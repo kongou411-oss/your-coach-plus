@@ -1,0 +1,2177 @@
+﻿        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                {/* 繝倥ャ繝繝ｼ */}
+                <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-t-2xl">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                            <Icon name={step.icon} size={32} />
+                            <div>
+                                <h2 className="text-xl font-bold">{step.title}</h2>
+                                <p className="text-sm opacity-90">
+                                    {currentStep + 1} / {totalSteps}
+                                </p>
+                            </div>
+                        </div>
+                        <button onClick={handleSkip} className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition">
+                            <Icon name="X" size={20} />
+                        </button>
+                    </div>
+
+                    {/* 繝励Ο繧ｰ繝ｬ繧ｹ繝舌・ */}
+                    <div className="w-full bg-white bg-opacity-30 rounded-full h-2">
+                        <div
+                            className="bg-white h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
+                        />
+                    </div>
+                </div>
+
+                {/* 繧ｳ繝ｳ繝・Φ繝・*/}
+                <div className="p-6">
+                    <div className="whitespace-pre-line text-gray-700 text-base leading-relaxed mb-6">
+                        {step.content}
+                    </div>
+
+                    {/* 繧ｹ繝・・繧ｸ繝舌ャ繧ｸ */}
+                    <div className="flex items-center gap-2 mb-6">
+                        <span className={`text-xs px-3 py-1 rounded-full font-bold ${
+                            step.stage === '螳・ ? 'bg-green-100 text-green-700' :
+                            step.stage === '遐ｴ' ? 'bg-blue-100 text-blue-700' :
+                            'bg-purple-100 text-purple-700'
+                        }`}>
+                            {step.stage}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                            {step.stage === '螳・ ? '蝓ｺ遉弱ｒ蟄ｦ縺ｶ' :
+                             step.stage === '遐ｴ' ? '蠢懃畑繝ｻ繧ｫ繧ｹ繧ｿ繝槭う繧ｺ' :
+                             '迢ｬ閾ｪ縺ｮ譁ｹ豕輔ｒ遒ｺ遶・}
+                        </span>
+                    </div>
+
+                    {/* 繝翫ン繧ｲ繝ｼ繧ｷ繝ｧ繝ｳ繝懊ち繝ｳ */}
+                    <div className="flex gap-3">
+                        {currentStep > 0 && (
+                            <button
+                                onClick={handlePrevious}
+                                className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                            >
+                                <Icon name="ChevronLeft" size={20} className="inline mr-1" />
+                                謌ｻ繧・                            </button>
+                        )}
+                        <button
+                            onClick={handleNext}
+                            className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition font-bold"
+                        >
+                            {currentStep === totalSteps - 1 ? '螳御ｺ・ : '谺｡縺ｸ'}
+                            {currentStep < totalSteps - 1 && <Icon name="ChevronRight" size={20} className="inline ml-1" />}
+                        </button>
+                    </div>
+
+                    {/* 繧ｹ繧ｭ繝・・繝懊ち繝ｳ */}
+                    {currentStep < totalSteps - 1 && (
+                        <button
+                            onClick={handleSkip}
+                            className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700 transition"
+                        >
+                            繝√Η繝ｼ繝医Μ繧｢繝ｫ繧偵せ繧ｭ繝・・
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ===== 險ｭ螳夂判髱｢ =====
+const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays, unlockedFeatures, onOpenAddView, darkMode, onToggleDarkMode }) => {
+    const [profile, setProfile] = useState({...userProfile});
+    const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'data', 'advanced'
+    const [showCustomMultiplierInput, setShowCustomMultiplierInput] = useState(false);
+    const [customMultiplierInputValue, setCustomMultiplierInputValue] = useState('');
+    const [infoModal, setInfoModal] = useState({ show: false, title: '', content: '' });
+    const [visualGuideModal, setVisualGuideModal] = useState({ show: false, gender: '逕ｷ諤ｧ', selectedLevel: 5 });
+
+    // 隧ｳ邏ｰ險ｭ螳夂畑縺ｮstate・医ョ繝輔か繝ｫ繝亥､繧偵・繝ｭ繝輔ぅ繝ｼ繝ｫ縺九ｉ蜿門ｾ暦ｼ・    const [advancedSettings, setAdvancedSettings] = useState({
+        proteinCoefficient: userProfile.proteinCoefficient || 2.5,
+        fatRatio: userProfile.fatRatio || 0.25,
+        ageProteinBoost: userProfile.ageProteinBoost !== undefined ? userProfile.ageProteinBoost : true,
+        bodymakerBoost: userProfile.bodymakerBoost !== undefined ? userProfile.bodymakerBoost : true,
+        trainingBoost: userProfile.trainingBoost !== undefined ? userProfile.trainingBoost : true,
+        sleepAdjustment: userProfile.sleepAdjustment !== undefined ? userProfile.sleepAdjustment : true,
+        stressAdjustment: userProfile.stressAdjustment !== undefined ? userProfile.stressAdjustment : true
+    });
+    const [localRoutines, setLocalRoutines] = useState(() => {
+        const saved = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [mealTemplates, setMealTemplates] = useState([]);
+    const [workoutTemplates, setWorkoutTemplates] = useState([]);
+    const [supplementTemplates, setSupplementTemplates] = useState([]);
+
+    // 繝・Φ繝励Ξ繝ｼ繝郁ｪｭ縺ｿ霎ｼ縺ｿ
+    useEffect(() => {
+        loadTemplates();
+    }, []);
+
+    const loadTemplates = async () => {
+        const meals = await DataService.getMealTemplates(userId);
+        const workouts = await DataService.getWorkoutTemplates(userId);
+        const supplements = await DataService.getSupplementTemplates(userId);
+        setMealTemplates(meals);
+        setWorkoutTemplates(workouts);
+        setSupplementTemplates(supplements);
+    };
+
+    const handleSave = () => {
+        // LBM蜀崎ｨ育ｮ・        const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
+        const bmr = LBMUtils.calculateBMR(lbm);
+        const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier);
+
+        const updatedProfile = {
+            ...profile,
+            ...advancedSettings, // 隧ｳ邏ｰ險ｭ螳壹ｒ邨ｱ蜷・            leanBodyMass: lbm,
+            bmr: bmr,
+            tdeeBase: tdeeBase
+        };
+
+        onUpdateProfile(updatedProfile);
+        onClose();
+    };
+
+    const handleExportData = async () => {
+        // 蜈ｨ繝・・繧ｿ蜿門ｾ・        const allData = {
+            profile: userProfile,
+            records: {}
+        };
+
+        // 驕主悉30譌･蛻・・繝・・繧ｿ繧貞叙蠕・        for (let i = 0; i < 30; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            const record = await DataService.getDailyRecord(userId, dateStr);
+            if (record) {
+                allData.records[dateStr] = record;
+            }
+        }
+
+        // JSON繝繧ｦ繝ｳ繝ｭ繝ｼ繝・        const dataStr = JSON.stringify(allData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `yourcoach_data_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleClearData = () => {
+        if (confirm('譛ｬ蠖薙↓蜈ｨ繝・・繧ｿ繧貞炎髯､縺励∪縺吶°・溘％縺ｮ謫堺ｽ懊・蜿悶ｊ豸医○縺ｾ縺帙ｓ縲・)) {
+            localStorage.clear();
+            alert('繝・・繧ｿ繧貞炎髯､縺励∪縺励◆縲ゅ・繝ｼ繧ｸ繧偵Μ繝ｭ繝ｼ繝峨＠縺ｦ縺上□縺輔＞縲・);
+        }
+    };
+
+    return (
+        <>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto slide-up">
+                <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
+                    <h3 className="text-lg font-bold">險ｭ螳・/h3>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+                        <Icon name="X" size={20} />
+                    </button>
+                </div>
+
+                {/* 險ｭ螳壹Γ繝九Η繝ｼ・域釜繧翫◆縺溘∩蠑丈ｸ隕ｧ・・*/}
+                <div className="p-6 space-y-3">
+                    {/* 菴ｿ縺・婿 */}
+                    <details className="border rounded-lg border-indigo-300 bg-indigo-50">
+                        <summary className="cursor-pointer p-4 hover:bg-indigo-100 font-medium flex items-center gap-2">
+                            <Icon name="BookOpen" size={18} className="text-indigo-600" />
+                            菴ｿ縺・婿
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t border-indigo-200">
+                            <div className="space-y-4">
+                                <p className="text-sm text-gray-700 font-semibold">YourCoach縺ｮ蝓ｺ譛ｬ繝輔Ο繝ｼ</p>
+
+                                {/* 繝輔Ο繝ｼ繝√Ε繝ｼ繝・*/}
+                                <div className="bg-white p-4 rounded-lg border-2 border-indigo-200 space-y-3">
+                                    {/* 繧ｹ繝・ャ繝・ */}
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                                        <div>
+                                            <p className="font-bold text-indigo-900">繝励Ο繝輔ぅ繝ｼ繝ｫ險ｭ螳・/p>
+                                            <p className="text-xs text-gray-600">菴馴㍾繝ｻ菴楢р閧ｪ邇・・逶ｮ逧・ｒ蜈･蜉・竊・LBM閾ｪ蜍戊ｨ育ｮ・竊・蛟句挨蛹門渕貅門､豎ｺ螳・/p>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
+
+                                    {/* 繧ｹ繝・ャ繝・ */}
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
+                                        <div>
+                                            <p className="font-bold text-indigo-900">豈取律縺ｮ險倬鹸</p>
+                                            <p className="text-xs text-gray-600">鬟滉ｺ九・繝医Ξ繝ｼ繝九Φ繧ｰ繝ｻ繧ｵ繝励Μ繧定ｨ倬鹸 竊・PFC繝ｻ繝薙ち繝溘Φ繝ｻ繝溘ロ繝ｩ繝ｫ閾ｪ蜍暮寔險・/p>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
+
+                                    {/* 繧ｹ繝・ャ繝・ */}
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
+                                        <div>
+                                            <p className="font-bold text-indigo-900">驕疲・迥ｶ豕√ｒ遒ｺ隱・/p>
+                                            <p className="text-xs text-gray-600">繝繝・す繝･繝懊・繝峨〒逶ｮ讓吝､縺ｨ縺ｮ豈碑ｼ・竊・荳崎ｶｳ譬・､顔ｴ繧堤音螳・/p>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
+
+                                    {/* 繧ｹ繝・ャ繝・ */}
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">4</div>
+                                        <div>
+                                            <p className="font-bold text-indigo-900">隱ｿ謨ｴ繝ｻ譛驕ｩ蛹・/p>
+                                            <p className="text-xs text-gray-600">鬟滉ｺ句・螳ｹ繧定ｪｿ謨ｴ 竊・1-12騾ｱ髢薙し繧､繧ｯ繝ｫ縺ｧ邯咏ｶ・/p>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
+
+                                    {/* 繧ｹ繝・ャ繝・ */}
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm">笨・/div>
+                                        <div>
+                                            <p className="font-bold text-green-900">逶ｮ讓咎＃謌・/p>
+                                            <p className="text-xs text-gray-600">逅・Φ縺ｮ霄ｫ菴薙∈・・65譌･邯咏ｶ壹〒繧ｭ繝ｼ繝・/p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 螳育ｴ髮｢繧ｷ繧ｹ繝・Β隱ｬ譏・*/}
+                                <div className="bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 p-4 rounded-lg border border-gray-200">
+                                    <p className="font-bold text-sm mb-2 flex items-center gap-2">
+                                        <Icon name="TrendingUp" size={16} />
+                                        螳育ｴ髮｢繧ｷ繧ｹ繝・Β
+                                    </p>
+                                    <div className="space-y-2 text-xs">
+                                        <p><span className="font-bold text-green-700">螳・0-9譌･)</span>: 蝓ｺ遉手ｨ倬鹸讖溯・縺ｧ鄙呈・蛹・/p>
+                                        <p><span className="font-bold text-blue-700">遐ｴ(10-17譌･)</span>: AI繧ｳ繝ｼ繝√・蛻・梵讖溯・縺碁幕謾ｾ</p>
+                                        <p><span className="font-bold text-purple-700">髮｢(18譌･~)</span>: 蜈ｨ讖溯・髢区叛縲∫峡閾ｪ繝｡繧ｽ繝・ラ遒ｺ遶・/p>
+                                    </div>
+                                </div>
+
+                                {/* 繝昴う繝ｳ繝・*/}
+                                <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                                    <p className="font-bold text-yellow-900 text-xs mb-1">庁 驥崎ｦ√・繧､繝ｳ繝・/p>
+                                    <ul className="text-xs text-gray-700 space-y-1 list-disc list-inside">
+                                        <li>蝓ｺ貅門､縺ｯLBM繝ｻ陦豸ｲ蝙九・逶ｮ逧・〒螳悟・蛟句挨蛹・/li>
+                                        <li>遲玖ｉ縺ｮ譁ｰ髯ｳ莉｣隰晏捉譛溘・50譌･縲∫┬繧峨★邯咏ｶ・/li>
+                                        <li>繝・Φ繝励Ξ繝ｼ繝医・繝ｫ繝ｼ繝・ぅ繝ｳ讖溯・縺ｧ蜉ｹ邇・喧</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+{/* 陦ｨ遉ｺ險ｭ螳・*/}                    <details className="border rounded-lg border-gray-300 bg-gray-50">                        <summary className="cursor-pointer p-4 hover:bg-gray-100 font-medium flex items-center gap-2">                            <Icon name="Monitor" size={18} className="text-gray-600" />                            陦ｨ遉ｺ險ｭ螳・                           <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />                        </summary>                        <div className="p-4 pt-0 border-t border-gray-200">                            <div className="space-y-4">                                {/* 繝繝ｼ繧ｯ繝｢繝ｼ繝牙・繧頑崛縺・*/}                                <div className="flex items-center justify-between p-3 bg-white rounded-lg border">                                    <div className="flex items-center gap-3">                                        <Icon name={darkMode ? "Moon" : "Sun"} size={20} className={darkMode ? "text-indigo-600" : "text-yellow-600"} />                                        <div>                                            <p className="font-medium">{darkMode ? "繝繝ｼ繧ｯ繝｢繝ｼ繝・ : "繝ｩ繧､繝医Δ繝ｼ繝・}</p>                                            <p className="text-xs text-gray-500">逕ｻ髱｢縺ｮ驟崎牡繧貞・繧頑崛縺・/p>                                        </div>                                    </div>                                    <button                                        onClick={onToggleDarkMode}                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${darkMode ? "bg-indigo-600" : "bg-gray-300"}`}                                    >                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${darkMode ? "translate-x-6" : "translate-x-1"}`} />                                    </button>                                </div>                            </div>                        </div>                    </details>
+
+                    {/* 繝励Ο繝輔ぅ繝ｼ繝ｫ */}
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="User" size={18} className="text-indigo-600" />
+                            繝励Ο繝輔ぅ繝ｼ繝ｫ
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t">
+                            {/* 繝励Ο繝輔ぅ繝ｼ繝ｫ蜀・ｮｹ */}
+                            <div className="space-y-3">
+                            {/* 蝓ｺ譛ｬ諠・ｱ */}
+                            <details className="border rounded-lg" style={{marginTop: '1.5rem'}}>
+                                <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium flex items-center gap-2">
+                                    <Icon name="User" size={16} />
+                                    蝓ｺ譛ｬ諠・ｱ
+                                </summary>
+                                <div className="p-4 pt-0 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">繝九ャ繧ｯ繝阪・繝</label>
+                                        <input
+                                            type="text"
+                                            value={profile.nickname}
+                                            onChange={(e) => setProfile({...profile, nickname: e.target.value})}
+                                            className="w-full px-4 py-3 border rounded-lg"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">蟷ｴ鮨｢</label>
+                                            <input
+                                                type="number"
+                                                value={profile.age}
+                                                onChange={(e) => setProfile({...profile, age: e.target.value === '' ? '' : e.target.value === '' ? '' : Number(e.target.value)})}
+                                                className="w-full px-4 py-3 border rounded-lg"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">諤ｧ蛻･</label>
+                                            <select
+                                                value={profile.gender}
+                                                onChange={(e) => setProfile({...profile, gender: e.target.value})}
+                                                className="w-full px-4 py-3 border rounded-lg"
+                                            >
+                                                <option value="逕ｷ諤ｧ">逕ｷ諤ｧ</option>
+                                                <option value="螂ｳ諤ｧ">螂ｳ諤ｧ</option>
+                                                <option value="縺昴・莉・>縺昴・莉・/option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">鬟滓枚蛹・/label>
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-gray-600">
+                                                縺ゅ↑縺溘・鬟溽函豢ｻ縺ｫ霑代＞繧ゅ・繧定､・焚驕ｸ謚槭＠縺ｦ縺上□縺輔＞縲ょ･ｽ縺ｿ縺ｫ蜷医▲縺溘∫ｶ咏ｶ壹＠繧・☆縺・｣滓攝繧貞━蜈育噪縺ｫ謠先｡医＠縺ｾ縺吶・                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {['繧｢繧ｸ繧｢', '谺ｧ邀ｳ', '繝ｩ繝・Φ', '縺昴・莉・].map(culture => (
+                                                    <label key={culture} className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={(profile.culturalRoots || []).includes(culture)}
+                                                            onChange={(e) => {
+                                                                const roots = profile.culturalRoots || [];
+                                                                if (e.target.checked) {
+                                                                    setProfile({...profile, culturalRoots: [...roots, culture]});
+                                                                } else {
+                                                                    setProfile({...profile, culturalRoots: roots.filter(r => r !== culture)});
+                                                                }
+                                                            }}
+                                                            className="rounded"
+                                                        />
+                                                        <span className="text-sm">{culture}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">繧ｹ繧ｿ繧､繝ｫ</label>
+                                        <select
+                                            value={profile.style || '荳闊ｬ'}
+                                            onChange={(e) => setProfile({...profile, style: e.target.value})}
+                                            className="w-full px-4 py-3 border rounded-lg"
+                                        >
+                                            <option value="荳闊ｬ">荳闊ｬ</option>
+                                            <option value="繝懊ョ繧｣繝｡繧､繧ｫ繝ｼ">繝懊ョ繧｣繝｡繧､繧ｫ繝ｼ</option>
+                                        </select>
+                                        <p className="text-xs text-gray-600 mt-1">
+                                            {profile.style === '繝懊ョ繧｣繝｡繧､繧ｫ繝ｼ' ? '鬮倥ち繝ｳ繝代け繝ｻ邊ｾ蟇・↑譬・､顔ｮ｡逅・渕貅・ : '讓呎ｺ也噪縺ｪ譬・､雁渕貅・}
+                                        </p>
+                                    </div>
+                                </div>
+                            </details>
+
+
+                            {/* 菴鍋ｵ・・ */}
+                            <details className="border rounded-lg">
+                                <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium flex items-center gap-2">
+                                    <Icon name="Activity" size={16} />
+                                    菴鍋ｵ・・
+                                </summary>
+                                <div className="p-4 pt-0 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">霄ｫ髟ｷ (cm)</label>
+                                            <input
+                                                type="number"
+                                                value={profile.height}
+                                                onChange={(e) => setProfile({...profile, height: e.target.value === '' ? '' : Number(e.target.value)})}
+                                                className="w-full px-4 py-3 border rounded-lg"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">菴馴㍾ (kg)</label>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                value={profile.weight}
+                                                onChange={(e) => setProfile({...profile, weight: e.target.value === '' ? '' : Number(e.target.value)})}
+                                                className="w-full px-4 py-3 border rounded-lg"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                            菴楢р閧ｪ邇・(%)
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: 'LBM・磯勁閼りが菴馴㍾・峨→縺ｯ・・,
+                                                    content: `菴馴㍾縺九ｉ閼りが縺ｮ驥阪＆繧帝勁縺・◆縲∫ｭ玖ｉ繧・ｪｨ縲∝・閾薙↑縺ｩ縺ｮ邱城㍼縺ｧ縺吶りｺｫ菴薙ｒ蜍輔°縺吶お繝ｳ繧ｸ繝ｳ縺ｮ繧医≧縺ｪ繧ゅ・縺ｧ縺ゅｊ縲∝渕遉惹ｻ｣隰晞㍼繧呈ｱｺ螳壹☆繧区怙繧る㍾隕√↑謖・ｨ吶〒縺吶・
+縲産our Coach+縲上〒縺ｯ縲∬ｺｫ髟ｷ縺ｨ菴馴㍾縺ｮ縺ｿ縺ｧ邂怜・縺輔ｌ繧毅MI繧貞ｮ悟・縺ｫ謗帝勁縺励√≠縺ｪ縺溘・霄ｫ菴薙・縲瑚ｳｪ縲阪ｒ豁｣縺励￥隧穂ｾ｡縺吶ｋ縺溘ａ縺ｫ縲√☆縺ｹ縺ｦ縺ｮ險育ｮ怜渕貅悶↓LBM繧呈治逕ｨ縺励※縺・∪縺吶・
+縲蝉ｽ鍋ｵ・・縺ｮ貂ｬ螳壽婿豕輔・**菴鍋ｵ・・險医〒縺ｮ貂ｬ螳壹ｒ蠑ｷ縺乗耳螂ｨ縺励∪縺・*
+
+窶｢ 繧ｸ繝縺ｮ菴鍋ｵ・・險茨ｼ・nBody縺ｪ縺ｩ・・  竊・譛繧よｭ｣遒ｺ縲ょ､壹￥縺ｮ繧ｸ繝縺ｧ辟｡譁呎ｸｬ螳壼庄閭ｽ
+窶｢ 螳ｶ蠎ｭ逕ｨ菴鍋ｵ・・險・  竊・謇玖ｻｽ縺ｧ豈取律貂ｬ螳壼庄閭ｽ・井ｾ・ 繧ｿ繝九ち縲√が繝繝ｭ繝ｳ・・窶｢ 貂ｬ螳壹ち繧､繝溘Φ繧ｰ
+  竊・譛昴∬ｵｷ蠎雁ｾ後・繝医う繝ｬ蠕後・遨ｺ閻ｹ譎ゅ↓貂ｬ螳・
+縲占ｨ育ｮ怜ｼ上・LBM = 菴馴㍾ ﾃ・(1 - 菴楢р閧ｪ邇・/ 100)
+
+萓・ 菴馴㍾70kg縲∽ｽ楢р閧ｪ邇・5%縺ｮ蝣ｴ蜷・LBM = 70 ﾃ・(1 - 0.15) = 59.5kg
+
+**驥崎ｦ・*: 豁｣遒ｺ縺ｪ菴楢р閧ｪ邇・・貂ｬ螳壹′縲￣FC繝舌Λ繝ｳ繧ｹ縺ｮ邊ｾ蠎ｦ繧貞､ｧ縺阪￥蟾ｦ蜿ｳ縺励∪縺吶Ａ
+                                                })}
+                                                className="text-indigo-600 hover:text-indigo-800"
+                                            >
+                                                <Icon name="Info" size={16} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setVisualGuideModal({
+                                                    show: true,
+                                                    gender: profile.gender || '逕ｷ諤ｧ',
+                                                    selectedLevel: 5
+                                                })}
+                                                className="text-orange-600 hover:text-orange-800"
+                                                title="螟冶ｦ九°繧画耳螳・
+                                            >
+                                                <Icon name="Eye" size={16} />
+                                            </button>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={profile.bodyFatPercentage}
+                                            onChange={(e) => setProfile({...profile, bodyFatPercentage: e.target.value === '' ? '' : Number(e.target.value)})}
+                                            className="w-full px-4 py-3 border rounded-lg"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            <Icon name="Eye" size={12} className="inline" /> = 菴鍋ｵ・・險医′縺ｪ縺・ｴ蜷医・螟冶ｦ九°繧画耳螳壹〒縺阪∪縺・                                        </p>
+                                    </div>
+                                </div>
+                            </details>
+
+                            {/* 豢ｻ蜍輔Ξ繝吶Ν繝ｻ逶ｮ逧・*/}
+                            <details className="border rounded-lg">
+                                <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium flex items-center gap-2">
+                                    <Icon name="Target" size={16} />
+                                    豢ｻ蜍輔Ξ繝吶Ν繝ｻ逶ｮ逧・                                </summary>
+                                <div className="p-4 pt-0 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                            逕滓ｴｻ繧ｹ繧ｿ繧､繝ｫ
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '豢ｻ蜍輔Ξ繝吶Ν菫よ焚縺ｨ縺ｯ・・,
+                                                    content: `縺ゅ↑縺溘・譌･蟶ｸ逕滓ｴｻ縺後←繧後□縺第ｴｻ蜍慕噪縺九ｒ謨ｰ蛟､蛹悶＠縺溘ｂ縺ｮ縺ｧ縺吶ゅ％縺ｮ菫よ焚繧貞渕遉惹ｻ｣隰晞㍼縺ｫ謗帙￠繧九％縺ｨ縺ｧ縲・譌･縺ｮ螟ｧ縺ｾ縺九↑豸郁ｲｻ繧ｫ繝ｭ繝ｪ繝ｼ・・DEE・峨ｒ邂怜・縺励∪縺吶・
+縲宣㍾隕√・縺薙ｌ縺ｯ縺ゅ￥縺ｾ縺ｧ譌･蟶ｸ逕滓ｴｻ縺ｮ豢ｻ蜍暮㍼縺ｧ縺ゅｊ縲√ヨ繝ｬ繝ｼ繝九Φ繧ｰ縺ｫ繧医ｋ豸郁ｲｻ繧ｫ繝ｭ繝ｪ繝ｼ縺ｯ縲√ｈ繧顔ｲｾ蟇・↑縲傘G蠑上上〒蛻･騾碑ｨ育ｮ励＆繧後∪縺吶ゅｈ繧頑ｭ｣遒ｺ縺ｪ險ｭ螳壹ｒ縺励◆縺・婿縺ｯ縲∽ｿよ焚繧堤峩謗･蜈･蜉帙☆繧九％縺ｨ繧ょ庄閭ｽ縺ｧ縺吶Ａ
+                                                })}
+                                                className="text-indigo-600 hover:text-indigo-800"
+                                            >
+                                                <Icon name="Info" size={16} />
+                                            </button>
+                                        </label>
+                                        {!profile.customActivityMultiplier && (
+                                            <select
+                                                value={profile.activityLevel}
+                                                onChange={(e) => setProfile({...profile, activityLevel: e.target.value === '' ? '' : Number(e.target.value)})}
+                                                className="w-full px-4 py-3 border rounded-lg"
+                                                disabled={profile.customActivityMultiplier}
+                                            >
+                                                <option value={1}>繝・せ繧ｯ繝ｯ繝ｼ繧ｯ荳ｭ蠢・- 1.05x</option>
+                                                <option value={2}>遶九■莉穂ｺ九′螟壹＞ - 1.225x</option>
+                                                <option value={3}>霆ｽ縺・ｉ菴灘感蜒・- 1.4x</option>
+                                                <option value={4}>驥阪＞閧我ｽ灘感蜒・- 1.575x</option>
+                                                <option value={5}>髱槫ｸｸ縺ｫ豼縺励＞閧我ｽ灘感蜒・- 1.75x</option>
+                                            </select>
+                                        )}
+                                        {profile.customActivityMultiplier && (
+                                            <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                                                <p className="text-sm text-indigo-800">
+                                                    繧ｫ繧ｹ繧ｿ繝菫よ焚: <span className="font-bold">{profile.customActivityMultiplier}x</span>
+                                                </p>
+                                            </div>
+                                        )}
+                                        {showCustomMultiplierInput && !profile.customActivityMultiplier && (
+                                            <div className="mt-2 p-3 bg-gray-50 border rounded-lg space-y-2">
+                                                <label className="block text-sm font-medium">菫よ焚繧貞・蜉・(1.0縲・.5)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="1.0"
+                                                    max="2.5"
+                                                    value={customMultiplierInputValue}
+                                                    onChange={(e) => setCustomMultiplierInputValue(e.target.value)}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                    placeholder="萓・ 1.45"
+                                                />
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const value = parseFloat(customMultiplierInputValue);
+                                                            if (!isNaN(value) && value >= 1.0 && value <= 2.5) {
+                                                                setProfile({...profile, customActivityMultiplier: value});
+                                                                setShowCustomMultiplierInput(false);
+                                                                setCustomMultiplierInputValue('');
+                                                            } else {
+                                                                alert('1.0縺九ｉ2.5縺ｮ髢薙・謨ｰ蛟､繧貞・蜉帙＠縺ｦ縺上□縺輔＞');
+                                                            }
+                                                        }}
+                                                        className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                                                    >
+                                                        險ｭ螳・                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowCustomMultiplierInput(false);
+                                                            setCustomMultiplierInputValue('');
+                                                        }}
+                                                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                                                    >
+                                                        繧ｭ繝｣繝ｳ繧ｻ繝ｫ
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (profile.customActivityMultiplier) {
+                                                    setProfile({...profile, customActivityMultiplier: null});
+                                                } else {
+                                                    const multipliers = {1: 1.05, 2: 1.225, 3: 1.4, 4: 1.575, 5: 1.75};
+                                                    const currentMultiplier = multipliers[profile.activityLevel] || 1.4;
+                                                    setCustomMultiplierInputValue(currentMultiplier.toString());
+                                                    setShowCustomMultiplierInput(!showCustomMultiplierInput);
+                                                }
+                                            }}
+                                            className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 underline"
+                                        >
+                                            {profile.customActivityMultiplier ? '5谿ｵ髫朱∈謚槭↓謌ｻ縺・ : showCustomMultiplierInput ? '蜈･蜉帙ｒ髢峨§繧・ : '縺ｾ縺溘・縲∵ｴｻ蜍輔Ξ繝吶Ν菫よ焚繧堤峩謗･蜈･蜉帙☆繧・}
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                            逶ｮ逧・                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '逶ｮ逧・・險ｭ螳・,
+                                                    content: `縺ゅ↑縺溘・繝懊ョ繧｣繝｡繧､繧ｯ縺ｮ逶ｮ逧・ｒ驕ｸ謚槭＠縺ｦ縺上□縺輔＞縲ら岼逧・↓蠢懊§縺ｦ謗ｨ螂ｨ繧ｫ繝ｭ繝ｪ繝ｼ縺ｨPFC繝舌Λ繝ｳ繧ｹ縺瑚・蜍戊ｪｿ謨ｴ縺輔ｌ縺ｾ縺吶・
+縲舌ム繧､繧ｨ繝・ヨ・郁р閧ｪ繧定誠縺ｨ縺呻ｼ峨・窶｢ 逶ｮ讓・ 菴楢р閧ｪ繧呈ｸ帙ｉ縺励∝ｼ輔″邱縺ｾ縺｣縺滉ｽ薙ｒ菴懊ｋ
+窶｢ 繧ｫ繝ｭ繝ｪ繝ｼ: 繝｡繝ｳ繝・リ繝ｳ繧ｹ繧ｫ繝ｭ繝ｪ繝ｼ -300kcal
+窶｢ 繧ｿ繝ｳ繝代け雉ｪ: 鬮倥ａ・育ｭ玖ｉ邯ｭ謖√・縺溘ａ・・窶｢ 謗ｨ螂ｨ繝壹・繧ｹ: 騾ｱ0.5縲・.7kg貂・
+縲舌Γ繝ｳ繝・リ繝ｳ繧ｹ・育樟迥ｶ邯ｭ謖・ｼ峨・窶｢ 逶ｮ讓・ 迴ｾ蝨ｨ縺ｮ菴馴㍾繝ｻ菴鍋ｵ・・繧堤ｶｭ謖・窶｢ 繧ｫ繝ｭ繝ｪ繝ｼ: 繝｡繝ｳ繝・リ繝ｳ繧ｹ繧ｫ繝ｭ繝ｪ繝ｼ ﾂｱ0kcal
+窶｢ 繝舌Λ繝ｳ繧ｹ蝙九・譬・､企・蛻・窶｢ 蛛･蠎ｷ逧・↑逕滓ｴｻ鄙呈・縺ｮ邯ｭ謖・
+縲舌ヰ繝ｫ繧ｯ繧｢繝・・・育ｭ玖ｉ繧偵▽縺代ｋ・峨・窶｢ 逶ｮ讓・ 遲玖ｉ驥上ｒ蠅励ｄ縺励∽ｽ薙ｒ螟ｧ縺阪￥縺吶ｋ
+窶｢ 繧ｫ繝ｭ繝ｪ繝ｼ: 繝｡繝ｳ繝・リ繝ｳ繧ｹ繧ｫ繝ｭ繝ｪ繝ｼ +300kcal
+窶｢ 繧ｿ繝ｳ繝代け雉ｪ: 髱槫ｸｸ縺ｫ鬮倥ａ
+窶｢ 轤ｭ豌ｴ蛹也黄: 螟壹ａ・育ｭ玖ｉ蜷域・縺ｮ繧ｨ繝阪Ν繧ｮ繝ｼ・・窶｢ 謗ｨ螂ｨ繝壹・繧ｹ: 騾ｱ0.5kg蠅・
+逶ｮ逧・・縺・▽縺ｧ繧ょ､画峩縺ｧ縺阪∪縺吶Ａ
+                                                })}
+                                                className="text-indigo-600 hover:text-indigo-800"
+                                            >
+                                                <Icon name="Info" size={14} />
+                                            </button>
+                                        </label>
+                                        <select
+                                            value={profile.purpose}
+                                            onChange={(e) => {
+                                                const purpose = e.target.value;
+                                                let pace = 0;
+                                                let calorieAdjust = 0;
+                                                if (purpose === '繝繧､繧ｨ繝・ヨ') {
+                                                    pace = -1;
+                                                    calorieAdjust = -300;
+                                                } else if (purpose === '繝舌Ν繧ｯ繧｢繝・・') {
+                                                    pace = 1;
+                                                    calorieAdjust = 300;
+                                                }
+                                                setProfile({...profile, purpose, weightChangePace: pace, calorieAdjustment: calorieAdjust});
+                                            }}
+                                            className="w-full px-4 py-3 border rounded-lg"
+                                        >
+                                            <option value="繝繧､繧ｨ繝・ヨ">繝繧､繧ｨ繝・ヨ・郁р閧ｪ繧定誠縺ｨ縺呻ｼ・/option>
+                                            <option value="繝｡繝ｳ繝・リ繝ｳ繧ｹ">繝｡繝ｳ繝・リ繝ｳ繧ｹ・育樟迥ｶ邯ｭ謖・ｼ・/option>
+                                            <option value="繝舌Ν繧ｯ繧｢繝・・">繝舌Ν繧ｯ繧｢繝・・・育ｭ玖ｉ繧偵▽縺代ｋ・・/option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                            <span>
+                                                繧ｫ繝ｭ繝ｪ繝ｼ隱ｿ謨ｴ蛟､・・cal/譌･・・                                                <span className="text-xs text-gray-500 ml-2">繝｡繝ｳ繝・リ繝ｳ繧ｹ縺九ｉﾂｱ隱ｿ謨ｴ</span>
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '繧ｫ繝ｭ繝ｪ繝ｼ隱ｿ謨ｴ蛟､',
+                                                    content: `繝｡繝ｳ繝・リ繝ｳ繧ｹ繧ｫ繝ｭ繝ｪ繝ｼ縺九ｉ縺ｮ隱ｿ謨ｴ蛟､繧定ｨｭ螳壹＠縺ｾ縺吶・
+縲先耳螂ｨ遽・峇: ﾂｱ300kcal縲・螳牙・縺ｧ謖∫ｶ壼庄閭ｽ縺ｪ繝壹・繧ｹ縺ｧ菴馴㍾繧貞､牙喧縺輔○繧九◆繧√・謗ｨ螂ｨ遽・峇縺ｧ縺吶・
+縲舌ム繧､繧ｨ繝・ヨ譎ゑｼ医・繧､繝翫せ蛟､・峨・窶｢ -200kcal: 遨上ｄ縺具ｼ磯ｱ0.5kg貂幢ｼ・窶｢ -300kcal: 讓呎ｺ也噪・磯ｱ0.7kg貂幢ｼ俄・謗ｨ螂ｨ
+窶｢ -400kcal莉･荳・ 諤･豼・医Μ繝舌え繝ｳ繝峨Μ繧ｹ繧ｯ鬮假ｼ・
+縲舌ヰ繝ｫ繧ｯ繧｢繝・・譎ゑｼ医・繝ｩ繧ｹ蛟､・峨・窶｢ +200kcal: 謗ｧ縺医ａ・磯ｱ0.25kg蠅暦ｼ・窶｢ +300kcal: 讓呎ｺ也噪・磯ｱ0.5kg蠅暦ｼ俄・謗ｨ螂ｨ
+窶｢ +400kcal莉･荳・ 遨肴･ｵ逧・ｼ郁р閧ｪ蠅怜刈繝ｪ繧ｹ繧ｯ鬮假ｼ・
+縲舌Γ繝ｳ繝・リ繝ｳ繧ｹ譎ゅ・窶｢ 0kcal: 迴ｾ迥ｶ邯ｭ謖・
+縲先ｳｨ諢上・讌ｵ遶ｯ縺ｪ繧ｫ繝ｭ繝ｪ繝ｼ隱ｿ謨ｴ縺ｯ縲∽ｻ｣隰昴・菴惹ｸ九∫ｭ玖ｉ縺ｮ貂帛ｰ代√Μ繝舌え繝ｳ繝峨・繝ｪ繧ｹ繧ｯ繧帝ｫ倥ａ縺ｾ縺吶つｱ200縲・00kcal縺ｮ遽・峇縺ｧ隱ｿ謨ｴ縺吶ｋ縺薙→繧貞ｼｷ縺乗耳螂ｨ縺励∪縺吶Ａ
+                                                })}
+                                                className="text-indigo-600 hover:text-indigo-800"
+                                            >
+                                                <Icon name="Info" size={14} />
+                                            </button>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="50"
+                                            value={profile.calorieAdjustment !== undefined ? profile.calorieAdjustment : 0}
+                                            onChange={(e) => {
+                                                const value = e.target.value === '' ? 0 : e.target.value === '' ? '' : Number(e.target.value);
+                                                setProfile({...profile, calorieAdjustment: value});
+                                            }}
+                                            className="w-full px-4 py-3 border rounded-lg"
+                                            placeholder="0"
+                                        />
+                                        <p className="text-xs text-gray-600 mt-1">
+                                            繝励Λ繧ｹ蛟､縺ｧ蠅鈴㍼縲√・繧､繝翫せ蛟､縺ｧ貂幃㍼縲つｱ200kcal縺梧ｨ呎ｺ也噪縺ｪ隱ｿ謨ｴ蟷・〒縺吶・                                        </p>
+                                    </div>
+                                </div>
+                            </details>
+
+                            {/* 隧ｳ邏ｰ險ｭ螳夲ｼ磯ｫ伜ｺｦ縺ｪ險ｭ螳夲ｼ・*/}
+                            <details className="border rounded-lg border-purple-300 bg-purple-50">
+                                <summary className="cursor-pointer p-3 hover:bg-purple-100 font-medium flex items-center gap-2">
+                                    <Icon name="Settings" size={16} className="text-purple-700" />
+                                    <span className="text-purple-900">隧ｳ邏ｰ險ｭ螳夲ｼ磯ｫ伜ｺｦ縺ｪ險ｭ螳夲ｼ・/span>
+                                </summary>
+                                <div className="p-4 pt-0 space-y-4 bg-white">
+                                    <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-xs">
+                                        <p className="font-bold text-yellow-900 mb-1">笞呻ｸ・鬮伜ｺｦ縺ｪ險ｭ螳・/p>
+                                        <p className="text-gray-700">縺吶∋縺ｦ縺ｮ螟画焚繧剃ｻｻ諢上↓螟画峩縺ｧ縺阪∪縺吶ゅョ繝輔か繝ｫ繝亥､縺ｯ閾ｪ蜍慕ｮ怜・縺輔ｌ縺ｦ縺・∪縺吶・/p>
+                                    </div>
+
+                                    {/* 繧ｿ繝ｳ繝代け雉ｪ菫よ焚 */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                            繧ｿ繝ｳ繝代け雉ｪ菫よ焚・・/kg LBM・・                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '繧ｿ繝ｳ繝代け雉ｪ菫よ焚縺ｨ縺ｯ・・,
+                                                    content: `髯､閼りが菴馴㍾・・BM・・kg縺ゅ◆繧翫・繧ｿ繝ｳ繝代け雉ｪ蠢・ｦ・㍼繧定ｨｭ螳壹＠縺ｾ縺吶・
+縲先耳螂ｨ蛟､縲・窶｢ 荳闊ｬ逧・↑繝医Ξ繝ｼ繝九Φ繧ｰ: 2.0縲・.5g/kg LBM
+窶｢ 譛ｬ譬ｼ逧・↑遲玖ぇ螟ｧ: 2.5縲・.0g/kg LBM
+窶｢ 貂幃㍼荳ｭ: 2.5縲・.0g/kg LBM・育ｭ玖ｉ邯ｭ謖・ｼ・窶｢ 繝｡繝ｳ繝・リ繝ｳ繧ｹ: 2.0縲・.2g/kg LBM
+
+縲蝉ｾ九・LBM 60kg縺ｧ菫よ焚2.5縺ｮ蝣ｴ蜷・ 60 ﾃ・2.5 = 150g/譌･
+
+繝・ヵ繧ｩ繝ｫ繝亥､・・.5・峨・遘大ｭｦ逧・ｹ諡縺ｫ蝓ｺ縺･縺乗怙驕ｩ蛟､縺ｧ縺吶ょ句挨縺ｮ繝九・繧ｺ縺ｫ蠢懊§縺ｦ隱ｿ謨ｴ縺励※縺上□縺輔＞縲Ａ
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={14} />
+                                            </button>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={advancedSettings.proteinCoefficient}
+                                            onChange={(e) => setAdvancedSettings({...advancedSettings, proteinCoefficient: e.target.value === '' ? '' : Number(e.target.value)})}
+                                            className="w-full px-4 py-3 border rounded-lg"
+                                        />
+                                        <p className="text-xs text-gray-600 mt-1">謗ｨ螂ｨ遽・峇: 2.0縲・.0・医ョ繝輔か繝ｫ繝・ 2.5・・/p>
+                                    </div>
+
+                                    {/* 閼りｳｪ豈皮紫 */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                            閼りｳｪ繧ｫ繝ｭ繝ｪ繝ｼ豈皮紫
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '閼りｳｪ繧ｫ繝ｭ繝ｪ繝ｼ豈皮紫縺ｨ縺ｯ・・,
+                                                    content: `邱上き繝ｭ繝ｪ繝ｼ縺ｫ蜊繧√ｋ閼りｳｪ縺ｮ蜑ｲ蜷医ｒ險ｭ螳壹＠縺ｾ縺吶・
+縲先耳螂ｨ蛟､縲・窶｢ 繝舌Λ繝ｳ繧ｹ蝙・ 0.25・・5%・・窶｢ 菴手р雉ｪ繝ｻ鬮倡く豌ｴ蛹也黄: 0.20縲・.22・・0縲・2%・・窶｢ 繧ｱ繝医ず繧ｧ繝九ャ繧ｯ莉･螟・ 0.30莉･荳九ｒ謗ｨ螂ｨ
+
+縲占ｨ育ｮ嶺ｾ九・邱上き繝ｭ繝ｪ繝ｼ2000kcal縲∵ｯ皮紫0.25縺ｮ蝣ｴ蜷・
+窶｢ 閼りｳｪ: 2000 ﾃ・0.25 = 500kcal
+窶｢ 閼りｳｪ繧ｰ繝ｩ繝: 500 ﾃｷ 9 = 邏・5g
+
+縲宣㍾隕√・閼りｳｪ縺ｯ邏ｰ閭櫁・繧・・繝ｫ繝｢繝ｳ逕滓・縺ｫ蠢・医〒縺吶よ･ｵ遶ｯ縺ｫ菴弱＞險ｭ螳夲ｼ・.15譛ｪ貅・峨・驕ｿ縺代※縺上□縺輔＞縲Ａ
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={14} />
+                                            </button>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.05"
+                                            value={advancedSettings.fatRatio}
+                                            onChange={(e) => setAdvancedSettings({...advancedSettings, fatRatio: e.target.value === '' ? '' : Number(e.target.value)})}
+                                            className="w-full px-4 py-3 border rounded-lg"
+                                        />
+                                        <p className="text-xs text-gray-600 mt-1">謗ｨ螂ｨ遽・峇: 0.20縲・.30・医ョ繝輔か繝ｫ繝・ 0.25 = 25%・・/p>
+                                    </div>
+
+
+                                    {/* 閾ｪ蜍戊ｪｿ謨ｴON/OFF */}
+                                    <div className="space-y-2 border-t pt-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <p className="font-medium text-sm">閾ｪ蜍戊ｪｿ謨ｴ讖溯・</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '閾ｪ蜍戊ｪｿ謨ｴ讖溯・縺ｨ縺ｯ・・,
+                                                    content: `繧ｳ繝ｳ繝・ぅ繧ｷ繝ｧ繝ｳ險倬鹸縺ｫ蝓ｺ縺･縺・※縲∫岼讓吶き繝ｭ繝ｪ繝ｼ繧・・繧ｯ繝ｭ譬・､顔ｴ繧定・蜍輔〒蠕ｮ隱ｿ謨ｴ縺吶ｋ讖溯・縺ｧ縺吶・
+縲占ｪｿ謨ｴ縺輔ｌ繧矩・岼縺ｨ蜿肴丐邂・園縲・
+1. **蟷ｴ鮨｢縺ｫ繧医ｋ繧ｿ繝ｳ繝代け雉ｪ繝悶・繧ｹ繝・*
+   窶｢ 蜿肴丐邂・園: 繧ｿ繝ｳ繝代け雉ｪ逶ｮ讓吝､・・・・   窶｢ 40豁ｳ莉･荳翫〒+0.2g/kg LBM
+   窶｢ 繝繝・す繝･繝懊・繝我ｸ企Κ縺ｮ逶ｮ讓儕FC蜀・げ繝ｩ繝輔↓蜊ｳ譎ょ渚譏
+
+2. **繝懊ョ繧｣繝｡繧､繧ｫ繝ｼ繝悶・繧ｹ繝・*
+   窶｢ 蜿肴丐邂・園: 繧ｿ繝ｳ繝代け雉ｪ逶ｮ讓吝､・・・・   窶｢ +0.5g/kg LBM
+   窶｢ 譛ｬ譬ｼ逧・↑遲玖ぇ螟ｧ繧堤岼謖・☆譁ｹ蜷代￠
+
+3. **繝医Ξ繝ｼ繝九Φ繧ｰ蠑ｷ蠎ｦ縺ｫ繧医ｋ蝗槫ｾｩ繝悶・繧ｹ繝・*
+   窶｢ 蜿肴丐邂・園: 繧ｿ繝ｳ繝代け雉ｪ逶ｮ讓吝､・・・・   窶｢ 鬮伜ｼｷ蠎ｦ譌･: +10%縲∬､・焚驛ｨ菴・ +5%
+   窶｢ 繝医Ξ繝ｼ繝九Φ繧ｰ險倬鹸蠕後↓閾ｪ蜍暮←逕ｨ
+
+4. **逹｡逵縺ｫ繧医ｋ閾ｪ蜍戊ｪｿ謨ｴ**
+   窶｢ 蜿肴丐邂・園: 蝓ｺ遉惹ｻ｣隰昴・邱上き繝ｭ繝ｪ繝ｼ逶ｮ讓・   窶｢ 逹｡逵6h莉･荳・ -5%縲・h莉･荳・ +3%
+   窶｢ 繧ｳ繝ｳ繝・ぅ繧ｷ繝ｧ繝ｳ險倬鹸蠕後↓閾ｪ蜍暮←逕ｨ
+
+5. **繧ｹ繝医Ξ繧ｹ繝ｬ繝吶Ν縺ｫ繧医ｋ閾ｪ蜍戊ｪｿ謨ｴ**
+   窶｢ 蜿肴丐邂・園: 邱上き繝ｭ繝ｪ繝ｼ逶ｮ讓・   窶｢ 鬮倥せ繝医Ξ繧ｹ: +100kcal縲∽ｸｭ遞句ｺｦ: +50kcal
+   窶｢ 繧ｳ繝ｳ繝・ぅ繧ｷ繝ｧ繝ｳ險倬鹸蠕後↓閾ｪ蜍暮←逕ｨ
+
+縲千｢ｺ隱肴婿豕輔・繝繝・す繝･繝懊・繝我ｸ企Κ縺ｮPFC蜀・げ繝ｩ繝輔〒縲∬ｪｿ謨ｴ蠕後・逶ｮ讓吝､繧堤｢ｺ隱阪〒縺阪∪縺吶ゅｈ繧顔ｲｾ蟇・↑邂｡逅・ｒ縺励◆縺・婿縺ｯ縲∝句挨縺ｫON/OFF繧貞・繧頑崛縺医ｋ縺薙→縺後〒縺阪∪縺吶Ａ
+                                                })}
+                                                className="text-indigo-600 hover:text-indigo-800"
+                                            >
+                                                <Icon name="Info" size={16} />
+                                            </button>
+                                        </div>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={advancedSettings.ageProteinBoost}
+                                                onChange={(e) => setAdvancedSettings({...advancedSettings, ageProteinBoost: e.target.checked})}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-sm">蟷ｴ鮨｢縺ｫ繧医ｋ閾ｪ蜍戊ｪｿ謨ｴ・・0豁ｳ莉･荳・ +0.2g/kg・・/span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '蟷ｴ鮨｢縺ｫ繧医ｋ閾ｪ蜍戊ｪｿ謨ｴ',
+                                                    content: `40豁ｳ莉･荳翫・蝣ｴ蜷医√ち繝ｳ繝代け雉ｪ菫よ焚繧定・蜍輔〒+0.2g/kg蠅励ｄ縺励∪縺吶・
+縲千炊逕ｱ縲・蜉鮨｢縺ｫ莨ｴ縺・ｭ玖ｉ蜷域・閭ｽ蜉帙′菴惹ｸ九☆繧九◆繧√√ｈ繧雁､壹￥縺ｮ繧ｿ繝ｳ繝代け雉ｪ縺悟ｿ・ｦ√↓縺ｪ繧翫∪縺吶・0豁ｳ莉･荳翫〒縺ｯ蝓ｺ遉惹ｻ｣隰昴・菴惹ｸ九→遲玖ｉ驥上・邯ｭ謖√′驥崎ｦ√↓縺ｪ繧翫∪縺吶・
+縲仙柑譫懊・遲玖ｉ縺ｮ貂帛ｰ代ｒ髦ｲ縺弱∽ｻ｣隰昴ｒ邯ｭ謖√☆繧九％縺ｨ縺ｧ蛛･蠎ｷ逧・↑菴鍋ｵ・・繧剃ｿ昴■縺ｾ縺吶Ａ
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={12} />
+                                            </button>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={advancedSettings.bodymakerBoost}
+                                                onChange={(e) => setAdvancedSettings({...advancedSettings, bodymakerBoost: e.target.checked})}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-sm">繝懊ョ繧｣繝｡繧､繧ｫ繝ｼ繝悶・繧ｹ繝茨ｼ・0.5g/kg・・/span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '繝懊ョ繧｣繝｡繧､繧ｫ繝ｼ繝悶・繧ｹ繝・,
+                                                    content: `譛ｬ譬ｼ逧・↑遲玖ぇ螟ｧ繧堤岼謖・☆譁ｹ蜷代￠縺ｫ縲√ち繝ｳ繝代け雉ｪ菫よ焚繧・0.5g/kg蠅励ｄ縺励∪縺吶・
+縲先耳螂ｨ蟇ｾ雎｡縲・窶｢ 騾ｱ4蝗樔ｻ･荳翫・鬮伜ｼｷ蠎ｦ繝医Ξ繝ｼ繝九Φ繧ｰ螳滓命閠・窶｢ 遶ｶ謚繝懊ョ繧｣繝薙Ν繝繝ｼ繝ｻ繝輔ぅ繧ｸ繝ｼ繧ｯ驕ｸ謇・窶｢ 遏ｭ譛滄俣縺ｧ遲玖ｉ驥上ｒ螟ｧ蟷・↓蠅励ｄ縺励◆縺・婿
+
+縲仙柑譫懊・遲玖ｉ蜷域・繧呈怙螟ｧ蛹悶＠縲√ヨ繝ｬ繝ｼ繝九Φ繧ｰ蜉ｹ譫懊ｒ譛螟ｧ髯仙ｼ輔″蜃ｺ縺励∪縺吶Ａ
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={12} />
+                                            </button>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={advancedSettings.trainingBoost}
+                                                onChange={(e) => setAdvancedSettings({...advancedSettings, trainingBoost: e.target.checked})}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-sm">繝医Ξ繝ｼ繝九Φ繧ｰ蠑ｷ蠎ｦ縺ｫ繧医ｋ蝗槫ｾｩ繝悶・繧ｹ繝・/span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '繝医Ξ繝ｼ繝九Φ繧ｰ蠑ｷ蠎ｦ縺ｫ繧医ｋ蝗槫ｾｩ繝悶・繧ｹ繝・,
+                                                    content: `繝医Ξ繝ｼ繝九Φ繧ｰ險倬鹸縺ｫ蝓ｺ縺･縺阪√ち繝ｳ繝代け雉ｪ繧定・蜍戊ｪｿ謨ｴ縺励∪縺吶・
+縲占ｪｿ謨ｴ蝓ｺ貅悶・窶｢ 鬮伜ｼｷ蠎ｦ繝医Ξ繝ｼ繝九Φ繧ｰ譌･: 繧ｿ繝ｳ繝代け雉ｪ+10%
+窶｢ 隍・焚驛ｨ菴阪・繝医Ξ繝ｼ繝九Φ繧ｰ譌･: 繧ｿ繝ｳ繝代け雉ｪ+5%
+
+縲仙柑譫懊・繝医Ξ繝ｼ繝九Φ繧ｰ縺ｧ謳榊す縺励◆遲狗ｹ顔ｶｭ縺ｮ菫ｮ蠕ｩ繧剃ｿ・ｲ縺励∬ｶ・屓蠕ｩ繧呈怙驕ｩ蛹悶＠縺ｾ縺吶Ａ
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={12} />
+                                            </button>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={advancedSettings.sleepAdjustment}
+                                                onChange={(e) => setAdvancedSettings({...advancedSettings, sleepAdjustment: e.target.checked})}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-sm">逹｡逵縺ｫ繧医ｋ閾ｪ蜍戊ｪｿ謨ｴ</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '逹｡逵縺ｫ繧医ｋ閾ｪ蜍戊ｪｿ謨ｴ',
+                                                    content: `逹｡逵縺ｮ雉ｪ縺ｫ蝓ｺ縺･縺阪∽ｻ｣隰昴→繧ｫ繝ｭ繝ｪ繝ｼ繧定・蜍戊ｪｿ謨ｴ縺励∪縺吶・
+縲占ｪｿ謨ｴ蝓ｺ貅悶・窶｢ 逹｡逵譎る俣6h莉･荳・ 蝓ｺ遉惹ｻ｣隰・5%
+窶｢ 逹｡逵縺ｮ雉ｪ縺梧が縺・ 蝗槫ｾｩ閭ｽ蜉帑ｽ惹ｸ九ｒ閠・・
+窶｢ 逹｡逵譎る俣8h莉･荳・ 莉｣隰晏柑邇・3%
+
+縲仙柑譫懊・逹｡逵荳崎ｶｳ譎ゅ・驕主臆縺ｪ繧ｫ繝ｭ繝ｪ繝ｼ鞫ょ叙繧帝亟縺弱∝香蛻・↑逹｡逵譎ゅ・遲玖ｉ蜷域・繧剃ｿ・ｲ縺励∪縺吶Ａ
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={12} />
+                                            </button>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={advancedSettings.stressAdjustment}
+                                                onChange={(e) => setAdvancedSettings({...advancedSettings, stressAdjustment: e.target.checked})}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-sm">繧ｹ繝医Ξ繧ｹ繝ｬ繝吶Ν縺ｫ繧医ｋ閾ｪ蜍戊ｪｿ謨ｴ</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '繧ｹ繝医Ξ繧ｹ繝ｬ繝吶Ν縺ｫ繧医ｋ閾ｪ蜍戊ｪｿ謨ｴ',
+                                                    content: `繧ｹ繝医Ξ繧ｹ繝ｬ繝吶Ν縺ｫ蝓ｺ縺･縺阪√き繝ｭ繝ｪ繝ｼ縺ｨ譬・､顔ｴ繧定・蜍戊ｪｿ謨ｴ縺励∪縺吶・
+縲占ｪｿ謨ｴ蝓ｺ貅悶・窶｢ 鬮倥せ繝医Ξ繧ｹ譎・ 繧ｫ繝ｭ繝ｪ繝ｼ+100kcal・医さ繝ｫ繝√だ繝ｼ繝ｫ蟇ｾ遲厄ｼ・窶｢ 荳ｭ遞句ｺｦ縺ｮ繧ｹ繝医Ξ繧ｹ: 繧ｫ繝ｭ繝ｪ繝ｼ+50kcal
+窶｢ 繧ｿ繝ｳ繝代け雉ｪ繧貞ｾｮ蠅暦ｼ育ｭ玖ｉ蛻・ｧ｣髦ｲ豁｢・・
+縲仙柑譫懊・繧ｹ繝医Ξ繧ｹ縺ｫ繧医ｋ遲玖ｉ縺ｮ逡ｰ蛹厄ｼ亥・隗｣・峨ｒ髦ｲ縺弱∽ｽ鍋ｵ・・縺ｮ邯ｭ謖√ｒ繧ｵ繝昴・繝医＠縺ｾ縺吶Ａ
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={12} />
+                                            </button>
+                                        </label>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <button
+                                onClick={handleSave}
+                                className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                            >
+                                菫晏ｭ・                            </button>
+                            </div>
+                        </div>
+                    </details>
+
+
+                    {/* 繝・Φ繝励Ξ繝ｼ繝・*/}
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="BookTemplate" size={18} className="text-indigo-600" />
+                            繝・Φ繝励Ξ繝ｼ繝・                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t">
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-600">菫晏ｭ倥＠縺溘ユ繝ｳ繝励Ξ繝ｼ繝医ｒ邂｡逅・〒縺阪∪縺吶ゅΝ繝ｼ繝・ぅ繝ｳ縺ｫ邏舌▼縺代※菴ｿ逕ｨ縺吶ｋ縺薙→繧ょ庄閭ｽ縺ｧ縺吶・/p>
+
+                            {/* 鬟滉ｺ九ユ繝ｳ繝励Ξ繝ｼ繝・*/}
+                            <div className="border rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                        <h3 className="font-semibold text-green-800">鎖・・鬟滉ｺ九ユ繝ｳ繝励Ξ繝ｼ繝・/h3>
+                                        <p className="text-xs text-gray-600">繧医￥鬟溘∋繧矩｣滉ｺ九・邨・∩蜷医ｏ縺帙ｒ菫晏ｭ・/p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-500">{mealTemplates.length}莉ｶ</span>
+                                        <button
+                                            onClick={() => onOpenAddView && onOpenAddView('meal')}
+                                            className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition flex items-center gap-1"
+                                        >
+                                            <Icon name="Plus" size={14} />
+                                            譁ｰ隕丈ｽ懈・
+                                        </button>
+                                    </div>
+                                </div>
+                                {mealTemplates.length === 0 ? (
+                                    <p className="text-sm text-gray-500">菫晏ｭ倥＆繧後◆繝・Φ繝励Ξ繝ｼ繝医・縺ゅｊ縺ｾ縺帙ｓ</p>
+                                ) : (
+                                    <div className="space-y-2 mt-3">
+                                        {mealTemplates.map(template => {
+                                            const totalCals = (template.items || []).reduce((sum, i) => sum + (i.calories || 0), 0);
+                                            const totalProtein = (template.items || []).reduce((sum, i) => sum + (i.protein || 0), 0);
+                                            const totalFat = (template.items || []).reduce((sum, i) => sum + (i.fat || 0), 0);
+                                            const totalCarbs = (template.items || []).reduce((sum, i) => sum + (i.carbs || 0), 0);
+
+                                            return (
+                                                <details key={template.id} className="bg-gray-50 p-3 rounded-lg">
+                                                    <summary className="flex items-center justify-between cursor-pointer hover:bg-gray-100 -m-3 p-3 rounded-lg">
+                                                        <div className="flex-1">
+                                                            <p className="font-medium text-sm">{template.name}</p>
+                                                            <p className="text-xs text-gray-600">
+                                                                {template.items?.length || 0}蜩∫岼 | {Math.round(totalCals)}kcal
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.preventDefault();
+                                                                if (confirm('縺薙・繝・Φ繝励Ξ繝ｼ繝医ｒ蜑企勁縺励∪縺吶°・・)) {
+                                                                    await DataService.deleteMealTemplate(userId, template.id);
+                                                                    await loadTemplates();
+                                                                }
+                                                            }}
+                                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition ml-2"
+                                                        >
+                                                            <Icon name="Trash2" size={16} />
+                                                        </button>
+                                                    </summary>
+                                                    <div className="mt-3 space-y-2 border-t pt-3">
+                                                        <div className="grid grid-cols-4 gap-2 text-xs bg-white p-2 rounded">
+                                                            <div className="text-center">
+                                                                <div className="font-medium text-gray-500">繧ｫ繝ｭ繝ｪ繝ｼ</div>
+                                                                <div className="font-bold">{Math.round(totalCals)}</div>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <div className="font-medium text-gray-500">P</div>
+                                                                <div className="font-bold">{totalProtein.toFixed(1)}g</div>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <div className="font-medium text-gray-500">F</div>
+                                                                <div className="font-bold">{totalFat.toFixed(1)}g</div>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <div className="font-medium text-gray-500">C</div>
+                                                                <div className="font-bold">{totalCarbs.toFixed(1)}g</div>
+                                                            </div>
+                                                        </div>
+                                                        {(template.items || []).map((item, idx) => (
+                                                            <div key={idx} className="text-xs bg-white p-2 rounded flex justify-between">
+                                                                <span className="font-medium">{item.name} ({item.amount}g)</span>
+                                                                <span className="text-gray-600">
+                                                                    {Math.round(item.calories)}kcal | P{item.protein.toFixed(1)} F{item.fat.toFixed(1)} C{item.carbs.toFixed(1)}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </details>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 繝医Ξ繝ｼ繝九Φ繧ｰ繝・Φ繝励Ξ繝ｼ繝・*/}
+                            <div className="border rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                        <h3 className="font-semibold text-orange-800">潮 繝医Ξ繝ｼ繝九Φ繧ｰ繝・Φ繝励Ξ繝ｼ繝・/h3>
+                                        <p className="text-xs text-gray-600">繧医￥陦後≧遞ｮ逶ｮ縺ｨ繧ｻ繝・ヨ謨ｰ繧剃ｿ晏ｭ・/p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-500">{workoutTemplates.length}莉ｶ</span>
+                                        <button
+                                            onClick={() => onOpenAddView && onOpenAddView('workout')}
+                                            className="px-3 py-1 bg-orange-600 text-white text-xs rounded-lg hover:bg-orange-700 transition flex items-center gap-1"
+                                        >
+                                            <Icon name="Plus" size={14} />
+                                            譁ｰ隕丈ｽ懈・
+                                        </button>
+                                    </div>
+                                </div>
+                                {workoutTemplates.length === 0 ? (
+                                    <p className="text-sm text-gray-500">菫晏ｭ倥＆繧後◆繝・Φ繝励Ξ繝ｼ繝医・縺ゅｊ縺ｾ縺帙ｓ</p>
+                                ) : (
+                                    <div className="space-y-2 mt-3">
+                                        {workoutTemplates.map(template => {
+                                            const totalCals = (template.sets || []).reduce((sum, s) => sum + (s.calories || 0), 0);
+
+                                            return (
+                                                <details key={template.id} className="bg-gray-50 p-3 rounded-lg">
+                                                    <summary className="flex items-center justify-between cursor-pointer hover:bg-gray-100 -m-3 p-3 rounded-lg">
+                                                        <div className="flex-1">
+                                                            <p className="font-medium text-sm">{template.name}</p>
+                                                            <p className="text-xs text-gray-600">
+                                                                {template.exercise?.name || '遞ｮ逶ｮ荳肴・'} | {template.sets?.length || 0}繧ｻ繝・ヨ | {Math.round(totalCals)}kcal
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.preventDefault();
+                                                                if (confirm('縺薙・繝・Φ繝励Ξ繝ｼ繝医ｒ蜑企勁縺励∪縺吶°・・)) {
+                                                                    await DataService.deleteWorkoutTemplate(userId, template.id);
+                                                                    await loadTemplates();
+                                                                }
+                                                            }}
+                                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition ml-2"
+                                                        >
+                                                            <Icon name="Trash2" size={16} />
+                                                        </button>
+                                                    </summary>
+                                                    <div className="mt-3 space-y-2 border-t pt-3">
+                                                        {(template.sets || []).map((set, idx) => (
+                                                            <div key={idx} className="text-xs bg-white p-2 rounded">
+                                                                <div className="flex justify-between mb-1">
+                                                                    <span className="font-medium">繧ｻ繝・ヨ{idx + 1}</span>
+                                                                    <span className="text-gray-600">{Math.round(set.calories || 0)}kcal</span>
+                                                                </div>
+                                                                <div className="text-gray-600 space-x-2">
+                                                                    <span>{set.weight}kg</span>
+                                                                    <span>ﾃ養set.reps}蝗・/span>
+                                                                    <span>| {set.distance}m</span>
+                                                                    <span>| TUT {set.tut}遘・/span>
+                                                                    <span>| Rest {set.restInterval}遘・/span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </details>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 繧ｵ繝励Μ繝｡繝ｳ繝医ユ繝ｳ繝励Ξ繝ｼ繝・*/}
+                            <div className="border rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                        <h3 className="font-semibold text-blue-800">抽 繧ｵ繝励Μ繝｡繝ｳ繝医ユ繝ｳ繝励Ξ繝ｼ繝・/h3>
+                                        <p className="text-xs text-gray-600">繧医￥菴ｿ縺・し繝励Μ縺ｮ邨・∩蜷医ｏ縺帙ｒ菫晏ｭ・/p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-500">{supplementTemplates.length}莉ｶ</span>
+                                        <button
+                                            onClick={() => onOpenAddView && onOpenAddView('supplement')}
+                                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
+                                        >
+                                            <Icon name="Plus" size={14} />
+                                            譁ｰ隕丈ｽ懈・
+                                        </button>
+                                    </div>
+                                </div>
+                                {supplementTemplates.length === 0 ? (
+                                    <p className="text-sm text-gray-500">菫晏ｭ倥＆繧後◆繝・Φ繝励Ξ繝ｼ繝医・縺ゅｊ縺ｾ縺帙ｓ</p>
+                                ) : (
+                                    <div className="space-y-2 mt-3">
+                                        {supplementTemplates.map(template => (
+                                            <details key={template.id} className="bg-gray-50 p-3 rounded-lg">
+                                                <summary className="flex items-center justify-between cursor-pointer hover:bg-gray-100 -m-3 p-3 rounded-lg">
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-sm">{template.name}</p>
+                                                        <p className="text-xs text-gray-600">{template.items?.length || 0}蜩∫岼</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.preventDefault();
+                                                            if (confirm('縺薙・繝・Φ繝励Ξ繝ｼ繝医ｒ蜑企勁縺励∪縺吶°・・)) {
+                                                                await DataService.deleteSupplementTemplate(userId, template.id);
+                                                                await loadTemplates();
+                                                            }
+                                                        }}
+                                                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition ml-2"
+                                                    >
+                                                        <Icon name="Trash2" size={16} />
+                                                    </button>
+                                                </summary>
+                                                <div className="mt-3 space-y-2 border-t pt-3">
+                                                    {(template.items || []).map((item, idx) => (
+                                                        <div key={idx} className="text-xs bg-white p-2 rounded flex justify-between">
+                                                            <span className="font-medium">{item.name}</span>
+                                                            <span className="text-gray-600">{item.amount}{item.unit}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </details>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        </div>
+                    </details>
+
+                    {/* 繝ｫ繝ｼ繝・ぅ繝ｳ */}
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="Calendar" size={18} className="text-indigo-600" />
+                            繝ｫ繝ｼ繝・ぅ繝ｳ
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t">
+                            {/* 繝ｫ繝ｼ繝・ぅ繝ｳ蜀・ｮｹ */}
+                            <div className="space-y-4">
+                            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                                <h4 className="font-bold text-purple-900 mb-2">繝ｫ繝ｼ繝・ぅ繝ｳ邂｡逅・/h4>
+                                <p className="text-sm text-purple-700">
+                                    Day1~7縺ｮ繝・ヵ繧ｩ繝ｫ繝医Ν繝ｼ繝・ぅ繝ｳ縺ｨ縲∵怙螟ｧ5縺､縺ｾ縺ｧ霑ｽ蜉蜿ｯ閭ｽ縺ｪ霑ｽ蜉譫繧定ｨｭ螳壹〒縺阪∪縺吶・                                </p>
+                            </div>
+
+                            {(() => {
+                                const saveRoutines = (updated) => {
+                                    setLocalRoutines(updated);
+                                    localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(updated));
+                                };
+
+                                const updateRoutine = (id, updates) => {
+                                    const updated = localRoutines.map(r => r.id === id ? { ...r, ...updates } : r);
+                                    saveRoutines(updated);
+                                };
+
+                                const addRoutine = () => {
+                                    if (localRoutines.length >= 12) {
+                                        alert('繝ｫ繝ｼ繝・ぅ繝ｳ縺ｯ譛螟ｧ12蛟具ｼ・ay7 + 霑ｽ蜉5譫・峨∪縺ｧ險ｭ螳壹〒縺阪∪縺・);
+                                        return;
+                                    }
+                                    const nextId = Math.max(...localRoutines.map(r => r.id), 0) + 1;
+                                    const dayNumber = ['', '竭', '竭｡', '竭｢', '竭｣', '竭､', '竭･', '竭ｦ', '竭ｧ', '竭ｨ', '竭ｩ', '竭ｪ', '竭ｫ'][nextId] || `竭ｧ${nextId - 7}`;
+                                    const updated = [...localRoutines, {
+                                        id: nextId,
+                                        name: `${dayNumber}霑ｽ蜉譌･`,
+                                        splitType: '',
+                                        isRestDay: false
+                                    }];
+                                    saveRoutines(updated);
+                                };
+
+                                const deleteRoutine = (id) => {
+                                    if (id <= 7) {
+                                        alert('Day1~7縺ｯ蜑企勁縺ｧ縺阪∪縺帙ｓ');
+                                        return;
+                                    }
+                                    if (confirm('縺薙・霑ｽ蜉譫繧貞炎髯､縺励∪縺吶°・・)) {
+                                        const updated = localRoutines.filter(r => r.id !== id);
+                                        saveRoutines(updated);
+                                    }
+                                };
+
+                                return (
+                                    <div className="space-y-6">
+                                        {/* Day1~7 */}
+                                        <div>
+                                            <h3 className="font-semibold mb-3">Day1~7・医ョ繝輔か繝ｫ繝茨ｼ・/h3>
+                                            <div className="space-y-3">
+                                                {localRoutines.filter(r => r.id <= 7).map(routine => (
+                                                    <div key={routine.id} className="border rounded-lg p-4 bg-white">
+                                                        <div className="flex items-center gap-3 mb-3">
+                                                            <input
+                                                                type="text"
+                                                                value={routine.name}
+                                                                onChange={(e) => updateRoutine(routine.id, { name: e.target.value })}
+                                                                className="font-bold text-indigo-600 bg-transparent border-b border-indigo-300 focus:outline-none w-32"
+                                                            />
+                                                            <label className="flex items-center gap-2 text-sm">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={routine.isRestDay}
+                                                                    onChange={(e) => updateRoutine(routine.id, {
+                                                                        isRestDay: e.target.checked,
+                                                                        splitType: e.target.checked ? '' : routine.splitType
+                                                                    })}
+                                                                    className="rounded"
+                                                                />
+                                                                莨第・譌･
+                                                            </label>
+                                                        </div>
+                                                        {!routine.isRestDay && (
+                                                            <div className="space-y-3">
+                                                                <div>
+                                                                    <label className="font-medium text-sm">蛻・牡豕・/label>
+                                                                    <select
+                                                                        value={routine.splitType}
+                                                                        onChange={(e) => {
+                                                                            if (e.target.value === '__custom__') {
+                                                                                const custom = prompt('蛻・牡豕輔ｒ蜈･蜉帙＠縺ｦ縺上□縺輔＞・井ｾ・ 閭ｸ繝ｻ荳蛾ｭ繝ｻ閧ｩ・・, routine.splitType);
+                                                                                if (custom !== null) {
+                                                                                    updateRoutine(routine.id, { splitType: custom });
+                                                                                }
+                                                                            } else {
+                                                                                updateRoutine(routine.id, { splitType: e.target.value });
+                                                                            }
+                                                                        }}
+                                                                        className="w-full mt-1 p-2 border rounded-lg"
+                                                                    >
+                                                                        <option value="">驕ｸ謚槭＠縺ｦ縺上□縺輔＞</option>
+                                                                        <option value="閭ｸ">閭ｸ</option>
+                                                                        <option value="閭御ｸｭ">閭御ｸｭ</option>
+                                                                        <option value="閼・>閼・/option>
+                                                                        <option value="閧ｩ">閧ｩ</option>
+                                                                        <option value="閻・>閻・/option>
+                                                                        <option value="蟆ｻ">蟆ｻ</option>
+                                                                        <option value="閻ｹ遲九・菴灘ｹｹ">閻ｹ遲九・菴灘ｹｹ</option>
+                                                                        <option value="荳雁濠霄ｫ">荳雁濠霄ｫ</option>
+                                                                        <option value="荳句濠霄ｫ">荳句濠霄ｫ</option>
+                                                                        <option value="蜈ｨ霄ｫ">蜈ｨ霄ｫ</option>
+                                                                        <option value="繝励ャ繧ｷ繝･・域款縺呻ｼ・>繝励ャ繧ｷ繝･・域款縺呻ｼ・/option>
+                                                                        <option value="繝励Ν・亥ｼ輔￥・・>繝励Ν・亥ｼ輔￥・・/option>
+                                                                        <option value="譛蛾・邏">譛蛾・邏</option>
+                                                                        <option value="閭ｸ繝ｻ荳蛾ｭ">閭ｸ繝ｻ荳蛾ｭ</option>
+                                                                        <option value="閭御ｸｭ繝ｻ莠碁ｭ">閭御ｸｭ繝ｻ莠碁ｭ</option>
+                                                                        <option value="閧ｩ繝ｻ閻・>閧ｩ繝ｻ閻・/option>
+                                                                        <option value="__custom__">笨擾ｸ・繧ｫ繧ｹ繧ｿ繝蜈･蜉・..</option>
+                                                                    </select>
+                                                                </div>
+
+                                                                {/* 繝・Φ繝励Ξ繝ｼ繝育ｴ舌▼縺・*/}
+                                                                <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                                                    <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
+                                                                        <Icon name="BookTemplate" size={14} />
+                                                                        繝・Φ繝励Ξ繝ｼ繝育ｴ舌▼縺・                                                                        <Icon name="ChevronDown" size={14} className="ml-auto" />
+                                                                    </summary>
+                                                                    <div className="space-y-2 mt-3">
+                                                                        {/* 鬟滉ｺ九ユ繝ｳ繝励Ξ繝ｼ繝・*/}
+                                                                        <div>
+                                                                            <label className="text-xs text-gray-600">鬟滉ｺ・/label>
+                                                                            <select
+                                                                                value={routine.mealTemplateId || ''}
+                                                                                onChange={(e) => updateRoutine(routine.id, { mealTemplateId: e.target.value || null })}
+                                                                                className="w-full mt-1 p-2 border rounded text-sm"
+                                                                            >
+                                                                                <option value="">繝・Φ繝励Ξ繝ｼ繝医↑縺・/option>
+                                                                                {mealTemplates.map(t => (
+                                                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                        </div>
+
+                                                                        {/* 繝医Ξ繝ｼ繝九Φ繧ｰ繝・Φ繝励Ξ繝ｼ繝・*/}
+                                                                        <div>
+                                                                            <label className="text-xs text-gray-600">繝医Ξ繝ｼ繝九Φ繧ｰ</label>
+                                                                            <select
+                                                                                value={routine.workoutTemplateId || ''}
+                                                                                onChange={(e) => updateRoutine(routine.id, { workoutTemplateId: e.target.value || null })}
+                                                                                className="w-full mt-1 p-2 border rounded text-sm"
+                                                                            >
+                                                                                <option value="">繝・Φ繝励Ξ繝ｼ繝医↑縺・/option>
+                                                                                {workoutTemplates.map(t => (
+                                                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                        </div>
+
+                                                                        {/* 繧ｵ繝励Μ繝｡繝ｳ繝医ユ繝ｳ繝励Ξ繝ｼ繝・*/}
+                                                                        <div>
+                                                                            <label className="text-xs text-gray-600">繧ｵ繝励Μ繝｡繝ｳ繝・/label>
+                                                                            <select
+                                                                                value={routine.supplementTemplateId || ''}
+                                                                                onChange={(e) => updateRoutine(routine.id, { supplementTemplateId: e.target.value || null })}
+                                                                                className="w-full mt-1 p-2 border rounded text-sm"
+                                                                            >
+                                                                                <option value="">繝・Φ繝励Ξ繝ｼ繝医↑縺・/option>
+                                                                                {supplementTemplates.map(t => (
+                                                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <p className="text-xs text-yellow-700 mt-2">
+                                                                        邏舌▼縺代◆繝・Φ繝励Ξ繝ｼ繝医・縲∬ｨ倬鹸逕ｻ髱｢縺ｧ閾ｪ蜍慕噪縺ｫ隱ｭ縺ｿ霎ｼ縺ｾ繧後∪縺・                                                                    </p>
+                                                                </details>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* 霑ｽ蜉譫 */}
+                                        {localRoutines.filter(r => r.id > 7).length > 0 && (
+                                            <div>
+                                                <h3 className="font-semibold mb-3">霑ｽ蜉譫・域怙螟ｧ5縺､・・/h3>
+                                                <div className="space-y-3">
+                                                    {localRoutines.filter(r => r.id > 7).map(routine => (
+                                                        <div key={routine.id} className="border rounded-lg p-4 bg-gray-50">
+                                                            <div className="flex justify-between items-center mb-3">
+                                                                <input
+                                                                    type="text"
+                                                                    value={routine.name}
+                                                                    onChange={(e) => updateRoutine(routine.id, { name: e.target.value })}
+                                                                    className="font-bold text-indigo-600 bg-transparent border-b border-indigo-300 focus:outline-none"
+                                                                />
+                                                                <button
+                                                                    onClick={() => deleteRoutine(routine.id)}
+                                                                    className="text-red-600 hover:text-red-800"
+                                                                >
+                                                                    <Icon name="Trash2" size={18} />
+                                                                </button>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 mb-3">
+                                                                <label className="flex items-center gap-2 text-sm">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={routine.isRestDay}
+                                                                        onChange={(e) => updateRoutine(routine.id, {
+                                                                            isRestDay: e.target.checked,
+                                                                            splitType: e.target.checked ? '' : routine.splitType
+                                                                        })}
+                                                                        className="rounded"
+                                                                    />
+                                                                    莨第・譌･
+                                                                </label>
+                                                            </div>
+                                                            {!routine.isRestDay && (
+                                                                <div className="space-y-3">
+                                                                    <div>
+                                                                        <label className="font-medium text-sm">蛻・牡豕・/label>
+                                                                        <select
+                                                                            value={routine.splitType}
+                                                                            onChange={(e) => {
+                                                                                if (e.target.value === '__custom__') {
+                                                                                    const custom = prompt('蛻・牡豕輔ｒ蜈･蜉帙＠縺ｦ縺上□縺輔＞・井ｾ・ 閭ｸ繝ｻ荳蛾ｭ繝ｻ閧ｩ・・, routine.splitType);
+                                                                                    if (custom !== null) {
+                                                                                        updateRoutine(routine.id, { splitType: custom });
+                                                                                    }
+                                                                                } else {
+                                                                                    updateRoutine(routine.id, { splitType: e.target.value });
+                                                                                }
+                                                                            }}
+                                                                            className="w-full mt-1 p-2 border rounded-lg"
+                                                                        >
+                                                                            <option value="">驕ｸ謚槭＠縺ｦ縺上□縺輔＞</option>
+                                                                            <option value="閭ｸ">閭ｸ</option>
+                                                                            <option value="閭御ｸｭ">閭御ｸｭ</option>
+                                                                            <option value="閼・>閼・/option>
+                                                                            <option value="閧ｩ">閧ｩ</option>
+                                                                            <option value="閻・>閻・/option>
+                                                                            <option value="蟆ｻ">蟆ｻ</option>
+                                                                            <option value="閻ｹ遲九・菴灘ｹｹ">閻ｹ遲九・菴灘ｹｹ</option>
+                                                                            <option value="荳雁濠霄ｫ">荳雁濠霄ｫ</option>
+                                                                            <option value="荳句濠霄ｫ">荳句濠霄ｫ</option>
+                                                                            <option value="蜈ｨ霄ｫ">蜈ｨ霄ｫ</option>
+                                                                            <option value="繝励ャ繧ｷ繝･・域款縺呻ｼ・>繝励ャ繧ｷ繝･・域款縺呻ｼ・/option>
+                                                                            <option value="繝励Ν・亥ｼ輔￥・・>繝励Ν・亥ｼ輔￥・・/option>
+                                                                            <option value="譛蛾・邏">譛蛾・邏</option>
+                                                                            <option value="閭ｸ繝ｻ荳蛾ｭ">閭ｸ繝ｻ荳蛾ｭ</option>
+                                                                            <option value="閭御ｸｭ繝ｻ莠碁ｭ">閭御ｸｭ繝ｻ莠碁ｭ</option>
+                                                                            <option value="閧ｩ繝ｻ閻・>閧ｩ繝ｻ閻・/option>
+                                                                            <option value="__custom__">笨擾ｸ・繧ｫ繧ｹ繧ｿ繝蜈･蜉・..</option>
+                                                                        </select>
+                                                                    </div>
+
+                                                                    {/* 繝・Φ繝励Ξ繝ｼ繝育ｴ舌▼縺・*/}
+                                                                    <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                                                        <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
+                                                                            <Icon name="BookTemplate" size={14} />
+                                                                            繝・Φ繝励Ξ繝ｼ繝育ｴ舌▼縺・                                                                            <Icon name="ChevronDown" size={14} className="ml-auto" />
+                                                                        </summary>
+                                                                        <div className="space-y-2 mt-3">
+                                                                            {/* 鬟滉ｺ九ユ繝ｳ繝励Ξ繝ｼ繝・*/}
+                                                                            <div>
+                                                                                <label className="text-xs text-gray-600">鬟滉ｺ・/label>
+                                                                                <select
+                                                                                    value={routine.mealTemplateId || ''}
+                                                                                    onChange={(e) => updateRoutine(routine.id, { mealTemplateId: e.target.value || null })}
+                                                                                    className="w-full mt-1 p-2 border rounded text-sm"
+                                                                                >
+                                                                                    <option value="">繝・Φ繝励Ξ繝ｼ繝医↑縺・/option>
+                                                                                    {mealTemplates.map(t => (
+                                                                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                                                                    ))}
+                                                                                </select>
+                                                                            </div>
+
+                                                                            {/* 繝医Ξ繝ｼ繝九Φ繧ｰ繝・Φ繝励Ξ繝ｼ繝・*/}
+                                                                            <div>
+                                                                                <label className="text-xs text-gray-600">繝医Ξ繝ｼ繝九Φ繧ｰ</label>
+                                                                                <select
+                                                                                    value={routine.workoutTemplateId || ''}
+                                                                                    onChange={(e) => updateRoutine(routine.id, { workoutTemplateId: e.target.value || null })}
+                                                                                    className="w-full mt-1 p-2 border rounded text-sm"
+                                                                                >
+                                                                                    <option value="">繝・Φ繝励Ξ繝ｼ繝医↑縺・/option>
+                                                                                    {workoutTemplates.map(t => (
+                                                                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                                                                    ))}
+                                                                                </select>
+                                                                            </div>
+
+                                                                            {/* 繧ｵ繝励Μ繝｡繝ｳ繝医ユ繝ｳ繝励Ξ繝ｼ繝・*/}
+                                                                            <div>
+                                                                                <label className="text-xs text-gray-600">繧ｵ繝励Μ繝｡繝ｳ繝・/label>
+                                                                                <select
+                                                                                    value={routine.supplementTemplateId || ''}
+                                                                                    onChange={(e) => updateRoutine(routine.id, { supplementTemplateId: e.target.value || null })}
+                                                                                    className="w-full mt-1 p-2 border rounded text-sm"
+                                                                                >
+                                                                                    <option value="">繝・Φ繝励Ξ繝ｼ繝医↑縺・/option>
+                                                                                    {supplementTemplates.map(t => (
+                                                                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                                                                    ))}
+                                                                                </select>
+                                                                            </div>
+                                                                        </div>
+                                                                        <p className="text-xs text-yellow-700 mt-2">
+                                                                            邏舌▼縺代◆繝・Φ繝励Ξ繝ｼ繝医・縲∬ｨ倬鹸逕ｻ髱｢縺ｧ閾ｪ蜍慕噪縺ｫ隱ｭ縺ｿ霎ｼ縺ｾ繧後∪縺・                                                                        </p>
+                                                                    </details>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* 霑ｽ蜉繝懊ち繝ｳ */}
+                                        {localRoutines.length < 12 && localRoutines.length >= 7 && (
+                                            <button
+                                                onClick={addRoutine}
+                                                className="w-full py-3 border-2 border-dashed border-purple-300 rounded-lg text-purple-600 hover:bg-purple-50 transition font-medium"
+                                            >
+                                                <Icon name="Plus" size={18} className="inline mr-2" />
+                                                霑ｽ蜉譫繧定ｿｽ蜉・・localRoutines.length - 7}/5・・                                            </button>
+                                        )}
+
+                                        {localRoutines.length === 0 && (
+                                            <div className="text-center py-8">
+                                                <p className="text-gray-500 mb-4">繝ｫ繝ｼ繝・ぅ繝ｳ縺瑚ｨｭ螳壹＆繧後※縺・∪縺帙ｓ</p>
+                                                <button
+                                                    onClick={() => {
+                                                        const defaultRoutines = [
+                                                            { id: 1, name: '竭譛域屆譌･', splitType: '閭ｸ', isRestDay: false },
+                                                            { id: 2, name: '竭｡轣ｫ譖懈律', splitType: '閭御ｸｭ', isRestDay: false },
+                                                            { id: 3, name: '竭｢豌ｴ譖懈律', splitType: '閼・, isRestDay: false },
+                                                            { id: 4, name: '竭｣譛ｨ譖懈律', splitType: '莨代∩', isRestDay: true },
+                                                            { id: 5, name: '竭､驥第屆譌･', splitType: '閧ｩ繝ｻ閻・, isRestDay: false },
+                                                            { id: 6, name: '竭･蝨滓屆譌･', splitType: '蜈ｨ霄ｫ', isRestDay: false },
+                                                            { id: 7, name: '竭ｦ譌･譖懈律', splitType: '莨代∩', isRestDay: true }
+                                                        ];
+                                                        localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(defaultRoutines));
+                                                        localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, new Date().toISOString());
+                                                        localStorage.setItem(STORAGE_KEYS.ROUTINE_ACTIVE, 'true');
+                                                        window.location.reload();
+                                                    }}
+                                                    className="px-6 py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition"
+                                                >
+                                                    繝・ヵ繧ｩ繝ｫ繝医Ν繝ｼ繝・ぅ繝ｳ縺ｧ髢句ｧ・                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* 邂｡逅・・繧ｿ繝ｳ */}
+                                        {localRoutines.length > 0 && (
+                                            <div className="flex gap-3 pt-4 border-t">
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm('繝ｫ繝ｼ繝・ぅ繝ｳ繧偵Μ繧ｻ繝・ヨ縺励∪縺吶°・・)) {
+                                                            localStorage.removeItem(STORAGE_KEYS.ROUTINES);
+                                                            localStorage.removeItem(STORAGE_KEYS.ROUTINE_START_DATE);
+                                                            localStorage.removeItem(STORAGE_KEYS.ROUTINE_ACTIVE);
+                                                            window.location.reload();
+                                                        }
+                                                    }}
+                                                    className="flex-1 px-4 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium border border-red-200"
+                                                >
+                                                    <Icon name="Trash2" size={18} className="inline mr-2" />
+                                                    繝ｪ繧ｻ繝・ヨ
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, new Date().toISOString());
+                                                        window.location.reload();
+                                                    }}
+                                                    className="flex-1 px-4 py-3 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-medium border border-indigo-200"
+                                                >
+                                                    <Icon name="RotateCcw" size={18} className="inline mr-2" />
+                                                    Day1縺九ｉ蜀埼幕
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                            </div>
+                        </div>
+                    </details>
+
+                    {/* 騾夂衍險ｭ螳・*/}
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="Bell" size={18} className="text-indigo-600" />
+                            騾夂衍險ｭ螳・                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t space-y-4">
+                            {/* 繝ｫ繝ｼ繝・ぅ繝ｳ騾夂衍 */}
+                            <div className="border rounded-lg p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={profile.notificationSettings?.routine !== false}
+                                            onChange={(e) => setProfile({
+                                                ...profile,
+                                                notificationSettings: {
+                                                    ...(profile.notificationSettings || {}),
+                                                    routine: e.target.checked
+                                                }
+                                            })}
+                                            className="rounded"
+                                        />
+                                        <div>
+                                            <div className="font-medium text-sm">繝ｫ繝ｼ繝・ぅ繝ｳ騾夂衍</div>
+                                            <div className="text-xs text-gray-600">縺昴・譌･縺ｮ繝医Ξ繝ｼ繝九Φ繧ｰ蜀・ｮｹ繧偵♀遏･繧峨○</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="ml-6">
+                                    <label className="block text-xs font-medium mb-1">騾夂衍譎ょ綾</label>
+                                    <input
+                                        type="time"
+                                        value={profile.notificationSettings?.routineTime || '08:00'}
+                                        onChange={(e) => setProfile({
+                                            ...profile,
+                                            notificationSettings: {
+                                                ...(profile.notificationSettings || {}),
+                                                routineTime: e.target.value
+                                            }
+                                        })}
+                                        className="px-3 py-2 border rounded-lg text-sm"
+                                        disabled={profile.notificationSettings?.routine === false}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 險倬鹸繝ｪ繝槭う繝ｳ繝・*/}
+                            <div className="border rounded-lg p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={profile.notificationSettings?.recordReminder !== false}
+                                            onChange={(e) => setProfile({
+                                                ...profile,
+                                                notificationSettings: {
+                                                    ...(profile.notificationSettings || {}),
+                                                    recordReminder: e.target.checked
+                                                }
+                                            })}
+                                            className="rounded"
+                                        />
+                                        <div>
+                                            <div className="font-medium text-sm">險倬鹸繝ｪ繝槭う繝ｳ繝・/div>
+                                            <div className="text-xs text-gray-600">險倬鹸縺後↑縺・ｴ蜷医↓騾夂衍</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="ml-6">
+                                    <label className="block text-xs font-medium mb-1">騾夂衍譎ょ綾</label>
+                                    <input
+                                        type="time"
+                                        value={profile.notificationSettings?.recordReminderTime || '19:30'}
+                                        onChange={(e) => setProfile({
+                                            ...profile,
+                                            notificationSettings: {
+                                                ...(profile.notificationSettings || {}),
+                                                recordReminderTime: e.target.value
+                                            }
+                                        })}
+                                        className="px-3 py-2 border rounded-lg text-sm"
+                                        disabled={profile.notificationSettings?.recordReminder === false}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 繧ｵ繝槭Μ繝ｼ騾夂衍 */}
+                            <div className="border rounded-lg p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={profile.notificationSettings?.summary !== false}
+                                            onChange={(e) => setProfile({
+                                                ...profile,
+                                                notificationSettings: {
+                                                    ...(profile.notificationSettings || {}),
+                                                    summary: e.target.checked
+                                                }
+                                            })}
+                                            className="rounded"
+                                        />
+                                        <div>
+                                            <div className="font-medium text-sm">繧ｵ繝槭Μ繝ｼ騾夂衍</div>
+                                            <div className="text-xs text-gray-600">1譌･縺ｮ邨ゅｏ繧翫↓驕疲・迥ｶ豕√ｒ隕∫ｴ・/div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="ml-6">
+                                    <label className="block text-xs font-medium mb-1">騾夂衍譎ょ綾</label>
+                                    <input
+                                        type="time"
+                                        value={profile.notificationSettings?.summaryTime || '23:00'}
+                                        onChange={(e) => setProfile({
+                                            ...profile,
+                                            notificationSettings: {
+                                                ...(profile.notificationSettings || {}),
+                                                summaryTime: e.target.value
+                                            }
+                                        })}
+                                        className="px-3 py-2 border rounded-lg text-sm"
+                                        disabled={profile.notificationSettings?.summary === false}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 繝溘ル繝槭Β繧ｿ繧ｹ繧ｯ */}
+                            <div className="border-t pt-3">
+                                <label className="block text-sm font-medium mb-2">繝溘ル繝槭Β繧ｿ繧ｹ繧ｯ</label>
+                                <input
+                                    type="text"
+                                    value={profile.minimumTask || ''}
+                                    onChange={(e) => setProfile({...profile, minimumTask: e.target.value})}
+                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                    placeholder="萓・ 閻慕ｫ九※1蝗・
+                                />
+                                <p className="text-xs text-gray-600 mt-1">
+                                    縲悟ｰ代＠縺縺代↑繧蛾大ｼｵ繧後ｋ縲阪→縺阪↓謠先｡医☆繧区怙菴朱剞縺ｮ繧ｿ繧ｹ繧ｯ繧定ｨｭ螳壹＠縺ｦ縺上□縺輔＞縲・                                </p>
+                            </div>
+                        </div>
+                    </details>
+
+                    {/* 繝・・繧ｿ邂｡逅・*/}
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="Database" size={18} className="text-indigo-600" />
+                            繝・・繧ｿ邂｡逅・                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t">
+                        <div className="space-y-4">
+                            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                                <div className="flex items-start gap-3">
+                                    <Icon name="Trash2" size={20} className="text-red-600 mt-1" />
+                                    <div className="flex-1">
+                                        <h4 className="font-bold mb-2 text-red-800">蜈ｨ繝・・繧ｿ縺ｮ蜑企勁</h4>
+                                        <p className="text-sm text-gray-600 mb-3">
+                                            縺吶∋縺ｦ縺ｮ繝・・繧ｿ繧貞炎髯､縺励∪縺吶ゅ％縺ｮ謫堺ｽ懊・蜿悶ｊ豸医○縺ｾ縺帙ｓ縲・                                        </p>
+                                        <button
+                                            onClick={handleClearData}
+                                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                                        >
+                                            蜈ｨ繝・・繧ｿ蜑企勁
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                                <h4 className="font-bold mb-2">繧｢繝励Μ諠・ｱ</h4>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">繝舌・繧ｸ繝ｧ繝ｳ</span>
+                                        <span className="font-medium">Beta 1.0.0</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">髢狗匱繝｢繝ｼ繝・/span>
+                                        <span className="font-medium">{DEV_MODE ? 'ON' : 'OFF'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </details>
+
+                    {/* 髢狗匱閠・*/}
+                    {DEV_MODE && (
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="Settings" size={18} className="text-orange-600" />
+                            髢狗匱閠・                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t">
+                            {/* 髢狗匱閠・Δ繝ｼ繝峨さ繝ｳ繝・Φ繝・*/}
+                            <div className="space-y-6">
+                            <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+                                <h4 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
+                                    <Icon name="AlertTriangle" size={18} />
+                                    髢狗匱閠・Δ繝ｼ繝・                                </h4>
+                                <p className="text-sm text-orange-700">
+                                    縺薙・繧ｿ繝悶・髢狗匱荳ｭ縺ｮ縺ｿ陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶ょｮ育ｴ髮｢讖溯・縺ｮ繝・せ繝医ｄ譌･莉倥・謇句虚謫堺ｽ懊′蜿ｯ閭ｽ縺ｧ縺吶・                                </p>
+                            </div>
+
+                            {/* 譌･莉俶焔蜍暮ｲ陦・*/}
+                            <div className="border rounded-lg p-6">
+                                <h4 className="font-bold mb-4 flex items-center gap-2">
+                                    <Icon name="Calendar" size={18} />
+                                    譌･莉俶焔蜍暮ｲ陦・                                </h4>
+                                <div className="space-y-4">
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <span className="text-sm text-gray-600">迴ｾ蝨ｨ縺ｮ蛻ｩ逕ｨ譌･謨ｰ</span>
+                                            <span className="text-2xl font-bold text-indigo-600">{usageDays}譌･</span>
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            迴ｾ蝨ｨ縺ｮ繧ｹ繝・・繧ｸ: {
+                                                usageDays < 10 ? '螳・(蝓ｺ遉・' :
+                                                usageDays < 18 ? '遐ｴ (蠢懃畑)' :
+                                                '髮｢ (迢ｬ閾ｪ)'
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={() => {
+                                                const newDays = Math.max(0, usageDays - 1);
+                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, newDays.toString());
+                                                window.location.reload();
+                                            }}
+                                            className="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
+                                        >
+                                            <Icon name="ChevronLeft" size={18} className="inline mr-1" />
+                                            -1譌･
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const newDays = usageDays + 1;
+                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, newDays.toString());
+                                                window.location.reload();
+                                            }}
+                                            className="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                                        >
+                                            <Icon name="ChevronRight" size={18} className="inline mr-1" />
+                                            +1譌･
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2 mb-2">
+                                        <button
+                                            onClick={() => {
+                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '0');
+                                                // 讖溯・髢区叛迥ｶ諷九ｂ繝ｪ繧ｻ繝・ヨ
+                                                localStorage.removeItem(STORAGE_KEYS.UNLOCKED_FEATURES);
+                                                window.location.reload();
+                                            }}
+                                            className="px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition font-medium"
+                                        >
+                                            0譌･ (蛻晄悄迥ｶ諷・
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '30');
+                                                // 蜈ｨ讖溯・髢区叛
+                                                const allFeatures = Object.values(FEATURES).map(f => f.id);
+                                                localStorage.setItem(STORAGE_KEYS.UNLOCKED_FEATURES, JSON.stringify(allFeatures));
+                                                window.location.reload();
+                                            }}
+                                            className="px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition font-medium"
+                                        >
+                                            30譌･ (蜈ｨ髢区叛)
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button
+                                            onClick={() => {
+                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '5');
+                                                window.location.reload();
+                                            }}
+                                            className="px-3 py-2 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition"
+                                        >
+                                            5譌･ (螳・
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '12');
+                                                window.location.reload();
+                                            }}
+                                            className="px-3 py-2 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition"
+                                        >
+                                            12譌･ (遐ｴ)
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '25');
+                                                window.location.reload();
+                                            }}
+                                            className="px-3 py-2 bg-purple-100 text-purple-700 rounded text-sm hover:bg-purple-200 transition"
+                                        >
+                                            25譌･ (髮｢)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 讖溯・髢区叛迥ｶ諷・*/}
+                            <div className="border rounded-lg p-6">
+                                <h4 className="font-bold mb-4 flex items-center gap-2">
+                                    <Icon name="Lock" size={18} />
+                                    讖溯・髢区叛迥ｶ諷・                                </h4>
+                                <div className="space-y-2">
+                                    {Object.values(FEATURES).map(feature => {
+                                        const isUnlocked = usageDays >= feature.requiredDays;
+                                        const stageColor =
+                                            feature.stage === '螳・ ? 'bg-green-100 text-green-700' :
+                                            feature.stage === '遐ｴ' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-purple-100 text-purple-700';
+                                        return (
+                                            <div key={feature.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`text-xs px-2 py-1 rounded-full ${stageColor} font-bold`}>
+                                                        {feature.stage}
+                                                    </span>
+                                                    <span className="font-medium">{feature.name}</span>
+                                                    <span className="text-xs text-gray-500">({feature.requiredDays}譌･縲・</span>
+                                                </div>
+                                                <div>
+                                                    {isUnlocked ? (
+                                                        <span className="text-green-600 flex items-center gap-1">
+                                                            <Icon name="CheckCircle" size={18} />
+                                                            <span className="text-sm font-medium">髢区叛貂医∩</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-400 flex items-center gap-1">
+                                                            <Icon name="Lock" size={18} />
+                                                            <span className="text-sm">譛ｪ髢区叛</span>
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </details>
+                    )}
+
+                    {/* 邂｡逅・・ヱ繝阪Ν (髢狗匱繝｢繝ｼ繝峨・縺ｿ陦ｨ遉ｺ) */}
+                    {DEV_MODE && (
+                        <details className="border rounded-lg border-red-300 bg-red-50">
+                            <summary className="cursor-pointer p-4 hover:bg-red-100 font-medium flex items-center gap-2">
+                                <Icon name="Shield" size={18} className="text-red-600" />
+                                邂｡逅・・ｩ溯・
+                                <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                            </summary>
+                            <div className="p-4 pt-0 border-t border-red-200">
+                                <div className="space-y-3">
+                                    <p className="text-sm text-red-700 mb-3">
+                                        白 邂｡逅・・ｩ溯・縺ｸ縺ｮ繧｢繧ｯ繧ｻ繧ｹ縺ｫ縺ｯ隱崎ｨｼ縺悟ｿ・ｦ√〒縺・                                    </p>
+                                    <button
+                                        onClick={() => {
+                                            const password = prompt('邂｡逅・・ヱ繧ｹ繝ｯ繝ｼ繝峨ｒ蜈･蜉帙＠縺ｦ縺上□縺輔＞:');
+                                            if (password === 'admin2024') {
+                                                onClose();
+                                                setTimeout(() => {
+                                                    document.dispatchEvent(new CustomEvent('openAdminPanel'));
+                                                }, 100);
+                                            } else if (password !== null) {
+                                                alert('繝代せ繝ｯ繝ｼ繝峨′髢馴＆縺｣縺ｦ縺・∪縺・);
+                                            }
+                                        }}
+                                        className="w-full py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="Shield" size={18} />
+                                        COMY謚慕ｨｿ謇ｿ隱阪ヱ繝阪Ν繧帝幕縺・                                    </button>
+                                    <p className="text-xs text-gray-600 mt-2">
+                                        窶ｻ 譛ｬ逡ｪ迺ｰ蠅・〒縺ｯ縲：irebase Authentication縺ｮ繧ｫ繧ｹ繧ｿ繝繧ｯ繝ｬ繝ｼ繝縺ｧadmin繝ｭ繝ｼ繝ｫ繧剃ｻ倅ｸ弱＠縺ｦ縺上□縺輔＞
+                                    </p>
+                                </div>
+                            </div>
+                        </details>
+                    )}
+            </div>
+            </div>
+        </div>
+
+        {/* 諠・ｱ繝｢繝ｼ繝繝ｫ */}
+        {infoModal.show && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
+                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                    <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center z-10">
+                        <h3 className="font-bold text-lg">{infoModal.title}</h3>
+                        <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
+                            <Icon name="X" size={20} />
+                        </button>
+                    </div>
+                    <div className="p-6">
+                        <p className="text-gray-700 whitespace-pre-line leading-relaxed">{infoModal.content}</p>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* Visual Guide Modal */}
+        {visualGuideModal.show && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-pink-600 text-white p-4 flex justify-between items-center z-10">
+                        <h3 className="font-bold text-lg">螟冶ｦ九°繧我ｽ楢р閧ｪ邇・ｒ謗ｨ螳・/h3>
+                        <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
+                            <Icon name="X" size={20} />
+                        </button>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <p className="text-sm text-yellow-800 font-medium">
+                                笞・・縺薙・謗ｨ螳壼､縺ｯ螟冶ｦ九↓蝓ｺ縺･縺丈ｸｻ隕ｳ逧・ｩ穂ｾ｡縺ｧ縺ゅｊ縲∝ｮ滄圀縺ｮ菴楢р閧ｪ邇・→ﾂｱ3-5%縺ｮ隱､蟾ｮ縺後≠繧翫∪縺吶よｭ｣遒ｺ縺ｪ貂ｬ螳壹↓縺ｯ菴鍋ｵ・・險医・菴ｿ逕ｨ繧貞ｼｷ縺乗耳螂ｨ縺励∪縺吶・                            </p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-2">諤ｧ蛻･繧帝∈謚・/label>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setVisualGuideModal({ ...visualGuideModal, gender: '逕ｷ諤ｧ' })}
+                                    className={`flex-1 px-4 py-2 rounded-lg border-2 ${visualGuideModal.gender === '逕ｷ諤ｧ' ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-300'}`}
+                                >
+                                    逕ｷ諤ｧ
+                                </button>
+                                <button
+                                    onClick={() => setVisualGuideModal({ ...visualGuideModal, gender: '螂ｳ諤ｧ' })}
+                                    className={`flex-1 px-4 py-2 rounded-lg border-2 ${visualGuideModal.gender === '螂ｳ諤ｧ' ? 'border-pink-600 bg-pink-50 text-pink-700' : 'border-gray-300'}`}
+                                >
+                                    螂ｳ諤ｧ
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-3">
+                                縺ゅ↑縺溘・菴灘梛縺ｫ譛繧りｿ代＞繝ｬ繝吶Ν繧帝∈謚槭＠縺ｦ縺上□縺輔＞ (1-10)
+                            </label>
+                            <div className="space-y-2">
+                                {LBMUtils.getVisualGuideInfo(visualGuideModal.gender).map((guide) => {
+                                    const isSelected = visualGuideModal.selectedLevel === guide.level;
+                                    return (
+                                        <button
+                                            key={guide.level}
+                                            onClick={() => setVisualGuideModal({ ...visualGuideModal, selectedLevel: guide.level })}
+                                            className={`w-full text-left p-4 rounded-lg border-2 transition ${
+                                                isSelected
+                                                    ? 'border-orange-600 bg-orange-50'
+                                                    : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                                                    isSelected ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-600'
+                                                }`}>
+                                                    {guide.level}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="font-bold text-gray-900">{guide.title}</span>
+                                                        <span className="text-sm text-gray-600">({guide.range})</span>
+                                                    </div>
+                                                    <ul className="text-sm text-gray-700 space-y-1">
+                                                        {guide.features.map((feature, idx) => (
+                                                            <li key={idx}>窶｢ {feature}</li>
+                                                        ))}
+                                                    </ul>
+                                                    <p className="text-xs text-gray-500 mt-2">蛛･蠎ｷ: {guide.health}</p>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-orange-50 to-pink-50 p-4 rounded-lg border border-orange-200">
+                            <p className="text-sm font-medium text-gray-700 mb-2">謗ｨ螳夂ｵ先棡</p>
+                            <p className="text-3xl font-bold text-orange-600">
+                                {LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel).bodyFatPercentage}%
+                            </p>
+                            <p className="text-sm text-gray-600 mt-2">
+                                {LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel).description}
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })}
+                                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                            >
+                                繧ｭ繝｣繝ｳ繧ｻ繝ｫ
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const estimate = LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel);
+                                    setProfile({ ...profile, bodyFatPercentage: estimate.bodyFatPercentage });
+                                    setVisualGuideModal({ ...visualGuideModal, show: false });
+                                }}
+                                className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-600 to-pink-600 text-white rounded-lg hover:from-orange-700 hover:to-pink-700 font-medium"
+                            >
+                                縺薙・蛟､繧剃ｽｿ逕ｨ縺吶ｋ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
+    );
+};
+// ===========================
+// Analysis and History Components
+// Extracted from index_beta.html
+// ===========================
+
+// ===== AnalysisView Component (lines 4684-5218) =====
+const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, setLastUpdate }) => {
+    const [loading, setLoading] = useState(true);
+    const [analysis, setAnalysis] = useState(null);
+    const [historicalInsights, setHistoricalInsights] = useState(null);
+    const [aiAnalysis, setAiAnalysis] = useState(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [suggestedDirective, setSuggestedDirective] = useState(null);
+
+    const getTodayDate = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    useEffect(() => {
+        performAnalysis();
+    }, []);
+
+    const handleClose = () => {
+        if (aiLoading) {
+            alert('AI蛻・梵縺悟ｮ御ｺ・☆繧九∪縺ｧ縺雁ｾ・■縺上□縺輔＞縲・);
+            return;
+        }
+        onClose();
+    };
+
+    const performAnalysis = async () => {
+        setLoading(true);
+
+        const totalCalories = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
+        const totalProtein = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
+        const totalFat = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
+        const totalCarbs = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
+        const totalBurned = (dailyRecord.workouts || []).reduce((sum, w) => sum + (w.caloriesBurned || 0), 0);
+
+        const proteinRate = targetPFC.protein > 0 ? Math.round((totalProtein / targetPFC.protein) * 100) : 0;
+        const fatRate = targetPFC.fat > 0 ? Math.round((totalFat / targetPFC.fat) * 100) : 0;
+        const carbsRate = targetPFC.carbs > 0 ? Math.round((totalCarbs / targetPFC.carbs) * 100) : 0;
+        const caloriesRate = targetPFC.calories > 0 ? Math.round((totalCalories / targetPFC.calories) * 100) : 0;
+        const overallRate = Math.round((proteinRate + fatRate + carbsRate + caloriesRate) / 4);
+
+        let evaluation = 'poor';
+        if (overallRate >= 95 && overallRate <= 105) evaluation = 'excellent';
+        else if (overallRate >= 85 && overallRate <= 115) evaluation = 'good';
+        else if (overallRate >= 70 && overallRate <= 130) evaluation = 'moderate';
+
+        const historicalData = [];
+        for (let i = 1; i <= 30; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const record = await DataService.getDailyRecord(userId, dateStr);
+            if (record) historicalData.push({ date: dateStr, record: record });
+        }
+
+        const insights = analyzeHistoricalTrends(historicalData, dailyRecord, userProfile);
+
+        const analysisData = {
+            actual: { calories: Math.round(totalCalories), protein: Math.round(totalProtein), fat: Math.round(totalFat), carbs: Math.round(totalCarbs), burned: Math.round(totalBurned) },
+            target: targetPFC,
+            achievementRates: { calories: caloriesRate, protein: proteinRate, fat: fatRate, carbs: carbsRate, overall: overallRate },
+            evaluation: evaluation
+        };
+
+        setAnalysis(analysisData);
+
+        const today = getTodayDate();
+        const analyses = JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_ANALYSES) || '{}');
+        analyses[today] = { ...(analyses[today] || {}), ...analysisData };
+        localStorage.setItem(STORAGE_KEYS.DAILY_ANALYSES, JSON.stringify(analyses));
+
+        setHistoricalInsights(insights);
+        setLoading(false);
+
+        generateAIAnalysis(analysisData, insights);
+    };
+
+    const generateAIDirective = (currentAnalysis, aiText) => {
+        // 繧ｿ繝ｳ繝代け雉ｪ荳崎ｶｳ・域怙蜆ｪ蜈茨ｼ・        if (currentAnalysis.achievementRates.protein < 90) {
+            const diff = Math.ceil(targetPFC.protein - currentAnalysis.actual.protein);
+            const grams = Math.ceil(diff / 0.23);
+            return { type: 'meal', text: `鮓上・縺ｭ閧・{grams}g霑ｽ蜉` };
+        }
+        // 轤ｭ豌ｴ蛹也黄驕主臆
+        else if (currentAnalysis.achievementRates.carbs > 120) {
+            const diff = Math.ceil(currentAnalysis.actual.carbs - targetPFC.carbs);
+            const grams = Math.ceil(diff / 0.37);
+            return { type: 'meal', text: `逋ｽ邀ｳ${grams}g貂帙ｉ縺兪 };
+        }
+        // 閼りｳｪ荳崎ｶｳ
+        else if (currentAnalysis.achievementRates.fat < 80) {
+            const diff = Math.ceil(targetPFC.fat - currentAnalysis.actual.fat);
+            const grams = Math.ceil(diff * 11.1); // 繝翫ャ繝・g縺ゅ◆繧顔ｴ・.09g縺ｮ閼りｳｪ
+            return { type: 'meal', text: `繝翫ャ繝・{grams}g霑ｽ蜉` };
+        }
+        // 繝医Ξ繝ｼ繝九Φ繧ｰ譛ｪ螳滓命
+        else if (dailyRecord.workouts.length === 0 && userProfile.goal !== '繝｡繝ｳ繝・リ繝ｳ繧ｹ') {
+            return { type: 'exercise', text: `30蛻・・謨｣豁ｩ繧貞ｮ滓命` };
+        }
+        // 繧ｫ繝ｭ繝ｪ繝ｼ荳崎ｶｳ
+        else if (currentAnalysis.achievementRates.calories < 85) {
+            return { type: 'meal', text: `髢馴｣溘〒繧ｫ繝ｭ繝ｪ繝ｼ陬懷・` };
+        }
+        // 螳檎挑
+        return { type: 'condition', text: `莉頑律縺ｮ鄙呈・繧堤ｶ咏ｶ啻 };
+    };
+
+    const saveDirective = () => {
+        if (!suggestedDirective) return;
+        const today = getTodayDate();
+        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
+        const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
+        const newDirective = {
+            date: today,
+            message: suggestedDirective.text,
+            type: suggestedDirective.type,
+            completed: false,
+            createdAt: new Date().toISOString()
+        };
+        const updatedDirectives = directives.filter(d => d.date !== today);
+        updatedDirectives.push(newDirective);
+        localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
+        setLastUpdate(Date.now()); // App繧貞・繝ｬ繝ｳ繝繝ｪ繝ｳ繧ｰ縺輔○繧・        alert('謖・､ｺ譖ｸ繧偵ム繝・す繝･繝懊・繝峨↓蜿肴丐縺励∪縺励◆縲・);
+        onClose();
+    };
+
+    // AI蛻・梵逕滓・
+    const generateAIAnalysis = async (currentAnalysis, insights) => {
+        setAiLoading(true);
+
+        // 繝励Ο繝ｳ繝励ヨ縺九ｉ繝槭・繧ｯ繝繧ｦ繝ｳ縺ｨ邨ｵ譁・ｭ励ｒ髯､蜴ｻ縺吶ｋ髢｢謨ｰ
+        const sanitizeText = (text) => {
+            if (!text) return '';
+            return text
+                // 繝槭・繧ｯ繝繧ｦ繝ｳ險伜捷繧帝勁蜴ｻ
+                .replace(/\*\*/g, '')
+                .replace(/##/g, '')
+                .replace(/###/g, '')
+                // 邨ｵ譁・ｭ励ｒ髯､蜴ｻ・亥桁諡ｬ逧・↑Unicode繝ｬ繝ｳ繧ｸ・・                .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // 鬘疲枚蟄・                .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // 繧ｷ繝ｳ繝懊Ν縺ｨ邨ｵ譁・ｭ・                .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // 莠､騾壽焔谿ｵ縺ｨ蝨ｰ蝗ｳ險伜捷
+                .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // 譌・                .replace(/[\u{2600}-\u{26FF}]/gu, '')   // 縺昴・莉冶ｨ伜捷
+                .replace(/[\u{2700}-\u{27BF}]/gu, '')   // 陬・｣ｾ險伜捷
+                .replace(/[\u{FE00}-\u{FE0F}]/gu, '')   // 逡ｰ菴灘ｭ励そ繝ｬ繧ｯ繧ｿ
+                .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // 陬懷勧邨ｵ譁・ｭ・                .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '') // 諡｡蠑ｵ邨ｵ譁・ｭ・                .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '') // 繧ｷ繝ｳ繝懊Ν縺ｨ邨ｵ譁・ｭ玲僑蠑ｵ
