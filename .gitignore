@@ -1,6 +1,5 @@
 # Firebase
 .firebase/
-.firebaserc
 
 # Node modules (if added later)
 node_modules/
@@ -24,3 +23,12 @@ npm-debug.log*
 # Build outputs (if added later)
 dist/
 build/
+
+# Backup files
+*.old
+*_backup_*.js
+components_backup_*
+
+# Temporary files
+temp/
+tmp/
