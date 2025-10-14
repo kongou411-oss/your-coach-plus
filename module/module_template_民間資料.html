@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[モジュールタイトル] - PGBASE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            line-height: 1.8;
+        }
+        .conclusion-box {
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .section-header {
+            border-left: 4px solid #06b6d4;
+            padding-left: 1rem;
+            margin: 2rem 0 1rem 0;
+        }
+        .evidence-badge {
+            display: inline-block;
+            background: #0891b2;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .key-point {
+            background: #ecfeff;
+            border-left: 4px solid #06b6d4;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .source-card {
+            background: #dbeafe;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+        .meta-info {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 2rem 0;
+            font-size: 0.875rem;
+        }
+        .expert-quote {
+            background: #f0f9ff;
+            border-left: 4px solid #0891b2;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-4xl mx-auto p-6 bg-white shadow-lg min-h-screen">
+
+        <!-- ヘッダー -->
+        <header class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="evidence-badge">📊 民間資料</span>
+                <span class="text-sm text-gray-600">レベル: 専門家・信頼できる民間団体</span>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">
+                [モジュールタイトル]
+            </h1>
+            <p class="text-lg text-gray-600">
+                [1行での魅力的なサブタイトル・概要]
+            </p>
+            <div class="flex gap-4 mt-4 text-sm text-gray-500">
+                <span>📚 カテゴリ: [栄養学/メンタル/トレーニング/リカバリー]</span>
+                <span>⏱️ 読了時間: [X]分</span>
+            </div>
+        </header>
+
+        <!-- 結論（冒頭） -->
+        <section class="conclusion-box">
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>💡</span>
+                <span>結論（先に知っておくべきこと）</span>
+            </h2>
+            <div class="text-lg leading-relaxed">
+                <p class="mb-3">
+                    [3-5行で本モジュールの核心を記述]
+                </p>
+                <ul class="list-disc list-inside space-y-2 ml-4">
+                    <li>[重要ポイント1]</li>
+                    <li>[重要ポイント2]</li>
+                    <li>[重要ポイント3]</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 目次 -->
+        <nav class="bg-gray-100 p-6 rounded-lg mb-8">
+            <h2 class="text-xl font-bold mb-4 text-gray-900">📋 目次</h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li><a href="#section1" class="hover:text-cyan-600">このテーマの重要性</a></li>
+                <li><a href="#section2" class="hover:text-cyan-600">専門家の知見とデータ</a></li>
+                <li><a href="#section3" class="hover:text-cyan-600">実践的アプローチ</a></li>
+                <li><a href="#section4" class="hover:text-cyan-600">よくある誤解と注意点</a></li>
+                <li><a href="#section5" class="hover:text-cyan-600">結論とまとめ</a></li>
+            </ol>
+        </nav>
+
+        <!-- セクション1: 重要性 -->
+        <section id="section1" class="mb-12">
+            <h2 class="section-header text-3xl font-bold text-gray-900">
+                1. このテーマの重要性
+            </h2>
+            <p class="text-gray-700 mt-4">
+                [テーマの背景や重要性を説明]
+            </p>
+            <div class="key-point">
+                <p class="font-semibold text-cyan-900 mb-2">🔑 キーポイント</p>
+                <p class="text-gray-700">
+                    [このセクションで最も重要な1文]
+                </p>
+            </div>
+            <p class="text-gray-700 mt-4">
+                [詳細説明]
+            </p>
+        </section>
+
+        <!-- セクション2: 専門家の知見 -->
+        <section id="section2" class="mb-12">
+            <h2 class="section-header text-3xl font-bold text-gray-900">
+                2. 専門家の知見とデータ
+            </h2>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">2.1 専門家の見解</h3>
+            <p class="text-gray-700">
+                [専門家の意見や見解を記述]
+            </p>
+
+            <!-- 専門家引用 -->
+            <div class="expert-quote">
+                <p class="text-gray-800 mb-2">
+                    「[専門家の引用文]」
+                </p>
+                <p class="text-sm text-gray-600 text-right">
+                    — [専門家名], [所属・肩書き]
+                </p>
+            </div>
+
+            <!-- 参考資料カード -->
+            <div class="source-card">
+                <p class="font-bold text-blue-900 mb-2">📖 参考資料</p>
+                <ul class="text-sm text-gray-800 space-y-1">
+                    <li><strong>資料名:</strong> [書籍名 or 記事タイトル]</li>
+                    <li><strong>著者/団体:</strong> [著者名 or 団体名]</li>
+                    <li><strong>発表年:</strong> [YYYY年]</li>
+                    <li><strong>URL:</strong> <a href="[URL]" target="_blank" class="text-blue-600 hover:underline">[URL]</a>（ある場合）</li>
+                </ul>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">2.2 実践的なデータ</h3>
+            <p class="text-gray-700">
+                [現場での実践データや統計を記述]
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li>[データポイント1]</li>
+                <li>[データポイント2]</li>
+                <li>[データポイント3]</li>
+            </ul>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">2.3 業界標準・ベストプラクティス</h3>
+            <p class="text-gray-700">
+                [業界で一般的に採用されている方法論]
+            </p>
+        </section>
+
+        <!-- セクション3: 実践的アプローチ -->
+        <section id="section3" class="mb-12">
+            <h2 class="section-header text-3xl font-bold text-gray-900">
+                3. 実践的アプローチ
+            </h2>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">3.1 具体的なステップ</h3>
+            <ol class="list-decimal list-inside space-y-4 ml-4 text-gray-700">
+                <li>
+                    <strong>[ステップ1]</strong>
+                    <p class="ml-6 mt-2">[詳細説明と実践例]</p>
+                </li>
+                <li>
+                    <strong>[ステップ2]</strong>
+                    <p class="ml-6 mt-2">[詳細説明と実践例]</p>
+                </li>
+                <li>
+                    <strong>[ステップ3]</strong>
+                    <p class="ml-6 mt-2">[詳細説明と実践例]</p>
+                </li>
+            </ol>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">3.2 推奨される方法</h3>
+            <p class="text-gray-700">
+                [専門家が推奨する具体的な方法や頻度]
+            </p>
+            <div class="key-point">
+                <p class="font-semibold text-cyan-900 mb-2">💪 実践的推奨値</p>
+                <ul class="list-disc list-inside space-y-1 text-gray-700">
+                    <li>[推奨値1]</li>
+                    <li>[推奨値2]</li>
+                    <li>[推奨値3]</li>
+                </ul>
+                <p class="text-sm text-gray-600 mt-2">
+                    ※ 個人差があるため、自身の体調を見ながら調整してください
+                </p>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">3.3 ケーススタディ</h3>
+            <div class="bg-cyan-50 p-4 rounded-lg my-4">
+                <p class="font-bold text-cyan-900 mb-2">📝 実践例1</p>
+                <p class="text-gray-700">
+                    [具体的な実践例・成功事例]
+                </p>
+            </div>
+            <div class="bg-cyan-50 p-4 rounded-lg my-4">
+                <p class="font-bold text-cyan-900 mb-2">📝 実践例2</p>
+                <p class="text-gray-700">
+                    [具体的な実践例・成功事例]
+                </p>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">3.4 よくある質問（Q&A）</h3>
+            <div class="space-y-4">
+                <div class="border-l-4 border-cyan-500 pl-4">
+                    <p class="font-semibold text-gray-900 mb-1">Q: [よくある質問1]</p>
+                    <p class="text-gray-700">A: [回答]</p>
+                </div>
+                <div class="border-l-4 border-cyan-500 pl-4">
+                    <p class="font-semibold text-gray-900 mb-1">Q: [よくある質問2]</p>
+                    <p class="text-gray-700">A: [回答]</p>
+                </div>
+                <div class="border-l-4 border-cyan-500 pl-4">
+                    <p class="font-semibold text-gray-900 mb-1">Q: [よくある質問3]</p>
+                    <p class="text-gray-700">A: [回答]</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- セクション4: よくある誤解 -->
+        <section id="section4" class="mb-12">
+            <h2 class="section-header text-3xl font-bold text-gray-900">
+                4. よくある誤解と注意点
+            </h2>
+
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 my-6">
+                <p class="font-semibold text-red-900 mb-2">❌ 誤解1: [誤った認識]</p>
+                <p class="text-gray-700"><strong>✅ 正しくは:</strong> [正しい情報]</p>
+            </div>
+
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 my-6">
+                <p class="font-semibold text-red-900 mb-2">❌ 誤解2: [誤った認識]</p>
+                <p class="text-gray-700"><strong>✅ 正しくは:</strong> [正しい情報]</p>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">注意すべきポイント</h3>
+            <p class="text-gray-700">
+                [実践する上での注意点]
+            </p>
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 my-6">
+                <p class="font-semibold text-yellow-900 mb-2">⚠️ 重要な注意事項</p>
+                <ul class="list-disc list-inside space-y-1 text-gray-700">
+                    <li>[注意点1]</li>
+                    <li>[注意点2]</li>
+                    <li>[注意点3]</li>
+                </ul>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">こんな場合は専門家に相談</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li>[相談すべき症状・状況1]</li>
+                <li>[相談すべき症状・状況2]</li>
+                <li>[相談すべき症状・状況3]</li>
+            </ul>
+        </section>
+
+        <!-- セクション5: 結論とまとめ -->
+        <section id="section5" class="mb-12">
+            <h2 class="section-header text-3xl font-bold text-gray-900">
+                5. 結論とまとめ
+            </h2>
+            <div class="conclusion-box">
+                <h3 class="text-2xl font-bold mb-4">📌 本モジュールのまとめ</h3>
+                <ul class="space-y-3 text-lg">
+                    <li>✅ [重要ポイント1の再確認]</li>
+                    <li>✅ [重要ポイント2の再確認]</li>
+                    <li>✅ [重要ポイント3の再確認]</li>
+                </ul>
+                <div class="mt-6 pt-6 border-t border-white/30">
+                    <p class="text-xl font-semibold mb-3">🎯 今日から始められること</p>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>[今日から始められる具体的な行動1]</li>
+                        <li>[今日から始められる具体的な行動2]</li>
+                        <li>[今日から始められる具体的な行動3]</li>
+                    </ol>
+                </div>
+                <div class="mt-6 pt-6 border-t border-white/30">
+                    <p class="text-xl font-semibold mb-3">🔄 習慣化のコツ</p>
+                    <p>[継続するためのアドバイス]</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 関連モジュール -->
+        <section class="mb-12 bg-cyan-50 p-6 rounded-lg">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">🔗 関連モジュール</h2>
+            <ul class="space-y-3">
+                <li>
+                    <a href="#" class="text-cyan-600 hover:text-cyan-800 font-semibold">
+                        → [関連モジュール1のタイトル]
+                    </a>
+                    <p class="text-sm text-gray-600 ml-4">[簡単な説明]</p>
+                </li>
+                <li>
+                    <a href="#" class="text-cyan-600 hover:text-cyan-800 font-semibold">
+                        → [関連モジュール2のタイトル]
+                    </a>
+                    <p class="text-sm text-gray-600 ml-4">[簡単な説明]</p>
+                </li>
+                <li>
+                    <a href="#" class="text-cyan-600 hover:text-cyan-800 font-semibold">
+                        → [関連モジュール3のタイトル]
+                    </a>
+                    <p class="text-sm text-gray-600 ml-4">[簡単な説明]</p>
+                </li>
+            </ul>
+        </section>
+
+        <!-- さらに学ぶために -->
+        <section class="mb-12 bg-blue-50 p-6 rounded-lg">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">📚 さらに学ぶために</h2>
+            <p class="text-gray-700 mb-4">
+                このテーマについてさらに深く学びたい方は、以下のリソースもご参考ください。
+            </p>
+            <ul class="space-y-2 text-gray-700">
+                <li>• 書籍: [おすすめ書籍名]（[著者名]）</li>
+                <li>• ウェブサイト: [信頼できるサイト名]</li>
+                <li>• 動画: [YouTube等の教育コンテンツ]</li>
+            </ul>
+        </section>
+
+        <!-- メタ情報 -->
+        <section class="meta-info">
+            <h3 class="font-bold text-gray-900 mb-3">📝 モジュール情報</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-700">
+                <div>
+                    <p><strong>編纂者:</strong> サクライ</p>
+                    <p><strong>作成日:</strong> [YYYY年MM月DD日]</p>
+                    <p><strong>更新日:</strong> [YYYY年MM月DD日]</p>
+                    <p><strong>バージョン:</strong> [1.0]</p>
+                </div>
+                <div>
+                    <p><strong>カテゴリー:</strong> [栄養学/メンタル/トレーニング/リカバリー]</p>
+                    <p><strong>エビデンスレベル:</strong> 民間資料</p>
+                    <p><strong>読了時間:</strong> 約[X]分</p>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-gray-300">
+                <p class="font-bold text-gray-900 mb-2">📖 主要参考資料</p>
+                <ol class="list-decimal list-inside space-y-2 text-sm text-gray-700">
+                    <li>
+                        [書籍名 or 資料名], [著者/団体], [年]<br>
+                        <span class="text-blue-600 ml-4">[URL]</span>（ある場合）
+                    </li>
+                    <li>
+                        [書籍名 or 資料名], [著者/団体], [年]<br>
+                        <span class="text-blue-600 ml-4">[URL]</span>（ある場合）
+                    </li>
+                </ol>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-gray-300">
+                <p class="font-bold text-gray-900 mb-2">🔍 編纂プロセス</p>
+                <p class="text-sm text-gray-700">
+                    本モジュールは、複数の信頼できる情報源を参照し、編纂者の専門知識と実践経験に基づいて作成されています。
+                    定期的に内容を見直し、最新の情報に更新しています。
+                </p>
+            </div>
+        </section>
+
+        <!-- フィードバック募集 -->
+        <section class="bg-gradient-to-r from-cyan-50 to-blue-50 p-6 rounded-lg mt-8">
+            <h3 class="font-bold text-gray-900 mb-3">💬 フィードバックをお待ちしています</h3>
+            <p class="text-gray-700 mb-4">
+                このモジュールは役に立ちましたか？改善点や追加してほしい情報があれば、ぜひお知らせください。
+            </p>
+            <div class="flex gap-3">
+                <button class="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition">
+                    👍 役に立った
+                </button>
+                <button class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                    💬 改善提案を送る
+                </button>
+            </div>
+        </section>
+
+        <!-- 免責事項 -->
+        <section class="bg-gray-100 p-6 rounded-lg mt-8 text-sm text-gray-600">
+            <p class="font-bold text-gray-900 mb-2">⚠️ 免責事項</p>
+            <p>
+                本モジュールの情報は教育・情報提供目的で作成されており、医療アドバイスの代替ではありません。
+                個別の健康状態や医学的な問題については、必ず医師・管理栄養士・専門家にご相談ください。
+                本情報は信頼できる情報源に基づいていますが、完全性・正確性を保証するものではありません。
+                本情報の利用により生じたいかなる損害についても、Your Coach+および編纂者は責任を負いかねます。
+            </p>
+        </section>
+
+    </div>
+
+    <!-- スクロールトップボタン -->
+    <button
+        onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+        class="fixed bottom-6 right-6 bg-cyan-600 text-white p-4 rounded-full shadow-lg hover:bg-cyan-700 transition"
+        aria-label="ページトップへ"
+    >
+        ↑
+    </button>
+
+</body>
+</html>

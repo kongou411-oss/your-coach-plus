@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ビタミン・ミネラル最適化 - PGBASE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.8;
+            background-color: #f9fafb;
+        }
+
+        .conclusion-box {
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-header {
+            border-left: 4px solid #14b8a6;
+            padding-left: 1rem;
+            margin: 2rem 0 1rem 0;
+            color: #0f766e;
+        }
+
+        .evidence-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .key-point {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border-left: 4px solid #10b981;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .action-list {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid #22c55e;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .action-list h4 {
+            color: #15803d;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 2px solid #f87171;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .warning-box h4 {
+            color: #dc2626;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .deficiency-box {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 2px solid #f87171;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .deficiency-box h4 {
+            color: #dc2626;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .vitamin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .vitamin-table th {
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: #ffffff;
+            font-weight: 600;
+            padding: 0.75rem;
+            text-align: left;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            font-size: 0.875rem;
+        }
+
+        .vitamin-table td {
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            color: #374151;
+            background-color: white;
+            font-size: 0.875rem;
+        }
+
+        .vitamin-table tr:nth-child(even) td {
+            background-color: #f9fafb;
+        }
+
+        .qa-item {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .qa-question {
+            padding: 1rem;
+            color: #0f766e;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f0fdfa;
+            transition: all 0.3s;
+        }
+
+        .qa-question:hover {
+            background-color: #ccfbf1;
+        }
+
+        .qa-answer {
+            padding: 1rem;
+            color: #374151;
+            display: none;
+            background-color: white;
+        }
+
+        .qa-answer.active {
+            display: block;
+        }
+
+        .related-link {
+            display: inline-block;
+            color: #0891b2;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border: 2px solid #14b8a6;
+            border-radius: 8px;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .related-link:hover {
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 1.25rem;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-top-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(20, 184, 166, 0.5);
+        }
+
+        .meta-info {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 1px solid #22c55e;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 2rem 0;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-4xl mx-auto p-6 bg-white shadow-lg min-h-screen">
+
+        <!-- ヘッダー -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="evidence-badge">🧬 栄養科学</span>
+                    <span class="text-sm text-gray-600">レベル: 中級～上級レベル</span>
+                </div>
+                <a href="#" onclick="window.parent.postMessage('return-to-pgbase-store', '*'); return false;" class="text-sm px-4 py-2 rounded-lg transition" style="color: #0891b2; border: 2px solid #0891b2; text-decoration: none; font-weight: 500;">← ストアに戻る</a>
+            </div>
+            <h1 class="text-4xl font-bold mb-4" style="color: #0f766e;">
+                ビタミン・ミネラル最適化
+            </h1>
+            <p class="text-lg text-gray-600">
+                微量栄養素による パフォーマンス最大化戦略
+            </p>
+            <div class="flex gap-4 mt-4 text-sm text-gray-500 flex-wrap">
+                <span>📚 カテゴリ: 栄養学</span>
+                <span>⏱️ 読了時間: 30分</span>
+                <span>📅 最終更新: 2025年10月</span>
+            </div>
+        </header>
+
+        <!-- 結論（冒頭） -->
+        <section class="conclusion-box">
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>📋</span>
+                <span>この記事の結論</span>
+            </h2>
+            <div class="text-lg leading-relaxed">
+                <ol class="list-decimal list-inside space-y-2 ml-2">
+                    <li>ビタミンD、B12、鉄分、マグネシウム、亜鉛が最も不足しやすい</li>
+                    <li>水溶性ビタミンは毎日、脂溶性ビタミンは体内蓄積を考慮</li>
+                    <li>吸収率向上には摂取タイミングと組み合わせが重要</li>
+                    <li>血液検査による現状把握が最適化の第一歩</li>
+                    <li>食事からの摂取を基本とし、サプリメントは補完的に活用</li>
+                </ol>
+            </div>
+            <div class="mt-6 pt-6 border-t border-white/30">
+                <p class="font-semibold mb-2">🎯 こんな人におすすめ</p>
+                <p>・慢性的な疲労感や体調不良を感じる人<br>
+                ・パフォーマンス向上を科学的に追求するアスリート<br>
+                ・栄養素の相互作用を理解したい上級者<br>
+                ・効率的なサプリメント活用法を学びたい人</p>
+            </div>
+        </section>
+
+        <!-- 目次 -->
+        <nav class="bg-gray-100 p-6 rounded-lg mb-8">
+            <h2 class="text-xl font-bold mb-4 text-gray-900">📋 目次</h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li><a href="#section1" class="hover:text-cyan-600">AIコーチによる要約</a></li>
+                <li><a href="#section2" class="hover:text-cyan-600">科学的根拠 / 仕組みの解説</a></li>
+                <li><a href="#section3" class="hover:text-cyan-600">メリット（期待できる効果）</a></li>
+                <li><a href="#section4" class="hover:text-cyan-600">リスクと考慮事項</a></li>
+                <li><a href="#section5" class="hover:text-cyan-600">具体的な実践プラン</a></li>
+                <li><a href="#section6" class="hover:text-cyan-600">Q&A / よくある質問</a></li>
+            </ol>
+        </nav>
+
+        <!-- セクション1: AIコーチによる要約 -->
+        <section id="section1" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                1. 🤖 AIコーチによる要約
+            </h2>
+            <p class="text-gray-700 mt-4">
+                ビタミン・ミネラルは、エネルギー産生、免疫機能、神経伝達、骨代謝、抗酸化防御など、身体の全ての生理機能に関与する微量栄養素です。現代人の多くは、食品の栄養価低下、ストレス増加、環境汚染により、潜在的な欠乏状態にあります。
+            </p>
+            <p class="text-gray-700 mt-4">
+                特にトレーニーやアスリートは、代謝活性の増加、発汗による損失増加、酸化ストレス増大により、一般人の1.5-3倍の必要量があります。単純な「RDA充足」ではなく、「最適化」レベルでの摂取が、真のポテンシャル発揮につながります。
+            </p>
+            <div class="key-point mt-6">
+                <p class="font-semibold mb-2" style="color: #065f46;">💡 キーポイント</p>
+                <p class="text-gray-700">
+                    微量栄養素最適化 = 個別欠乏の特定 × 吸収効率の向上 × 相乗効果の活用
+                </p>
+            </div>
+        </section>
+
+        <!-- セクション2: 科学的根拠 -->
+        <section id="section2" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                2. 🧬 科学的根拠 / 仕組みの解説
+            </h2>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.1 ビタミンの分類と機能</h3>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">水溶性ビタミン（毎日補給必要）</h4>
+            <table class="vitamin-table">
+                <thead>
+                    <tr>
+                        <th>ビタミン</th>
+                        <th>主要機能</th>
+                        <th>欠乏症状</th>
+                        <th>推奨量（成人）</th>
+                        <th>上限量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>B1（チアミン）</td>
+                        <td>糖質代謝、神経機能</td>
+                        <td>疲労、集中力低下</td>
+                        <td>1.4mg</td>
+                        <td>設定なし</td>
+                    </tr>
+                    <tr>
+                        <td>B2（リボフラビン）</td>
+                        <td>エネルギー代謝</td>
+                        <td>皮膚炎、口内炎</td>
+                        <td>1.6mg</td>
+                        <td>設定なし</td>
+                    </tr>
+                    <tr>
+                        <td>B3（ナイアシン）</td>
+                        <td>NAD合成、血管拡張</td>
+                        <td>皮膚炎、下痢</td>
+                        <td>15mg NE</td>
+                        <td>300mg</td>
+                    </tr>
+                    <tr>
+                        <td>B6（ピリドキシン）</td>
+                        <td>アミノ酸代謝</td>
+                        <td>皮膚炎、貧血</td>
+                        <td>1.4mg</td>
+                        <td>60mg</td>
+                    </tr>
+                    <tr>
+                        <td>B12（コバラミン）</td>
+                        <td>DNA合成、造血</td>
+                        <td>悪性貧血、神経障害</td>
+                        <td>2.4μg</td>
+                        <td>設定なし</td>
+                    </tr>
+                    <tr>
+                        <td>葉酸</td>
+                        <td>DNA合成、造血</td>
+                        <td>巨赤芽球性貧血</td>
+                        <td>240μg</td>
+                        <td>1000μg</td>
+                    </tr>
+                    <tr>
+                        <td>C（アスコルビン酸）</td>
+                        <td>抗酸化、コラーゲン合成</td>
+                        <td>壊血病、免疫低下</td>
+                        <td>100mg</td>
+                        <td>設定なし</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">脂溶性ビタミン（体内蓄積性）</h4>
+            <table class="vitamin-table">
+                <thead>
+                    <tr>
+                        <th>ビタミン</th>
+                        <th>主要機能</th>
+                        <th>欠乏症状</th>
+                        <th>推奨量（成人）</th>
+                        <th>過剰症</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>A（レチノール）</td>
+                        <td>視覚機能、成長促進</td>
+                        <td>夜盲症、成長遅延</td>
+                        <td>900μg RAE</td>
+                        <td>肝機能障害</td>
+                    </tr>
+                    <tr>
+                        <td>D（カルシフェロール）</td>
+                        <td>カルシウム吸収、骨代謝</td>
+                        <td>くる病、骨軟化症</td>
+                        <td>5.5μg</td>
+                        <td>高カルシウム血症</td>
+                    </tr>
+                    <tr>
+                        <td>E（トコフェロール）</td>
+                        <td>抗酸化、細胞膜保護</td>
+                        <td>溶血性貧血</td>
+                        <td>6.5mg</td>
+                        <td>出血傾向</td>
+                    </tr>
+                    <tr>
+                        <td>K（フィロキノン）</td>
+                        <td>血液凝固、骨代謝</td>
+                        <td>出血傾向</td>
+                        <td>150μg</td>
+                        <td>溶血性黄疸</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.2 重要ミネラルの機能</h3>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">必須ミネラル</h4>
+            <table class="vitamin-table">
+                <thead>
+                    <tr>
+                        <th>ミネラル</th>
+                        <th>主要機能</th>
+                        <th>推奨量</th>
+                        <th>欠乏症状</th>
+                        <th>主要食材</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>鉄（Fe）</td>
+                        <td>ヘモグロビン合成、酸素運搬</td>
+                        <td>男性10mg、女性18mg</td>
+                        <td>貧血、疲労、息切れ</td>
+                        <td>レバー、赤身肉、ほうれん草</td>
+                    </tr>
+                    <tr>
+                        <td>亜鉛（Zn）</td>
+                        <td>300以上の酵素活性、免疫</td>
+                        <td>10-15mg</td>
+                        <td>味覚障害、免疫低下</td>
+                        <td>牡蠣、牛肉、ナッツ</td>
+                    </tr>
+                    <tr>
+                        <td>マグネシウム（Mg）</td>
+                        <td>300以上の代謝反応、ATP合成</td>
+                        <td>300-400mg</td>
+                        <td>筋肉痙攣、不眠、イライラ</td>
+                        <td>ナッツ、全粒穀物、緑黄色野菜</td>
+                    </tr>
+                    <tr>
+                        <td>カルシウム（Ca）</td>
+                        <td>骨形成、筋収縮、神経伝達</td>
+                        <td>800-1000mg</td>
+                        <td>骨粗鬆症、筋痙攣</td>
+                        <td>乳製品、小魚、緑黄色野菜</td>
+                    </tr>
+                    <tr>
+                        <td>セレン（Se）</td>
+                        <td>抗酸化酵素、甲状腺機能</td>
+                        <td>50-100μg</td>
+                        <td>免疫低下、甲状腺機能異常</td>
+                        <td>ブラジルナッツ、魚介類</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.3 吸収メカニズムと相互作用</h3>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">促進要因</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>ビタミンC + 鉄</strong>: 非ヘム鉄の還元により吸収促進</li>
+                <li><strong>ビタミンD + カルシウム</strong>: 腸管でのカルシウム吸収促進</li>
+                <li><strong>脂質 + 脂溶性ビタミン</strong>: ミセル形成により吸収向上</li>
+                <li><strong>プロバイオティクス</strong>: 腸内細菌による合成促進</li>
+            </ul>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">阻害要因</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>カルシウム + 鉄・亜鉛</strong>: 競合的阻害</li>
+                <li><strong>タンニン + 鉄</strong>: キレート化により吸収阻害</li>
+                <li><strong>フィチン酸 + 亜鉛・マグネシウム</strong>: 不溶性複合体形成</li>
+                <li><strong>アルコール + B群ビタミン</strong>: 代謝促進による消費増大</li>
+            </ul>
+        </section>
+
+        <!-- セクション3: メリット -->
+        <section id="section3" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                3. ✅ メリット（期待できる効果）
+            </h2>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.1 パフォーマンス向上効果</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>エネルギー産生最大化</strong>: B群ビタミンによるATP合成促進</li>
+                <li><strong>酸素運搬能向上</strong>: 鉄・B12による赤血球機能最適化</li>
+                <li><strong>筋収縮効率向上</strong>: カルシウム・マグネシウムバランス改善</li>
+                <li><strong>乳酸除去促進</strong>: B1による糖質代謝効率化</li>
+                <li><strong>集中力・判断力向上</strong>: B群・鉄による神経機能最適化</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.2 回復・適応促進効果</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>筋損傷修復促進</strong>: 亜鉛・ビタミンCによるタンパク質合成</li>
+                <li><strong>炎症抑制</strong>: ビタミンC・E・セレンの抗酸化作用</li>
+                <li><strong>免疫機能維持</strong>: 亜鉛・ビタミンC・Dによる免疫活性</li>
+                <li><strong>骨密度向上</strong>: カルシウム・ビタミンD・Kの協働作用</li>
+                <li><strong>睡眠の質改善</strong>: マグネシウムによる神経リラックス</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.3 代謝・体組成改善効果</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>脂肪燃焼促進</strong>: L-カルニチン合成（鉄・ビタミンC）</li>
+                <li><strong>甲状腺機能最適化</strong>: セレン・ヨウ素によるホルモン活性</li>
+                <li><strong>インスリン感受性向上</strong>: クロム・マグネシウムによる糖代謝改善</li>
+                <li><strong>基礎代謝向上</strong>: 鉄・B群による代謝酵素活性化</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.4 長期健康効果</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>心血管疾患予防</strong>: 葉酸・B12によるホモシステイン低下</li>
+                <li><strong>骨粗鬆症予防</strong>: カルシウム・ビタミンD・K複合効果</li>
+                <li><strong>認知機能保持</strong>: B12・葉酸・オメガ3の神経保護</li>
+                <li><strong>癌リスク低下</strong>: 葉酸・セレンによるDNA保護</li>
+                <li><strong>老化抑制</strong>: 抗酸化ビタミン群による酸化ストレス軽減</li>
+            </ul>
+        </section>
+
+        <!-- セクション4: リスクと考慮事項 -->
+        <section id="section4" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                4. ⚠️ リスクと考慮事項
+            </h2>
+
+            <div class="warning-box">
+                <h4>過剰摂取のリスク</h4>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li><strong>脂溶性ビタミン蓄積毒性</strong>: A・D・E・Kの長期大量摂取</li>
+                    <li><strong>鉄過剰症</strong>: 男性・閉経後女性での臓器損傷</li>
+                    <li><strong>亜鉛過剰</strong>: 銅欠乏、免疫機能低下</li>
+                    <li><strong>セレン中毒</strong>: 脱毛、爪変形、神経症状</li>
+                </ul>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.1 現代人に多い欠乏パターン</h3>
+
+            <div class="deficiency-box">
+                <h4>ビタミンD欠乏（日本人の80%）</h4>
+                <p class="text-gray-700">
+                    症状：易疲労、筋力低下、骨痛、免疫力低下、うつ傾向<br>
+                    原因：日照不足、食事からの摂取困難<br>
+                    対策：1日2000-4000IUのD3サプリメント
+                </p>
+            </div>
+
+            <div class="deficiency-box">
+                <h4>鉄欠乏（女性の65%、男性の25%）</h4>
+                <p class="text-gray-700">
+                    症状：疲労、息切れ、集中力低下、冷え性、爪の変形<br>
+                    原因：月経、発汗、吸収率の低さ<br>
+                    対策：ヘム鉄サプリ、ビタミンCとの同時摂取
+                </p>
+            </div>
+
+            <div class="deficiency-box">
+                <h4>マグネシウム欠乏（成人の75%）</h4>
+                <p class="text-gray-700">
+                    症状：筋肉痙攣、不眠、イライラ、不整脈<br>
+                    原因：精製食品中心、ストレス増加<br>
+                    対策：キレート型マグネシウム300-400mg/日
+                </p>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.2 薬物・栄養相互作用</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>制酸薬 + B12</strong>: 胃酸分泌抑制によりB12吸収阻害</li>
+                <li><strong>利尿剤 + マグネシウム・カリウム</strong>: 腎臓からの排出促進</li>
+                <li><strong>抗生物質 + プロバイオティクス</strong>: 腸内細菌による合成阻害</li>
+                <li><strong>ワルファリン + ビタミンK</strong>: 血液凝固作用の拮抗</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.3 個人差・遺伝的要因</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>MTHFR変異</strong>: 葉酸代謝異常（日本人の15-20%）</li>
+                <li><strong>ヘモクロマトーシス</strong>: 鉄過剰蓄積症（北欧系に多い）</li>
+                <li><strong>セリアック病</strong>: 小腸絨毛萎縮による吸収不良</li>
+                <li><strong>G6PD欠損症</strong>: ビタミンC大量摂取で溶血リスク</li>
+            </ul>
+        </section>
+
+        <!-- セクション5: 具体的な実践プラン -->
+        <section id="section5" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                5. 🎯 具体的な実践プラン
+            </h2>
+
+            <div class="action-list">
+                <h4>Phase 1: 現状把握（1ヶ月目）</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                    <li><strong>血液検査実施</strong>: ビタミンD、B12、葉酸、鉄、フェリチン</li>
+                    <li><strong>食事記録</strong>: 1週間の詳細な栄養素摂取量分析</li>
+                    <li><strong>症状チェック</strong>: 疲労、集中力、睡眠の質を数値化</li>
+                    <li><strong>ライフスタイル評価</strong>: 日光暴露、ストレス、運動量</li>
+                    <li><strong>サプリメント棚卸し</strong>: 現在摂取中のサプリの効果検証</li>
+                </ol>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.1 目的別最適化プロトコル</h3>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">パフォーマンス最大化プロトコル</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>朝食時</strong>:
+                    <ul class="list-disc list-inside ml-6 mt-1">
+                        <li>マルチビタミン（高品質・天然型）</li>
+                        <li>ビタミンD3: 2000-4000IU</li>
+                        <li>マグネシウム（キレート型）: 200mg</li>
+                    </ul>
+                </li>
+                <li class="mt-2"><strong>昼食時</strong>:
+                    <ul class="list-disc list-inside ml-6 mt-1">
+                        <li>鉄分（ヘム鉄）: 18mg（女性）、10mg（男性）</li>
+                        <li>ビタミンC: 500mg（鉄吸収促進）</li>
+                        <li>B-complex（高容量型）</li>
+                    </ul>
+                </li>
+                <li class="mt-2"><strong>夕食時</strong>:
+                    <ul class="list-disc list-inside ml-6 mt-1">
+                        <li>亜鉛（ピコリン酸型）: 15mg</li>
+                        <li>セレン: 100μg</li>
+                        <li>マグネシウム: 200mg（残り分）</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">回復最適化プロトコル</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>抗酸化強化</strong>:
+                    <ul class="list-disc list-inside ml-6 mt-1">
+                        <li>ビタミンC: 1000mg/日（分割摂取）</li>
+                        <li>ビタミンE: 400IU/日</li>
+                        <li>セレン: 200μg/日</li>
+                    </ul>
+                </li>
+                <li class="mt-2"><strong>炎症抑制</strong>:
+                    <ul class="list-disc list-inside ml-6 mt-1">
+                        <li>オメガ3（EPA/DHA）: 2-3g/日</li>
+                        <li>ビタミンD3: 4000-5000IU/日</li>
+                        <li>マグネシウム: 400-600mg/日</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">女性特化プロトコル</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>鉄欠乏対策</strong>:
+                    <ul class="list-disc list-inside ml-6 mt-1">
+                        <li>ヘム鉄: 25-30mg/日</li>
+                        <li>ビタミンC: 500mg（同時摂取）</li>
+                        <li>葉酸: 400μg/日（妊娠可能期）</li>
+                    </ul>
+                </li>
+                <li class="mt-2"><strong>骨密度維持</strong>:
+                    <ul class="list-disc list-inside ml-6 mt-1">
+                        <li>カルシウム: 1000mg/日（食事+サプリ）</li>
+                        <li>ビタミンD3: 2000-3000IU/日</li>
+                        <li>ビタミンK2: 100μg/日</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <div class="action-list mt-6">
+                <h4>品質選択基準</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                    <li><strong>天然型 vs 合成型</strong>: 葉酸はメチル葉酸、B12はメチルコバラミン優先</li>
+                    <li><strong>キレート型ミネラル</strong>: 吸収率が高いピコリン酸・グリシン結合型</li>
+                    <li><strong>第三者機関検査</strong>: USP、NSF、Informed Choice認証</li>
+                    <li><strong>添加物最小化</strong>: 人工色素・香料・保存料不使用</li>
+                    <li><strong>個別包装</strong>: 酸化防止・正確な用量管理</li>
+                </ol>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.2 摂取タイミング最適化</h3>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">朝（起床後30分以内）</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li>水溶性ビタミン（B群・C）</li>
+                <li>ビタミンD3（カルシウムとは別）</li>
+                <li>マグネシウム（1日分の50%）</li>
+            </ul>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">昼（食事と共に）</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li>脂溶性ビタミン（A・D・E・K）</li>
+                <li>鉄分（ビタミンCと同時）</li>
+                <li>カロテノイド系</li>
+            </ul>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">夜（就寝2時間前）</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li>マグネシウム（残り50%）</li>
+                <li>カルシウム（他ミネラルとは別時間）</li>
+                <li>亜鉛（空腹時推奨）</li>
+            </ul>
+        </section>
+
+        <!-- セクション6: Q&A -->
+        <section id="section6" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                6. ❓ Q&A / よくある質問
+            </h2>
+            <div class="space-y-4 mt-6">
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q1: マルチビタミンだけで十分ですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: マルチビタミンは基礎的な保険として有効ですが、多くの場合、十分ではありません：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>容量制限</strong>: 錠剤サイズの制約で各栄養素が不十分量</li>
+                            <li><strong>吸収競合</strong>: 異なる栄養素の同時摂取による効率低下</li>
+                            <li><strong>個人差</strong>: 一律配合では個人の特殊ニーズに対応不可</li>
+                            <li><strong>品質問題</strong>: 安価品は合成型・低品質原料使用</li>
+                        </ul>
+                        <p class="mt-2">推奨アプローチ：高品質マルチビタミンをベースに、血液検査で判明した不足分を個別サプリで補完する「マルチ+ターゲット」戦略が最適です。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q2: 天然型と合成型、どちらが良いですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 栄養素により異なりますが、以下が一般的な指針です：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>天然型推奨</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>ビタミンE（d-α-トコフェロール）: 合成型より生体利用率2倍</li>
+                                    <li>葉酸→メチル葉酸: MTHFR変異者にも有効</li>
+                                    <li>B12→メチルコバラミン: 神経保護効果が高い</li>
+                                </ul>
+                            </li>
+                            <li class="mt-2"><strong>合成型でも可</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>ビタミンC（アスコルビン酸）: 分子構造同一</li>
+                                    <li>ビタミンD3: 天然・合成で効果差なし</li>
+                                    <li>B1、B2、B3: 単純構造で差は軽微</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <p class="mt-2">品質と価格のバランスを考慮し、重要度の高い栄養素（D、B12、葉酸、E）は天然型、その他は品質の良い合成型でも十分です。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q3: サプリメントを飲むタイミングはいつが最適？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 栄養素の特性に応じた最適タイミングがあります：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>朝食時（脂質と共に）</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>脂溶性ビタミン（A、D、E、K）</li>
+                                    <li>カロテノイド（リコピン、ルテイン）</li>
+                                    <li>CoQ10、α-リポ酸</li>
+                                </ul>
+                            </li>
+                            <li class="mt-2"><strong>空腹時（起床後・食間）</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>水溶性ビタミン（B群、C）</li>
+                                    <li>アミノ酸系（グルタミン、アルギニン）</li>
+                                </ul>
+                            </li>
+                            <li class="mt-2"><strong>就寝前</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>マグネシウム（リラックス効果）</li>
+                                    <li>カルシウム（夜間骨代謝活発）</li>
+                                    <li>メラトニン前駆体（トリプトファン）</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <p class="mt-2">重要：鉄とカルシウムは相互阻害するため、摂取時間を3-4時間空けることが推奨されます。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q4: 血液検査でどの項目をチェックすべきですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 栄養状態の包括的評価に必要な検査項目：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>必須検査（年1回）</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>25(OH)ビタミンD: 30ng/ml以上が目標</li>
+                                    <li>ビタミンB12: 400pg/ml以上</li>
+                                    <li>葉酸: 6ng/ml以上</li>
+                                    <li>フェリチン: 男性100-300、女性30-150ng/ml</li>
+                                </ul>
+                            </li>
+                            <li class="mt-2"><strong>推奨追加検査</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>ホモシステイン: B群・葉酸不足指標</li>
+                                    <li>マグネシウム（RBC内）: 血清値は不正確</li>
+                                    <li>亜鉛（血清）: 免疫機能評価</li>
+                                    <li>セレン: 抗酸化能評価</li>
+                                </ul>
+                            </li>
+                            <li class="mt-2"><strong>機能評価</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>甲状腺機能（TSH、fT3、fT4）</li>
+                                    <li>炎症マーカー（CRP、ESR）</li>
+                                    <li>酸化ストレス（MDA、8-OHdG）</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <p class="mt-2">結果は単独評価ではなく、症状・食事内容・ライフスタイルと総合的に判断することが重要です。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q5: 妊娠中・授乳中の摂取で注意すべきことは？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 妊娠・授乳期は通常の2-3倍の注意が必要です：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>絶対必須</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>葉酸: 妊娠前3ヶ月〜妊娠3ヶ月は800μg/日</li>
+                                    <li>鉄分: 妊娠中期以降20-25mg/日</li>
+                                    <li>DHA: 胎児脳発育に300mg/日</li>
+                                    <li>ビタミンD: 2000IU/日（胎児骨発育）</li>
+                                </ul>
+                            </li>
+                            <li class="mt-2"><strong>摂取制限・禁忌</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>ビタミンA: 3000μg/日以上で催奇形性</li>
+                                    <li>高容量ハーブ系: 子宮収縮・流産リスク</li>
+                                    <li>未承認サプリ: 安全性未確立品の使用禁止</li>
+                                </ul>
+                            </li>
+                            <li class="mt-2"><strong>医師との相談必須</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>既存のサプリメント全てのチェック</li>
+                                    <li>血液検査による栄養状態確認</li>
+                                    <li>個別の健康状態に応じた調整</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <p class="mt-2">「妊婦用」表示のあるサプリメントでも、必ず成分と用量を確認し、産婦人科医に相談してから使用してください。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 結論とまとめ -->
+        <section class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                7. 結論とまとめ
+            </h2>
+            <div class="conclusion-box">
+                <h3 class="text-2xl font-bold mb-4">📌 本モジュールのまとめ</h3>
+                <ul class="space-y-3 text-lg">
+                    <li>✅ ビタミンD、B12、鉄分、マグネシウム、亜鉛が最も不足しやすい</li>
+                    <li>✅ 水溶性ビタミンは毎日、脂溶性ビタミンは体内蓄積を考慮</li>
+                    <li>✅ 吸収率向上には摂取タイミングと組み合わせが重要</li>
+                    <li>✅ 血液検査による現状把握が最適化の第一歩</li>
+                    <li>✅ 食事からの摂取を基本とし、サプリメントは補完的に活用</li>
+                </ul>
+                <div class="mt-6 pt-6 border-t border-white/30">
+                    <p class="text-xl font-semibold mb-3">🎯 今日から始められること</p>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>血液検査（ビタミンD・B12・フェリチン）の予約</li>
+                        <li>1週間の食事記録で栄養素摂取量分析</li>
+                        <li>現在のサプリメント成分・品質の確認</li>
+                        <li>慢性症状（疲労・不眠・集中力低下）の記録</li>
+                        <li>Your Coach+でビタミン・ミネラル摂取記録を開始</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- 関連モジュール -->
+        <section class="mb-12 rounded-lg p-6" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #3b82f6;">
+            <h2 class="text-2xl font-bold mb-4" style="color: #1e40af;">🔗 関連モジュール</h2>
+            <div class="flex flex-wrap gap-2">
+                <a href="../../pg_formula_textbook_new.html" class="related-link">PG式カロリー計算</a>
+                <a href="../macro/protein_textbook_new.html" class="related-link">プロテイン科学と実践</a>
+                <a href="../macro/fat_textbook_new.html" class="related-link">脂質科学とオメガバランス</a>
+                <a href="../macro/carb_textbook_new.html" class="related-link">炭水化物の教科書</a>
+                <a href="../../mental_textbook_new.html" class="related-link">メンタルトレーニング基礎</a>
+            </div>
+        </section>
+
+        <!-- メタ情報 -->
+        <section class="meta-info">
+            <h3 class="font-bold text-gray-900 mb-3">📝 モジュール情報</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-700">
+                <div>
+                    <p><strong>編纂者:</strong> PG BASE編集チーム</p>
+                    <p><strong>作成日:</strong> 2025年10月</p>
+                    <p><strong>更新日:</strong> 2025年10月</p>
+                    <p><strong>バージョン:</strong> 2.0</p>
+                </div>
+                <div>
+                    <p><strong>カテゴリー:</strong> 栄養学</p>
+                    <p><strong>レベル:</strong> 中級～上級レベル</p>
+                    <p><strong>読了時間:</strong> 約30分</p>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t" style="border-color: #22c55e;">
+                <p class="font-bold text-gray-900 mb-2">🔍 編纂プロセス</p>
+                <p class="text-sm text-gray-700">
+                    本モジュールは、複数の信頼できる科学的情報源を参照し、運動栄養学の専門知識と実践経験に基づいて作成されています。
+                    定期的に内容を見直し、最新の研究成果を反映するよう更新しています。
+                </p>
+            </div>
+        </section>
+
+        <!-- 免責事項 -->
+        <section class="bg-gray-100 p-6 rounded-lg mt-8 text-sm text-gray-600">
+            <p class="font-bold text-gray-900 mb-2">⚠️ 免責事項</p>
+            <p>
+                本モジュールの情報は教育・情報提供目的で作成されており、医療アドバイスの代替ではありません。
+                個別の健康状態や医学的な問題については、必ず医師・管理栄養士・専門家にご相談ください。
+                本情報は信頼できる情報源に基づいていますが、完全性・正確性を保証するものではありません。
+                本情報の利用により生じたいかなる損害についても、Your Coach+および編纂者は責任を負いかねます。
+            </p>
+        </section>
+
+    </div>
+
+    <!-- スクロールトップボタン -->
+    <button
+        onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+        class="scroll-top-btn"
+        aria-label="ページトップへ"
+    >
+        ↑
+    </button>
+
+    <script>
+        function toggleQA(element) {
+            const answer = element.nextElementSibling;
+            const icon = element.querySelector('span');
+
+            answer.classList.toggle('active');
+            icon.textContent = answer.classList.contains('active') ? '-' : '+';
+        }
+    </script>
+</body>
+</html>

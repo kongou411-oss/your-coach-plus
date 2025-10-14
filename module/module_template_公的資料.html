@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[モジュールタイトル] - PGBASE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            line-height: 1.8;
+        }
+        .conclusion-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .section-header {
+            border-left: 4px solid #667eea;
+            padding-left: 1rem;
+            margin: 2rem 0 1rem 0;
+        }
+        .evidence-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .key-point {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .source-card {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+        .meta-info {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 2rem 0;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-4xl mx-auto p-6 bg-white shadow-lg min-h-screen">
+
+        <!-- ヘッダー -->
+        <header class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="evidence-badge">🏛️ 公的資料</span>
+                <span class="text-sm text-gray-600">レベル: 公的機関・査読付き論文</span>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">
+                [モジュールタイトル]
+            </h1>
+            <p class="text-lg text-gray-600">
+                [1行での魅力的なサブタイトル・概要]
+            </p>
+            <div class="flex gap-4 mt-4 text-sm text-gray-500">
+                <span>📚 カテゴリ: [栄養学/メンタル/トレーニング/リカバリー]</span>
+                <span>⏱️ 読了時間: [X]分</span>
+            </div>
+        </header>
+
+        <!-- 結論（冒頭） -->
+        <section class="conclusion-box">
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>💡</span>
+                <span>結論（先に知っておくべきこと）</span>
+            </h2>
+            <div class="text-lg leading-relaxed">
+                <p class="mb-3">
+                    [3-5行で本モジュールの核心を記述]
+                </p>
+                <ul class="list-disc list-inside space-y-2 ml-4">
+                    <li>[重要ポイント1]</li>
+                    <li>[重要ポイント2]</li>
+                    <li>[重要ポイント3]</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 目次 -->
+        <nav class="bg-gray-100 p-6 rounded-lg mb-8">
+            <h2 class="text-xl font-bold mb-4 text-gray-900">📋 目次</h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li><a href="#section1" class="hover:text-indigo-600">なぜこのテーマが重要なのか</a></li>
+                <li><a href="#section2" class="hover:text-indigo-600">科学的根拠とエビデンス</a></li>
+                <li><a href="#section3" class="hover:text-indigo-600">具体的な実践方法</a></li>
+                <li><a href="#section4" class="hover:text-indigo-600">よくある誤解と注意点</a></li>
+                <li><a href="#section5" class="hover:text-indigo-600">結論とまとめ</a></li>
+            </ol>
+        </nav>
+
+        <!-- セクション1: なぜ重要なのか -->
+        <section id="section1" class="mb-12">
+            <h2 class="section-header text-3xl font-bold text-gray-900">
+                1. なぜこのテーマが重要なのか
+            </h2>
+            <p class="text-gray-700 mt-4">
+                [このテーマの背景や重要性を説明]
+            </p>
+            <div class="key-point">
+                <p class="font-semibold text-blue-900 mb-2">🔑 キーポイント</p>
+                <p class="text-gray-700">
+                    [このセクションで最も重要な1文]
+                </p>
+            </div>
+            <p class="text-gray-700 mt-4">
+                [詳細説明]
+            </p>
+        </section>
+
+        <!-- セクション2: 科学的根拠 -->
+        <section id="section2" class="mb-12">
+            <h2 class="section-header text-3xl font-bold text-gray-900">
+                2. 科学的根拠とエビデンス
+            </h2>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">2.1 研究結果の概要</h3>
+            <p class="text-gray-700">
+                [主要な研究結果を記述]
+            </p>
+
+            <!-- 出典カード（公的資料の場合は必須） -->
+            <div class="source-card">
+                <p class="font-bold text-amber-900 mb-2">📄 出典情報</p>
+                <ul class="text-sm text-gray-800 space-y-1">
+                    <li><strong>論文・資料名:</strong> [正式なタイトル]</li>
+                    <li><strong>発表元:</strong> [政府機関名 or 学会名]</li>
+                    <li><strong>発表年:</strong> [YYYY年]</li>
+                    <li><strong>URL:</strong> <a href="[URL]" target="_blank" class="text-blue-600 hover:underline">[URL]</a></li>
+                    <li><strong>DOI:</strong> [DOI番号]（該当する場合）</li>
+                </ul>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">2.2 データと統計</h3>
+            <p class="text-gray-700">
+                [具体的な数値やデータを引用]
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li>[データポイント1]</li>
+                <li>[データポイント2]</li>
+                <li>[データポイント3]</li>
+            </ul>
+
+            <!-- 追加の出典がある場合 -->
+            <div class="source-card">
+                <p class="font-bold text-amber-900 mb-2">📄 出典情報</p>
+                <ul class="text-sm text-gray-800 space-y-1">
+                    <li><strong>論文・資料名:</strong> [正式なタイトル]</li>
+                    <li><strong>発表元:</strong> [政府機関名 or 学会名]</li>
+                    <li><strong>発表年:</strong> [YYYY年]</li>
+                    <li><strong>URL:</strong> <a href="[URL]" target="_blank" class="text-blue-600 hover:underline">[URL]</a></li>
+                </ul>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">2.3 専門家の見解</h3>
+            <p class="text-gray-700">
+                [公的機関や専門家団体の見解を引用]
+            </p>
+        </section>
+
+        <!-- セクション3: 実践方法 -->
+        <section id="section3" class="mb-12">
+            <h2 class="section-header text-3xl font-bold text-gray-900">
+                3. 具体的な実践方法
+            </h2>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">3.1 基本ステップ</h3>
+            <ol class="list-decimal list-inside space-y-4 ml-4 text-gray-700">
+                <li>
+                    <strong>[ステップ1]</strong>
+                    <p class="ml-6 mt-2">[詳細説明]</p>
+                </li>
+                <li>
+                    <strong>[ステップ2]</strong>
+                    <p class="ml-6 mt-2">[詳細説明]</p>
+                </li>
+                <li>
+                    <strong>[ステップ3]</strong>
+                    <p class="ml-6 mt-2">[詳細説明]</p>
+                </li>
+            </ol>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">3.2 推奨される頻度・量</h3>
+            <p class="text-gray-700">
+                [公的機関が推奨する具体的な数値や頻度]
+            </p>
+            <div class="key-point">
+                <p class="font-semibold text-blue-900 mb-2">📊 推奨値（公的基準）</p>
+                <ul class="list-disc list-inside space-y-1 text-gray-700">
+                    <li>[推奨値1]</li>
+                    <li>[推奨値2]</li>
+                    <li>[推奨値3]</li>
+                </ul>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">3.3 実践例</h3>
+            <p class="text-gray-700">
+                [具体的な例を挙げて説明]
+            </p>
+        </section>
+
+        <!-- セクション4: よくある誤解 -->
+        <section id="section4" class="mb-12">
+            <h2 class="section-header text-3xl font-bold text-gray-900">
+                4. よくある誤解と注意点
+            </h2>
+
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 my-6">
+                <p class="font-semibold text-red-900 mb-2">⚠️ 誤解1: [誤った認識]</p>
+                <p class="text-gray-700"><strong>正しくは:</strong> [正しい情報]</p>
+            </div>
+
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 my-6">
+                <p class="font-semibold text-red-900 mb-2">⚠️ 誤解2: [誤った認識]</p>
+                <p class="text-gray-700"><strong>正しくは:</strong> [正しい情報]</p>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">安全性と禁忌事項</h3>
+            <p class="text-gray-700">
+                [医学的な注意事項や禁忌事項があれば記載]
+            </p>
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 my-6">
+                <p class="font-semibold text-yellow-900 mb-2">⚠️ 重要な注意事項</p>
+                <ul class="list-disc list-inside space-y-1 text-gray-700">
+                    <li>[注意点1]</li>
+                    <li>[注意点2]</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- セクション5: 結論とまとめ -->
+        <section id="section5" class="mb-12">
+            <h2 class="section-header text-3xl font-bold text-gray-900">
+                5. 結論とまとめ
+            </h2>
+            <div class="conclusion-box">
+                <h3 class="text-2xl font-bold mb-4">📌 本モジュールのまとめ</h3>
+                <ul class="space-y-3 text-lg">
+                    <li>✅ [重要ポイント1の再確認]</li>
+                    <li>✅ [重要ポイント2の再確認]</li>
+                    <li>✅ [重要ポイント3の再確認]</li>
+                </ul>
+                <div class="mt-6 pt-6 border-t border-white/30">
+                    <p class="text-xl font-semibold mb-3">🎯 次のアクションステップ</p>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>[今日から始められる具体的な行動1]</li>
+                        <li>[今日から始められる具体的な行動2]</li>
+                        <li>[今日から始められる具体的な行動3]</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- 関連モジュール -->
+        <section class="mb-12 bg-indigo-50 p-6 rounded-lg">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">🔗 関連モジュール</h2>
+            <ul class="space-y-3">
+                <li>
+                    <a href="#" class="text-indigo-600 hover:text-indigo-800 font-semibold">
+                        → [関連モジュール1のタイトル]
+                    </a>
+                    <p class="text-sm text-gray-600 ml-4">[簡単な説明]</p>
+                </li>
+                <li>
+                    <a href="#" class="text-indigo-600 hover:text-indigo-800 font-semibold">
+                        → [関連モジュール2のタイトル]
+                    </a>
+                    <p class="text-sm text-gray-600 ml-4">[簡単な説明]</p>
+                </li>
+            </ul>
+        </section>
+
+        <!-- メタ情報 -->
+        <section class="meta-info">
+            <h3 class="font-bold text-gray-900 mb-3">📝 モジュール情報</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-700">
+                <div>
+                    <p><strong>編纂者:</strong> [編纂者名]</p>
+                    <p><strong>作成日:</strong> [YYYY年MM月DD日]</p>
+                    <p><strong>更新日:</strong> [YYYY年MM月DD日]</p>
+                    <p><strong>バージョン:</strong> [1.0]</p>
+                </div>
+                <div>
+                    <p><strong>カテゴリー:</strong> [栄養学/メンタル/トレーニング/リカバリー]</p>
+                    <p><strong>エビデンスレベル:</strong> 公的資料</p>
+                    <p><strong>読了時間:</strong> 約[X]分</p>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-gray-300">
+                <p class="font-bold text-gray-900 mb-2">📚 主要出典一覧</p>
+                <ol class="list-decimal list-inside space-y-2 text-sm text-gray-700">
+                    <li>
+                        [論文・資料名1], [発表元], [年]<br>
+                        <a href="[URL]" target="_blank" class="text-blue-600 hover:underline ml-4">[URL]</a>
+                    </li>
+                    <li>
+                        [論文・資料名2], [発表元], [年]<br>
+                        <a href="[URL]" target="_blank" class="text-blue-600 hover:underline ml-4">[URL]</a>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- 免責事項 -->
+        <section class="bg-gray-100 p-6 rounded-lg mt-8 text-sm text-gray-600">
+            <p class="font-bold text-gray-900 mb-2">⚠️ 免責事項</p>
+            <p>
+                本モジュールの情報は教育目的で提供されており、医療アドバイスの代替ではありません。
+                個別の健康状態や医学的な問題については、必ず医師・管理栄養士・専門家にご相談ください。
+                本情報の利用により生じたいかなる損害についても、Your Coach+は責任を負いかねます。
+            </p>
+        </section>
+
+    </div>
+
+    <!-- スクロールトップボタン -->
+    <button
+        onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+        class="fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 transition"
+        aria-label="ページトップへ"
+    >
+        ↑
+    </button>
+
+</body>
+</html>
