@@ -1,0 +1,205 @@
+# Your Coach+ プロジェクト設定
+
+## プロジェクト概要
+
+Your Coach+は、React 18とFirebaseを使用したフィットネスコーチングアプリケーションです。
+食事管理、トレーニング記録、サプリメント管理、コンディション記録などの機能を提供します。
+
+## 技術スタック
+
+- **フロントエンド**: React 18（CDN版）
+- **バックエンド**: Firebase（Auth, Firestore, Storage）
+- **AI**: Google Gemini API
+- **スタイリング**: Tailwind CSS（CDN）
+- **アイコン**: Lucide Icons（CDN）
+
+## ファイル構造
+
+```
+C:\Users\yourc\yourcoach_new\
+├── index.html              # メインHTMLファイル
+├── styles.css              # カスタムCSS（ダークモード対応）
+├── styles_dark.css         # ダークモードスタイル
+├── config.js               # Firebase設定とアプリ設定
+├── utils.js                # ユーティリティ関数
+├── services.js             # サービス層（DB、AI）
+├── components.js           # Reactコンポーネント（統合版）
+├── foodDatabase.js         # 食品データベース
+├── trainingDatabase.js     # トレーニングデータベース
+└── firebase.json           # Firebase Hosting設定
+```
+
+## 開発コマンド
+
+### ローカル開発サーバー
+```bash
+python -m http.server 8000
+# ブラウザで http://localhost:8000 を開く
+```
+
+### Firebaseデプロイ
+```bash
+firebase deploy
+```
+
+### キャッシュクリア（開発用）
+ブラウザで `clear_cache.html` を開く
+
+## コーディング規約
+
+### JavaScript
+- **モジュール形式**: ES Modules不使用（CDN版Reactのため）
+- **命名規則**:
+  - コンポーネント: PascalCase（例: `DashboardView`）
+  - 関数: camelCase（例: `getFoodDB`）
+  - 定数: UPPER_SNAKE_CASE（例: `DEV_MODE`）
+- **React Hooks**:
+  - `useState`, `useEffect`, `useCallback`, `useMemo`を適切に使用
+  - 依存配列を必ず指定
+
+### CSS
+- **主要スタイル**: Tailwind CSSのユーティリティクラスを使用
+- **カスタムCSS**: `styles.css`に定義
+- **ダークモード**: `dark:`プレフィックスまたは`styles_dark.css`を使用
+- **レスポンシブ**: モバイルファーストで設計
+
+### コンポーネント設計
+- **単一責任の原則**: 各コンポーネントは1つの機能に集中
+- **Props**: 明確な命名とデフォルト値の設定
+- **State管理**: ローカルstateは最小限に、必要に応じてグローバル化
+
+## プロジェクトの主要機能
+
+### 認証（components_auth.js）
+- Email/Password認証
+- Google認証
+- オンボーディングフロー（3ステップ）
+
+### ダッシュボード（components_dashboard.js）
+- 日次記録の表示
+- 食事、トレーニング、サプリ、コンディションの一覧
+- カロリー・PFCバランスの表示
+
+### 入力機能（components_addinput.js）
+- 食事入力（検索、カスタム、お気に入り）
+- トレーニング入力（検索、カスタム）
+- サプリメント入力
+- コンディション入力（体重、体脂肪率、睡眠、気分）
+
+### 分析機能（components_analysis.js）
+- AI搭載のPFC分析
+- カレンダービュー
+- 履歴グラフ・トレンド
+
+### コミュニティ（components_community.js）
+- 投稿の作成・閲覧
+- いいね・コメント機能
+- 管理者パネル（投稿承認）
+
+### 設定（components_settings.js）
+- プロフィール管理
+- ルーティン設定
+- テンプレート管理
+
+## データ構造
+
+### Firestore Collections
+- `users/{userId}` - ユーザープロフィール
+- `users/{userId}/dailyRecords/{date}` - 日次記録
+- `users/{userId}/favorites` - お気に入り
+- `users/{userId}/routines` - ルーティン
+- `community/posts` - コミュニティ投稿
+
+### LocalStorage（DEV_MODE=true時）
+- `currentUser` - 現在のユーザー情報
+- `dailyRecords_${userId}` - 日次記録
+- `favorites_${userId}` - お気に入り
+- `routines_${userId}` - ルーティン
+
+## 開発フロー
+
+### 新機能の追加
+1. 関連ファイルを確認（README.mdのファイル対応表を参照）
+2. 該当するcomponentsファイルまたはservices.jsを編集
+3. ブラウザで動作確認（F12でコンソールエラーをチェック）
+4. 変更をコミット
+
+### バグ修正
+1. ブラウザのコンソール（F12）でエラーを確認
+2. 該当するファイルを特定
+3. 修正を実施
+4. 動作確認
+5. 変更をコミット
+
+### テスト
+- **手動テスト**: ブラウザで各機能を実際に操作
+- **DEV_MODE**: `config.js`で`DEV_MODE=true`に設定すると、Firebaseを使わずにLocalStorageでテスト可能
+- **エラー確認**: 必ずブラウザのコンソール（F12）でエラーをチェック
+
+## トラブルシューティング
+
+### コンポーネントが表示されない
+1. ブラウザのコンソール（F12）を開いてエラーを確認
+2. 全てのJSファイルが正しく読み込まれているか確認
+3. React/ReactDOMのCDNが正しく読み込まれているか確認
+
+### Firebase接続エラー
+- `config.js`のFirebase設定が正しいか確認
+- Firebase Consoleでプロジェクトが有効か確認
+
+### データが保存されない
+- `config.js`で`DEV_MODE`の設定を確認
+- `DEV_MODE=true`: LocalStorage使用
+- `DEV_MODE=false`: Firebase使用
+
+### スタイルが適用されない
+- `styles.css`が正しく読み込まれているか確認
+- Tailwind CSSのCDNが正しく読み込まれているか確認
+- ブラウザのキャッシュをクリア
+
+## 重要な注意事項
+
+### セキュリティ
+- **APIキー**: `config.js`の機密情報は公開リポジトリにコミットしない
+- **Firebase Rules**: Firestoreセキュリティルールを適切に設定
+- **認証**: 全ての機密操作は認証済みユーザーのみに制限
+
+### パフォーマンス
+- **画像最適化**: アップロード画像は適切なサイズに圧縮
+- **データ取得**: 必要なデータのみを取得（無駄なクエリを避ける）
+- **キャッシュ**: 頻繁にアクセスするデータはキャッシュを活用
+
+### メンテナンス
+- **バックアップ**: 大きな変更前は必ずバックアップを作成
+- **バージョン管理**: 定期的にGitにコミット
+- **ドキュメント**: 大きな変更時はREADME.mdも更新
+
+## AI（Claude Code）への指示
+
+### コード修正時
+- 変更前に必ず該当ファイルを読み込んで現在の実装を確認
+- 大きな変更の場合は、変更前のバックアップを作成
+- 変更後は必ずブラウザで動作確認
+
+### 新機能追加時
+- まず実装方針を提案し、承認を得てから実装
+- 関連する既存コードを確認し、スタイルを統一
+- 必要に応じてREADME.mdも更新
+
+### デバッグ時
+- エラーメッセージを詳細に分析
+- 該当箇所のコードを読み込んで問題を特定
+- 修正案を複数提示（可能な場合）
+
+## 今後の改善予定
+
+1. **モジュール化**: components.jsのさらなる分割
+2. **ビルドツール**: Vite/Webpackの導入
+3. **TypeScript化**: 型安全性の向上
+4. **テスト**: Jest + React Testing Libraryの導入
+5. **パフォーマンス**: Code splitting, Lazy loading
+
+---
+
+**最終更新**: 2025年10月14日
+**プロジェクト開始**: 2025年10月12日
