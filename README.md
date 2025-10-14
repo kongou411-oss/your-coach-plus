@@ -7,6 +7,8 @@
 
 🌐 **Live Demo**: https://your-coach-plus.web.app
 
+🤖 **Status**: GitHub Actions による完全自動デプロイ運用中
+
 ---
 
 ## 🚀 自動デプロイ
