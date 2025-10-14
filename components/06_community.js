@@ -8,7 +8,11 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
     const [aiLoading, setAiLoading] = useState(false);
     const aiChatContainerRef = useRef(null);
 
-    // Textbookモジュール一覧
+    // Textbookモジュール一覧（教科書ファイルは現在開発中のため空配列）
+    // TODO: module/ディレクトリに教科書HTMLファイルを配置後、以下のモジュールを有効化
+    const textbookModules = [];
+
+    /* 教科書モジュール定義（無効化中）
     const textbookModules = [
         {
             id: 'mental_textbook',
@@ -67,6 +71,7 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             icon: 'Apple'
         }
     ];
+    */
 
     // チャット履歴の読み込み
     useEffect(() => {
