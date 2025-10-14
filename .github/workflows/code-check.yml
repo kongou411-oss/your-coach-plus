@@ -1,0 +1,40 @@
+name: Code Quality Check
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  check:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check JavaScript Syntax
+        run: |
+          echo "Checking JavaScript files..."
+          # 基本的なシンタックスチェック
+          find . -name "*.js" -not -path "./node_modules/*" -not -path "./.git/*" | while read file; do
+            echo "Checking: $file"
+            node --check "$file" || exit 1
+          done
+          echo "✅ All JavaScript files are valid"
+
+      - name: Check for TODO comments
+        run: |
+          echo "Searching for TODO comments..."
+          grep -r "TODO:" components/ || echo "No TODO comments found"
+
+      - name: File Statistics
+        run: |
+          echo "📊 Project Statistics:"
+          echo "JavaScript files: $(find . -name '*.js' -not -path './node_modules/*' | wc -l)"
+          echo "Total lines: $(find . -name '*.js' -not -path './node_modules/*' | xargs wc -l | tail -1)"
+          echo "Components: $(ls components/*.js | wc -l)"

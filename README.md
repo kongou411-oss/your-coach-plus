@@ -1,4 +1,25 @@
-# Your Coach+ Beta - クリーンな機能分割版
+# Your Coach+
+
+[![Deploy to Firebase](https://github.com/kongou411-oss/your-coach-plus/actions/workflows/deploy.yml/badge.svg)](https://github.com/kongou411-oss/your-coach-plus/actions/workflows/deploy.yml)
+[![Code Quality](https://github.com/kongou411-oss/your-coach-plus/actions/workflows/code-check.yml/badge.svg)](https://github.com/kongou411-oss/your-coach-plus/actions/workflows/code-check.yml)
+
+フィットネス・栄養管理のためのAI搭載コーチングアプリ
+
+🌐 **Live Demo**: https://your-coach-plus.web.app
+
+---
+
+## 🚀 自動デプロイ
+
+このリポジトリは **GitHub Actions** による完全自動デプロイを採用しています。
+
+```
+git push origin main
+↓
+🤖 自動でFirebaseにデプロイ
+↓
+✅ 1-2分で本番反映
+```
 
 元の`index_beta.html`（12,049行）を機能ごとに分割し、保守しやすい構造に整理しました。
 
