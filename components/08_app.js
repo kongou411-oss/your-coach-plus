@@ -44,6 +44,7 @@
             const [showAnalysisView, setShowAnalysisView] = useState(false); // 本日の分析
             const [showAIInput, setShowAIInput] = useState(false); // AI自然言語入力
             const [showHistoryView, setShowHistoryView] = useState(false); // 履歴（過去の分析）
+            const [showHistoryV10, setShowHistoryV10] = useState(false); // 履歴グラフV10
             const [showPGBaseView, setShowPGBaseView] = useState(false);
             const [showCOMYView, setShowCOMYView] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
@@ -63,6 +64,7 @@
             const [earnedBadges, setEarnedBadges] = useState([]);
             const [lastUpdate, setLastUpdate] = useState(Date.now());
             const [bottomBarMenu, setBottomBarMenu] = useState(null); // 'daily', 'history', 'settings'
+            const [bottomBarExpanded, setBottomBarExpanded] = useState(true); // BAB展開状態
             const [showDatePicker, setShowDatePicker] = useState(false); // 日付ピッカーモーダル
             const [calendarViewYear, setCalendarViewYear] = useState(new Date().getFullYear());
             const [calendarViewMonth, setCalendarViewMonth] = useState(new Date().getMonth() + 1);
@@ -393,6 +395,56 @@
 
             // This useEffect was moved to DashboardView to follow the moved function.
 
+            // クイックアクションハンドラをグローバルに設定
+            useEffect(() => {
+                window.handleQuickAction = (action) => {
+                    switch (action) {
+                        case 'meal':
+                            setAddViewType('meal');
+                            setShowAddView(true);
+                            setBottomBarMenu(null);
+                            setBottomBarExpanded(false);
+                            break;
+                        case 'supplement':
+                            setAddViewType('supplement');
+                            setShowAddView(true);
+                            setBottomBarMenu(null);
+                            setBottomBarExpanded(false);
+                            break;
+                        case 'workout':
+                            setAddViewType('workout');
+                            setShowAddView(true);
+                            setBottomBarMenu(null);
+                            setBottomBarExpanded(false);
+                            break;
+                        case 'condition':
+                            setAddViewType('condition');
+                            setShowAddView(true);
+                            setBottomBarMenu(null);
+                            setBottomBarExpanded(false);
+                            break;
+                        case 'analysis':
+                            setShowAnalysisView(true);
+                            setBottomBarMenu(null);
+                            setBottomBarExpanded(false);
+                            break;
+                        case 'history':
+                            setShowHistoryView(true);
+                            setBottomBarMenu(null);
+                            setBottomBarExpanded(false);
+                            break;
+                        case 'history_v10':
+                            setShowHistoryV10(true);
+                            setBottomBarMenu(null);
+                            setBottomBarExpanded(false);
+                            break;
+                    }
+                };
+                return () => {
+                    delete window.handleQuickAction;
+                };
+            }, []);
+
             // FABメニュー項目クリック
             const handleFABItemClick = (type) => {
                 // 分析
@@ -439,10 +491,9 @@
                     return;
                 }
 
-                // 食事・サプリ・トレーニング・コンディション
+                // 食事・トレーニング・コンディション
                 const featureMap = {
                     'meal': 'food',
-                    'supplement': 'supplement',
                     'workout': 'training',
                     'condition': 'condition'
                 };
@@ -453,7 +504,6 @@
                     if (feature) {
                         const triggerMessages = {
                             'after_meal': '最初の食事を記録すると開放されます',
-                            'after_supplement': '最初のサプリを記録すると開放されます',
                             'after_training': '最初のトレーニングを記録すると開放されます',
                             'after_condition': '最初のコンディションを記録すると開放されます'
                         };
@@ -530,75 +580,127 @@
 
             return (
                 <div className="min-h-screen bg-gray-50 pb-24">
-                    {/* 日付ナビゲーションバー */}
-                    <div className="bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-                        <button
-                            onClick={() => {
-                                const [year, month, day] = currentDate.split('-').map(Number);
-                                const date = new Date(year, month - 1, day);
-                                date.setDate(date.getDate() - 1);
-                                const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                                handleDateChange(dateStr);
-                            }}
-                            className="p-2 hover:bg-gray-100 rounded-full transition"
-                        >
-                            <Icon name="ChevronLeft" size={20} />
-                        </button>
-
-                        <div className="flex items-center gap-2">
-                            <div
+                    {/* 日付ナビゲーション＋ルーティン統合ヘッダー */}
+                    <div className="bg-white shadow-md sticky top-0 z-30">
+                        {/* 日付ナビゲーション */}
+                        <div className="flex items-center justify-between px-4 py-3 border-b">
+                            <button
                                 onClick={() => {
-                                    if (!showDatePicker) {
-                                        // モーダルを開く時、カレンダーの表示を現在選択中の日付の月にリセット
-                                        const [year, month] = currentDate.split('-').map(Number);
-                                        setCalendarViewYear(year);
-                                        setCalendarViewMonth(month);
-                                    }
-                                    setShowDatePicker(!showDatePicker);
+                                    const [year, month, day] = currentDate.split('-').map(Number);
+                                    const date = new Date(year, month - 1, day);
+                                    date.setDate(date.getDate() - 1);
+                                    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                                    handleDateChange(dateStr);
                                 }}
-                                className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition flex items-center gap-2"
+                                className="p-2 hover:bg-gray-100 rounded-full transition"
                             >
-                                <Icon name="Calendar" size={20} className="text-indigo-600" />
-                                <span className="font-medium">
-                                    {(() => {
-                                        const [year, month, day] = currentDate.split('-').map(Number);
-                                        const date = new Date(year, month - 1, day);
-                                        return date.toLocaleDateString('ja-JP', {
-                                            month: 'long',
-                                            day: 'numeric',
-                                            weekday: 'short'
-                                        });
-                                    })()}
-                                </span>
+                                <Icon name="ChevronLeft" size={20} className="text-gray-600" />
+                            </button>
+
+                            <div className="flex items-center gap-2">
+                                <div
+                                    onClick={() => {
+                                        if (!showDatePicker) {
+                                            // モーダルを開く時、カレンダーの表示を現在選択中の日付の月にリセット
+                                            const [year, month] = currentDate.split('-').map(Number);
+                                            setCalendarViewYear(year);
+                                            setCalendarViewMonth(month);
+                                        }
+                                        setShowDatePicker(!showDatePicker);
+                                    }}
+                                    className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition flex items-center gap-2"
+                                >
+                                    <Icon name="Calendar" size={20} className="text-indigo-600" />
+                                    <span className="font-bold text-gray-800">
+                                        {(() => {
+                                            const [year, month, day] = currentDate.split('-').map(Number);
+                                            const date = new Date(year, month - 1, day);
+                                            return date.toLocaleDateString('ja-JP', {
+                                                month: 'long',
+                                                day: 'numeric',
+                                                weekday: 'short'
+                                            });
+                                        })()}
+                                    </span>
+                                </div>
+                                {(() => {
+                                    const today = new Date();
+                                    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                                    if (currentDate !== todayStr) {
+                                        return (
+                                            <button
+                                                onClick={() => handleDateChange(todayStr)}
+                                                className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition font-medium"
+                                            >
+                                                今日
+                                            </button>
+                                        );
+                                    } else {
+                                        return (
+                                            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">今日</span>
+                                        );
+                                    }
+                                })()}
                             </div>
-                            {(() => {
-                                const today = new Date();
-                                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                                if (currentDate !== todayStr) {
-                                    return (
-                                        <button
-                                            onClick={() => handleDateChange(todayStr)}
-                                            className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition font-medium"
-                                        >
-                                            今日へ
-                                        </button>
-                                    );
-                                }
-                            })()}
+
+                            <button
+                                onClick={() => {
+                                    const [year, month, day] = currentDate.split('-').map(Number);
+                                    const date = new Date(year, month - 1, day);
+                                    date.setDate(date.getDate() + 1);
+                                    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                                    handleDateChange(dateStr);
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-full transition"
+                            >
+                                <Icon name="ChevronRight" size={20} className="text-gray-600" />
+                            </button>
                         </div>
 
-                        <button
-                            onClick={() => {
-                                const [year, month, day] = currentDate.split('-').map(Number);
-                                const date = new Date(year, month - 1, day);
-                                date.setDate(date.getDate() + 1);
-                                const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                                handleDateChange(dateStr);
-                            }}
-                            className="p-2 hover:bg-gray-100 rounded-full transition"
-                        >
-                            <Icon name="ChevronRight" size={20} />
-                        </button>
+                        {/* ルーティン情報（固定表示） - 12日で開放 */}
+                        {unlockedFeatures.includes(FEATURES.ROUTINE.id) && (() => {
+                            const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+                            const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
+                            const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
+                            const routineActive = localStorage.getItem(STORAGE_KEYS.ROUTINE_ACTIVE) === 'true';
+
+                            if (routineActive && routineStartDate && routines.length > 0) {
+                                const startDate = new Date(routineStartDate);
+                                const today = new Date();
+                                const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+                                const currentIndex = daysDiff % routines.length;
+                                const currentRoutine = routines[currentIndex];
+
+                                if (currentRoutine) {
+                                    return (
+                                        <div className="w-full px-4 py-3 flex items-center justify-between border-t">
+                                            <div className="flex items-center gap-3">
+                                                <div className="bg-purple-100 p-2 rounded-lg">
+                                                    <Icon name="Dumbbell" size={20} className="text-purple-600" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-bold text-gray-900">{currentRoutine.name}</span>
+                                                        <span className="text-xs text-gray-500">Day {currentIndex + 1}/{routines.length}</span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-600">今日のルーティン</div>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setShowSettings(true);
+                                                }}
+                                                className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-purple-700 transition"
+                                            >
+                                                管理
+                                            </button>
+                                        </div>
+                                    );
+                                }
+                            }
+
+                            return null;
+                        })()}
                     </div>
 
                     {/* 日付ピッカーモーダル */}
@@ -888,9 +990,9 @@
                                                         } else if (directiveType === 'exercise') {
                                                             // 運動提案（前日のトレーニング履歴と目標ベース）
                                                             const todayWorkouts = dailyRecord.workouts || [];
-                                                            const totalCaloriesBurned = todayWorkouts.reduce((sum, w) => sum + (w.caloriesBurned || 0), 0);
+                                                            const hasWorkout = todayWorkouts.length > 0;
 
-                                                            if (totalCaloriesBurned === 0) {
+                                                            if (!hasWorkout) {
                                                                 // 運動なし
                                                                 if (userProfile.goal === 'diet' || userProfile.goal === 'lose_fat') {
                                                                     suggestion = 'HIIT 20分 または ウォーキング 60分';
@@ -899,10 +1001,14 @@
                                                                 } else {
                                                                     suggestion = '中強度トレーニング 30-45分';
                                                                 }
-                                                            } else if (totalCaloriesBurned < 200) {
-                                                                suggestion = '運動強度を上げる（重量+10%）';
                                                             } else {
-                                                                suggestion = '今日は休養日。ストレッチ推奨';
+                                                                // 運動済み
+                                                                const totalExercises = todayWorkouts.reduce((sum, w) => sum + (w.exercises?.length || 0), 0);
+                                                                if (totalExercises < 3) {
+                                                                    suggestion = '種目数を増やす（あと1-2種目）';
+                                                                } else {
+                                                                    suggestion = '今日は休養日。ストレッチ推奨';
+                                                                }
                                                             }
                                                         } else if (directiveType === 'condition') {
                                                             // 体調管理提案（睡眠・ストレスベース）
@@ -969,8 +1075,8 @@
                                         d.date === currentDate ? {...d, completed: !isCompleted} : d
                                     );
                                     localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
-                                    // 強制的に再レンダリング
-                                    window.location.reload();
+                                    // Reactステートで再レンダリング
+                                    setLastUpdate(Date.now());
                                 };
 
                                 const directiveIconName =
@@ -1094,103 +1200,6 @@
                                 </div>
                             );
                         })()}
-
-                        {/* ルーティン - 12日で開放 */}
-                        {unlockedFeatures.includes(FEATURES.ROUTINE.id) && (() => {
-                            const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
-                            const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
-                            const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
-                            const routineActive = localStorage.getItem(STORAGE_KEYS.ROUTINE_ACTIVE) === 'true';
-
-                            if (routineActive && routineStartDate && routines.length > 0) {
-                                const startDate = new Date(routineStartDate);
-                                const today = new Date();
-                                const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                                const currentIndex = daysDiff % routines.length;
-                                const currentRoutine = routines[currentIndex];
-
-                                if (currentRoutine) {
-                                    return (
-                                        <div className="bg-white border-2 border-purple-500 p-4 rounded-xl shadow-lg slide-up">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-3">
-                                                    <Icon name="Calendar" size={24} className="text-purple-600" />
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="text-xs text-gray-500">今日のルーティン</div>
-                                                            <div className="text-xs text-gray-500">Day {currentIndex + 1}/{routines.length}</div>
-                                                            <div className="font-bold text-xs text-gray-900">{currentRoutine.name}</div>
-                                                        </div>
-                                                        <div className="font-bold text-lg text-gray-900">{currentRoutine.splitType}</div>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => {
-                                                        setShowSettings(true);
-                                                        // 設定画面でルーティンタブを開く（後ほど実装）
-                                                    }}
-                                                    className="bg-purple-600 text-white px-3 py-1 rounded text-sm font-bold hover:bg-purple-700 transition"
-                                                >
-                                                    管理
-                                                </button>
-                                            </div>
-                                            {currentRoutine.note && (
-                                                <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 p-2 rounded">
-                                                    {currentRoutine.note}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                }
-                            }
-
-                            // ルーティン未設定時
-                            return (
-                                <div className="bg-white border-2 border-purple-500 p-4 rounded-xl shadow-lg slide-up">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <Icon name="Calendar" size={24} className="text-purple-600" />
-                                            <div>
-                                                <div className="font-bold text-lg text-gray-900">ルーティンを設定</div>
-                                                <div className="text-sm text-gray-600">毎日の記録を簡単に</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    // デフォルトルーティンを設定（ルーティン名と分割名を統一）
-                                                    const defaultRoutines = [
-                                                        { id: 1, name: '胸', splitType: '胸', isRestDay: false },
-                                                        { id: 2, name: '背中', splitType: '背中', isRestDay: false },
-                                                        { id: 3, name: '脚', splitType: '脚', isRestDay: false },
-                                                        { id: 4, name: '休み', splitType: '休み', isRestDay: true },
-                                                        { id: 5, name: '肩・腕', splitType: '肩・腕', isRestDay: false },
-                                                        { id: 6, name: '全身', splitType: '全身', isRestDay: false },
-                                                        { id: 7, name: '休み', splitType: '休み', isRestDay: true }
-                                                    ];
-                                                    localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(defaultRoutines));
-                                                    localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, new Date().toISOString());
-                                                    localStorage.setItem(STORAGE_KEYS.ROUTINE_ACTIVE, 'true');
-                                                    window.location.reload();
-                                                }}
-                                                className="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition"
-                                            >
-                                                開始
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setShowSettings(true);
-                                                    // 設定画面でルーティンタブを開く
-                                                }}
-                                                className="bg-purple-600 text-white px-3 py-2 rounded-lg font-bold hover:bg-purple-700 transition"
-                                            >
-                                                管理
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })()}
                     </div>
 
                     {/* メインコンテンツ */}
@@ -1207,21 +1216,18 @@
                             currentDate={currentDate}
                             onDateChange={handleDateChange}
                             onDeleteItem={async (type, itemId) => {
-                                // 表示中の日付（currentDate）から削除
-                                const currentRecord = await DataService.getDailyRecord(user.uid, currentDate);
-
-                                if (!currentRecord) return;
+                                // 現在のstateから削除（DBから再読み込みしない）
+                                const updatedRecord = { ...dailyRecord };
 
                                 if (type === 'meal') {
-                                    currentRecord.meals = currentRecord.meals?.filter(m => m.id !== itemId);
+                                    updatedRecord.meals = dailyRecord.meals?.filter(m => m.id !== itemId);
                                 } else if (type === 'workout') {
-                                    currentRecord.workouts = currentRecord.workouts?.filter(w => w.id !== itemId);
-                                } else if (type === 'supplement') {
-                                    currentRecord.supplements = currentRecord.supplements?.filter(s => s.id !== itemId);
+                                    updatedRecord.workouts = dailyRecord.workouts?.filter(w => w.id !== itemId);
                                 }
 
-                                await DataService.saveDailyRecord(user.uid, currentDate, currentRecord);
-                                setDailyRecord(currentRecord);
+                                // state更新とDB保存
+                                setDailyRecord(updatedRecord);
+                                await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
                             }}
                         />
                     </div>
@@ -1248,7 +1254,7 @@
                                 // 表示中の日付（currentDate）に記録を保存
                                 const currentRecord = await DataService.getDailyRecord(user.uid, currentDate);
 
-                                let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+                                let updatedRecord = currentRecord || { meals: [], workouts: [], conditions: null };
 
                                 // トリガー判定用の変数
                                 let triggerFired = null;
@@ -1258,7 +1264,7 @@
 
                                 if (addViewType === 'meal') {
                                     updatedRecord.meals = [...(updatedRecord.meals || []), item];
-                                    // 初めての食事記録でサプリメント機能を開放
+                                    // 初めての食事記録でトレーニング機能を開放
                                     if (!triggers.after_meal) {
                                         triggerFired = 'after_meal';
                                     }
@@ -1267,12 +1273,6 @@
                                     // 初めてのトレーニング記録でコンディション機能を開放
                                     if (!triggers.after_training) {
                                         triggerFired = 'after_training';
-                                    }
-                                } else if (addViewType === 'supplement') {
-                                    updatedRecord.supplements = [...(updatedRecord.supplements || []), item];
-                                    // 初めてのサプリメント記録でトレーニング機能を開放
-                                    if (!triggers.after_supplement) {
-                                        triggerFired = 'after_supplement';
                                     }
                                 } else if (addViewType === 'condition') {
                                     updatedRecord.conditions = item; // コンディションは1日1回
@@ -1367,6 +1367,15 @@
                             userProfile={userProfile}
                             lastUpdate={lastUpdate}
                             setInfoModal={setInfoModal}
+                        />
+                    )}
+
+                    {/* 履歴グラフV10ビュー */}
+                    {showHistoryV10 && (
+                        <HistoryV10View
+                            onClose={() => setShowHistoryV10(false)}
+                            userId={user.uid}
+                            userProfile={userProfile}
                         />
                     )}
 
@@ -1511,7 +1520,7 @@
                                                                             parts: [{
                                                                                 text: `あなたは栄養とトレーニングの記録を構造化するアシスタントです。
 
-以下のユーザー入力から、食事・運動・サプリメントの記録を抽出してJSON形式で返してください。
+以下のユーザー入力から、食事・運動の記録を抽出してJSON形式で返してください。
 
 ユーザー入力:
 ${aiInputText}
@@ -1822,42 +1831,6 @@ ${aiInputText}
                                                 )}
 
                                                 {/* サプリ */}
-                                                {aiParsedData.supplements && aiParsedData.supplements.length > 0 && (
-                                                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                                                        <div className="flex items-center gap-2 mb-3">
-                                                            <Icon name="Pill" size={18} className="text-green-600" />
-                                                            <h3 className="font-semibold text-green-900">サプリ記録</h3>
-                                                        </div>
-                                                        {aiParsedData.supplements.map((supp, idx) => (
-                                                            <div key={idx} className="mb-3 p-3 bg-white rounded border border-green-200">
-                                                                <input
-                                                                    type="text"
-                                                                    value={supp.name}
-                                                                    onChange={(e) => {
-                                                                        const updated = {...aiParsedData};
-                                                                        updated.supplements[idx].name = e.target.value;
-                                                                        setAiParsedData(updated);
-                                                                    }}
-                                                                    className="w-full mb-2 px-2 py-1 text-sm border border-green-300 rounded focus:ring-2 focus:ring-green-500"
-                                                                    placeholder="サプリ名"
-                                                                />
-                                                                <div>
-                                                                    <label className="text-xs text-green-700">量(g)</label>
-                                                                    <input
-                                                                        type="number"
-                                                                        value={supp.amount}
-                                                                        onChange={(e) => {
-                                                                            const updated = {...aiParsedData};
-                                                                            updated.supplements[idx].amount = Number(e.target.value);
-                                                                            setAiParsedData(updated);
-                                                                        }}
-                                                                        className="w-full px-2 py-1 text-sm border border-green-300 rounded focus:ring-2 focus:ring-green-500"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
                                             </div>
 
                                             <div className="flex gap-2">
@@ -1914,24 +1887,11 @@ ${aiInputText}
                                                             });
                                                         }
 
-                                                        // サプリ記録を準備
-                                                        if (aiParsedData.supplements && aiParsedData.supplements.length > 0) {
-                                                            aiParsedData.supplements.forEach((supp, idx) => {
-                                                                newSupplements.push({
-                                                                    id: Date.now() + idx * 0.1,
-                                                                    name: supp.name,
-                                                                    amount: supp.amount,
-                                                                    timestamp: new Date().toISOString()
-                                                                });
-                                                            });
-                                                        }
-
                                                         // 一括で保存
                                                         const updatedRecord = {
                                                             ...dailyRecord,
                                                             meals: [...(dailyRecord.meals || []), ...newMeals],
-                                                            exercises: [...(dailyRecord.exercises || []), ...newExercises],
-                                                            supplements: [...(dailyRecord.supplements || []), ...newSupplements]
+                                                            exercises: [...(dailyRecord.exercises || []), ...newExercises]
                                                         };
 
                                                         await DataService.saveDailyRecord(user?.uid || DEV_USER_ID, currentDate, updatedRecord);
@@ -2086,7 +2046,7 @@ AIコーチなどの高度な機能が解放されます。
                     <InfoModal />
 
                     {/* サブメニュー（ボトムバーの上に展開） */}
-                    {bottomBarMenu === 'daily' && (
+                    {bottomBarExpanded && bottomBarMenu === 'daily' && (
                         <div className="fixed bottom-16 left-0 right-0 z-[9998] bg-blue-50 border-t shadow-lg px-4 py-3">
                             <div className="grid grid-cols-6 gap-2">
                                 <button
@@ -2109,17 +2069,6 @@ AIコーチなどの高度な機能が解放されます。
                                 >
                                     <Icon name="Utensils" size={18} className="text-green-600" />
                                     <span className="text-xs text-gray-700">食事</span>
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setAddViewType('supplement');
-                                        setShowAddView(true);
-                                        setBottomBarMenu(null);
-                                    }}
-                                    className="flex flex-col items-center gap-1 px-3 py-2 bg-white rounded-lg hover:bg-blue-100 transition"
-                                >
-                                    <Icon name="Pill" size={18} className="text-blue-600" />
-                                    <span className="text-xs text-gray-700">サプリ</span>
                                 </button>
                                 <button
                                     onClick={() => {
@@ -2157,7 +2106,7 @@ AIコーチなどの高度な機能が解放されます。
                         </div>
                     )}
 
-                    {bottomBarMenu === 'pgbase' && (
+                    {bottomBarExpanded && bottomBarMenu === 'pgbase' && (
                         <div className="fixed bottom-16 left-0 right-0 z-[9998] bg-purple-50 border-t shadow-lg px-4 py-3">
                             <div className="grid grid-cols-3 gap-2">
                                 <button
@@ -2221,7 +2170,7 @@ AIコーチなどの高度な機能が解放されます。
                         </div>
                     )}
 
-                    {bottomBarMenu === 'settings' && (
+                    {bottomBarExpanded && bottomBarMenu === 'settings' && (
                         <div className="fixed bottom-16 left-0 right-0 z-[9998] bg-orange-50 border-t shadow-lg px-4 py-3">
                             <div className="grid grid-cols-3 gap-2">
                                 <button
@@ -2259,49 +2208,140 @@ AIコーチなどの高度な機能が解放されます。
                     )}
 
                     {/* ボトムアプリバー */}
-                    <div className="fixed bottom-0 left-0 right-0 z-[9999] bg-white border-t shadow-lg py-3">
-                        {/* ボトムナビゲーション（3ボタン） */}
-                        <div className="grid grid-cols-3 gap-0">
-                            {/* ①デイリー */}
-                            <button
-                                onClick={() => setBottomBarMenu(bottomBarMenu === 'daily' ? null : 'daily')}
-                                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                    bottomBarMenu === 'daily' ? 'bg-blue-50' : 'hover:bg-gray-50'
-                                }`}
-                            >
-                                <Icon name="Home" size={20} className={bottomBarMenu === 'daily' ? 'text-blue-600' : 'text-gray-600'} />
-                                <span className={`text-xs font-medium ${bottomBarMenu === 'daily' ? 'text-blue-600' : 'text-gray-600'}`}>
-                                    デイリー
-                                </span>
-                            </button>
+                    <div className="fixed bottom-0 left-0 right-0 z-[9999] bg-white border-t shadow-lg">
+                        {/* 折りたたみトグルボタン - 最上辺に配置 */}
+                        <button
+                            onClick={() => setBottomBarExpanded(!bottomBarExpanded)}
+                            className="w-full py-1 flex items-center justify-center hover:bg-gray-50 transition border-b border-gray-100"
+                        >
+                            <Icon
+                                name={bottomBarExpanded ? "ChevronDown" : "ChevronUp"}
+                                size={16}
+                                className="text-gray-400"
+                            />
+                            <span className="text-xs text-gray-400 ml-1">
+                                {bottomBarExpanded ? 'メニューを閉じる' : 'メニューを開く'}
+                            </span>
+                        </button>
 
-                            {/* ②PGBASE */}
-                            <button
-                                onClick={() => setBottomBarMenu(bottomBarMenu === 'pgbase' ? null : 'pgbase')}
-                                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                    bottomBarMenu === 'pgbase' ? 'bg-purple-50' : 'hover:bg-gray-50'
-                                }`}
-                            >
-                                <Icon name="BookOpen" size={20} className={bottomBarMenu === 'pgbase' ? 'text-purple-600' : 'text-gray-600'} />
-                                <span className={`text-xs font-medium ${bottomBarMenu === 'pgbase' ? 'text-purple-600' : 'text-gray-600'}`}>
-                                    PGBASE
-                                </span>
-                            </button>
+                        {/* 展開時のみ表示されるメインボタン（5ボタン） */}
+                        {bottomBarExpanded && (
+                            <div className="grid grid-cols-5 gap-0 py-2">
+                                {/* ①ホーム */}
+                                <button
+                                    onClick={() => {
+                                        // すべてのビューを閉じてダッシュボードに戻る
+                                        setShowHistoryV10(false);
+                                        setShowPGBaseView(false);
+                                        setShowCOMYView(false);
+                                        setShowSettings(false);
+                                        setShowAnalysisView(false);
+                                        setShowAddView(false);
+                                        setShowHistoryView(false);
+                                        setShowAIInput(false);
+                                        setBottomBarExpanded(false);
+                                    }}
+                                    className="flex flex-col items-center gap-1 p-2 rounded-lg transition hover:bg-gray-50"
+                                >
+                                    <Icon name="Home" size={20} className="text-gray-600" />
+                                    <span className="text-xs font-medium text-gray-600">
+                                        ホーム
+                                    </span>
+                                </button>
 
-                            {/* ③設定・バッジ・チュートリアル */}
-                            <button
-                                onClick={() => setBottomBarMenu(bottomBarMenu === 'settings' ? null : 'settings')}
-                                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                    bottomBarMenu === 'settings' ? 'bg-orange-50' : 'hover:bg-gray-50'
-                                }`}
-                            >
-                                <Icon name="Settings" size={20} className={bottomBarMenu === 'settings' ? 'text-orange-600' : 'text-gray-600'} />
-                                <span className={`text-xs font-medium ${bottomBarMenu === 'settings' ? 'text-orange-600' : 'text-gray-600'}`}>
-                                    設定
-                                </span>
-                            </button>
-                        </div>
+                                {/* ②履歴 */}
+                                <button
+                                    onClick={() => {
+                                        // 他のカテゴリを全て閉じる
+                                        setShowPGBaseView(false);
+                                        setShowCOMYView(false);
+                                        setShowSettings(false);
+                                        // 履歴を開く（メニューは開いたまま）
+                                        setShowHistoryV10(true);
+                                    }}
+                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
+                                        showHistoryV10 ? 'bg-purple-100' : 'hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <Icon name="TrendingUp" size={20} className={showHistoryV10 ? 'text-purple-700' : 'text-purple-600'} />
+                                    <span className={`text-xs font-medium ${showHistoryV10 ? 'text-purple-700' : 'text-gray-600'}`}>
+                                        履歴
+                                    </span>
+                                </button>
+
+                                {/* ③PGBASE */}
+                                <button
+                                    onClick={() => {
+                                        if (!unlockedFeatures.includes('pg_base')) {
+                                            alert('PGBASE機能は10日継続で開放されます');
+                                            return;
+                                        }
+                                        // 他のカテゴリを全て閉じる
+                                        setShowHistoryV10(false);
+                                        setShowCOMYView(false);
+                                        setShowSettings(false);
+                                        // PGBASEを開く（メニューは開いたまま）
+                                        setShowPGBaseView(true);
+                                    }}
+                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
+                                        showPGBaseView ? 'bg-cyan-100' : (unlockedFeatures.includes('pg_base') ? 'hover:bg-gray-50' : 'opacity-50')
+                                    }`}
+                                >
+                                    <Icon name="BookOpen" size={20} className={showPGBaseView ? 'text-cyan-700' : 'text-cyan-600'} />
+                                    <span className={`text-xs font-medium ${showPGBaseView ? 'text-cyan-700' : 'text-gray-600'}`}>
+                                        PGBASE
+                                    </span>
+                                </button>
+
+                                {/* ④COMY */}
+                                <button
+                                    onClick={() => {
+                                        if (!unlockedFeatures.includes('community')) {
+                                            alert('COMY機能は30日継続で開放されます');
+                                            return;
+                                        }
+                                        // 他のカテゴリを全て閉じる
+                                        setShowHistoryV10(false);
+                                        setShowPGBaseView(false);
+                                        setShowSettings(false);
+                                        // COMYを開く（メニューは開いたまま）
+                                        setShowCOMYView(true);
+                                    }}
+                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
+                                        showCOMYView ? 'bg-fuchsia-100' : (unlockedFeatures.includes('community') ? 'hover:bg-gray-50' : 'opacity-50')
+                                    }`}
+                                >
+                                    <Icon name="Users" size={20} className={showCOMYView ? 'text-fuchsia-700' : 'text-fuchsia-600'} />
+                                    <span className={`text-xs font-medium ${showCOMYView ? 'text-fuchsia-700' : 'text-gray-600'}`}>
+                                        COMY
+                                    </span>
+                                </button>
+
+                                {/* ⑤設定 */}
+                                <button
+                                    onClick={() => {
+                                        // 他のカテゴリを全て閉じる
+                                        setShowHistoryV10(false);
+                                        setShowPGBaseView(false);
+                                        setShowCOMYView(false);
+                                        // 設定を開く（メニューは開いたまま）
+                                        setShowSettings(true);
+                                    }}
+                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
+                                        showSettings ? 'bg-gray-200' : 'hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <Icon name="Settings" size={20} className={showSettings ? 'text-gray-800' : 'text-gray-600'} />
+                                    <span className={`text-xs font-medium ${showSettings ? 'text-gray-800' : 'text-gray-600'}`}>
+                                        設定
+                                    </span>
+                                </button>
+                            </div>
+                        )}
                     </div>
+
+                    {/* Feedback Manager（グローバル） */}
+                    <FeedbackManager />
                 </div>
             );
         };
