@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>候補1: レポート型AIコーチング</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-md mx-auto min-h-screen">
+        <!-- 候補1: レポート型 -->
+        <!-- 特徴: コーチングレポートを文書形式で提示、読みやすさ重視 -->
+
+        <!-- ヘッダー -->
+        <header class="p-4 flex items-center border-b bg-gradient-to-r from-indigo-600 to-purple-600">
+            <button class="text-white">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </button>
+            <h1 class="text-xl font-bold mx-auto text-white">AIコーチングレポート</h1>
+            <button class="text-white">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            </button>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <div class="p-4 space-y-4">
+            <!-- 日付とスコア -->
+            <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-5 text-white shadow-lg">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                        <span class="text-sm font-medium">10月15日(火)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="dumbbell" class="w-5 h-5"></i>
+                        <span class="text-sm font-medium">胸の日</span>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm opacity-90 mb-1">本日のパフォーマンススコア</p>
+                    <p class="text-6xl font-bold mb-1">87</p>
+                    <p class="text-sm opacity-90">/ 100点</p>
+                </div>
+            </div>
+
+            <!-- ① 本日のパフォーマンスレポート -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="clipboard-check" class="w-5 h-5 text-indigo-600"></i>
+                    本日のパフォーマンスレポート
+                </h3>
+
+                <!-- 評価セクション -->
+                <div class="mb-4">
+                    <h4 class="font-bold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                        <i data-lucide="thumbs-up" class="w-4 h-4 text-green-600"></i>
+                        評価
+                    </h4>
+                    <div class="space-y-3">
+                        <div class="bg-green-50 rounded-lg p-3 border border-green-200">
+                            <p class="text-sm text-gray-800 leading-relaxed">
+                                タンパク質180gをしっかり摂取できており、LBM維持に理想的な栄養状態です。この習慣は過去7日間も安定しており、素晴らしい継続力です。
+                            </p>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-3 border border-green-200">
+                            <p class="text-sm text-gray-800 leading-relaxed">
+                                睡眠時間8時間を確保できたことで、トレーニングボリューム（12,000kg）が先週比+8%向上しています。回復とパフォーマンスの相関が明確です。
+                            </p>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-3 border border-green-200">
+                            <p class="text-sm text-gray-800 leading-relaxed">
+                                クレアチン5gの継続摂取により、ベンチプレスの最大挙上重量が2週間で+5kg向上。サプリメント戦略が功を奏しています。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 改善提案セクション -->
+                <div>
+                    <h4 class="font-bold text-sm text-gray-700 mb-2 flex items-center gap-2">
+                        <i data-lucide="lightbulb" class="w-4 h-4 text-amber-600"></i>
+                        改善提案
+                    </h4>
+                    <div class="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                        <p class="text-sm text-gray-800 leading-relaxed">
+                            炭水化物が目標比-50g不足しています。トレーニング後に白米を100g（約50gの炭水化物）追加すると、次回のパフォーマンス向上が期待できます。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ② 中長期トレンド分析 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="trending-up" class="w-5 h-5 text-purple-600"></i>
+                    中長期トレンド分析
+                    <span class="text-xs font-normal text-gray-500 ml-auto">LBM向上への道筋</span>
+                </h3>
+
+                <!-- 分析の注意点 -->
+                <div class="bg-blue-50 rounded-lg p-3 border border-blue-200 mb-4">
+                    <p class="text-xs text-gray-700 leading-relaxed">
+                        💡 ルーティン（「脚の日」「胸の日」など）による違いを考慮し、特定のルーティンで顕著に現れるパターンを優先的に分析しています。
+                    </p>
+                </div>
+
+                <!-- 勝ちパターン -->
+                <div class="mb-4">
+                    <h4 class="font-bold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                        <i data-lucide="trophy" class="w-4 h-4 text-green-600"></i>
+                        📈 過去7日間の勝ちパターン
+                    </h4>
+                    <div class="space-y-2">
+                        <div class="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-3 border border-green-200">
+                            <p class="text-sm text-gray-800 leading-relaxed">
+                                睡眠8時間以上 + 炭水化物400g以上の日は、「脚の日」のスクワットMax重量が平均+7%向上しています。
+                            </p>
+                        </div>
+                        <div class="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-3 border border-green-200">
+                            <p class="text-sm text-gray-800 leading-relaxed">
+                                トレーニング前にクレアチンを摂取した日は、総ボリュームが平均+12%増加しています。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 負けパターン -->
+                <div>
+                    <h4 class="font-bold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-red-600"></i>
+                        📉 過去30日間の負けパターン
+                    </h4>
+                    <div class="space-y-2">
+                        <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-3 border border-red-200">
+                            <p class="text-sm text-gray-800 leading-relaxed">
+                                タンパク質が2日連続で150g未満の場合、翌日のトレーニングボリュームが平均-15%低下しています。
+                            </p>
+                        </div>
+                        <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-3 border border-red-200">
+                            <p class="text-sm text-gray-800 leading-relaxed">
+                                睡眠時間が6時間未満の日は、集中力スコアが平均-2ポイント低下し、フォームの乱れによる怪我リスクが高まります。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ③ 次回アクションプラン (PDCAサイクル) -->
+            <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl shadow-sm border-2 border-purple-300 p-5">
+                <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <i data-lucide="target" class="w-5 h-5 text-purple-600"></i>
+                    次回アクションプラン
+                    <span class="text-xs font-normal text-gray-500 ml-auto">PDCAサイクル</span>
+                </h3>
+
+                <!-- ユーザーの閃きメモを引用 -->
+                <div class="bg-white rounded-lg p-4 border-l-4 border-purple-600 mb-4">
+                    <div class="flex items-start gap-2 mb-2">
+                        <i data-lucide="message-square" class="w-4 h-4 text-purple-600 mt-0.5"></i>
+                        <p class="text-xs font-bold text-purple-800">あなたの閃きメモ</p>
+                    </div>
+                    <p class="text-sm text-gray-700 italic leading-relaxed">
+                        「睡眠を8時間取れた日は、スクワットの粘りが違う気がする。次回も試してみたい。」
+                    </p>
+                </div>
+
+                <p class="text-sm text-gray-800 mb-4 leading-relaxed">
+                    あなたの<strong>「睡眠を8時間取れた日は、スクワットの粘りが違う気がする」</strong>という気づきは、データにも明確に表れている素晴らしい仮説です。この仮説を「確信」に変えるためのプランを立てましょう。
+                </p>
+
+                <!-- PDCAサイクル -->
+                <div class="space-y-3">
+                    <div class="bg-white rounded-lg p-3 border border-purple-200">
+                        <h4 class="font-bold text-sm text-purple-800 mb-1 flex items-center gap-2">
+                            <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                            P (Plan)
+                        </h4>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            次の「脚の日」3回連続で睡眠8時間以上を確保し、スクワットのMax重量とReps数を記録する。
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-3 border border-purple-200">
+                        <h4 class="font-bold text-sm text-purple-800 mb-1 flex items-center gap-2">
+                            <i data-lucide="play" class="w-4 h-4"></i>
+                            D (Do)
+                        </h4>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            就寝時間を23:00に設定し、7:00起床を目標にアラームをセット。スクワット時のセット間の回復感も記録する。
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-3 border border-purple-200">
+                        <h4 class="font-bold text-sm text-purple-800 mb-1 flex items-center gap-2">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                            C (Check)
+                        </h4>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            3回のデータを比較し、睡眠8時間以上の日とそれ以外の日でMax重量・総ボリュームに統計的な差があるか確認する。
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-3 border border-purple-200">
+                        <h4 class="font-bold text-sm text-purple-800 mb-1 flex items-center gap-2">
+                            <i data-lucide="repeat" class="w-4 h-4"></i>
+                            A (Act)
+                        </h4>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            仮説が確認できた場合、脚の日の前日は必ず8時間睡眠を確保するルールを習慣化する。仮説が否定された場合、他の要因（炭水化物量、前日の疲労など）を再分析する。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- アクションボタン -->
+                <button class="w-full mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition flex items-center justify-center gap-2">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    このプランを指示書に保存
+                </button>
+            </div>
+        </div>
+
+        <!-- 説明 -->
+        <div class="p-4">
+            <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <h3 class="font-bold text-gray-800 mb-2 text-sm">候補1の特徴</h3>
+                <ul class="text-xs text-gray-600 space-y-1">
+                    <li>✅ コーチングレポートを文書形式で提示</li>
+                    <li>✅ 読みやすさを最優先（長文でも読める）</li>
+                    <li>✅ ユーザーの閃きメモを最大限に尊重</li>
+                    <li>✅ PDCAサイクルが明確に可視化</li>
+                    <li>✅ 勝ち・負けパターンが視覚的に区別</li>
+                    <li>❌ スクロール量が多い</li>
+                    <li>❌ 情報密度が高い</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

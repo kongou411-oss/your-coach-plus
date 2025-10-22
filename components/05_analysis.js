@@ -6,6 +6,12 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     const [aiAnalysis, setAiAnalysis] = useState(null);
     const [aiLoading, setAiLoading] = useState(false);
     const [suggestedDirective, setSuggestedDirective] = useState(null);
+    const [microLearningContent, setMicroLearningContent] = useState(null);
+    const [showCollaborativePlanning, setShowCollaborativePlanning] = useState(false);
+    const [userQuestion, setUserQuestion] = useState('');
+    const [conversationHistory, setConversationHistory] = useState([]);
+    const [qaLoading, setQaLoading] = useState(false);
+    const chatEndRef = useRef(null);
 
     const getTodayDate = () => {
         const today = new Date();
@@ -34,7 +40,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         const totalProtein = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
         const totalFat = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
         const totalCarbs = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
-        const totalBurned = (dailyRecord.workouts || []).reduce((sum, w) => sum + (w.caloriesBurned || 0), 0);
 
         const proteinRate = targetPFC.protein > 0 ? Math.round((totalProtein / targetPFC.protein) * 100) : 0;
         const fatRate = targetPFC.fat > 0 ? Math.round((totalFat / targetPFC.fat) * 100) : 0;
@@ -59,7 +64,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         const insights = analyzeHistoricalTrends(historicalData, dailyRecord, userProfile);
 
         const analysisData = {
-            actual: { calories: Math.round(totalCalories), protein: Math.round(totalProtein), fat: Math.round(totalFat), carbs: Math.round(totalCarbs), burned: Math.round(totalBurned) },
+            actual: { calories: Math.round(totalCalories), protein: Math.round(totalProtein), fat: Math.round(totalFat), carbs: Math.round(totalCarbs) },
             target: targetPFC,
             achievementRates: { calories: caloriesRate, protein: proteinRate, fat: fatRate, carbs: carbsRate, overall: overallRate },
             evaluation: evaluation
@@ -74,6 +79,16 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
         setHistoricalInsights(insights);
         setLoading(false);
+
+        // マイクロラーニングトリガー
+        const microLearningTriggered = triggerMicroLearning({
+            dailyRecord,
+            analysis: analysisData,
+            userProfile
+        });
+        if (microLearningTriggered) {
+            setMicroLearningContent(microLearningTriggered);
+        }
 
         generateAIAnalysis(analysisData, insights);
     };
@@ -111,178 +126,391 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
     const saveDirective = () => {
         if (!suggestedDirective) return;
-        const today = getTodayDate();
+
+        // 明日の日付を取得
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
         const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
         const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
         const newDirective = {
-            date: today,
+            date: tomorrowDate,
             message: suggestedDirective.text,
             type: suggestedDirective.type,
             completed: false,
             createdAt: new Date().toISOString()
         };
-        const updatedDirectives = directives.filter(d => d.date !== today);
+        const updatedDirectives = directives.filter(d => d.date !== tomorrowDate);
         updatedDirectives.push(newDirective);
         localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
         setLastUpdate(Date.now()); // Appを再レンダリングさせる
-        alert('指示書をダッシュボードに反映しました。');
+        alert('指示書を明日のダッシュボードに反映しました。');
         onClose();
     };
 
     // AI分析生成
     const generateAIAnalysis = async (currentAnalysis, insights) => {
+        // クレジットチェック
+        const creditCheck = await GeminiAPI.consumeAICredit(userId);
+        if (!creditCheck.success) {
+            alert(creditCheck.error);
+            return;
+        }
+
         setAiLoading(true);
 
-        // プロンプトからマークダウンと絵文字を除去する関数
-        const sanitizeText = (text) => {
-            if (!text) return '';
-            return text
-                // マークダウン記号を除去
-                .replace(/\*\*/g, '')
-                .replace(/##/g, '')
-                .replace(/###/g, '')
-                // 絵文字を除去（包括的なUnicodeレンジ）
-                .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // 顔文字
-                .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // シンボルと絵文字
-                .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // 交通手段と地図記号
-                .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // 旗
-                .replace(/[\u{2600}-\u{26FF}]/gu, '')   // その他記号
-                .replace(/[\u{2700}-\u{27BF}]/gu, '')   // 装飾記号
-                .replace(/[\u{FE00}-\u{FE0F}]/gu, '')   // 異体字セレクタ
-                .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // 補助絵文字
-                .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '') // 拡張絵文字
-                .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '') // シンボルと絵文字拡張
-                .trim();
+        // 既存のAI分析をクリア
+        setAiAnalysis(null);
+
+        // 当日のフルデータを準備
+        const today = getTodayDate();
+        const todayRecord = await DataService.getDailyRecord(userId, today);
+
+        // 当日のデータを完全な形で送信
+        const todayData = todayRecord ? {
+            date: today,
+            routine: todayRecord.routine || { type: "休息日", is_rest_day: true },
+            diet: {
+                protein_g: (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0),
+                fat_g: (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0),
+                carbs_g: (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0),
+                total_calories: (todayRecord.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0),
+                meal_count: (todayRecord.meals || []).length,
+                supplements: (todayRecord.supplements || []).map(s => ({ name: s.name, timing: s.time }))
+            },
+            workout: {
+                exercise_count: (todayRecord.workouts || []).length,
+                total_time_min: 0,
+                exercises: (todayRecord.workouts || []).map(w => ({
+                    name: w.exercises?.[0]?.name || w.name,
+                    category: w.exercises?.[0]?.category || 'その他',
+                    set_count: w.exercises?.[0]?.sets?.length || 0
+                }))
+            },
+            condition: {
+                sleep_hours: todayRecord.conditions?.sleepHours || 0,
+                sleep_quality: todayRecord.conditions?.sleepQuality || 0,
+                appetite: todayRecord.conditions?.appetite || 0,
+                gut_health: todayRecord.conditions?.digestion || 0,
+                concentration: todayRecord.conditions?.focus || 0,
+                stress_level: todayRecord.conditions?.stress || 0
+            },
+            memo: todayRecord.notes || null
+        } : null;
+
+        const promptData = {
+            user_profile: {
+                height_cm: userProfile.height || 170,
+                weight_kg: userProfile.weight || 70,
+                body_fat_percentage: userProfile.bodyFatPercentage || 15,
+                lean_body_mass_kg: userProfile.leanBodyMass || 60,
+                style: userProfile.style || "一般"
+            },
+            today: todayData
         };
 
-        // インサイトデータを無害化
-        const sanitizedInsights = insights.insights ?
-            insights.insights.map(i => sanitizeText(i)).join('\n')
-            : 'データ不足';
+        // トークン量の確認（デバッグ）
+        const promptDataStr = JSON.stringify(promptData, null, 2);
+        const estimatedTokens = Math.ceil(promptDataStr.length / 4); // 1トークン ≈ 4文字
+        console.log('[TOKEN DEBUG] Prompt Data Length:', promptDataStr.length);
+        console.log('[TOKEN DEBUG] Estimated Tokens:', estimatedTokens);
+        console.log('[TOKEN DEBUG] Today Data:', todayData);
 
-        // プロンプト全体を無害化
-        const rawPrompt = `
-あなたは、ユーザーの日々の頑張りを一番近くで応援する専属コーチです。
-以下のデータに基づき、今日の努力を称え、明日がもっと良くなるための、シンプルで具体的なアドバイスと明日の指示書を提案してください。
+        // セクション1: パフォーマンスレポート
+        const section1Prompt = `## 役割とゴール
 
-【ユーザー情報】
-- LBM（除脂肪体重）: ${userProfile.leanBodyMass || 'N/A'}kg
-- 目標: ${sanitizeText(userProfile.goal || '未設定')}
-- 体重: ${userProfile.weight || 'N/A'}kg
-- 体脂肪率: ${userProfile.bodyFatPercentage || 'N/A'}%
+あなたは、トップアスリートから成長期の学生までを指導する、データサイエンティスト兼エリートパーソナルコーチです。
+あなたの最重要ミッションは、ユーザーのLBM（除脂肪体重）を維持・向上させることです。
 
-【本日の達成率】
-- 総合達成率: ${currentAnalysis.achievementRates.overall}%
-- カロリー: ${currentAnalysis.achievementRates.calories}% (実績${currentAnalysis.actual.calories}kcal / 目標${targetPFC.calories}kcal)
-- タンパク質: ${currentAnalysis.achievementRates.protein}% (実績${currentAnalysis.actual.protein}g / 目標${targetPFC.protein}g)
-- 脂質: ${currentAnalysis.achievementRates.fat}% (実績${currentAnalysis.actual.fat}g / 目標${targetPFC.fat}g)
-- 炭水化物: ${currentAnalysis.achievementRates.carbs}% (実績${currentAnalysis.actual.carbs}g / 目標${targetPFC.carbs}g)
-- 運動消費: ${currentAnalysis.actual.burned}kcal
+## インプットデータ
 
-【過去30日の傾向】
-${sanitizedInsights}
+${JSON.stringify(promptData, null, 2)}
 
-コミュニケーションの原則
-- 承認と共感: まずは今日の頑張りを具体的に褒めます（例：「タンパク質目標100%達成、素晴らしいですね」）
-- 完璧を目指させない: 達成できなかった項目があっても、責めるのではなく「惜しかったですね」「明日はこうすればもっと良くなりますよ」と前向きな姿勢を示します
-- ワンポイント集中: アドバイスは一つか二つに絞り、ユーザーが「これならできそう」と思えるものにします
+## タスク
 
-回答形式（簡潔かつ、ポジティブな言葉で）
-・本日の振り返り
-今日のデータで最も良かった点を具体的に褒める。総合評価をポジティブに伝える
+today（本日のデータ）を基に、本日のパフォーマンスレポートを生成してください。
 
-・明日のためのワンポイントアドバイス
-今日の結果を踏まえ、「これだけは意識してみよう」というアクションを一つだけ提案する。具体的で簡単なものが望ましい
+### 分析の重要ポイント
+- **1食当たりのkcal**: 総カロリーを食事回数で割り、1食あたりのエネルギー量が適切か評価してください
+- **摂取タイミング**: 食事の回数や分散状況から、エネルギー供給の最適性を評価してください
+- 理想的には3-5回に分けて均等に摂取することが望ましい
 
-・明日の指示書
-本日のデータで最も不足している要素を1つだけ特定し、それを改善する最も効果的な行動を提案してください。
-余計な説明や選択肢は不要です。以下の形式で簡潔に：
-[DIRECTIVE_TYPE:meal]鶏むね肉150g追加
-[DIRECTIVE_TYPE:exercise]ベンチプレス80kg×8回×3セット
-[DIRECTIVE_TYPE:condition]睡眠8時間確保
+### 出力形式（この形式を厳守）
 
-※[DIRECTIVE_TYPE:カテゴリー]の直後に最も重要な行動1つだけを記載
-※カテゴリーはmeal、exercise、conditionのいずれか
-※優先順位: タンパク質不足>カロリー過不足>運動不足>睡眠不足
+① 本日のパフォーマンスレポート (スコア: [0-100の整数] 点)
 
-・最後にひとこと
-ユーザーを勇気づけ、リラックスさせるような、ポジティブなメッセージで締めくくる
+評価:
+- [ポジティブな評価点1を1文1行で記述]
+- [ポジティブな評価点2を1文1行で記述]
+- [ポジティブな評価点3を1文1行で記述]
+
+改善提案:
+- [今日の状態をさらに良くするための具体的アクションを1文1行で記述]
 
 重要:
+- 箇条書きには「-」のみを使用（アスタリスク不可）
+- 評価点は3項目、各1文1行で完結
+- 改善提案は1項目、1文1行で完結
 - LBM至上主義: すべての評価はLBMを基準に
-- ユーザー主権: 押し付けではなく提案として
-- 簡潔に: 各セクション2-3行以内
-- 指示書は必ず[DIRECTIVE_TYPE:]形式で出力すること
+- 専門用語を避け、高校生にも理解できる言葉で
+- 「承知いたしました」などの返答は不要
+- 1食当たりのkcalと摂取タイミングを必ず評価に含めること
 `;
 
-        const sanitizedPrompt = sanitizeText(rawPrompt);
+        // セクション2: 指示書プラン生成
+        const section2Prompt = `## 役割とゴール
+
+あなたは、エリートパーソナルコーチです。
+ユーザーのLBM向上のため、実行すべき具体的なアクションプランを提案します。
+
+## インプットデータ
+
+${JSON.stringify(promptData, null, 2)}
+
+${dailyRecord.notes ? `
+## ユーザーの気づき
+
+ユーザーは「${dailyRecord.notes}」という気づきを記録しています。
+この気づきを最大限に尊重し、仮説検証をサポートする形で提案してください。
+` : ''}
+
+## タスク
+
+today（本日のデータ）を基に、実行すべき指示書プランを生成してください。
+
+### 出力形式（この形式を厳守）
+
+② 指示書プラン
+
+- 【カテゴリー】具体的なアクションプラン（数値含む）
+
+### 例
+
+② 指示書プラン
+
+- 【食事】夕食に鶏むね肉150gを追加してタンパク質を目標値に近づける
+
+または
+
+② 指示書プラン
+
+- 【運動】ベンチプレス80kg×8回×3セットで胸のトレーニングを行う
+
+### 重要な制約
+
+- 見出しは必ず「② 指示書プラン」（「明日」などの文字を追加しない）
+- 箇条書きは「-」を使用（アスタリスク不可）
+- 【カテゴリー】は食事/運動/睡眠のいずれか
+- 具体的な数値を必ず含める
+- 1つの箇条書きのみ（最も優先度が高いもの）
+- 「承知いたしました」などの返答は不要
+- 本日のデータから最も効果的なアクションを選ぶ
+`;
 
         try {
-            // 分析機能：gemini-2.5-proを使用
-            const response = await GeminiAPI.sendMessage(sanitizedPrompt, [], userProfile, 'gemini-2.5-pro');
-            if (response.success) {
-                // AI応答から指示書を抽出（タグを非表示にするため）
-                let displayText = response.text;
-                const directiveMatch = response.text.match(/\[DIRECTIVE_TYPE:(meal|exercise|condition)\](.+?)(?=\n|$)/);
+            let fullAnalysis = '';
 
-                if (directiveMatch) {
-                    const directiveType = directiveMatch[1]; // meal, exercise, condition
-                    const directiveText = directiveMatch[2].trim();
+            // プロンプトのトークン量確認
+            console.log('[TOKEN DEBUG] Section 1 Prompt Length:', section1Prompt.length, 'Est. Tokens:', Math.ceil(section1Prompt.length / 4));
+            console.log('[TOKEN DEBUG] Section 2 Prompt Length:', section2Prompt.length, 'Est. Tokens:', Math.ceil(section2Prompt.length / 4));
+            console.log('[TOKEN DEBUG] Total Est. Tokens:', Math.ceil((section1Prompt.length + section2Prompt.length) / 4));
 
-                    // タグをユーザーフレンドリーなラベルに置き換え
-                    const labelMap = {
-                        'meal': '【食事】',
-                        'exercise': '【運動】',
-                        'condition': '【コンディション】'
-                    };
-                    const label = labelMap[directiveType] || '【指示】';
-                    displayText = displayText.replace(/\[DIRECTIVE_TYPE:(meal|exercise|condition)\]/, label);
+            // セクション1: パフォーマンスレポートを生成
+            const response1 = await GeminiAPI.sendMessage(section1Prompt, [], userProfile, 'gemini-2.5-pro');
+            if (response1.success) {
+                fullAnalysis += response1.text + '\n\n---\n\n';
+                setAiAnalysis(fullAnalysis);
+            } else {
+                throw new Error(response1.error || 'セクション1の生成に失敗');
+            }
 
-                    // 指示書を自動保存（タグなしのテキストを保存）
-                    const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
-                    const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
-                    const now = new Date();
-                    const deadline = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-                    const today = getTodayDate();
+            // セクション2: 指示書プランを生成
+            const response2 = await GeminiAPI.sendMessage(section2Prompt, [], userProfile, 'gemini-2.5-pro');
+            console.log('[DEBUG] Section 2 Response:', response2);
+            console.log('[DEBUG] Section 2 Text Length:', response2.text?.length || 0);
+            if (response2.success) {
+                fullAnalysis += response2.text;
+                console.log('[DEBUG] Full Analysis after Section 2:', fullAnalysis.substring(fullAnalysis.length - 300));
+                setAiAnalysis(fullAnalysis);
 
-                    const newDirective = {
-                        date: today,
-                        message: directiveText,
-                        type: directiveType,
-                        deadline: deadline.toISOString(),
-                        createdAt: now.toISOString(),
-                        completed: false
-                    };
-
-                    const updatedDirectives = directives.filter(d => d.date !== today);
-                    updatedDirectives.push(newDirective);
-                    localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
-
-                    // ダッシュボードを更新するためのイベントを発火
-                    window.dispatchEvent(new Event('directiveUpdated'));
-                }
-
-                setAiAnalysis(displayText);
-
-                // AI分析の結果をLocalStorageに永続化（表示用テキストを保存）
+                // AI分析の結果をLocalStorageに永続化
                 const today = getTodayDate();
                 const analyses = JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_ANALYSES) || '{}');
                 if (analyses[today]) {
-                    analyses[today].aiComment = displayText;
+                    analyses[today].aiComment = fullAnalysis;
                     localStorage.setItem(STORAGE_KEYS.DAILY_ANALYSES, JSON.stringify(analyses));
                 }
+
+                // 指示書を抽出してダッシュボードに保存
+                const directiveMatch = response2.text.match(/- \[?【(.+?)】(.+)/);
+                if (directiveMatch) {
+                    const category = directiveMatch[1]; // 食事、運動、睡眠
+                    const action = directiveMatch[2].trim();
+                    const directiveText = `【${category}】${action}`;
+
+                    console.log('[DEBUG] Extracted Directive:', directiveText);
+
+                    // 明日の日付を取得
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const tomorrowDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+                    // 指示書を保存（明日の日付で）
+                    const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
+                    const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
+                    const existingIndex = directives.findIndex(d => d.date === tomorrowDate);
+
+                    const newDirective = {
+                        date: tomorrowDate,
+                        message: directiveText,
+                        type: category === '食事' ? 'meal' : category === '運動' ? 'exercise' : 'condition',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    if (existingIndex >= 0) {
+                        directives[existingIndex] = newDirective;
+                    } else {
+                        directives.push(newDirective);
+                    }
+
+                    localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(directives));
+                    console.log('[DEBUG] Directive saved to dashboard for tomorrow:', tomorrowDate);
+
+                    // ダッシュボードを更新
+                    setLastUpdate(Date.now());
+                }
             } else {
-                // ユーザーフレンドリーなエラーメッセージを表示
-                const errorMessage = response.error || '不明なエラー';
-                console.error('AI分析エラー詳細:', errorMessage);
-                setAiAnalysis('申し訳ございません。AI分析の生成に失敗しました。\n\nしばらく時間をおいて、「再生成」ボタンをタップしてお試しください。\n\n問題が続く場合は、記録データを確認してください。');
+                throw new Error(response2.error || 'セクション2の生成に失敗');
             }
         } catch (error) {
             console.error('AI分析エラー:', error);
-            setAiAnalysis('申し訳ございません。AI分析の生成中に問題が発生しました。\n\nネットワーク接続を確認の上、「再生成」ボタンをタップしてお試しください。');
+            setAiAnalysis('申し訳ございません。AI分析の生成中に問題が発生しました。\n\nエラー内容: ' + error.message + '\n\nしばらく時間をおいて、「再生成」ボタンをタップしてお試しください。');
         }
 
         setAiLoading(false);
+    };
+
+    // 対話型Q&A機能
+    const handleUserQuestion = async () => {
+        if (!userQuestion.trim() || qaLoading) return;
+
+        const question = userQuestion.trim();
+        setUserQuestion('');
+        setQaLoading(true);
+
+        // ユーザーの質問を会話履歴に追加
+        const newHistory = [...conversationHistory, {
+            type: 'user',
+            content: question,
+            timestamp: new Date().toISOString()
+        }];
+        setConversationHistory(newHistory);
+
+        try {
+            // 過去30日分のログデータを準備（Q&A用）
+            const dailyLogsForQA = [];
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                const record = await DataService.getDailyRecord(userId, dateStr);
+
+                if (record && record.meals && record.meals.length > 0) {
+                    const totalProtein = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
+                    const totalFat = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
+                    const totalCarbs = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
+                    const totalCalories = (record.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
+
+                    dailyLogsForQA.push({
+                        date: dateStr,
+                        routine: record.routine || { type: "休息日", is_rest_day: true },
+                        diet: {
+                            protein_g: Math.round(totalProtein),
+                            fat_g: Math.round(totalFat),
+                            carbs_g: Math.round(totalCarbs),
+                            total_calories: Math.round(totalCalories)
+                        },
+                        workout: {
+                            exercise_count: (record.workouts || []).length,
+                            exercises: (record.workouts || []).map(w => w.name).join(', ')
+                        },
+                        condition: {
+                            sleep_hours: record.conditions?.sleepHours || 0,
+                            sleep_quality: record.conditions?.sleepQuality || 0,
+                            appetite: record.conditions?.appetite || 0,
+                            gut_health: record.conditions?.digestion || 0,
+                            concentration: record.conditions?.focus || 0,
+                            stress_level: record.conditions?.stress || 0
+                        },
+                        memo: record.notes || null
+                    });
+                }
+            }
+
+            const qaPromptData = {
+                user_profile: {
+                    height_cm: userProfile.height || 170,
+                    weight_kg: userProfile.weight || 70,
+                    body_fat_percentage: userProfile.bodyFatPercentage || 15,
+                    lean_body_mass_kg: userProfile.leanBodyMass || 60,
+                    style: userProfile.style || "一般"
+                },
+                daily_logs: dailyLogsForQA
+            };
+
+            // 文脈を含むプロンプトを作成
+            const contextPrompt = `## 役割
+あなたは、ユーザーの質問に答える、親身で優秀なAIパフォーマンスコーチです。
+
+## 文脈
+あなたは以前、以下のユーザーデータに基づいて、下記の「AIコーチングレポート」を生成しました。この会話は、そのレポートに関するユーザーからの質問です。
+
+### ユーザープロファイルと全データ
+${JSON.stringify(qaPromptData, null, 2)}
+
+### あなたが生成したレポート
+${aiAnalysis || '（レポート生成中または未生成）'}
+
+## ユーザーからの質問
+「${question}」
+
+## タスク
+上記の文脈をすべて踏まえ、ユーザーの質問に対して、専門用語を避け、高校生にも理解できるような言葉で、簡潔かつ丁寧な回答を生成してください。
+`;
+
+            const response = await GeminiAPI.sendMessage(contextPrompt, [], userProfile, 'gemini-2.5-pro');
+
+            if (response.success) {
+                // AIの回答を会話履歴に追加
+                setConversationHistory([...newHistory, {
+                    type: 'ai',
+                    content: response.text,
+                    timestamp: new Date().toISOString()
+                }]);
+
+                // 自動スクロール
+                setTimeout(() => {
+                    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            } else {
+                setConversationHistory([...newHistory, {
+                    type: 'ai',
+                    content: '申し訳ございません。質問への回答生成に失敗しました。もう一度お試しください。',
+                    timestamp: new Date().toISOString()
+                }]);
+            }
+        } catch (error) {
+            console.error('Q&Aエラー:', error);
+            setConversationHistory([...newHistory, {
+                type: 'ai',
+                content: '申し訳ございません。エラーが発生しました。ネットワーク接続を確認の上、もう一度お試しください。',
+                timestamp: new Date().toISOString()
+            }]);
+        }
+
+        setQaLoading(false);
     };
 
     // 過去データから体質・傾向・相関を分析
@@ -398,213 +626,181 @@ ${sanitizedInsights}
     }
 
     return (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col">
-            <header className="p-4 flex items-center border-b bg-gradient-to-r from-purple-600 to-indigo-600 flex-shrink-0">
+        <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
+            <header className="p-4 flex items-center border-b bg-gradient-to-r from-indigo-600 to-purple-600 flex-shrink-0 sticky top-0 z-30">
                 <button onClick={handleClose} className="text-white">
                     <Icon name="ArrowLeft" size={24} />
                 </button>
-                <h1 className="text-xl font-bold mx-auto text-white">本日の分析</h1>
-                <div className="w-6"></div>
+                <div className="flex-1 text-center">
+                    <h1 className="text-xl font-bold text-white">AIコーチ</h1>
+                    <p className="text-xs text-white opacity-80">トップアスリート育成プログラム</p>
+                </div>
+                <button onClick={() => generateAIAnalysis(analysis, historicalInsights)} className="text-white">
+                    <Icon name="RefreshCw" size={20} />
+                </button>
             </header>
 
-            <div className="p-6 flex-grow overflow-y-auto bg-gray-50 space-y-6">
-                {/* 総合評価 */}
-                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 text-center border border-purple-200">
-                    <p className="text-sm text-gray-600 mb-2">総合達成率</p>
-                    <p className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 mb-2">
-                        {analysis.achievementRates.overall}%
-                    </p>
-                    <div className="flex items-center justify-center gap-2 mt-3">
-                        {analysis.evaluation === 'excellent' && (
-                            <span className="px-4 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold flex items-center gap-1">
-                                <Icon name="Star" size={14} />
-                                優秀
-                            </span>
+            <div className="p-4 flex-grow overflow-y-auto space-y-3">
+                {/* 日付バッジ */}
+                <div className="flex justify-center">
+                    <div className="bg-gray-200 rounded-full px-4 py-1.5 text-xs text-gray-700 font-medium flex items-center gap-2">
+                        <Icon name="Calendar" size={14} />
+                        {new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' })}
+                        {dailyRecord.routine && dailyRecord.routine.name && (
+                            <>
+                                <span>-</span>
+                                <Icon name="Dumbbell" size={14} />
+                                {dailyRecord.routine.name}
+                            </>
                         )}
-                        {analysis.evaluation === 'good' && (
-                            <span className="px-4 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold flex items-center gap-1">
-                                <Icon name="ThumbsUp" size={14} />
-                                良好
-                            </span>
-                        )}
-                        {analysis.evaluation === 'moderate' && (
-                            <span className="px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-semibold flex items-center gap-1">
-                                <Icon name="Minus" size={14} />
-                                普通
-                            </span>
-                        )}
-                        {analysis.evaluation === 'poor' && (
-                            <span className="px-4 py-1 bg-red-100 text-red-700 rounded-full text-sm font-semibold flex items-center gap-1">
-                                <Icon name="AlertTriangle" size={14} />
-                                要改善
-                            </span>
-                        )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-3">
-                        {new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short' })} 現在
-                    </p>
-                </div>
-
-                {/* 達成率詳細 */}
-                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                    <h4 className="font-bold mb-4 flex items-center gap-2 text-gray-800">
-                        <Icon name="Target" size={18} className="text-indigo-600" />
-                        本日の栄養素達成率
-                    </h4>
-                    <div className="space-y-4">
-                        {/* カロリー */}
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-gray-700">カロリー</span>
-                                <span className="text-sm font-bold text-indigo-600">{analysis.achievementRates.calories}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                <div
-                                    className="bg-indigo-600 h-3 rounded-full transition-all"
-                                    style={{ width: `${Math.min(analysis.achievementRates.calories, 100)}%` }}
-                                ></div>
-                            </div>
-                            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>実績: {analysis.actual.calories}kcal</span>
-                                <span>目標: {analysis.target.calories}kcal</span>
-                            </div>
-                        </div>
-
-                        {/* タンパク質 */}
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-gray-700">タンパク質</span>
-                                <span className="text-sm font-bold text-cyan-600">{analysis.achievementRates.protein}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                <div
-                                    className="bg-cyan-600 h-3 rounded-full transition-all"
-                                    style={{ width: `${Math.min(analysis.achievementRates.protein, 100)}%` }}
-                                ></div>
-                            </div>
-                            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>実績: {analysis.actual.protein}g</span>
-                                <span>目標: {analysis.target.protein}g</span>
-                            </div>
-                        </div>
-
-                        {/* 脂質 */}
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-gray-700">脂質</span>
-                                <span className="text-sm font-bold text-yellow-600">{analysis.achievementRates.fat}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                <div
-                                    className="bg-yellow-600 h-3 rounded-full transition-all"
-                                    style={{ width: `${Math.min(analysis.achievementRates.fat, 100)}%` }}
-                                ></div>
-                            </div>
-                            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>実績: {analysis.actual.fat}g</span>
-                                <span>目標: {analysis.target.fat}g</span>
-                            </div>
-                        </div>
-
-                        {/* 炭水化物 */}
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-gray-700">炭水化物</span>
-                                <span className="text-sm font-bold text-green-600">{analysis.achievementRates.carbs}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                <div
-                                    className="bg-green-600 h-3 rounded-full transition-all"
-                                    style={{ width: `${Math.min(analysis.achievementRates.carbs, 100)}%` }}
-                                ></div>
-                            </div>
-                            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>実績: {analysis.actual.carbs}g</span>
-                                <span>目標: {analysis.target.carbs}g</span>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                {/* 過去データからの傾向分析 */}
-                {historicalInsights && (
-                    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                        <h4 className="font-bold mb-4 flex items-center gap-2 text-gray-800">
-                            <Icon name="TrendingUp" size={18} className="text-purple-600" />
-                            あなたの体質・傾向分析
-                            <span className="ml-auto text-xs text-gray-500 font-normal">過去{historicalInsights.recordCount}日分のデータ</span>
-                        </h4>
-                        <div className="space-y-3">
-                            {historicalInsights.insights.map((insight, idx) => (
-                                <div key={idx} className="bg-purple-50 p-3 rounded-lg border border-purple-100">
-                                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{insight}</p>
+                {/* AIからのメッセージ: AI生成分析のみ表示 */}
+                {aiLoading ? (
+                    <div className="flex items-start gap-3">
+                        <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
+                            <Icon name="Bot" size={20} className="text-white" />
+                        </div>
+                        <div className="flex-1">
+                            <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
+                                <div className="flex items-center justify-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                                    <span className="ml-3 text-sm text-gray-600">AI分析を生成中...</span>
                                 </div>
-                            ))}
+                            </div>
                         </div>
                     </div>
-                )}
-
-                {/* 改善提案 */}
-                {historicalInsights && historicalInsights.recommendations && (
-                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-5 shadow-sm">
-                        <h4 className="font-bold mb-4 flex items-center gap-2 text-gray-800">
-                            <Icon name="Lightbulb" size={18} className="text-amber-600" />
-                            あなたへの改善提案
-                        </h4>
-                        <div className="space-y-3">
-                            {historicalInsights.recommendations.map((rec, idx) => (
-                                <div key={idx} className="flex items-start gap-2">
-                                    <Icon name="CheckCircle" size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
-                                    <p className="text-sm text-gray-700 leading-relaxed">{rec}</p>
+                ) : aiAnalysis ? (
+                    <div className="flex items-start gap-3">
+                        <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
+                            <Icon name="Bot" size={20} className="text-white" />
+                        </div>
+                        <div className="flex-1">
+                            <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
+                                <div className="text-sm text-gray-700 leading-relaxed">
+                                    <MarkdownRenderer text={aiAnalysis} />
                                 </div>
-                            ))}
+                            </div>
                         </div>
+                    </div>
+                ) : null}
+
+                {/* 区切り線: Q&Aセクション */}
+                {!aiLoading && aiAnalysis && (
+                    <div className="flex items-center gap-3 py-2">
+                        <div className="flex-1 h-px bg-gray-300"></div>
+                        <span className="text-xs text-gray-500 font-medium">質問・相談</span>
+                        <div className="flex-1 h-px bg-gray-300"></div>
                     </div>
                 )}
 
-                {/* AI分析 */}
-                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200 p-5 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-bold flex items-center gap-2 text-purple-800">
-                            <Icon name="Sparkles" size={18} className="text-purple-600" />
-                            AI分析
-                        </h4>
-                        {!aiLoading && (
-                            <button
-                                onClick={() => generateAIAnalysis(analysis, historicalInsights)}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium"
-                            >
-                                <Icon name="RefreshCw" size={14} />
-                                再生成
-                            </button>
+                {/* 対話型Q&A: 会話履歴 */}
+                {conversationHistory.map((msg, idx) => (
+                    <div key={idx}>
+                        {msg.type === 'user' ? (
+                            /* ユーザーの質問（右側） */
+                            <div className="flex items-start gap-3 justify-end">
+                                <div className="flex-1 max-w-[85%]">
+                                    <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl rounded-tr-none p-4 shadow-md text-white">
+                                        <p className="text-sm leading-relaxed">
+                                            {msg.content}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="bg-purple-600 rounded-full p-2 flex-shrink-0">
+                                    <Icon name="User" size={20} className="text-white" />
+                                </div>
+                            </div>
+                        ) : (
+                            /* AIの回答（左側） */
+                            <div className="flex items-start gap-3">
+                                <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
+                                    <Icon name="MessageCircle" size={20} className="text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
+                                        <div className="text-sm text-gray-800 leading-relaxed">
+                                            <MarkdownRenderer text={msg.content} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
-                    {aiLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                            <span className="ml-3 text-sm text-gray-600">AI分析を生成中...</span>
-                        </div>
-                    ) : aiAnalysis ? (
-                        <div className="text-sm text-gray-700 leading-relaxed">
-                            <MarkdownRenderer text={aiAnalysis} />
-                        </div>
-                    ) : (
-                        <p className="text-sm text-gray-500">AI分析を生成できませんでした。</p>
-                    )}
-                </div>
+                ))}
 
-                {/* トレーニング実績 */}
-                {analysis.actual.burned > 0 && (
-                    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                        <h4 className="font-bold mb-3 flex items-center gap-2 text-gray-800">
-                            <Icon name="Dumbbell" size={18} className="text-red-600" />
-                            本日のトレーニング
-                        </h4>
-                        <p className="text-2xl font-bold text-red-600">{analysis.actual.burned}kcal</p>
-                        <p className="text-xs text-gray-500 mt-1">消費カロリー</p>
+                {/* Q&A ローディング */}
+                {qaLoading && (
+                    <div className="flex items-start gap-3">
+                        <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
+                            <Icon name="MessageCircle" size={20} className="text-white" />
+                        </div>
+                        <div className="flex-1">
+                            <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
+                                <div className="flex items-center gap-2">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+                                    <span className="text-sm text-gray-600">考え中...</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
+
+                {/* スクロール用の参照 */}
+                <div ref={chatEndRef}></div>
+
             </div>
+
+            {/* 質問入力エリア（固定） */}
+            {!aiLoading && aiAnalysis && (
+                <div className="border-t bg-white p-4 flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            value={userQuestion}
+                            onChange={(e) => setUserQuestion(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleUserQuestion()}
+                            placeholder="レポートについて質問してください..."
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                            disabled={qaLoading}
+                        />
+                        <button
+                            onClick={handleUserQuestion}
+                            disabled={!userQuestion.trim() || qaLoading}
+                            className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Icon name="Send" size={20} />
+                        </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                        💡 例: 「タンパク質が不足する原因は？」「この改善提案をもっと詳しく教えて」
+                    </p>
+                </div>
+            )}
+
+            {/* マイクロラーニングポップアップ */}
+            {microLearningContent && (
+                <MicroLearningPopup
+                    content={microLearningContent}
+                    onClose={() => setMicroLearningContent(null)}
+                    onComplete={() => {
+                        // 完了時の処理（ユーザープロフィール更新など）
+                        console.log('Micro-learning completed:', microLearningContent.title);
+                    }}
+                />
+            )}
+
+            {/* 協働プランニングモーダル */}
+            {showCollaborativePlanning && (
+                <CollaborativePlanningView
+                    onClose={() => setShowCollaborativePlanning(false)}
+                    userId={userId}
+                    userProfile={userProfile}
+                    dailyRecord={dailyRecord}
+                    analysis={analysis}
+                />
+            )}
         </div>
     );
 };
@@ -631,7 +827,7 @@ const CalendarView = ({ selectedStartDate, selectedEndDate, onDateSelect, analys
         const dateStr = date.toISOString().split('T')[0];
         const analysis = analyses[dateStr];
         const dayData = historyData.find(d => d.date === dateStr);
-        const hasRecord = dayData && (dayData.calories > 0 || dayData.burned > 0);
+        const hasRecord = dayData && dayData.calories > 0;
         const hasHighScore = analysis && analysis.achievementRates && analysis.achievementRates.overall >= 80;
         if (hasRecord && hasHighScore) {
             return 'highScore';
@@ -642,13 +838,13 @@ const CalendarView = ({ selectedStartDate, selectedEndDate, onDateSelect, analys
     return (
         <div className="bg-white p-4 rounded-xl border border-gray-200">
             <div className="flex justify-between items-center mb-4">
-                <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="p-2 hover:bg-gray-100 rounded-full">
+                <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full">
                     <Icon name="ChevronLeft" size={20} />
                 </button>
                 <h4 className="font-bold text-lg">
                     {currentMonth.getFullYear()}年 {currentMonth.getMonth() + 1}月
                 </h4>
-                <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="p-2 hover:bg-gray-100 rounded-full">
+                <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full">
                     <Icon name="ChevronRight" size={20} />
                 </button>
             </div>
@@ -722,6 +918,57 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
         }
     };
 
+    // 期間選択関数（固定日数）
+    const selectPeriodDays = (days) => {
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - (days - 1));
+        setStartDate(start);
+        setEndDate(today);
+    };
+
+    // 期間選択関数（今週、先週、今月、先月）
+    const selectPeriodRange = (rangeType) => {
+        const today = new Date();
+        let start, end;
+
+        switch(rangeType) {
+            case 'thisWeek':
+                // 今週（月曜日～今日）
+                const dayOfWeek = today.getDay();
+                const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                start = new Date(today);
+                start.setDate(today.getDate() - diffToMonday);
+                end = today;
+                break;
+
+            case 'lastWeek':
+                // 先週（先週の月曜日～日曜日）
+                const lastSunday = new Date(today);
+                const daysToLastSunday = today.getDay() === 0 ? 0 : today.getDay();
+                lastSunday.setDate(today.getDate() - daysToLastSunday);
+                start = new Date(lastSunday);
+                start.setDate(lastSunday.getDate() - 6);
+                end = lastSunday;
+                break;
+
+            case 'thisMonth':
+                // 今月（1日～今日）
+                start = new Date(today.getFullYear(), today.getMonth(), 1);
+                end = today;
+                break;
+
+            case 'lastMonth':
+                // 先月（先月の1日～末日）
+                start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                end = new Date(today.getFullYear(), today.getMonth(), 0);
+                break;
+        }
+
+        setStartDate(start);
+        setEndDate(end);
+    };
+
     const loadHistoryData = async () => {
         if (!startDate) return;
         setLoading(true);
@@ -749,10 +996,6 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                 const totalProtein = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
                 const totalFat = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
                 const totalCarbs = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
-                const totalBurned = (record.workouts || []).reduce((sum, w) => sum + (w.caloriesBurned || 0), 0);
-                const dit = (totalProtein * 4 * 0.30) + (totalFat * 9 * 0.04) + (totalCarbs * 4 * 0.06);
-                const epoc = totalBurned * 0.10;
-                const totalExpenditure = totalBurned + dit + epoc;
 
                 // 体組成データを取得（コンディション記録から）
                 const latestCondition = record.conditions; // conditionsはオブジェクト
@@ -763,8 +1006,6 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                 data.push({
                     date: dateStr,
                     calories: totalCalories, protein: totalProtein, fat: totalFat, carbs: totalCarbs,
-                    burned: totalBurned, dit, epoc, totalExpenditure,
-                    netCalories: totalCalories - totalExpenditure,
                     weight: latestCondition?.weight || null,
                     bodyFat: latestCondition?.bodyFat || null,
                     rmUpdates,
@@ -775,8 +1016,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                 });
             } else {
                 data.push({
-                    date: dateStr, calories: 0, protein: 0, fat: 0, carbs: 0, burned: 0, dit: 0, epoc: 0,
-                    totalExpenditure: 0, netCalories: 0, weight: null, bodyFat: null, rmUpdates: [],
+                    date: dateStr, calories: 0, protein: 0, fat: 0, carbs: 0, weight: null, bodyFat: null, rmUpdates: [],
                     meals: [], workouts: [], conditions: null, directive: directive || null
                 });
             }
@@ -825,7 +1065,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                 <div className="sticky top-0 bg-white border-b p-4 z-10">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-lg font-bold">履歴</h3>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full">
                             <Icon name="X" size={20} />
                         </button>
                     </div>
@@ -903,7 +1143,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                         </details>
 
                         {/* 体組成 */}
-                        <details className="border rounded-lg overflow-hidden">
+                        <details open className="border rounded-lg overflow-hidden">
                             <summary className="cursor-pointer p-3 bg-green-50 hover:bg-green-100 font-medium flex items-center gap-2">
                                 <Icon name="Scale" size={16} className="text-green-700" />
                                 <span>体組成</span>
@@ -929,7 +1169,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                         </details>
 
                         {/* RM更新 */}
-                        <details className="border rounded-lg overflow-hidden">
+                        <details open className="border rounded-lg overflow-hidden">
                             <summary className="cursor-pointer p-3 bg-purple-50 hover:bg-purple-100 font-medium flex items-center gap-2">
                                 <Icon name="Trophy" size={16} className="text-purple-700" />
                                 <span>RM更新記録</span>
@@ -961,7 +1201,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                         <>
                             {/* 折れ線グラフ */}
                             <div className="bg-white p-4 rounded-xl border border-gray-200">
-                                <h4 className="font-bold mb-4 flex items-center gap-2">
+                                <h4 className="font-bold mb-3 flex items-center gap-2">
                                     <Icon name="TrendingUp" size={18} />
                                     {selectedMetric === 'calories' && 'カロリー推移'}
                                     {selectedMetric === 'protein' && 'タンパク質推移'}
@@ -970,6 +1210,41 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                     {selectedMetric === 'weight' && '体重推移'}
                                     {selectedMetric === 'bodyFat' && '体脂肪率推移'}
                                 </h4>
+
+                                {/* 期間選択ボタン */}
+                                <div className="mb-3 flex flex-wrap gap-2">
+                                    <button onClick={() => selectPeriodDays(7)} className="px-3 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition">7日</button>
+                                    <button onClick={() => selectPeriodDays(14)} className="px-3 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition">14日</button>
+                                    <button onClick={() => selectPeriodDays(30)} className="px-3 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition">30日</button>
+                                    <button onClick={() => selectPeriodRange('thisWeek')} className="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition">今週</button>
+                                    <button onClick={() => selectPeriodRange('lastWeek')} className="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition">先週</button>
+                                    <button onClick={() => selectPeriodRange('thisMonth')} className="px-3 py-1 text-xs font-medium bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200 transition">今月</button>
+                                    <button onClick={() => selectPeriodRange('lastMonth')} className="px-3 py-1 text-xs font-medium bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200 transition">先月</button>
+                                </div>
+
+                                {/* カテゴリ範囲表示 */}
+                                {historyData.length > 0 && (() => {
+                                    const values = historyData.map(d => d[selectedMetric] || 0).filter(v => v > 0);
+                                    if (values.length === 0) return null;
+                                    const min = Math.min(...values);
+                                    const max = Math.max(...values);
+                                    const unit = selectedMetric === 'calories' ? 'kcal' :
+                                                selectedMetric === 'bodyFat' ? '%' :
+                                                ['protein', 'fat', 'carbs'].includes(selectedMetric) ? 'g' : 'kg';
+                                    return (
+                                        <div className="mb-3 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="text-gray-600">全期間の範囲:</span>
+                                                <span className="font-semibold text-gray-800">
+                                                    <span className="text-orange-600">{min.toFixed(1)}</span>
+                                                    <span className="text-gray-400 mx-1">～</span>
+                                                    <span className="text-green-600">{max.toFixed(1)}</span>
+                                                    <span className="ml-1">{unit}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                                 <div className="relative" style={{ height: '300px' }}>
                                     <svg width="100%" height="100%" viewBox="0 0 800 300" preserveAspectRatio="none">
                                         {/* グリッド線 */}
@@ -1076,7 +1351,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
 
                             {/* 履歴リスト（折りたたみ式） */}
                             <div className="space-y-3">
-                                {historyData.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).filter(d => d.calories > 0 || d.burned > 0).map((day, index) => {
+                                {historyData.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).filter(d => d.calories > 0).map((day, index) => {
                                     const isExpanded = expandedDates.has(day.date);
                                     return (
                                         <div key={index} className="bg-gray-50 rounded-xl border border-gray-200">
@@ -1111,13 +1386,9 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                             <span className="text-gray-600 font-bold">総合スコア</span>
                                                             <span className="font-bold text-purple-600">{analyses[day.date]?.achievementRates?.overall || '-'}点</span>
                                                         </div>
-                                                        <div className="flex justify-between">
+                                                        <div className="flex justify-between col-span-2">
                                                             <span className="text-gray-600">摂取</span>
                                                             <span className="font-medium">{Math.round(day.calories)}kcal</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-600">消費</span>
-                                                            <span className="font-medium">-{Math.round(day.burned)}kcal</span>
                                                         </div>
                                                         <div className="flex justify-between">
                                                             <span className="text-gray-600">タンパク質</span>
@@ -1177,7 +1448,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                                     <div key={i} className="text-xs">
                                                                         <div className="font-medium">{workout.name}</div>
                                                                         <div className="text-gray-600 ml-2">
-                                                                            {workout.exercises?.length || 0}種目 • {workout.caloriesBurned || 0}kcal消費
+                                                                            {workout.exercises?.length || 0}種目
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -1241,7 +1512,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                         </div>
                                     );
                                 })}
-                                {historyData.filter(d => d.calories > 0 || d.burned > 0).length === 0 && (
+                                {historyData.filter(d => d.calories > 0).length === 0 && (
                                     <p className="text-center text-gray-500 py-12">この期間の記録はありません</p>
                                 )}
                             </div>
@@ -1255,7 +1526,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                         onClick={() => setInfoModal({
                                             show: true,
                                             title: '統計情報について',
-                                            content: '現在カレンダーで選択されている期間の集計データが表示されます。\n\n• 平均カロリー: 期間内の総摂取カロリーを記録日数で割った平均値です。\n• 平均タンパク質: 期間内の総タンパク質摂取量を記録日数で割った平均値です。\n• 総消費カロリー: 期間内のトレーニングによる総消費カロリーです。\n• 記録日数: 期間内で食事またはトレーニングが記録された日数を表します。'
+                                            content: '現在カレンダーで選択されている期間の集計データが表示されます。\n\n• 平均カロリー: 期間内の総摂取カロリーを記録日数で割った平均値です。\n• 平均タンパク質: 期間内の総タンパク質摂取量を記録日数で割った平均値です。\n• 記録日数: 期間内で食事またはトレーニングが記録された日数を表します。'
                                         })}
                                         className="text-indigo-600 hover:text-indigo-800"
                                     >
@@ -1273,12 +1544,6 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                         <p className="text-sm text-gray-600">平均タンパク質</p>
                                         <p className="text-xl font-bold text-cyan-600">
                                             {(historyData.reduce((sum, d) => sum + d.protein, 0) / historyData.length).toFixed(1)}g
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-600">総消費カロリー</p>
-                                        <p className="text-xl font-bold text-orange-600">
-                                            {Math.round(historyData.reduce((sum, d) => sum + d.burned, 0))}kcal
                                         </p>
                                     </div>
                                     <div>
@@ -1303,7 +1568,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                 <Icon name="BarChart3" size={20} />
                                 {new Date(selectedDateAnalysis.date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short' })}の分析
                             </h3>
-                            <button onClick={() => setSelectedDateAnalysis(null)} className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition">
+                            <button onClick={() => setSelectedDateAnalysis(null)} className="w-8 h-8 flex items-center justify-center hover:bg-white hover:bg-opacity-20 rounded-full transition">
                                 <Icon name="X" size={20} />
                             </button>
                         </div>

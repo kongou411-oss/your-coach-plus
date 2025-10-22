@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>履歴改修案（グラフ式）3: ダッシュボードスタイル型 v6（最終版）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .tab-button {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .tab-button.active {
+            font-weight: 600;
+        }
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: currentColor;
+        }
+        .sub-tab-button {
+            transition: all 0.2s ease;
+        }
+        .sub-tab-button.active {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .day-box {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+        .day-box.done {
+            background-color: #22c55e;
+            color: white;
+        }
+        .day-box.not-done {
+            background-color: #e5e7eb;
+            color: #6b7280;
+        }
+        .range-control {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold mb-2 text-gray-800">📊 履歴改修案（グラフ式）3: ダッシュボードスタイル型 v6</h1>
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 p-3 mb-6">
+            <p class="text-sm font-semibold text-yellow-800">⭐ 推奨案（最終版）</p>
+            <p class="text-xs text-yellow-700">項目ごとに適切なレンジ設定、初回記録を基準軸として任意変更可能</p>
+        </div>
+
+        <!-- メインコンテナ -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <!-- 大カテゴリタブ -->
+            <div class="flex border-b bg-gray-50">
+                <button
+                    class="tab-button flex-1 py-4 px-4 text-center transition text-gray-600"
+                    onclick="selectMainCategory('nutrition')">
+                    <div class="flex items-center justify-center gap-2">
+                        <i data-lucide="utensils" class="w-5 h-5"></i>
+                        <div>
+                            <div class="text-sm font-semibold">食事</div>
+                            <div class="text-xs opacity-75">85点</div>
+                        </div>
+                    </div>
+                </button>
+                <button
+                    class="tab-button flex-1 py-4 px-4 text-center transition text-gray-600"
+                    onclick="selectMainCategory('training')">
+                    <div class="flex items-center justify-center gap-2">
+                        <i data-lucide="dumbbell" class="w-5 h-5"></i>
+                        <div>
+                            <div class="text-sm font-semibold">運動</div>
+                            <div class="text-xs opacity-75">88点</div>
+                        </div>
+                    </div>
+                </button>
+                <button
+                    class="tab-button flex-1 py-4 px-4 text-center transition text-gray-600"
+                    onclick="selectMainCategory('condition')">
+                    <div class="flex items-center justify-center gap-2">
+                        <i data-lucide="activity" class="w-5 h-5"></i>
+                        <div>
+                            <div class="text-sm font-semibold">コンディション</div>
+                            <div class="text-xs opacity-75">24/30点</div>
+                        </div>
+                    </div>
+                </button>
+                <button
+                    class="tab-button flex-1 py-4 px-4 text-center transition active text-purple-700 bg-white border-b-0"
+                    onclick="selectMainCategory('performance')">
+                    <div class="flex items-center justify-center gap-2">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i>
+                        <div>
+                            <div class="text-sm font-semibold">パフォーマンス</div>
+                            <div class="text-xs opacity-75">総合92点</div>
+                        </div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- 小カテゴリタブ（栄養・食事） -->
+            <div id="nutrition-subtabs" class="sub-tabs hidden flex-wrap gap-2 p-4 bg-green-50 border-b">
+                <button class="sub-tab-button active px-4 py-2 bg-white text-green-700 rounded-lg text-sm font-semibold border-2 border-green-500" onclick="selectSubCategory('nutrition', 'calories')">
+                    🔥 カロリー
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'protein')">
+                    🥩 タンパク質
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'fat')">
+                    🧈 脂質
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'carbs')">
+                    🍚 糖質
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'fiber')">
+                    🥬 食物繊維
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'vitamin')">
+                    💊 ビタミン
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'mineral')">
+                    ⚡ ミネラル
+                </button>
+            </div>
+
+            <!-- 小カテゴリタブ（トレーニング） -->
+            <div id="training-subtabs" class="sub-tabs hidden flex-wrap gap-2 p-4 bg-red-50 border-b">
+                <button class="sub-tab-button active px-4 py-2 bg-white text-red-700 rounded-lg text-sm font-semibold border-2 border-red-500" onclick="selectSubCategory('training', 'habit')">
+                    📈 運動習慣率
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'big3')">
+                    🏋️ BIG3合計
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'routine')">
+                    📋 分割法別
+                </button>
+            </div>
+
+            <!-- 小カテゴリタブ（コンディション） -->
+            <div id="condition-subtabs" class="sub-tabs hidden flex-wrap gap-2 p-4 bg-blue-50 border-b">
+                <button class="sub-tab-button active px-4 py-2 bg-white text-blue-700 rounded-lg text-sm font-semibold border-2 border-blue-500" onclick="selectSubCategory('condition', 'total')">
+                    🎯 総合スコア
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'sleep')">
+                    😴 睡眠の質
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'appetite')">
+                    🍽️ 食欲
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'focus')">
+                    🧠 集中力
+                </button>
+            </div>
+
+            <!-- 小カテゴリタブ（パフォーマンス） -->
+            <div id="performance-subtabs" class="sub-tabs flex flex-wrap gap-2 p-4 bg-purple-50 border-b">
+                <button class="sub-tab-button active px-4 py-2 bg-white text-purple-700 rounded-lg text-sm font-semibold border-2 border-purple-500" onclick="selectSubCategory('performance', 'lbm')">
+                    💪 LBM
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('performance', 'directive')">
+                    📋 指示書達成率
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('performance', 'overall')">
+                    🎯 総合分析
+                </button>
+                <button class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('performance', 'rm_detail')">
+                    🏋️ RM記録詳細
+                </button>
+            </div>
+
+            <!-- 詳細グラフ表示エリア -->
+            <div class="p-6">
+                <div id="chart-display" class="chart-container">
+                    <!-- ヘッダー -->
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 id="chart-title" class="text-3xl font-bold text-gray-800">💪 LBM（除脂肪体重）</h3>
+                            <p id="chart-period" class="text-sm text-gray-500 mt-1">過去7日間の推移</p>
+                        </div>
+                        <div class="text-right">
+                            <div id="chart-value" class="text-5xl font-bold text-purple-600">62.5</div>
+                            <div id="chart-unit" class="text-sm text-gray-500 mt-1">kg</div>
+                            <div id="chart-target" class="text-sm font-semibold text-green-600 mt-2">目標: 65kg</div>
+                        </div>
+                    </div>
+
+                    <!-- Y軸レンジコントロール -->
+                    <div id="range-control" class="range-control">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-sm font-semibold text-gray-700">Y軸の表示範囲</label>
+                            <button
+                                onclick="resetAxisRange()"
+                                class="text-xs text-blue-600 hover:text-blue-800 underline">
+                                初期値に戻す
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs text-gray-600 block mb-1">最小値</label>
+                                <input
+                                    type="number"
+                                    id="axis-min"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                                    onchange="updateAxisRange()"
+                                />
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-600 block mb-1">最大値</label>
+                                <input
+                                    type="number"
+                                    id="axis-max"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                                    onchange="updateAxisRange()"
+                                />
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">💡 初回記録時のレンジを基準に自動設定されます</p>
+                    </div>
+
+                    <!-- グラフ -->
+                    <canvas id="main-chart" height="100" class="mt-4"></canvas>
+
+                    <!-- 統計情報 -->
+                    <div id="stats-container" class="mt-6 grid grid-cols-3 gap-4 text-center">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <div class="text-xs text-gray-600 mb-1">平均</div>
+                            <div id="stat-avg" class="text-2xl font-bold text-blue-600">62.0</div>
+                            <div id="stat-avg-unit" class="text-xs text-gray-500">kg</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <div class="text-xs text-gray-600 mb-1">最高</div>
+                            <div id="stat-max" class="text-2xl font-bold text-green-600">62.5</div>
+                            <div id="stat-max-unit" class="text-xs text-gray-500">kg</div>
+                        </div>
+                        <div class="bg-orange-50 p-4 rounded-lg">
+                            <div class="text-xs text-gray-600 mb-1">最低</div>
+                            <div id="stat-min" class="text-2xl font-bold text-orange-600">61.0</div>
+                            <div id="stat-min-unit" class="text-xs text-gray-500">kg</div>
+                        </div>
+                    </div>
+
+                    <!-- 運動習慣率用の週間カレンダー -->
+                    <div id="habit-calendar" class="mt-6 hidden">
+                        <div class="grid grid-cols-7 gap-2">
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-2">月</div>
+                                <div class="day-box done">実施</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-2">火</div>
+                                <div class="day-box done">実施</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-2">水</div>
+                                <div class="day-box not-done">未実施</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-2">木</div>
+                                <div class="day-box done">実施</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-2">金</div>
+                                <div class="day-box done">実施</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-2">土</div>
+                                <div class="day-box done">実施</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-2">日</div>
+                                <div class="day-box done">実施</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RM記録詳細用（種目選択） -->
+                    <div id="rm-detail-selector" class="mt-6 hidden">
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">種目を選択</label>
+                            <select id="exercise-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg" onchange="updateRMDetail()">
+                                <option value="bench">ベンチプレス</option>
+                                <option value="squat">スクワット</option>
+                                <option value="deadlift">デッドリフト</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">RM回数を選択</label>
+                            <select id="rm-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg" onchange="updateRMDetail()">
+                                <option value="1">1RM</option>
+                                <option value="3">3RM</option>
+                                <option value="5">5RM</option>
+                                <option value="10">10RM</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 分割法別用（ルーティン選択） -->
+                    <div id="routine-selector" class="mt-6 hidden">
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">ルーティンを選択</label>
+                            <select id="routine-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg" onchange="updateRoutine()">
+                                <option value="chest">胸の日</option>
+                                <option value="back">背中の日</option>
+                                <option value="legs">脚の日</option>
+                                <option value="shoulders">肩の日</option>
+                                <option value="arms">腕の日</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- v6の改良ポイント -->
+        <div class="bg-white rounded-lg shadow-md p-4 mt-6">
+            <h3 class="font-bold text-lg mb-3 text-gray-800">✅ v6の改良ポイント</h3>
+            <ul class="list-disc pl-5 space-y-1 text-sm text-gray-700">
+                <li><strong>項目ごとに適切なレンジ</strong>: RM記録は800kg、カロリーは1500-3500kcal、LBMは40-80kgなど</li>
+                <li><strong>初回記録を基準軸として保存</strong>: データの最小値・最大値から自動計算し、初回設定を記憶</li>
+                <li><strong>軸の任意変更</strong>: Y軸の最小値・最大値をユーザーが自由に変更可能</li>
+                <li><strong>初期値リセット</strong>: ボタン1つで初回記録時のレンジに戻せる</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Lucideアイコン初期化
+        lucide.createIcons();
+
+        let currentMainCategory = 'performance';
+        let currentSubCategory = {
+            nutrition: 'calories',
+            training: 'habit',
+            condition: 'total',
+            performance: 'lbm'
+        };
+        let mainChart = null;
+        let currentAxisRange = { min: null, max: null };
+        let initialAxisRange = {}; // 初回記録時のレンジを保存
+
+        // 各指標の適切なレンジ設定
+        const defaultRanges = {
+            // 栄養
+            'nutrition-calories': { min: 1500, max: 3500 },
+            'nutrition-protein': { min: 0, max: 250 },
+            'nutrition-fat': { min: 0, max: 150 },
+            'nutrition-carbs': { min: 0, max: 500 },
+            'nutrition-fiber': { min: 0, max: 50 },
+            'nutrition-vitamin': { min: 0, max: 100 },
+            'nutrition-mineral': { min: 0, max: 100 },
+            // トレーニング
+            'training-habit': { min: 0, max: 1 },
+            'training-big3': { min: 0, max: 500 },
+            'training-routine': { min: 0, max: 300 },
+            // コンディション
+            'condition-total': { min: 0, max: 30 },
+            'condition-sleep': { min: 0, max: 10 },
+            'condition-appetite': { min: 0, max: 10 },
+            'condition-focus': { min: 0, max: 10 },
+            // パフォーマンス
+            'performance-lbm': { min: 40, max: 80 },
+            'performance-directive': { min: 0, max: 100 },
+            'performance-overall': { min: 0, max: 100 },
+            'performance-rm_detail': { min: 0, max: 800 } // RM記録のみ800kg
+        };
+
+        // データ定義
+        const chartData = {
+            nutrition: {
+                calories: {
+                    values: [2400, 2450, 2500, 2420, 2380, 2460, 2480],
+                    label: '🔥 カロリー',
+                    unit: 'kcal',
+                    color: 'rgb(59, 130, 246)',
+                    target: '目標: 2,500kcal (98%)'
+                },
+                protein: {
+                    values: [145, 150, 155, 148, 142, 152, 150],
+                    label: '🥩 タンパク質',
+                    unit: 'g',
+                    color: 'rgb(6, 182, 212)',
+                    target: '目標: 160g (94%)'
+                },
+                fat: {
+                    values: [60, 65, 68, 63, 62, 64, 65],
+                    label: '🧈 脂質',
+                    unit: 'g',
+                    color: 'rgb(245, 158, 11)',
+                    target: '目標: 70g (93%)'
+                },
+                carbs: {
+                    values: [280, 285, 290, 280, 275, 290, 295],
+                    label: '🍚 糖質',
+                    unit: 'g',
+                    color: 'rgb(34, 197, 94)',
+                    target: '目標: 300g (98%)'
+                },
+                fiber: {
+                    values: [23, 24, 25, 25, 24, 24, 25],
+                    label: '🥬 食物繊維',
+                    unit: 'g',
+                    color: 'rgb(132, 204, 22)',
+                    target: '目標: 30g (83%)'
+                },
+                vitamin: {
+                    values: [75, 76, 78, 79, 78, 77, 78],
+                    label: '💊 ビタミン総合達成率',
+                    unit: '%',
+                    color: 'rgb(168, 85, 247)',
+                    target: '目標: 100%'
+                },
+                mineral: {
+                    values: [80, 81, 82, 83, 82, 81, 82],
+                    label: '⚡ ミネラル総合達成率',
+                    unit: '%',
+                    color: 'rgb(249, 115, 22)',
+                    target: '目標: 100%'
+                }
+            },
+            training: {
+                habit: {
+                    values: [1, 1, 0, 1, 1, 1, 1],
+                    label: '📈 運動習慣率',
+                    unit: '',
+                    color: 'rgb(34, 197, 94)',
+                    target: '週6日実施 (85%)',
+                    isHabit: true
+                },
+                big3: {
+                    values: [350, 355, 360, 365, 368, 370, 370],
+                    label: '🏋️ BIG3合計（1RM）',
+                    unit: 'kg',
+                    color: 'rgb(239, 68, 68)',
+                    target: '目標: 400kg',
+                    period: '過去7日間の推移'
+                },
+                routine: {
+                    isRoutine: true,
+                    label: '📋 分割法別トレーニング量',
+                    period: '過去7日間の実施記録'
+                }
+            },
+            condition: {
+                total: {
+                    values: [22, 24, 26, 24, 23, 25, 24],
+                    label: '🎯 総合コンディションスコア',
+                    unit: '点',
+                    color: 'rgb(59, 130, 246)',
+                    target: '/ 30点'
+                },
+                sleep: {
+                    values: [7, 8, 9, 8, 7, 8, 8],
+                    label: '😴 睡眠の質',
+                    unit: '点',
+                    color: 'rgb(59, 130, 246)',
+                    target: '/ 10点'
+                },
+                appetite: {
+                    values: [7, 8, 8, 8, 7, 8, 8],
+                    label: '🍽️ 食欲',
+                    unit: '点',
+                    color: 'rgb(34, 197, 94)',
+                    target: '/ 10点'
+                },
+                focus: {
+                    values: [8, 8, 9, 8, 9, 9, 8],
+                    label: '🧠 集中力',
+                    unit: '点',
+                    color: 'rgb(168, 85, 247)',
+                    target: '/ 10点'
+                }
+            },
+            performance: {
+                lbm: {
+                    values: [61.0, 61.2, 61.5, 61.8, 62.0, 62.2, 62.5],
+                    label: '💪 LBM（除脂肪体重）',
+                    unit: 'kg',
+                    color: 'rgb(168, 85, 247)',
+                    target: '目標: 65kg',
+                    period: '過去7日間の推移'
+                },
+                directive: {
+                    values: [80, 85, 90, 85, 88, 92, 95],
+                    label: '📋 指示書達成率',
+                    unit: '%',
+                    color: 'rgb(34, 197, 94)',
+                    target: '目標: 100%',
+                    period: '過去7日間の達成率'
+                },
+                overall: {
+                    values: [85, 87, 90, 88, 90, 91, 92],
+                    label: '🎯 総合分析スコア',
+                    unit: '点',
+                    color: 'rgb(59, 130, 246)',
+                    target: '/ 100点',
+                    period: '過去7日間の推移'
+                },
+                rm_detail: {
+                    isRMDetail: true,
+                    label: '🏋️ RM記録詳細（種目別・RM別）',
+                    period: '過去4週間の推移'
+                }
+            }
+        };
+
+        // RM詳細データ（種目別×RM別）
+        const rmDetailData = {
+            bench: {
+                '1': { values: [95, 97, 98, 100], latest: 100, change: +2 },
+                '3': { values: [88, 90, 91, 93], latest: 93, change: +2 },
+                '5': { values: [82, 83, 85, 85], latest: 85, change: 0 },
+                '10': { values: [70, 71, 72, 73], latest: 73, change: +1 }
+            },
+            squat: {
+                '1': { values: [135, 138, 140, 140], latest: 140, change: 0 },
+                '3': { values: [125, 127, 128, 130], latest: 130, change: +2 },
+                '5': { values: [115, 117, 118, 120], latest: 120, change: +2 },
+                '10': { values: [95, 96, 98, 100], latest: 100, change: +2 }
+            },
+            deadlift: {
+                '1': { values: [170, 173, 175, 180], latest: 180, change: +5 },
+                '3': { values: [155, 158, 160, 165], latest: 165, change: +5 },
+                '5': { values: [140, 143, 145, 150], latest: 150, change: +5 },
+                '10': { values: [120, 122, 125, 128], latest: 128, change: +3 }
+            }
+        };
+
+        // ルーティン別データ
+        const routineData = {
+            chest: { values: [120, 125, 130, 135, 140, 145, 150], label: '胸の日', unit: 'kg' },
+            back: { values: [150, 155, 160, 165, 170, 175, 180], label: '背中の日', unit: 'kg' },
+            legs: { values: [200, 205, 210, 215, 220, 225, 230], label: '脚の日', unit: 'kg' },
+            shoulders: { values: [80, 82, 85, 87, 90, 92, 95], label: '肩の日', unit: 'kg' },
+            arms: { values: [60, 62, 65, 67, 70, 72, 75], label: '腕の日', unit: 'kg' }
+        };
+
+        // 初回記録時のレンジを計算して保存
+        function calculateInitialRange(category, subCategory, values) {
+            const key = `${category}-${subCategory}`;
+
+            if (initialAxisRange[key]) {
+                return initialAxisRange[key];
+            }
+
+            // デフォルトレンジがあればそれを使用
+            if (defaultRanges[key]) {
+                initialAxisRange[key] = { ...defaultRanges[key] };
+                return initialAxisRange[key];
+            }
+
+            // なければデータから自動計算
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const padding = (max - min) * 0.2 || 10;
+
+            initialAxisRange[key] = {
+                min: Math.floor(min - padding),
+                max: Math.ceil(max + padding)
+            };
+
+            return initialAxisRange[key];
+        }
+
+        // Y軸レンジをリセット
+        function resetAxisRange() {
+            const key = `${currentMainCategory}-${currentSubCategory[currentMainCategory]}`;
+            const range = initialAxisRange[key];
+
+            if (range) {
+                document.getElementById('axis-min').value = range.min;
+                document.getElementById('axis-max').value = range.max;
+                updateAxisRange();
+            }
+        }
+
+        // Y軸レンジを更新
+        function updateAxisRange() {
+            const min = parseFloat(document.getElementById('axis-min').value);
+            const max = parseFloat(document.getElementById('axis-max').value);
+
+            if (!isNaN(min) && !isNaN(max) && min < max) {
+                currentAxisRange = { min, max };
+
+                // グラフを再描画
+                if (mainChart) {
+                    mainChart.options.scales.y.min = min;
+                    mainChart.options.scales.y.max = max;
+                    mainChart.update();
+                }
+            }
+        }
+
+        // 大カテゴリ選択
+        function selectMainCategory(category) {
+            currentMainCategory = category;
+
+            // 大カテゴリタブのアクティブ状態を更新
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active', 'text-green-700', 'text-red-700', 'text-blue-700', 'text-purple-700', 'bg-white', 'border-b-0');
+                btn.classList.add('text-gray-600');
+            });
+            event.currentTarget.classList.add('active', 'bg-white', 'border-b-0');
+
+            if (category === 'nutrition') {
+                event.currentTarget.classList.add('text-green-700');
+            } else if (category === 'training') {
+                event.currentTarget.classList.add('text-red-700');
+            } else if (category === 'condition') {
+                event.currentTarget.classList.add('text-blue-700');
+            } else if (category === 'performance') {
+                event.currentTarget.classList.add('text-purple-700');
+            }
+
+            // 小カテゴリタブを切り替え
+            document.querySelectorAll('.sub-tabs').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`${category}-subtabs`).classList.remove('hidden');
+            document.getElementById(`${category}-subtabs`).classList.add('flex');
+
+            // 選択中の小カテゴリを表示
+            updateChart(category, currentSubCategory[category]);
+        }
+
+        // 小カテゴリ選択
+        function selectSubCategory(category, subCategory) {
+            currentSubCategory[category] = subCategory;
+
+            // 小カテゴリタブのアクティブ状態を更新
+            const subtabContainer = document.getElementById(`${category}-subtabs`);
+            subtabContainer.querySelectorAll('.sub-tab-button').forEach(btn => {
+                btn.classList.remove('active', 'border-green-500', 'border-red-500', 'border-blue-500', 'border-purple-500', 'text-green-700', 'text-red-700', 'text-blue-700', 'text-purple-700');
+                btn.classList.add('border-transparent', 'text-gray-700');
+            });
+
+            event.currentTarget.classList.add('active');
+            event.currentTarget.classList.remove('border-transparent', 'text-gray-700');
+
+            if (category === 'nutrition') {
+                event.currentTarget.classList.add('border-green-500', 'text-green-700');
+            } else if (category === 'training') {
+                event.currentTarget.classList.add('border-red-500', 'text-red-700');
+            } else if (category === 'condition') {
+                event.currentTarget.classList.add('border-blue-500', 'text-blue-700');
+            } else if (category === 'performance') {
+                event.currentTarget.classList.add('border-purple-500', 'text-purple-700');
+            }
+
+            updateChart(category, subCategory);
+        }
+
+        // グラフ更新
+        function updateChart(category, subCategory) {
+            const data = chartData[category][subCategory];
+
+            // すべての特別表示を非表示
+            document.getElementById('habit-calendar').classList.add('hidden');
+            document.getElementById('rm-detail-selector').classList.add('hidden');
+            document.getElementById('routine-selector').classList.add('hidden');
+            document.getElementById('stats-container').classList.remove('hidden');
+            document.getElementById('range-control').classList.remove('hidden');
+
+            // 運動習慣率の場合
+            if (data.isHabit) {
+                document.getElementById('chart-title').textContent = data.label;
+                document.getElementById('chart-period').textContent = '過去7日間の実施状況';
+                document.getElementById('chart-value').textContent = '6';
+                document.getElementById('chart-unit').textContent = '日実施';
+                document.getElementById('chart-target').textContent = data.target;
+                document.getElementById('stats-container').classList.add('hidden');
+                document.getElementById('habit-calendar').classList.remove('hidden');
+                document.getElementById('range-control').classList.add('hidden');
+
+                const range = calculateInitialRange(category, subCategory, data.values);
+                currentAxisRange = { ...range };
+                document.getElementById('axis-min').value = range.min;
+                document.getElementById('axis-max').value = range.max;
+
+                if (mainChart) mainChart.destroy();
+                mainChart = new Chart(document.getElementById('main-chart'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['月', '火', '水', '木', '金', '土', '日'],
+                        datasets: [{
+                            label: '運動実施',
+                            data: data.values,
+                            backgroundColor: data.values.map(v => v === 1 ? data.color : 'rgb(229, 231, 235)')
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                min: currentAxisRange.min,
+                                max: currentAxisRange.max,
+                                ticks: {
+                                    stepSize: 1,
+                                    callback: (val) => val === 1 ? '実施' : '未実施'
+                                }
+                            }
+                        }
+                    }
+                });
+                return;
+            }
+
+            // RM詳細の場合
+            if (data.isRMDetail) {
+                document.getElementById('chart-title').textContent = data.label;
+                document.getElementById('chart-period').textContent = data.period;
+                document.getElementById('chart-value').textContent = '';
+                document.getElementById('chart-unit').textContent = '';
+                document.getElementById('chart-target').textContent = '';
+                document.getElementById('stats-container').classList.add('hidden');
+                document.getElementById('rm-detail-selector').classList.remove('hidden');
+                updateRMDetail();
+                return;
+            }
+
+            // ルーティン別の場合
+            if (data.isRoutine) {
+                document.getElementById('chart-title').textContent = data.label;
+                document.getElementById('chart-period').textContent = data.period;
+                document.getElementById('chart-value').textContent = '';
+                document.getElementById('chart-unit').textContent = '';
+                document.getElementById('chart-target').textContent = '';
+                document.getElementById('stats-container').classList.add('hidden');
+                document.getElementById('routine-selector').classList.remove('hidden');
+                updateRoutine();
+                return;
+            }
+
+            // 通常の指標
+            document.getElementById('chart-title').textContent = data.label;
+            document.getElementById('chart-period').textContent = data.period || '過去7日間の推移';
+            document.getElementById('chart-value').textContent = data.values[data.values.length - 1];
+            document.getElementById('chart-unit').textContent = data.unit;
+            document.getElementById('chart-target').textContent = data.target;
+
+            // 統計計算
+            const avg = (data.values.reduce((a, b) => a + b, 0) / data.values.length).toFixed(data.unit === '%' ? 1 : 1);
+            const max = Math.max(...data.values);
+            const min = Math.min(...data.values);
+
+            document.getElementById('stat-avg').textContent = avg;
+            document.getElementById('stat-max').textContent = max;
+            document.getElementById('stat-min').textContent = min;
+
+            // 統計の単位も更新
+            document.getElementById('stat-avg-unit').textContent = data.unit;
+            document.getElementById('stat-max-unit').textContent = data.unit;
+            document.getElementById('stat-min-unit').textContent = data.unit;
+
+            // Y軸レンジを設定
+            const range = calculateInitialRange(category, subCategory, data.values);
+            currentAxisRange = { ...range };
+            document.getElementById('axis-min').value = range.min;
+            document.getElementById('axis-max').value = range.max;
+
+            // グラフ描画
+            if (mainChart) mainChart.destroy();
+
+            const labels = ['月', '火', '水', '木', '金', '土', '日'];
+
+            mainChart = new Chart(document.getElementById('main-chart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: data.label,
+                        data: data.values,
+                        borderColor: data.color,
+                        backgroundColor: data.color.replace('rgb', 'rgba').replace(')', ', 0.1)'),
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: currentAxisRange.min,
+                            max: currentAxisRange.max
+                        }
+                    }
+                }
+            });
+        }
+
+        // RM詳細更新
+        function updateRMDetail() {
+            const exercise = document.getElementById('exercise-select').value;
+            const rm = document.getElementById('rm-select').value;
+            const data = rmDetailData[exercise][rm];
+
+            const exerciseNames = {
+                bench: 'ベンチプレス',
+                squat: 'スクワット',
+                deadlift: 'デッドリフト'
+            };
+
+            document.getElementById('chart-value').textContent = data.latest;
+            document.getElementById('chart-unit').textContent = 'kg';
+            document.getElementById('chart-target').textContent = `${rm}RM | ${data.change > 0 ? '↑' : data.change < 0 ? '↓' : ''} ${data.change > 0 ? '+' : ''}${data.change}kg`;
+
+            // RM記録専用のレンジ（800kg）
+            const range = { min: 0, max: 800 };
+            currentAxisRange = { ...range };
+            document.getElementById('axis-min').value = range.min;
+            document.getElementById('axis-max').value = range.max;
+
+            if (mainChart) mainChart.destroy();
+
+            mainChart = new Chart(document.getElementById('main-chart'), {
+                type: 'line',
+                data: {
+                    labels: ['第1週', '第2週', '第3週', '第4週'],
+                    datasets: [{
+                        label: `${exerciseNames[exercise]} ${rm}RM`,
+                        data: data.values,
+                        borderColor: 'rgb(168, 85, 247)',
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            min: currentAxisRange.min,
+                            max: currentAxisRange.max
+                        }
+                    }
+                }
+            });
+        }
+
+        // ルーティン更新
+        function updateRoutine() {
+            const routine = document.getElementById('routine-select').value;
+            const data = routineData[routine];
+
+            document.getElementById('chart-value').textContent = data.values[data.values.length - 1];
+            document.getElementById('chart-unit').textContent = data.unit;
+            document.getElementById('chart-target').textContent = `${data.label}の総重量`;
+
+            // ルーティン用のレンジ
+            const range = calculateInitialRange('training', 'routine', data.values);
+            currentAxisRange = { ...range };
+            document.getElementById('axis-min').value = range.min;
+            document.getElementById('axis-max').value = range.max;
+
+            if (mainChart) mainChart.destroy();
+
+            mainChart = new Chart(document.getElementById('main-chart'), {
+                type: 'line',
+                data: {
+                    labels: ['月', '火', '水', '木', '金', '土', '日'],
+                    datasets: [{
+                        label: data.label,
+                        data: data.values,
+                        borderColor: 'rgb(239, 68, 68)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: currentAxisRange.min,
+                            max: currentAxisRange.max
+                        }
+                    }
+                }
+            });
+        }
+
+        // 初期表示
+        updateChart('performance', 'lbm');
+    </script>
+</body>
+</html>

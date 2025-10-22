@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>候補3: インラインカード型ダッシュボード</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-md mx-auto min-h-screen">
+        <!-- 候補3: インラインカード型 -->
+        <!-- 特徴: 今日/統計/グラフ/履歴を全てカード形式で並べて表示、スクロールで全体を見渡せる -->
+
+        <!-- ヘッダー（固定） -->
+        <div class="bg-white shadow-md sticky top-0 z-30">
+            <div class="flex items-center justify-between px-4 py-3 border-b">
+                <button class="p-2 hover:bg-gray-100 rounded-full transition">
+                    <i data-lucide="chevron-left" class="w-5 h-5 text-gray-600"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-5 h-5 text-indigo-600"></i>
+                    <span class="font-bold text-gray-800">10月15日(火)</span>
+                    <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">今日</span>
+                </div>
+                <button class="p-2 hover:bg-gray-100 rounded-full transition">
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-600"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- メインコンテンツ（全てカード形式） -->
+        <div class="p-4 space-y-4">
+            <!-- 今日の記録カード -->
+            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-300 rounded-xl p-5 shadow-md">
+                <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <i data-lucide="home" class="w-5 h-5 text-indigo-600"></i>
+                    今日の記録
+                </h3>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="bg-white rounded-lg p-3">
+                        <div class="text-gray-600 text-xs mb-1">カロリー</div>
+                        <div class="font-bold text-lg">2,200kcal</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3">
+                        <div class="text-gray-600 text-xs mb-1">タンパク質</div>
+                        <div class="font-bold text-lg text-cyan-600">180g</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3">
+                        <div class="text-gray-600 text-xs mb-1">食事記録</div>
+                        <div class="font-bold text-lg">3回</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3">
+                        <div class="text-gray-600 text-xs mb-1">トレーニング</div>
+                        <div class="font-bold text-lg text-purple-600">胸</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- クイック統計カード -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-bold flex items-center gap-2">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-green-600"></i>
+                        週間サマリー
+                    </h4>
+                    <span class="text-xs text-gray-500">過去7日</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-indigo-50 rounded-lg p-2">
+                        <div class="text-xs text-gray-600 mb-1">平均カロリー</div>
+                        <div class="font-bold text-sm">2,150kcal</div>
+                    </div>
+                    <div class="bg-cyan-50 rounded-lg p-2">
+                        <div class="text-xs text-gray-600 mb-1">平均P</div>
+                        <div class="font-bold text-sm">180g</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-2">
+                        <div class="text-xs text-gray-600 mb-1">記録日数</div>
+                        <div class="font-bold text-sm">7日</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 指示書達成率カード -->
+            <div class="bg-gradient-to-r from-green-50 to-teal-50 border-2 border-green-300 rounded-xl p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-5 h-5 text-green-600"></i>
+                        <span class="font-bold text-gray-800">指示書達成率</span>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold text-green-600">85%</div>
+                        <div class="text-xs text-gray-500">6/7日達成</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- グラフカード -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-bold flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-4 h-4 text-blue-600"></i>
+                        カロリー推移
+                    </h4>
+                    <select class="text-xs border rounded px-2 py-1">
+                        <option>カロリー</option>
+                        <option>P</option>
+                        <option>体重</option>
+                    </select>
+                </div>
+                <div class="h-32 bg-gradient-to-t from-indigo-50 to-transparent rounded-lg border border-indigo-200 flex items-center justify-center">
+                    <span class="text-gray-400 text-sm">グラフエリア</span>
+                </div>
+                <div class="flex justify-between text-xs text-gray-500 mt-2">
+                    <span>10/9</span>
+                    <span>10/12</span>
+                    <span>10/15</span>
+                </div>
+            </div>
+
+            <!-- ミニカレンダーカード -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                <h4 class="font-bold mb-3 flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-4 h-4 text-indigo-600"></i>
+                    今月のカレンダー
+                </h4>
+                <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                    <div class="text-gray-400 p-1">日</div>
+                    <div class="text-gray-400 p-1">月</div>
+                    <div class="text-gray-400 p-1">火</div>
+                    <div class="text-gray-400 p-1">水</div>
+                    <div class="text-gray-400 p-1">木</div>
+                    <div class="text-gray-400 p-1">金</div>
+                    <div class="text-gray-400 p-1">土</div>
+                    <div class="p-1 text-gray-300">1</div>
+                    <div class="p-1 text-gray-300">2</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">3</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">4</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">5</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">6</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">7</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">8</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">9</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">10</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">11</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">12</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">13</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">14</div>
+                    <div class="p-1 bg-indigo-600 text-white rounded-full font-bold">15</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">16</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">17</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">18</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">19</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">20</div>
+                    <div class="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer">21</div>
+                </div>
+            </div>
+
+            <!-- 最近の履歴カード -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                <h4 class="font-bold mb-3 flex items-center gap-2">
+                    <i data-lucide="clock" class="w-4 h-4 text-purple-600"></i>
+                    最近の履歴
+                </h4>
+                <div class="space-y-2">
+                    <div class="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition cursor-pointer">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-bold text-sm">10月14日(月)</div>
+                                <div class="text-xs text-gray-600">2,100kcal / P: 175g</div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition cursor-pointer">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-bold text-sm">10月13日(日)</div>
+                                <div class="text-xs text-gray-600">2,300kcal / P: 190g</div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition cursor-pointer">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-bold text-sm">10月12日(土)</div>
+                                <div class="text-xs text-gray-600">2,250kcal / P: 185g</div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="w-full mt-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition">
+                    もっと見る
+                </button>
+            </div>
+        </div>
+
+        <!-- 説明カード -->
+        <div class="p-4">
+            <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <h3 class="font-bold text-gray-800 mb-2">候補3の特徴</h3>
+                <ul class="text-sm text-gray-600 space-y-2">
+                    <li>✅ 全情報をカード形式で一覧表示</li>
+                    <li>✅ 縦スクロールで全体を見渡せる</li>
+                    <li>✅ 視覚的に情報がわかりやすい</li>
+                    <li>✅ 折りたたみ・タブ切り替え不要</li>
+                    <li>✅ ダッシュボードとして最も直感的</li>
+                    <li>❌ 画面が長くなる</li>
+                    <li>❌ スクロール量が多い</li>
+                </ul>
+                <div class="mt-3 p-2 bg-blue-100 rounded">
+                    <p class="text-xs text-blue-900 font-medium">💡 推奨ケース</p>
+                    <p class="text-xs text-blue-700">
+                        全情報を一目で把握したい。スクロールで自然に情報を確認したい場合。最も直感的。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

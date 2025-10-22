@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>候補1: タブ切り替え型ダッシュボード</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-md mx-auto min-h-screen">
+        <!-- 候補1: タブ切り替え型 -->
+        <!-- 特徴: 今日/履歴/統計をタブで切り替え、全てダッシュボード内で完結 -->
+
+        <!-- ヘッダー（固定） -->
+        <div class="bg-white shadow-md sticky top-0 z-30">
+            <div class="flex items-center justify-between px-4 py-3 border-b">
+                <button class="p-2 hover:bg-gray-100 rounded-full transition">
+                    <i data-lucide="chevron-left" class="w-5 h-5 text-gray-600"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-5 h-5 text-indigo-600"></i>
+                    <span class="font-bold text-gray-800">10月15日(火)</span>
+                    <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">今日</span>
+                </div>
+                <button class="p-2 hover:bg-gray-100 rounded-full transition">
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-600"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- タブナビゲーション -->
+        <div class="bg-white border-b sticky top-[57px] z-20">
+            <div class="flex">
+                <button id="tab-today" onclick="switchTab('today')" class="flex-1 px-4 py-3 font-medium text-sm border-b-2 border-indigo-600 text-indigo-600">
+                    <i data-lucide="home" class="w-4 h-4 inline mr-1"></i>
+                    今日
+                </button>
+                <button id="tab-history" onclick="switchTab('history')" class="flex-1 px-4 py-3 font-medium text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    <i data-lucide="clock" class="w-4 h-4 inline mr-1"></i>
+                    履歴
+                </button>
+                <button id="tab-stats" onclick="switchTab('stats')" class="flex-1 px-4 py-3 font-medium text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 inline mr-1"></i>
+                    統計
+                </button>
+            </div>
+        </div>
+
+        <!-- コンテンツエリア -->
+        <div class="p-4 space-y-4">
+            <!-- 今日タブ -->
+            <div id="content-today" class="space-y-4">
+                <div class="bg-white rounded-xl p-6 shadow-sm">
+                    <h3 class="font-bold text-gray-800 mb-2">今日の記録</h3>
+                    <div class="text-sm text-gray-600">
+                        <p>✅ カロリー: 2,200kcal</p>
+                        <p>✅ タンパク質: 180g</p>
+                        <p>✅ 食事記録: 3回</p>
+                        <p>✅ トレーニング: 胸</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 履歴タブ -->
+            <div id="content-history" class="hidden space-y-4">
+                <!-- ミニカレンダー -->
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <h4 class="font-bold mb-3 flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                        期間選択
+                    </h4>
+                    <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                        <div class="text-gray-500">日</div>
+                        <div class="text-gray-500">月</div>
+                        <div class="text-gray-500">火</div>
+                        <div class="text-gray-500">水</div>
+                        <div class="text-gray-500">木</div>
+                        <div class="text-gray-500">金</div>
+                        <div class="text-gray-500">土</div>
+                        <div class="p-2 text-gray-400">1</div>
+                        <div class="p-2 text-gray-400">2</div>
+                        <div class="p-2">3</div>
+                        <div class="p-2">4</div>
+                        <div class="p-2">5</div>
+                        <div class="p-2">6</div>
+                        <div class="p-2">7</div>
+                        <div class="p-2">8</div>
+                        <div class="p-2">9</div>
+                        <div class="p-2">10</div>
+                        <div class="p-2">11</div>
+                        <div class="p-2">12</div>
+                        <div class="p-2">13</div>
+                        <div class="p-2">14</div>
+                        <div class="p-2 bg-indigo-600 text-white rounded">15</div>
+                    </div>
+                </div>
+
+                <!-- グラフ表示 -->
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-bold">カロリー推移</h4>
+                        <select class="text-xs border rounded px-2 py-1">
+                            <option>カロリー</option>
+                            <option>タンパク質</option>
+                            <option>体重</option>
+                        </select>
+                    </div>
+                    <div class="h-32 bg-gray-100 rounded flex items-center justify-center">
+                        <span class="text-gray-400 text-sm">グラフエリア</span>
+                    </div>
+                </div>
+
+                <!-- 履歴リスト -->
+                <div class="space-y-2">
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-bold text-sm">10月14日(月)</div>
+                                <div class="text-xs text-gray-600">2,100kcal / P: 175g</div>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-bold text-sm">10月13日(日)</div>
+                                <div class="text-xs text-gray-600">2,300kcal / P: 190g</div>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 統計タブ -->
+            <div id="content-stats" class="hidden space-y-4">
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <h4 class="font-bold mb-3">週間統計</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">平均カロリー</span>
+                            <span class="font-bold">2,150kcal</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">平均タンパク質</span>
+                            <span class="font-bold">180g</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">記録日数</span>
+                            <span class="font-bold">7日</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <h4 class="font-bold mb-3">指示書達成率</h4>
+                    <div class="flex items-center gap-3">
+                        <div class="text-4xl font-bold text-green-600">85%</div>
+                        <div class="text-xs text-gray-600">6/7日達成</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 説明カード -->
+        <div class="p-4">
+            <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <h3 class="font-bold text-gray-800 mb-2">候補1の特徴</h3>
+                <ul class="text-sm text-gray-600 space-y-2">
+                    <li>✅ 今日/履歴/統計をタブで切り替え</li>
+                    <li>✅ モーダル不要で全てダッシュボードで完結</li>
+                    <li>✅ 直感的なタブUI</li>
+                    <li>✅ 画面遷移がなくスムーズ</li>
+                    <li>❌ タブが増えると情報密度が高くなる</li>
+                </ul>
+                <div class="mt-3 p-2 bg-blue-100 rounded">
+                    <p class="text-xs text-blue-900 font-medium">💡 推奨ケース</p>
+                    <p class="text-xs text-blue-700">
+                        全機能に素早くアクセスしたい。画面遷移を最小限にしたい場合。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function switchTab(tabName) {
+            // タブボタンのスタイル切り替え
+            ['today', 'history', 'stats'].forEach(tab => {
+                const btn = document.getElementById(`tab-${tab}`);
+                const content = document.getElementById(`content-${tab}`);
+
+                if (tab === tabName) {
+                    btn.classList.add('border-indigo-600', 'text-indigo-600');
+                    btn.classList.remove('border-transparent', 'text-gray-500');
+                    content.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('border-indigo-600', 'text-indigo-600');
+                    btn.classList.add('border-transparent', 'text-gray-500');
+                    content.classList.add('hidden');
+                }
+            });
+
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

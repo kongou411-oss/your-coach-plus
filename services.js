@@ -17,10 +17,25 @@ const getFoodDBFromExternal = () => {
     }
     const foodCategories = {};
     Object.keys(foodDatabase).forEach(category => {
-        if (category !== 'サプリメント' && category !== '調味料') {
+        if (category !== '調味料') {
             foodCategories[category] = foodDatabase[category];
         }
     });
+
+    // LocalStorageからカスタム食材を読み込む
+    try {
+        const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
+        if (customFoods.length > 0) {
+            foodCategories['カスタム'] = {};
+            customFoods.forEach(food => {
+                foodCategories['カスタム'][food.name] = food;
+            });
+            console.log(`Loaded ${customFoods.length} custom foods from localStorage`);
+        }
+    } catch (err) {
+        console.error('Failed to load custom foods from localStorage:', err);
+    }
+
     return foodCategories;
 };
 
@@ -148,6 +163,56 @@ const exerciseDB = getExerciseDBFromExternal();
 
 // ===== データアクセス層（開発中はlocalStorage） =====
 const DataService = {
+    // ユーザー認証情報の保存/更新（Google/Email認証後に自動実行）
+    saveOrUpdateAuthUser: async (firebaseUser) => {
+        if (!firebaseUser) return false;
+
+        const userId = firebaseUser.uid;
+        const authData = {
+            uid: userId,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName || '',
+            photoURL: firebaseUser.photoURL || '',
+            emailVerified: firebaseUser.emailVerified,
+            provider: firebaseUser.providerData[0]?.providerId || 'password',
+            lastLoginAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        if (DEV_MODE) {
+            // DEV_MODEでは認証情報をLocalStorageに保存
+            localStorage.setItem('yourCoachBeta_authUser', JSON.stringify(authData));
+            return true;
+        }
+
+        try {
+            const userRef = db.collection('users').doc(userId);
+            const doc = await userRef.get();
+
+            if (!doc.exists) {
+                // 新規ユーザー: 作成日時も追加
+                authData.createdAt = new Date().toISOString();
+                authData.joinDate = new Date().toISOString();
+                await userRef.set(authData);
+                console.log('New user created:', userId);
+            } else {
+                // 既存ユーザー: lastLoginAtとupdatedAtのみ更新
+                await userRef.update({
+                    lastLoginAt: authData.lastLoginAt,
+                    updatedAt: authData.updatedAt,
+                    email: authData.email, // メール変更対応
+                    photoURL: authData.photoURL, // プロフィール画像更新
+                    displayName: authData.displayName // 表示名更新
+                });
+                console.log('User login updated:', userId);
+            }
+            return true;
+        } catch (error) {
+            console.error('Error saving auth user:', error);
+            return false;
+        }
+    },
+
     // ユーザープロファイル取得
     getUserProfile: async (userId) => {
         if (DEV_MODE) {
@@ -620,6 +685,140 @@ const DataService = {
             return true;
         }
         return true;
+    },
+
+    // ===== ワークアウト履歴管理 =====
+
+    // ワークアウト履歴を保存（種目別、RM別、重量別に記録）
+    saveWorkoutHistory: async (userId, exerciseName, setData) => {
+        const historyKey = `workout_history_${userId}`;
+        const timestamp = new Date().toISOString();
+
+        if (DEV_MODE) {
+            const saved = localStorage.getItem(historyKey);
+            const history = saved ? JSON.parse(saved) : [];
+
+            history.push({
+                exerciseName,
+                weight: setData.weight,
+                rm: setData.rm || 1,
+                reps: setData.reps,
+                setType: setData.setType || 'main',
+                timestamp
+            });
+
+            localStorage.setItem(historyKey, JSON.stringify(history));
+            return true;
+        }
+
+        try {
+            await db
+                .collection('users')
+                .doc(userId)
+                .collection('workoutHistory')
+                .add({
+                    exerciseName,
+                    weight: setData.weight,
+                    rm: setData.rm || 1,
+                    reps: setData.reps,
+                    setType: setData.setType || 'main',
+                    timestamp
+                });
+            return true;
+        } catch (error) {
+            console.error('Error saving workout history:', error);
+            return false;
+        }
+    },
+
+    // ワークアウト履歴を取得（種目別フィルタ）
+    getWorkoutHistoryByExercise: async (userId, exerciseName) => {
+        const historyKey = `workout_history_${userId}`;
+
+        if (DEV_MODE) {
+            const saved = localStorage.getItem(historyKey);
+            const history = saved ? JSON.parse(saved) : [];
+
+            return history
+                .filter(h => h.exerciseName === exerciseName)
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        }
+
+        try {
+            const snapshot = await db
+                .collection('users')
+                .doc(userId)
+                .collection('workoutHistory')
+                .where('exerciseName', '==', exerciseName)
+                .orderBy('timestamp', 'desc')
+                .limit(100)
+                .get();
+
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error('Error fetching workout history by exercise:', error);
+            return [];
+        }
+    },
+
+    // ワークアウト履歴を取得（種目別 + RM別フィルタ）
+    getWorkoutHistoryByExerciseAndRM: async (userId, exerciseName, rm) => {
+        const historyKey = `workout_history_${userId}`;
+
+        if (DEV_MODE) {
+            const saved = localStorage.getItem(historyKey);
+            const history = saved ? JSON.parse(saved) : [];
+
+            return history
+                .filter(h => h.exerciseName === exerciseName && h.rm === rm)
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        }
+
+        try {
+            const snapshot = await db
+                .collection('users')
+                .doc(userId)
+                .collection('workoutHistory')
+                .where('exerciseName', '==', exerciseName)
+                .where('rm', '==', rm)
+                .orderBy('timestamp', 'desc')
+                .limit(50)
+                .get();
+
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error('Error fetching workout history by exercise and RM:', error);
+            return [];
+        }
+    },
+
+    // 全ワークアウト履歴を取得（最近100件）
+    getAllWorkoutHistory: async (userId) => {
+        const historyKey = `workout_history_${userId}`;
+
+        if (DEV_MODE) {
+            const saved = localStorage.getItem(historyKey);
+            const history = saved ? JSON.parse(saved) : [];
+
+            return history
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                .slice(0, 100);
+        }
+
+        try {
+            const snapshot = await db
+                .collection('users')
+                .doc(userId)
+                .collection('workoutHistory')
+                .orderBy('timestamp', 'desc')
+                .limit(100)
+                .get();
+
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error('Error fetching all workout history:', error);
+            return [];
+        }
     }
 };
 
@@ -753,5 +952,120 @@ ${userProfile ? `
                 error: 'AIとの通信中にネットワークエラーが発生しました。接続を確認してください。'
             };
         }
+    },
+
+    // AIクレジット管理
+    getAICredits: async (userId) => {
+        const profile = await DataService.getUserProfile(userId);
+        if (!profile || !profile.subscription) {
+            return {
+                monthly: 0,
+                remaining: 0,
+                used: 0,
+                purchased: 0,
+                isPremium: false
+            };
+        }
+
+        const credits = profile.subscription.aiCredits || {
+            monthly: SUBSCRIPTION_PLAN.aiCredits.monthly,
+            remaining: 0,
+            used: 0,
+            purchased: 0,
+            lastReset: new Date().toISOString().split('T')[0]
+        };
+
+        // 月が変わったらリセット
+        const today = new Date().toISOString().split('T')[0];
+        const lastReset = credits.lastReset || today;
+        const currentMonth = today.substring(0, 7); // YYYY-MM
+        const lastMonth = lastReset.substring(0, 7);
+
+        if (currentMonth !== lastMonth) {
+            // 新しい月 = クレジットリセット
+            credits.monthly = SUBSCRIPTION_PLAN.aiCredits.monthly;
+            credits.remaining = SUBSCRIPTION_PLAN.aiCredits.monthly;
+            credits.used = 0;
+            credits.purchased = 0;
+            credits.lastReset = today;
+
+            // Firestoreに保存
+            await DataService.saveUserProfile(userId, {
+                ...profile,
+                subscription: {
+                    ...profile.subscription,
+                    aiCredits: credits
+                }
+            });
+        }
+
+        return {
+            ...credits,
+            isPremium: profile.subscription.status === 'active'
+        };
+    },
+
+    // AIクレジット消費
+    consumeAICredit: async (userId) => {
+        const profile = await DataService.getUserProfile(userId);
+        if (!profile || !profile.subscription || profile.subscription.status !== 'active') {
+            return { success: false, error: 'プレミアムプランに登録してください' };
+        }
+
+        const credits = await GeminiAPI.getAICredits(userId);
+
+        if (credits.remaining <= 0) {
+            return { success: false, error: 'AIクレジットが不足しています。追加購入してください。' };
+        }
+
+        // クレジット消費
+        const updatedCredits = {
+            ...credits,
+            remaining: credits.remaining - 1,
+            used: credits.used + 1
+        };
+
+        await DataService.saveUserProfile(userId, {
+            ...profile,
+            subscription: {
+                ...profile.subscription,
+                aiCredits: updatedCredits
+            }
+        });
+
+        return { success: true, remaining: updatedCredits.remaining };
+    },
+
+    // AIクレジット追加購入
+    purchaseAICredits: async (userId, amount) => {
+        const profile = await DataService.getUserProfile(userId);
+        if (!profile || !profile.subscription) {
+            return { success: false, error: 'サブスクリプション情報が見つかりません' };
+        }
+
+        const credits = profile.subscription.aiCredits || {
+            monthly: SUBSCRIPTION_PLAN.aiCredits.monthly,
+            remaining: 0,
+            used: 0,
+            purchased: 0,
+            lastReset: new Date().toISOString().split('T')[0]
+        };
+
+        // クレジット追加
+        const updatedCredits = {
+            ...credits,
+            remaining: credits.remaining + amount,
+            purchased: credits.purchased + amount
+        };
+
+        await DataService.saveUserProfile(userId, {
+            ...profile,
+            subscription: {
+                ...profile.subscription,
+                aiCredits: updatedCredits
+            }
+        });
+
+        return { success: true, remaining: updatedCredits.remaining };
     }
 };

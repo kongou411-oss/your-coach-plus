@@ -11,35 +11,11 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
     // Textbookモジュール一覧
     const textbookModules = [
         {
-            id: 'mental_textbook',
-            title: 'メンタルの教科書',
-            category: '心理学',
-            path: './module/mental_textbook_new.html',
-            description: 'モチベーション、習慣形成、ストレス管理などメンタル面の科学的アプローチ',
-            icon: 'Brain'
-        },
-        {
-            id: 'pg_formula_textbook',
-            title: 'PG式の教科書',
-            category: '運動科学',
-            path: './module/pg_formula_textbook_new.html',
-            description: 'METsを超えた革新的カロリー計算アルゴリズムの科学的根拠と実践',
-            icon: 'Zap'
-        },
-        {
             id: 'protein_textbook',
             title: 'タンパク質の教科書',
             category: '栄養学',
             path: './module/Nutrition/macro/protein_textbook_new.html',
             description: 'タンパク質の役割、アミノ酸スコア、摂取タイミング、プロテインの選び方',
-            icon: 'Apple'
-        },
-        {
-            id: 'carb_textbook',
-            title: '炭水化物の教科書',
-            category: '栄養学',
-            path: './module/Nutrition/macro/carb_textbook_new.html',
-            description: '炭水化物の種類、GI値、タイミング、糖質制限の科学',
             icon: 'Apple'
         },
         {
@@ -51,11 +27,11 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             icon: 'Apple'
         },
         {
-            id: 'basic_supplements_textbook',
-            title: '基礎サプリメントの教科書',
+            id: 'carb_textbook',
+            title: '炭水化物の教科書',
             category: '栄養学',
-            path: './module/basic_supplements_textbook_new.html',
-            description: 'クレアチン、アミノ酸、ベータアラニン、HMBなど基礎サプリメントの科学',
+            path: './module/Nutrition/macro/carb_textbook_new.html',
+            description: '炭水化物の種類、GI値、タイミング、糖質制限の科学',
             icon: 'Apple'
         },
         {
@@ -65,6 +41,22 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             path: './module/Nutrition/micro/vitamin_mineral_textbook_new.html',
             description: '微量栄養素の役割、欠乏症、過剰症、サプリメント摂取の考え方',
             icon: 'Apple'
+        },
+        {
+            id: 'basic_supplements_textbook',
+            title: '基礎サプリメントの教科書',
+            category: '栄養学',
+            path: './module/basic_supplements_textbook_new.html',
+            description: 'クレアチン、アミノ酸、ベータアラニン、HMBなど基礎サプリメントの科学',
+            icon: 'Apple'
+        },
+        {
+            id: 'mental_textbook',
+            title: 'メンタルの教科書',
+            category: 'メンタル',
+            path: './module/mental_textbook_new.html',
+            description: 'モチベーション、習慣形成、ストレス管理などメンタル面の科学的アプローチ',
+            icon: 'Brain'
         }
     ];
 
@@ -248,7 +240,7 @@ ${context}
         return (
             <div className="fixed inset-0 bg-white z-50 flex flex-col">
                 {/* ヘッダー */}
-                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-4 flex items-center justify-between shadow-lg">
+                <div className="bg-gradient-to-r from-cyan-600 to-cyan-500 text-white px-4 py-4 flex items-center justify-between shadow-lg">
                     <button onClick={() => setSelectedModule(null)} className="p-2 hover:bg-white/20 rounded-lg transition">
                         <Icon name="ArrowLeft" size={24} />
                     </button>
@@ -278,7 +270,7 @@ ${context}
     return (
         <div className="fixed inset-0 bg-white z-50 flex flex-col">
             {/* ヘッダー */}
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-4 flex items-center justify-between shadow-lg">
+            <div className="bg-gradient-to-r from-cyan-600 to-cyan-500 text-white px-4 py-4 flex items-center justify-between shadow-lg">
                 <div className="flex items-center gap-3">
                     <Icon name="BookOpen" size={24} />
                     <div>
@@ -291,14 +283,14 @@ ${context}
                 </button>
             </div>
 
-            {/* タブ切り替え（モジュール/AIモード） */}
+            {/* タブ切り替え（モジュール/AIモード/コミュニティ） */}
             <div className="bg-white border-b border-gray-200 px-4 pt-3">
                 <div className="flex gap-2 mb-3">
                     <button
                         onClick={() => setViewMode('modules')}
                         className={`px-5 py-2 rounded-t-lg font-medium text-sm transition ${
                             viewMode === 'modules'
-                                ? 'bg-purple-600 text-white'
+                                ? 'bg-cyan-600 text-white'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                     >
@@ -309,7 +301,7 @@ ${context}
                         onClick={() => setViewMode('ai')}
                         className={`px-5 py-2 rounded-t-lg font-medium text-sm transition ${
                             viewMode === 'ai'
-                                ? 'bg-purple-600 text-white'
+                                ? 'bg-cyan-600 text-white'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                     >
@@ -324,8 +316,8 @@ ${context}
                 <div className="bg-white border-b border-gray-200 px-4 py-3">
                     <div className="flex gap-3 flex-wrap">
                         {[
-                            { value: 'all', label: 'すべて', icon: 'LayoutGrid', color: 'purple' },
-                            { value: '心理学', label: '心理学', icon: 'Brain', color: 'pink' },
+                            { value: 'all', label: 'すべて', icon: 'LayoutGrid', color: 'cyan' },
+                            { value: 'メンタル', label: 'メンタル', icon: 'Brain', color: 'pink' },
                             { value: '栄養学', label: '栄養学', icon: 'Apple', color: 'green' },
                             { value: '運動科学', label: '運動科学', icon: 'Zap', color: 'orange' }
                         ].map(cat => (
@@ -334,7 +326,7 @@ ${context}
                                 onClick={() => setSelectedCategory(cat.value)}
                                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium text-sm transition ${
                                     selectedCategory === cat.value
-                                        ? cat.color === 'purple' ? 'bg-purple-600 text-white' :
+                                        ? cat.color === 'purple' ? 'bg-cyan-600 text-white' :
                                           cat.color === 'pink' ? 'bg-pink-600 text-white' :
                                           cat.color === 'green' ? 'bg-green-600 text-white' :
                                           'bg-orange-600 text-white'
@@ -363,7 +355,7 @@ ${context}
                             <button
                                 key={module.id}
                                 onClick={() => setSelectedModule(module)}
-                                className="bg-white rounded-lg p-4 shadow-sm hover:shadow-lg transition text-left border-2 border-transparent hover:border-purple-300"
+                                className="bg-white rounded-lg p-4 shadow-sm hover:shadow-lg transition text-left border-2 border-transparent hover:border-cyan-300"
                             >
                                 <div className="flex items-start gap-3 mb-3">
                                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -376,16 +368,16 @@ ${context}
                                     <div className="flex-1">
                                         <h3 className="font-bold text-gray-800 mb-1">{module.title}</h3>
                                         <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                            module.category === '心理学' ? 'bg-pink-100 text-pink-700' :
-                                            module.category === '運動科学' ? 'bg-orange-100 text-orange-700' :
-                                            'bg-green-100 text-green-700'
+                                            module.category === 'メンタル' ? 'bg-pink-600 text-white' :
+                                            module.category === '運動科学' ? 'bg-orange-600 text-white' :
+                                            'bg-green-600 text-white'
                                         }`}>
                                             {module.category}
                                         </span>
                                     </div>
                                 </div>
                                 <p className="text-sm text-gray-600">{module.description}</p>
-                                <div className="mt-3 flex items-center text-purple-600 text-sm font-medium">
+                                <div className="mt-3 flex items-center text-cyan-600 text-sm font-medium">
                                     <span>教科書を開く</span>
                                     <Icon name="ChevronRight" size={16} className="ml-1" />
                                 </div>
@@ -403,7 +395,7 @@ ${context}
                     <div ref={aiChatContainerRef} className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-4" style={{paddingBottom: '2rem'}}>
                         {aiChatHistory.length === 0 ? (
                             <div className="text-center py-12">
-                                <Icon name="MessageCircle" size={48} className="mx-auto mb-4 text-purple-300" />
+                                <Icon name="MessageCircle" size={48} className="mx-auto mb-4 text-cyan-300" />
                                 <p className="text-gray-600 font-medium mb-2">PG BASE AIモード</p>
                                 <p className="text-sm text-gray-500 px-8">
                                     あなたの記録データと傾向をもとに、最適な知識モジュールを提案します。<br/>
@@ -415,7 +407,7 @@ ${context}
                                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[80%] rounded-lg p-3 ${
                                         msg.role === 'user'
-                                            ? 'bg-purple-600 text-white'
+                                            ? 'bg-cyan-600 text-white'
                                             : 'bg-white border border-gray-200 text-gray-800'
                                     }`}>
                                         <div className="text-sm leading-relaxed"><MarkdownRenderer text={msg.content} /></div>
@@ -430,7 +422,7 @@ ${context}
                             <div className="flex justify-start">
                                 <div className="bg-white border border-gray-200 rounded-lg p-3">
                                     <div className="flex items-center gap-2">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-600"></div>
                                         <span className="text-sm text-gray-600">分析中...</span>
                                     </div>
                                 </div>
@@ -449,13 +441,13 @@ ${context}
                                 onChange={(e) => setAiInputMessage(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && sendAIMessage()}
                                 placeholder="質問や悩みを入力..."
-                                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                 disabled={aiLoading}
                             />
                             <button
                                 onClick={sendAIMessage}
                                 disabled={!aiInputMessage.trim() || aiLoading}
-                                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                                className="px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
                             >
                                 <Icon name="Send" size={20} />
                             </button>
@@ -770,7 +762,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     const stats = calculateStats();
 
     const pgbaseModules = [
-        { id: 'mental_textbook', title: 'メンタルの教科書', category: '心理学' },
+        { id: 'mental_textbook', title: 'メンタルの教科書', category: 'メンタル' },
         { id: 'pg_formula_textbook', title: 'PG式の教科書', category: '運動科学' },
         { id: 'carb_textbook', title: '炭水化物の教科書', category: '栄養学' },
         { id: 'protein_textbook', title: 'タンパク質の教科書', category: '栄養学' },
@@ -1515,13 +1507,15 @@ const AdminPanel = ({ onClose }) => {
 
 // ===== COMYビュー =====
 const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
-    const [activeView, setActiveView] = useState('feed'); // 'feed', 'post', 'mypage'
+    const [activeView, setActiveView] = useState('feed'); // 'feed', 'post', 'mypage', 'community'
     const [posts, setPosts] = useState([]);
     const [fabOpen, setFabOpen] = useState(false);
     const [commentingPostId, setCommentingPostId] = useState(null);
     const [commentText, setCommentText] = useState('');
     const [shareModalPostId, setShareModalPostId] = useState(null);
     const [selectedPostId, setSelectedPostId] = useState(null);
+    const [showThemeSpaceSelector, setShowThemeSpaceSelector] = useState(false);
+    const [showMentorApplication, setShowMentorApplication] = useState(false);
 
     useEffect(() => {
         loadPosts();
@@ -1675,7 +1669,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
     return (
         <div className="fixed inset-0 bg-white z-50 flex flex-col">
             {/* ヘッダー */}
-            <div className="bg-gradient-to-r from-pink-600 to-orange-600 text-white px-4 py-4 flex items-center justify-between shadow-lg">
+            <div className="bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white px-4 py-4 flex items-center justify-between shadow-lg">
                 <div className="flex items-center gap-3">
                     <Icon name="Users" size={24} />
                     <div>
@@ -1686,6 +1680,34 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                 <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition">
                     <Icon name="X" size={24} />
                 </button>
+            </div>
+
+            {/* タブナビゲーション */}
+            <div className="bg-white border-b border-gray-200">
+                <div className="flex px-4 gap-2">
+                    <button
+                        onClick={() => setActiveView('feed')}
+                        className={`px-5 py-3 font-medium text-sm transition border-b-2 ${
+                            activeView === 'feed'
+                                ? 'border-fuchsia-600 text-fuchsia-600'
+                                : 'border-transparent text-gray-600 hover:text-gray-800'
+                        }`}
+                    >
+                        <Icon name="MessageSquare" size={16} className="inline mr-1" />
+                        フィード
+                    </button>
+                    <button
+                        onClick={() => setActiveView('community')}
+                        className={`px-5 py-3 font-medium text-sm transition border-b-2 ${
+                            activeView === 'community'
+                                ? 'border-fuchsia-600 text-fuchsia-600'
+                                : 'border-transparent text-gray-600 hover:text-gray-800'
+                        }`}
+                    >
+                        <Icon name="Compass" size={16} className="inline mr-1" />
+                        コミュニティ
+                    </button>
+                </div>
             </div>
 
             {/* コンテンツエリア */}
@@ -1711,7 +1733,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                     <div className="flex items-center justify-between mb-3">
                                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                                             post.category === 'body'
-                                                ? 'bg-indigo-100 text-indigo-700'
+                                                ? 'bg-fuchsia-100 text-fuchsia-700'
                                                 : 'bg-teal-100 text-teal-700'
                                         }`}>
                                             {post.category === 'body' ? '💪 ボディメイク' : '🧠 メンタル'}
@@ -1748,15 +1770,15 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
 
                                     {/* データ連携情報 */}
                                     {post.attachedData && (
-                                        <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg mb-3">
-                                            <p className="text-xs font-semibold text-indigo-700 mb-2">📊 データ連携</p>
+                                        <div className="p-3 bg-fuchsia-50 border border-fuchsia-200 rounded-lg mb-3">
+                                            <p className="text-xs font-semibold text-fuchsia-700 mb-2">📊 データ連携</p>
                                             <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
                                                 <div>• 継続: {post.attachedData.usageDays}日</div>
                                                 <div>• 記録: {post.attachedData.recordDays}日</div>
                                                 <div>• カロリー: {post.attachedData.totalCalories}kcal</div>
                                                 <div>• タンパク質: {post.attachedData.protein}g</div>
                                                 {post.attachedData.lbmChange && (
-                                                    <div className="col-span-2 font-semibold text-indigo-700">
+                                                    <div className="col-span-2 font-semibold text-fuchsia-700">
                                                         • LBM変化: {post.attachedData.lbmChange > 0 ? '+' : ''}{post.attachedData.lbmChange}kg
                                                     </div>
                                                 )}
@@ -1779,8 +1801,8 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                             onClick={() => toggleLike(post.id)}
                                             className={`flex items-center gap-1 transition ${
                                                 (post.likedUsers || []).includes(userId)
-                                                    ? 'text-pink-600'
-                                                    : 'text-gray-600 hover:text-pink-600'
+                                                    ? 'text-fuchsia-600'
+                                                    : 'text-gray-600 hover:text-fuchsia-600'
                                             }`}
                                         >
                                             <Icon name="Heart" size={18} fill={(post.likedUsers || []).includes(userId) ? 'currentColor' : 'none'} />
@@ -1788,14 +1810,14 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                         </button>
                                         <button
                                             onClick={() => handleToggleComments(post.id)}
-                                            className="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition"
+                                            className="flex items-center gap-1 text-gray-600 hover:text-teal-600 transition"
                                         >
                                             <Icon name="MessageCircle" size={18} />
                                             <span className="text-sm">{post.comments?.length || 0}</span>
                                         </button>
                                         <button
                                             onClick={() => handleShare(post)}
-                                            className="flex items-center gap-1 text-gray-600 hover:text-green-600 transition"
+                                            className="flex items-center gap-1 text-gray-600 hover:text-emerald-600 transition"
                                         >
                                             <Icon name="Share2" size={18} />
                                         </button>
@@ -1850,11 +1872,72 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                     </div>
                 )}
 
+                {activeView === 'community' && (
+                    <div className="max-w-2xl mx-auto p-4 space-y-4">
+                        {/* テーマスペース選択 */}
+                        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                                <Icon name="Compass" size={20} className="text-fuchsia-600" />
+                                テーマスペース
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-4">
+                                あなたの目標に合ったスペースに参加しましょう
+                            </p>
+                            <button
+                                onClick={() => setShowThemeSpaceSelector(true)}
+                                className="w-full bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white font-bold py-3 rounded-lg hover:from-fuchsia-700 hover:to-teal-700 transition"
+                            >
+                                スペースを選択
+                            </button>
+                        </div>
+
+                        {/* メンターシステム */}
+                        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                                <Icon name="Award" size={20} className="text-emerald-600" />
+                                メンター制度
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-4">
+                                経験豊富なユーザーから学び、サポートを受けましょう
+                            </p>
+                            <div className="space-y-2">
+                                <button
+                                    onClick={() => setShowMentorApplication(true)}
+                                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-3 rounded-lg hover:from-emerald-700 hover:to-teal-700 transition"
+                                >
+                                    メンターに応募
+                                </button>
+                                <p className="text-xs text-gray-500 text-center">
+                                    ※ 30日以上の利用、10回以上の貢献が必要です
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* ベストアンサー機能の説明 */}
+                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 shadow-sm border border-amber-200">
+                            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                                <Icon name="Star" size={20} className="text-amber-600" />
+                                ベストアンサー制度
+                            </h3>
+                            <p className="text-sm text-gray-700 mb-3">
+                                質問に対して最も役立つ回答をベストアンサーとして選べます
+                            </p>
+                            <div className="bg-white rounded-lg p-3 text-sm text-gray-600">
+                                <ul className="space-y-1">
+                                    <li>✓ ベストアンサーに選ばれると50ポイント獲得</li>
+                                    <li>✓ ポイントでメンター資格が取得可能</li>
+                                    <li>✓ 質問者は7日以内に選択可能</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {activeView === 'mypage' && (
                     <div className="max-w-2xl mx-auto p-4">
                         <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-2xl">
+                                <div className="w-20 h-20 bg-gradient-to-br from-fuchsia-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-2xl">
                                     {userProfile.name?.[0] || 'U'}
                                 </div>
                                 <div>
@@ -1956,12 +2039,33 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                 )}
                 <div
                     onClick={() => setFabOpen(!fabOpen)}
-                    className="w-14 h-14 bg-gradient-to-br from-pink-600 to-orange-600 rounded-full flex items-center justify-center text-white shadow-lg cursor-pointer hover:shadow-xl transition transform hover:scale-110"
+                    className="w-14 h-14 bg-gradient-to-br from-fuchsia-600 to-teal-600 rounded-full flex items-center justify-center text-white shadow-lg cursor-pointer hover:shadow-xl transition transform hover:scale-110"
                 >
                     <Icon name={fabOpen ? "X" : "Plus"} size={24} />
                 </div>
             </div>
+
+            {/* テーマスペース選択モーダル */}
+            {showThemeSpaceSelector && (
+                <ThemeSpaceSelector
+                    userId={userId}
+                    onClose={() => setShowThemeSpaceSelector(false)}
+                />
+            )}
+
+            {/* メンター応募モーダル */}
+            {showMentorApplication && (
+                <MentorApplicationForm
+                    userId={userId}
+                    userProfile={userProfile}
+                    userStats={{
+                        usageDays: usageDays || 0,
+                        helpfulAnswers: 0,
+                        averageScore: 0
+                    }}
+                    onClose={() => setShowMentorApplication(false)}
+                />
+            )}
         </div>
     );
 };
-

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>候補3: タイムライン型指示書（ダッシュボード＋生成画面）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-md mx-auto min-h-screen">
+        <!-- 候補3: タイムライン型 -->
+        <!-- 特徴: タスク管理アプリ風、進捗が視覚的、チェックボックスで完了管理 -->
+
+        <div class="p-4 space-y-6">
+            <!-- ========== ダッシュボードの指示書セクション ========== -->
+            <div>
+                <h2 className="text-lg font-bold mb-4 text-gray-800">ダッシュボードの指示書セクション</h2>
+
+                <!-- パターン1: 指示書あり（タイムライン） -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="list-checks" class="w-5 h-5 text-purple-600"></i>
+                            <h3 class="font-bold text-gray-800">今日の指示書</h3>
+                        </div>
+                        <button class="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center gap-1">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            追加
+                        </button>
+                    </div>
+
+                    <!-- タイムラインアイテム -->
+                    <div class="relative">
+                        <!-- 縦線 -->
+                        <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+
+                        <!-- 指示書1: 未完了 -->
+                        <div class="relative flex gap-3 mb-4">
+                            <div class="flex-shrink-0 z-10">
+                                <input
+                                    type="checkbox"
+                                    class="w-10 h-10 rounded-full border-2 border-green-600 appearance-none checked:bg-green-600 cursor-pointer relative
+                                    after:content-[''] after:absolute after:left-1/2 after:top-1/2 after:-translate-x-1/2 after:-translate-y-1/2
+                                    after:w-5 after:h-3 after:border-white after:border-b-2 after:border-r-2 after:rotate-45 after:hidden
+                                    checked:after:block"
+                                />
+                            </div>
+                            <div class="flex-1 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-3 border-l-4 border-green-600">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i data-lucide="utensils" class="w-4 h-4 text-green-600"></i>
+                                    <span class="text-xs font-bold text-green-700">【食事】</span>
+                                    <span class="ml-auto text-xs text-gray-500">2分前</span>
+                                </div>
+                                <p class="text-sm font-bold text-gray-800 mb-1">鶏むね肉150g追加</p>
+                                <p class="text-xs text-gray-600 leading-relaxed">
+                                    タンパク質を目標に近づけるため、夕食に追加
+                                </p>
+                                <button class="text-xs text-purple-600 hover:text-purple-700 font-medium mt-2 flex items-center gap-1">
+                                    <i data-lucide="edit-3" class="w-3 h-3"></i>
+                                    編集
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 指示書2: 完了済み -->
+                        <div class="relative flex gap-3 mb-4">
+                            <div class="flex-shrink-0 z-10">
+                                <input
+                                    type="checkbox"
+                                    checked
+                                    class="w-10 h-10 rounded-full border-2 border-gray-300 appearance-none checked:bg-gray-400 cursor-pointer relative
+                                    after:content-[''] after:absolute after:left-1/2 after:top-1/2 after:-translate-x-1/2 after:-translate-y-1/2
+                                    after:w-5 after:h-3 after:border-white after:border-b-2 after:border-r-2 after:rotate-45 after:hidden
+                                    checked:after:block"
+                                />
+                            </div>
+                            <div class="flex-1 bg-gray-50 rounded-lg p-3 border-l-4 border-gray-300 opacity-60">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i data-lucide="dumbbell" class="w-4 h-4 text-gray-500"></i>
+                                    <span class="text-xs font-bold text-gray-600">【運動】</span>
+                                    <span class="ml-auto text-xs text-gray-500">昨日</span>
+                                </div>
+                                <p class="text-sm font-bold text-gray-600 line-through mb-1">ベンチプレス 80kg×8回×3セット</p>
+                                <p class="text-xs text-gray-500 leading-relaxed line-through">
+                                    胸のトレーニング
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 進捗サマリー -->
+                    <div class="bg-purple-50 rounded-lg p-3 border border-purple-200 mt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-purple-800">今日の進捗</span>
+                            <span class="text-xs text-purple-600">0/1完了</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div class="bg-purple-600 h-2 rounded-full transition-all" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- パターン2: 指示書なし（タイムライン空） -->
+                <div class="bg-white rounded-xl border-2 border-dashed border-gray-300 p-6 text-center mt-4">
+                    <div class="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="list-checks" class="w-8 h-8 text-gray-400"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-800 mb-1">指示書がありません</p>
+                    <p class="text-xs text-gray-500 mb-4">AIが今日のデータから最適なアクションを提案します</p>
+                    <button class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-5 py-2.5 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-semibold text-sm flex items-center justify-center gap-2 mx-auto">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        AI指示書を生成
+                    </button>
+                </div>
+            </div>
+
+            <!-- ========== 指示書生成画面 ========== -->
+            <div>
+                <h2 className="text-lg font-bold mb-4 text-gray-800">指示書生成画面</h2>
+
+                <!-- ヘッダー -->
+                <div class="bg-white rounded-t-xl border-b p-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-purple-600"></i>
+                            AI指示書を編集
+                        </h3>
+                        <button class="text-gray-400 hover:text-gray-600">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">AIが提案した内容を確認・編集できます</p>
+                </div>
+
+                <!-- 生成された指示書（タイムライン形式） -->
+                <div class="bg-gray-50 p-4">
+                    <div class="bg-white rounded-xl border border-gray-200 p-4">
+                        <!-- プレビュー -->
+                        <div class="relative">
+                            <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+
+                            <div class="relative flex gap-3">
+                                <div class="flex-shrink-0 z-10">
+                                    <div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
+                                        <i data-lucide="utensils" class="w-5 h-5 text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-4 border-l-4 border-green-600">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="text-xs font-bold text-green-700">【食事】</span>
+                                            <span class="ml-auto bg-white px-2 py-0.5 rounded text-xs text-gray-600">編集可能</span>
+                                        </div>
+
+                                        <!-- 指示内容（編集可能） -->
+                                        <input
+                                            type="text"
+                                            value="鶏むね肉150g追加"
+                                            class="w-full text-sm font-bold text-gray-800 bg-transparent border-b border-dashed border-gray-300 focus:outline-none focus:border-green-600 mb-2 pb-1"
+                                        />
+
+                                        <!-- 詳細説明（編集可能） -->
+                                        <textarea
+                                            class="w-full text-xs text-gray-700 bg-white border border-gray-200 rounded p-2 resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            rows="3"
+                                        >タンパク質を目標に近づけるため、今日の夕食に鶏むね肉を追加しましょう。グリルまたは蒸して調理すると、余分な脂質を抑えられます。</textarea>
+
+                                        <!-- AI根拠（折りたたみ） -->
+                                        <details class="mt-3">
+                                            <summary class="text-xs text-gray-600 cursor-pointer font-medium flex items-center gap-1">
+                                                <i data-lucide="lightbulb" class="w-3 h-3"></i>
+                                                AIの判断根拠
+                                            </summary>
+                                            <div class="mt-2 p-2 bg-white rounded text-xs text-gray-600 leading-relaxed">
+                                                本日のタンパク質摂取量は120gで、目標の180gより60g不足しています。鶏むね肉100gあたり約23gのタンパク質が含まれるため、150gで約35gのタンパク質を補充できます。
+                                            </div>
+                                        </details>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- カテゴリー変更 -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-4 mt-3">
+                        <label class="text-xs font-bold text-gray-700 block mb-2">カテゴリー</label>
+                        <div class="flex gap-2">
+                            <button class="flex-1 py-2 px-3 bg-green-100 text-green-700 rounded-lg border-2 border-green-600 text-xs font-semibold flex items-center justify-center gap-1">
+                                <i data-lucide="utensils" class="w-3.5 h-3.5"></i>
+                                食事
+                            </button>
+                            <button class="flex-1 py-2 px-3 bg-gray-100 text-gray-600 rounded-lg border border-gray-300 text-xs font-semibold flex items-center justify-center gap-1 hover:bg-gray-200">
+                                <i data-lucide="dumbbell" class="w-3.5 h-3.5"></i>
+                                運動
+                            </button>
+                            <button class="flex-1 py-2 px-3 bg-gray-100 text-gray-600 rounded-lg border border-gray-300 text-xs font-semibold flex items-center justify-center gap-1 hover:bg-gray-200">
+                                <i data-lucide="moon" class="w-3.5 h-3.5"></i>
+                                睡眠
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- アクションボタン -->
+                <div class="bg-white rounded-b-xl border-t p-4 flex gap-2">
+                    <button class="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-bold flex items-center justify-center gap-2">
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                        保存して完了
+                    </button>
+                    <button class="bg-white text-gray-700 p-3 rounded-lg hover:bg-gray-100 transition border border-gray-300">
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 説明 -->
+            <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <h3 class="font-bold text-gray-800 mb-2 text-sm">候補3の特徴</h3>
+                <ul class="text-xs text-gray-600 space-y-1">
+                    <li>✅ タスク管理アプリ風で親しみやすい</li>
+                    <li>✅ チェックボックスで完了管理が直感的</li>
+                    <li>✅ 進捗バーでモチベーション向上</li>
+                    <li>✅ タイムラインで時系列が明確</li>
+                    <li>✅ カテゴリー変更が簡単</li>
+                    <li>✅ 複数指示書の管理に最適</li>
+                    <li>❌ 情報量が多いと縦に長くなる</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

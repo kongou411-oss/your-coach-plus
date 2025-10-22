@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>履歴改修案（グラフ式）3: ダッシュボードスタイル型（推奨）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .metric-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+        .mini-chart {
+            height: 60px;
+        }
+        .sparkline {
+            stroke-width: 2;
+            fill: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold mb-2 text-gray-800">📊 履歴改修案（グラフ式）3: ダッシュボードスタイル型</h1>
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 p-3 mb-6">
+            <p class="text-sm font-semibold text-yellow-800">⭐ 推奨案</p>
+            <p class="text-xs text-yellow-700">各指標をカード化し、ミニグラフで即座にトレンド把握。クリックで詳細グラフ表示</p>
+        </div>
+
+        <!-- 栄養・食事セクション -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-green-700">
+                <span>📊</span>
+                <span>栄養・食事</span>
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <!-- 分析点数カード -->
+                <div class="metric-card bg-white rounded-lg shadow-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-xs text-gray-500">🎯 分析点数</div>
+                            <div class="text-3xl font-bold text-green-600">85</div>
+                            <div class="text-xs text-gray-400">/ 100点</div>
+                        </div>
+                        <div class="text-green-600 text-sm font-semibold">+3</div>
+                    </div>
+                    <canvas id="sparkline1" class="mini-chart"></canvas>
+                </div>
+
+                <!-- カロリーカード -->
+                <div class="metric-card bg-white rounded-lg shadow-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-xs text-gray-500">🔥 カロリー</div>
+                            <div class="text-3xl font-bold text-blue-600">2,450</div>
+                            <div class="text-xs text-gray-400">/ 2,500 kcal (98%)</div>
+                        </div>
+                        <div class="text-blue-600 text-sm font-semibold">+20</div>
+                    </div>
+                    <canvas id="sparkline2" class="mini-chart"></canvas>
+                </div>
+
+                <!-- タンパク質カード -->
+                <div class="metric-card bg-white rounded-lg shadow-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-xs text-gray-500">🥩 タンパク質</div>
+                            <div class="text-3xl font-bold text-cyan-600">150g</div>
+                            <div class="text-xs text-gray-400">/ 160g (94%)</div>
+                        </div>
+                        <div class="text-cyan-600 text-sm font-semibold">+5g</div>
+                    </div>
+                    <canvas id="sparkline3" class="mini-chart"></canvas>
+                </div>
+
+                <!-- 脂質カード -->
+                <div class="metric-card bg-white rounded-lg shadow-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-xs text-gray-500">🧈 脂質</div>
+                            <div class="text-3xl font-bold text-yellow-600">65g</div>
+                            <div class="text-xs text-gray-400">/ 70g (93%)</div>
+                        </div>
+                        <div class="text-yellow-600 text-sm font-semibold">+1g</div>
+                    </div>
+                    <canvas id="sparkline4" class="mini-chart"></canvas>
+                </div>
+
+                <!-- 糖質カード -->
+                <div class="metric-card bg-white rounded-lg shadow-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-xs text-gray-500">🍚 糖質</div>
+                            <div class="text-3xl font-bold text-green-600">280g</div>
+                            <div class="text-xs text-gray-400">/ 300g (93%)</div>
+                        </div>
+                        <div class="text-green-600 text-sm font-semibold">+5g</div>
+                    </div>
+                    <canvas id="sparkline5" class="mini-chart"></canvas>
+                </div>
+
+                <!-- 食物繊維カード -->
+                <div class="metric-card bg-white rounded-lg shadow-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-xs text-gray-500">🥬 食物繊維</div>
+                            <div class="text-3xl font-bold text-yellow-600">25g</div>
+                            <div class="text-xs text-gray-400">/ 30g (83%)</div>
+                        </div>
+                        <div class="text-yellow-600 text-sm font-semibold">+2g</div>
+                    </div>
+                    <canvas id="sparkline6" class="mini-chart"></canvas>
+                </div>
+
+                <!-- ビタミンカード -->
+                <div class="metric-card bg-white rounded-lg shadow-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-xs text-gray-500">💊 ビタミン</div>
+                            <div class="text-3xl font-bold text-purple-600">78%</div>
+                            <div class="text-xs text-gray-400">総合達成率</div>
+                        </div>
+                        <div class="text-purple-600 text-sm font-semibold">+3%</div>
+                    </div>
+                    <canvas id="sparkline7" class="mini-chart"></canvas>
+                </div>
+
+                <!-- ミネラルカード -->
+                <div class="metric-card bg-white rounded-lg shadow-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-xs text-gray-500">⚡ ミネラル</div>
+                            <div class="text-3xl font-bold text-orange-600">82%</div>
+                            <div class="text-xs text-gray-400">総合達成率</div>
+                        </div>
+                        <div class="text-orange-600 text-sm font-semibold">+2%</div>
+                    </div>
+                    <canvas id="sparkline8" class="mini-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- トレーニングセクション -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-red-700">
+                <span>💪</span>
+                <span>トレーニング</span>
+            </h2>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <!-- RM記録カード -->
+                <div class="bg-white rounded-lg shadow-lg p-4">
+                    <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <span>🏋️</span>
+                        <span>回数別RM記録</span>
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-blue-50 rounded">
+                            <div>
+                                <div class="text-xs text-gray-600">ベンチプレス 1RM</div>
+                                <div class="text-2xl font-bold text-blue-600">100kg</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-green-600 font-semibold">↑ +2kg</div>
+                                <div class="text-xs text-gray-500">先週比</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-purple-50 rounded">
+                            <div>
+                                <div class="text-xs text-gray-600">スクワット 5RM</div>
+                                <div class="text-2xl font-bold text-purple-600">120kg</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-gray-400 font-semibold">-</div>
+                                <div class="text-xs text-gray-500">変化なし</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-orange-50 rounded">
+                            <div>
+                                <div class="text-xs text-gray-600">デッドリフト 3RM</div>
+                                <div class="text-2xl font-bold text-orange-600">150kg</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-green-600 font-semibold">↑ +5kg</div>
+                                <div class="text-xs text-gray-500">先週比</div>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="rmTrendChart" class="mt-4" height="100"></canvas>
+                </div>
+
+                <!-- 運動習慣カード -->
+                <div class="bg-white rounded-lg shadow-lg p-4">
+                    <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <span>📈</span>
+                        <span>運動習慣率</span>
+                    </h3>
+                    <div class="text-center mb-4">
+                        <div class="text-5xl font-bold text-green-600">85%</div>
+                        <div class="text-sm text-gray-500 mt-1">週6日実施</div>
+                    </div>
+                    <canvas id="exerciseHabitChart" height="100"></canvas>
+                    <div class="mt-4 grid grid-cols-7 gap-1">
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500">月</div>
+                            <div class="w-full h-8 bg-green-500 rounded mt-1"></div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500">火</div>
+                            <div class="w-full h-8 bg-green-500 rounded mt-1"></div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500">水</div>
+                            <div class="w-full h-8 bg-gray-200 rounded mt-1"></div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500">木</div>
+                            <div class="w-full h-8 bg-green-500 rounded mt-1"></div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500">金</div>
+                            <div class="w-full h-8 bg-green-500 rounded mt-1"></div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500">土</div>
+                            <div class="w-full h-8 bg-green-500 rounded mt-1"></div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500">日</div>
+                            <div class="w-full h-8 bg-green-500 rounded mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- コンディションセクション -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-blue-700">
+                <span>🧘</span>
+                <span>コンディション</span>
+            </h2>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- コンディションスコアカード -->
+                <div class="bg-white rounded-lg shadow-lg p-4">
+                    <h3 class="font-semibold text-gray-700 mb-3">🎯 総合スコア（最大30点）</h3>
+                    <div class="text-center mb-4">
+                        <div class="text-5xl font-bold text-blue-600">24</div>
+                        <div class="text-sm text-gray-500 mt-1">/ 30点</div>
+                    </div>
+                    <canvas id="conditionScoreChart" height="80"></canvas>
+                </div>
+
+                <!-- コンディション詳細カード -->
+                <div class="bg-white rounded-lg shadow-lg p-4">
+                    <h3 class="font-semibold text-gray-700 mb-3">詳細内訳</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">😴</span>
+                                <span class="text-sm text-gray-600">睡眠の質</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-32 bg-gray-200 rounded-full h-3">
+                                    <div class="bg-blue-500 h-3 rounded-full" style="width: 80%"></div>
+                                </div>
+                                <span class="text-lg font-bold text-blue-600">8/10</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">🍽️</span>
+                                <span class="text-sm text-gray-600">食欲</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-32 bg-gray-200 rounded-full h-3">
+                                    <div class="bg-green-500 h-3 rounded-full" style="width: 80%"></div>
+                                </div>
+                                <span class="text-lg font-bold text-green-600">8/10</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">🧠</span>
+                                <span class="text-sm text-gray-600">集中力</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-32 bg-gray-200 rounded-full h-3">
+                                    <div class="bg-purple-500 h-3 rounded-full" style="width: 80%"></div>
+                                </div>
+                                <span class="text-lg font-bold text-purple-600">8/10</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- メリット・デメリット -->
+        <div class="bg-white rounded-lg shadow-md p-4">
+            <h3 class="font-bold text-lg mb-3 text-gray-800">✅ メリット</h3>
+            <ul class="list-disc pl-5 space-y-1 text-sm text-gray-700 mb-4">
+                <li><strong>一目で全体像を把握</strong>できるカードレイアウト</li>
+                <li>ミニグラフ（スパークライン）で<strong>トレンドを即座に確認</strong></li>
+                <li>前日比の変化（↑+2kg など）が視覚的にわかりやすい</li>
+                <li><strong>モバイルでも快適</strong>（カードは縦スクロールに最適）</li>
+                <li>クリックで詳細グラフに展開可能（拡張性が高い）</li>
+            </ul>
+            <h3 class="font-bold text-lg mb-3 text-gray-800">⚠️ デメリット</h3>
+            <ul class="list-disc pl-5 space-y-1 text-sm text-gray-700">
+                <li>カード数が多いため、初期表示に若干時間がかかる可能性</li>
+                <li>ミニグラフは詳細な数値が見づらい（クリックで詳細表示が必要）</li>
+            </ul>
+        </div>
+
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mt-6">
+            <h3 class="font-bold text-blue-800 mb-2">🎯 推奨理由</h3>
+            <ol class="list-decimal pl-5 space-y-1 text-sm text-blue-900">
+                <li><strong>直感性</strong>: スパークライン + 大きな数値で瞬時に状況把握</li>
+                <li><strong>情報密度</strong>: 8項目を1画面に収め、スクロール不要</li>
+                <li><strong>モバイル最適化</strong>: カードUIはタップしやすく、レスポンシブ</li>
+                <li><strong>拡張性</strong>: カードクリックで詳細モーダル表示など、機能追加が容易</li>
+                <li><strong>現代的</strong>: Google Analytics、Apple Health風のダッシュボードUI</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const sparklineData = {
+            data1: [75, 78, 82, 85, 88, 85, 85],
+            data2: [2400, 2420, 2450, 2480, 2460, 2440, 2450],
+            data3: [145, 148, 150, 152, 150, 148, 150],
+            data4: [60, 62, 64, 65, 64, 64, 65],
+            data5: [275, 278, 280, 285, 282, 278, 280],
+            data6: [23, 24, 25, 25, 24, 24, 25],
+            data7: [75, 76, 78, 79, 78, 77, 78],
+            data8: [80, 81, 82, 83, 82, 81, 82]
+        };
+
+        // スパークライン描画関数
+        function createSparkline(canvasId, data, color) {
+            const canvas = document.getElementById(canvasId);
+            new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: ['', '', '', '', '', '', ''],
+                    datasets: [{
+                        data: data,
+                        borderColor: color,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    }
+                }
+            });
+        }
+
+        // 各スパークラインを描画
+        createSparkline('sparkline1', sparklineData.data1, 'rgb(34, 197, 94)');
+        createSparkline('sparkline2', sparklineData.data2, 'rgb(59, 130, 246)');
+        createSparkline('sparkline3', sparklineData.data3, 'rgb(6, 182, 212)');
+        createSparkline('sparkline4', sparklineData.data4, 'rgb(245, 158, 11)');
+        createSparkline('sparkline5', sparklineData.data5, 'rgb(34, 197, 94)');
+        createSparkline('sparkline6', sparklineData.data6, 'rgb(245, 158, 11)');
+        createSparkline('sparkline7', sparklineData.data7, 'rgb(168, 85, 247)');
+        createSparkline('sparkline8', sparklineData.data8, 'rgb(249, 115, 22)');
+
+        // RM推移グラフ
+        new Chart(document.getElementById('rmTrendChart'), {
+            type: 'line',
+            data: {
+                labels: ['第1週', '第2週', '第3週', '第4週'],
+                datasets: [
+                    {
+                        label: 'ベンチプレス',
+                        data: [95, 97, 98, 100],
+                        borderColor: 'rgb(59, 130, 246)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'スクワット',
+                        data: [115, 117, 118, 120],
+                        borderColor: 'rgb(168, 85, 247)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'デッドリフト',
+                        data: [140, 143, 145, 150],
+                        borderColor: 'rgb(249, 115, 22)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: true, position: 'bottom' } }
+            }
+        });
+
+        // 運動習慣チャート
+        new Chart(document.getElementById('exerciseHabitChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['実施', '未実施'],
+                datasets: [{
+                    data: [6, 1],
+                    backgroundColor: ['rgb(34, 197, 94)', 'rgb(229, 231, 235)']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // コンディションスコアチャート
+        new Chart(document.getElementById('conditionScoreChart'), {
+            type: 'line',
+            data: {
+                labels: ['月', '火', '水', '木', '金', '土', '日'],
+                datasets: [{
+                    label: 'スコア',
+                    data: [22, 24, 26, 24, 23, 25, 24],
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, max: 30 }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

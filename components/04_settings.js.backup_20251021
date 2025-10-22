@@ -92,13 +92,13 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                 {/* 設定メニュー（折りたたみ式一覧） */}
                 <div className="p-6 space-y-3">
                     {/* 使い方 */}
-                    <details className="border rounded-lg">
-                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                    <details className="border rounded-lg border-indigo-300 bg-indigo-50">
+                        <summary className="cursor-pointer p-4 hover:bg-indigo-100 font-medium flex items-center gap-2">
                             <Icon name="BookOpen" size={18} className="text-indigo-600" />
                             使い方
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
-                        <div className="p-4 pt-0 border-t">
+                        <div className="p-4 pt-0 border-t border-indigo-200">
                             <div className="space-y-4">
                                 <p className="text-sm text-gray-700 font-semibold">YourCoachの基本フロー</p>
 
@@ -174,12 +174,77 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <li>基準値はLBM・血液型・目的で完全個別化</li>
                                         <li>筋肉の新陳代謝周期は50日、焦らず継続</li>
                                         <li>テンプレート・ルーティン機能で効率化</li>
-                                        <li>予測入力機能（前日に記録がある場合のみ出現）</li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
                     </details>
+                    {/* カラーモード */}
+                    <details className="border rounded-lg border-gray-300 bg-gray-50">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-100 font-medium flex items-center gap-2">
+                            <Icon name="Palette" size={18} className="text-purple-600" />
+                            カラーモード
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t border-gray-200">
+                            <div className="space-y-4">
+                                {/* テーマ選択 */}
+                                <div className="p-3 bg-white rounded-lg border">
+                                    <div className="mb-3">
+                                        <p className="font-medium flex items-center gap-2">
+                                            <Icon name="Palette" size={18} className="text-purple-600" />
+                                            テーマ選択
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">アプリの見た目を変更できます</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {allThemes.map(theme => (
+                                            <button
+                                                key={theme.id}
+                                                onClick={() => handleThemeChange(theme.id)}
+                                                className={`relative p-3 rounded-lg border-2 transition-all ${
+                                                    currentTheme === theme.id
+                                                        ? 'border-purple-500 ring-2 ring-purple-200'
+                                                        : 'border-gray-200 hover:border-purple-300'
+                                                }`}
+                                            >
+                                                {/* プレビューカラー */}
+                                                <div className="flex gap-1 mb-2">
+                                                    <div
+                                                        className="w-8 h-8 rounded"
+                                                        style={{ backgroundColor: theme.preview.bgColor }}
+                                                    />
+                                                    <div
+                                                        className="w-8 h-8 rounded"
+                                                        style={{ backgroundColor: theme.preview.primaryColor }}
+                                                    />
+                                                    <div
+                                                        className="w-8 h-8 rounded"
+                                                        style={{ backgroundColor: theme.preview.textColor }}
+                                                    />
+                                                </div>
+
+                                                {/* テーマ名 */}
+                                                <p className="font-bold text-sm text-left">{theme.name}</p>
+                                                <p className="text-xs text-gray-600 text-left mt-1 line-clamp-2">
+                                                    {theme.description}
+                                                </p>
+
+                                                {/* チェックマーク */}
+                                                {currentTheme === theme.id && (
+                                                    <div className="absolute top-2 right-2 bg-purple-500 text-white rounded-full p-1">
+                                                        <Icon name="Check" size={12} />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    {/* プロフィール */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="User" size={18} className="text-indigo-600" />
@@ -228,36 +293,32 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             </select>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">体重 (kg)</label>
-                                            <input
-                                                type="number"
-                                                value={profile.weight}
-                                                onChange={(e) => setProfile({...profile, weight: e.target.value === '' ? '' : Number(e.target.value)})}
-                                                className="w-full px-4 py-3 border rounded-lg"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                                体脂肪率 (%)
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setVisualGuideModal({ ...visualGuideModal, show: true, gender: profile.gender })}
-                                                    className="text-orange-600 hover:text-orange-800"
-                                                    title="外見から体脂肪率を推定"
-                                                >
-                                                    <Icon name="Eye" size={16} />
-                                                </button>
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                value={profile.bodyFatPercentage}
-                                                onChange={(e) => setProfile({...profile, bodyFatPercentage: e.target.value === '' ? '' : Number(e.target.value)})}
-                                                className="w-full px-4 py-3 border rounded-lg"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">目アイコンで推定可能</p>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">食文化</label>
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-gray-600">
+                                                あなたの食生活に近いものを複数選択してください。好みに合った、継続しやすい食材を優先的に提案します。
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {['アジア', '欧米', 'ラテン', 'その他'].map(culture => (
+                                                    <label key={culture} className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={(profile.culturalRoots || []).includes(culture)}
+                                                            onChange={(e) => {
+                                                                const roots = profile.culturalRoots || [];
+                                                                if (e.target.checked) {
+                                                                    setProfile({...profile, culturalRoots: [...roots, culture]});
+                                                                } else {
+                                                                    setProfile({...profile, culturalRoots: roots.filter(r => r !== culture)});
+                                                                }
+                                                            }}
+                                                            className="rounded"
+                                                        />
+                                                        <span className="text-sm">{culture}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                     <div>
@@ -276,7 +337,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                            活動レベル
+                                            生活スタイル（活動レベル）
                                             <button
                                                 type="button"
                                                 onClick={() => setInfoModal({
@@ -383,7 +444,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     title: '目的の設定',
                                                     content: `あなたのボディメイクの目的を選択してください。目的に応じて推奨カロリーとPFCバランスが自動調整されます。
 
-【ダイエット】
+【減量（ダイエット）】
 • 目標: 体脂肪を減らし、引き締まった体を作る
 • カロリー: メンテナンスカロリー -300kcal
 • タンパク質: 高め（筋肉維持のため）
@@ -395,14 +456,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 • タンパク質: 非常に高め
 • 最適: 初心者や体脂肪率が高めの方に最適
 
-【バルクアップ】
+【増量（バルクアップ）】
 • 目標: 筋肉量を増やし、体を大きくする
 • カロリー: メンテナンスカロリー +300kcal
 • タンパク質: 非常に高め
 • 炭水化物: 多め（筋肉合成のエネルギー）
 • 推奨ペース: 週0.5kg増
 
-【メンテナンス】
+【維持（メンテナンス）】
 • 目標: 現在の体重・体組成を維持
 • カロリー: メンテナンスカロリー ±0kcal
 • バランス型の栄養配分
@@ -435,10 +496,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             }}
                                             className="w-full px-4 py-3 border rounded-lg"
                                         >
-                                            <option value="ダイエット">ダイエット</option>
+                                            <option value="ダイエット">減量（ダイエット）</option>
                                             <option value="リコンプ">リコンプ</option>
-                                            <option value="バルクアップ">バルクアップ</option>
-                                            <option value="メンテナンス">メンテナンス</option>
+                                            <option value="バルクアップ">増量（バルクアップ）</option>
+                                            <option value="メンテナンス">維持</option>
                                         </select>
                                         <p className="text-xs text-gray-600 mt-1">
                                             {profile.purpose === 'ダイエット' && '体脂肪を減らす'}
@@ -446,155 +507,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             {profile.purpose === 'バルクアップ' && '筋肉量を増やす'}
                                             {profile.purpose === 'メンテナンス' && '現状を維持'}
                                         </p>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                            カロリー調整値（任意）
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: 'カロリー調整値とは？',
-                                                    content: `あなたの目標に合わせて1日の摂取カロリーを微調整する値です。
-
-【目標別で自動調整】
-• バルクアップ: +300 kcal（筋肉をつけやすくする）
-• ダイエット: -300 kcal（脂肪を落としやすくする）
-• メンテナンス: ±0 kcal（現状維持）
-• リコンプ: ±0 kcal（体組成改善）
-
-【任意変更も可能】
-もっと早く結果を出したい場合や、ゆっくり進めたい場合は、この値を手動で変更できます。
-
-例：
-• より速くダイエット: -500 kcal
-• ゆっくりバルクアップ: +200 kcal
-
-空欄のままにすると目標別のデフォルト値が自動適用されます。`
-                                                })}
-                                                className="text-indigo-600 hover:text-indigo-800"
-                                            >
-                                                <Icon name="Info" size={14} />
-                                            </button>
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={profile.calorieAdjustment !== undefined && profile.calorieAdjustment !== null ? profile.calorieAdjustment : ''}
-                                            onChange={(e) => setProfile({...profile, calorieAdjustment: e.target.value === '' ? null : Number(e.target.value)})}
-                                            className="w-full px-4 py-3 border rounded-lg"
-                                            placeholder={`目標別で自動調整（${profile.purpose === 'バルクアップ' ? '+300' : profile.purpose === 'ダイエット' ? '-300' : '±0'} kcal）`}
-                                        />
-                                        <p className="text-xs text-gray-600 mt-1">
-                                            未入力の場合、目標に応じて自動調整されます
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                            PFCバランス（任意）
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: 'PFCバランスのカスタマイズ',
-                                                    content: `目的に応じた推奨PFCバランスを手動で調整できます。
-
-【デフォルト値（目的別）】
-• ダイエット: P40% F30% C30%
-• リコンプ: P35% F30% C35%
-• バルクアップ: P30% F25% C45%
-• メンテナンス: P30% F30% C40%
-
-【カスタマイズする場合】
-合計が100%になるように入力してください。
-入力しない場合は目的に応じたデフォルト値が自動適用されます。`
-                                                })}
-                                                className="text-indigo-600 hover:text-indigo-800"
-                                            >
-                                                <Icon name="Info" size={16} />
-                                            </button>
-                                        </label>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <div>
-                                                <label className="block text-xs text-gray-600 mb-1">P (タンパク質) %</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    value={profile.customPFC?.P || ''}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value === '' ? null : Number(e.target.value);
-                                                        setProfile({
-                                                            ...profile,
-                                                            customPFC: {
-                                                                ...(profile.customPFC || {}),
-                                                                P: value
-                                                            }
-                                                        });
-                                                    }}
-                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                    placeholder="自動"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs text-gray-600 mb-1">F (脂質) %</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    value={profile.customPFC?.F || ''}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value === '' ? null : Number(e.target.value);
-                                                        setProfile({
-                                                            ...profile,
-                                                            customPFC: {
-                                                                ...(profile.customPFC || {}),
-                                                                F: value
-                                                            }
-                                                        });
-                                                    }}
-                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                    placeholder="自動"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs text-gray-600 mb-1">C (炭水化物) %</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    value={profile.customPFC?.C || ''}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value === '' ? null : Number(e.target.value);
-                                                        setProfile({
-                                                            ...profile,
-                                                            customPFC: {
-                                                                ...(profile.customPFC || {}),
-                                                                C: value
-                                                            }
-                                                        });
-                                                    }}
-                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                    placeholder="自動"
-                                                />
-                                            </div>
-                                        </div>
-                                        {profile.customPFC?.P && profile.customPFC?.F && profile.customPFC?.C && (
-                                            <p className={`text-xs mt-1 ${
-                                                (profile.customPFC.P + profile.customPFC.F + profile.customPFC.C) === 100
-                                                    ? 'text-green-600'
-                                                    : 'text-red-600'
-                                            }`}>
-                                                合計: {profile.customPFC.P + profile.customPFC.F + profile.customPFC.C}%
-                                                {(profile.customPFC.P + profile.customPFC.F + profile.customPFC.C) !== 100 && ' (100%になるように調整してください)'}
-                                            </p>
-                                        )}
-                                        <button
-                                            type="button"
-                                            onClick={() => setProfile({...profile, customPFC: null})}
-                                            className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 underline"
-                                        >
-                                            デフォルトに戻す
-                                        </button>
                                     </div>
                                 </div>
                             </details>
@@ -608,6 +520,165 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             </div>
                         </div>
                     </details>
+
+
+                    {/* サブスクリプション管理 */}
+                    <details className="border rounded-lg border-purple-300 bg-purple-50" data-subscription-section open>
+                        <summary className="cursor-pointer p-4 hover:bg-purple-100 font-medium flex items-center gap-2">
+                            <Icon name="CreditCard" size={18} className="text-purple-600" />
+                            サブスクリプション
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t bg-white">
+                            {aiCredits && aiCredits.isPremium ? (
+                                <div className="space-y-4">
+                                    {/* プレミアム会員 */}
+                                    <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-lg">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <Icon name="Crown" size={24} className="text-yellow-300" />
+                                                <span className="text-xl font-bold">Premium</span>
+                                            </div>
+                                            <span className="text-2xl font-bold">¥{SUBSCRIPTION_PLAN.price}/月</span>
+                                        </div>
+                                        <p className="text-sm opacity-90">全機能利用可能 + AI分析クレジット付き</p>
+                                    </div>
+
+                                    {/* AIクレジット残高 */}
+                                    <div className="border-2 border-indigo-200 rounded-lg p-4 bg-indigo-50">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <Icon name="Sparkles" size={20} className="text-indigo-600" />
+                                                <span className="font-bold text-indigo-900">AIクレジット残高</span>
+                                            </div>
+                                            <button
+                                                onClick={loadAICredits}
+                                                className="text-indigo-600 hover:text-indigo-800"
+                                            >
+                                                <Icon name="RefreshCw" size={16} />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-end gap-2 mb-2">
+                                            <span className="text-4xl font-bold text-indigo-600">{aiCredits.remaining}</span>
+                                            <span className="text-gray-600 mb-1">/ {aiCredits.monthly + aiCredits.purchased} 回</span>
+                                        </div>
+
+                                        <div className="space-y-1 text-xs text-gray-600">
+                                            <div className="flex justify-between">
+                                                <span>今月の使用:</span>
+                                                <span className="font-medium">{aiCredits.used}回</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>月額付与分:</span>
+                                                <span className="font-medium">{aiCredits.monthly}回</span>
+                                            </div>
+                                            {aiCredits.purchased > 0 && (
+                                                <div className="flex justify-between">
+                                                    <span>追加購入分:</span>
+                                                    <span className="font-medium text-green-600">{aiCredits.purchased}回</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* プログレスバー */}
+                                        <div className="mt-3 bg-gray-200 rounded-full h-2">
+                                            <div
+                                                className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all"
+                                                style={{ width: `${(aiCredits.remaining / (aiCredits.monthly + aiCredits.purchased)) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* 追加クレジット購入 */}
+                                    <div className="border rounded-lg p-4">
+                                        <h4 className="font-bold mb-3 flex items-center gap-2">
+                                            <Icon name="ShoppingCart" size={18} className="text-green-600" />
+                                            追加クレジット購入
+                                        </h4>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {SUBSCRIPTION_PLAN.aiCredits.purchaseOptions.map(option => (
+                                                <button
+                                                    key={option.credits}
+                                                    onClick={() => {
+                                                        if (confirm(`${option.name}を¥${option.price}で購入しますか？\n\n※現在はStripe未接続のため、実際の決済は行われません。`)) {
+                                                            GeminiAPI.purchaseAICredits(userId, option.credits).then(() => {
+                                                                loadAICredits();
+                                                                alert(`${option.credits}回分のクレジットを追加しました！`);
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="border-2 border-green-300 bg-green-50 hover:bg-green-100 p-3 rounded-lg transition text-center"
+                                                >
+                                                    <div className="text-lg font-bold text-green-700">{option.credits}回</div>
+                                                    <div className="text-xs text-gray-600">¥{option.price}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-2">※ 購入したクレジットは有効期限なし</p>
+                                    </div>
+
+                                    {/* サブスク管理 */}
+                                    <div className="border-t pt-4">
+                                        <button
+                                            onClick={() => alert('Stripe Customer Portalへのリンクを後ほど実装します')}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm"
+                                        >
+                                            サブスクリプション管理（決済方法・解約）
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {/* 無料ユーザー */}
+                                    <div className="bg-gray-100 p-4 rounded-lg">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Icon name="User" size={20} className="text-gray-600" />
+                                            <span className="font-bold">無料プラン</span>
+                                        </div>
+                                        <p className="text-sm text-gray-600 mb-3">基本機能のみ利用可能</p>
+
+                                        <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg mb-3">
+                                            <p className="text-sm font-bold text-yellow-800 mb-1">制限事項:</p>
+                                            <ul className="text-xs text-gray-700 space-y-1">
+                                                <li>• 履歴は7日間のみ</li>
+                                                <li>• AI分析機能なし</li>
+                                                <li>• コミュニティアクセスなし</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    {/* プレミアムプラン紹介 */}
+                                    <div className="border-2 border-purple-300 rounded-lg p-4 bg-gradient-to-br from-purple-50 to-indigo-50">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Icon name="Crown" size={24} className="text-purple-600" />
+                                            <span className="text-xl font-bold text-purple-900">Premium プラン</span>
+                                        </div>
+
+                                        <div className="text-3xl font-bold text-purple-600 mb-3">¥{SUBSCRIPTION_PLAN.price}/月</div>
+
+                                        <ul className="space-y-2 mb-4">
+                                            {SUBSCRIPTION_PLAN.features.map((feature, i) => (
+                                                <li key={i} className="flex items-start gap-2 text-sm">
+                                                    <Icon name="Check" size={16} className="text-green-600 mt-0.5" />
+                                                    <span>{feature}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+
+                                        <button
+                                            onClick={() => alert('Stripe Checkout へのリンクを後ほど実装します')}
+                                            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition"
+                                        >
+                                            プレミアムプランに登録
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </details>
+
+                    {/* テンプレート */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="BookTemplate" size={18} className="text-indigo-600" />
@@ -777,6 +848,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                         </div>
                     </details>
+
+                    {/* ルーティン */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Calendar" size={18} className="text-indigo-600" />
@@ -1192,7 +1265,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     className="flex-1 px-4 py-3 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-medium border border-indigo-200"
                                                 >
                                                     <Icon name="RotateCcw" size={18} className="inline mr-2" />
-                                                    Day1から開始
+                                                    Day1から再開
                                                 </button>
                                             </div>
                                         )}
@@ -1203,6 +1276,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             )}
                         </div>
                     </details>
+
+                    {/* 通知 */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Bell" size={18} className="text-indigo-600" />
@@ -1346,6 +1421,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             </div>
                         </div>
                     </details>
+
+                    {/* ショートカット設定 */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Zap" size={18} className="text-indigo-600" />
@@ -1364,12 +1441,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 const [localShortcuts, setLocalShortcuts] = React.useState(() => {
                                     const saved = localStorage.getItem('chevronShortcuts');
                                     return saved ? JSON.parse(saved) : [
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'Activity', label: '体組成', action: 'open_body_composition', enabled: true },
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'HeartPulse', label: 'コンディション', action: 'open_condition', enabled: true },
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'Camera', label: '写真解析', action: 'open_meal_photo', enabled: true },
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'Utensils', label: '食事', action: 'open_meal', enabled: false },
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'Dumbbell', label: '運動', action: 'open_workout', enabled: false },
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'PieChart', label: '分析', action: 'open_analysis', enabled: false }
+                                        { side: 'left', icon: 'Activity', label: '体組成', action: 'open_body_composition' },
+                                        { side: 'left', icon: 'Utensils', label: '食事', action: 'open_meal' },
+                                        { side: 'left', icon: 'Dumbbell', label: '運動', action: 'open_workout' },
+                                        { side: 'right', icon: 'PieChart', label: '分析', action: 'open_analysis' },
+                                        { side: 'right', icon: 'TrendingUp', label: '履歴', action: 'open_history' },
+                                        { side: 'right', icon: 'Settings', label: '設定', action: 'open_settings' }
                                     ];
                                 });
 
@@ -1418,7 +1495,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     { value: 'open_body_composition', label: '体組成', icon: 'Activity' },
                                     { value: 'open_condition', label: 'コンディション', icon: 'HeartPulse' },
                                     { value: 'open_meal', label: '食事', icon: 'Utensils' },
-                                    { value: 'open_meal_photo', label: '写真解析', icon: 'Camera' },
+                                    { value: 'open_meal_photo', label: '食事写真解析', icon: 'Camera' },
                                     { value: 'open_workout', label: '運動', icon: 'Dumbbell' },
                                     { value: 'open_analysis', label: '分析', icon: 'PieChart' },
                                     { value: 'open_history', label: '履歴', icon: 'TrendingUp' },
@@ -1427,136 +1504,118 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     { value: 'open_settings', label: '設定', icon: 'Settings' }
                                 ];
 
+                                const leftShortcuts = localShortcuts.filter(s => s.side === 'left');
+                                const rightShortcuts = localShortcuts.filter(s => s.side === 'right');
+
                                 return (
                                     <div className="space-y-6">
-                                        {/* ショートカット一覧 */}
+                                        {/* Left Shortcuts */}
                                         <div>
                                             <div className="flex items-center justify-between mb-3">
                                                 <h3 className="font-semibold flex items-center gap-2">
-                                                    <Icon name="Zap" size={18} className="text-indigo-600" />
-                                                    ショートカット一覧（最大6項目）
+                                                    <Icon name="ChevronLeft" size={18} className="text-gray-600" />
+                                                    左側ショートカット
                                                 </h3>
-                                                <div className="text-xs text-gray-500">
-                                                    {localShortcuts.filter(s => s.enabled).length} / 6 表示中
-                                                </div>
+                                                <button
+                                                    onClick={() => toggleVisibility('left')}
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
+                                                        shortcutVisibility.left
+                                                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                                    }`}
+                                                >
+                                                    <Icon name={shortcutVisibility.left ? 'Eye' : 'EyeOff'} size={16} />
+                                                    {shortcutVisibility.left ? '表示中' : '非表示'}
+                                                </button>
                                             </div>
-
-                                            {/* グローバル設定 */}
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                                                <div className="grid grid-cols-2 gap-3 mb-3">
-                                                    <div>
-                                                        <label className="text-xs font-medium text-gray-900 dark:text-white mb-1 block">位置</label>
-                                                        <select
-                                                            value={localShortcuts[0]?.position || 'middle'}
-                                                            onChange={(e) => {
-                                                                const updated = localShortcuts.map(s => ({ ...s, position: e.target.value }));
-                                                                saveShortcuts(updated);
-                                                            }}
-                                                            className="w-full px-2 py-1.5 border rounded text-sm"
-                                                        >
-                                                            <option value="top">上</option>
-                                                            <option value="middle">中</option>
-                                                            <option value="bottom">下</option>
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-medium text-gray-900 dark:text-white mb-1 block">サイズ</label>
-                                                        <select
-                                                            value={localShortcuts[0]?.size || 'medium'}
-                                                            onChange={(e) => {
-                                                                const updated = localShortcuts.map(s => ({ ...s, size: e.target.value }));
-                                                                saveShortcuts(updated);
-                                                            }}
-                                                            className="w-full px-2 py-1.5 border rounded text-sm"
-                                                        >
-                                                            <option value="small">小</option>
-                                                            <option value="medium">中（デフォルト）</option>
-                                                            <option value="large">大</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div className="border-t border-blue-300 pt-3">
-                                                    <label className="text-xs font-medium text-gray-900 dark:text-white mb-2 block">左右設定</label>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <button
-                                                            onClick={() => toggleVisibility('left')}
-                                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                                                                shortcutVisibility.left
-                                                                    ? 'bg-blue-600 text-white'
-                                                                    : 'bg-white text-gray-600 border border-gray-300'
-                                                            }`}
-                                                        >
-                                                            <Icon name="ChevronLeft" size={16} className="inline mr-1" />
-                                                            左側 {shortcutVisibility.left ? 'ON' : 'OFF'}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => toggleVisibility('right')}
-                                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                                                                shortcutVisibility.right
-                                                                    ? 'bg-blue-600 text-white'
-                                                                    : 'bg-white text-gray-600 border border-gray-300'
-                                                            }`}
-                                                        >
-                                                            右側 {shortcutVisibility.right ? 'ON' : 'OFF'}
-                                                            <Icon name="ChevronRight" size={16} className="inline ml-1" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                {localShortcuts.map((shortcut, index) => (
-                                                    <div key={index} className={`border rounded-lg p-3 ${shortcut.enabled ? 'bg-white' : 'bg-gray-50 opacity-60'}`}>
-                                                        <div className="flex items-center gap-3">
-                                                            {/* 有効/無効トグル */}
-                                                            <button
-                                                                onClick={() => updateShortcut(index, { enabled: !shortcut.enabled })}
-                                                                className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition ${
-                                                                    shortcut.enabled ? 'bg-indigo-100' : 'bg-gray-100'
-                                                                }`}
-                                                            >
-                                                                <Icon
-                                                                    name={shortcut.enabled ? 'Eye' : 'EyeOff'}
-                                                                    size={18}
-                                                                    className={shortcut.enabled ? 'text-indigo-600' : 'text-gray-400'}
-                                                                />
-                                                            </button>
-
-                                                            {/* 番号 */}
-                                                            <div className="flex-shrink-0 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs font-bold text-gray-600">
-                                                                {index + 1}
-                                                            </div>
-
-                                                            {/* アイコンプレビュー */}
-                                                            <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                                                                <Icon name={shortcut.icon} size={18} className={getIconColor(shortcut.action)} />
-                                                            </div>
-
-                                                            {/* 機能選択 */}
-                                                            <div className="flex-1">
-                                                                <select
-                                                                    value={shortcut.action}
-                                                                    onChange={(e) => {
-                                                                        const selected = availableActions.find(a => a.value === e.target.value);
-                                                                        updateShortcut(index, {
-                                                                            action: selected.value,
-                                                                            label: selected.label,
-                                                                            icon: selected.icon
-                                                                        });
-                                                                    }}
-                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                                    disabled={!shortcut.enabled}
-                                                                >
-                                                                    {availableActions.map(action => (
-                                                                        <option key={action.value} value={action.value}>
-                                                                            {action.label}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
+                                            <div className="space-y-3">
+                                                {leftShortcuts.map((shortcut, idx) => {
+                                                    const globalIndex = localShortcuts.findIndex(s => s === shortcut);
+                                                    return (
+                                                        <div key={globalIndex} className="border rounded-lg p-4 bg-white">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                                    <Icon name={shortcut.icon} size={18} className={getIconColor(shortcut.action)} />
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <select
+                                                                        value={shortcut.action}
+                                                                        onChange={(e) => {
+                                                                            const selected = availableActions.find(a => a.value === e.target.value);
+                                                                            updateShortcut(globalIndex, {
+                                                                                action: selected.value,
+                                                                                label: selected.label,
+                                                                                icon: selected.icon
+                                                                            });
+                                                                        }}
+                                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                    >
+                                                                        {availableActions.map(action => (
+                                                                            <option key={action.value} value={action.value}>
+                                                                                {action.label}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* Right Shortcuts */}
+                                        <div>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h3 className="font-semibold flex items-center gap-2">
+                                                    <Icon name="ChevronRight" size={18} className="text-gray-600" />
+                                                    右側ショートカット
+                                                </h3>
+                                                <button
+                                                    onClick={() => toggleVisibility('right')}
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
+                                                        shortcutVisibility.right
+                                                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                                    }`}
+                                                >
+                                                    <Icon name={shortcutVisibility.right ? 'Eye' : 'EyeOff'} size={16} />
+                                                    {shortcutVisibility.right ? '表示中' : '非表示'}
+                                                </button>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {rightShortcuts.map((shortcut, idx) => {
+                                                    const globalIndex = localShortcuts.findIndex(s => s === shortcut);
+                                                    return (
+                                                        <div key={globalIndex} className="border rounded-lg p-4 bg-white">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                                    <Icon name={shortcut.icon} size={18} className={getIconColor(shortcut.action)} />
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <select
+                                                                        value={shortcut.action}
+                                                                        onChange={(e) => {
+                                                                            const selected = availableActions.find(a => a.value === e.target.value);
+                                                                            updateShortcut(globalIndex, {
+                                                                                action: selected.value,
+                                                                                label: selected.label,
+                                                                                icon: selected.icon
+                                                                            });
+                                                                        }}
+                                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                    >
+                                                                        {availableActions.map(action => (
+                                                                            <option key={action.value} value={action.value}>
+                                                                                {action.label}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
 
@@ -1566,12 +1625,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 onClick={() => {
                                                     if (confirm('ショートカット設定をデフォルトに戻しますか？')) {
                                                         const defaultShortcuts = [
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'Activity', label: '体組成', action: 'open_body_composition', enabled: true },
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'HeartPulse', label: 'コンディション', action: 'open_condition', enabled: true },
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'Camera', label: '写真解析', action: 'open_meal_photo', enabled: true },
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'Utensils', label: '食事', action: 'open_meal', enabled: false },
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'Dumbbell', label: '運動', action: 'open_workout', enabled: false },
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'PieChart', label: '分析', action: 'open_analysis', enabled: false }
+                                                            { side: 'left', icon: 'Activity', label: '体組成', action: 'open_body_composition' },
+                                                            { side: 'left', icon: 'Utensils', label: '食事', action: 'open_meal' },
+                                                            { side: 'left', icon: 'Dumbbell', label: '運動', action: 'open_workout' },
+                                                            { side: 'right', icon: 'PieChart', label: '分析', action: 'open_analysis' },
+                                                            { side: 'right', icon: 'TrendingUp', label: '履歴', action: 'open_history' },
+                                                            { side: 'right', icon: 'Settings', label: '設定', action: 'open_settings' }
                                                         ];
                                                         saveShortcuts(defaultShortcuts);
                                                     }
@@ -1587,69 +1646,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             })()}
                         </div>
                     </details>
-                    <details className="border rounded-lg">
-                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Palette" size={18} className="text-purple-600" />
-                            カラーモード
-                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
-                        </summary>
-                        <div className="p-4 pt-0 border-t border-gray-200">
-                            <div className="space-y-4">
-                                {/* テーマ選択 */}
-                                <div className="p-3 bg-white rounded-lg border">
-                                    <div className="mb-3">
-                                        <p className="font-medium flex items-center gap-2">
-                                            <Icon name="Palette" size={18} className="text-purple-600" />
-                                            テーマ選択
-                                        </p>
-                                        <p className="text-xs text-gray-500 mt-1">アプリの見た目を変更できます</p>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {allThemes.map(theme => (
-                                            <button
-                                                key={theme.id}
-                                                onClick={() => handleThemeChange(theme.id)}
-                                                className={`relative p-3 rounded-lg border-2 transition-all ${
-                                                    currentTheme === theme.id
-                                                        ? 'border-purple-500 ring-2 ring-purple-200'
-                                                        : 'border-gray-200 hover:border-purple-300'
-                                                }`}
-                                            >
-                                                {/* プレビューカラー */}
-                                                <div className="flex gap-1 mb-2">
-                                                    <div
-                                                        className="w-8 h-8 rounded"
-                                                        style={{ backgroundColor: theme.preview.bgColor }}
-                                                    />
-                                                    <div
-                                                        className="w-8 h-8 rounded"
-                                                        style={{ backgroundColor: theme.preview.primaryColor }}
-                                                    />
-                                                    <div
-                                                        className="w-8 h-8 rounded"
-                                                        style={{ backgroundColor: theme.preview.textColor }}
-                                                    />
-                                                </div>
 
-                                                {/* テーマ名 */}
-                                                <p className="font-bold text-sm text-left">{theme.name}</p>
-                                                <p className="text-xs text-gray-600 text-left mt-1 line-clamp-2">
-                                                    {theme.description}
-                                                </p>
-
-                                                {/* チェックマーク */}
-                                                {currentTheme === theme.id && (
-                                                    <div className="absolute top-2 right-2 bg-purple-500 text-white rounded-full p-1">
-                                                        <Icon name="Check" size={12} />
-                                                    </div>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </details>
+                    {/* データ管理 */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Database" size={18} className="text-indigo-600" />
@@ -1692,6 +1690,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                         </div>
                     </details>
+
+                    {/* 開発者 */}
+                    {DEV_MODE && (
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Code" size={18} className="text-orange-600" />
@@ -1763,8 +1764,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '0');
                                                 // 機能開放状態もリセット
                                                 localStorage.removeItem(STORAGE_KEYS.UNLOCKED_FEATURES);
-                                                // 初回完了フラグもリセット
-                                                localStorage.removeItem('yourCoachBeta_firstTimeCompleted');
                                                 window.location.reload();
                                             }}
                                             className="px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition font-medium"
@@ -1914,6 +1913,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                         </div>
                     </details>
+                    )}
 
                     {/* 管理者パネル (開発モードのみ表示) */}
                     {DEV_MODE && (
@@ -2033,10 +2033,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="font-bold text-gray-900">レベル {guide.level}</span>
-                                                        <span className="text-sm font-semibold text-orange-600">({guide.range})</span>
+                                                        <span className="font-bold text-gray-900">{guide.title}</span>
+                                                        <span className="text-sm text-gray-600">({guide.range})</span>
                                                     </div>
-                                                    <p className="text-sm text-gray-600 mb-2">{guide.title}</p>
                                                     <ul className="text-sm text-gray-700 space-y-1">
                                                         {guide.features.map((feature, idx) => (
                                                             <li key={idx}>• {feature}</li>

@@ -4,6 +4,15 @@
     box-sizing: border-box;
 }
 
+/* スクロールバーを完全非表示 */
+* {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+*::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Opera */
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     background-color: #f9fafb;
@@ -467,4 +476,48 @@ body {
 /* ステージインジケーターはそのまま（グラデーション維持） */
 .dark-mode .stage-indicator {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* PFC別食材アイテムの背景色 */
+.pfc-item-protein {
+    background-color: rgba(220, 38, 38, 0.2) !important;
+    color: #991b1b !important;
+}
+
+.pfc-item-fat {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+    color: #92400e !important;
+}
+
+.pfc-item-carb {
+    background-color: rgba(22, 163, 74, 0.2) !important;
+    color: #14532d !important;
+}
+
+.pfc-item-gray {
+    background-color: rgba(107, 114, 128, 0.2) !important;
+    color: #374151 !important;
+}
+
+/* PFC数値の色分け */
+.pfc-calories {
+    color: #60a5fa !important;
+}
+
+.pfc-protein {
+    color: #ef4444 !important;
+}
+
+.pfc-fat {
+    color: #eab308 !important;
+}
+
+.pfc-carbs {
+    color: #22c55e !important;
+}
+
+/* 食材アイテムの左端縦線 - インラインスタイルを優先 */
+button[data-pfc-border] {
+    border-left-width: 5px !important;
+    border-left-style: solid !important;
 }

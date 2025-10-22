@@ -1,92 +1,308 @@
 /* ダークモード - より強力な適用 */
-html.dark-mode,
-html.dark-mode body,
-html.dark-mode #root {
+.dark-mode,
+.dark-mode body,
+.dark-mode #root {
     background-color: #1a1a1a !important;
     color: #e5e5e5 !important;
 }
 
 /* 背景色 */
-html.dark-mode .bg-white,
-html.dark-mode [class*="bg-white"] { 
+.dark-mode .bg-white,
+.dark-mode [class*="bg-white"] { 
     background-color: #2d2d2d !important; 
 }
 
-html.dark-mode .bg-gray-50,
-html.dark-mode [class*="bg-gray-50"] { 
+.dark-mode .bg-gray-50,
+.dark-mode [class*="bg-gray-50"] { 
     background-color: #262626 !important; 
 }
 
-html.dark-mode .bg-gray-100,
-html.dark-mode [class*="bg-gray-100"] { 
-    background-color: #2d2d2d !important; 
+.dark-mode .bg-gray-100,
+.dark-mode [class*="bg-gray-100"] {
+    background-color: #3a3a3a !important;
 }
 
-html.dark-mode .bg-gray-200 { 
+.dark-mode .bg-gray-200 { 
     background-color: #3a3a3a !important; 
 }
 
 /* テキスト色 */
-html.dark-mode .text-gray-600 { 
+.dark-mode .text-gray-600 { 
     color: #a1a1a1 !important; 
 }
 
-html.dark-mode .text-gray-700 { 
+.dark-mode .text-gray-700 { 
     color: #b5b5b5 !important; 
 }
 
-html.dark-mode .text-gray-800 { 
+.dark-mode .text-gray-800 { 
     color: #d4d4d4 !important; 
 }
 
-html.dark-mode .text-gray-900 { 
+.dark-mode .text-gray-900 { 
     color: #e5e5e5 !important; 
 }
 
 /* ボーダー */
-html.dark-mode .border,
-html.dark-mode .border-t,
-html.dark-mode .border-b,
-html.dark-mode .border-gray-200,
-html.dark-mode .border-gray-300 { 
-    border-color: #3a3a3a !important; 
+.dark-mode .border,
+.dark-mode .border-t,
+.dark-mode .border-b,
+.dark-mode .border-gray-200 {
+    border-color: #3a3a3a !important;
+}
+
+.dark-mode .border-gray-300,
+.dark-mode .border-2 {
+    border-color: #4a4a4a !important;
 }
 
 /* カード背景 */
-html.dark-mode .bg-blue-50 { 
+.dark-mode .bg-blue-50 { 
     background-color: #1e3a5f !important; 
 }
 
-html.dark-mode .bg-green-50 { 
+.dark-mode .bg-green-50 { 
     background-color: #1a3d2e !important; 
 }
 
-html.dark-mode .bg-purple-50 { 
+.dark-mode .bg-purple-50 { 
     background-color: #2d1f4a !important; 
 }
 
-html.dark-mode .bg-orange-50 { 
+.dark-mode .bg-orange-50 { 
     background-color: #4a2d1f !important; 
 }
 
 /* ホバー */
-html.dark-mode .hover\:bg-gray-50:hover { 
+.dark-mode .hover\:bg-gray-50:hover { 
     background-color: #2d2d2d !important; 
 }
 
-html.dark-mode .hover\:bg-gray-100:hover { 
+.dark-mode .hover\:bg-gray-100:hover { 
     background-color: #3a3a3a !important; 
 }
 
 /* シャドウ */
-html.dark-mode .shadow-sm { 
+.dark-mode .shadow-sm { 
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5) !important; 
 }
 
-html.dark-mode .shadow { 
+.dark-mode .shadow { 
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.6) !important; 
 }
 
-html.dark-mode .shadow-lg { 
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.7) !important; 
+.dark-mode .shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* 閃き入力欄（AI入力欄） */
+.dark-mode textarea[placeholder*="閃き"],
+.dark-mode textarea[placeholder*="自然言語"],
+.dark-mode .ai-input-textarea {
+    background-color: #2d2d2d !important;
+    color: #e5e5e5 !important;
+    border-color: #4a4a4a !important;
+}
+
+.dark-mode textarea[placeholder*="閃き"]:focus,
+.dark-mode textarea[placeholder*="自然言語"]:focus,
+.dark-mode .ai-input-textarea:focus {
+    background-color: #333333 !important;
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+}
+
+/* 指示書セクション */
+.dark-mode .directive-section,
+.dark-mode [class*="directive"] {
+    background-color: #2d2d2d !important;
+    border-color: #4a4a4a !important;
+}
+
+.dark-mode .directive-header {
+    background-color: #262626 !important;
+    color: #e5e5e5 !important;
+}
+
+.dark-mode .directive-content {
+    background-color: #2d2d2d !important;
+    color: #d4d4d4 !important;
+}
+
+.dark-mode .directive-item {
+    background-color: #333333 !important;
+    border-color: #4a4a4a !important;
+}
+
+.dark-mode .directive-item:hover {
+    background-color: #3a3a3a !important;
+}
+
+/* 使い方セクション（設定画面） - 統一感のあるダーク背景 */
+.dark-mode .bg-indigo-50 {
+    background-color: #2d2d2d !important;
+}
+
+.dark-mode .border-indigo-300 {
+    border-color: #4a4a4a !important;
+}
+
+.dark-mode .border-indigo-200 {
+    border-color: #3a3a3a !important;
+}
+
+.dark-mode .hover\:bg-indigo-100:hover {
+    background-color: #333333 !important;
+}
+
+.dark-mode .text-indigo-600,
+.dark-mode .text-indigo-900 {
+    color: #a78bfa !important;
+}
+
+.dark-mode .bg-indigo-600 {
+    background-color: #667eea !important;
+}
+
+.dark-mode .text-green-700 {
+    color: #86efac !important;
+}
+
+.dark-mode .text-blue-700 {
+    color: #93c5fd !important;
+}
+
+.dark-mode .text-purple-700 {
+    color: #c4b5fd !important;
+}
+
+.dark-mode .bg-yellow-50 {
+    background-color: #2d2d2d !important;
+}
+
+.dark-mode .border-yellow-200 {
+    border-color: #4a4a4a !important;
+}
+
+.dark-mode .text-yellow-900 {
+    color: #fde047 !important;
+}
+
+/* 見出しの色を明るく */
+.dark-mode h1,
+.dark-mode h2,
+.dark-mode h3,
+.dark-mode h4,
+.dark-mode h5,
+.dark-mode h6 {
+    color: #e5e5e5 !important;
+}
+
+.dark-mode .font-bold,
+.dark-mode .font-semibold {
+    color: #e5e5e5 !important;
+}
+
+/* グラデーション背景の調整 */
+.dark-mode [class*="bg-gradient-to-r"],
+.dark-mode [class*="bg-gradient-to-br"] {
+    filter: brightness(0.8);
+}
+
+/* プログレスバーとステージインジケーター（グラデーション維持） */
+.dark-mode .stage-indicator {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+/* テーマ選択のプレビューカード */
+.dark-mode .border-purple-500 {
+    border-color: #a78bfa !important;
+}
+
+.dark-mode .ring-purple-200 {
+    --tw-ring-color: rgba(167, 139, 250, 0.3) !important;
+}
+
+.dark-mode .border-purple-300 {
+    border-color: #8b5cf6 !important;
+}
+
+.dark-mode .bg-purple-500 {
+    background-color: #8b5cf6 !important;
+}
+
+.dark-mode .text-purple-600 {
+    color: #c4b5fd !important;
+}
+
+/* 閃きセクション（Flashセクション）の入力欄 */
+.dark-mode input[type="text"],
+.dark-mode input[type="number"],
+.dark-mode input[type="email"],
+.dark-mode input[type="password"],
+.dark-mode textarea,
+.dark-mode select {
+    background-color: #2d2d2d !important;
+    color: #e5e5e5 !important;
+    border-color: #4a4a4a !important;
+}
+
+.dark-mode input:focus,
+.dark-mode textarea:focus,
+.dark-mode select:focus {
+    background-color: #333333 !important;
+    border-color: #667eea !important;
+}
+
+/* 閃き（Flash）セクションのヘッダー */
+.dark-mode .bg-gradient-to-r {
+    background: linear-gradient(to right, #2d2d2d, #333333) !important;
+}
+
+/* 指示書セクションのヘッダー背景 */
+.dark-mode [class*="bg-gradient-to-r"] {
+    background: linear-gradient(to right, #2d2d2d, #333333) !important;
+}
+
+/* PFC別食材アイテムの背景色（ダークモード） */
+.dark-mode .pfc-item-protein {
+    background-color: rgba(220, 38, 38, 0.3) !important;
+    color: #fca5a5 !important;
+}
+
+.dark-mode .pfc-item-fat {
+    background-color: rgba(245, 158, 11, 0.3) !important;
+    color: #fde047 !important;
+}
+
+.dark-mode .pfc-item-carb {
+    background-color: rgba(22, 163, 74, 0.3) !important;
+    color: #86efac !important;
+}
+
+.dark-mode .pfc-item-gray {
+    background-color: rgba(107, 114, 128, 0.3) !important;
+    color: #d1d5db !important;
+}
+
+/* PFC数値の色分け（ダークモード） */
+.dark-mode .pfc-calories {
+    color: #93c5fd !important;
+}
+
+.dark-mode .pfc-protein {
+    color: #fca5a5 !important;
+}
+
+.dark-mode .pfc-fat {
+    color: #fde047 !important;
+}
+
+.dark-mode .pfc-carbs {
+    color: #86efac !important;
+}
+
+/* グラデーションボタンをダークモードで明るくする */
+.dark-mode .bg-gradient-to-r.from-indigo-600.to-purple-600 {
+    background: linear-gradient(to right, #818cf8, #a78bfa) !important;
 }

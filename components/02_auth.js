@@ -7,10 +7,16 @@ const LoginScreen = () => {
     const handleAuth = async (e) => {
         e.preventDefault();
         try {
+            let userCredential;
             if (isSignUp) {
-                await auth.createUserWithEmailAndPassword(email, password);
+                userCredential = await auth.createUserWithEmailAndPassword(email, password);
             } else {
-                await auth.signInWithEmailAndPassword(email, password);
+                userCredential = await auth.signInWithEmailAndPassword(email, password);
+            }
+
+            // 認証成功後、ユーザー情報をFirestoreに保存
+            if (userCredential && userCredential.user) {
+                await DataService.saveOrUpdateAuthUser(userCredential.user);
             }
         } catch (error) {
             alert(error.message);
@@ -20,7 +26,12 @@ const LoginScreen = () => {
     const handleGoogleSignIn = async () => {
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
-            await auth.signInWithPopup(provider);
+            const result = await auth.signInWithPopup(provider);
+
+            // Google認証成功後、ユーザー情報をFirestoreに保存
+            if (result && result.user) {
+                await DataService.saveOrUpdateAuthUser(result.user);
+            }
         } catch (error) {
             alert(error.message);
         }
@@ -88,7 +99,17 @@ const LoginScreen = () => {
 
 // ===== オンボーディング画面 =====
 const OnboardingScreen = ({ user, onComplete }) => {
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(0); // Start from 0 for goal selection
+    const [infoModal, setInfoModal] = useState({ show: false, title: '', content: '' });
+    const [visualGuideModal, setVisualGuideModal] = useState({ show: false, gender: '男性', selectedLevel: 5 });
+    const [showBodyFatInfoIcon, setShowBodyFatInfoIcon] = useState(() => {
+        const viewed = localStorage.getItem('onboarding_bodyFatInfoViewed');
+        return viewed !== 'true';
+    });
+    const [showBodyFatStandardIcon, setShowBodyFatStandardIcon] = useState(() => {
+        const viewed = localStorage.getItem('onboarding_bodyFatStandardViewed');
+        return viewed !== 'true';
+    });
     const [profile, setProfile] = useState({
         nickname: '',
         gender: '男性',
@@ -98,7 +119,10 @@ const OnboardingScreen = ({ user, onComplete }) => {
         bodyFatPercentage: 15,
         activityLevel: 3,
         purpose: 'メンテナンス',
-        weightChangePace: 0
+        weightChangePace: 0,
+        primaryGoal: null, // New: user's primary goal
+        recommendedStart: null, // New: recommended starting feature
+        userChoosesOwn: false // New: whether user wants to choose their own path
     });
 
     const handleComplete = async () => {
@@ -121,7 +145,59 @@ const OnboardingScreen = ({ user, onComplete }) => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl slide-up">
-                <h2 className="text-2xl font-bold mb-6">プロフィール設定 ({step}/3)</h2>
+                <h2 className="text-2xl font-bold mb-6">
+                    {step === 0 ? 'あなたの目標を教えてください' : `プロフィール設定 (${step}/3)`}
+                </h2>
+
+                {step === 0 && (
+                    <div className="space-y-4">
+                        <p className="text-gray-600 text-center mb-6">
+                            最大の目標は何ですか？これに基づいて、最適な開始点をご提案します。
+                        </p>
+                        <div className="space-y-3">
+                            {[
+                                { id: 'bulk', label: 'バルクアップ', desc: '筋肉を増やして体を大きくしたい', icon: '💪', color: 'blue', purpose: 'バルクアップ', pace: 1 },
+                                { id: 'diet', label: 'ダイエット', desc: '脂肪を落として引き締めたい', icon: '🔥', color: 'red', purpose: 'ダイエット', pace: -1 },
+                                { id: 'maintain', label: 'メンテナンス', desc: '現状を維持しながら健康的に過ごしたい', icon: '⚖️', color: 'green', purpose: 'メンテナンス', pace: 0 },
+                                { id: 'recomp', label: 'リコンプ', desc: '脂肪を落としながら筋肉をつけたい', icon: '⚡', color: 'purple', purpose: 'リコンプ', pace: -1 }
+                            ].map(goal => (
+                                <button
+                                    key={goal.id}
+                                    onClick={() => {
+                                        setProfile(prev => ({
+                                            ...prev,
+                                            primaryGoal: goal.id,
+                                            purpose: goal.purpose,
+                                            weightChangePace: goal.pace
+                                        }));
+                                    }}
+                                    className={`w-full p-4 rounded-xl border-2 text-left transition hover:shadow-lg ${
+                                        profile.primaryGoal === goal.id
+                                            ? `border-${goal.color}-500 bg-${goal.color}-50`
+                                            : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <span className="text-3xl">{goal.icon}</span>
+                                        <div>
+                                            <h3 className="font-bold text-lg">{goal.label}</h3>
+                                            <p className="text-sm text-gray-600">{goal.desc}</p>
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        {profile.primaryGoal && (
+                            <button
+                                onClick={() => setStep(1)}
+                                className="w-full mt-6 bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700"
+                            >
+                                次へ
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {step === 1 && (
                     <div className="space-y-4">
@@ -146,32 +222,6 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <option value="女性">女性</option>
                                 <option value="その他">その他</option>
                             </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-2">食文化</label>
-                            <p className="text-xs text-gray-600 mb-2">
-                                あなたの食生活に近いものを複数選択してください。好みに合った、継続しやすい食材を優先的に提案します。
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {['アジア', '欧米', 'ラテン', 'その他'].map(culture => (
-                                    <label key={culture} className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                        <input
-                                            type="checkbox"
-                                            checked={(profile.culturalRoots || []).includes(culture)}
-                                            onChange={(e) => {
-                                                const roots = profile.culturalRoots || [];
-                                                if (e.target.checked) {
-                                                    setProfile({...profile, culturalRoots: [...roots, culture]});
-                                                } else {
-                                                    setProfile({...profile, culturalRoots: roots.filter(r => r !== culture)});
-                                                }
-                                            }}
-                                            className="rounded"
-                                        />
-                                        <span className="text-sm">{culture}</span>
-                                    </label>
-                                ))}
-                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-2">年齢</label>
@@ -206,7 +256,49 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-2">体脂肪率 (%)</label>
+                            <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                体脂肪率 (%)
+                                {!infoModal.show && !visualGuideModal.show && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setInfoModal({
+                                                    show: true,
+                                                    title: '体脂肪率とは？',
+                                                    content: `体脂肪率は、体重のうち脂肪が占める割合を示す指標です。
+
+【体脂肪率の重要性】
+• 除脂肪体重（LBM）の計算に必要
+• LBMから基礎代謝量（BMR）を算出
+• 個別化された栄養目標の設定に使用
+
+【測定方法】
+• 体組成計（InBodyなど）での測定を推奨
+• 不明な場合は外見から推定できます（目アイコンをタップ）
+
+【注意】
+正確な体脂肪率を知ることで、より精密な栄養管理が可能になります。`
+                                                });
+                                            }}
+                                            className="text-indigo-600 hover:text-indigo-800"
+                                            title="体脂肪率について"
+                                        >
+                                            <Icon name="Info" size={16} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setVisualGuideModal({ ...visualGuideModal, show: true, gender: profile.gender });
+                                            }}
+                                            className="text-orange-600 hover:text-orange-800"
+                                            title="外見から体脂肪率を推定"
+                                        >
+                                            <Icon name="Eye" size={16} />
+                                        </button>
+                                    </>
+                                )}
+                            </label>
                             <input
                                 type="number"
                                 step="0.1"
@@ -229,7 +321,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                生活スタイル
+                                活動レベル
                                 <button
                                     type="button"
                                     onClick={() => setInfoModal({
@@ -258,22 +350,101 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-2">目的</label>
+                            <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                スタイル
+                                <button
+                                    type="button"
+                                    onClick={() => setInfoModal({
+                                        show: true,
+                                        title: 'スタイルとは？',
+                                        content: `トレーニングスタイルによってPFC（タンパク質・脂質・炭水化物）の推奨バランスが異なります。
+
+【一般】
+・週1〜3回程度の軽めのトレーニング
+・健康維持や軽い体づくりが目的
+・タンパク質係数: 標準
+
+【ボディメイカー】
+・週4回以上の本格的なトレーニング
+・筋肥大や競技パフォーマンス向上が目的
+・タンパク質係数: 2倍（より多くのタンパク質を推奨）
+
+あとから設定画面で変更することも可能です。`
+                                    })}
+                                    className="text-indigo-600 hover:text-indigo-800"
+                                >
+                                    <Icon name="Info" size={16} />
+                                </button>
+                            </label>
                             <select
-                                value={profile.purpose}
-                                onChange={(e) => {
-                                    const purpose = e.target.value;
-                                    let pace = 0;
-                                    if (purpose === '減量') pace = -1;
-                                    else if (purpose === '増量') pace = 1;
-                                    setProfile({...profile, purpose, weightChangePace: pace});
-                                }}
+                                value={profile.style || '一般'}
+                                onChange={(e) => setProfile({...profile, style: e.target.value})}
                                 className="w-full px-4 py-3 border rounded-lg"
                             >
-                                <option value="減量">減量（脂肪を落とす）</option>
-                                <option value="メンテナンス">現状維持</option>
-                                <option value="増量">増量（筋肉をつける）</option>
+                                <option value="一般">一般</option>
+                                <option value="ボディメイカー">ボディメイカー</option>
                             </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                カロリー調整値（任意）
+                                <button
+                                    type="button"
+                                    onClick={() => setInfoModal({
+                                        show: true,
+                                        title: 'カロリー調整値とは？',
+                                        content: `あなたの目標に合わせて1日の摂取カロリーを微調整する値です。
+
+【目標別で自動調整】
+• バルクアップ: +300 kcal（筋肉をつけやすくする）
+• ダイエット: -300 kcal（脂肪を落としやすくする）
+• メンテナンス: ±0 kcal（現状維持）
+• リコンプ: ±0 kcal（体組成改善）
+
+【任意変更も可能】
+もっと早く結果を出したい場合や、ゆっくり進めたい場合は、この値を手動で変更できます。
+
+例：
+• より速くダイエット: -500 kcal
+• ゆっくりバルクアップ: +200 kcal
+
+空欄のままにすると目標別のデフォルト値が自動適用されます。`
+                                    })}
+                                    className="text-indigo-600 hover:text-indigo-800"
+                                >
+                                    <Icon name="Info" size={16} />
+                                </button>
+                            </label>
+                            <input
+                                type="number"
+                                value={profile.calorieAdjustment !== undefined && profile.calorieAdjustment !== null ? profile.calorieAdjustment : ''}
+                                onChange={(e) => setProfile({...profile, calorieAdjustment: e.target.value === '' ? null : Number(e.target.value)})}
+                                className="w-full px-4 py-3 border rounded-lg"
+                                placeholder={`目標別で自動調整（${profile.primaryGoal === 'bulk' ? '+300' : profile.primaryGoal === 'diet' ? '-300' : '±0'} kcal）`}
+                            />
+                            <p className="text-xs text-gray-600 mt-1">
+                                未入力の場合、目標に応じて自動調整されます
+                            </p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <p className="text-sm font-medium text-gray-600 mb-2">選択された目標</p>
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl">
+                                    {profile.primaryGoal === 'bulk' && '💪'}
+                                    {profile.primaryGoal === 'diet' && '🔥'}
+                                    {profile.primaryGoal === 'maintain' && '⚖️'}
+                                    {profile.primaryGoal === 'recomp' && '⚡'}
+                                </span>
+                                <div>
+                                    <p className="font-bold text-lg text-gray-800">
+                                        {profile.primaryGoal === 'bulk' && 'バルクアップ'}
+                                        {profile.primaryGoal === 'diet' && 'ダイエット'}
+                                        {profile.primaryGoal === 'maintain' && 'メンテナンス'}
+                                        {profile.primaryGoal === 'recomp' && 'リコンプ'}
+                                    </p>
+                                    <p className="text-sm text-gray-600">{profile.purpose}</p>
+                                </div>
+                            </div>
                         </div>
                         <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
                             <p className="text-sm font-medium text-indigo-800">あなたの目標</p>
@@ -284,7 +455,12 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         profile.activityLevel
                                     ),
                                     profile.weightChangePace,
-                                    LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage)
+                                    LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage),
+                                    profile.style || '一般',
+                                    profile.purpose || 'メンテナンス',
+                                    'バランス',
+                                    profile.calorieAdjustment,
+                                    profile.customPFC
                                 ).calories} kcal/日
                             </p>
                         </div>
@@ -292,7 +468,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 )}
 
                 <div className="flex gap-4 mt-8">
-                    {step > 1 && (
+                    {step > 0 && (
                         <button
                             onClick={() => setStep(step - 1)}
                             className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300"
@@ -300,22 +476,151 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             戻る
                         </button>
                     )}
-                    {step < 3 ? (
+                    {step > 0 && step < 3 ? (
                         <button
                             onClick={() => setStep(step + 1)}
                             className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700"
                         >
                             次へ
                         </button>
-                    ) : (
+                    ) : step === 3 ? (
                         <button
                             onClick={handleComplete}
                             className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700"
                         >
                             開始する
                         </button>
-                    )}
+                    ) : null}
                 </div>
+
+                {/* 情報モーダル */}
+                {/* 情報モーダル（iアイコン用） */}
+                {infoModal.show && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center z-10">
+                                <h3 className="font-bold text-lg">{infoModal.title}</h3>
+                                <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white hover:bg-opacity-20 rounded-full">
+                                    <Icon name="X" size={20} />
+                                </button>
+                            </div>
+                            <div className="p-6">
+                                <p className="text-gray-700 whitespace-pre-line leading-relaxed">{infoModal.content}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Visual Guide Modal（目アイコン用・体脂肪率％基準） */}
+                {visualGuideModal.show && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                            <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-pink-600 text-white p-4 flex justify-between items-center z-10">
+                                <h3 className="font-bold text-lg">外見から体脂肪率を推定</h3>
+                                <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white hover:bg-opacity-20 rounded-full">
+                                    <Icon name="X" size={20} />
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <p className="text-sm text-yellow-800 font-medium">
+                                        ⚠️ この推定値は外見に基づく主観的評価であり、実際の体脂肪率と±3-5%の誤差があります。正確な測定には体組成計の使用を強く推奨します。
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">性別を選択</label>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setVisualGuideModal({ ...visualGuideModal, gender: '男性' })}
+                                            className={`flex-1 px-4 py-2 rounded-lg border-2 ${visualGuideModal.gender === '男性' ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-300'}`}
+                                        >
+                                            男性
+                                        </button>
+                                        <button
+                                            onClick={() => setVisualGuideModal({ ...visualGuideModal, gender: '女性' })}
+                                            className={`flex-1 px-4 py-2 rounded-lg border-2 ${visualGuideModal.gender === '女性' ? 'border-pink-600 bg-pink-50 text-pink-700' : 'border-gray-300'}`}
+                                        >
+                                            女性
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-3">
+                                        あなたの体型に最も近いレベルを選択してください (1-10)
+                                    </label>
+                                    <div className="space-y-2">
+                                        {LBMUtils.getVisualGuideInfo(visualGuideModal.gender).map((guide) => {
+                                            const isSelected = visualGuideModal.selectedLevel === guide.level;
+                                            return (
+                                                <button
+                                                    key={guide.level}
+                                                    onClick={() => setVisualGuideModal({ ...visualGuideModal, selectedLevel: guide.level })}
+                                                    className={`w-full text-left p-4 rounded-lg border-2 transition ${
+                                                        isSelected
+                                                            ? 'border-orange-600 bg-orange-50'
+                                                            : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                                                            isSelected ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-600'
+                                                        }`}>
+                                                            {guide.level}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="font-bold text-gray-900">レベル {guide.level}</span>
+                                                                <span className="text-sm font-semibold text-orange-600">({guide.range})</span>
+                                                            </div>
+                                                            <p className="text-sm text-gray-600 mb-2">{guide.title}</p>
+                                                            <ul className="text-sm text-gray-700 space-y-1">
+                                                                {guide.features.map((feature, idx) => (
+                                                                    <li key={idx}>• {feature}</li>
+                                                                ))}
+                                                            </ul>
+                                                            <p className="text-xs text-gray-500 mt-2">健康: {guide.health}</p>
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="bg-gradient-to-r from-orange-50 to-pink-50 p-4 rounded-lg border border-orange-200">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">推定結果</p>
+                                    <p className="text-3xl font-bold text-orange-600">
+                                        {LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel).bodyFatPercentage}%
+                                    </p>
+                                    <p className="text-sm text-gray-600 mt-2">
+                                        {LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel).description}
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })}
+                                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    >
+                                        キャンセル
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const estimate = LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel);
+                                            setProfile({ ...profile, bodyFatPercentage: estimate.bodyFatPercentage });
+                                            setVisualGuideModal({ ...visualGuideModal, show: false });
+                                        }}
+                                        className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-600 to-pink-600 text-white rounded-lg hover:from-orange-700 hover:to-pink-700 font-medium"
+                                    >
+                                        この値を使用する
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

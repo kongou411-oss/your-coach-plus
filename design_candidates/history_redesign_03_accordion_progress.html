@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>履歴改修案3: アコーディオン式・プログレスバー型（推奨）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .accordion-item {
+            transition: all 0.3s ease;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .accordion-item.expanded .accordion-content {
+            max-height: 1000px;
+        }
+        .accordion-item.expanded .toggle-icon {
+            transform: rotate(180deg);
+        }
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+        .progress-bar {
+            transition: width 0.5s ease;
+            animation: fillBar 1s ease-out;
+        }
+        @keyframes fillBar {
+            from { width: 0; }
+        }
+        .metric-item {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-2 text-gray-800">📊 履歴改修案3: アコーディオン式・プログレスバー型</h1>
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 p-3 mb-6">
+            <p class="text-sm font-semibold text-yellow-800">⭐ 推奨案</p>
+            <p class="text-xs text-yellow-700">各項目にプログレスバーを表示、視覚的にわかりやすい</p>
+        </div>
+
+        <!-- 栄養・食事アコーディオン -->
+        <div class="accordion-item bg-white rounded-lg shadow-md mb-3 overflow-hidden">
+            <div class="flex items-center justify-between p-4 cursor-pointer bg-gradient-to-r from-green-50 to-white" onclick="toggleAccordion(this.parentElement)">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">📊</span>
+                    <h2 class="text-lg font-semibold text-gray-800">栄養・食事</h2>
+                </div>
+                <span class="toggle-icon text-green-600 text-xl">▼</span>
+            </div>
+            <div class="accordion-content">
+                <div class="p-4 space-y-4">
+                    <!-- 分析点数 -->
+                    <div class="metric-item">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">🎯 分析点数</span>
+                            <span class="text-sm font-bold text-green-600">85/100</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar bg-green-500 h-2.5 rounded-full" style="width: 85%"></div>
+                        </div>
+                    </div>
+
+                    <!-- 摂取カロリー -->
+                    <div class="metric-item">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">🔥 摂取カロリー</span>
+                            <span class="text-sm font-bold text-green-600">2,450/2,500kcal</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar bg-green-500 h-2.5 rounded-full" style="width: 98%"></div>
+                        </div>
+                    </div>
+
+                    <!-- タンパク質 -->
+                    <div class="metric-item">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">🥩 タンパク質</span>
+                            <span class="text-sm font-bold text-green-600">150/160g (94%)</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar bg-green-500 h-2.5 rounded-full" style="width: 94%"></div>
+                        </div>
+                    </div>
+
+                    <!-- 脂質 -->
+                    <div class="metric-item">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">🧈 脂質</span>
+                            <span class="text-sm font-bold text-green-600">65/70g (93%)</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar bg-green-500 h-2.5 rounded-full" style="width: 93%"></div>
+                        </div>
+                    </div>
+
+                    <!-- 糖質 -->
+                    <div class="metric-item">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">🍚 糖質</span>
+                            <span class="text-sm font-bold text-green-600">280/300g (93%)</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar bg-green-500 h-2.5 rounded-full" style="width: 93%"></div>
+                        </div>
+                    </div>
+
+                    <!-- 食物繊維 -->
+                    <div class="metric-item">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">🥬 食物繊維</span>
+                            <span class="text-sm font-bold text-yellow-600">25/30g (83%)</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar bg-yellow-400 h-2.5 rounded-full" style="width: 83%"></div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <!-- ビタミン -->
+                    <div class="metric-item">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">💊 ビタミン総合達成率</span>
+                            <span class="text-sm font-bold text-yellow-600">78%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar bg-yellow-400 h-2.5 rounded-full" style="width: 78%"></div>
+                        </div>
+                    </div>
+
+                    <!-- ミネラル -->
+                    <div class="metric-item">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">⚡ ミネラル総合達成率</span>
+                            <span class="text-sm font-bold text-yellow-600">82%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar bg-yellow-400 h-2.5 rounded-full" style="width: 82%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- トレーニングアコーディオン -->
+        <div class="accordion-item bg-white rounded-lg shadow-md mb-3 overflow-hidden">
+            <div class="flex items-center justify-between p-4 cursor-pointer bg-gradient-to-r from-red-50 to-white" onclick="toggleAccordion(this.parentElement)">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">💪</span>
+                    <h2 class="text-lg font-semibold text-gray-800">トレーニング</h2>
+                </div>
+                <span class="toggle-icon text-red-600 text-xl">▼</span>
+            </div>
+            <div class="accordion-content">
+                <div class="p-4 space-y-4">
+                    <!-- RM記録 -->
+                    <div class="metric-item">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">🏋️ 回数別RM記録</h3>
+
+                        <div class="space-y-3 pl-2">
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-sm text-gray-600">ベンチプレス</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-600 pl-2">
+                                    <span>• 1RM: <span class="font-semibold text-gray-800">100kg</span></span>
+                                    <span class="text-green-600 font-semibold">↑ +2kg (先週比)</span>
+                                </div>
+                                <div class="text-xs text-gray-600 pl-2 mt-1">
+                                    <span>• 5RM: <span class="font-semibold text-gray-800">85kg</span></span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-sm text-gray-600">スクワット</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-600 pl-2">
+                                    <span>• 1RM: <span class="font-semibold text-gray-800">140kg</span></span>
+                                </div>
+                                <div class="text-xs text-gray-600 pl-2 mt-1">
+                                    <span>• 5RM: <span class="font-semibold text-gray-800">120kg</span></span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-sm text-gray-600">デッドリフト</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-600 pl-2">
+                                    <span>• 1RM: <span class="font-semibold text-gray-800">180kg</span></span>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-600 pl-2 mt-1">
+                                    <span>• 3RM: <span class="font-semibold text-gray-800">150kg</span></span>
+                                    <span class="text-green-600 font-semibold">↑ +5kg (先週比)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <!-- 運動習慣率 -->
+                    <div class="metric-item">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">📈 運動習慣率</span>
+                            <span class="text-sm font-bold text-green-600">85% (週6日)</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar bg-green-500 h-2.5 rounded-full" style="width: 85%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- コンディションアコーディオン -->
+        <div class="accordion-item bg-white rounded-lg shadow-md mb-3 overflow-hidden">
+            <div class="flex items-center justify-between p-4 cursor-pointer bg-gradient-to-r from-blue-50 to-white" onclick="toggleAccordion(this.parentElement)">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🧘</span>
+                    <h2 class="text-lg font-semibold text-gray-800">コンディション</h2>
+                </div>
+                <span class="toggle-icon text-blue-600 text-xl">▼</span>
+            </div>
+            <div class="accordion-content">
+                <div class="p-4 space-y-4">
+                    <!-- コンディションスコア -->
+                    <div class="metric-item">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">🎯 コンディションスコア</span>
+                            <span class="text-sm font-bold text-blue-600">24/30点</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar bg-blue-500 h-2.5 rounded-full" style="width: 80%"></div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">詳細:</h3>
+                    <div class="space-y-3 pl-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">😴 睡眠の質</span>
+                            <div class="flex items-center gap-2">
+                                <div class="w-20 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 80%"></div>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-800 w-8 text-right">8/10</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">🍽️ 食欲</span>
+                            <div class="flex items-center gap-2">
+                                <div class="w-20 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 80%"></div>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-800 w-8 text-right">8/10</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">🧠 集中力</span>
+                            <div class="flex items-center gap-2">
+                                <div class="w-20 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 80%"></div>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-800 w-8 text-right">8/10</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- メリット・デメリット -->
+        <div class="bg-white rounded-lg shadow-md p-4 mt-6">
+            <h3 class="font-bold text-lg mb-3 text-gray-800">✅ メリット</h3>
+            <ul class="list-disc pl-5 space-y-1 text-sm text-gray-700 mb-4">
+                <li><strong>視覚的に最もわかりやすい</strong>（プログレスバー）</li>
+                <li>モバイルで操作しやすい（大きなタップ領域）</li>
+                <li>折り畳み時はスッキリ、展開時は詳細表示</li>
+                <li>先週比や変化を表示できる（RM記録など）</li>
+            </ul>
+            <h3 class="font-bold text-lg mb-3 text-gray-800">⚠️ デメリット</h3>
+            <ul class="list-disc pl-5 space-y-1 text-sm text-gray-700">
+                <li>実装がやや複雑</li>
+                <li>プログレスバーの色設定が必要</li>
+            </ul>
+        </div>
+
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mt-6">
+            <h3 class="font-bold text-blue-800 mb-2">🎯 推奨理由</h3>
+            <ol class="list-decimal pl-5 space-y-1 text-sm text-blue-900">
+                <li><strong>モバイルファースト</strong>: タップ領域が大きく、操作しやすい</li>
+                <li><strong>視覚的直感性</strong>: プログレスバーで達成率が一目瞭然</li>
+                <li><strong>情報密度</strong>: 折り畳み時はスッキリ、展開時は詳細</li>
+                <li><strong>拡張性</strong>: RM記録の週比較など、詳細データを追加しやすい</li>
+                <li><strong>現代的UI</strong>: 多くのフィットネスアプリで採用されているパターン</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function toggleAccordion(element) {
+            element.classList.toggle('expanded');
+        }
+
+        // 初期状態で最初のアコーディオンを開く
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.accordion-item').classList.add('expanded');
+        });
+    </script>
+</body>
+</html>

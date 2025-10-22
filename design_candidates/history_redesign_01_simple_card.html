@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>履歴改修案1: シンプル・カード型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .category-card {
+            transition: all 0.3s ease;
+        }
+        .category-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .collapsed .content {
+            display: none;
+        }
+        .expand-icon {
+            transition: transform 0.3s ease;
+        }
+        .collapsed .expand-icon {
+            transform: rotate(-90deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-4 text-gray-800">📊 履歴改修案1: シンプル・カード型</h1>
+        <p class="text-sm text-gray-600 mb-6">特徴: モバイルフレンドリーで、カテゴリごとに明確に分離</p>
+
+        <!-- 栄養・食事カテゴリ -->
+        <div class="category-card bg-white rounded-lg shadow-md mb-4 overflow-hidden" onclick="toggleCard(this)">
+            <div class="flex items-center justify-between p-4 bg-green-50 cursor-pointer">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">📊</span>
+                    <h2 class="text-lg font-semibold text-green-800">栄養・食事 (8項目)</h2>
+                </div>
+                <span class="expand-icon text-green-600 text-xl">▼</span>
+            </div>
+            <div class="content p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">🎯 分析点数</span>
+                    <span class="font-bold text-green-600">85/100</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">🔥 摂取カロリー</span>
+                    <span class="font-semibold">2,450kcal</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">🥩 タンパク質</span>
+                    <span class="font-semibold">150g <span class="text-sm text-green-600">(94%)</span></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">🧈 脂質</span>
+                    <span class="font-semibold">65g <span class="text-sm text-green-600">(93%)</span></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">🍚 糖質</span>
+                    <span class="font-semibold">280g <span class="text-sm text-green-600">(93%)</span></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">🥬 食物繊維</span>
+                    <span class="font-semibold">25g <span class="text-sm text-yellow-600">(83%)</span></span>
+                </div>
+                <hr class="my-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">💊 ビタミン達成率</span>
+                    <span class="font-semibold text-yellow-600">78%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">⚡ ミネラル達成率</span>
+                    <span class="font-semibold text-yellow-600">82%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- トレーニングカテゴリ -->
+        <div class="category-card bg-white rounded-lg shadow-md mb-4 overflow-hidden" onclick="toggleCard(this)">
+            <div class="flex items-center justify-between p-4 bg-red-50 cursor-pointer">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">💪</span>
+                    <h2 class="text-lg font-semibold text-red-800">トレーニング (2項目)</h2>
+                </div>
+                <span class="expand-icon text-red-600 text-xl">▼</span>
+            </div>
+            <div class="content p-4 space-y-3">
+                <div>
+                    <div class="text-gray-700 font-semibold mb-2">🏋️ 回数別RM記録</div>
+                    <div class="pl-4 space-y-1 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">ベンチプレス 1RM</span>
+                            <span class="font-semibold">100kg <span class="text-green-600 text-xs">↑ +2kg</span></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">スクワット 5RM</span>
+                            <span class="font-semibold">120kg</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">デッドリフト 3RM</span>
+                            <span class="font-semibold">150kg <span class="text-green-600 text-xs">↑ +5kg</span></span>
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">📈 運動習慣率</span>
+                    <span class="font-semibold text-green-600">85% <span class="text-sm text-gray-500">(週6日)</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- コンディションカテゴリ -->
+        <div class="category-card bg-white rounded-lg shadow-md mb-4 overflow-hidden" onclick="toggleCard(this)">
+            <div class="flex items-center justify-between p-4 bg-blue-50 cursor-pointer">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🧘</span>
+                    <h2 class="text-lg font-semibold text-blue-800">コンディション (1項目)</h2>
+                </div>
+                <span class="expand-icon text-blue-600 text-xl">▼</span>
+            </div>
+            <div class="content p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">🎯 コンディションスコア</span>
+                    <span class="font-bold text-blue-600">24/30点</span>
+                </div>
+                <hr class="my-2">
+                <div class="text-sm space-y-1 pl-4">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">😴 睡眠の質</span>
+                        <span class="font-semibold">8/10</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">🍽️ 食欲</span>
+                        <span class="font-semibold">8/10</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">🧠 集中力</span>
+                        <span class="font-semibold">8/10</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- メリット・デメリット -->
+        <div class="bg-white rounded-lg shadow-md p-4 mt-6">
+            <h3 class="font-bold text-lg mb-3 text-gray-800">✅ メリット</h3>
+            <ul class="list-disc pl-5 space-y-1 text-sm text-gray-700 mb-4">
+                <li>視認性が高く、スクロール量が少ない</li>
+                <li>カテゴリごとに色分け可能（栄養=緑、トレーニング=赤、コンディション=青）</li>
+                <li>グラフ表示との相性が良い</li>
+            </ul>
+            <h3 class="font-bold text-lg mb-3 text-gray-800">⚠️ デメリット</h3>
+            <ul class="list-disc pl-5 space-y-1 text-sm text-gray-700">
+                <li>カテゴリ数が少ないため、やや単調</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function toggleCard(card) {
+            card.classList.toggle('collapsed');
+        }
+    </script>
+</body>
+</html>

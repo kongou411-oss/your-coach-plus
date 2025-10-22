@@ -47,7 +47,7 @@ C:\Users\yourc\yourcoach_new\
     ├── Icon, MarkdownRenderer
     ├── LoginScreen, OnboardingScreen
     ├── DashboardView
-    ├── TutorialView, SettingsView
+    ├── SettingsView
     ├── AnalysisView, CalendarView, HistoryView
     ├── PGBaseView
     ├── CommunityPostView, COMYView, AdminPanel
@@ -63,7 +63,7 @@ C:\Users\yourc\yourcoach_new\
 - `components_utils.js` - Icon, MarkdownRenderer
 - `components_auth.js` - LoginScreen, OnboardingScreen
 - `components_dashboard.js` - DashboardView
-- `components_settings.js` - TutorialView, SettingsView
+- `components_settings.js` - SettingsView
 - `components_analysis.js` - AnalysisView, CalendarView, HistoryView
 - `components_community.js` - PGBaseView, CommunityPostView, AdminPanel, COMYView, ContinuitySupportView
 - `components_addinput.js` - AddItemView（Food, Workout, Supplement, Condition入力）
@@ -108,7 +108,6 @@ python -m http.server 8000
 
 ### 教育・サポート
 - ✅ **PG BASE**: 教育モジュールとAIチャット
-- ✅ **チュートリアル**: ステップバイステップガイド
 - ✅ **継続サポート**: 3段階のサポートシステム
 
 ### コミュニティ
@@ -134,13 +133,12 @@ python -m http.server 8000
 | 987-1118 | `services.js` | GeminiAPI |
 | 321-366 | `components.js` | Icon, MarkdownRenderer |
 | 1120-2635 | `components.js` | App |
-| 2637-2763 | `components.js` | TutorialView |
-| 2765-4682 | `components.js` | SettingsView |
-| 4684-6078 | `components.js` | AnalysisView, CalendarView, HistoryView |
-| 6080-8005 | `components.js` | PGBase, Community, Admin, Support |
-| 8007-8328 | `components.js` | LoginScreen, OnboardingScreen |
-| 8330-8971 | `components.js` | DashboardView |
-| 8973-12037 | `components.js` | AddItemView |
+| 2637-4554 | `components.js` | SettingsView |
+| 4556-5950 | `components.js` | AnalysisView, CalendarView, HistoryView |
+| 5952-7877 | `components.js` | PGBase, Community, Admin, Support |
+| 7879-8200 | `components.js` | LoginScreen, OnboardingScreen |
+| 8202-8843 | `components.js` | DashboardView |
+| 8845-11909 | `components.js` | AddItemView |
 
 ## 🎨 主な改善点
 
