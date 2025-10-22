@@ -1310,8 +1310,13 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                             usageDays={usageDays}
                             dailyRecord={dailyRecord}
                             onAdd={async (item) => {
+                                console.log('📥 App.js onAdd実行開始');
+                                console.log('  - addViewType:', addViewType);
+                                console.log('  - item:', item);
+
                                 // 表示中の日付（currentDate）に記録を保存
                                 const currentRecord = await DataService.getDailyRecord(user.uid, currentDate);
+                                console.log('  - currentRecord:', currentRecord);
 
                                 let updatedRecord = currentRecord || { meals: [], workouts: [], conditions: null };
 
@@ -1320,6 +1325,7 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
 
                                 // 既存のトリガー状態を取得
                                 const triggers = JSON.parse(localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS) || '{}');
+                                console.log('  - 既存トリガー:', triggers);
 
                                 if (addViewType === 'meal') {
                                     updatedRecord.meals = [...(updatedRecord.meals || []), item];
@@ -1328,20 +1334,28 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                                         triggerFired = 'after_meal';
                                     }
                                 } else if (addViewType === 'workout') {
+                                    console.log('  ✅ workoutタイプ検出');
                                     updatedRecord.workouts = [...(updatedRecord.workouts || []), item];
+                                    console.log('  - updatedRecord.workouts:', updatedRecord.workouts);
                                     // 初めてのトレーニング記録でコンディション機能を開放
                                     if (!triggers.after_training) {
                                         triggerFired = 'after_training';
+                                        console.log('  ✅ after_trainingトリガー発火');
                                     }
                                 } else if (addViewType === 'condition') {
                                     updatedRecord.conditions = item; // コンディションは1日1回
+                                    console.log('  - updatedRecord.conditions:', updatedRecord.conditions);
+                                    console.log('  - isFullyRecorded:', ConditionUtils.isFullyRecorded(updatedRecord));
                                     // コンディション6項目すべて記録完了で分析機能を開放
                                     if (!triggers.after_condition && ConditionUtils.isFullyRecorded(updatedRecord)) {
                                         triggerFired = 'after_condition';
+                                        console.log('  ✅ after_conditionトリガー発火');
                                     }
                                 }
 
+                                console.log('  - 保存前のupdatedRecord:', updatedRecord);
                                 await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
+                                console.log('  ✅ DataService.saveDailyRecord完了');
                                 setDailyRecord(updatedRecord);
                                 setLastUpdate(Date.now());
 

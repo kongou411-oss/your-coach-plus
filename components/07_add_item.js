@@ -1104,6 +1104,9 @@
                 };
 
                 const handleWorkoutSave = async () => {
+                    console.log('🏋️ handleWorkoutSave 実行開始');
+                    console.log('  - exercises:', exercises);
+
                     if (exercises.length === 0) {
                         alert('運動を追加してください');
                         return;
@@ -1123,8 +1126,12 @@
                         }))
                     };
 
+                    console.log('  - workoutData:', workoutData);
+                    console.log('  - onAdd関数:', typeof onAdd);
+
                     // 1つのworkoutとして追加
                     onAdd(workoutData);
+                    console.log('✅ onAdd実行完了');
                     onClose();
                 };
 
