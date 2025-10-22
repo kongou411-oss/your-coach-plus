@@ -1144,7 +1144,7 @@ ${Math.round(caloriesPercent)}%
                         />
                     </div>
                 </div>
-            )}
+                )}
 
                 {/* 分析ボタン */}
                 <div>
