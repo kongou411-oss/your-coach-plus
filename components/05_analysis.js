@@ -357,6 +357,49 @@ ${dailyRecord.notes ? `
                     analyses[today].aiComment = fullAnalysis;
                     localStorage.setItem(STORAGE_KEYS.DAILY_ANALYSES, JSON.stringify(analyses));
                 }
+
+                // 指示書プランを翌日の指示書として保存
+                const directiveText = response3.text;
+                // 「- 【カテゴリー】内容」の形式から抽出
+                const directiveMatch = directiveText.match(/【(.+?)】(.+)/);
+                if (directiveMatch) {
+                    const category = directiveMatch[1]; // 食事/運動/睡眠など
+                    const message = directiveMatch[2].trim();
+
+                    // カテゴリーをtypeに変換
+                    let type = 'meal';
+                    if (category.includes('運動') || category.includes('トレーニング')) {
+                        type = 'exercise';
+                    } else if (category.includes('睡眠') || category.includes('コンディション')) {
+                        type = 'condition';
+                    }
+
+                    // 翌日の日付を計算
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+                    // 翌日の23:59を期限として設定
+                    const deadline = new Date(tomorrow);
+                    deadline.setHours(23, 59, 59, 999);
+
+                    // 指示書を保存
+                    const directives = JSON.parse(localStorage.getItem(STORAGE_KEYS.DIRECTIVES) || '[]');
+                    // 翌日の既存指示書を削除
+                    const filteredDirectives = directives.filter(d => d.date !== tomorrowStr);
+                    filteredDirectives.push({
+                        date: tomorrowStr,
+                        message: message,
+                        type: type,
+                        completed: false,
+                        deadline: deadline.toISOString(),
+                        createdAt: new Date().toISOString()
+                    });
+                    localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(filteredDirectives));
+
+                    // directiveUpdatedイベントを発火してダッシュボードを更新
+                    window.dispatchEvent(new Event('directiveUpdated'));
+                }
             } else {
                 throw new Error(response3.error || 'セクション3の生成に失敗');
             }

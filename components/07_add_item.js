@@ -1137,26 +1137,22 @@
                         return;
                     }
 
-                    // 現在の日付を取得
-                    const today = new Date().toISOString().split('T')[0];
-
-                    // 運動データを保存
-                    const workoutData = exercises.map(ex => ({
-                        name: ex.exercise.name,
-                        category: ex.exercise.category,
-                        sets: ex.sets
-                    }));
-
-                    // dailyRecordに保存
-                    const existingRecord = await DataService.getDailyRecord(user?.uid || DEV_USER_ID, today);
-                    const updatedRecord = {
-                        ...(existingRecord || {}),
-                        workouts: [...((existingRecord?.workouts) || []), ...workoutData]
+                    // 全ての種目を1つのworkoutオブジェクトにまとめる
+                    const workoutData = {
+                        id: Date.now(),
+                        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                        name: exercises.length === 1
+                            ? exercises[0].exercise.name
+                            : `${exercises[0].exercise.category}トレーニング`, // 複数種目の場合はカテゴリ名
+                        category: exercises[0].exercise.category,
+                        exercises: exercises.map(ex => ({
+                            name: ex.exercise.name,
+                            sets: ex.sets
+                        }))
                     };
 
-                    await DataService.saveDailyRecord(user?.uid || DEV_USER_ID, today, updatedRecord);
-
-                    alert('運動を保存しました');
+                    // 1つのworkoutとして追加
+                    onAdd(workoutData);
                     onClose();
                 };
 

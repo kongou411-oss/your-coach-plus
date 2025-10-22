@@ -609,12 +609,19 @@ const SubscriptionUtils = {
 
 // コンディションチェックユーティリティ
 const ConditionUtils = {
-    // コンディションが完全に記録されているか確認（6項目全て）
+    // コンディションが完全に記録されているか確認（食事・運動・コンディション6項目全て）
     isFullyRecorded: (dailyRecord) => {
+        // 食事記録があるか確認
+        if (!dailyRecord?.meals || dailyRecord.meals.length === 0) return false;
+
+        // 運動記録があるか確認
+        if (!dailyRecord?.workouts || dailyRecord.workouts.length === 0) return false;
+
+        // コンディション記録があるか確認
         const conditions = dailyRecord?.conditions;
         if (!conditions) return false;
 
-        // 6項目全てがnumberで0-4の範囲内にあるか確認
+        // 6項目全てがnumberで1-5の範囲内にあるか確認
         const requiredFields = [
             'sleepHours',    // 睡眠時間
             'sleepQuality',  // 睡眠の質
@@ -626,8 +633,8 @@ const ConditionUtils = {
 
         return requiredFields.every(field =>
             typeof conditions[field] === 'number' &&
-            conditions[field] >= 0 &&
-            conditions[field] <= 4
+            conditions[field] >= 1 &&
+            conditions[field] <= 5
         );
     }
 };

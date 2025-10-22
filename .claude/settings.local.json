@@ -5,7 +5,17 @@
       "Bash(timeout 3 powershell:*)",
       "Bash(firebase hosting:clone:*)",
       "Bash(curl:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Read(//e/Your Coach+/yourcoach_new - コピー (2)/**)",
+      "Read(//e/Your Coach+/yourcoach_new - コピー (2)/components/**)",
+      "Bash(ls:*)",
+      "Bash(awk:*)",
+      "Bash(for f in 00_init.js 01_common.js 02_auth.js 04_settings.js 05_analysis.js 06_community.js 09_render.js 10_feedback.js 11_ai_food_recognition.js 12_wearable_integration.js 13_collaborative_planning.js 14_microlearning.js 15_community_growth.js 16_history_v10.js)",
+      "Bash(do cp \"E:/Your Coach+/yourcoach_new - コピー (2)/components/$f\" \"$f\")",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

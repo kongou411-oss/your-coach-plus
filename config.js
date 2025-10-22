@@ -157,48 +157,52 @@ const BADGES = {
     }
 };
 
-// 機能開放システム（継続日数に応じた段階的機能開放）
+// 機能開放システム（動的オンボーディング + 日数ベースの段階的機能開放）
 const FEATURES = {
-    // 0日目：基本機能を全て開放
+    // 初期開放：食事記録のみ
     FOOD: {
         id: 'food',
         name: '食事記録',
-        requiredDays: 0,
+        trigger: 'initial',
         icon: 'Utensils',
         description: '食事内容を記録してPFCバランスを管理'
     },
+
+    // 動的オンボーディング：食事→運動→コンディション→分析
     TRAINING: {
         id: 'training',
         name: '運動記録',
-        requiredDays: 0,
+        trigger: 'after_meal',
         icon: 'Dumbbell',
         description: 'トレーニング内容を記録して進捗を可視化'
     },
     CONDITION: {
         id: 'condition',
         name: 'コンディション記録',
-        requiredDays: 0,
+        trigger: 'after_training',
         icon: 'Activity',
         description: '体調・睡眠・疲労度を記録して体の声を聞く'
     },
     ANALYSIS: {
         id: 'analysis',
         name: '分析',
-        requiredDays: 0,
+        trigger: 'after_condition',
         icon: 'BarChart3',
         description: '記録データを分析して改善点を発見'
     },
     DIRECTIVE: {
         id: 'directive',
         name: '指示書',
-        requiredDays: 0,
+        trigger: 'after_analysis',
         icon: 'FileText',
         description: 'AI が分析結果に基づいて最適な次のアクションを提案'
     },
+
+    // 初期開放：PG BASE
     PG_BASE: {
         id: 'pg_base',
         name: 'PG BASE',
-        requiredDays: 0,
+        trigger: 'initial',
         icon: 'BookOpen',
         description: 'ボディメイクの理論と知識を学ぶ'
     },
@@ -207,6 +211,7 @@ const FEATURES = {
     TRAINING_TEMPLATE: {
         id: 'training_template',
         name: 'テンプレート',
+        trigger: 'days',
         requiredDays: 2,
         icon: 'BookTemplate',
         description: 'よく使う食事・トレーニングをテンプレート化して効率化'
@@ -214,6 +219,7 @@ const FEATURES = {
     ROUTINE: {
         id: 'routine',
         name: 'ルーティン',
+        trigger: 'days',
         requiredDays: 2,
         icon: 'Calendar',
         description: '分割法を設定して計画的にトレーニング'
@@ -223,6 +229,7 @@ const FEATURES = {
     COMMUNITY_VIEW: {
         id: 'community_view',
         name: 'COMY（閲覧）',
+        trigger: 'days',
         requiredDays: 8,
         icon: 'Users',
         description: 'コミュニティのフィードを閲覧'
@@ -232,6 +239,7 @@ const FEATURES = {
     MICRONUTRIENTS: {
         id: 'micronutrients',
         name: 'ビタミン・ミネラル詳細',
+        trigger: 'days',
         requiredDays: 18,
         icon: 'Droplets',
         description: 'ビタミン・ミネラルの詳細な摂取状況を確認'
@@ -241,6 +249,7 @@ const FEATURES = {
     COMMUNITY_POST: {
         id: 'community_post',
         name: 'COMY（投稿）',
+        trigger: 'days',
         requiredDays: 30,
         icon: 'MessageSquare',
         description: 'コミュニティで成果を共有し、仲間と刺激し合う'
