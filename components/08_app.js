@@ -60,7 +60,6 @@
             });
             const [showAdminPanel, setShowAdminPanel] = useState(false);
             const [isAdmin, setIsAdmin] = useState(false);
-            const [showTutorial, setShowTutorial] = useState(false);
             const [earnedBadges, setEarnedBadges] = useState([]);
             const [lastUpdate, setLastUpdate] = useState(Date.now());
             const [bottomBarMenu, setBottomBarMenu] = useState(null); // 'daily', 'history', 'settings'
@@ -76,11 +75,7 @@
 
             // チュートリアル初回起動チェック
             useEffect(() => {
-                const tutorialCompleted = localStorage.getItem(STORAGE_KEYS.TUTORIAL_COMPLETED);
-                if (!tutorialCompleted && userProfile) {
-                    // プロフィールが設定されていて、かつチュートリアル未完了の場合
-                    setShowTutorial(true);
-                }
+                // チュートリアル機能は削除されました
 
                 // バッジ読み込み
                 const badges = JSON.parse(localStorage.getItem(STORAGE_KEYS.BADGES) || '[]');
@@ -2030,17 +2025,7 @@ AIコーチなどの高度な機能が解放されます。
                         />
                     )}
 
-                    {/* チュートリアル */}
-                    {showTutorial && (
-                        <TutorialView
-                            onClose={() => setShowTutorial(false)}
-                            onComplete={() => {
-                                // バッジ再読み込み
-                                const badges = JSON.parse(localStorage.getItem(STORAGE_KEYS.BADGES) || '[]');
-                                setEarnedBadges(badges);
-                            }}
-                        />
-                    )}
+                    {/* チュートリアル機能は削除されました */}
 
                     {/* 情報モーダル */}
                     <InfoModal />
@@ -2195,7 +2180,7 @@ AIコーチなどの高度な機能が解放されます。
                                 </button>
                                 <button
                                     onClick={() => {
-                                        setShowTutorial(true);
+                                        alert('チュートリアル機能は削除されました');
                                         setBottomBarMenu(null);
                                     }}
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-orange-100 transition"
