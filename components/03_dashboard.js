@@ -462,7 +462,7 @@ ${Math.round(caloriesPercent)}%
 
             {/* 今日の指示書 */}
             {todayDirective && (
-                <div className="bg-white rounded-xl shadow-sm p-5 slide-up">
+                <div id="directive-section" className="bg-white rounded-xl shadow-sm p-5 slide-up">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <Icon name="Target" size={20} className="text-purple-600" />
@@ -511,7 +511,7 @@ ${Math.round(caloriesPercent)}%
             )}
 
             {/* 記録一覧 */}
-            <div className="bg-white rounded-xl shadow-sm p-6 slide-up">
+            <div id="record-section" className="bg-white rounded-xl shadow-sm p-6 slide-up">
                 <div className="flex items-center gap-2 mb-4">
                     <h3 className="text-lg font-bold">記録</h3>
                     <button
@@ -698,7 +698,7 @@ ${Math.round(caloriesPercent)}%
                 </div>
 
                 {/* 食事セクション */}
-                <div className="mb-6">
+                <div id="meal-section" className="mb-6">
                     <div className="flex items-center justify-between mb-3">
                         <h4 className="font-bold text-gray-800 flex items-center gap-2">
                             <Icon name="Utensils" size={18} className="text-green-600" />
@@ -752,7 +752,7 @@ ${Math.round(caloriesPercent)}%
                 </div>
 
                 {/* 運動セクション */}
-                <div className="mb-6">
+                <div id="workout-section" className="mb-6">
                     <div className="flex items-center justify-between mb-3">
                         <h4 className="font-bold text-gray-800 flex items-center gap-2">
                             <Icon name="Dumbbell" size={18} className="text-orange-600" />
@@ -810,7 +810,7 @@ ${Math.round(caloriesPercent)}%
                 </div>
 
                 {/* 体調セクション - 直接入力 */}
-                <div className="mb-6">
+                <div id="condition-section" className="mb-6">
                     <div className="flex items-center justify-between mb-3">
                         <h4 className="font-bold text-gray-800 flex items-center gap-2">
                             <Icon name="HeartPulse" size={18} className="text-red-600" />

@@ -1,3 +1,52 @@
+// ===== Guide Modal Component =====
+const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId, onClose }) => {
+    if (!show) return null;
+
+    const handleOK = () => {
+        onClose();
+
+        // ターゲットセクションへスクロール
+        if (targetSectionId) {
+            setTimeout(() => {
+                const element = document.getElementById(targetSectionId);
+                if (element) {
+                    element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'  // ショートカット領域内に表示
+                    });
+                }
+            }, 300);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-sm mx-4 slide-up">
+                {/* アイコン */}
+                <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-12 h-12 ${iconColor} rounded-full flex items-center justify-center`}>
+                        <Icon name={iconName} size={24} className={iconColor.replace('bg-', 'text-').replace('-100', '-600')} />
+                    </div>
+                    <h3 className="text-xl font-bold">{title}</h3>
+                </div>
+
+                {/* メッセージ */}
+                <p className="text-gray-700 mb-6 whitespace-pre-line">
+                    {message}
+                </p>
+
+                {/* OKボタン */}
+                <button
+                    onClick={handleOK}
+                    className={`w-full ${iconColor.replace('-100', '-600')} text-white py-3 rounded-lg font-bold hover:opacity-90 transition`}
+                >
+                    OK
+                </button>
+            </div>
+        </div>
+    );
+};
+
 // ===== Main App Component =====
         const App = () => {
             const [user, setUser] = useState(null);
@@ -62,6 +111,13 @@
             const [isAdmin, setIsAdmin] = useState(false);
             const [earnedBadges, setEarnedBadges] = useState([]);
             const [lastUpdate, setLastUpdate] = useState(Date.now());
+
+            // 誘導モーダルの状態管理
+            const [showMealGuide, setShowMealGuide] = useState(false);       // オンボーディング後
+            const [showTrainingGuide, setShowTrainingGuide] = useState(false); // 食事記録後
+            const [showConditionGuide, setShowConditionGuide] = useState(false); // 運動記録後
+            const [showAnalysisGuide, setShowAnalysisGuide] = useState(false);   // コンディション完了後
+            const [showDirectiveGuide, setShowDirectiveGuide] = useState(false); // 分析閲覧後
             const [bottomBarMenu, setBottomBarMenu] = useState(null); // 'daily', 'history', 'settings'
             const [bottomBarExpanded, setBottomBarExpanded] = useState(true); // BAB展開状態
             const [showDatePicker, setShowDatePicker] = useState(false); // 日付ピッカーモーダル
@@ -1295,10 +1351,13 @@
                                     });
                                     setUnlockedFeatures(unlocked);
 
-                                    // 新機能開放の通知
-                                    const newFeature = Object.values(FEATURES).find(f => f.trigger === triggerFired);
-                                    if (newFeature) {
-                                        alert(`🎉 新機能「${newFeature.name}」が開放されました！\n${newFeature.description}`);
+                                    // 誘導モーダルを表示
+                                    if (triggerFired === 'after_meal') {
+                                        setShowTrainingGuide(true);
+                                    } else if (triggerFired === 'after_training') {
+                                        setShowConditionGuide(true);
+                                    } else if (triggerFired === 'after_condition') {
+                                        setShowAnalysisGuide(true);
                                     }
                                 }
 
@@ -1336,15 +1395,8 @@
                                     });
                                     setUnlockedFeatures(unlocked);
 
-                                    // 新機能開放の通知
-                                    const newFeature = Object.values(FEATURES).find(f => f.trigger === 'after_analysis');
-                                    if (newFeature) {
-                                        setInfoModal({
-                                            show: true,
-                                            title: `🎉 新機能「${newFeature.name}」開放`,
-                                            content: newFeature.description
-                                        });
-                                    }
+                                    // 指示書誘導モーダルを表示
+                                    setShowDirectiveGuide(true);
                                 }
                             }}
                             userId={user.uid}
