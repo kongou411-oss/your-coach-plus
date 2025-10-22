@@ -9,6 +9,8 @@
             const [expandedCategories, setExpandedCategories] = useState({});
             const [mealName, setMealName] = useState('');
             const [addedItems, setAddedItems] = useState([]);
+            const [selectedFoods, setSelectedFoods] = useState([]); // 選択中の食品リスト
+            const [editingItemIndex, setEditingItemIndex] = useState(null); // 編集中のアイテムのインデックス
             const [mealTemplates, setMealTemplates] = useState([]);
             const [supplementTemplates, setSupplementTemplates] = useState([]);
             const [showTemplates, setShowTemplates] = useState(false);
@@ -16,6 +18,8 @@
             const [selectedExercise, setSelectedExercise] = useState(null);
             const [showAIFoodRecognition, setShowAIFoodRecognition] = useState(false);
             const [showCustomFoodCreator, setShowCustomFoodCreator] = useState(false);
+            const [showSearchModal, setShowSearchModal] = useState(false);
+            const [foodOrSupplementTab, setFoodOrSupplementTab] = useState('food'); // 'food' or 'supplement'
 
             // 料理作成用のstate
             const [showRecipeCreator, setShowRecipeCreator] = useState(false);
@@ -441,7 +445,10 @@
                                             <p className="text-sm text-gray-600">{selectedItem.category}</p>
                                         </div>
                                         <button
-                                            onClick={() => setSelectedItem(null)}
+                                            onClick={() => {
+                                                setSelectedItem(null);
+                                                setEditingItemIndex(null);
+                                            }}
                                             className="text-gray-500 hover:text-gray-700"
                                         >
                                             <Icon name="X" size={20} />
@@ -450,19 +457,19 @@
                                     <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
                                         <div>
                                             <p className="text-gray-600">カロリー</p>
-                                            <p className="font-bold">{selectedItem.calories}kcal</p>
+                                            <p className="font-bold" style={{color: '#7686BA'}}>{selectedItem.calories}kcal</p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">P</p>
-                                            <p className="font-bold">{selectedItem.protein}g</p>
+                                            <p className="font-bold text-red-600">{selectedItem.protein}g</p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">F</p>
-                                            <p className="font-bold">{selectedItem.fat}g</p>
+                                            <p className="font-bold text-yellow-600">{selectedItem.fat}g</p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">C</p>
-                                            <p className="font-bold">{selectedItem.carbs}g</p>
+                                            <p className="font-bold text-green-600">{selectedItem.carbs}g</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1871,7 +1878,7 @@
 
                 return (
                     <div className="space-y-4">
-                        {/* ①検索欄 */}
+                        {/* ①食事名入力 */}
                         <div>
                             <label className="block text-sm font-medium mb-2">食事名</label>
                             <input
@@ -1883,97 +1890,241 @@
                             />
                         </div>
 
-                        <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="食材を検索..."
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                        />
+                        {/* ②どうやって記録しますか？ */}
+                        {!selectedItem && !showAIFoodRecognition && !showCustomSupplementForm && (
+                            <div className="space-y-3">
+                                <p className="text-center text-base font-medium text-gray-700 mb-4">どうやって記録しますか？</p>
 
-                        {/* テンプレート（一覧+新規保存） - 12日以上で開放 */}
-                        {!selectedItem && unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id) && (
-                                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
-                                    <button
-                                        onClick={() => setShowTemplates(!showTemplates)}
-                                        className="w-full flex items-center justify-between mb-3"
-                                    >
-                                        <span className="font-medium text-yellow-800 flex items-center gap-2">
-                                            <Icon name="BookTemplate" size={16} />
-                                            テンプレート
-                                        </span>
-                                        <Icon name={showTemplates ? "ChevronUp" : "ChevronDown"} size={16} />
-                                    </button>
+                                {/* 写真から記録（黒背景） */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAIFoodRecognition(true)}
+                                    className="w-full bg-black text-white py-3 px-4 rounded-lg hover:bg-gray-900 transition flex items-center gap-4"
+                                >
+                                    <Icon name="Camera" size={32} />
+                                    <div className="text-left flex-1">
+                                        <div className="font-bold text-base">写真から記録</div>
+                                        <div className="text-xs text-gray-400 mt-0.5">料理の写真をAIが解析</div>
+                                    </div>
+                                </button>
 
-                                    {showTemplates && (
-                                        <div className="space-y-3">
-                                            {/* テンプレート一覧 */}
-                                            {mealTemplates.length > 0 && (
-                                                <div className="space-y-2">
-                                                    {mealTemplates.map(template => (
-                                                        <div key={template.id} className="flex items-center gap-2 bg-white p-2 rounded border">
+                                {/* 食材を検索（グレー背景、グレー枠） */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSearchModal(true)}
+                                    className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                >
+                                    <Icon name="Search" size={32} />
+                                    <div className="text-left flex-1">
+                                        <div className="font-bold text-base">食材を検索</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">データベースから選択</div>
+                                    </div>
+                                </button>
+
+                                {/* 手動で作成（グレー背景、グレー枠） */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCustomSupplementForm(true)}
+                                    className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                >
+                                    <Icon name="Plus" size={32} />
+                                    <div className="text-left flex-1">
+                                        <div className="font-bold text-base">手動で作成</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">カスタム食材を登録</div>
+                                    </div>
+                                </button>
+                            </div>
+                        )}
+
+                        {/* テンプレート - 12日以上で開放（新デザイン） */}
+                        {!selectedItem && !showAIFoodRecognition && !showCustomSupplementForm && unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id) && (
+                            <button
+                                type="button"
+                                onClick={() => setShowTemplates(!showTemplates)}
+                                className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-4 px-4 rounded-lg hover:bg-gray-200 transition flex flex-col items-center justify-center gap-2"
+                            >
+                                <Icon name="BookTemplate" size={28} />
+                                <div className="text-center">
+                                    <div className="font-bold text-base">テンプレート</div>
+                                    <div className="text-xs text-gray-600 mt-1">保存した食事を呼び出す</div>
+                                </div>
+                            </button>
+                        )}
+
+                        {/* テンプレートモーダル */}
+                        {showTemplates && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+                                    <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+                                        <h3 className="text-lg font-bold">テンプレート</h3>
+                                        <button
+                                            onClick={() => setShowTemplates(false)}
+                                            className="text-gray-500 hover:text-gray-700"
+                                        >
+                                            <Icon name="X" size={24} />
+                                        </button>
+                                    </div>
+                                    <div className="p-4 space-y-3">
+                                        {/* テンプレート一覧 */}
+                                        {mealTemplates.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {mealTemplates.map(template => (
+                                                    <div key={template.id} className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                                        <button
+                                                            onClick={() => {
+                                                                loadTemplate(template);
+                                                                setShowTemplates(false);
+                                                            }}
+                                                            className="flex-1 text-left hover:text-indigo-600"
+                                                        >
+                                                            <p className="font-medium">{template.name}</p>
+                                                            <p className="text-xs text-gray-500">{template.items.length}品目</p>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => deleteTemplate(template.id)}
+                                                            className="p-2 text-red-500 hover:text-red-700"
+                                                        >
+                                                            <Icon name="Trash2" size={18} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-500 text-center py-8">保存されたテンプレートはありません</p>
+                                        )}
+
+                                        {/* テンプレート新規保存 */}
+                                        {addedItems.length > 0 && (
+                                            <div className="pt-3 border-t border-gray-200">
+                                                <p className="text-sm font-medium mb-2">新しいテンプレートとして保存</p>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={templateName}
+                                                        onChange={(e) => setTemplateName(e.target.value)}
+                                                        placeholder="テンプレート名（例: 朝食パターン1）"
+                                                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            saveAsTemplate();
+                                                            setShowTemplates(false);
+                                                        }}
+                                                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
+                                                    >
+                                                        保存
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 検索モーダル */}
+                        {showSearchModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+                                    {/* ヘッダー */}
+                                    <div className="sticky top-0 bg-white border-b p-4">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-lg font-bold">食材を検索</h3>
+                                            <button
+                                                onClick={() => setShowSearchModal(false)}
+                                                className="text-gray-500 hover:text-gray-700"
+                                            >
+                                                <Icon name="X" size={24} />
+                                            </button>
+                                        </div>
+
+                                        {/* 検索欄 */}
+                                        <input
+                                            type="text"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            placeholder="食材・サプリメントを検索..."
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        />
+
+                                        {/* 選択中アイテムリスト */}
+                                        {selectedFoods.length > 0 && (
+                                            <div className="mt-3">
+                                                <p className="text-sm font-bold text-blue-700 mb-2">選択中 ({selectedFoods.length}品目)</p>
+                                                <div className="space-y-1 max-h-32 overflow-y-auto">
+                                                    {selectedFoods.map((food, index) => (
+                                                        <div key={index} className="bg-blue-50 px-3 py-1.5 rounded flex justify-between items-center">
+                                                            <div className="flex-1">
+                                                                <span className="text-xs font-medium">{food.name}</span>
+                                                                <span className="text-xs text-gray-600 ml-2">
+                                                                    {food.calories}kcal
+                                                                </span>
+                                                            </div>
                                                             <button
-                                                                onClick={() => loadTemplate(template)}
-                                                                className="flex-1 text-left text-sm hover:text-indigo-600"
+                                                                onClick={() => setSelectedFoods(selectedFoods.filter((_, i) => i !== index))}
+                                                                className="text-red-500 hover:text-red-700 ml-2"
                                                             >
-                                                                <p className="font-medium">{template.name}</p>
-                                                                <p className="text-xs text-gray-500">{template.items.length}品目</p>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => deleteTemplate(template.id)}
-                                                                className="p-1 text-red-500 hover:text-red-700"
-                                                            >
-                                                                <Icon name="Trash2" size={16} />
+                                                                <Icon name="X" size={14} />
                                                             </button>
                                                         </div>
                                                     ))}
                                                 </div>
-                                            )}
+                                                <button
+                                                    onClick={() => {
+                                                        // 選択した全アイテムをデフォルト100gで追加済みリストに追加
+                                                        const newItems = selectedFoods.map(food => ({
+                                                            name: food.name,
+                                                            amount: 100,
+                                                            protein: food.protein,
+                                                            fat: food.fat,
+                                                            carbs: food.carbs,
+                                                            calories: food.calories,
+                                                            vitamins: food.vitamins || {},
+                                                            minerals: food.minerals || {},
+                                                            otherNutrients: {}
+                                                        }));
+                                                        setAddedItems([...addedItems, ...newItems]);
+                                                        setSelectedFoods([]);
+                                                        setShowSearchModal(false);
+                                                    }}
+                                                    className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition text-sm mt-2"
+                                                >
+                                                    選択したアイテムを追加
+                                                </button>
+                                            </div>
+                                        )}
 
-                                            {/* テンプレート新規保存 */}
-                                            {addedItems.length > 0 && (
-                                                <div className="pt-3 border-t border-yellow-300">
-                                                    <p className="text-xs text-yellow-800 mb-2">新しいテンプレートとして保存</p>
-                                                    <div className="flex gap-2">
-                                                        <input
-                                                            type="text"
-                                                            value={templateName}
-                                                            onChange={(e) => setTemplateName(e.target.value)}
-                                                            placeholder="テンプレート名（例: 朝食パターン1）"
-                                                            className="flex-1 px-3 py-2 text-sm border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none"
-                                                        />
-                                                        <button
-                                                            onClick={saveAsTemplate}
-                                                            className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-sm font-medium"
-                                                        >
-                                                            保存
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {mealTemplates.length === 0 && addedItems.length === 0 && (
-                                                <p className="text-sm text-gray-600">保存されたテンプレートはありません</p>
-                                            )}
+                                        {/* 食材/サプリメント タブ */}
+                                        <div className="grid grid-cols-2 mt-3 border-b border-gray-200">
+                                            <button
+                                                onClick={() => setFoodOrSupplementTab('food')}
+                                                className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    foodOrSupplementTab === 'food'
+                                                        ? 'border-green-600 text-green-600'
+                                                        : 'border-transparent text-gray-600 hover:text-green-600'
+                                                }`}
+                                            >
+                                                <Icon name="Apple" size={20} />
+                                                <span className="text-sm">食材</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setFoodOrSupplementTab('supplement')}
+                                                className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    foodOrSupplementTab === 'supplement'
+                                                        ? 'border-blue-600 text-blue-600'
+                                                        : 'border-transparent text-gray-600 hover:text-blue-600'
+                                                }`}
+                                            >
+                                                <Icon name="Pill" size={20} />
+                                                <span className="text-sm">サプリメント</span>
+                                            </button>
                                         </div>
-                                    )}
-                                </div>
-                        )}
+                                    </div>
 
-                        {/* AI食事認識ボタン */}
-                        <button
-                            type="button"
-                            onClick={() => setShowAIFoodRecognition(true)}
-                            className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:from-cyan-700 hover:to-blue-700 transition flex items-center justify-center gap-2 shadow-lg"
-                        >
-                            <Icon name="Camera" size={20} />
-                            写真から食事を記録
-                            <span className="text-xs bg-white bg-opacity-20 px-2 py-0.5 rounded-full">AI</span>
-                        </button>
-
-                        {/* ②折りたたみカテゴリ一覧（よく使う食材含む） */}
-                        {!selectedItem ? (
-                            <div className="space-y-3">
+                                    {/* コンテンツエリア */}
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                {!selectedItem ? (
+                                    <>
                                 {/* よく使う食材（予測） - 9日以上で開放 */}
                                 {usageDays >= 9 && predictedData?.commonMeals && predictedData.commonMeals.length > 0 && !searchTerm && addedItems.length === 0 && (
                                     <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-lg border border-purple-200">
@@ -2003,6 +2154,7 @@
                                                         onClick={() => {
                                                             const nutrients = mapNutrients(foundFood);
                                                             setSelectedItem({ name: foodName, ...foundFood, category: foundCategory, ...nutrients });
+                                                            setAmount('100');
                                                         }}
                                                         className="px-3 py-1.5 bg-white border border-purple-300 rounded-full text-sm hover:bg-purple-100 transition"
                                                     >
@@ -2014,37 +2166,32 @@
                                     </div>
                                 )}
 
-                                <div className="space-y-2 max-h-96 overflow-y-auto">
+                                <div className="space-y-2">
                                     {Object.keys(filteredFoods).map(topCategory => {
                                         const subcategories = filteredFoods[topCategory];
                                         if (Object.keys(subcategories).length === 0) return null;
 
+                                        // タブに応じてフィルタリング
+                                        if (foodOrSupplementTab === 'food' && topCategory !== '食材' && topCategory !== 'カスタム料理') return null;
+                                        if (foodOrSupplementTab === 'supplement' && topCategory !== 'サプリメント') return null;
+
                                         return (
-                                            <div key={topCategory} className="border-2 border-indigo-300 rounded-lg overflow-hidden">
-                                                {/* 最上位カテゴリ */}
-                                                <button
-                                                    onClick={() => setExpandedCategories(prev => ({...prev, [topCategory]: !prev[topCategory]}))}
-                                                    className="w-full px-4 py-3 bg-indigo-100 hover:bg-indigo-200 flex justify-between items-center font-bold"
-                                                >
-                                                    <span className="text-indigo-900">{topCategory}</span>
-                                                    <Icon name={expandedCategories[topCategory] ? 'ChevronDown' : 'ChevronRight'} size={20} className="text-indigo-900" />
-                                                </button>
-
+                                            <div key={topCategory}>
                                                 {/* サブカテゴリ */}
-                                                {expandedCategories[topCategory] && (
-                                                    <div className="bg-white">
-                                                        {Object.keys(subcategories).map(subCategory => (
-                                                            <div key={subCategory} className="border-t border-gray-200">
-                                                                <button
-                                                                    onClick={() => setExpandedCategories(prev => ({...prev, [`${topCategory}-${subCategory}`]: !prev[`${topCategory}-${subCategory}`]}))}
-                                                                    className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                                >
-                                                                    <span className="font-medium text-sm">{subCategory}</span>
-                                                                    <Icon name={expandedCategories[`${topCategory}-${subCategory}`] ? 'ChevronDown' : 'ChevronRight'} size={18} />
-                                                                </button>
+                                                <div className="bg-white">
+                                                    {Object.keys(subcategories).map(subCategory => (
+                                                        <div key={subCategory} className="border-t border-gray-200">
+                                                            {/* カテゴリボタン */}
+                                                            <button
+                                                                onClick={() => setExpandedCategories(prev => ({...prev, [subCategory]: !prev[subCategory]}))}
+                                                                className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
+                                                            >
+                                                                <span className="font-medium text-sm">{subCategory}</span>
+                                                                <Icon name={expandedCategories[subCategory] ? 'ChevronDown' : 'ChevronRight'} size={18} />
+                                                            </button>
 
-                                                                {/* アイテム一覧 */}
-                                                                {expandedCategories[`${topCategory}-${subCategory}`] && (
+                                                            {/* アイテム一覧 */}
+                                                            {expandedCategories[subCategory] && (
                                                                     <div className="p-2 space-y-1 bg-gray-50">
                                                                         {subcategories[subCategory].map(foodName => {
                                                                             // カスタム食材・カスタム料理の場合はlocalStorageから取得
@@ -2062,11 +2209,27 @@
                                                                                 actualCategory = 'サプリメント';
                                                                             } else {
                                                                                 // 通常の食材
-                                                                                food = foodDB[subCategory][foodName];
-                                                                                actualCategory = subCategory;
+                                                                                if (foodDB[subCategory] && foodDB[subCategory][foodName]) {
+                                                                                    food = foodDB[subCategory][foodName];
+                                                                                    actualCategory = subCategory;
+                                                                                }
                                                                             }
 
                                                                             if (!food) return null;
+
+                                                                            // PFCのカロリー計算
+                                                                            const pCal = parseFloat(food.protein) * 4;
+                                                                            const fCal = parseFloat(food.fat) * 9;
+                                                                            const cCal = parseFloat(food.carbs) * 4;
+
+                                                                            // 最も高い割合の栄養素を判定
+                                                                            const maxCal = Math.max(pCal, fCal, cCal);
+                                                                            let borderColor = 'border-gray-300';
+                                                                            if (maxCal === pCal) borderColor = 'border-red-500';
+                                                                            else if (maxCal === fCal) borderColor = 'border-yellow-500';
+                                                                            else if (maxCal === cCal) borderColor = 'border-green-500';
+
+                                                                            const isSelected = selectedFoods.some(f => f.name === foodName);
 
                                                                             return (
                                                                                 <button
@@ -2075,7 +2238,8 @@
                                                                                         const nutrients = isCustom
                                                                                             ? (food.vitamins && food.minerals ? { vitamins: food.vitamins, minerals: food.minerals } : { vitamins: {}, minerals: {} })
                                                                                             : mapNutrients(food);
-                                                                                        setSelectedItem({
+
+                                                                                        const foodData = {
                                                                                             name: foodName,
                                                                                             calories: food.calories,
                                                                                             protein: parseFloat(food.protein),
@@ -2087,105 +2251,296 @@
                                                                                             servingSize: food.servingSize,
                                                                                             servingUnit: food.servingUnit,
                                                                                             ...nutrients
-                                                                                        });
+                                                                                        };
+
+                                                                                        // アイテムを選択して詳細画面を表示
+                                                                                        setSelectedItem(foodData);
+                                                                                        setAmount('100');
                                                                                     }}
-                                                                                    className="w-full text-left px-3 py-2 hover:bg-indigo-50 rounded-lg transition"
+                                                                                    className={`w-full text-left rounded-lg transition hover:bg-gray-50 border-l-4 ${borderColor} ${isSelected ? 'bg-blue-50 border-2 border-blue-500' : 'bg-white'}`}
                                                                                 >
-                                                                                    <div className="flex justify-between">
-                                                                                        <span className="text-sm">{foodName}</span>
-                                                                                        <span className="text-xs text-gray-500">
-                                                                                            {food.calories}kcal/{food.unit || `${food.servingSize || 100}${food.servingUnit || 'g'}`}
-                                                                                        </span>
+                                                                                    <div className="px-3 py-2">
+                                                                                        <div className="flex justify-between items-start mb-1">
+                                                                                            <span className="text-sm font-medium">{foodName}</span>
+                                                                                            <span className="text-xs font-bold text-cyan-600">
+                                                                                                {food.calories}kcal
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <div className="flex justify-between items-center">
+                                                                                            <div className="flex gap-2 text-xs">
+                                                                                                <span className="text-red-600">P:{food.protein}g</span>
+                                                                                                <span className="text-yellow-600">F:{food.fat}g</span>
+                                                                                                <span className="text-green-600">C:{food.carbs}g</span>
+                                                                                            </div>
+                                                                                            <span className="text-xs text-gray-400">
+                                                                                                ※{(food.servingSize !== undefined && food.servingUnit !== undefined)
+                                                                                                    ? `${food.servingSize}${food.servingUnit}`
+                                                                                                    : (food.unit === 'g' || food.unit === 'ml')
+                                                                                                        ? `100${food.unit}`
+                                                                                                        : (food.unit && (food.unit.includes('個') || food.unit.includes('本') || food.unit.includes('枚')))
+                                                                                                            ? food.unit
+                                                                                                            : `1${food.unit || '個'}`}あたり
+                                                                                            </span>
+                                                                                        </div>
                                                                                     </div>
                                                                                 </button>
                                                                             );
                                                                         })}
                                                                     </div>
                                                                 )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         );
                                     })}
                                 </div>
+                                    </>
+                                ) : (
+                                    /* 詳細画面（量調整UI） */
+                                    <div className="space-y-4">
+                                        {/* アイテム情報 */}
+                                        <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <h4 className="font-bold text-lg">{selectedItem.name}</h4>
+                                                    <p className="text-sm text-gray-600">{selectedItem.category}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedItem(null);
+                                                        setEditingItemIndex(null);
+                                                    }}
+                                                    className="text-gray-500 hover:text-gray-700"
+                                                >
+                                                    <Icon name="X" size={20} />
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
+                                                <div>
+                                                    <p className="text-gray-600">カロリー</p>
+                                                    <p className="font-bold" style={{color: '#7686BA'}}>{selectedItem.calories}kcal</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-600">P</p>
+                                                    <p className="font-bold text-red-600">{selectedItem.protein}g</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-600">F</p>
+                                                    <p className="font-bold text-yellow-600">{selectedItem.fat}g</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-600">C</p>
+                                                    <p className="font-bold text-green-600">{selectedItem.carbs}g</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-2">※100gあたり</p>
+                                        </div>
 
-                                {/* カスタムアイテム作成 */}
-                                <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
-                                    <div className="w-full flex items-center justify-between mb-3">
+                                        {/* 量調整 */}
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">量 (g)</label>
+
+                                            {/* スライダー */}
+                                            <div className="mb-3">
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="500"
+                                                    step="5"
+                                                    value={amount}
+                                                    onChange={(e) => setAmount(e.target.value)}
+                                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                                    style={{
+                                                        background: `linear-gradient(to right, #4f46e5 0%, #4f46e5 ${(amount/500)*100}%, #e5e7eb ${(amount/500)*100}%, #e5e7eb 100%)`
+                                                    }}
+                                                />
+                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                    <span onClick={() => setAmount(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0g</span>
+                                                    <span onClick={() => setAmount(100)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">100g</span>
+                                                    <span onClick={() => setAmount(200)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">200g</span>
+                                                    <span onClick={() => setAmount(300)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">300g</span>
+                                                    <span onClick={() => setAmount(400)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">400g</span>
+                                                    <span onClick={() => setAmount(500)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">500g</span>
+                                                </div>
+                                            </div>
+
+                                            <input
+                                                type="number"
+                                                value={amount}
+                                                onChange={(e) => setAmount(e.target.value)}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2"
+                                            />
+
+                                            {/* 増減ボタン */}
+                                            <div className="grid grid-cols-6 gap-1">
+                                                <button
+                                                    onClick={() => setAmount(Math.max(0, Number(amount) - 100))}
+                                                    className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                                                >
+                                                    -100
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Math.max(0, Number(amount) - 50))}
+                                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                >
+                                                    -50
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Math.max(0, Number(amount) - 10))}
+                                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                >
+                                                    -10
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Number(amount) + 10)}
+                                                    className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                >
+                                                    +10
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Number(amount) + 50)}
+                                                    className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                >
+                                                    +50
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Number(amount) + 100)}
+                                                    className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                                                >
+                                                    +100
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 摂取量プレビュー */}
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <p className="text-sm font-medium mb-2">摂取量</p>
+                                            <div className="grid grid-cols-4 gap-2">
+                                                <div>
+                                                    <p className="text-xs text-gray-600">カロリー</p>
+                                                    <p className="font-bold" style={{color: '#7686BA'}}>
+                                                        {Math.round(selectedItem.calories * (Number(amount) / 100))}kcal
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-600">P</p>
+                                                    <p className="font-bold text-red-600">{(selectedItem.protein * (Number(amount) / 100)).toFixed(1)}g</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-600">F</p>
+                                                    <p className="font-bold text-yellow-600">{(selectedItem.fat * (Number(amount) / 100)).toFixed(1)}g</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-600">C</p>
+                                                    <p className="font-bold text-green-600">{(selectedItem.carbs * (Number(amount) / 100)).toFixed(1)}g</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 追加ボタン */}
                                         <button
-                                            onClick={() => setShowCustomSupplementForm(!showCustomSupplementForm)}
-                                            className="flex-1 flex items-center gap-2 font-medium text-green-800"
+                                            onClick={() => {
+                                                const numAmount = Number(amount);
+                                                const ratio = numAmount / 100;
+
+                                                const vitamins = {};
+                                                const minerals = {};
+
+                                                if (selectedItem.vitamins) {
+                                                    Object.keys(selectedItem.vitamins).forEach(key => {
+                                                        vitamins[key] = selectedItem.vitamins[key] * ratio;
+                                                    });
+                                                }
+
+                                                if (selectedItem.minerals) {
+                                                    Object.keys(selectedItem.minerals).forEach(key => {
+                                                        minerals[key] = selectedItem.minerals[key] * ratio;
+                                                    });
+                                                }
+
+                                                const otherNutrients = {};
+                                                const otherNutrientKeys = ['caffeine', 'catechin', 'tannin', 'polyphenol', 'chlorogenicAcid',
+                                                                            'creatine', 'lArginine', 'lCarnitine', 'EPA', 'DHA', 'coQ10',
+                                                                            'lutein', 'astaxanthin'];
+                                                otherNutrientKeys.forEach(key => {
+                                                    if (selectedItem[key]) {
+                                                        otherNutrients[key] = selectedItem[key] * ratio;
+                                                    }
+                                                });
+
+                                                const newItem = {
+                                                    name: selectedItem.name,
+                                                    amount: numAmount,
+                                                    protein: selectedItem.protein * ratio,
+                                                    fat: selectedItem.fat * ratio,
+                                                    carbs: selectedItem.carbs * ratio,
+                                                    calories: selectedItem.calories * ratio,
+                                                    vitamins: vitamins,
+                                                    minerals: minerals,
+                                                    otherNutrients: otherNutrients
+                                                };
+
+                                                if (editingItemIndex !== null) {
+                                                    const updatedItems = [...addedItems];
+                                                    updatedItems[editingItemIndex] = newItem;
+                                                    setAddedItems(updatedItems);
+                                                    setEditingItemIndex(null);
+                                                } else {
+                                                    setAddedItems([...addedItems, newItem]);
+                                                }
+
+                                                setSelectedItem(null);
+                                                setAmount('100');
+                                            }}
+                                            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
                                         >
-                                            <Icon name="Plus" size={16} />
-                                            カスタムアイテムを作成
-                                        </button>
-                                        <button type="button" onClick={() => {
-                                            setWorkoutInfoModal({
-                                                show: true,
-                                                title: 'カスタムアイテム作成について',
-                                                content: `データベースにない食材・料理・サプリメントを独自に登録できます。
-
-【アイテムタイプの選択】
-• 食材: 単品の食品（例: 自家製プロテインバー）
-• 料理: 複数の食材を組み合わせた料理（例: 自家製カレー）
-• サプリ: プロテイン、ビタミン・ミネラル、アミノ酸など
-
-【基本情報の入力】
-• 名前: アイテムの名称
-• カテゴリ: 種類を選択
-• 1回分の量: 1回あたりの摂取量と単位（例: 100g、30g、500ml）
-
-【栄養素の入力】
-• 基本栄養素: カロリー、タンパク質、脂質、炭水化物
-• ビタミン・ミネラル: 詳細な微量栄養素（任意）
-• すべて「1回分あたり」の含有量を入力してください
-
-【データの参照方法】
-1. 商品パッケージの栄養成分表示を確認
-2. メーカー公式サイトの製品情報ページ
-3. 栄養データベース（文部科学省の食品成分データベースなど）
-
-【作成後の使い方】
-保存すると、食事記録画面に追加され、通常のアイテムと同様に記録できるようになります。
-
-【注意点】
-• 正確な栄養情報の入力が重要です
-• ビタミン・ミネラルは任意項目です（わかる範囲で入力）
-• 作成後も編集・削除が可能です`
-                                            });
-                                        }} className="text-green-700 hover:text-green-900 p-1">
-                                            <Icon name="Info" size={14} />
-                                        </button>
-                                        <button
-                                            onClick={() => setShowCustomSupplementForm(!showCustomSupplementForm)}
-                                            className="text-green-800 p-1"
-                                        >
-                                            <Icon name={showCustomSupplementForm ? "ChevronUp" : "ChevronDown"} size={16} />
+                                            {editingItemIndex !== null ? '更新' : '追加'}
                                         </button>
                                     </div>
-                                    {showCustomSupplementForm && (
-                                                    <div className="mt-3 space-y-3 max-h-96 overflow-y-auto">
-                                                        {/* Row 1: 名前入力 */}
-                                                        <div>
-                                                            <label className="text-xs font-medium text-gray-700 mb-1 block">名前</label>
-                                                            <input
-                                                                type="text"
-                                                                value={customSupplementData.name}
-                                                                onChange={(e) => setCustomSupplementData({...customSupplementData, name: e.target.value})}
-                                                                placeholder={
-                                                                    customSupplementData.itemType === 'food' ? '例: 自家製プロテインバー' :
-                                                                    customSupplementData.itemType === 'recipe' ? '例: 自家製カレー' :
-                                                                    '例: マルチビタミン'
-                                                                }
-                                                                className="w-full px-3 py-2 text-sm border rounded-lg"
-                                                            />
-                                                        </div>
+                                )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-                                                        {/* Row 2: アイテムタイプ選択（一覧式） */}
-                                                        <div>
-                                                            <label className="text-xs font-medium text-gray-700 mb-1 block">種類</label>
+                        {showCustomSupplementForm && (
+                            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="font-bold text-green-800 flex items-center gap-2">
+                                        <Icon name="Plus" size={20} />
+                                        カスタムアイテムを作成
+                                    </h3>
+                                    <button
+                                        onClick={() => setShowCustomSupplementForm(false)}
+                                        className="text-gray-500 hover:text-gray-700"
+                                    >
+                                        <Icon name="X" size={20} />
+                                    </button>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    データベースにない食材・料理・サプリメントを独自に登録できます
+                                </p>
+                                <div className="space-y-3">
+                                    {/* Row 1: 名前入力 */}
+                                    <div>
+                                        <label className="text-xs font-medium text-gray-700 mb-1 block">名前</label>
+                                        <input
+                                            type="text"
+                                            value={customSupplementData.name}
+                                            onChange={(e) => setCustomSupplementData({...customSupplementData, name: e.target.value})}
+                                            placeholder={
+                                                customSupplementData.itemType === 'food' ? '例: 自家製プロテインバー' :
+                                                customSupplementData.itemType === 'recipe' ? '例: 自家製カレー' :
+                                                '例: マルチビタミン'
+                                            }
+                                            className="w-full px-3 py-2 text-sm border rounded-lg"
+                                        />
+                                    </div>
+
+                                    {/* Row 2: アイテムタイプ選択（一覧式） */}
+                                    <div>
+                                        <label className="text-xs font-medium text-gray-700 mb-1 block">種類</label>
                                                             <div className="space-y-1">
                                                                 <button
                                                                     type="button"
@@ -2454,11 +2809,11 @@
                                                         >
                                                             追加
                                                         </button>
-                                                    </div>
-                                                )}
                                 </div>
                             </div>
-                        ) : (
+                        )}
+
+                        {!selectedItem && !showAIFoodRecognition && !showCustomSupplementForm && !showSearchModal ? null : selectedItem && (
                             <div className="space-y-4">
                                 <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
                                     <div className="flex justify-between items-start mb-2">
@@ -2467,7 +2822,10 @@
                                             <p className="text-sm text-gray-600">{selectedItem.category}</p>
                                         </div>
                                         <button
-                                            onClick={() => setSelectedItem(null)}
+                                            onClick={() => {
+                                                setSelectedItem(null);
+                                                setEditingItemIndex(null);
+                                            }}
                                             className="text-gray-500 hover:text-gray-700"
                                         >
                                             <Icon name="X" size={20} />
@@ -2476,19 +2834,19 @@
                                     <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
                                         <div>
                                             <p className="text-gray-600">カロリー</p>
-                                            <p className="font-bold">{selectedItem.calories}kcal</p>
+                                            <p className="font-bold" style={{color: '#7686BA'}}>{selectedItem.calories}kcal</p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">P</p>
-                                            <p className="font-bold">{selectedItem.protein}g</p>
+                                            <p className="font-bold text-red-600">{selectedItem.protein}g</p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">F</p>
-                                            <p className="font-bold">{selectedItem.fat}g</p>
+                                            <p className="font-bold text-yellow-600">{selectedItem.fat}g</p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">C</p>
-                                            <p className="font-bold">{selectedItem.carbs}g</p>
+                                            <p className="font-bold text-green-600">{selectedItem.carbs}g</p>
                                         </div>
                                     </div>
                                     <p className="text-xs text-gray-500 mt-2">※100gあたり</p>
@@ -2601,85 +2959,87 @@
                                     <div className="grid grid-cols-4 gap-2">
                                         <div>
                                             <p className="text-xs text-gray-600">カロリー</p>
-                                            <p className="font-bold text-indigo-600">
+                                            <p className="font-bold" style={{color: '#7686BA'}}>
                                                 {Math.round(selectedItem.calories * (Number(amount) / 100))}kcal
                                             </p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-600">P</p>
-                                            <p className="font-bold">{(selectedItem.protein * (Number(amount) / 100)).toFixed(1)}g</p>
+                                            <p className="font-bold text-red-600">{(selectedItem.protein * (Number(amount) / 100)).toFixed(1)}g</p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-600">F</p>
-                                            <p className="font-bold">{(selectedItem.fat * (Number(amount) / 100)).toFixed(1)}g</p>
+                                            <p className="font-bold text-yellow-600">{(selectedItem.fat * (Number(amount) / 100)).toFixed(1)}g</p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-600">C</p>
-                                            <p className="font-bold">{(selectedItem.carbs * (Number(amount) / 100)).toFixed(1)}g</p>
+                                            <p className="font-bold text-green-600">{(selectedItem.carbs * (Number(amount) / 100)).toFixed(1)}g</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => {
-                                            const numAmount = Number(amount);
-                                            const ratio = numAmount / 100;
+                                <button
+                                    onClick={() => {
+                                        const numAmount = Number(amount);
+                                        const ratio = numAmount / 100;
 
-                                            // Calculate vitamins and minerals based on amount
-                                            const vitamins = {};
-                                            const minerals = {};
+                                        // Calculate vitamins and minerals based on amount
+                                        const vitamins = {};
+                                        const minerals = {};
 
-                                            if (selectedItem.vitamins) {
-                                                Object.keys(selectedItem.vitamins).forEach(key => {
-                                                    vitamins[key] = selectedItem.vitamins[key] * ratio;
-                                                });
-                                            }
-
-                                            if (selectedItem.minerals) {
-                                                Object.keys(selectedItem.minerals).forEach(key => {
-                                                    minerals[key] = selectedItem.minerals[key] * ratio;
-                                                });
-                                            }
-
-                                            // その他の栄養素を計算
-                                            const otherNutrients = {};
-                                            const otherNutrientKeys = ['caffeine', 'catechin', 'tannin', 'polyphenol', 'chlorogenicAcid',
-                                                                        'creatine', 'lArginine', 'lCarnitine', 'EPA', 'DHA', 'coQ10',
-                                                                        'lutein', 'astaxanthin'];
-                                            otherNutrientKeys.forEach(key => {
-                                                if (selectedItem[key]) {
-                                                    otherNutrients[key] = selectedItem[key] * ratio;
-                                                }
+                                        if (selectedItem.vitamins) {
+                                            Object.keys(selectedItem.vitamins).forEach(key => {
+                                                vitamins[key] = selectedItem.vitamins[key] * ratio;
                                             });
+                                        }
 
-                                            // Add to the list of items
-                                            const newItem = {
-                                                name: selectedItem.name,
-                                                amount: numAmount,
-                                                protein: selectedItem.protein * ratio,
-                                                fat: selectedItem.fat * ratio,
-                                                carbs: selectedItem.carbs * ratio,
-                                                calories: selectedItem.calories * ratio,
-                                                vitamins: vitamins,
-                                                minerals: minerals,
-                                                otherNutrients: otherNutrients
-                                            };
+                                        if (selectedItem.minerals) {
+                                            Object.keys(selectedItem.minerals).forEach(key => {
+                                                minerals[key] = selectedItem.minerals[key] * ratio;
+                                            });
+                                        }
+
+                                        // その他の栄養素を計算
+                                        const otherNutrients = {};
+                                        const otherNutrientKeys = ['caffeine', 'catechin', 'tannin', 'polyphenol', 'chlorogenicAcid',
+                                                                    'creatine', 'lArginine', 'lCarnitine', 'EPA', 'DHA', 'coQ10',
+                                                                    'lutein', 'astaxanthin'];
+                                        otherNutrientKeys.forEach(key => {
+                                            if (selectedItem[key]) {
+                                                otherNutrients[key] = selectedItem[key] * ratio;
+                                            }
+                                        });
+
+                                        const newItem = {
+                                            name: selectedItem.name,
+                                            amount: numAmount,
+                                            protein: selectedItem.protein * ratio,
+                                            fat: selectedItem.fat * ratio,
+                                            carbs: selectedItem.carbs * ratio,
+                                            calories: selectedItem.calories * ratio,
+                                            vitamins: vitamins,
+                                            minerals: minerals,
+                                            otherNutrients: otherNutrients
+                                        };
+
+                                        // 編集モードの場合は既存アイテムを更新、それ以外は新規追加
+                                        if (editingItemIndex !== null) {
+                                            const updatedItems = [...addedItems];
+                                            updatedItems[editingItemIndex] = newItem;
+                                            setAddedItems(updatedItems);
+                                            setEditingItemIndex(null);
+                                        } else {
                                             setAddedItems([...addedItems, newItem]);
-                                            setSelectedItem(null);
-                                            setAmount('100');
-                                        }}
-                                        className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
-                                    >
-                                        追加
-                                    </button>
-                                    <button
-                                        onClick={() => setSelectedItem(null)}
-                                        className="px-4 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
-                                    >
-                                        キャンセル
-                                    </button>
-                                </div>
+                                        }
+
+                                        setSelectedItem(null);
+                                        setAmount('100');
+                                        setShowSearchModal(true);
+                                    }}
+                                    className="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm"
+                                >
+                                    {editingItemIndex !== null ? '更新' : 'アイテムを追加'}
+                                </button>
                             </div>
                         )}
 
@@ -2696,12 +3056,35 @@
                                                 <p className="text-sm font-medium">{item.name}</p>
                                                 <p className="text-xs text-gray-600">{item.amount}g - {Math.round(item.calories)}kcal</p>
                                             </div>
-                                            <button
-                                                onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
-                                                className="text-red-500 hover:text-red-700 ml-2"
-                                            >
-                                                <Icon name="Trash2" size={16} />
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        // 編集時は100gあたりの栄養価に戻す必要がある
+                                                        const originalRatio = 100 / item.amount;
+                                                        setSelectedItem({
+                                                            name: item.name,
+                                                            calories: item.calories * originalRatio,
+                                                            protein: item.protein * originalRatio,
+                                                            fat: item.fat * originalRatio,
+                                                            carbs: item.carbs * originalRatio,
+                                                            vitamins: item.vitamins,
+                                                            minerals: item.minerals,
+                                                            category: item.category || ''
+                                                        });
+                                                        setAmount(item.amount.toString());
+                                                        setEditingItemIndex(index);
+                                                    }}
+                                                    className="text-blue-500 hover:text-blue-700"
+                                                >
+                                                    <Icon name="Pencil" size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
+                                                    className="text-red-500 hover:text-red-700"
+                                                >
+                                                    <Icon name="Trash2" size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -2709,60 +3092,80 @@
                                     <div className="grid grid-cols-4 gap-2 text-xs">
                                         <div>
                                             <p className="text-gray-600">カロリー</p>
-                                            <p className="font-bold text-indigo-600">
+                                            <p className="font-bold" style={{color: '#7686BA'}}>
                                                 {Math.round(addedItems.reduce((sum, item) => sum + item.calories, 0))}kcal
                                             </p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">P</p>
-                                            <p className="font-bold">
+                                            <p className="font-bold text-red-600">
                                                 {addedItems.reduce((sum, item) => sum + item.protein, 0).toFixed(1)}g
                                             </p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">F</p>
-                                            <p className="font-bold">
+                                            <p className="font-bold text-yellow-600">
                                                 {addedItems.reduce((sum, item) => sum + item.fat, 0).toFixed(1)}g
                                             </p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">C</p>
-                                            <p className="font-bold">
+                                            <p className="font-bold text-green-600">
                                                 {addedItems.reduce((sum, item) => sum + item.carbs, 0).toFixed(1)}g
                                             </p>
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* アイテムを追加ボタン */}
+                                <button
+                                    onClick={() => {
+                                        setSelectedItem(null);
+                                        setShowSearchModal(true);
+                                    }}
+                                    className="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm mt-3"
+                                >
+                                    アイテムを追加
+                                </button>
+
+                                {/* 記録とキャンセルボタン */}
+                                <div className="flex gap-2 mt-3">
+                                    <button
+                                        onClick={async () => {
+                                            const totalCalories = addedItems.reduce((sum, item) => sum + item.calories, 0);
+                                            const newMeal = {
+                                                id: Date.now(),
+                                                time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                                                name: mealName || '食事',
+                                                calories: Math.round(totalCalories),
+                                                items: addedItems.map(item => ({
+                                                    name: item.name,
+                                                    amount: `${item.amount}g`,
+                                                    protein: item.protein,
+                                                    fat: item.fat,
+                                                    carbs: item.carbs,
+                                                    vitamins: item.vitamins,
+                                                    minerals: item.minerals
+                                                }))
+                                            };
+
+                                            onAdd(newMeal);
+                                        }}
+                                        className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                    >
+                                        記録
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setAddedItems([]);
+                                            setShowModal(false);
+                                        }}
+                                        className="px-4 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
+                                    >
+                                        キャンセル
+                                    </button>
+                                </div>
                             </div>
-                        )}
-
-                        {/* ⑤記録ボタン */}
-                        {addedItems.length > 0 && !selectedItem && (
-                            <button
-                                onClick={async () => {
-                                    const totalCalories = addedItems.reduce((sum, item) => sum + item.calories, 0);
-                                    const newMeal = {
-                                        id: Date.now(),
-                                        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-                                        name: mealName || '食事',
-                                        calories: Math.round(totalCalories),
-                                        items: addedItems.map(item => ({
-                                            name: item.name,
-                                            amount: `${item.amount}g`,
-                                            protein: item.protein,
-                                            fat: item.fat,
-                                            carbs: item.carbs,
-                                            vitamins: item.vitamins,
-                                            minerals: item.minerals
-                                        }))
-                                    };
-
-                                    onAdd(newMeal);
-                                }}
-                                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
-                            >
-                                記録する ({addedItems.length}品目)
-                            </button>
                         )}
 
                         {/* AI食事認識モーダル */}

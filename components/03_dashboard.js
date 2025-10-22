@@ -237,22 +237,20 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
                     <div>
                         <div className="flex justify-between items-center mb-2">
                             <div className="flex items-center gap-2">
-                                <span className="font-medium">カロリー収支</span>
+                                <span className="font-medium">摂取カロリー</span>
                                 <button
                                     onClick={() => setInfoModal({
                                         show: true,
-                                        title: '💡 カロリー収支の詳細',
+                                        title: '💡 摂取カロリーの詳細',
                                         content: `【摂取カロリー】
-食事とサプリメントから摂取したカロリー
+食事とサプリメントから摂取したカロリーの合計
 ${currentIntake.calories} kcal
 
 【目標カロリー】
 ${targetPFC.calories} kcal
 
 【達成率】
-${Math.round(caloriesPercent)}%
-
-※カロリー収支 = 摂取カロリー ÷ 目標カロリー`
+${Math.round(caloriesPercent)}%`
                                     })}
                                     className="text-indigo-600 hover:text-indigo-800"
                                 >
@@ -260,15 +258,15 @@ ${Math.round(caloriesPercent)}%
                                 </button>
                             </div>
                             <div className="text-sm text-right">
-                                <div className="font-bold text-gray-800">
+                                <div className="font-bold" style={{color: '#7686BA'}}>
                                     {Math.round(currentIntake.calories)} / {targetPFC.calories} kcal
                                 </div>
                             </div>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-500"
-                                style={{ width: `${Math.min(caloriesPercent, 100)}%` }}
+                                className="h-full transition-all duration-500"
+                                style={{ width: `${Math.min(caloriesPercent, 100)}%`, backgroundColor: '#7686BA' }}
                             ></div>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
@@ -278,13 +276,14 @@ ${Math.round(caloriesPercent)}%
                     <div>
                         <div className="flex justify-between mb-2">
                             <span className="font-medium">タンパク質 (P)</span>
-                            <span className="text-sm text-gray-600">
-                                {currentIntake.protein.toFixed(1)} / {targetPFC.protein} g
+                            <span className="text-sm">
+                                <span className="font-bold text-red-600">{currentIntake.protein.toFixed(1)}</span>
+                                <span className="text-gray-600"> / {targetPFC.protein} g</span>
                             </span>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 transition-all duration-500"
+                                className="h-full bg-red-500 transition-all duration-500"
                                 style={{ width: `${Math.min(proteinPercent, 100)}%` }}
                             ></div>
                         </div>
@@ -292,13 +291,14 @@ ${Math.round(caloriesPercent)}%
                     <div>
                         <div className="flex justify-between mb-2">
                             <span className="font-medium">脂質 (F)</span>
-                            <span className="text-sm text-gray-600">
-                                {currentIntake.fat.toFixed(1)} / {targetPFC.fat} g
+                            <span className="text-sm">
+                                <span className="font-bold text-yellow-600">{currentIntake.fat.toFixed(1)}</span>
+                                <span className="text-gray-600"> / {targetPFC.fat} g</span>
                             </span>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-yellow-500 to-orange-600 transition-all duration-500"
+                                className="h-full bg-yellow-500 transition-all duration-500"
                                 style={{ width: `${Math.min((currentIntake.fat / targetPFC.fat) * 100, 100)}%` }}
                             ></div>
                         </div>
@@ -306,13 +306,14 @@ ${Math.round(caloriesPercent)}%
                     <div>
                         <div className="flex justify-between mb-2">
                             <span className="font-medium">炭水化物 (C)</span>
-                            <span className="text-sm text-gray-600">
-                                {currentIntake.carbs.toFixed(1)} / {targetPFC.carbs} g
+                            <span className="text-sm">
+                                <span className="font-bold text-green-600">{currentIntake.carbs.toFixed(1)}</span>
+                                <span className="text-gray-600"> / {targetPFC.carbs} g</span>
                             </span>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-500"
+                                className="h-full bg-green-500 transition-all duration-500"
                                 style={{ width: `${Math.min((currentIntake.carbs / targetPFC.carbs) * 100, 100)}%` }}
                             ></div>
                         </div>
@@ -734,13 +735,26 @@ ${Math.round(caloriesPercent)}%
                                             ))}
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-emerald-600 mb-2">{meal.calories} kcal</p>
-                                            <button
-                                                onClick={() => onDeleteItem('meal', meal.id)}
-                                                className="text-red-500 hover:text-red-700 text-sm"
-                                            >
-                                                <Icon name="Trash2" size={16} />
-                                            </button>
+                                            <p className="font-bold mb-2" style={{color: '#7686BA'}}>{meal.calories} kcal</p>
+                                            <div className="flex gap-2 justify-end">
+                                                <button
+                                                    onClick={() => {
+                                                        // 食事編集機能を呼び出す
+                                                        if (window.handleEditMeal) {
+                                                            window.handleEditMeal(meal);
+                                                        }
+                                                    }}
+                                                    className="text-blue-500 hover:text-blue-700 text-sm"
+                                                >
+                                                    <Icon name="Pencil" size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => onDeleteItem('meal', meal.id)}
+                                                    className="text-red-500 hover:text-red-700 text-sm"
+                                                >
+                                                    <Icon name="Trash2" size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
