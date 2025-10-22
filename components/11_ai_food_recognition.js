@@ -56,7 +56,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose }) => {
             const base64Image = await imageToBase64(selectedImage);
 
             // Gemini Vision APIを呼び出し
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
 
             const requestBody = {
                 contents: [{
@@ -481,46 +481,46 @@ const FoodItemTag = ({ food, onAmountChange, onRemove }) => {
     };
 
     return (
-        <div className={`bg-gray-800 border-2 rounded-xl p-4 transition ${
-            food.isUnknown ? 'border-yellow-500 bg-yellow-900' : 'border-gray-700'
+        <div className={`bg-white border-2 rounded-xl p-4 transition ${
+            food.isUnknown ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200'
         }`}>
             {/* ヘッダー部分 */}
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-bold text-base text-white">{food.name}</h4>
+                        <h4 className="font-bold text-base">{food.name}</h4>
                         <button
                             onClick={onRemove}
-                            className="text-red-400 hover:text-red-300 ml-auto"
+                            className="text-red-500 hover:text-red-700"
                         >
-                            <Icon name="X" size={20} />
+                            <Icon name="X" size={16} />
                         </button>
                     </div>
                     {food.category && (
-                        <p className="text-xs text-gray-400">{food.category}</p>
+                        <p className="text-xs text-gray-500">{food.category}</p>
                     )}
                 </div>
             </div>
 
             {/* 栄養素表示（100gあたり） */}
             {!food.isUnknown && (
-                <div className="bg-gray-900 rounded-lg p-3 mb-3">
+                <div className="bg-gray-50 rounded-lg p-3 mb-3">
                     <div className="grid grid-cols-4 gap-3 text-center">
                         <div>
-                            <p className="text-xs text-gray-400">カロリー</p>
-                            <p className="text-sm font-bold text-white">{food.calories || 0}kcal</p>
+                            <p className="text-xs text-gray-600">カロリー</p>
+                            <p className="text-sm font-bold">{food.calories || 0}kcal</p>
                         </div>
                         <div>
-                            <p className="text-xs text-gray-400">P</p>
-                            <p className="text-sm font-bold text-white">{(food.protein || 0).toFixed(1)}g</p>
+                            <p className="text-xs text-gray-600">P</p>
+                            <p className="text-sm font-bold">{(food.protein || 0).toFixed(1)}g</p>
                         </div>
                         <div>
-                            <p className="text-xs text-gray-400">F</p>
-                            <p className="text-sm font-bold text-white">{(food.fat || 0).toFixed(1)}g</p>
+                            <p className="text-xs text-gray-600">F</p>
+                            <p className="text-sm font-bold">{(food.fat || 0).toFixed(1)}g</p>
                         </div>
                         <div>
-                            <p className="text-xs text-gray-400">C</p>
-                            <p className="text-sm font-bold text-white">{(food.carbs || 0).toFixed(1)}g</p>
+                            <p className="text-xs text-gray-600">C</p>
+                            <p className="text-sm font-bold">{(food.carbs || 0).toFixed(1)}g</p>
                         </div>
                     </div>
                     <p className="text-xs text-gray-500 text-center mt-1">※100gあたり</p>
@@ -530,9 +530,9 @@ const FoodItemTag = ({ food, onAmountChange, onRemove }) => {
             {/* 重量調整セクション */}
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-300 flex items-center gap-1">
-                        量 (g)
-                        <Icon name="HelpCircle" size={14} className="text-gray-500" />
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                        重量 (g)
+                        <Icon name="HelpCircle" size={14} className="text-gray-400" />
                     </label>
                     <span className="text-xs text-gray-500">
                         0g - 100g - 200g - 300g - 400g - 500g
@@ -547,7 +547,7 @@ const FoodItemTag = ({ food, onAmountChange, onRemove }) => {
                     step="5"
                     value={amount}
                     onChange={(e) => handleAmountChange(Number(e.target.value))}
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                 />
 
                 {/* 数値入力 */}
@@ -558,45 +558,45 @@ const FoodItemTag = ({ food, onAmountChange, onRemove }) => {
                         max="9999"
                         value={amount}
                         onChange={(e) => handleAmountChange(Number(e.target.value))}
-                        className="w-full px-4 py-3 text-2xl font-bold text-center border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-indigo-500 focus:outline-none"
+                        className="w-full px-4 py-3 text-2xl font-bold text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
                     />
                 </div>
 
                 {/* クイック調整ボタン */}
-                <div className="grid grid-cols-6 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                     <button
                         onClick={() => adjustAmount(-100)}
-                        className="px-2 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                        className="px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition"
                     >
                         -100
                     </button>
                     <button
                         onClick={() => adjustAmount(-50)}
-                        className="px-2 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                        className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition"
                     >
                         -50
                     </button>
                     <button
                         onClick={() => adjustAmount(-10)}
-                        className="px-2 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                        className="px-3 py-2 bg-orange-50 text-orange-600 rounded-lg text-sm font-medium hover:bg-orange-100 transition"
                     >
                         -10
                     </button>
                     <button
                         onClick={() => adjustAmount(10)}
-                        className="px-2 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                        className="px-3 py-2 bg-green-50 text-green-600 rounded-lg text-sm font-medium hover:bg-green-100 transition"
                     >
                         +10
                     </button>
                     <button
                         onClick={() => adjustAmount(50)}
-                        className="px-2 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                        className="px-3 py-2 bg-emerald-50 text-emerald-600 rounded-lg text-sm font-medium hover:bg-emerald-100 transition"
                     >
                         +50
                     </button>
                     <button
                         onClick={() => adjustAmount(100)}
-                        className="px-2 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                        className="px-3 py-2 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-200 transition col-span-5"
                     >
                         +100
                     </button>
@@ -605,24 +605,24 @@ const FoodItemTag = ({ food, onAmountChange, onRemove }) => {
 
             {/* 摂取量表示 */}
             {!food.isUnknown && (
-                <div className="mt-4 pt-4 border-t border-gray-700">
-                    <p className="text-xs text-gray-400 mb-2 font-medium">摂取量</p>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-xs text-gray-600 mb-2 font-medium">摂取量</p>
                     <div className="grid grid-cols-4 gap-3 text-center">
-                        <div className="bg-gray-900 rounded-lg p-2">
-                            <p className="text-xs text-gray-400">カロリー</p>
-                            <p className="text-base font-bold text-white">{nutrients.calories}kcal</p>
+                        <div className="bg-indigo-50 rounded-lg p-2">
+                            <p className="text-xs text-gray-600">カロリー</p>
+                            <p className="text-base font-bold text-indigo-700">{nutrients.calories}kcal</p>
                         </div>
-                        <div className="bg-gray-900 rounded-lg p-2">
-                            <p className="text-xs text-gray-400">P</p>
-                            <p className="text-base font-bold text-white">{nutrients.protein}g</p>
+                        <div className="bg-cyan-50 rounded-lg p-2">
+                            <p className="text-xs text-gray-600">P</p>
+                            <p className="text-base font-bold text-cyan-700">{nutrients.protein}g</p>
                         </div>
-                        <div className="bg-gray-900 rounded-lg p-2">
-                            <p className="text-xs text-gray-400">F</p>
-                            <p className="text-base font-bold text-white">{nutrients.fat}g</p>
+                        <div className="bg-yellow-50 rounded-lg p-2">
+                            <p className="text-xs text-gray-600">F</p>
+                            <p className="text-base font-bold text-yellow-700">{nutrients.fat}g</p>
                         </div>
-                        <div className="bg-gray-900 rounded-lg p-2">
-                            <p className="text-xs text-gray-400">C</p>
-                            <p className="text-base font-bold text-white">{nutrients.carbs}g</p>
+                        <div className="bg-green-50 rounded-lg p-2">
+                            <p className="text-xs text-gray-600">C</p>
+                            <p className="text-base font-bold text-green-700">{nutrients.carbs}g</p>
                         </div>
                     </div>
                 </div>
@@ -673,13 +673,6 @@ const FoodItemTag = ({ food, onAmountChange, onRemove }) => {
             {showCustomFoodModal && (
                 <CustomFoodCreator
                     initialName={food.name}
-                    initialData={{
-                        calories: food.calories || 0,
-                        protein: food.protein || 0,
-                        fat: food.fat || 0,
-                        carbs: food.carbs || 0
-                    }}
-                    fromAIRecognition={true}
                     onClose={() => setShowCustomFoodModal(false)}
                     onSave={(customFood) => {
                         // カスタム食材を保存してfoodを更新
@@ -694,10 +687,9 @@ const FoodItemTag = ({ food, onAmountChange, onRemove }) => {
 };
 
 // カスタム食材作成コンポーネント（ハイブリッド方式）
-const CustomFoodCreator = ({ initialName, initialData, fromAIRecognition = false, itemType = 'food', onClose, onSave }) => {
+const CustomFoodCreator = ({ initialName, itemType = 'food', onClose, onSave }) => {
     const [foodName, setFoodName] = useState(initialName || '');
-    // AI認識からの場合は手動入力モードで開始、それ以外は内訳入力モード
-    const [inputMethod, setInputMethod] = useState(fromAIRecognition ? 'manual' : 'composition'); // 'composition' | 'manual' | 'ai'
+    const [inputMethod, setInputMethod] = useState('composition'); // 'composition' | 'manual' | 'ai'
 
     // itemTypeに応じたラベル
     const labels = {
@@ -714,10 +706,10 @@ const CustomFoodCreator = ({ initialName, initialData, fromAIRecognition = false
 
     // 手動入力方式のstate（詳細な栄養素を含む）
     const [manualData, setManualData] = useState({
-        calories: initialData?.calories || 0,
-        protein: initialData?.protein || 0,
-        fat: initialData?.fat || 0,
-        carbs: initialData?.carbs || 0,
+        calories: 0,
+        protein: 0,
+        fat: 0,
+        carbs: 0,
         // ビタミン
         vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
         vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
@@ -793,7 +785,7 @@ const CustomFoodCreator = ({ initialName, initialData, fromAIRecognition = false
     const estimateWithAI = async () => {
         setAiEstimating(true);
         try {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
             const requestBody = {
                 contents: [{
                     parts: [{
@@ -870,7 +862,6 @@ JSON形式のみを出力し、他のテキストは含めないでください�
                 })),
                 isCustom: true,
                 isRecipe: true, // 料理フラグ
-                itemType: 'recipe', // 検索用
                 createdAt: new Date().toISOString()
             };
         } else if (inputMethod === 'manual') {
@@ -879,7 +870,6 @@ JSON形式のみを出力し、他のテキストは含めないでください�
                 name: foodName,
                 ...manualData,
                 isCustom: true,
-                itemType: 'food', // 検索用
                 createdAt: new Date().toISOString()
             };
         } else if (inputMethod === 'ai') {
@@ -892,23 +882,13 @@ JSON形式のみを出力し、他のテキストは含めないでください�
                 name: foodName,
                 ...aiEstimate,
                 isCustom: true,
-                itemType: 'food', // 検索用
                 createdAt: new Date().toISOString()
             };
         }
 
-        // LocalStorageに保存（重複チェック）
+        // LocalStorageに保存
         const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
-        const existingIndex = customFoods.findIndex(f => f.name === foodName);
-
-        if (existingIndex >= 0) {
-            // 既存の食材を更新
-            customFoods[existingIndex] = customFood;
-        } else {
-            // 新規追加
-            customFoods.push(customFood);
-        }
-
+        customFoods.push(customFood);
         localStorage.setItem('customFoods', JSON.stringify(customFoods));
 
         // foodDatabase.jsに追加（グローバルに利用可能にする）
@@ -950,50 +930,48 @@ JSON形式のみを出力し、他のテキストは含めないでください�
                         />
                     </div>
 
-                    {/* 入力方法選択（AI認識からの場合は非表示） */}
-                    {!fromAIRecognition && (
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-3">栄養素の入力方法</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                <button
-                                    onClick={() => setInputMethod('composition')}
-                                    className={`p-4 rounded-lg border-2 transition ${
-                                        inputMethod === 'composition'
-                                            ? 'border-amber-500 bg-amber-50'
-                                            : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                                >
-                                    <Icon name="ListPlus" size={24} className="mx-auto mb-2 text-amber-600" />
-                                    <p className="text-sm font-medium">内訳入力</p>
-                                    <p className="text-xs text-gray-500 mt-1">食材を組み合わせ</p>
-                                </button>
-                                <button
-                                    onClick={() => setInputMethod('manual')}
-                                    className={`p-4 rounded-lg border-2 transition ${
-                                        inputMethod === 'manual'
-                                            ? 'border-amber-500 bg-amber-50'
-                                            : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                                >
-                                    <Icon name="Edit" size={24} className="mx-auto mb-2 text-amber-600" />
-                                    <p className="text-sm font-medium">手動入力</p>
-                                    <p className="text-xs text-gray-500 mt-1">直接数値を入力</p>
-                                </button>
-                                <button
-                                    onClick={() => setInputMethod('ai')}
-                                    className={`p-4 rounded-lg border-2 transition ${
-                                        inputMethod === 'ai'
-                                            ? 'border-amber-500 bg-amber-50'
-                                            : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                                >
-                                    <Icon name="Sparkles" size={24} className="mx-auto mb-2 text-amber-600" />
-                                    <p className="text-sm font-medium">AI推定</p>
-                                    <p className="text-xs text-gray-500 mt-1">AIで自動推定</p>
-                                </button>
-                            </div>
+                    {/* 入力方法選択 */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">栄養素の入力方法</label>
+                        <div className="grid grid-cols-3 gap-3">
+                            <button
+                                onClick={() => setInputMethod('composition')}
+                                className={`p-4 rounded-lg border-2 transition ${
+                                    inputMethod === 'composition'
+                                        ? 'border-amber-500 bg-amber-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                            >
+                                <Icon name="ListPlus" size={24} className="mx-auto mb-2 text-amber-600" />
+                                <p className="text-sm font-medium">内訳入力</p>
+                                <p className="text-xs text-gray-500 mt-1">食材を組み合わせ</p>
+                            </button>
+                            <button
+                                onClick={() => setInputMethod('manual')}
+                                className={`p-4 rounded-lg border-2 transition ${
+                                    inputMethod === 'manual'
+                                        ? 'border-amber-500 bg-amber-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                            >
+                                <Icon name="Edit" size={24} className="mx-auto mb-2 text-amber-600" />
+                                <p className="text-sm font-medium">手動入力</p>
+                                <p className="text-xs text-gray-500 mt-1">直接数値を入力</p>
+                            </button>
+                            <button
+                                onClick={() => setInputMethod('ai')}
+                                className={`p-4 rounded-lg border-2 transition ${
+                                    inputMethod === 'ai'
+                                        ? 'border-amber-500 bg-amber-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                            >
+                                <Icon name="Sparkles" size={24} className="mx-auto mb-2 text-amber-600" />
+                                <p className="text-sm font-medium">AI推定</p>
+                                <p className="text-xs text-gray-500 mt-1">AIで自動推定</p>
+                            </button>
                         </div>
-                    )}
+                    </div>
 
                     {/* 内訳入力方式 */}
                     {inputMethod === 'composition' && (
@@ -1105,7 +1083,7 @@ JSON形式のみを出力し、他のテキストは含めないでください�
                                     <input
                                         type="number"
                                         value={manualData.calories}
-                                        onChange={(e) => setManualData({...manualData, calories: e.target.value === '' ? 0 : e.target.value === '' ? 0 : Number(e.target.value)})}
+                                        onChange={(e) => setManualData({...manualData, calories: Number(e.target.value)})}
                                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
                                     />
                                 </div>
@@ -1115,7 +1093,7 @@ JSON形式のみを出力し、他のテキストは含めないでください�
                                         type="number"
                                         step="0.1"
                                         value={manualData.protein}
-                                        onChange={(e) => setManualData({...manualData, protein: e.target.value === '' ? 0 : e.target.value === '' ? 0 : Number(e.target.value)})}
+                                        onChange={(e) => setManualData({...manualData, protein: Number(e.target.value)})}
                                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
                                     />
                                 </div>
@@ -1125,7 +1103,7 @@ JSON形式のみを出力し、他のテキストは含めないでください�
                                         type="number"
                                         step="0.1"
                                         value={manualData.fat}
-                                        onChange={(e) => setManualData({...manualData, fat: e.target.value === '' ? 0 : e.target.value === '' ? 0 : Number(e.target.value)})}
+                                        onChange={(e) => setManualData({...manualData, fat: Number(e.target.value)})}
                                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
                                     />
                                 </div>
@@ -1135,7 +1113,7 @@ JSON形式のみを出力し、他のテキストは含めないでください�
                                         type="number"
                                         step="0.1"
                                         value={manualData.carbs}
-                                        onChange={(e) => setManualData({...manualData, carbs: e.target.value === '' ? 0 : e.target.value === '' ? 0 : Number(e.target.value)})}
+                                        onChange={(e) => setManualData({...manualData, carbs: Number(e.target.value)})}
                                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
                                     />
                                 </div>
@@ -1143,122 +1121,124 @@ JSON形式のみを出力し、他のテキストは含めないでください�
 
                             {/* ビタミン */}
                             <div className="p-4 bg-teal-50 rounded-lg border border-teal-200">
-                                <h4 className="font-semibold text-sm text-teal-800 mb-3">
-                                    ビタミン<br />(100gあたり)
+                                <h4 className="font-semibold text-sm text-teal-800 mb-3 flex items-center gap-2">
+                                    <Icon name="Pill" size={16} />
+                                    ビタミン (100gあたり)
                                 </h4>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-xs text-gray-600">ビタミンA (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminA} onChange={(e) => setManualData({...manualData, vitaminA: e.target.value === '' ? 0 : e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.vitaminA} onChange={(e) => setManualData({...manualData, vitaminA: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">ビタミンB1 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminB1} onChange={(e) => setManualData({...manualData, vitaminB1: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.vitaminB1} onChange={(e) => setManualData({...manualData, vitaminB1: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">ビタミンB2 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminB2} onChange={(e) => setManualData({...manualData, vitaminB2: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.vitaminB2} onChange={(e) => setManualData({...manualData, vitaminB2: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">ビタミンB6 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminB6} onChange={(e) => setManualData({...manualData, vitaminB6: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.vitaminB6} onChange={(e) => setManualData({...manualData, vitaminB6: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">ビタミンB12 (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminB12} onChange={(e) => setManualData({...manualData, vitaminB12: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.vitaminB12} onChange={(e) => setManualData({...manualData, vitaminB12: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">ビタミンC (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminC} onChange={(e) => setManualData({...manualData, vitaminC: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.vitaminC} onChange={(e) => setManualData({...manualData, vitaminC: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">ビタミンD (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminD} onChange={(e) => setManualData({...manualData, vitaminD: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.vitaminD} onChange={(e) => setManualData({...manualData, vitaminD: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">ビタミンE (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminE} onChange={(e) => setManualData({...manualData, vitaminE: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.vitaminE} onChange={(e) => setManualData({...manualData, vitaminE: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">ビタミンK (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminK} onChange={(e) => setManualData({...manualData, vitaminK: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.vitaminK} onChange={(e) => setManualData({...manualData, vitaminK: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">ナイアシン (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.niacin} onChange={(e) => setManualData({...manualData, niacin: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.niacin} onChange={(e) => setManualData({...manualData, niacin: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">パントテン酸 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.pantothenicAcid} onChange={(e) => setManualData({...manualData, pantothenicAcid: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.pantothenicAcid} onChange={(e) => setManualData({...manualData, pantothenicAcid: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">ビオチン (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.biotin} onChange={(e) => setManualData({...manualData, biotin: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.biotin} onChange={(e) => setManualData({...manualData, biotin: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">葉酸 (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.folicAcid} onChange={(e) => setManualData({...manualData, folicAcid: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.folicAcid} onChange={(e) => setManualData({...manualData, folicAcid: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                 </div>
                             </div>
 
                             {/* ミネラル */}
                             <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-200">
-                                <h4 className="font-semibold text-sm text-cyan-800 mb-3">
-                                    ミネラル<br />(100gあたり)
+                                <h4 className="font-semibold text-sm text-cyan-800 mb-3 flex items-center gap-2">
+                                    <Icon name="Droplet" size={16} />
+                                    ミネラル (100gあたり)
                                 </h4>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-xs text-gray-600">ナトリウム (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.sodium} onChange={(e) => setManualData({...manualData, sodium: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.sodium} onChange={(e) => setManualData({...manualData, sodium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">カリウム (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.potassium} onChange={(e) => setManualData({...manualData, potassium: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.potassium} onChange={(e) => setManualData({...manualData, potassium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">カルシウム (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.calcium} onChange={(e) => setManualData({...manualData, calcium: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.calcium} onChange={(e) => setManualData({...manualData, calcium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">マグネシウム (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.magnesium} onChange={(e) => setManualData({...manualData, magnesium: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.magnesium} onChange={(e) => setManualData({...manualData, magnesium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">リン (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.phosphorus} onChange={(e) => setManualData({...manualData, phosphorus: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.phosphorus} onChange={(e) => setManualData({...manualData, phosphorus: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">鉄 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.iron} onChange={(e) => setManualData({...manualData, iron: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.iron} onChange={(e) => setManualData({...manualData, iron: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">亜鉛 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.zinc} onChange={(e) => setManualData({...manualData, zinc: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.zinc} onChange={(e) => setManualData({...manualData, zinc: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">銅 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.copper} onChange={(e) => setManualData({...manualData, copper: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.copper} onChange={(e) => setManualData({...manualData, copper: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">マンガン (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.manganese} onChange={(e) => setManualData({...manualData, manganese: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.manganese} onChange={(e) => setManualData({...manualData, manganese: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">ヨウ素 (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.iodine} onChange={(e) => setManualData({...manualData, iodine: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.iodine} onChange={(e) => setManualData({...manualData, iodine: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">セレン (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.selenium} onChange={(e) => setManualData({...manualData, selenium: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.selenium} onChange={(e) => setManualData({...manualData, selenium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">クロム (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.chromium} onChange={(e) => setManualData({...manualData, chromium: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.chromium} onChange={(e) => setManualData({...manualData, chromium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-600">モリブデン (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.molybdenum} onChange={(e) => setManualData({...manualData, molybdenum: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
+                                        <input type="number" step="0.01" value={manualData.molybdenum} onChange={(e) => setManualData({...manualData, molybdenum: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
                                     </div>
                                 </div>
                             </div>

@@ -11,19 +11,27 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
     // Textbookモジュール一覧
     const textbookModules = [
         {
+            id: 'mental_textbook',
+            title: 'メンタルの教科書',
+            category: '心理学',
+            path: './module/mental_textbook_new.html',
+            description: 'モチベーション、習慣形成、ストレス管理などメンタル面の科学的アプローチ',
+            icon: 'Brain'
+        },
+        {
+            id: 'pg_formula_textbook',
+            title: 'PG式の教科書',
+            category: '運動科学',
+            path: './module/pg_formula_textbook_new.html',
+            description: 'METsを超えた革新的カロリー計算アルゴリズムの科学的根拠と実践',
+            icon: 'Zap'
+        },
+        {
             id: 'protein_textbook',
             title: 'タンパク質の教科書',
             category: '栄養学',
             path: './module/Nutrition/macro/protein_textbook_new.html',
             description: 'タンパク質の役割、アミノ酸スコア、摂取タイミング、プロテインの選び方',
-            icon: 'Apple'
-        },
-        {
-            id: 'fat_textbook',
-            title: '脂質の教科書',
-            category: '栄養学',
-            path: './module/Nutrition/macro/fat_textbook_new.html',
-            description: '脂質の種類、オメガ3/6/9、トランス脂肪酸、ケトジェニックダイエット',
             icon: 'Apple'
         },
         {
@@ -35,11 +43,11 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             icon: 'Apple'
         },
         {
-            id: 'vitamin_mineral_textbook',
-            title: 'ビタミン・ミネラルの教科書',
+            id: 'fat_textbook',
+            title: '脂質の教科書',
             category: '栄養学',
-            path: './module/Nutrition/micro/vitamin_mineral_textbook_new.html',
-            description: '微量栄養素の役割、欠乏症、過剰症、サプリメント摂取の考え方',
+            path: './module/Nutrition/macro/fat_textbook_new.html',
+            description: '脂質の種類、オメガ3/6/9、トランス脂肪酸、ケトジェニックダイエット',
             icon: 'Apple'
         },
         {
@@ -51,12 +59,12 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             icon: 'Apple'
         },
         {
-            id: 'mental_textbook',
-            title: 'メンタルの教科書',
-            category: 'メンタル',
-            path: './module/mental_textbook_new.html',
-            description: 'モチベーション、習慣形成、ストレス管理などメンタル面の科学的アプローチ',
-            icon: 'Brain'
+            id: 'vitamin_mineral_textbook',
+            title: 'ビタミン・ミネラルの教科書',
+            category: '栄養学',
+            path: './module/Nutrition/micro/vitamin_mineral_textbook_new.html',
+            description: '微量栄養素の役割、欠乏症、過剰症、サプリメント摂取の考え方',
+            icon: 'Apple'
         }
     ];
 
@@ -317,7 +325,7 @@ ${context}
                     <div className="flex gap-3 flex-wrap">
                         {[
                             { value: 'all', label: 'すべて', icon: 'LayoutGrid', color: 'cyan' },
-                            { value: 'メンタル', label: 'メンタル', icon: 'Brain', color: 'pink' },
+                            { value: '心理学', label: '心理学', icon: 'Brain', color: 'pink' },
                             { value: '栄養学', label: '栄養学', icon: 'Apple', color: 'green' },
                             { value: '運動科学', label: '運動科学', icon: 'Zap', color: 'orange' }
                         ].map(cat => (
@@ -368,9 +376,9 @@ ${context}
                                     <div className="flex-1">
                                         <h3 className="font-bold text-gray-800 mb-1">{module.title}</h3>
                                         <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                            module.category === 'メンタル' ? 'bg-pink-600 text-white' :
-                                            module.category === '運動科学' ? 'bg-orange-600 text-white' :
-                                            'bg-green-600 text-white'
+                                            module.category === '心理学' ? 'bg-pink-100 text-pink-700' :
+                                            module.category === '運動科学' ? 'bg-orange-100 text-orange-700' :
+                                            'bg-green-100 text-green-700'
                                         }`}>
                                             {module.category}
                                         </span>
@@ -762,7 +770,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     const stats = calculateStats();
 
     const pgbaseModules = [
-        { id: 'mental_textbook', title: 'メンタルの教科書', category: 'メンタル' },
+        { id: 'mental_textbook', title: 'メンタルの教科書', category: '心理学' },
         { id: 'pg_formula_textbook', title: 'PG式の教科書', category: '運動科学' },
         { id: 'carb_textbook', title: '炭水化物の教科書', category: '栄養学' },
         { id: 'protein_textbook', title: 'タンパク質の教科書', category: '栄養学' },

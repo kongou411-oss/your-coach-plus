@@ -126,78 +126,72 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
     const saveDirective = () => {
         if (!suggestedDirective) return;
-
-        // 明日の日付を取得
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-
+        const today = getTodayDate();
         const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
         const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
         const newDirective = {
-            date: tomorrowDate,
+            date: today,
             message: suggestedDirective.text,
             type: suggestedDirective.type,
             completed: false,
             createdAt: new Date().toISOString()
         };
-        const updatedDirectives = directives.filter(d => d.date !== tomorrowDate);
+        const updatedDirectives = directives.filter(d => d.date !== today);
         updatedDirectives.push(newDirective);
         localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
         setLastUpdate(Date.now()); // Appを再レンダリングさせる
-        alert('指示書を明日のダッシュボードに反映しました。');
+        alert('指示書をダッシュボードに反映しました。');
         onClose();
     };
 
     // AI分析生成
     const generateAIAnalysis = async (currentAnalysis, insights) => {
-        // クレジットチェック
-        const creditCheck = await GeminiAPI.consumeAICredit(userId);
-        if (!creditCheck.success) {
-            alert(creditCheck.error);
-            return;
-        }
-
         setAiLoading(true);
 
         // 既存のAI分析をクリア
         setAiAnalysis(null);
 
-        // 当日のフルデータを準備
-        const today = getTodayDate();
-        const todayRecord = await DataService.getDailyRecord(userId, today);
+        // 過去30日分のログデータを準備
+        const dailyLogsForPrompt = [];
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const record = await DataService.getDailyRecord(userId, dateStr);
 
-        // 当日のデータを完全な形で送信
-        const todayData = todayRecord ? {
-            date: today,
-            routine: todayRecord.routine || { type: "休息日", is_rest_day: true },
-            diet: {
-                protein_g: (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0),
-                fat_g: (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0),
-                carbs_g: (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0),
-                total_calories: (todayRecord.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0),
-                meal_count: (todayRecord.meals || []).length,
-                supplements: (todayRecord.supplements || []).map(s => ({ name: s.name, timing: s.time }))
-            },
-            workout: {
-                exercise_count: (todayRecord.workouts || []).length,
-                total_time_min: 0,
-                exercises: (todayRecord.workouts || []).map(w => ({
-                    name: w.exercises?.[0]?.name || w.name,
-                    category: w.exercises?.[0]?.category || 'その他',
-                    set_count: w.exercises?.[0]?.sets?.length || 0
-                }))
-            },
-            condition: {
-                sleep_hours: todayRecord.conditions?.sleepHours || 0,
-                sleep_quality: todayRecord.conditions?.sleepQuality || 0,
-                appetite: todayRecord.conditions?.appetite || 0,
-                gut_health: todayRecord.conditions?.digestion || 0,
-                concentration: todayRecord.conditions?.focus || 0,
-                stress_level: todayRecord.conditions?.stress || 0
-            },
-            memo: todayRecord.notes || null
-        } : null;
+            if (record && record.meals && record.meals.length > 0) {
+                const totalProtein = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
+                const totalFat = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
+                const totalCarbs = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
+                const totalCalories = (record.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
+
+                dailyLogsForPrompt.push({
+                    date: dateStr,
+                    routine: record.routine || { type: "休息日", is_rest_day: true },
+                    diet: {
+                        protein_g: Math.round(totalProtein),
+                        fat_g: Math.round(totalFat),
+                        carbs_g: Math.round(totalCarbs),
+                        total_calories: Math.round(totalCalories),
+                        supplements: [] // サプリメントデータがあれば追加
+                    },
+                    workout: {
+                        exercise_count: (record.workouts || []).length,
+                        total_time_min: 0, // 必要に応じて計算
+                        exercises: (record.workouts || []).map(w => w.name).join(', ')
+                    },
+                    condition: {
+                        sleep_hours: record.conditions?.sleepHours || 0,
+                        sleep_quality: record.conditions?.sleepQuality || 0,
+                        appetite: record.conditions?.appetite || 0,
+                        gut_health: record.conditions?.digestion || 0,
+                        concentration: record.conditions?.focus || 0,
+                        stress_level: record.conditions?.stress || 0
+                    },
+                    memo: record.notes || null
+                });
+            }
+        }
 
         const promptData = {
             user_profile: {
@@ -207,15 +201,8 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
                 lean_body_mass_kg: userProfile.leanBodyMass || 60,
                 style: userProfile.style || "一般"
             },
-            today: todayData
+            daily_logs: dailyLogsForPrompt
         };
-
-        // トークン量の確認（デバッグ）
-        const promptDataStr = JSON.stringify(promptData, null, 2);
-        const estimatedTokens = Math.ceil(promptDataStr.length / 4); // 1トークン ≈ 4文字
-        console.log('[TOKEN DEBUG] Prompt Data Length:', promptDataStr.length);
-        console.log('[TOKEN DEBUG] Estimated Tokens:', estimatedTokens);
-        console.log('[TOKEN DEBUG] Today Data:', todayData);
 
         // セクション1: パフォーマンスレポート
         const section1Prompt = `## 役割とゴール
@@ -229,12 +216,7 @@ ${JSON.stringify(promptData, null, 2)}
 
 ## タスク
 
-today（本日のデータ）を基に、本日のパフォーマンスレポートを生成してください。
-
-### 分析の重要ポイント
-- **1食当たりのkcal**: 総カロリーを食事回数で割り、1食あたりのエネルギー量が適切か評価してください
-- **摂取タイミング**: 食事の回数や分散状況から、エネルギー供給の最適性を評価してください
-- 理想的には3-5回に分けて均等に摂取することが望ましい
+最新日のデータを基に、本日のパフォーマンスレポートを生成してください。
 
 ### 出力形式（この形式を厳守）
 
@@ -255,14 +237,56 @@ today（本日のデータ）を基に、本日のパフォーマンスレポー
 - LBM至上主義: すべての評価はLBMを基準に
 - 専門用語を避け、高校生にも理解できる言葉で
 - 「承知いたしました」などの返答は不要
-- 1食当たりのkcalと摂取タイミングを必ず評価に含めること
 `;
 
-        // セクション2: 指示書プラン生成
+        // セクション2: トレンド分析
         const section2Prompt = `## 役割とゴール
 
+あなたは、データサイエンティスト兼エリートパーソナルコーチです。
+ユーザーのLBM向上のため、過去のデータから勝ちパターンと負けパターンを分析します。
+
+## インプットデータ
+
+${JSON.stringify(promptData, null, 2)}
+
+## データ不足時の対応
+
+もし過去のdaily_logsが空または不足している場合:
+- 「現時点では過去データが不足しているため、トレンド分析はできません」と正直に伝える
+- データが蓄積された後に分析できることを説明する
+- 今後のデータ記録を続けることを推奨する
+
+## タスク
+
+過去30日分のデータを基に、中長期トレンド分析を生成してください。
+データが十分にある場合のみ、パターン分析を行ってください。
+
+### 出力形式（この形式を厳守）
+
+② 中長期トレンド分析 (LBM向上への道筋)
+
+📈 過去7日間の勝ちパターン:
+- [相関関係に基づき、パフォーマンスが良かった際の共通点を記述]
+- [もう一つの共通点を記述]
+
+📉 過去30日間の負けパターン:
+- [相関関係に基づき、パフォーマンスが低下した際の共通点を記述]
+- [もう一つの共通点を記述]
+
+重要:
+- 箇条書きには「-」のみを使用（アスタリスク不可）
+- 各項目は1文1行で完結
+- ルーティン（例：「脚の日」「胸の日」）による違いを考慮
+- 観測可能な事実と結果の相関関係に焦点を当てる
+- 「承知いたしました」などの返答は不要
+- 簡潔に記述
+`;
+
+        // セクション3: 指示書プラン生成
+        const section3Prompt = `## 役割とゴール
+
 あなたは、エリートパーソナルコーチです。
-ユーザーのLBM向上のため、実行すべき具体的なアクションプランを提案します。
+ユーザーのLBM向上のため、明日実行すべき具体的なアクションプランを1行で提案します。
 
 ## インプットデータ
 
@@ -277,44 +301,30 @@ ${dailyRecord.notes ? `
 
 ## タスク
 
-today（本日のデータ）を基に、実行すべき指示書プランを生成してください。
+過去のデータ分析と最新の状態を踏まえ、明日実行すべき指示書プランを1行で生成してください。
 
 ### 出力形式（この形式を厳守）
 
-② 指示書プラン
+③ 明日の指示書プラン
 
-- 【カテゴリー】具体的なアクションプラン（数値含む）
+- [食事/運動/睡眠のいずれかのカテゴリーに関する、具体的で実行可能な1行のアクションプラン]
 
-### 例
-
-② 指示書プラン
-
+例:
 - 【食事】夕食に鶏むね肉150gを追加してタンパク質を目標値に近づける
-
-または
-
-② 指示書プラン
-
 - 【運動】ベンチプレス80kg×8回×3セットで胸のトレーニングを行う
+- 【睡眠】23時までに就寝して8時間睡眠を確保する
 
-### 重要な制約
-
-- 見出しは必ず「② 指示書プラン」（「明日」などの文字を追加しない）
-- 箇条書きは「-」を使用（アスタリスク不可）
-- 【カテゴリー】は食事/運動/睡眠のいずれか
-- 具体的な数値を必ず含める
-- 1つの箇条書きのみ（最も優先度が高いもの）
+重要:
+- 必ず【カテゴリー】を先頭につける
+- 1行で完結させる（改行不可）
+- 具体的な数値を含める
+- 実行可能で明確な指示にする
+- 箇条書きには「-」のみを使用（アスタリスク不可）
 - 「承知いたしました」などの返答は不要
-- 本日のデータから最も効果的なアクションを選ぶ
 `;
 
         try {
             let fullAnalysis = '';
-
-            // プロンプトのトークン量確認
-            console.log('[TOKEN DEBUG] Section 1 Prompt Length:', section1Prompt.length, 'Est. Tokens:', Math.ceil(section1Prompt.length / 4));
-            console.log('[TOKEN DEBUG] Section 2 Prompt Length:', section2Prompt.length, 'Est. Tokens:', Math.ceil(section2Prompt.length / 4));
-            console.log('[TOKEN DEBUG] Total Est. Tokens:', Math.ceil((section1Prompt.length + section2Prompt.length) / 4));
 
             // セクション1: パフォーマンスレポートを生成
             const response1 = await GeminiAPI.sendMessage(section1Prompt, [], userProfile, 'gemini-2.5-pro');
@@ -325,13 +335,19 @@ today（本日のデータ）を基に、実行すべき指示書プランを生
                 throw new Error(response1.error || 'セクション1の生成に失敗');
             }
 
-            // セクション2: 指示書プランを生成
+            // セクション2: トレンド分析を生成
             const response2 = await GeminiAPI.sendMessage(section2Prompt, [], userProfile, 'gemini-2.5-pro');
-            console.log('[DEBUG] Section 2 Response:', response2);
-            console.log('[DEBUG] Section 2 Text Length:', response2.text?.length || 0);
             if (response2.success) {
-                fullAnalysis += response2.text;
-                console.log('[DEBUG] Full Analysis after Section 2:', fullAnalysis.substring(fullAnalysis.length - 300));
+                fullAnalysis += response2.text + '\n\n---\n\n';
+                setAiAnalysis(fullAnalysis);
+            } else {
+                throw new Error(response2.error || 'セクション2の生成に失敗');
+            }
+
+            // セクション3: 指示書プランを生成
+            const response3 = await GeminiAPI.sendMessage(section3Prompt, [], userProfile, 'gemini-2.5-pro');
+            if (response3.success) {
+                fullAnalysis += response3.text;
                 setAiAnalysis(fullAnalysis);
 
                 // AI分析の結果をLocalStorageに永続化
@@ -341,48 +357,8 @@ today（本日のデータ）を基に、実行すべき指示書プランを生
                     analyses[today].aiComment = fullAnalysis;
                     localStorage.setItem(STORAGE_KEYS.DAILY_ANALYSES, JSON.stringify(analyses));
                 }
-
-                // 指示書を抽出してダッシュボードに保存
-                const directiveMatch = response2.text.match(/- \[?【(.+?)】(.+)/);
-                if (directiveMatch) {
-                    const category = directiveMatch[1]; // 食事、運動、睡眠
-                    const action = directiveMatch[2].trim();
-                    const directiveText = `【${category}】${action}`;
-
-                    console.log('[DEBUG] Extracted Directive:', directiveText);
-
-                    // 明日の日付を取得
-                    const tomorrow = new Date();
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    const tomorrowDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-
-                    // 指示書を保存（明日の日付で）
-                    const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
-                    const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
-                    const existingIndex = directives.findIndex(d => d.date === tomorrowDate);
-
-                    const newDirective = {
-                        date: tomorrowDate,
-                        message: directiveText,
-                        type: category === '食事' ? 'meal' : category === '運動' ? 'exercise' : 'condition',
-                        completed: false,
-                        createdAt: new Date().toISOString()
-                    };
-
-                    if (existingIndex >= 0) {
-                        directives[existingIndex] = newDirective;
-                    } else {
-                        directives.push(newDirective);
-                    }
-
-                    localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(directives));
-                    console.log('[DEBUG] Directive saved to dashboard for tomorrow:', tomorrowDate);
-
-                    // ダッシュボードを更新
-                    setLastUpdate(Date.now());
-                }
             } else {
-                throw new Error(response2.error || 'セクション2の生成に失敗');
+                throw new Error(response3.error || 'セクション3の生成に失敗');
             }
         } catch (error) {
             console.error('AI分析エラー:', error);
@@ -838,13 +814,13 @@ const CalendarView = ({ selectedStartDate, selectedEndDate, onDateSelect, analys
     return (
         <div className="bg-white p-4 rounded-xl border border-gray-200">
             <div className="flex justify-between items-center mb-4">
-                <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full">
+                <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="p-2 hover:bg-gray-100 rounded-full">
                     <Icon name="ChevronLeft" size={20} />
                 </button>
                 <h4 className="font-bold text-lg">
                     {currentMonth.getFullYear()}年 {currentMonth.getMonth() + 1}月
                 </h4>
-                <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full">
+                <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="p-2 hover:bg-gray-100 rounded-full">
                     <Icon name="ChevronRight" size={20} />
                 </button>
             </div>
@@ -1065,7 +1041,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                 <div className="sticky top-0 bg-white border-b p-4 z-10">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-lg font-bold">履歴</h3>
-                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full">
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
                             <Icon name="X" size={20} />
                         </button>
                     </div>
@@ -1568,7 +1544,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                 <Icon name="BarChart3" size={20} />
                                 {new Date(selectedDateAnalysis.date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short' })}の分析
                             </h3>
-                            <button onClick={() => setSelectedDateAnalysis(null)} className="w-8 h-8 flex items-center justify-center hover:bg-white hover:bg-opacity-20 rounded-full transition">
+                            <button onClick={() => setSelectedDateAnalysis(null)} className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition">
                                 <Icon name="X" size={20} />
                             </button>
                         </div>

@@ -1,4 +1,131 @@
 // ===== Settings Components =====
+const TutorialView = ({ onClose, onComplete }) => {
+    const [currentStep, setCurrentStep] = useState(0);
+    const totalSteps = TUTORIAL_STEPS.length;
+    const step = TUTORIAL_STEPS[currentStep];
+
+    const handleNext = () => {
+        if (currentStep < totalSteps - 1) {
+            setCurrentStep(currentStep + 1);
+        } else {
+            handleComplete();
+        }
+    };
+
+    const handlePrevious = () => {
+        if (currentStep > 0) {
+            setCurrentStep(currentStep - 1);
+        }
+    };
+
+    const handleSkip = () => {
+        localStorage.setItem(STORAGE_KEYS.TUTORIAL_COMPLETED, 'skipped');
+        onClose();
+    };
+
+    const handleComplete = () => {
+        localStorage.setItem(STORAGE_KEYS.TUTORIAL_COMPLETED, 'true');
+
+        // バッジ授与
+        const badges = JSON.parse(localStorage.getItem(STORAGE_KEYS.BADGES) || '[]');
+        if (!badges.find(b => b.id === BADGES.TUTORIAL_COMPLETE.id)) {
+            badges.push({
+                ...BADGES.TUTORIAL_COMPLETE,
+                earnedAt: new Date().toISOString()
+            });
+            localStorage.setItem(STORAGE_KEYS.BADGES, JSON.stringify(badges));
+        }
+
+        onComplete();
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                {/* ヘッダー */}
+                <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-t-2xl">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                            <Icon name={step.icon} size={32} />
+                            <div>
+                                <h2 className="text-xl font-bold">{step.title}</h2>
+                                <p className="text-sm opacity-90">
+                                    {currentStep + 1} / {totalSteps}
+                                </p>
+                            </div>
+                        </div>
+                        <button onClick={handleSkip} className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition">
+                            <Icon name="X" size={20} />
+                        </button>
+                    </div>
+
+                    {/* プログレスバー */}
+                    <div className="w-full bg-white bg-opacity-30 rounded-full h-2">
+                        <div
+                            className="bg-white h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
+                        />
+                    </div>
+                </div>
+
+                {/* コンテンツ */}
+                <div className="p-6">
+                    <div className="whitespace-pre-line text-gray-700 text-base leading-relaxed mb-6">
+                        {step.content}
+                    </div>
+
+                    {/* ステージバッジ */}
+                    <div className="flex items-center gap-2 mb-6">
+                        <span className={`text-xs px-3 py-1 rounded-full font-bold ${
+                            step.stage === '守' ? 'bg-green-100 text-green-700' :
+                            step.stage === '破' ? 'bg-blue-100 text-blue-700' :
+                            'bg-purple-100 text-purple-700'
+                        }`}>
+                            {step.stage}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                            {step.stage === '守' ? '基礎を学ぶ' :
+                             step.stage === '破' ? '応用・カスタマイズ' :
+                             '独自の方法を確立'}
+                        </span>
+                    </div>
+
+                    {/* ナビゲーションボタン */}
+                    <div className="flex gap-3">
+                        {currentStep > 0 && (
+                            <button
+                                onClick={handlePrevious}
+                                className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                            >
+                                <Icon name="ChevronLeft" size={20} className="inline mr-1" />
+                                戻る
+                            </button>
+                        )}
+                        <button
+                            onClick={handleNext}
+                            className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition font-bold"
+                        >
+                            {currentStep === totalSteps - 1 ? '完了' : '次へ'}
+                            {currentStep < totalSteps - 1 && <Icon name="ChevronRight" size={20} className="inline ml-1" />}
+                        </button>
+                    </div>
+
+                    {/* スキップボタン */}
+                    {currentStep < totalSteps - 1 && (
+                        <button
+                            onClick={handleSkip}
+                            className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700 transition"
+                        >
+                            チュートリアルをスキップ
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ===== 設定画面 =====
 const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays, unlockedFeatures, onOpenAddView, darkMode, onToggleDarkMode }) => {
     const [profile, setProfile] = useState({...userProfile});
@@ -7,9 +134,18 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const [customMultiplierInputValue, setCustomMultiplierInputValue] = useState('');
     const [infoModal, setInfoModal] = useState({ show: false, title: '', content: '' });
     const [visualGuideModal, setVisualGuideModal] = useState({ show: false, gender: '男性', selectedLevel: 5 });
-    const [currentTheme, setCurrentTheme] = useState(ThemeUtils.getCurrentTheme());
-    const [allThemes] = useState(ThemeUtils.getAllThemes());
+    const [showWearableIntegration, setShowWearableIntegration] = useState(false);
 
+    // 詳細設定用のstate（デフォルト値をプロフィールから取得）
+    const [advancedSettings, setAdvancedSettings] = useState({
+        proteinCoefficient: userProfile.proteinCoefficient || 2.5,
+        fatRatio: userProfile.fatRatio || 0.25,
+        ageProteinBoost: userProfile.ageProteinBoost !== undefined ? userProfile.ageProteinBoost : true,
+        bodymakerBoost: userProfile.bodymakerBoost !== undefined ? userProfile.bodymakerBoost : true,
+        trainingBoost: userProfile.trainingBoost !== undefined ? userProfile.trainingBoost : true,
+        sleepAdjustment: userProfile.sleepAdjustment !== undefined ? userProfile.sleepAdjustment : true,
+        stressAdjustment: userProfile.stressAdjustment !== undefined ? userProfile.stressAdjustment : true
+    });
     const [localRoutines, setLocalRoutines] = useState(() => {
         const saved = localStorage.getItem(STORAGE_KEYS.ROUTINES);
         return saved ? JSON.parse(saved) : [];
@@ -17,18 +153,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const [mealTemplates, setMealTemplates] = useState([]);
     const [workoutTemplates, setWorkoutTemplates] = useState([]);
     const [supplementTemplates, setSupplementTemplates] = useState([]);
-    const [aiCredits, setAiCredits] = useState(null);
 
     // テンプレート読み込み
     useEffect(() => {
         loadTemplates();
-        loadAICredits();
     }, []);
-
-    const loadAICredits = async () => {
-        const credits = await GeminiAPI.getAICredits(userId);
-        setAiCredits(credits);
-    };
 
     const loadTemplates = async () => {
         const meals = await DataService.getMealTemplates(userId);
@@ -47,6 +176,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
         const updatedProfile = {
             ...profile,
+            ...advancedSettings, // 詳細設定を統合
             leanBodyMass: lbm,
             bmr: bmr,
             tdeeBase: tdeeBase
@@ -56,25 +186,39 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         onClose();
     };
 
+    const handleExportData = async () => {
+        // 全データ取得
+        const allData = {
+            profile: userProfile,
+            records: {}
+        };
+
+        // 過去30日分のデータを取得
+        for (let i = 0; i < 30; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            const record = await DataService.getDailyRecord(userId, dateStr);
+            if (record) {
+                allData.records[dateStr] = record;
+            }
+        }
+
+        // JSONダウンロード
+        const dataStr = JSON.stringify(allData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `yourcoach_data_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
 
     const handleClearData = () => {
         if (confirm('本当に全データを削除しますか？この操作は取り消せません。')) {
             localStorage.clear();
             alert('データを削除しました。ページをリロードしてください。');
-        }
-    };
-
-    // テーマ変更ハンドラー
-    const handleThemeChange = (themeId) => {
-        const success = ThemeUtils.setTheme(themeId);
-        if (success) {
-            setCurrentTheme(themeId);
-            // ダークモードの状態も同期（旧ダークモード切り替えとの互換性のため）
-            if (themeId === 'dark' && !darkMode) {
-                onToggleDarkMode();
-            } else if (themeId !== 'dark' && darkMode) {
-                onToggleDarkMode();
-            }
         }
     };
 
@@ -84,7 +228,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto slide-up">
                 <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
                     <h3 className="text-lg font-bold">設定</h3>
-                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
                         <Icon name="X" size={20} />
                     </button>
                 </div>
@@ -92,13 +236,13 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                 {/* 設定メニュー（折りたたみ式一覧） */}
                 <div className="p-6 space-y-3">
                     {/* 使い方 */}
-                    <details className="border rounded-lg">
-                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                    <details className="border rounded-lg border-indigo-300 bg-indigo-50">
+                        <summary className="cursor-pointer p-4 hover:bg-indigo-100 font-medium flex items-center gap-2">
                             <Icon name="BookOpen" size={18} className="text-indigo-600" />
                             使い方
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
-                        <div className="p-4 pt-0 border-t">
+                        <div className="p-4 pt-0 border-t border-indigo-200">
                             <div className="space-y-4">
                                 <p className="text-sm text-gray-700 font-semibold">YourCoachの基本フロー</p>
 
@@ -174,12 +318,38 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <li>基準値はLBM・血液型・目的で完全個別化</li>
                                         <li>筋肉の新陳代謝周期は50日、焦らず継続</li>
                                         <li>テンプレート・ルーティン機能で効率化</li>
-                                        <li>予測入力機能（前日に記録がある場合のみ出現）</li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
                     </details>
+{/* ウェアラブルデバイス連携 */}
+                    <details className="border rounded-lg border-gray-300 bg-gradient-to-br from-green-50 to-teal-50">
+                        <summary className="cursor-pointer p-4 hover:bg-green-100 font-medium flex items-center gap-2">
+                            <Icon name="Watch" size={18} className="text-green-600" />
+                            ウェアラブルデバイス連携
+                            <span className="ml-auto text-xs bg-green-600 text-white px-2 py-1 rounded-full">NEW</span>
+                            <Icon name="ChevronDown" size={16} className="ml-2 text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t border-green-200">
+                            <div className="space-y-3">
+                                <p className="text-sm text-gray-600">
+                                    Apple WatchやAndroidスマートウォッチと連携して、睡眠データを自動で記録
+                                </p>
+                                <button
+                                    onClick={() => setShowWearableIntegration(true)}
+                                    className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white font-bold py-3 rounded-lg hover:from-green-700 hover:to-teal-700 transition flex items-center justify-center gap-2"
+                                >
+                                    <Icon name="Watch" size={18} />
+                                    デバイスを接続
+                                </button>
+                            </div>
+                        </div>
+                    </details>
+
+                    {/* 表示設定 */}                    <details className="border rounded-lg border-gray-300 bg-gray-50">                        <summary className="cursor-pointer p-4 hover:bg-gray-100 font-medium flex items-center gap-2">                            <Icon name="Monitor" size={18} className="text-gray-600" />                            表示設定                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />                        </summary>                        <div className="p-4 pt-0 border-t border-gray-200">                            <div className="space-y-4">                                {/* ダークモード切り替え */}                                <div className="flex items-center justify-between p-3 bg-white rounded-lg border">                                    <div className="flex items-center gap-3">                                        <Icon name={darkMode ? "Moon" : "Sun"} size={20} className={darkMode ? "text-indigo-600" : "text-yellow-600"} />                                        <div>                                            <p className="font-medium">{darkMode ? "ダークモード" : "ライトモード"}</p>                                            <p className="text-xs text-gray-500">画面の配色を切り替え</p>                                        </div>                                    </div>                                    <button                                        onClick={onToggleDarkMode}                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${darkMode ? "bg-indigo-600" : "bg-gray-300"}`}                                    >                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${darkMode ? "translate-x-6" : "translate-x-1"}`} />                                    </button>                                </div>                            </div>                        </div>                    </details>
+
+                    {/* プロフィール */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="User" size={18} className="text-indigo-600" />
@@ -228,36 +398,32 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             </select>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">体重 (kg)</label>
-                                            <input
-                                                type="number"
-                                                value={profile.weight}
-                                                onChange={(e) => setProfile({...profile, weight: e.target.value === '' ? '' : Number(e.target.value)})}
-                                                className="w-full px-4 py-3 border rounded-lg"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                                体脂肪率 (%)
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setVisualGuideModal({ ...visualGuideModal, show: true, gender: profile.gender })}
-                                                    className="text-orange-600 hover:text-orange-800"
-                                                    title="外見から体脂肪率を推定"
-                                                >
-                                                    <Icon name="Eye" size={16} />
-                                                </button>
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                value={profile.bodyFatPercentage}
-                                                onChange={(e) => setProfile({...profile, bodyFatPercentage: e.target.value === '' ? '' : Number(e.target.value)})}
-                                                className="w-full px-4 py-3 border rounded-lg"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">目アイコンで推定可能</p>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">食文化</label>
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-gray-600">
+                                                あなたの食生活に近いものを複数選択してください。好みに合った、継続しやすい食材を優先的に提案します。
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {['アジア', '欧米', 'ラテン', 'その他'].map(culture => (
+                                                    <label key={culture} className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={(profile.culturalRoots || []).includes(culture)}
+                                                            onChange={(e) => {
+                                                                const roots = profile.culturalRoots || [];
+                                                                if (e.target.checked) {
+                                                                    setProfile({...profile, culturalRoots: [...roots, culture]});
+                                                                } else {
+                                                                    setProfile({...profile, culturalRoots: roots.filter(r => r !== culture)});
+                                                                }
+                                                            }}
+                                                            className="rounded"
+                                                        />
+                                                        <span className="text-sm">{culture}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                     <div>
@@ -274,9 +440,109 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             {profile.style === 'ボディメイカー' ? '高タンパク・精密な栄養管理基準' : '標準的な栄養基準'}
                                         </p>
                                     </div>
+                                </div>
+                            </details>
+
+
+                            {/* 体組成 */}
+                            <details className="border rounded-lg">
+                                <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium flex items-center gap-2">
+                                    <Icon name="Activity" size={16} />
+                                    体組成
+                                </summary>
+                                <div className="p-4 pt-0 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">身長 (cm)</label>
+                                            <input
+                                                type="number"
+                                                value={profile.height}
+                                                onChange={(e) => setProfile({...profile, height: e.target.value === '' ? '' : Number(e.target.value)})}
+                                                className="w-full px-4 py-3 border rounded-lg"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">体重 (kg)</label>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                value={profile.weight}
+                                                onChange={(e) => setProfile({...profile, weight: e.target.value === '' ? '' : Number(e.target.value)})}
+                                                className="w-full px-4 py-3 border rounded-lg"
+                                            />
+                                        </div>
+                                    </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                            活動レベル
+                                            体脂肪率 (%)
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: 'LBM（除脂肪体重）とは？',
+                                                    content: `体重から脂肪の重さを除いた、筋肉や骨、内臓などの総量です。身体を動かすエンジンのようなものであり、基礎代謝量を決定する最も重要な指標です。
+
+『Your Coach+』では、身長と体重のみで算出されるBMIを完全に排除し、あなたの身体の「質」を正しく評価するために、すべての計算基準にLBMを採用しています。
+
+【体組成の測定方法】
+**体組成計での測定を強く推奨します**
+
+• ジムの体組成計（InBodyなど）
+  → 最も正確。多くのジムで無料測定可能
+• 家庭用体組成計
+  → 手軽で毎日測定可能（例: タニタ、オムロン）
+• 測定タイミング
+  → 朝、起床後・トイレ後・空腹時に測定
+
+【計算式】
+LBM = 体重 × (1 - 体脂肪率 / 100)
+
+例: 体重70kg、体脂肪率15%の場合
+LBM = 70 × (1 - 0.15) = 59.5kg
+
+**重要**: 正確な体脂肪率の測定が、PFCバランスの精度を大きく左右します。`
+                                                })}
+                                                className="text-indigo-600 hover:text-indigo-800"
+                                            >
+                                                <Icon name="Info" size={16} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setVisualGuideModal({
+                                                    show: true,
+                                                    gender: profile.gender || '男性',
+                                                    selectedLevel: 5
+                                                })}
+                                                className="text-orange-600 hover:text-orange-800"
+                                                title="外見から推定"
+                                            >
+                                                <Icon name="Eye" size={16} />
+                                            </button>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={profile.bodyFatPercentage}
+                                            onChange={(e) => setProfile({...profile, bodyFatPercentage: e.target.value === '' ? '' : Number(e.target.value)})}
+                                            className="w-full px-4 py-3 border rounded-lg"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            <Icon name="Eye" size={12} className="inline" /> = 体組成計がない場合は外見から推定できます
+                                        </p>
+                                    </div>
+                                </div>
+                            </details>
+
+                            {/* 活動レベル・目的 */}
+                            <details className="border rounded-lg">
+                                <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium flex items-center gap-2">
+                                    <Icon name="Target" size={16} />
+                                    活動レベル・目的
+                                </summary>
+                                <div className="p-4 pt-0 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                            生活スタイル
                                             <button
                                                 type="button"
                                                 onClick={() => setInfoModal({
@@ -383,30 +649,24 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     title: '目的の設定',
                                                     content: `あなたのボディメイクの目的を選択してください。目的に応じて推奨カロリーとPFCバランスが自動調整されます。
 
-【ダイエット】
+【ダイエット（脂肪を落とす）】
 • 目標: 体脂肪を減らし、引き締まった体を作る
 • カロリー: メンテナンスカロリー -300kcal
 • タンパク質: 高め（筋肉維持のため）
 • 推奨ペース: 週0.5〜0.7kg減
 
-【リコンプ】
-• 目標: 体脂肪を減らしながら筋肉を増やす
+【メンテナンス（現状維持）】
+• 目標: 現在の体重・体組成を維持
 • カロリー: メンテナンスカロリー ±0kcal
-• タンパク質: 非常に高め
-• 最適: 初心者や体脂肪率が高めの方に最適
+• バランス型の栄養配分
+• 健康的な生活習慣の維持
 
-【バルクアップ】
+【バルクアップ（筋肉をつける）】
 • 目標: 筋肉量を増やし、体を大きくする
 • カロリー: メンテナンスカロリー +300kcal
 • タンパク質: 非常に高め
 • 炭水化物: 多め（筋肉合成のエネルギー）
 • 推奨ペース: 週0.5kg増
-
-【メンテナンス】
-• 目標: 現在の体重・体組成を維持
-• カロリー: メンテナンスカロリー ±0kcal
-• バランス型の栄養配分
-• 健康的な生活習慣の維持
 
 目的はいつでも変更できます。`
                                                 })}
@@ -427,50 +687,47 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 } else if (purpose === 'バルクアップ') {
                                                     pace = 1;
                                                     calorieAdjust = 300;
-                                                } else if (purpose === 'リコンプ') {
-                                                    pace = 0;
-                                                    calorieAdjust = 0;
                                                 }
                                                 setProfile({...profile, purpose, weightChangePace: pace, calorieAdjustment: calorieAdjust});
                                             }}
                                             className="w-full px-4 py-3 border rounded-lg"
                                         >
-                                            <option value="ダイエット">ダイエット</option>
-                                            <option value="リコンプ">リコンプ</option>
-                                            <option value="バルクアップ">バルクアップ</option>
-                                            <option value="メンテナンス">メンテナンス</option>
+                                            <option value="ダイエット">ダイエット（脂肪を落とす）</option>
+                                            <option value="メンテナンス">メンテナンス（現状維持）</option>
+                                            <option value="バルクアップ">バルクアップ（筋肉をつける）</option>
                                         </select>
-                                        <p className="text-xs text-gray-600 mt-1">
-                                            {profile.purpose === 'ダイエット' && '体脂肪を減らす'}
-                                            {profile.purpose === 'リコンプ' && '体脂肪を減らしながら筋肉を増やす。初心者や体脂肪率が高めの方に最適'}
-                                            {profile.purpose === 'バルクアップ' && '筋肉量を増やす'}
-                                            {profile.purpose === 'メンテナンス' && '現状を維持'}
-                                        </p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                            カロリー調整値（任意）
+                                            <span>
+                                                カロリー調整値（kcal/日）
+                                                <span className="text-xs text-gray-500 ml-2">メンテナンスから±調整</span>
+                                            </span>
                                             <button
                                                 type="button"
                                                 onClick={() => setInfoModal({
                                                     show: true,
-                                                    title: 'カロリー調整値とは？',
-                                                    content: `あなたの目標に合わせて1日の摂取カロリーを微調整する値です。
+                                                    title: 'カロリー調整値',
+                                                    content: `メンテナンスカロリーからの調整値を設定します。
 
-【目標別で自動調整】
-• バルクアップ: +300 kcal（筋肉をつけやすくする）
-• ダイエット: -300 kcal（脂肪を落としやすくする）
-• メンテナンス: ±0 kcal（現状維持）
-• リコンプ: ±0 kcal（体組成改善）
+【推奨範囲: ±300kcal】
+安全で持続可能なペースで体重を変化させるための推奨範囲です。
 
-【任意変更も可能】
-もっと早く結果を出したい場合や、ゆっくり進めたい場合は、この値を手動で変更できます。
+【ダイエット時（マイナス値）】
+• -200kcal: 穏やか（週0.5kg減）
+• -300kcal: 標準的（週0.7kg減）★推奨
+• -400kcal以上: 急激（リバウンドリスク高）
 
-例：
-• より速くダイエット: -500 kcal
-• ゆっくりバルクアップ: +200 kcal
+【バルクアップ時（プラス値）】
+• +200kcal: 控えめ（週0.25kg増）
+• +300kcal: 標準的（週0.5kg増）★推奨
+• +400kcal以上: 積極的（脂肪増加リスク高）
 
-空欄のままにすると目標別のデフォルト値が自動適用されます。`
+【メンテナンス時】
+• 0kcal: 現状維持
+
+【注意】
+極端なカロリー調整は、代謝の低下、筋肉の減少、リバウンドのリスクを高めます。±200〜300kcalの範囲で調整することを強く推奨します。`
                                                 })}
                                                 className="text-indigo-600 hover:text-indigo-800"
                                             >
@@ -479,122 +736,299 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         </label>
                                         <input
                                             type="number"
-                                            value={profile.calorieAdjustment !== undefined && profile.calorieAdjustment !== null ? profile.calorieAdjustment : ''}
-                                            onChange={(e) => setProfile({...profile, calorieAdjustment: e.target.value === '' ? null : Number(e.target.value)})}
+                                            step="50"
+                                            value={profile.calorieAdjustment !== undefined ? profile.calorieAdjustment : 0}
+                                            onChange={(e) => {
+                                                const value = e.target.value === '' ? 0 : e.target.value === '' ? '' : Number(e.target.value);
+                                                setProfile({...profile, calorieAdjustment: value});
+                                            }}
                                             className="w-full px-4 py-3 border rounded-lg"
-                                            placeholder={`目標別で自動調整（${profile.purpose === 'バルクアップ' ? '+300' : profile.purpose === 'ダイエット' ? '-300' : '±0'} kcal）`}
+                                            placeholder="0"
                                         />
                                         <p className="text-xs text-gray-600 mt-1">
-                                            未入力の場合、目標に応じて自動調整されます
+                                            プラス値で増量、マイナス値で減量。±200kcalが標準的な調整幅です。
                                         </p>
                                     </div>
+                                </div>
+                            </details>
+
+                            {/* 詳細設定（高度な設定） */}
+                            <details className="border rounded-lg border-purple-300 bg-purple-50">
+                                <summary className="cursor-pointer p-3 hover:bg-purple-100 font-medium flex items-center gap-2">
+                                    <Icon name="Settings" size={16} className="text-purple-700" />
+                                    <span className="text-purple-900">詳細設定（高度な設定）</span>
+                                </summary>
+                                <div className="p-4 pt-0 space-y-4 bg-white">
+                                    <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-xs">
+                                        <p className="font-bold text-yellow-900 mb-1">⚙️ 高度な設定</p>
+                                        <p className="text-gray-700">すべての変数を任意に変更できます。デフォルト値は自動算出されています。</p>
+                                    </div>
+
+                                    {/* タンパク質係数 */}
                                     <div>
                                         <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                            PFCバランス（任意）
+                                            タンパク質係数（g/kg LBM）
                                             <button
                                                 type="button"
                                                 onClick={() => setInfoModal({
                                                     show: true,
-                                                    title: 'PFCバランスのカスタマイズ',
-                                                    content: `目的に応じた推奨PFCバランスを手動で調整できます。
+                                                    title: 'タンパク質係数とは？',
+                                                    content: `除脂肪体重（LBM）1kgあたりのタンパク質必要量を設定します。
 
-【デフォルト値（目的別）】
-• ダイエット: P40% F30% C30%
-• リコンプ: P35% F30% C35%
-• バルクアップ: P30% F25% C45%
-• メンテナンス: P30% F30% C40%
+【推奨値】
+• 一般的なトレーニング: 2.0〜2.5g/kg LBM
+• 本格的な筋肥大: 2.5〜3.0g/kg LBM
+• 減量中: 2.5〜3.0g/kg LBM（筋肉維持）
+• メンテナンス: 2.0〜2.2g/kg LBM
 
-【カスタマイズする場合】
-合計が100%になるように入力してください。
-入力しない場合は目的に応じたデフォルト値が自動適用されます。`
+【例】
+LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
+
+デフォルト値（2.5）は科学的根拠に基づく最適値です。個別のニーズに応じて調整してください。`
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={14} />
+                                            </button>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={advancedSettings.proteinCoefficient}
+                                            onChange={(e) => setAdvancedSettings({...advancedSettings, proteinCoefficient: e.target.value === '' ? '' : Number(e.target.value)})}
+                                            className="w-full px-4 py-3 border rounded-lg"
+                                        />
+                                        <p className="text-xs text-gray-600 mt-1">推奨範囲: 2.0〜3.0（デフォルト: 2.5）</p>
+                                    </div>
+
+                                    {/* 脂質比率 */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                            脂質カロリー比率
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '脂質カロリー比率とは？',
+                                                    content: `総カロリーに占める脂質の割合を設定します。
+
+【推奨値】
+• バランス型: 0.25（25%）
+• 低脂質・高炭水化物: 0.20〜0.22（20〜22%）
+• ケトジェニック以外: 0.30以下を推奨
+
+【計算例】
+総カロリー2000kcal、比率0.25の場合:
+• 脂質: 2000 × 0.25 = 500kcal
+• 脂質グラム: 500 ÷ 9 = 約55g
+
+【重要】
+脂質は細胞膜やホルモン生成に必須です。極端に低い設定（0.15未満）は避けてください。`
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={14} />
+                                            </button>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.05"
+                                            value={advancedSettings.fatRatio}
+                                            onChange={(e) => setAdvancedSettings({...advancedSettings, fatRatio: e.target.value === '' ? '' : Number(e.target.value)})}
+                                            className="w-full px-4 py-3 border rounded-lg"
+                                        />
+                                        <p className="text-xs text-gray-600 mt-1">推奨範囲: 0.20〜0.30（デフォルト: 0.25 = 25%）</p>
+                                    </div>
+
+
+                                    {/* 自動調整ON/OFF */}
+                                    <div className="space-y-2 border-t pt-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <p className="font-medium text-sm">自動調整機能</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '自動調整機能とは？',
+                                                    content: `コンディション記録に基づいて、目標カロリーやマクロ栄養素を自動で微調整する機能です。
+
+【調整される項目と反映箇所】
+
+1. **年齢によるタンパク質ブースト**
+   • 反映箇所: タンパク質目標値（P）
+   • 40歳以上で+0.2g/kg LBM
+   • ダッシュボード上部の目標PFC円グラフに即時反映
+
+2. **ボディメイカーブースト**
+   • 反映箇所: タンパク質目標値（P）
+   • +0.5g/kg LBM
+   • 本格的な筋肥大を目指す方向け
+
+3. **トレーニング強度による回復ブースト**
+   • 反映箇所: タンパク質目標値（P）
+   • 高強度日: +10%、複数部位: +5%
+   • トレーニング記録後に自動適用
+
+4. **睡眠による自動調整**
+   • 反映箇所: 基礎代謝・総カロリー目標
+   • 睡眠6h以下: -5%、8h以上: +3%
+   • コンディション記録後に自動適用
+
+5. **ストレスレベルによる自動調整**
+   • 反映箇所: 総カロリー目標
+   • 高ストレス: +100kcal、中程度: +50kcal
+   • コンディション記録後に自動適用
+
+【確認方法】
+ダッシュボード上部のPFC円グラフで、調整後の目標値を確認できます。より精密な管理をしたい方は、個別にON/OFFを切り替えることができます。`
                                                 })}
                                                 className="text-indigo-600 hover:text-indigo-800"
                                             >
                                                 <Icon name="Info" size={16} />
                                             </button>
-                                        </label>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <div>
-                                                <label className="block text-xs text-gray-600 mb-1">P (タンパク質) %</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    value={profile.customPFC?.P || ''}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value === '' ? null : Number(e.target.value);
-                                                        setProfile({
-                                                            ...profile,
-                                                            customPFC: {
-                                                                ...(profile.customPFC || {}),
-                                                                P: value
-                                                            }
-                                                        });
-                                                    }}
-                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                    placeholder="自動"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs text-gray-600 mb-1">F (脂質) %</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    value={profile.customPFC?.F || ''}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value === '' ? null : Number(e.target.value);
-                                                        setProfile({
-                                                            ...profile,
-                                                            customPFC: {
-                                                                ...(profile.customPFC || {}),
-                                                                F: value
-                                                            }
-                                                        });
-                                                    }}
-                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                    placeholder="自動"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs text-gray-600 mb-1">C (炭水化物) %</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    value={profile.customPFC?.C || ''}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value === '' ? null : Number(e.target.value);
-                                                        setProfile({
-                                                            ...profile,
-                                                            customPFC: {
-                                                                ...(profile.customPFC || {}),
-                                                                C: value
-                                                            }
-                                                        });
-                                                    }}
-                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                    placeholder="自動"
-                                                />
-                                            </div>
                                         </div>
-                                        {profile.customPFC?.P && profile.customPFC?.F && profile.customPFC?.C && (
-                                            <p className={`text-xs mt-1 ${
-                                                (profile.customPFC.P + profile.customPFC.F + profile.customPFC.C) === 100
-                                                    ? 'text-green-600'
-                                                    : 'text-red-600'
-                                            }`}>
-                                                合計: {profile.customPFC.P + profile.customPFC.F + profile.customPFC.C}%
-                                                {(profile.customPFC.P + profile.customPFC.F + profile.customPFC.C) !== 100 && ' (100%になるように調整してください)'}
-                                            </p>
-                                        )}
-                                        <button
-                                            type="button"
-                                            onClick={() => setProfile({...profile, customPFC: null})}
-                                            className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 underline"
-                                        >
-                                            デフォルトに戻す
-                                        </button>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={advancedSettings.ageProteinBoost}
+                                                onChange={(e) => setAdvancedSettings({...advancedSettings, ageProteinBoost: e.target.checked})}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-sm">年齢による自動調整（40歳以上: +0.2g/kg）</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '年齢による自動調整',
+                                                    content: `40歳以上の場合、タンパク質係数を自動で+0.2g/kg増やします。
+
+【理由】
+加齢に伴い筋肉合成能力が低下するため、より多くのタンパク質が必要になります。40歳以上では基礎代謝の低下と筋肉量の維持が重要になります。
+
+【効果】
+筋肉の減少を防ぎ、代謝を維持することで健康的な体組成を保ちます。`
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={12} />
+                                            </button>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={advancedSettings.bodymakerBoost}
+                                                onChange={(e) => setAdvancedSettings({...advancedSettings, bodymakerBoost: e.target.checked})}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-sm">ボディメイカーブースト（+0.5g/kg）</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: 'ボディメイカーブースト',
+                                                    content: `本格的な筋肥大を目指す方向けに、タンパク質係数を+0.5g/kg増やします。
+
+【推奨対象】
+• 週4回以上の高強度トレーニング実施者
+• 競技ボディビルダー・フィジーク選手
+• 短期間で筋肉量を大幅に増やしたい方
+
+【効果】
+筋肉合成を最大化し、トレーニング効果を最大限引き出します。`
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={12} />
+                                            </button>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={advancedSettings.trainingBoost}
+                                                onChange={(e) => setAdvancedSettings({...advancedSettings, trainingBoost: e.target.checked})}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-sm">トレーニング強度による回復ブースト</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: 'トレーニング強度による回復ブースト',
+                                                    content: `トレーニング記録に基づき、タンパク質を自動調整します。
+
+【調整基準】
+• 高強度トレーニング日: タンパク質+10%
+• 複数部位のトレーニング日: タンパク質+5%
+
+【効果】
+トレーニングで損傷した筋繊維の修復を促進し、超回復を最適化します。`
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={12} />
+                                            </button>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={advancedSettings.sleepAdjustment}
+                                                onChange={(e) => setAdvancedSettings({...advancedSettings, sleepAdjustment: e.target.checked})}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-sm">睡眠による自動調整</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '睡眠による自動調整',
+                                                    content: `睡眠の質に基づき、代謝とカロリーを自動調整します。
+
+【調整基準】
+• 睡眠時間6h以下: 基礎代謝-5%
+• 睡眠の質が悪い: 回復能力低下を考慮
+• 睡眠時間8h以上: 代謝効率+3%
+
+【効果】
+睡眠不足時は過剰なカロリー摂取を防ぎ、十分な睡眠時は筋肉合成を促進します。`
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={12} />
+                                            </button>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={advancedSettings.stressAdjustment}
+                                                onChange={(e) => setAdvancedSettings({...advancedSettings, stressAdjustment: e.target.checked})}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-sm">ストレスレベルによる自動調整</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: 'ストレスレベルによる自動調整',
+                                                    content: `ストレスレベルに基づき、カロリーと栄養素を自動調整します。
+
+【調整基準】
+• 高ストレス時: カロリー+100kcal（コルチゾール対策）
+• 中程度のストレス: カロリー+50kcal
+• タンパク質を微増（筋肉分解防止）
+
+【効果】
+ストレスによる筋肉の異化（分解）を防ぎ、体組成の維持をサポートします。`
+                                                })}
+                                                className="text-purple-600 hover:text-purple-800"
+                                            >
+                                                <Icon name="Info" size={12} />
+                                            </button>
+                                        </label>
                                     </div>
                                 </div>
                             </details>
@@ -608,6 +1042,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             </div>
                         </div>
                     </details>
+
+
+                    {/* テンプレート */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="BookTemplate" size={18} className="text-indigo-600" />
@@ -703,11 +1140,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 )}
                             </div>
 
-                            {/* 運動テンプレート */}
+                            {/* トレーニングテンプレート */}
                             <div className="border rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-3">
                                     <div>
-                                        <h3 className="font-semibold text-orange-800">💪 運動テンプレート</h3>
+                                        <h3 className="font-semibold text-orange-800">💪 トレーニングテンプレート</h3>
                                         <p className="text-xs text-gray-600">よく行う種目とセット数を保存</p>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -774,46 +1211,74 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 )}
                             </div>
 
+                            {/* サプリメントテンプレート */}
+                            <div className="border rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                        <h3 className="font-semibold text-blue-800">💊 サプリメントテンプレート</h3>
+                                        <p className="text-xs text-gray-600">よく使うサプリの組み合わせを保存</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-500">{supplementTemplates.length}件</span>
+                                        <button
+                                            onClick={() => onOpenAddView && onOpenAddView('supplement')}
+                                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
+                                        >
+                                            <Icon name="Plus" size={14} />
+                                            新規作成
+                                        </button>
+                                    </div>
+                                </div>
+                                {supplementTemplates.length === 0 ? (
+                                    <p className="text-sm text-gray-500">保存されたテンプレートはありません</p>
+                                ) : (
+                                    <div className="space-y-2 mt-3">
+                                        {supplementTemplates.map(template => (
+                                            <details key={template.id} className="bg-gray-50 p-3 rounded-lg">
+                                                <summary className="flex items-center justify-between cursor-pointer hover:bg-gray-100 -m-3 p-3 rounded-lg">
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-sm">{template.name}</p>
+                                                        <p className="text-xs text-gray-600">{template.items?.length || 0}品目</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.preventDefault();
+                                                            if (confirm('このテンプレートを削除しますか？')) {
+                                                                await DataService.deleteSupplementTemplate(userId, template.id);
+                                                                await loadTemplates();
+                                                            }
+                                                        }}
+                                                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition ml-2"
+                                                    >
+                                                        <Icon name="Trash2" size={16} />
+                                                    </button>
+                                                </summary>
+                                                <div className="mt-3 space-y-2 border-t pt-3">
+                                                    {(template.items || []).map((item, idx) => (
+                                                        <div key={idx} className="text-xs bg-white p-2 rounded flex justify-between">
+                                                            <span className="font-medium">{item.name}</span>
+                                                            <span className="text-gray-600">{item.amount}{item.unit}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </details>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         </div>
                     </details>
+
+                    {/* ルーティン */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Calendar" size={18} className="text-indigo-600" />
                             ルーティン
-                            {!SubscriptionUtils.isPremiumUser(userProfile) && (
-                                <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded">Premium</span>
-                            )}
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
-                            {/* プレミアムプラン制限チェック */}
-                            {!SubscriptionUtils.isPremiumUser(userProfile) ? (
-                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
-                                    <div className="flex items-start gap-3">
-                                        <Icon name="Lock" size={20} className="text-amber-600 mt-0.5" />
-                                        <div>
-                                            <h4 className="font-bold text-amber-900 mb-1">ルーティン機能はプレミアムプラン限定です</h4>
-                                            <p className="text-sm text-amber-700 mb-3">
-                                                プレミアムプランにアップグレードすると、トレーニングルーティンを無制限に作成・管理できます。
-                                            </p>
-                                            <button
-                                                onClick={() => {
-                                                    // サブスクリプションセクションにスクロール
-                                                    const subSection = document.querySelector('[data-subscription-section]');
-                                                    if (subSection) {
-                                                        subSection.scrollIntoView({ behavior: 'smooth' });
-                                                    }
-                                                }}
-                                                className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition"
-                                            >
-                                                プレミアムプランを見る
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                            /* ルーティン内容 */
+                            {/* ルーティン内容 */}
                             <div className="space-y-4">
                             <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
                                 <h4 className="font-bold text-purple-900 mb-2">ルーティン管理</h4>
@@ -950,7 +1415,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                             </select>
                                                                         </div>
 
-                                                                        {/* 運動テンプレート */}
+                                                                        {/* トレーニングテンプレート */}
                                                                         <div>
                                                                             <label className="text-xs text-gray-600">トレーニング</label>
                                                                             <select
@@ -1088,7 +1553,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                                 </select>
                                                                             </div>
 
-                                                                            {/* 運動テンプレート */}
+                                                                            {/* トレーニングテンプレート */}
                                                                             <div>
                                                                                 <label className="text-xs text-gray-600">トレーニング</label>
                                                                                 <select
@@ -1192,7 +1657,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     className="flex-1 px-4 py-3 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-medium border border-indigo-200"
                                                 >
                                                     <Icon name="RotateCcw" size={18} className="inline mr-2" />
-                                                    Day1から開始
+                                                    Day1から再開
                                                 </button>
                                             </div>
                                         )}
@@ -1200,13 +1665,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 );
                             })()}
                             </div>
-                            )}
                         </div>
                     </details>
+
+                    {/* 通知設定 */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Bell" size={18} className="text-indigo-600" />
-                            通知
+                            通知設定
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t space-y-4">
@@ -1346,310 +1812,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             </div>
                         </div>
                     </details>
-                    <details className="border rounded-lg">
-                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Zap" size={18} className="text-indigo-600" />
-                            ショートカット設定
-                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
-                        </summary>
-                        <div className="p-4 pt-0 border-t space-y-4">
-                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                <h4 className="font-bold text-blue-900 mb-2">画面端ショートカット</h4>
-                                <p className="text-sm text-blue-700">
-                                    左右の画面端からよく使う機能へ素早くアクセスできます
-                                </p>
-                            </div>
 
-                            {(() => {
-                                const [localShortcuts, setLocalShortcuts] = React.useState(() => {
-                                    const saved = localStorage.getItem('chevronShortcuts');
-                                    return saved ? JSON.parse(saved) : [
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'Activity', label: '体組成', action: 'open_body_composition', enabled: true },
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'HeartPulse', label: 'コンディション', action: 'open_condition', enabled: true },
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'Camera', label: '写真解析', action: 'open_meal_photo', enabled: true },
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'Utensils', label: '食事', action: 'open_meal', enabled: false },
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'Dumbbell', label: '運動', action: 'open_workout', enabled: false },
-                                        { side: 'left', position: 'middle', size: 'medium', icon: 'PieChart', label: '分析', action: 'open_analysis', enabled: false }
-                                    ];
-                                });
-
-                                const [shortcutVisibility, setShortcutVisibility] = React.useState(() => {
-                                    const saved = localStorage.getItem('chevronShortcutsVisibility');
-                                    return saved ? JSON.parse(saved) : { left: true, right: true };
-                                });
-
-                                const saveShortcuts = (shortcuts) => {
-                                    setLocalShortcuts(shortcuts);
-                                    localStorage.setItem('chevronShortcuts', JSON.stringify(shortcuts));
-                                    // ショートカット更新イベントを発行
-                                    window.dispatchEvent(new CustomEvent('shortcutsUpdated', { detail: shortcuts }));
-                                };
-
-                                const toggleVisibility = (side) => {
-                                    const newVisibility = { ...shortcutVisibility, [side]: !shortcutVisibility[side] };
-                                    setShortcutVisibility(newVisibility);
-                                    localStorage.setItem('chevronShortcutsVisibility', JSON.stringify(newVisibility));
-                                    // 表示/非表示更新イベントを発行
-                                    window.dispatchEvent(new CustomEvent('shortcutsVisibilityUpdated', { detail: newVisibility }));
-                                };
-
-                                const updateShortcut = (index, updates) => {
-                                    const updated = localShortcuts.map((s, i) => i === index ? { ...s, ...updates } : s);
-                                    saveShortcuts(updated);
-                                };
-
-                                const getIconColor = (action) => {
-                                    const iconColors = {
-                                        'open_body_composition': 'text-teal-600',
-                                        'open_condition': 'text-red-600',
-                                        'open_meal': 'text-green-600',
-                                        'open_meal_photo': 'text-green-600',
-                                        'open_workout': 'text-orange-600',
-                                        'open_analysis': 'text-indigo-600',
-                                        'open_history': 'text-purple-600',
-                                        'open_pgbase': 'text-cyan-600',
-                                        'open_community': 'text-fuchsia-600',
-                                        'open_settings': 'text-gray-600'
-                                    };
-                                    return iconColors[action] || 'text-gray-700';
-                                };
-
-                                const availableActions = [
-                                    { value: 'open_body_composition', label: '体組成', icon: 'Activity' },
-                                    { value: 'open_condition', label: 'コンディション', icon: 'HeartPulse' },
-                                    { value: 'open_meal', label: '食事', icon: 'Utensils' },
-                                    { value: 'open_meal_photo', label: '写真解析', icon: 'Camera' },
-                                    { value: 'open_workout', label: '運動', icon: 'Dumbbell' },
-                                    { value: 'open_analysis', label: '分析', icon: 'PieChart' },
-                                    { value: 'open_history', label: '履歴', icon: 'TrendingUp' },
-                                    { value: 'open_pgbase', label: 'PGBASE', icon: 'BookOpen' },
-                                    { value: 'open_community', label: 'COMY', icon: 'Users' },
-                                    { value: 'open_settings', label: '設定', icon: 'Settings' }
-                                ];
-
-                                return (
-                                    <div className="space-y-6">
-                                        {/* ショートカット一覧 */}
-                                        <div>
-                                            <div className="flex items-center justify-between mb-3">
-                                                <h3 className="font-semibold flex items-center gap-2">
-                                                    <Icon name="Zap" size={18} className="text-indigo-600" />
-                                                    ショートカット一覧（最大6項目）
-                                                </h3>
-                                                <div className="text-xs text-gray-500">
-                                                    {localShortcuts.filter(s => s.enabled).length} / 6 表示中
-                                                </div>
-                                            </div>
-
-                                            {/* グローバル設定 */}
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                                                <div className="grid grid-cols-2 gap-3 mb-3">
-                                                    <div>
-                                                        <label className="text-xs font-medium text-gray-900 dark:text-white mb-1 block">位置</label>
-                                                        <select
-                                                            value={localShortcuts[0]?.position || 'middle'}
-                                                            onChange={(e) => {
-                                                                const updated = localShortcuts.map(s => ({ ...s, position: e.target.value }));
-                                                                saveShortcuts(updated);
-                                                            }}
-                                                            className="w-full px-2 py-1.5 border rounded text-sm"
-                                                        >
-                                                            <option value="top">上</option>
-                                                            <option value="middle">中</option>
-                                                            <option value="bottom">下</option>
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-medium text-gray-900 dark:text-white mb-1 block">サイズ</label>
-                                                        <select
-                                                            value={localShortcuts[0]?.size || 'medium'}
-                                                            onChange={(e) => {
-                                                                const updated = localShortcuts.map(s => ({ ...s, size: e.target.value }));
-                                                                saveShortcuts(updated);
-                                                            }}
-                                                            className="w-full px-2 py-1.5 border rounded text-sm"
-                                                        >
-                                                            <option value="small">小</option>
-                                                            <option value="medium">中（デフォルト）</option>
-                                                            <option value="large">大</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div className="border-t border-blue-300 pt-3">
-                                                    <label className="text-xs font-medium text-gray-900 dark:text-white mb-2 block">左右設定</label>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <button
-                                                            onClick={() => toggleVisibility('left')}
-                                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                                                                shortcutVisibility.left
-                                                                    ? 'bg-blue-600 text-white'
-                                                                    : 'bg-white text-gray-600 border border-gray-300'
-                                                            }`}
-                                                        >
-                                                            <Icon name="ChevronLeft" size={16} className="inline mr-1" />
-                                                            左側 {shortcutVisibility.left ? 'ON' : 'OFF'}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => toggleVisibility('right')}
-                                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                                                                shortcutVisibility.right
-                                                                    ? 'bg-blue-600 text-white'
-                                                                    : 'bg-white text-gray-600 border border-gray-300'
-                                                            }`}
-                                                        >
-                                                            右側 {shortcutVisibility.right ? 'ON' : 'OFF'}
-                                                            <Icon name="ChevronRight" size={16} className="inline ml-1" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                {localShortcuts.map((shortcut, index) => (
-                                                    <div key={index} className={`border rounded-lg p-3 ${shortcut.enabled ? 'bg-white' : 'bg-gray-50 opacity-60'}`}>
-                                                        <div className="flex items-center gap-3">
-                                                            {/* 有効/無効トグル */}
-                                                            <button
-                                                                onClick={() => updateShortcut(index, { enabled: !shortcut.enabled })}
-                                                                className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition ${
-                                                                    shortcut.enabled ? 'bg-indigo-100' : 'bg-gray-100'
-                                                                }`}
-                                                            >
-                                                                <Icon
-                                                                    name={shortcut.enabled ? 'Eye' : 'EyeOff'}
-                                                                    size={18}
-                                                                    className={shortcut.enabled ? 'text-indigo-600' : 'text-gray-400'}
-                                                                />
-                                                            </button>
-
-                                                            {/* 番号 */}
-                                                            <div className="flex-shrink-0 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs font-bold text-gray-600">
-                                                                {index + 1}
-                                                            </div>
-
-                                                            {/* アイコンプレビュー */}
-                                                            <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                                                                <Icon name={shortcut.icon} size={18} className={getIconColor(shortcut.action)} />
-                                                            </div>
-
-                                                            {/* 機能選択 */}
-                                                            <div className="flex-1">
-                                                                <select
-                                                                    value={shortcut.action}
-                                                                    onChange={(e) => {
-                                                                        const selected = availableActions.find(a => a.value === e.target.value);
-                                                                        updateShortcut(index, {
-                                                                            action: selected.value,
-                                                                            label: selected.label,
-                                                                            icon: selected.icon
-                                                                        });
-                                                                    }}
-                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                                    disabled={!shortcut.enabled}
-                                                                >
-                                                                    {availableActions.map(action => (
-                                                                        <option key={action.value} value={action.value}>
-                                                                            {action.label}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Action Buttons */}
-                                        <div className="border-t pt-4">
-                                            <button
-                                                onClick={() => {
-                                                    if (confirm('ショートカット設定をデフォルトに戻しますか？')) {
-                                                        const defaultShortcuts = [
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'Activity', label: '体組成', action: 'open_body_composition', enabled: true },
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'HeartPulse', label: 'コンディション', action: 'open_condition', enabled: true },
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'Camera', label: '写真解析', action: 'open_meal_photo', enabled: true },
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'Utensils', label: '食事', action: 'open_meal', enabled: false },
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'Dumbbell', label: '運動', action: 'open_workout', enabled: false },
-                                                            { side: 'left', position: 'middle', size: 'medium', icon: 'PieChart', label: '分析', action: 'open_analysis', enabled: false }
-                                                        ];
-                                                        saveShortcuts(defaultShortcuts);
-                                                    }
-                                                }}
-                                                className="w-full px-4 py-3 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition font-medium border border-gray-200"
-                                            >
-                                                <Icon name="RotateCcw" size={18} className="inline mr-2" />
-                                                デフォルトに戻す
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    </details>
-                    <details className="border rounded-lg">
-                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Palette" size={18} className="text-purple-600" />
-                            カラーモード
-                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
-                        </summary>
-                        <div className="p-4 pt-0 border-t border-gray-200">
-                            <div className="space-y-4">
-                                {/* テーマ選択 */}
-                                <div className="p-3 bg-white rounded-lg border">
-                                    <div className="mb-3">
-                                        <p className="font-medium flex items-center gap-2">
-                                            <Icon name="Palette" size={18} className="text-purple-600" />
-                                            テーマ選択
-                                        </p>
-                                        <p className="text-xs text-gray-500 mt-1">アプリの見た目を変更できます</p>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {allThemes.map(theme => (
-                                            <button
-                                                key={theme.id}
-                                                onClick={() => handleThemeChange(theme.id)}
-                                                className={`relative p-3 rounded-lg border-2 transition-all ${
-                                                    currentTheme === theme.id
-                                                        ? 'border-purple-500 ring-2 ring-purple-200'
-                                                        : 'border-gray-200 hover:border-purple-300'
-                                                }`}
-                                            >
-                                                {/* プレビューカラー */}
-                                                <div className="flex gap-1 mb-2">
-                                                    <div
-                                                        className="w-8 h-8 rounded"
-                                                        style={{ backgroundColor: theme.preview.bgColor }}
-                                                    />
-                                                    <div
-                                                        className="w-8 h-8 rounded"
-                                                        style={{ backgroundColor: theme.preview.primaryColor }}
-                                                    />
-                                                    <div
-                                                        className="w-8 h-8 rounded"
-                                                        style={{ backgroundColor: theme.preview.textColor }}
-                                                    />
-                                                </div>
-
-                                                {/* テーマ名 */}
-                                                <p className="font-bold text-sm text-left">{theme.name}</p>
-                                                <p className="text-xs text-gray-600 text-left mt-1 line-clamp-2">
-                                                    {theme.description}
-                                                </p>
-
-                                                {/* チェックマーク */}
-                                                {currentTheme === theme.id && (
-                                                    <div className="absolute top-2 right-2 bg-purple-500 text-white rounded-full p-1">
-                                                        <Icon name="Check" size={12} />
-                                                    </div>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </details>
+                    {/* データ管理 */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Database" size={18} className="text-indigo-600" />
@@ -1692,9 +1856,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                         </div>
                     </details>
+
+                    {/* 開発者 */}
+                    {DEV_MODE && (
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Code" size={18} className="text-orange-600" />
+                            <Icon name="Settings" size={18} className="text-orange-600" />
                             開発者
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -1763,8 +1930,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '0');
                                                 // 機能開放状態もリセット
                                                 localStorage.removeItem(STORAGE_KEYS.UNLOCKED_FEATURES);
-                                                // 初回完了フラグもリセット
-                                                localStorage.removeItem('yourCoachBeta_firstTimeCompleted');
                                                 window.location.reload();
                                             }}
                                             className="px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition font-medium"
@@ -1856,64 +2021,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     })}
                                 </div>
                             </div>
-
-                            {/* 有料機能開放 (テスト用) */}
-                            <div className="border rounded-lg p-6 bg-purple-50 border-purple-300">
-                                <h4 className="font-bold mb-4 flex items-center gap-2 text-purple-800">
-                                    <Icon name="Crown" size={18} />
-                                    有料機能開放 (テスト用)
-                                </h4>
-                                <p className="text-sm text-purple-700 mb-4">
-                                    開発・テスト用にプレミアムプラン機能を一時的に開放します。
-                                </p>
-                                <div className="space-y-3">
-                                    <button
-                                        onClick={() => {
-                                            // プレミアムプランを有効化
-                                            const profile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-                                            profile.subscription = {
-                                                status: 'active',
-                                                plan: 'premium',
-                                                startDate: new Date().toISOString(),
-                                                aiCredits: {
-                                                    monthly: 100,
-                                                    remaining: 100,
-                                                    used: 0,
-                                                    purchased: 0,
-                                                    lastReset: new Date().toISOString().substring(0, 7)
-                                                }
-                                            };
-                                            localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
-                                            alert('プレミアムプランを有効化しました。ページをリロードします。');
-                                            window.location.reload();
-                                        }}
-                                        className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-bold flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="Crown" size={18} />
-                                        プレミアムプラン有効化
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            // プレミアムプランを無効化
-                                            const profile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-                                            profile.subscription = {
-                                                status: 'inactive',
-                                                plan: 'free'
-                                            };
-                                            localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
-                                            alert('無料プランに戻しました。ページをリロードします。');
-                                            window.location.reload();
-                                        }}
-                                        className="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="XCircle" size={18} />
-                                        無料プランに戻す
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                         </div>
                     </details>
+                    )}
 
                     {/* 管理者パネル (開発モードのみ表示) */}
                     {DEV_MODE && (
@@ -1962,7 +2073,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                 <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                     <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center z-10">
                         <h3 className="font-bold text-lg">{infoModal.title}</h3>
-                        <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white hover:bg-opacity-20 rounded-full">
+                        <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
                             <Icon name="X" size={20} />
                         </button>
                     </div>
@@ -1979,7 +2090,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                 <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                     <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-pink-600 text-white p-4 flex justify-between items-center z-10">
                         <h3 className="font-bold text-lg">外見から体脂肪率を推定</h3>
-                        <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white hover:bg-opacity-20 rounded-full">
+                        <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
                             <Icon name="X" size={20} />
                         </button>
                     </div>
@@ -2033,10 +2144,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="font-bold text-gray-900">レベル {guide.level}</span>
-                                                        <span className="text-sm font-semibold text-orange-600">({guide.range})</span>
+                                                        <span className="font-bold text-gray-900">{guide.title}</span>
+                                                        <span className="text-sm text-gray-600">({guide.range})</span>
                                                     </div>
-                                                    <p className="text-sm text-gray-600 mb-2">{guide.title}</p>
                                                     <ul className="text-sm text-gray-700 space-y-1">
                                                         {guide.features.map((feature, idx) => (
                                                             <li key={idx}>• {feature}</li>
@@ -2084,6 +2194,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             </div>
         )}
 
+        {/* ウェアラブル連携モーダル */}
+        {showWearableIntegration && (
+            <WearableIntegration
+                onClose={() => setShowWearableIntegration(false)}
+                userId={userId}
+                userProfile={profile}
+            />
+        )}
         </>
     );
 };
