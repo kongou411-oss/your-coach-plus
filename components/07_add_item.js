@@ -87,13 +87,11 @@
             const renderConditionInput = () => {
                 const [condition, setCondition] = useState({
                     sleepHours: 7,
-                    sleep: 3,
-                    fatigue: 3,
+                    sleepQuality: 3,
                     stress: 3,
-                    mood: 3,
-                    thinking: 3,
                     appetite: 3,
-                    gut: 3,
+                    digestion: 3,
+                    focus: 3,
                     weight: userProfile.weight || 0,
                     bodyFat: userProfile.bodyFat || 0,
                     notes: ''
@@ -140,27 +138,14 @@
 
                         <RatingButton
                             label="😴 睡眠の質"
-                            value={condition.sleep}
-                            onChange={(val) => setCondition({...condition, sleep: val})}
+                            value={condition.sleepQuality}
+                            onChange={(val) => setCondition({...condition, sleepQuality: val})}
                             options={[
                                 { value: 1, emoji: '😫', label: '最悪' },
                                 { value: 2, emoji: '😪', label: '悪い' },
                                 { value: 3, emoji: '😐', label: '普通' },
                                 { value: 4, emoji: '😊', label: '良い' },
                                 { value: 5, emoji: '🌟', label: '最高' }
-                            ]}
-                        />
-
-                        <RatingButton
-                            label="💪 疲労度（回復具合）"
-                            value={condition.fatigue}
-                            onChange={(val) => setCondition({...condition, fatigue: val})}
-                            options={[
-                                { value: 1, emoji: '🥱', label: 'ヘトヘト' },
-                                { value: 2, emoji: '😓', label: '疲れ' },
-                                { value: 3, emoji: '😐', label: '普通' },
-                                { value: 4, emoji: '🙂', label: '回復' },
-                                { value: 5, emoji: '💪', label: '絶好調' }
                             ]}
                         />
 
@@ -174,32 +159,6 @@
                                 { value: 3, emoji: '😐', label: '普通' },
                                 { value: 4, emoji: '😰', label: '多い' },
                                 { value: 5, emoji: '🤯', label: '極度' }
-                            ]}
-                        />
-
-                        <RatingButton
-                            label="😊 気分"
-                            value={condition.mood}
-                            onChange={(val) => setCondition({...condition, mood: val})}
-                            options={[
-                                { value: 1, emoji: '😢', label: '落ち込み' },
-                                { value: 2, emoji: '😕', label: '微妙' },
-                                { value: 3, emoji: '😐', label: '普通' },
-                                { value: 4, emoji: '😊', label: '良い' },
-                                { value: 5, emoji: '🤗', label: '最高' }
-                            ]}
-                        />
-
-                        <RatingButton
-                            label="🧠 思考のクリアさ"
-                            value={condition.thinking}
-                            onChange={(val) => setCondition({...condition, thinking: val})}
-                            options={[
-                                { value: 1, emoji: '😵', label: 'フォグ' },
-                                { value: 2, emoji: '😕', label: 'ぼんやり' },
-                                { value: 3, emoji: '😐', label: '普通' },
-                                { value: 4, emoji: '🙂', label: 'クリア' },
-                                { value: 5, emoji: '✨', label: '超クリア' }
                             ]}
                         />
 
@@ -218,14 +177,27 @@
 
                         <RatingButton
                             label="🦠 腸内環境"
-                            value={condition.gut}
-                            onChange={(val) => setCondition({...condition, gut: val})}
+                            value={condition.digestion}
+                            onChange={(val) => setCondition({...condition, digestion: val})}
                             options={[
                                 { value: 1, emoji: '😖', label: '悪い' },
                                 { value: 2, emoji: '😕', label: '不調' },
                                 { value: 3, emoji: '😐', label: '普通' },
                                 { value: 4, emoji: '🙂', label: '良好' },
                                 { value: 5, emoji: '✨', label: '快調' }
+                            ]}
+                        />
+
+                        <RatingButton
+                            label="🧠 集中力"
+                            value={condition.focus}
+                            onChange={(val) => setCondition({...condition, focus: val})}
+                            options={[
+                                { value: 1, emoji: '😵', label: '集中できない' },
+                                { value: 2, emoji: '😕', label: 'ぼんやり' },
+                                { value: 3, emoji: '😐', label: '普通' },
+                                { value: 4, emoji: '🙂', label: '集中できる' },
+                                { value: 5, emoji: '✨', label: '超集中' }
                             ]}
                         />
 
