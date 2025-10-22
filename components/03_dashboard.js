@@ -116,29 +116,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
         });
     });
 
-    // トレーニング消費カロリー
-    const totalBurned = dailyRecord.workouts?.reduce((sum, w) => sum + (w.caloriesBurned || 0), 0) || 0;
-
-    // DIT（食事誘発性熱産生）の計算
-    const dit = (currentIntake.protein * 4 * 0.30) + (currentIntake.fat * 9 * 0.04) + (currentIntake.carbs * 4 * 0.06);
-
-    // EPOC（運動後過剰酸素消費）の計算
-    const epoc = totalBurned * 0.10;
-
-    // 総消費カロリー = 運動消費 + DIT + EPOC
-    const totalExpenditure = totalBurned + dit + epoc;
-
-    // currentIntakeにDIT/EPOC/totalExpenditureを追加
-    currentIntake.dit = dit;
-    currentIntake.epoc = epoc;
-    currentIntake.totalExpenditure = totalExpenditure;
-
-    // 純摂取 = 摂取 - 運動消費
-    const netCalories = currentIntake.calories - totalBurned;
-    // 実質摂取 = 摂取 - (運動消費 + DIT + EPOC)
-    const effectiveCalories = currentIntake.calories - totalExpenditure;
-    const caloriesPercent = (effectiveCalories / targetPFC.calories) * 100;
+    // 達成率の計算
+    const caloriesPercent = (currentIntake.calories / targetPFC.calories) * 100;
     const proteinPercent = (currentIntake.protein / targetPFC.protein) * 100;
+    const fatPercent = (currentIntake.fat / targetPFC.fat) * 100;
+    const carbsPercent = (currentIntake.carbs / targetPFC.carbs) * 100;
 
     // 今日かどうかのチェック（タイトル表示用）
     const isToday = () => {
@@ -152,7 +134,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
             {/* PFCサマリー */}
             <div className="bg-white rounded-xl shadow-sm p-6 slide-up">
                 <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-lg font-bold">{isToday() ? '今日' : ''}の摂取状況</h3>
+                    <h3 className="text-lg font-bold">デイリー記録</h3>
                     <button
                         onClick={() => setInfoModal({
                             show: true,
@@ -185,101 +167,71 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
                 <div className="space-y-4">
                     <div>
                         <div className="flex justify-between items-center mb-2">
-                            <div className="flex items-center gap-2">
-                                <span className="font-medium">カロリー収支</span>
-                                <button
-                                    onClick={() => setInfoModal({
-                                        show: true,
-                                        title: '💡 カロリー収支の詳細',
-                                        content: `【摂取カロリー】
-食事とサプリメントから摂取したカロリー
-${currentIntake.calories} kcal
-
-━━━━━━━━━━━━━━━━━━━━━━
-
-【消費カロリー内訳】
-
-• 運動消費: ${totalBurned} kcal
-
-• DIT (食事誘発性熱産生): ${Math.round(currentIntake.dit || 0)} kcal
-  → 食事を消化・吸収する際に消費されるエネルギー
-  → P: 30%, F: 4%, C: 6%
-
-• EPOC (運動後過剰酸素消費): ${Math.round(currentIntake.epoc || 0)} kcal
-  → 運動後の代謝亢進による追加消費
-  → 運動消費の約10%
-
-総消費: ${Math.round(totalExpenditure)} kcal
-
-━━━━━━━━━━━━━━━━━━━━━━
-
-【収支計算】
-
-純摂取 (摂取 - 運動): ${netCalories} kcal
-
-実質摂取 (摂取 - 総消費): ${Math.round(effectiveCalories)} kcal
-※実質摂取が体内に蓄積される正味のカロリーです`
-                                    })}
-                                    className="text-indigo-600 hover:text-indigo-800"
-                                >
-                                    <Icon name="Info" size={16} />
-                                </button>
-                            </div>
+                            <span className="font-medium">摂取カロリー</span>
                             <div className="text-sm text-right">
-                                <div className="font-bold text-gray-800">
-                                    {Math.round(effectiveCalories)} / {targetPFC.calories} kcal
+                                <div className="font-bold" style={{ color: '#8BA3C7' }}>
+                                    {Math.round(currentIntake.calories)} / {targetPFC.calories} kcal
                                 </div>
                             </div>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-500"
-                                style={{ width: `${Math.min((effectiveCalories / targetPFC.calories) * 100, 100)}%` }}
+                                className="h-full transition-all duration-500"
+                                style={{
+                                    width: `${Math.min(caloriesPercent, 100)}%`,
+                                    backgroundColor: '#8BA3C7'
+                                }}
                             ></div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                            実質摂取カロリー = 摂取 - (運動 + DIT + EPOC)
-                        </p>
                     </div>
                     <div>
                         <div className="flex justify-between mb-2">
                             <span className="font-medium">タンパク質 (P)</span>
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm font-bold" style={{ color: '#EF4444' }}>
                                 {currentIntake.protein.toFixed(1)} / {targetPFC.protein} g
                             </span>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 transition-all duration-500"
-                                style={{ width: `${Math.min(proteinPercent, 100)}%` }}
+                                className="h-full transition-all duration-500"
+                                style={{
+                                    width: `${Math.min(proteinPercent, 100)}%`,
+                                    backgroundColor: '#EF4444'
+                                }}
                             ></div>
                         </div>
                     </div>
                     <div>
                         <div className="flex justify-between mb-2">
                             <span className="font-medium">脂質 (F)</span>
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm font-bold" style={{ color: '#F59E0B' }}>
                                 {currentIntake.fat.toFixed(1)} / {targetPFC.fat} g
                             </span>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-yellow-500 to-orange-600 transition-all duration-500"
-                                style={{ width: `${Math.min((currentIntake.fat / targetPFC.fat) * 100, 100)}%` }}
+                                className="h-full transition-all duration-500"
+                                style={{
+                                    width: `${Math.min(fatPercent, 100)}%`,
+                                    backgroundColor: '#F59E0B'
+                                }}
                             ></div>
                         </div>
                     </div>
                     <div>
                         <div className="flex justify-between mb-2">
                             <span className="font-medium">炭水化物 (C)</span>
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm font-bold" style={{ color: '#10B981' }}>
                                 {currentIntake.carbs.toFixed(1)} / {targetPFC.carbs} g
                             </span>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-500"
-                                style={{ width: `${Math.min((currentIntake.carbs / targetPFC.carbs) * 100, 100)}%` }}
+                                className="h-full transition-all duration-500"
+                                style={{
+                                    width: `${Math.min(carbsPercent, 100)}%`,
+                                    backgroundColor: '#10B981'
+                                }}
                             ></div>
                         </div>
                     </div>
