@@ -1115,35 +1115,35 @@ ${Math.round(caloriesPercent)}%
                                 ))}
                             </div>
                         </div>
-                    </div>
-                </div>
+                        </div>
 
-                {/* 閃きセクション */}
-                <div className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                            <Icon name="Lightbulb" size={18} className="text-yellow-500" />
-                            閃き
-                        </h4>
+                        {/* 閃きセクション */}
+                        <div className="space-y-2 mt-4">
+                            <div className="py-2 px-3 bg-gray-50 rounded-lg">
+                                <div className="mb-2">
+                                    <span className="text-sm text-gray-700 font-bold flex items-center gap-2">
+                                        <Icon name="Lightbulb" size={16} className="text-yellow-500" />
+                                        閃き
+                                    </span>
+                                </div>
+                                <textarea
+                                    value={dailyRecord.notes || ''}
+                                    onChange={async (e) => {
+                                        const updated = {
+                                            ...dailyRecord,
+                                            notes: e.target.value
+                                        };
+                                        setDailyRecord(updated);
+                                        const userId = user?.uid || DEV_USER_ID;
+                                        await DataService.saveDailyRecord(userId, currentDate, updated);
+                                    }}
+                                    placeholder="今日の気づき、メモなど..."
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none text-sm"
+                                    rows="3"
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                        <textarea
-                            value={dailyRecord.notes || ''}
-                            onChange={async (e) => {
-                                const updated = {
-                                    ...dailyRecord,
-                                    notes: e.target.value
-                                };
-                                setDailyRecord(updated);
-                                const userId = user?.uid || DEV_USER_ID;
-                                await DataService.saveDailyRecord(userId, currentDate, updated);
-                            }}
-                            placeholder="今日の気づき、メモなど..."
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none text-sm"
-                            rows="3"
-                        />
-                    </div>
-                </div>
                 )}
 
                 {/* 分析ボタン */}
