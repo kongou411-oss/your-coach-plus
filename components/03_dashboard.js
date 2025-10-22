@@ -1,7 +1,106 @@
 // ===== Dashboard Component =====
 const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange }) => {
+    // 指示書管理
+    const [todayDirective, setTodayDirective] = useState(null);
+    const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
+
+    // 体組成の状態管理
+    const [bodyComposition, setBodyComposition] = useState({
+        weight: profile?.weight || 0,
+        bodyFatPercentage: profile?.bodyFatPercentage || 0
+    });
+
+    // 今日の日付を取得
+    const getTodayDate = () => {
+        const today = new Date();
+        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    };
+
+    // profileが更新されたらbodyCompositionを同期
+    useEffect(() => {
+        setBodyComposition({
+            weight: profile?.weight || 0,
+            bodyFatPercentage: profile?.bodyFatPercentage || 0
+        });
+    }, [profile]);
+
+    // 指示書を読み込む
+    useEffect(() => {
+        loadDirective();
+        // directiveUpdatedイベントをリッスン
+        window.addEventListener('directiveUpdated', loadDirective);
+        return () => window.removeEventListener('directiveUpdated', loadDirective);
+    }, [currentDate]);
+
+    const loadDirective = () => {
+        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
+        if (savedDirectives) {
+            const directives = JSON.parse(savedDirectives);
+            const today = currentDate || getTodayDate();
+            const directive = directives.find(d => d.date === today);
+            setTodayDirective(directive || null);
+        }
+    };
+
+    // 指示書を完了にする
+    const handleCompleteDirective = async () => {
+        if (!todayDirective) return;
+        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
+        const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
+        const updated = directives.map(d =>
+            d.date === todayDirective.date ? { ...d, completed: true } : d
+        );
+        localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updated));
+        setTodayDirective({ ...todayDirective, completed: true });
+    };
+
+    // 残り時間を計算
+    const getTimeRemaining = (deadline) => {
+        if (!deadline) return 'まもなく';
+        const now = new Date();
+        const end = new Date(deadline);
+        const diff = end - now;
+        if (diff < 0) return '期限切れ';
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        if (hours >= 24) {
+            const days = Math.floor(hours / 24);
+            return `あと${days}日`;
+        }
+        return `あと${hours}時間`;
+    };
+
+    // カテゴリーアイコンを取得
+    const getCategoryIcon = (type) => {
+        switch (type) {
+            case 'meal': return 'Utensils';
+            case 'exercise': return 'Dumbbell';
+            case 'condition': return 'HeartPulse';
+            default: return 'Target';
+        }
+    };
+
+    // カテゴリーラベルを取得
+    const getCategoryLabel = (type) => {
+        switch (type) {
+            case 'meal': return '食事';
+            case 'exercise': return '運動';
+            case 'condition': return 'コンディション';
+            default: return '指示';
+        }
+    };
+
+    // カテゴリー色を取得
+    const getCategoryColor = (type) => {
+        switch (type) {
+            case 'meal': return { bg: 'from-green-50 to-teal-50', border: 'border-green-600', text: 'text-green-700', icon: 'text-green-600' };
+            case 'exercise': return { bg: 'from-orange-50 to-red-50', border: 'border-orange-600', text: 'text-orange-700', icon: 'text-orange-600' };
+            case 'condition': return { bg: 'from-indigo-50 to-purple-50', border: 'border-indigo-600', text: 'text-indigo-700', icon: 'text-indigo-600' };
+            default: return { bg: 'from-gray-50 to-gray-100', border: 'border-gray-600', text: 'text-gray-700', icon: 'text-gray-600' };
+        }
+    };
+
     // 予測入力を実行する関数
-    const loadPredictedData = () => {
+    const loadPredictedData = async () => {
         if (!yesterdayRecord) {
             alert('前日の記録がありません');
             return;
@@ -24,17 +123,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
                     isPredicted: true
                 })) || [])
             ],
-            supplements: [
-                ...(dailyRecord.supplements?.filter(s => !s.isPredicted) || []),
-                ...(yesterdayRecord.supplements?.map(supp => ({
-                    ...supp,
-                    id: Date.now() + Math.random(),
-                    isPredicted: true
-                })) || [])
-            ],
             conditions: dailyRecord.conditions
         };
         setDailyRecord(copiedRecord);
+
+        // DBに保存して永続化
+        const userId = user?.uid || DEV_USER_ID;
+        await DataService.saveDailyRecord(userId, currentDate, copiedRecord);
     };
 
     // 予測データの自動展開はhandleDateChangeで行うため、このuseEffectは削除
@@ -90,37 +185,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
         });
     });
 
-    // サプリメントも摂取量に加算
-    dailyRecord.supplements?.forEach(supp => {
-        supp.items?.forEach(item => {
-            currentIntake.calories += item.calories || 0;
-            currentIntake.protein += item.protein || 0;
-            currentIntake.fat += item.fat || 0;
-            currentIntake.carbs += item.carbs || 0;
+    // サプリメントは食事に統合されたため、この処理は不要
 
-            if (item.vitamins) {
-                Object.keys(item.vitamins).forEach(v => {
-                    currentIntake.vitamins[v] = (currentIntake.vitamins[v] || 0) + (item.vitamins[v] || 0);
-                });
-            }
-            if (item.minerals) {
-                Object.keys(item.minerals).forEach(m => {
-                    currentIntake.minerals[m] = (currentIntake.minerals[m] || 0) + (item.minerals[m] || 0);
-                });
-            }
-            if (item.otherNutrients) {
-                Object.keys(item.otherNutrients).forEach(o => {
-                    currentIntake.otherNutrients[o] = (currentIntake.otherNutrients[o] || 0) + (item.otherNutrients[o] || 0);
-                });
-            }
-        });
-    });
-
-    // 達成率の計算
+    // カロリー収支計算
     const caloriesPercent = (currentIntake.calories / targetPFC.calories) * 100;
     const proteinPercent = (currentIntake.protein / targetPFC.protein) * 100;
-    const fatPercent = (currentIntake.fat / targetPFC.fat) * 100;
-    const carbsPercent = (currentIntake.carbs / targetPFC.carbs) * 100;
 
     // 今日かどうかのチェック（タイトル表示用）
     const isToday = () => {
@@ -134,7 +203,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
             {/* PFCサマリー */}
             <div className="bg-white rounded-xl shadow-sm p-6 slide-up">
                 <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-lg font-bold">デイリー記録</h3>
+                    <h3 className="text-lg font-bold">{isToday() ? '今日' : ''}の摂取状況</h3>
                     <button
                         onClick={() => setInfoModal({
                             show: true,
@@ -167,71 +236,84 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
                 <div className="space-y-4">
                     <div>
                         <div className="flex justify-between items-center mb-2">
-                            <span className="font-medium">摂取カロリー</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">カロリー収支</span>
+                                <button
+                                    onClick={() => setInfoModal({
+                                        show: true,
+                                        title: '💡 カロリー収支の詳細',
+                                        content: `【摂取カロリー】
+食事とサプリメントから摂取したカロリー
+${currentIntake.calories} kcal
+
+【目標カロリー】
+${targetPFC.calories} kcal
+
+【達成率】
+${Math.round(caloriesPercent)}%
+
+※カロリー収支 = 摂取カロリー ÷ 目標カロリー`
+                                    })}
+                                    className="text-indigo-600 hover:text-indigo-800"
+                                >
+                                    <Icon name="Info" size={16} />
+                                </button>
+                            </div>
                             <div className="text-sm text-right">
-                                <div className="font-bold" style={{ color: '#8BA3C7' }}>
+                                <div className="font-bold text-gray-800">
                                     {Math.round(currentIntake.calories)} / {targetPFC.calories} kcal
                                 </div>
                             </div>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full transition-all duration-500"
-                                style={{
-                                    width: `${Math.min(caloriesPercent, 100)}%`,
-                                    backgroundColor: '#8BA3C7'
-                                }}
+                                className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-500"
+                                style={{ width: `${Math.min(caloriesPercent, 100)}%` }}
                             ></div>
                         </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                            摂取カロリー ÷ 目標カロリー
+                        </p>
                     </div>
                     <div>
                         <div className="flex justify-between mb-2">
                             <span className="font-medium">タンパク質 (P)</span>
-                            <span className="text-sm font-bold" style={{ color: '#EF4444' }}>
+                            <span className="text-sm text-gray-600">
                                 {currentIntake.protein.toFixed(1)} / {targetPFC.protein} g
                             </span>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full transition-all duration-500"
-                                style={{
-                                    width: `${Math.min(proteinPercent, 100)}%`,
-                                    backgroundColor: '#EF4444'
-                                }}
+                                className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 transition-all duration-500"
+                                style={{ width: `${Math.min(proteinPercent, 100)}%` }}
                             ></div>
                         </div>
                     </div>
                     <div>
                         <div className="flex justify-between mb-2">
                             <span className="font-medium">脂質 (F)</span>
-                            <span className="text-sm font-bold" style={{ color: '#F59E0B' }}>
+                            <span className="text-sm text-gray-600">
                                 {currentIntake.fat.toFixed(1)} / {targetPFC.fat} g
                             </span>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full transition-all duration-500"
-                                style={{
-                                    width: `${Math.min(fatPercent, 100)}%`,
-                                    backgroundColor: '#F59E0B'
-                                }}
+                                className="h-full bg-gradient-to-r from-yellow-500 to-orange-600 transition-all duration-500"
+                                style={{ width: `${Math.min((currentIntake.fat / targetPFC.fat) * 100, 100)}%` }}
                             ></div>
                         </div>
                     </div>
                     <div>
                         <div className="flex justify-between mb-2">
                             <span className="font-medium">炭水化物 (C)</span>
-                            <span className="text-sm font-bold" style={{ color: '#10B981' }}>
+                            <span className="text-sm text-gray-600">
                                 {currentIntake.carbs.toFixed(1)} / {targetPFC.carbs} g
                             </span>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full transition-all duration-500"
-                                style={{
-                                    width: `${Math.min(carbsPercent, 100)}%`,
-                                    backgroundColor: '#10B981'
-                                }}
+                                className="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-500"
+                                style={{ width: `${Math.min((currentIntake.carbs / targetPFC.carbs) * 100, 100)}%` }}
                             ></div>
                         </div>
                     </div>
@@ -378,6 +460,56 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
                 )}
             </div>
 
+            {/* 今日の指示書 */}
+            {todayDirective && (
+                <div className="bg-white rounded-xl shadow-sm p-5 slide-up">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <Icon name="Target" size={20} className="text-purple-600" />
+                            <h3 className="text-lg font-bold text-gray-800">今日の指示書</h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
+                                {getTimeRemaining(todayDirective.deadline)}
+                            </span>
+                            <button
+                                onClick={() => setShowDirectiveEdit(true)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <Icon name="Edit3" size={16} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className={`bg-gradient-to-r ${getCategoryColor(todayDirective.type).bg} rounded-lg p-4 border-l-4 ${getCategoryColor(todayDirective.type).border} ${todayDirective.completed ? 'opacity-60' : ''}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Icon name={getCategoryIcon(todayDirective.type)} size={16} className={getCategoryColor(todayDirective.type).icon} />
+                            <span className={`text-xs font-bold ${getCategoryColor(todayDirective.type).text}`}>
+                                【{getCategoryLabel(todayDirective.type)}】
+                            </span>
+                        </div>
+                        <p className={`text-sm font-bold text-gray-800 mb-1 ${todayDirective.completed ? 'line-through' : ''}`}>
+                            {todayDirective.message}
+                        </p>
+                        {!todayDirective.completed && (
+                            <button
+                                onClick={handleCompleteDirective}
+                                className="mt-3 w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition font-semibold flex items-center justify-center gap-2 text-sm"
+                            >
+                                <Icon name="Check" size={16} />
+                                完了
+                            </button>
+                        )}
+                        {todayDirective.completed && (
+                            <div className="mt-3 flex items-center justify-center gap-2 text-green-600 font-medium text-sm">
+                                <Icon name="CheckCircle" size={16} />
+                                完了済み
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* 記録一覧 */}
             <div className="bg-white rounded-xl shadow-sm p-6 slide-up">
                 <div className="flex items-center gap-2 mb-4">
@@ -402,15 +534,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
                                 予測入力
                             </button>
                         )}
-                        {yesterdayRecord && (dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted) || dailyRecord.supplements?.some(s => s.isPredicted)) && (
+                        {yesterdayRecord && (dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) && (
                             <button
                                 onClick={async () => {
                                     // 予測入力された記録のみを削除
                                     const clearedRecord = {
                                         ...dailyRecord,
                                         meals: dailyRecord.meals?.filter(m => !m.isPredicted) || [],
-                                        workouts: dailyRecord.workouts?.filter(w => !w.isPredicted) || [],
-                                        supplements: dailyRecord.supplements?.filter(s => !s.isPredicted) || [],
+                                        workouts: dailyRecord.workouts?.filter(w => !w.isPredicted) || []
                                     };
                                     setDailyRecord(clearedRecord);
                                     const userId = user?.uid || DEV_USER_ID;
@@ -424,178 +555,721 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
                     </div>
                 </div>
 
-                {(dailyRecord.meals?.length === 0 || !dailyRecord.meals) &&
-                 (dailyRecord.workouts?.length === 0 || !dailyRecord.workouts) &&
-                 (dailyRecord.supplements?.length === 0 || !dailyRecord.supplements) ? (
-                    <div className="text-center py-12">
-                        <Icon name="UtensilsCrossed" size={48} className="text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-500 mb-3 font-semibold">まだ記録がありません</p>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-center gap-2 text-sm text-indigo-600">
-                                <span className="font-bold">①</span>
-                                <Icon name="Settings" size={16} />
-                                <span>：右上の設定でプロフィールを入力</span>
+                {/* 体組成セクション */}
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                            <Icon name="Activity" size={18} className="text-teal-600" />
+                            体組成
+                        </h4>
+                    </div>
+
+                    {/* 体重 */}
+                    <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Icon name="Weight" size={16} className="text-teal-600" />
+                            <span className="text-sm font-bold text-gray-700">体重</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                            <button
+                                onClick={() => {
+                                    const newWeight = Math.max(0, bodyComposition.weight - 1);
+                                    const updated = { ...bodyComposition, weight: newWeight };
+                                    setBodyComposition(updated);
+                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
+                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, weight: newWeight }));
+                                    window.dispatchEvent(new Event('profileUpdated'));
+                                }}
+                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                            >
+                                -1
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const newWeight = Math.max(0, bodyComposition.weight - 0.1);
+                                    const updated = { ...bodyComposition, weight: parseFloat(newWeight.toFixed(1)) };
+                                    setBodyComposition(updated);
+                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
+                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, weight: parseFloat(newWeight.toFixed(1)) }));
+                                    window.dispatchEvent(new Event('profileUpdated'));
+                                }}
+                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                            >
+                                -0.1
+                            </button>
+                            <div className="px-4 py-1.5 bg-white border-2 border-gray-300 rounded-lg min-w-[90px] text-center">
+                                <span className="text-lg font-bold text-gray-900">{bodyComposition.weight.toFixed(1)}</span>
+                                <span className="text-xs text-gray-600 ml-1">kg</span>
                             </div>
-                            <div className="flex items-center justify-center gap-2 text-sm text-indigo-600">
-                                <span className="font-bold">②</span>
-                                <Icon name="Plus" size={16} />
-                                <span>：右下の＋ボタンから記録を開始</span>
-                            </div>
+                            <button
+                                onClick={() => {
+                                    const newWeight = bodyComposition.weight + 0.1;
+                                    const updated = { ...bodyComposition, weight: parseFloat(newWeight.toFixed(1)) };
+                                    setBodyComposition(updated);
+                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
+                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, weight: parseFloat(newWeight.toFixed(1)) }));
+                                    window.dispatchEvent(new Event('profileUpdated'));
+                                }}
+                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                            >
+                                +0.1
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const newWeight = bodyComposition.weight + 1;
+                                    const updated = { ...bodyComposition, weight: newWeight };
+                                    setBodyComposition(updated);
+                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
+                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, weight: newWeight }));
+                                    window.dispatchEvent(new Event('profileUpdated'));
+                                }}
+                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                            >
+                                +1
+                            </button>
                         </div>
                     </div>
-                ) : (
-                    <div className="space-y-3">
-                        {dailyRecord.meals?.map((meal, index) => (
-                            <div key={meal.id || index} className={`border rounded-lg p-4 hover:border-emerald-300 transition ${meal.isPredicted ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}`}>
-                                <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Icon name="Utensils" size={16} className="text-emerald-600" />
-                                            <p className="font-medium">{meal.name}</p>
-                                            {meal.isPredicted && (
-                                                <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                    <Icon name="Sparkles" size={10} />
-                                                    昨日から
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-gray-500 mb-2">{meal.time}</p>
-                                        {meal.items?.map((item, i) => (
-                                            <p key={i} className="text-sm text-gray-600">
-                                                {item.name} {item.amount}
-                                            </p>
-                                        ))}
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="font-bold text-emerald-600 mb-2">{meal.calories} kcal</p>
-                                        <button
-                                            onClick={() => onDeleteItem('meal', meal.id)}
-                                            className="text-red-500 hover:text-red-700 text-sm"
-                                        >
-                                            <Icon name="Trash2" size={16} />
-                                        </button>
-                                    </div>
-                                </div>
+
+                    {/* 体脂肪率 */}
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Icon name="Percent" size={16} className="text-teal-600" />
+                            <span className="text-sm font-bold text-gray-700">体脂肪率</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                            <button
+                                onClick={() => {
+                                    const newBodyFat = Math.max(0, bodyComposition.bodyFatPercentage - 1);
+                                    const updated = { ...bodyComposition, bodyFatPercentage: newBodyFat };
+                                    setBodyComposition(updated);
+                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
+                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, bodyFatPercentage: newBodyFat }));
+                                    window.dispatchEvent(new Event('profileUpdated'));
+                                }}
+                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                            >
+                                -1
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const newBodyFat = Math.max(0, bodyComposition.bodyFatPercentage - 0.1);
+                                    const updated = { ...bodyComposition, bodyFatPercentage: parseFloat(newBodyFat.toFixed(1)) };
+                                    setBodyComposition(updated);
+                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
+                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, bodyFatPercentage: parseFloat(newBodyFat.toFixed(1)) }));
+                                    window.dispatchEvent(new Event('profileUpdated'));
+                                }}
+                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                            >
+                                -0.1
+                            </button>
+                            <div className="px-4 py-1.5 bg-white border-2 border-gray-300 rounded-lg min-w-[90px] text-center">
+                                <span className="text-lg font-bold text-gray-900">{bodyComposition.bodyFatPercentage.toFixed(1)}</span>
+                                <span className="text-xs text-gray-600 ml-1">%</span>
                             </div>
-                        ))}
-                        {dailyRecord.workouts?.map((workout, index) => (
-                            <div key={workout.id || index} className={`border rounded-lg p-4 hover:border-orange-300 transition ${workout.isPredicted ? 'border-blue-300 bg-white' : 'border-gray-200 bg-white'}`}>
-                                <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Icon name="Dumbbell" size={16} className="text-orange-600" />
-                                            <p className="font-medium">{workout.name}</p>
-                                            {workout.isPredicted && (
-                                                <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                    <Icon name="Sparkles" size={10} />
-                                                    昨日から
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-gray-500 mb-2">{workout.time}</p>
-                                        {workout.exercises?.map((exercise, i) => (
-                                            <div key={i} className="text-sm text-gray-600">
-                                                <p className="font-medium">{exercise.name}</p>
-                                                {exercise.sets?.map((set, si) => (
-                                                    <p key={si} className="text-xs">
-                                                        Set {si + 1}: {set.weight}kg × {set.reps}回
-                                                    </p>
-                                                ))}
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="flex items-center gap-1 justify-end mb-2">
-                                            <p className="font-bold text-orange-600">-{workout.caloriesBurned} kcal</p>
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: '独自アルゴリズム『PG式』とは？',
-                                                    content: `従来の消費カロリー計算（METs法）の欠点を克服するために独自開発した、本アプリの核心的技術です。
+                            <button
+                                onClick={() => {
+                                    const newBodyFat = bodyComposition.bodyFatPercentage + 0.1;
+                                    const updated = { ...bodyComposition, bodyFatPercentage: parseFloat(newBodyFat.toFixed(1)) };
+                                    setBodyComposition(updated);
+                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
+                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, bodyFatPercentage: parseFloat(newBodyFat.toFixed(1)) }));
+                                    window.dispatchEvent(new Event('profileUpdated'));
+                                }}
+                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                            >
+                                +0.1
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const newBodyFat = bodyComposition.bodyFatPercentage + 1;
+                                    const updated = { ...bodyComposition, bodyFatPercentage: newBodyFat };
+                                    setBodyComposition(updated);
+                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
+                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, bodyFatPercentage: newBodyFat }));
+                                    window.dispatchEvent(new Event('profileUpdated'));
+                                }}
+                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                            >
+                                +1
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-単なる運動強度だけでなく、物理的仕事量（重量、回数、可動距離）や生理的コスト（TUT、インターバル）などを多角的に解析することで、あなたの「純粋な努力」を科学的かつ正当に評価します。
-
-【PG式の特徴】
-• 個人のLBM（除脂肪体重）に基づく精密計算
-• 重量・回数・可動距離を考慮した物理的仕事量
-• TUT（筋緊張時間）やインターバルの生理的コスト
-• 単なる時間ベースではない正確な評価`
-                                                })}
-                                                className="text-indigo-600 hover:text-indigo-800"
-                                            >
-                                                <Icon name="Info" size={14} />
-                                            </button>
-                                        </div>
-                                        <button
-                                            onClick={() => onDeleteItem('workout', workout.id)}
-                                            className="text-red-500 hover:text-red-700 text-sm"
-                                        >
-                                            <Icon name="Trash2" size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        {dailyRecord.supplements?.map((supplement, index) => {
-                            // 合計タンパク質を計算
-                            const totalProtein = (supplement.items || []).reduce((sum, item) => sum + (item.protein || 0), 0);
-
-                            return (
-                                <div key={supplement.id || index} className={`border rounded-lg p-4 hover:border-blue-300 transition ${supplement.isPredicted ? 'border-blue-300 bg-white' : 'border-gray-200 bg-white'}`}>
+                {/* 食事セクション */}
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                            <Icon name="Utensils" size={18} className="text-green-600" />
+                            食事
+                        </h4>
+                        <button
+                            onClick={() => window.handleQuickAction && window.handleQuickAction('meal')}
+                            className="text-xs px-3 py-1 bg-green-50 border border-green-300 text-green-700 rounded-lg hover:bg-green-100 transition"
+                        >
+                            + 追加
+                        </button>
+                    </div>
+                    {dailyRecord.meals?.length > 0 ? (
+                        <div className="space-y-3">
+                            {dailyRecord.meals.map((meal, index) => (
+                                <div key={meal.id || index} className={`border rounded-lg p-4 hover:border-emerald-300 transition ${meal.isPredicted ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}`}>
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <Icon name="Pill" size={16} className="text-blue-600" />
-                                                <p className="font-medium">{supplement.name}</p>
-                                                {supplement.isPredicted && (
+                                                <p className="font-medium">{meal.name}</p>
+                                                {meal.isPredicted && (
                                                     <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                         <Icon name="Sparkles" size={10} />
                                                         昨日から
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-gray-500 mb-2">{supplement.time}</p>
-                                            {supplement.items?.map((item, i) => {
-                                                // 正確な分量表示を最適化
-                                                const servings = item.servings || 1;
-                                                const servingSize = item.servingSize || 0;
-                                                const servingUnit = item.servingUnit || 'g';
-                                                const totalAmount = servings * servingSize;
-                                                const unit = item.unit || `${servingSize}${servingUnit}`;
-
-                                                // 表示形式の最適化
-                                                let displayText = '';
-                                                if (servings === 1) {
-                                                    // 1回分の場合はシンプルに表示
-                                                    displayText = `${item.name} ${unit}`;
-                                                } else {
-                                                    // 複数回分の場合
-                                                    displayText = `${item.name} ${servings}回分 = ${totalAmount}${servingUnit}`;
-                                                }
-
-                                                return (
-                                                    <p key={i} className="text-sm text-gray-600">
-                                                        {displayText}
-                                                    </p>
-                                                );
-                                            })}
+                                            <p className="text-sm text-gray-500 mb-2">{meal.time}</p>
+                                            {meal.items?.map((item, i) => (
+                                                <p key={i} className="text-sm text-gray-600">
+                                                    {item.name} {item.amount}
+                                                </p>
+                                            ))}
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm text-blue-600">P: {totalProtein.toFixed(1)}g</p>
+                                            <p className="font-bold text-emerald-600 mb-2">{meal.calories} kcal</p>
                                             <button
-                                                onClick={() => onDeleteItem('supplement', supplement.id)}
-                                                className="text-red-500 hover:text-red-700 text-sm mt-2"
+                                                onClick={() => onDeleteItem('meal', meal.id)}
+                                                className="text-red-500 hover:text-red-700 text-sm"
                                             >
                                                 <Icon name="Trash2" size={16} />
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-                            );
-                        })}
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-gray-400 text-center py-4">食事の記録がありません</p>
+                    )}
+                </div>
+
+                {/* 運動セクション */}
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                            <Icon name="Dumbbell" size={18} className="text-orange-600" />
+                            運動
+                        </h4>
+                        <button
+                            onClick={() => window.handleQuickAction && window.handleQuickAction('workout')}
+                            className="text-xs px-3 py-1 bg-orange-50 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-100 transition"
+                        >
+                            + 追加
+                        </button>
                     </div>
-                )}
+                    {dailyRecord.workouts?.length > 0 ? (
+                        <div className="space-y-3">
+                            {dailyRecord.workouts.map((workout, index) => (
+                                <div key={workout.id || index} className={`border rounded-lg p-4 hover:border-orange-300 transition ${workout.isPredicted ? 'border-blue-300 bg-white' : 'border-gray-200 bg-white'}`}>
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <p className="font-medium">{workout.name}</p>
+                                                {workout.isPredicted && (
+                                                    <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        <Icon name="Sparkles" size={10} />
+                                                        昨日から
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-gray-500 mb-2">{workout.time}</p>
+                                            {workout.exercises?.map((exercise, i) => (
+                                                <div key={i} className="text-sm text-gray-600">
+                                                    <p className="font-medium">{exercise.name}</p>
+                                                    {exercise.sets?.map((set, si) => (
+                                                        <p key={si} className="text-xs">
+                                                            Set {si + 1}: {set.weight}kg × {set.reps}回
+                                                        </p>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="text-right">
+                                            <button
+                                                onClick={() => onDeleteItem('workout', workout.id)}
+                                                className="text-red-500 hover:text-red-700 text-sm"
+                                            >
+                                                <Icon name="Trash2" size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-gray-400 text-center py-4">運動の記録がありません</p>
+                    )}
+                </div>
+
+                {/* 体調セクション - 直接入力 */}
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                            <Icon name="HeartPulse" size={18} className="text-red-600" />
+                            コンディション
+                        </h4>
+                    </div>
+                    <div className="space-y-2">
+                        {/* 睡眠時間 */}
+                        <div className="py-2 px-3 bg-gray-50 rounded-lg">
+                            <div className="mb-2">
+                                <span className="text-sm text-gray-700 font-bold">睡眠時間</span>
+                            </div>
+                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
+                                {/* スライド背景 */}
+                                {dailyRecord.conditions?.sleepHours && (
+                                    <div
+                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        style={{
+                                            left: `calc(${((dailyRecord.conditions.sleepHours - 1) / 5) * 100}% + 0.375rem)`,
+                                            width: 'calc(20% - 0.375rem)'
+                                        }}
+                                    />
+                                )}
+                                {[
+                                    { value: 1, label: '5h以下' },
+                                    { value: 2, label: '6h' },
+                                    { value: 3, label: '7h' },
+                                    { value: 4, label: '8h' },
+                                    { value: 5, label: '9h以上' }
+                                ].map(item => (
+                                    <button
+                                        key={item.value}
+                                        onClick={async () => {
+                                            const updated = {
+                                                ...dailyRecord,
+                                                conditions: {
+                                                    ...(dailyRecord.conditions || {}),
+                                                    sleepHours: item.value
+                                                }
+                                            };
+                                            setDailyRecord(updated);
+                                            const userId = user?.uid || DEV_USER_ID;
+                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                        }}
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                            item.value === ((dailyRecord.conditions?.sleepHours) || 0)
+                                                ? 'text-white'
+                                                : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 睡眠の質 */}
+                        <div className="py-2 px-3 bg-gray-50 rounded-lg">
+                            <div className="mb-2">
+                                <span className="text-sm text-gray-700 font-bold">睡眠の質</span>
+                            </div>
+                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
+                                {/* スライド背景 */}
+                                {dailyRecord.conditions?.sleepQuality && (
+                                    <div
+                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        style={{
+                                            left: `calc(${((dailyRecord.conditions.sleepQuality - 1) / 5) * 100}% + 0.375rem)`,
+                                            width: 'calc(20% - 0.375rem)'
+                                        }}
+                                    />
+                                )}
+                                {[
+                                    { value: 1, label: '最悪' },
+                                    { value: 2, label: '悪' },
+                                    { value: 3, label: '普通' },
+                                    { value: 4, label: '良' },
+                                    { value: 5, label: '最高' }
+                                ].map(item => (
+                                    <button
+                                        key={item.value}
+                                        onClick={async () => {
+                                            const updated = {
+                                                ...dailyRecord,
+                                                conditions: {
+                                                    ...(dailyRecord.conditions || {}),
+                                                    sleepQuality: item.value
+                                                }
+                                            };
+                                            setDailyRecord(updated);
+                                            const userId = user?.uid || DEV_USER_ID;
+                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                        }}
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                            item.value === ((dailyRecord.conditions?.sleepQuality) || 0)
+                                                ? 'text-white'
+                                                : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 食欲 */}
+                        <div className="py-2 px-3 bg-gray-50 rounded-lg">
+                            <div className="mb-2">
+                                <span className="text-sm text-gray-700 font-bold">食欲</span>
+                            </div>
+                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
+                                {/* スライド背景 */}
+                                {dailyRecord.conditions?.appetite && (
+                                    <div
+                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        style={{
+                                            left: `calc(${((dailyRecord.conditions.appetite - 1) / 5) * 100}% + 0.375rem)`,
+                                            width: 'calc(20% - 0.375rem)'
+                                        }}
+                                    />
+                                )}
+                                {[
+                                    { value: 1, label: 'なし' },
+                                    { value: 2, label: '少' },
+                                    { value: 3, label: '普通' },
+                                    { value: 4, label: '良好' },
+                                    { value: 5, label: '最適' }
+                                ].map(item => (
+                                    <button
+                                        key={item.value}
+                                        onClick={async () => {
+                                            const updated = {
+                                                ...dailyRecord,
+                                                conditions: {
+                                                    ...(dailyRecord.conditions || {}),
+                                                    appetite: item.value
+                                                }
+                                            };
+                                            setDailyRecord(updated);
+                                            const userId = user?.uid || DEV_USER_ID;
+                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                        }}
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                            item.value === ((dailyRecord.conditions?.appetite) || 0)
+                                                ? 'text-white'
+                                                : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 腸内環境 */}
+                        <div className="py-2 px-3 bg-gray-50 rounded-lg">
+                            <div className="mb-2">
+                                <span className="text-sm text-gray-700 font-bold">腸内環境</span>
+                            </div>
+                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
+                                {/* スライド背景 */}
+                                {dailyRecord.conditions?.digestion && (
+                                    <div
+                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        style={{
+                                            left: `calc(${((dailyRecord.conditions.digestion - 1) / 5) * 100}% + 0.375rem)`,
+                                            width: 'calc(20% - 0.375rem)'
+                                        }}
+                                    />
+                                )}
+                                {[
+                                    { value: 1, label: '不調' },
+                                    { value: 2, label: 'やや悪' },
+                                    { value: 3, label: '普通' },
+                                    { value: 4, label: '良好' },
+                                    { value: 5, label: '最高' }
+                                ].map(item => (
+                                    <button
+                                        key={item.value}
+                                        onClick={async () => {
+                                            const updated = {
+                                                ...dailyRecord,
+                                                conditions: {
+                                                    ...(dailyRecord.conditions || {}),
+                                                    digestion: item.value
+                                                }
+                                            };
+                                            setDailyRecord(updated);
+                                            const userId = user?.uid || DEV_USER_ID;
+                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                        }}
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                            item.value === ((dailyRecord.conditions?.digestion) || 0)
+                                                ? 'text-white'
+                                                : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 集中力 */}
+                        <div className="py-2 px-3 bg-gray-50 rounded-lg">
+                            <div className="mb-2">
+                                <span className="text-sm text-gray-700 font-bold">集中力</span>
+                            </div>
+                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
+                                {/* スライド背景 */}
+                                {dailyRecord.conditions?.focus && (
+                                    <div
+                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        style={{
+                                            left: `calc(${((dailyRecord.conditions.focus - 1) / 5) * 100}% + 0.375rem)`,
+                                            width: 'calc(20% - 0.375rem)'
+                                        }}
+                                    />
+                                )}
+                                {[
+                                    { value: 1, label: '最低' },
+                                    { value: 2, label: '低' },
+                                    { value: 3, label: '普通' },
+                                    { value: 4, label: '高' },
+                                    { value: 5, label: '最高' }
+                                ].map(item => (
+                                    <button
+                                        key={item.value}
+                                        onClick={async () => {
+                                            const updated = {
+                                                ...dailyRecord,
+                                                conditions: {
+                                                    ...(dailyRecord.conditions || {}),
+                                                    focus: item.value
+                                                }
+                                            };
+                                            setDailyRecord(updated);
+                                            const userId = user?.uid || DEV_USER_ID;
+                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                        }}
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                            item.value === ((dailyRecord.conditions?.focus) || 0)
+                                                ? 'text-white'
+                                                : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* ストレス */}
+                        <div className="py-2 px-3 bg-gray-50 rounded-lg">
+                            <div className="mb-2">
+                                <span className="text-sm text-gray-700 font-bold">ストレス</span>
+                            </div>
+                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
+                                {/* スライド背景 */}
+                                {dailyRecord.conditions?.stress && (
+                                    <div
+                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        style={{
+                                            left: `calc(${((dailyRecord.conditions.stress - 1) / 5) * 100}% + 0.375rem)`,
+                                            width: 'calc(20% - 0.375rem)'
+                                        }}
+                                    />
+                                )}
+                                {[
+                                    { value: 1, label: '極大' },
+                                    { value: 2, label: '高' },
+                                    { value: 3, label: '普通' },
+                                    { value: 4, label: '低' },
+                                    { value: 5, label: 'なし' }
+                                ].map(item => (
+                                    <button
+                                        key={item.value}
+                                        onClick={async () => {
+                                            const updated = {
+                                                ...dailyRecord,
+                                                conditions: {
+                                                    ...(dailyRecord.conditions || {}),
+                                                    stress: item.value
+                                                }
+                                            };
+                                            setDailyRecord(updated);
+                                            const userId = user?.uid || DEV_USER_ID;
+                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                        }}
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                            item.value === ((dailyRecord.conditions?.stress) || 0)
+                                                ? 'text-white'
+                                                : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 閃きセクション */}
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                            <Icon name="Lightbulb" size={18} className="text-yellow-500" />
+                            閃き
+                        </h4>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                        <textarea
+                            value={dailyRecord.notes || ''}
+                            onChange={async (e) => {
+                                const updated = {
+                                    ...dailyRecord,
+                                    notes: e.target.value
+                                };
+                                setDailyRecord(updated);
+                                const userId = user?.uid || DEV_USER_ID;
+                                await DataService.saveDailyRecord(userId, currentDate, updated);
+                            }}
+                            placeholder="今日の気づき、メモなど..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none text-sm"
+                            rows="3"
+                        />
+                    </div>
+                </div>
+
+                {/* 分析ボタン */}
+                <div>
+                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                            <Icon name="PieChart" size={18} className="text-indigo-600" />
+                            分析
+                        </h4>
+                        <button
+                            onClick={() => window.handleQuickAction && window.handleQuickAction('analysis')}
+                            className="text-xs px-3 py-1 bg-indigo-50 border border-indigo-300 text-indigo-700 rounded-lg hover:bg-indigo-100 transition"
+                        >
+                            詳細を見る
+                        </button>
+                    </div>
+                    <p className="text-sm text-gray-500">AIによる詳細な栄養分析を確認できます</p>
+                </div>
+
+            </div>
+
+            {/* 指示書編集モーダル */}
+            {showDirectiveEdit && todayDirective && (
+                <DirectiveEditModal
+                    directive={todayDirective}
+                    onClose={() => setShowDirectiveEdit(false)}
+                    onSave={(updatedDirective) => {
+                        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
+                        const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
+                        const updated = directives.map(d =>
+                            d.date === updatedDirective.date ? updatedDirective : d
+                        );
+                        localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updated));
+                        setTodayDirective(updatedDirective);
+                        setShowDirectiveEdit(false);
+                    }}
+                    onDelete={() => {
+                        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
+                        const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
+                        const updated = directives.filter(d => d.date !== todayDirective.date);
+                        localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updated));
+                        setTodayDirective(null);
+                        setShowDirectiveEdit(false);
+                    }}
+                    getCategoryIcon={getCategoryIcon}
+                    getCategoryLabel={getCategoryLabel}
+                    getCategoryColor={getCategoryColor}
+                />
+            )}
+        </div>
+    );
+};
+
+// ===== Directive Edit Modal Component =====
+const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryIcon, getCategoryLabel, getCategoryColor }) => {
+    const [editedMessage, setEditedMessage] = useState(directive.message);
+    const [editedType, setEditedType] = useState(directive.type);
+
+    const handleSave = () => {
+        if (!editedMessage.trim()) {
+            alert('指示内容を入力してください');
+            return;
+        }
+        onSave({ ...directive, message: editedMessage.trim(), type: editedType });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-md w-full shadow-xl">
+                {/* ヘッダー */}
+                <div className="p-4 border-b flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <Icon name="Edit3" size={20} className="text-purple-600" />
+                        指示書を編集
+                    </h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <Icon name="X" size={24} />
+                    </button>
+                </div>
+
+                {/* コンテンツ */}
+                <div className="p-4 space-y-4">
+                    {/* カテゴリー選択 */}
+                    <div>
+                        <label className="text-sm font-bold text-gray-700 block mb-2">カテゴリー</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {['meal', 'exercise', 'condition'].map((type) => (
+                                <button
+                                    key={type}
+                                    onClick={() => setEditedType(type)}
+                                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition ${
+                                        editedType === type
+                                            ? `bg-gradient-to-r ${getCategoryColor(type).bg} border-2 ${getCategoryColor(type).border} ${getCategoryColor(type).text}`
+                                            : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    <Icon name={getCategoryIcon(type)} size={14} />
+                                    {getCategoryLabel(type)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 指示内容 */}
+                    <div>
+                        <label className="text-sm font-bold text-gray-700 block mb-2">指示内容</label>
+                        <textarea
+                            value={editedMessage}
+                            onChange={(e) => setEditedMessage(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm"
+                            rows="3"
+                            placeholder="例: 鶏むね肉150g追加"
+                        />
+                    </div>
+                </div>
+
+                {/* アクションボタン */}
+                <div className="p-4 border-t flex gap-2">
+                    <button
+                        onClick={handleSave}
+                        className="flex-1 bg-purple-600 text-white py-2.5 rounded-lg hover:bg-purple-700 transition font-semibold text-sm"
+                    >
+                        保存
+                    </button>
+                    <button
+                        onClick={onDelete}
+                        className="px-4 bg-red-50 text-red-600 py-2.5 rounded-lg hover:bg-red-100 transition font-semibold text-sm border border-red-300"
+                    >
+                        削除
+                    </button>
+                </div>
             </div>
         </div>
     );

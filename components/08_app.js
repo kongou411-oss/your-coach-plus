@@ -48,34 +48,23 @@
             const [showPGBaseView, setShowPGBaseView] = useState(false);
             const [showCOMYView, setShowCOMYView] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
-            const [showAIFoodRecognition, setShowAIFoodRecognition] = useState(false); // AI食事認識
             const [showStageInfo, setShowStageInfo] = useState(false);
             const [showContinuitySupport, setShowContinuitySupport] = useState(false); // 継続支援システム
-            const [shortcuts, setShortcuts] = useState(() => {
-                const saved = localStorage.getItem('chevronShortcuts');
-                return saved ? JSON.parse(saved) : [
-                    { side: 'left', icon: 'Activity', label: '体組成', action: 'open_body_composition' },
-                    { side: 'left', icon: 'Utensils', label: '食事', action: 'open_meal' },
-                    { side: 'left', icon: 'Dumbbell', label: '運動', action: 'open_workout' },
-                    { side: 'right', icon: 'PieChart', label: '分析', action: 'open_analysis' },
-                    { side: 'right', icon: 'TrendingUp', label: '履歴', action: 'open_history' },
-                    { side: 'right', icon: 'Settings', label: '設定', action: 'open_settings' }
-                ];
-            });
             const [aiSuggestion, setAiSuggestion] = useState(null); // オートパイロットのAI提案
             const [directiveEditing, setDirectiveEditing] = useState(false);
             const [directiveText, setDirectiveText] = useState('');
             const [directiveType, setDirectiveType] = useState('meal'); // 'meal', 'exercise', 'condition'
             const [darkMode, setDarkMode] = useState(() => {
                 const saved = localStorage.getItem('darkMode');
-                return saved !== null ? saved === 'true' : true;
+                return saved === 'true';
             });
             const [showAdminPanel, setShowAdminPanel] = useState(false);
             const [isAdmin, setIsAdmin] = useState(false);
+            const [showTutorial, setShowTutorial] = useState(false);
             const [earnedBadges, setEarnedBadges] = useState([]);
             const [lastUpdate, setLastUpdate] = useState(Date.now());
             const [bottomBarMenu, setBottomBarMenu] = useState(null); // 'daily', 'history', 'settings'
-            const [bottomBarExpanded, setBottomBarExpanded] = useState(true); // BAB展開状態（ダッシュボード起動時は展開）
+            const [bottomBarExpanded, setBottomBarExpanded] = useState(true); // BAB展開状態
             const [showDatePicker, setShowDatePicker] = useState(false); // 日付ピッカーモーダル
             const [calendarViewYear, setCalendarViewYear] = useState(new Date().getFullYear());
             const [calendarViewMonth, setCalendarViewMonth] = useState(new Date().getMonth() + 1);
@@ -85,47 +74,18 @@
             const [aiProcessing, setAiProcessing] = useState(false);
             const [aiParsedData, setAiParsedData] = useState(null);
 
-            // 初回フロー管理
-            const [firstTimeCompleted, setFirstTimeCompleted] = useState(() => {
-                const saved = localStorage.getItem('yourCoachBeta_firstTimeCompleted');
-                return saved ? JSON.parse(saved) : {
-                    meal: false,
-                    training: false,
-                    condition: false,
-                    analysis: false,
-                    directive: false,
-                    pg_base: false
-                };
-            });
-
-            // オンボーディング後の食事記録誘導ポップアップ
-            const [showMealGuidancePopup, setShowMealGuidancePopup] = useState(false);
-            // 運動誘導ポップアップ
-            const [showWorkoutGuidancePopup, setShowWorkoutGuidancePopup] = useState(false);
-            // コンディション開放ポップアップ
-            const [showConditionGuidancePopup, setShowConditionGuidancePopup] = useState(false);
-
-            // アプリ初期化時にテーマを復元
+            // チュートリアル初回起動チェック
             useEffect(() => {
-                ThemeUtils.restoreTheme();
-            }, []);
+                const tutorialCompleted = localStorage.getItem(STORAGE_KEYS.TUTORIAL_COMPLETED);
+                if (!tutorialCompleted && userProfile) {
+                    // プロフィールが設定されていて、かつチュートリアル未完了の場合
+                    setShowTutorial(true);
+                }
 
-            // バッジ読み込み
-            useEffect(() => {
+                // バッジ読み込み
                 const badges = JSON.parse(localStorage.getItem(STORAGE_KEYS.BADGES) || '[]');
                 setEarnedBadges(badges);
             }, [userProfile]);
-
-            // モーダル表示時にFABとBABを自動格納
-            useEffect(() => {
-                if (showAddView || showAnalysisView || showHistoryV10 || showPGBaseView ||
-                    showCOMYView || showSettings || showDatePicker || bottomBarMenu) {
-                    setFabOpen(false);
-                    setBottomBarExpanded(false); // モーダル表示時はBABを格納
-                } else {
-                    setBottomBarExpanded(true); // ダッシュボード表示時はBABを展開
-                }
-            }, [showAddView, showAnalysisView, showHistoryV10, showPGBaseView, showCOMYView, showSettings, showDatePicker, bottomBarMenu]);
 
             // 管理者パネル開くイベントリスナー
             useEffect(() => {
@@ -134,15 +94,6 @@
                 };
                 document.addEventListener('openAdminPanel', handleOpenAdminPanel);
                 return () => document.removeEventListener('openAdminPanel', handleOpenAdminPanel);
-            }, []);
-
-            // ショートカット更新イベントリスナー
-            useEffect(() => {
-                const handleShortcutsUpdated = (e) => {
-                    setShortcuts(e.detail);
-                };
-                window.addEventListener('shortcutsUpdated', handleShortcutsUpdated);
-                return () => window.removeEventListener('shortcutsUpdated', handleShortcutsUpdated);
             }, []);
 
             // URLパラメータチェック（投稿リンク対応）
@@ -180,14 +131,30 @@
                             }
                             setUsageDays(days);
 
-                            // 日数ベースの機能開放
-                            const unlocked = [];
+                            // 動的オンボーディング + 日数ベースの機能開放
+                            const unlocked = ['food']; // 食事記録は最初から開放
+                            const triggers = JSON.parse(localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS) || '{}');
+
                             Object.values(FEATURES).forEach(feature => {
-                                if (days >= feature.requiredDays) {
-                                    unlocked.push(feature.id);
+                                if (feature.trigger === 'initial') {
+                                    // initial: 最初から開放
+                                    if (!unlocked.includes(feature.id)) unlocked.push(feature.id);
+                                } else if (feature.trigger === 'days') {
+                                    // days: 日数ベースで開放
+                                    if (days >= feature.requiredDays && !unlocked.includes(feature.id)) {
+                                        unlocked.push(feature.id);
+                                    }
+                                } else if (feature.trigger && triggers[feature.trigger]) {
+                                    // 動的トリガー: トリガーが発火済みなら開放
+                                    if (!unlocked.includes(feature.id)) unlocked.push(feature.id);
                                 }
                             });
                             setUnlockedFeatures(unlocked);
+
+                            // 守破離の段階を更新（21日で離、7日で破）
+                            if (days >= 21) setCurrentStage('離');
+                            else if (days >= 7) setCurrentStage('破');
+                            else setCurrentStage('守');
                         }
 
                         const generateDummyData = async () => {
@@ -217,9 +184,6 @@
                     // 本番モード: Firebase認証
                     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
                         if (firebaseUser) {
-                            // 認証状態変更時にユーザー情報を更新（最終ログイン時刻など）
-                            await DataService.saveOrUpdateAuthUser(firebaseUser);
-
                             setUser(firebaseUser);
                             const profile = await DataService.getUserProfile(firebaseUser.uid);
                             if (profile) {
@@ -355,82 +319,6 @@
                 }
             };
 
-            // モーダル/ページの排他制御関数
-            const closeAllModals = () => {
-                setShowAddView(false);
-                setShowAnalysisView(false);
-                setShowHistoryV10(false);
-                setShowPGBaseView(false);
-                setShowCOMYView(false);
-                setShowSettings(false);
-                setShowAIFoodRecognition(false);
-            };
-
-            // ショートカットアクションハンドラー
-            const handleShortcutAction = (action) => {
-                switch (action) {
-                    case 'open_body_composition':
-                        // ダッシュボードの体組成セクションにスクロール（ルーティンの下に配置）
-                        const bodyCompSection = document.getElementById('body-composition-section');
-                        if (bodyCompSection) {
-                            // ルーティンの高さ分（約180px）を考慮してオフセット
-                            const yOffset = -200;
-                            const y = bodyCompSection.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                            window.scrollTo({ top: y, behavior: 'smooth' });
-                        }
-                        break;
-                    case 'open_condition':
-                        // ダッシュボードのコンディションセクションにスクロール（ルーティンの下に配置）
-                        const conditionSection = document.getElementById('condition-section');
-                        if (conditionSection) {
-                            // ルーティンの高さ分（約180px）を考慮してオフセット
-                            const yOffset = -200;
-                            const y = conditionSection.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                            window.scrollTo({ top: y, behavior: 'smooth' });
-                        }
-                        break;
-                    case 'open_meal':
-                        closeAllModals();
-                        setPredictedData(null); // 新規追加モードにリセット
-                        setAddViewType('meal');
-                        setShowAddView(true);
-                        break;
-                    case 'open_meal_photo':
-                        // AI食事写真解析機能を直接開く
-                        closeAllModals();
-                        setShowAIFoodRecognition(true);
-                        break;
-                    case 'open_workout':
-                        closeAllModals();
-                        setPredictedData(null); // 新規追加モードにリセット
-                        setAddViewType('workout');
-                        setShowAddView(true);
-                        break;
-                    case 'open_analysis':
-                        closeAllModals();
-                        setShowAnalysisView(true);
-                        break;
-                    case 'open_history':
-                        closeAllModals();
-                        setShowHistoryV10(true);
-                        break;
-                    case 'open_pgbase':
-                        closeAllModals();
-                        setShowPGBaseView(true);
-                        break;
-                    case 'open_community':
-                        closeAllModals();
-                        setShowCOMYView(true);
-                        break;
-                    case 'open_settings':
-                        closeAllModals();
-                        setShowSettings(true);
-                        break;
-                    default:
-                        console.warn('Unknown shortcut action:', action);
-                }
-            };
-
             // 予測データ生成関数
             const generatePredictions = (previousRecord) => {
                 const predictions = {
@@ -510,8 +398,6 @@
             // クイックアクションハンドラをグローバルに設定
             useEffect(() => {
                 window.handleQuickAction = (action) => {
-                    closeAllModals();
-                    setPredictedData(null); // 新規追加モードにリセット
                     switch (action) {
                         case 'meal':
                             setAddViewType('meal');
@@ -563,12 +449,10 @@
             const handleFABItemClick = (type) => {
                 // 分析
                 if (type === 'analysis') {
-                    // コンディション記録が完了しているかチェック（6項目全て必須）
-                    if (!ConditionUtils.isFullyRecorded(dailyRecord)) {
-                        alert('この機能はコンディション記録を完了後に開放されます\n（睡眠時間・睡眠の質・食欲・消化・集中力・ストレスの6項目全て）');
+                    if (!unlockedFeatures.includes('analysis')) {
+                        alert('この機能はコンディション記録後に開放されます');
                         return;
                     }
-                    closeAllModals();
                     setShowAnalysisView(true);
                     setFabOpen(false);
                     return;
@@ -580,7 +464,6 @@
                         alert(`この機能は${FEATURES.PG_BASE.requiredDays}日継続で開放されます（残り${Math.max(0, FEATURES.PG_BASE.requiredDays - usageDays)}日）`);
                         return;
                     }
-                    closeAllModals();
                     setShowPGBaseView(true);
                     setFabOpen(false);
                     return;
@@ -592,7 +475,6 @@
                         alert(`この機能は${FEATURES.HISTORY_GRAPH.requiredDays}日継続で開放されます（残り${Math.max(0, FEATURES.HISTORY_GRAPH.requiredDays - usageDays)}日）`);
                         return;
                     }
-                    closeAllModals();
                     setShowHistoryView(true);
                     setFabOpen(false);
                     return;
@@ -600,11 +482,10 @@
 
                 // COMY
                 if (type === 'comy') {
-                    if (!unlockedFeatures.includes('community_view')) {
-                        alert(`この機能は${FEATURES.COMMUNITY_VIEW.requiredDays}日継続で開放されます（残り${Math.max(0, FEATURES.COMMUNITY_VIEW.requiredDays - usageDays)}日）`);
+                    if (!unlockedFeatures.includes('community')) {
+                        alert(`この機能は${FEATURES.COMMUNITY.requiredDays}日継続で開放されます（残り${Math.max(0, FEATURES.COMMUNITY.requiredDays - usageDays)}日）`);
                         return;
                     }
-                    closeAllModals();
                     setShowCOMYView(true);
                     setFabOpen(false);
                     return;
@@ -620,16 +501,17 @@
                 const featureId = featureMap[type];
                 if (!unlockedFeatures.includes(featureId)) {
                     const feature = Object.values(FEATURES).find(f => f.id === featureId);
-                    if (feature && feature.requiredDays > 0) {
-                        alert(`この機能は${feature.requiredDays}日目以降に開放されます`);
-                    } else {
-                        alert('この機能はまだ開放されていません');
+                    if (feature) {
+                        const triggerMessages = {
+                            'after_meal': '最初の食事を記録すると開放されます',
+                            'after_training': '最初のトレーニングを記録すると開放されます',
+                            'after_condition': '最初のコンディションを記録すると開放されます'
+                        };
+                        alert(triggerMessages[feature.trigger] || `この機能はまだ開放されていません`);
                     }
                     return;
                 }
 
-                closeAllModals();
-                setPredictedData(null); // 新規追加モードにリセット
                 setAddViewType(type);
                 setShowAddView(true);
                 setFabOpen(false);
@@ -681,10 +563,7 @@
             }
 
             if (!userProfile) {
-                return <OnboardingScreen user={user} onComplete={(profile) => {
-                    setUserProfile(profile);
-                    setShowMealGuidancePopup(true);
-                }} />;
+                return <OnboardingScreen user={user} onComplete={(profile) => setUserProfile(profile)} />;
             }
 
             // LBM計算
@@ -692,12 +571,7 @@
             const targetPFC = LBMUtils.calculateTargetPFC(
                 userProfile.tdeeBase || 2200,
                 userProfile.weightChangePace || 0,
-                lbm,
-                userProfile.style || userProfile.lifestyle || '一般',
-                userProfile.purpose || 'メンテナンス',
-                userProfile.dietStyle || 'バランス',
-                userProfile.calorieAdjustment,
-                userProfile.customPFC
+                lbm
             );
 
             // 進捗計算
@@ -718,7 +592,7 @@
                                     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                                     handleDateChange(dateStr);
                                 }}
-                                className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition"
+                                className="p-2 hover:bg-gray-100 rounded-full transition"
                             >
                                 <Icon name="ChevronLeft" size={20} className="text-gray-600" />
                             </button>
@@ -758,7 +632,7 @@
                                                 onClick={() => handleDateChange(todayStr)}
                                                 className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition font-medium"
                                             >
-                                                今日へ
+                                                今日
                                             </button>
                                         );
                                     } else {
@@ -777,7 +651,7 @@
                                     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                                     handleDateChange(dateStr);
                                 }}
-                                className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition"
+                                className="p-2 hover:bg-gray-100 rounded-full transition"
                             >
                                 <Icon name="ChevronRight" size={20} className="text-gray-600" />
                             </button>
@@ -801,12 +675,12 @@
                                     return (
                                         <div className="w-full px-4 py-3 flex items-center justify-between border-t">
                                             <div className="flex items-center gap-3">
-                                                <div className="bg-purple-600 rounded-lg w-10 h-10 flex items-center justify-center">
-                                                    <Icon name="Dumbbell" size={20} className="text-white" />
+                                                <div className="bg-purple-100 p-2 rounded-lg">
+                                                    <Icon name="Dumbbell" size={20} className="text-purple-600" />
                                                 </div>
                                                 <div className="text-left">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-bold text-gray-900">{currentRoutine.splitType || currentRoutine.name}</span>
+                                                        <span className="text-sm font-bold text-gray-900">{currentRoutine.name}</span>
                                                         <span className="text-xs text-gray-500">Day {currentIndex + 1}/{routines.length}</span>
                                                     </div>
                                                     <div className="text-xs text-gray-600">今日のルーティン</div>
@@ -814,7 +688,6 @@
                                             </div>
                                             <button
                                                 onClick={() => {
-                                                    closeAllModals();
                                                     setShowSettings(true);
                                                 }}
                                                 className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-purple-700 transition"
@@ -848,7 +721,7 @@
                                     </div>
                                     <button
                                         onClick={() => setShowDatePicker(false)}
-                                        className="w-8 h-8 flex items-center justify-center hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                                        className="hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition"
                                     >
                                         <Icon name="X" size={20} />
                                     </button>
@@ -915,7 +788,7 @@
                                                                 setCalendarViewMonth(calendarViewMonth - 1);
                                                             }
                                                         }}
-                                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition"
+                                                        className="p-2 hover:bg-gray-100 rounded-full transition"
                                                     >
                                                         <Icon name="ChevronLeft" size={20} />
                                                     </button>
@@ -933,7 +806,7 @@
                                                                 setCalendarViewMonth(calendarViewMonth + 1);
                                                             }
                                                         }}
-                                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition"
+                                                        className="p-2 hover:bg-gray-100 rounded-full transition"
                                                     >
                                                         <Icon name="ChevronRight" size={20} />
                                                     </button>
@@ -976,129 +849,358 @@
                         </div>
                     )}
 
-                    {/* 今日の指示書（バナー直下） */}
-                    {unlockedFeatures.includes('directive') && (() => {
-                        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
-                        const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
-                        const todayDirective = directives.find(d => d.date === currentDate);
+                    {/* 指示書・ルーティンセクション */}
+                    <div className="px-4 pt-4 space-y-3">
+                        {/* 指示書（AI生成提案型 - 分析閲覧後に開放） */}
+                        {unlockedFeatures.includes('directive') && (() => {
+                            const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
+                            const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
+                            // 表示中の日付の指示書を取得
+                            const todayDirective = directives.find(d => d.date === currentDate);
 
-                        if (!todayDirective) return null;
+                            const handleSave = () => {
+                                const now = new Date();
+                                const deadline = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24時間後
+                                const newDirective = {
+                                    date: currentDate, // 表示中の日付に保存
+                                    message: directiveText,
+                                    type: directiveType, // タイプを保存
+                                    deadline: deadline.toISOString(),
+                                    createdAt: now.toISOString()
+                                };
 
-                        const getTimeRemaining = (deadline) => {
-                            if (!deadline) return 'まもなく';
-                            const now = new Date();
-                            const end = new Date(deadline);
-                            const diff = end - now;
-                            if (diff < 0) return '期限切れ';
-                            const hours = Math.floor(diff / (1000 * 60 * 60));
-                            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                            return `残り${hours}時間${minutes}分`;
-                        };
+                                const updatedDirectives = directives.filter(d => d.date !== currentDate);
+                                updatedDirectives.push(newDirective);
+                                localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
+                                setDirectiveEditing(false);
+                                setDirectiveText('');
+                            };
 
-                        const getCategoryIcon = (type) => {
-                            switch (type) {
-                                case 'meal': return 'Utensils';
-                                case 'exercise': return 'Dumbbell';
-                                case 'condition': return 'Activity';
-                                default: return 'FileText';
-                            }
-                        };
-
-                        const getCategoryLabel = (type) => {
-                            switch (type) {
-                                case 'meal': return '食事';
-                                case 'exercise': return '運動';
-                                case 'condition': return '体調';
-                                default: return 'その他';
-                            }
-                        };
-
-                        const getCategoryColor = (type) => {
-                            switch (type) {
-                                case 'meal':
-                                    return {
-                                        bg: 'from-green-50 to-emerald-50',
-                                        border: 'border-green-500',
-                                        icon: 'text-green-600',
-                                        text: 'text-green-700'
-                                    };
-                                case 'exercise':
-                                    return {
-                                        bg: 'from-orange-50 to-amber-50',
-                                        border: 'border-orange-500',
-                                        icon: 'text-orange-600',
-                                        text: 'text-orange-700'
-                                    };
-                                case 'condition':
-                                    return {
-                                        bg: 'from-indigo-50 to-purple-50',
-                                        border: 'border-indigo-500',
-                                        icon: 'text-indigo-600',
-                                        text: 'text-indigo-700'
-                                    };
-                                default:
-                                    return {
-                                        bg: 'from-gray-50 to-slate-50',
-                                        border: 'border-gray-500',
-                                        icon: 'text-gray-600',
-                                        text: 'text-gray-700'
-                                    };
-                            }
-                        };
-
-                        const handleCompleteDirective = () => {
-                            const updatedDirectives = directives.map(d =>
-                                d.date === currentDate ? { ...d, completed: true } : d
-                            );
-                            localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
-                            setLastUpdate(Date.now());
-                        };
-
-                        return (
-                            <div className="px-4 pt-3">
-                                <div className="bg-white rounded-xl shadow-sm p-5 slide-up">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <Icon name="Target" size={20} className="text-purple-600" />
-                                            <h3 className="text-lg font-bold text-gray-800">今日の指示書</h3>
+                            // 編集中
+                            if (directiveEditing) {
+                                return (
+                                    <div className="bg-gradient-to-r from-green-50 to-teal-50 border-2 border-green-500 rounded-xl p-4 shadow-lg slide-up">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <Icon name="FileText" size={20} className="text-green-700" />
+                                                <span className="font-bold text-green-900">今日の指示書</span>
+                                            </div>
+                                            <button
+                                                onClick={() => setDirectiveEditing(false)}
+                                                className="text-gray-500 hover:text-gray-700"
+                                            >
+                                                <Icon name="X" size={20} />
+                                            </button>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs bg-purple-600 text-white px-3 py-1 rounded-full font-medium">
-                                                {getTimeRemaining(todayDirective.deadline)}
-                                            </span>
+
+                                        {/* タイプ選択 */}
+                                        <div className="flex gap-2 mb-3">
+                                            <button
+                                                onClick={() => setDirectiveType('meal')}
+                                                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                                                    directiveType === 'meal'
+                                                        ? 'bg-emerald-600 text-white'
+                                                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                <Icon name="Utensils" size={14} className="inline mr-1" />
+                                                食事
+                                            </button>
+                                            <button
+                                                onClick={() => setDirectiveType('exercise')}
+                                                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                                                    directiveType === 'exercise'
+                                                        ? 'bg-orange-600 text-white'
+                                                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                <Icon name="Dumbbell" size={14} className="inline mr-1" />
+                                                運動
+                                            </button>
+                                            <button
+                                                onClick={() => setDirectiveType('condition')}
+                                                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                                                    directiveType === 'condition'
+                                                        ? 'bg-indigo-600 text-white'
+                                                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                <Icon name="Activity" size={14} className="inline mr-1" />
+                                                体調
+                                            </button>
+                                        </div>
+
+                                        <textarea
+                                            value={directiveText}
+                                            onChange={(e) => setDirectiveText(e.target.value)}
+                                            placeholder={
+                                                directiveType === 'meal' ? '例: 鶏むね肉150g追加' :
+                                                directiveType === 'exercise' ? '例: ベンチプレス 80kg×8回×3セット' :
+                                                '例: 睡眠8時間確保、水分2L摂取'
+                                            }
+                                            className="w-full p-3 border border-green-300 rounded-lg text-gray-800 text-sm resize-none focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                            rows="4"
+                                        />
+                                        <div className="flex flex-col gap-2 mt-3">
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={async () => {
+                                                        // 表示中の日付または最新の分析データを取得
+                                                        const analyses = JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_ANALYSES) || '{}');
+                                                        let latestAnalysis = analyses[currentDate];
+
+                                                        // 表示中の日付のデータがなければ、前日のデータを取得
+                                                        if (!latestAnalysis) {
+                                                            const prevDate = new Date(currentDate + 'T00:00:00');
+                                                            prevDate.setDate(prevDate.getDate() - 1);
+                                                            const prevDateStr = prevDate.toISOString().split('T')[0];
+                                                            latestAnalysis = analyses[prevDateStr];
+                                                        }
+
+                                                        if (!latestAnalysis) {
+                                                            alert('まず分析を実行してください。分析結果に基づいてAIが最適な指示書を提案します。');
+                                                            return;
+                                                        }
+
+                                                        // AI に提案を生成させる（タイプ別）
+                                                        let suggestion = '';
+
+                                                        if (directiveType === 'meal') {
+                                                            // 食事提案（PFC分析ベース）
+                                                            if (latestAnalysis.achievementRates.protein < 90) {
+                                                                const diff = Math.ceil(targetPFC.protein - latestAnalysis.actual.protein);
+                                                                // 鶏むね肉: 100gあたり23g（皮なし）のタンパク質
+                                                                const grams = Math.ceil(diff / 0.23);
+                                                                suggestion = `鶏むね肉${grams}g追加`;
+                                                            } else if (latestAnalysis.achievementRates.carbs > 110) {
+                                                                const diff = Math.ceil(latestAnalysis.actual.carbs - targetPFC.carbs);
+                                                                // 白米: 100gあたり37gの炭水化物
+                                                                const grams = Math.ceil(diff / 0.37);
+                                                                suggestion = `白米-${grams}g減らす`;
+                                                            } else if (latestAnalysis.achievementRates.fat < 90) {
+                                                                const diff = Math.ceil(targetPFC.fat - latestAnalysis.actual.fat);
+                                                                // アボカド: 100gあたり15gの脂質
+                                                                const grams = Math.ceil(diff / 0.15);
+                                                                suggestion = `アボカド${grams}g追加`;
+                                                            } else if (latestAnalysis.achievementRates.overall >= 95 && latestAnalysis.achievementRates.overall <= 105) {
+                                                                suggestion = '昨日の食事を完全再現';
+                                                            } else {
+                                                                suggestion = 'PFC比率を整える';
+                                                            }
+                                                        } else if (directiveType === 'exercise') {
+                                                            // 運動提案（前日のトレーニング履歴と目標ベース）
+                                                            const todayWorkouts = dailyRecord.workouts || [];
+                                                            const hasWorkout = todayWorkouts.length > 0;
+
+                                                            if (!hasWorkout) {
+                                                                // 運動なし
+                                                                if (userProfile.goal === 'diet' || userProfile.goal === 'lose_fat') {
+                                                                    suggestion = 'HIIT 20分 または ウォーキング 60分';
+                                                                } else if (userProfile.goal === 'bulk' || userProfile.goal === 'gain_muscle') {
+                                                                    suggestion = 'コンパウンド種目 4種目×3セット';
+                                                                } else {
+                                                                    suggestion = '中強度トレーニング 30-45分';
+                                                                }
+                                                            } else {
+                                                                // 運動済み
+                                                                const totalExercises = todayWorkouts.reduce((sum, w) => sum + (w.exercises?.length || 0), 0);
+                                                                if (totalExercises < 3) {
+                                                                    suggestion = '種目数を増やす（あと1-2種目）';
+                                                                } else {
+                                                                    suggestion = '今日は休養日。ストレッチ推奨';
+                                                                }
+                                                            }
+                                                        } else if (directiveType === 'condition') {
+                                                            // 体調管理提案（睡眠・ストレスベース）
+                                                            const condition = dailyRecord.conditions;
+                                                            if (condition) {
+                                                                if (condition.sleepHours < 7) {
+                                                                    suggestion = '睡眠時間を8時間確保する';
+                                                                } else if (condition.stress >= 4) {
+                                                                    suggestion = '深呼吸10分、リラックス時間を設ける';
+                                                                } else if (condition.fatigue <= 2) {
+                                                                    suggestion = '休養日を設ける、マッサージ推奨';
+                                                                } else if (condition.appetite <= 2) {
+                                                                    suggestion = '消化の良い食事、少量頻回に変更';
+                                                                } else {
+                                                                    suggestion = '現在の生活習慣を維持';
+                                                                }
+                                                            } else {
+                                                                suggestion = '睡眠8時間、水分2L、ストレス管理';
+                                                            }
+                                                        }
+
+                                                        setDirectiveText(suggestion);
+                                                    }}
+                                                    className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition text-xs font-medium"
+                                                >
+                                                    AI
+                                                </button>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-xs text-gray-500">24時間後に期限切れ</div>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => setDirectiveEditing(false)}
+                                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium"
+                                                    >
+                                                        キャンセル
+                                                    </button>
+                                                    <button
+                                                        onClick={handleSave}
+                                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-bold"
+                                                    >
+                                                        保存
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
+                                );
+                            }
 
-                                    <div className={`bg-gradient-to-r ${getCategoryColor(todayDirective.type).bg} rounded-lg p-4 border-l-4 ${getCategoryColor(todayDirective.type).border} ${todayDirective.completed ? 'opacity-60' : ''}`}>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Icon name={getCategoryIcon(todayDirective.type)} size={16} className={getCategoryColor(todayDirective.type).icon} />
-                                            <span className={`text-xs font-bold ${getCategoryColor(todayDirective.type).text}`}>
-                                                【{getCategoryLabel(todayDirective.type)}】
-                                            </span>
-                                        </div>
-                                        <p className={`text-sm font-bold text-gray-800 mb-1 ${todayDirective.completed ? 'line-through' : ''}`}>
-                                            {todayDirective.message}
-                                        </p>
-                                        {!todayDirective.completed && (
-                                            <button
-                                                onClick={handleCompleteDirective}
-                                                className="mt-3 w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition font-semibold flex items-center justify-center gap-2 text-sm"
-                                            >
-                                                <Icon name="Check" size={16} />
-                                                完了
-                                            </button>
-                                        )}
-                                        {todayDirective.completed && (
-                                            <div className="mt-3 flex items-center justify-center gap-2 text-green-600 font-medium text-sm">
-                                                <Icon name="CheckCircle" size={16} />
-                                                完了済み
+                            // 指示書がある場合
+                            if (todayDirective) {
+                                const deadline = new Date(todayDirective.deadline);
+                                const now = new Date();
+                                const timeLeft = deadline - now;
+                                const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+                                const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                                const isExpired = timeLeft <= 0;
+
+                                const isCompleted = todayDirective.completed || false;
+
+                                const handleToggleComplete = () => {
+                                    const updatedDirectives = directives.map(d =>
+                                        d.date === currentDate ? {...d, completed: !isCompleted} : d
+                                    );
+                                    localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
+                                    // Reactステートで再レンダリング
+                                    setLastUpdate(Date.now());
+                                };
+
+                                const directiveIconName =
+                                    todayDirective.type === 'meal' ? 'Utensils' :
+                                    todayDirective.type === 'exercise' ? 'Dumbbell' :
+                                    todayDirective.type === 'condition' ? 'Activity' :
+                                    'FileText';
+
+                                const directiveColor =
+                                    todayDirective.type === 'meal' ? 'emerald' :
+                                    todayDirective.type === 'exercise' ? 'orange' :
+                                    todayDirective.type === 'condition' ? 'indigo' :
+                                    'green';
+
+                                return (
+                                    <div className={`border-2 rounded-xl p-4 shadow-lg slide-up ${isCompleted ? 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-400' : `bg-gradient-to-r from-${directiveColor}-50 to-teal-50 border-${directiveColor}-500`}`}>
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <Icon name={directiveIconName} size={20} className={isCompleted ? "text-gray-500" : `text-${directiveColor}-700`} />
+                                                <span className={`font-bold ${isCompleted ? "text-gray-700 line-through" : `text-${directiveColor}-900`}`}>
+                                                    今日の指示書
+                                                    {todayDirective.type && (
+                                                        <span className="text-xs ml-2 opacity-70">
+                                                            ({todayDirective.type === 'meal' ? '食事' : todayDirective.type === 'exercise' ? '運動' : '体調'})
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                <button
+                                                    onClick={() => setInfoModal({
+                                                        show: true,
+                                                        title: '💡 指示書について',
+                                                        content: '1日1つ目標を決めて、その通りに実行しましょう。\n\n指示書を作成することで、今日やるべきことを明確にし、達成することで自己管理能力が向上します。\n\n例：\n• トレーニング: 脚の日（スクワット5セット）\n• 食事: タンパク質180g摂取\n• 睡眠: 23時までに就寝'
+                                                    })}
+                                                    className="text-indigo-600 hover:text-indigo-800"
+                                                >
+                                                    <Icon name="Info" size={16} />
+                                                </button>
                                             </div>
-                                        )}
+                                            <div className="flex items-center gap-2">
+                                                {!isExpired && !isCompleted && (
+                                                    <div className="text-right mr-2">
+                                                        <div className="text-xs text-gray-600">残り時間</div>
+                                                        <div className="font-bold text-red-600">{hoursLeft}h {minutesLeft}m</div>
+                                                    </div>
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        setDirectiveText(todayDirective.message);
+                                                        setDirectiveEditing(true);
+                                                    }}
+                                                    className={isCompleted ? "text-gray-500 hover:text-gray-700" : "text-green-700 hover:text-green-900"}
+                                                >
+                                                    <Icon name="Edit2" size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className={`rounded-lg p-3 mb-3 ${isCompleted ? "bg-gray-100" : "bg-white"}`}>
+                                            <p className={`whitespace-pre-wrap ${isCompleted ? "text-gray-500 line-through" : "text-gray-800"}`}>{todayDirective.message}</p>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                {isExpired && !isCompleted && (
+                                                    <div className="text-sm text-red-600 font-medium">期限切れ</div>
+                                                )}
+                                                {isCompleted && (
+                                                    <div className="text-sm text-gray-600 font-medium flex items-center gap-1">
+                                                        <Icon name="CheckCircle" size={16} className="text-green-600" />
+                                                        完了済み
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={handleToggleComplete}
+                                                className={`px-4 py-2 rounded-lg font-bold transition text-sm flex items-center gap-2 ${
+                                                    isCompleted
+                                                    ? 'bg-gray-400 text-white hover:bg-gray-500'
+                                                    : 'bg-green-600 text-white hover:bg-green-700'
+                                                }`}
+                                            >
+                                                <Icon name={isCompleted ? "RotateCcw" : "CheckCircle"} size={16} />
+                                                {isCompleted ? '未完了に戻す' : '完了'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // 指示書がない場合は AI 生成提案ボタン
+                            return (
+                                <div className="bg-gradient-to-r from-green-50 to-teal-50 border-2 border-green-500 rounded-xl p-4 shadow-lg slide-up">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Icon name="Sparkles" size={20} className="text-green-700" />
+                                            <span className="font-bold text-green-900">今日の指示書</span>
+                                            <button
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: '💡 AI指示書について',
+                                                    content: 'AIがあなたの分析結果に基づいて、今日の最適な目標を提案します。\n\n提案された指示書は編集可能で、自分の状況に合わせてカスタマイズできます。\n\n指示書を達成することで、自己管理能力が向上し、目標達成率が高まります。'
+                                                })}
+                                                className="text-indigo-600 hover:text-indigo-800"
+                                            >
+                                                <Icon name="Info" size={16} />
+                                            </button>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setDirectiveText('');
+                                                    setDirectiveEditing(true);
+                                                }}
+                                                className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition text-sm"
+                                            >
+                                                手動で作成
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="mt-2 text-sm text-gray-600">
+                                        AIに今日の目標を提案してもらうか、手動で作成できます
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })()}
+                            );
+                        })()}
+                    </div>
 
                     {/* メインコンテンツ */}
                     <div className="p-4 pb-32">
@@ -1113,39 +1215,6 @@
                             user={user}
                             currentDate={currentDate}
                             onDateChange={handleDateChange}
-                            firstTimeCompleted={firstTimeCompleted}
-                            setFirstTimeCompleted={setFirstTimeCompleted}
-                            showMealGuidancePopup={showMealGuidancePopup}
-                            onCloseMealGuidancePopup={() => setShowMealGuidancePopup(false)}
-                            showWorkoutGuidancePopup={showWorkoutGuidancePopup}
-                            onCloseWorkoutGuidancePopup={() => setShowWorkoutGuidancePopup(false)}
-                            showConditionGuidancePopup={showConditionGuidancePopup}
-                            onCloseConditionGuidancePopup={() => setShowConditionGuidancePopup(false)}
-                            onOpenAddView={(type) => {
-                                closeAllModals();
-                                setAddViewType(type);
-                                setShowAddView(true);
-                            }}
-                            onOpenAnalysis={() => {
-                                closeAllModals();
-                                setShowAnalysisView(true);
-                                // 分析を開いたらフラグ更新
-                                const newCompleted = { ...firstTimeCompleted, analysis: true };
-                                setFirstTimeCompleted(newCompleted);
-                                localStorage.setItem('yourCoachBeta_firstTimeCompleted', JSON.stringify(newCompleted));
-                            }}
-                            onOpenPGBase={() => {
-                                closeAllModals();
-                                setShowPGBaseView(true);
-                                // PG BASEを開いたらフラグ更新
-                                const newCompleted = { ...firstTimeCompleted, pg_base: true };
-                                setFirstTimeCompleted(newCompleted);
-                                localStorage.setItem('yourCoachBeta_firstTimeCompleted', JSON.stringify(newCompleted));
-                            }}
-                            onUpgradeClick={() => {
-                                closeAllModals();
-                                setShowSettings(true);
-                            }}
                             onDeleteItem={async (type, itemId) => {
                                 // 現在のstateから削除（DBから再読み込みしない）
                                 const updatedRecord = { ...dailyRecord };
@@ -1160,13 +1229,6 @@
                                 setDailyRecord(updatedRecord);
                                 await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
                             }}
-                            onEditItem={(type, item) => {
-                                // 編集モードで追加ビューを開く
-                                closeAllModals();
-                                setAddViewType(type);
-                                setPredictedData(item); // 既存データを編集用に渡す
-                                setShowAddView(true);
-                            }}
                         />
                     </div>
 
@@ -1176,7 +1238,6 @@
                             type={addViewType}
                             onClose={() => {
                                 setShowAddView(false);
-                                setPredictedData(null); // 編集モードをリセット
                                 if (openedFromSettings) {
                                     setShowSettings(true);
                                     setOpenedFromSettings(false);
@@ -1189,60 +1250,64 @@
                             currentRoutine={currentRoutine}
                             usageDays={usageDays}
                             dailyRecord={dailyRecord}
-                            setInfoModal={setInfoModal}
                             onAdd={async (item) => {
                                 // 表示中の日付（currentDate）に記録を保存
                                 const currentRecord = await DataService.getDailyRecord(user.uid, currentDate);
 
                                 let updatedRecord = currentRecord || { meals: [], workouts: [], conditions: null };
 
-                                // 編集モードの場合は既存のアイテムを削除
-                                const isEditMode = predictedData && predictedData.id;
+                                // トリガー判定用の変数
+                                let triggerFired = null;
+
+                                // 既存のトリガー状態を取得
+                                const triggers = JSON.parse(localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS) || '{}');
 
                                 if (addViewType === 'meal') {
-                                    if (isEditMode) {
-                                        // 編集モード: 既存のアイテムを削除してから新しいアイテムを追加
-                                        updatedRecord.meals = updatedRecord.meals?.filter(m => m.id !== predictedData.id) || [];
-                                    }
                                     updatedRecord.meals = [...(updatedRecord.meals || []), item];
-                                } else if (addViewType === 'workout') {
-                                    if (isEditMode) {
-                                        // 編集モード: 既存のアイテムを削除してから新しいアイテムを追加
-                                        updatedRecord.workouts = updatedRecord.workouts?.filter(w => w.id !== predictedData.id) || [];
+                                    // 初めての食事記録でトレーニング機能を開放
+                                    if (!triggers.after_meal) {
+                                        triggerFired = 'after_meal';
                                     }
+                                } else if (addViewType === 'workout') {
                                     updatedRecord.workouts = [...(updatedRecord.workouts || []), item];
+                                    // 初めてのトレーニング記録でコンディション機能を開放
+                                    if (!triggers.after_training) {
+                                        triggerFired = 'after_training';
+                                    }
                                 } else if (addViewType === 'condition') {
                                     updatedRecord.conditions = item; // コンディションは1日1回
+                                    // 初めてのコンディション記録で分析機能を開放
+                                    if (!triggers.after_condition) {
+                                        triggerFired = 'after_condition';
+                                    }
                                 }
 
                                 await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
                                 setDailyRecord(updatedRecord);
                                 setLastUpdate(Date.now());
 
-                                // 初回フロー: 編集モードでない場合のみフラグを更新
-                                if (!isEditMode) {
-                                    const newCompleted = { ...firstTimeCompleted };
-                                    if (addViewType === 'meal') {
-                                        newCompleted.meal = true;
-                                        // 食事記録完了後、運動誘導ポップアップを表示
-                                        if (!firstTimeCompleted.meal) {
-                                            setShowWorkoutGuidancePopup(true);
+                                // トリガーが発火した場合、機能を開放
+                                if (triggerFired) {
+                                    triggers[triggerFired] = true;
+                                    localStorage.setItem(STORAGE_KEYS.ONBOARDING_TRIGGERS, JSON.stringify(triggers));
+
+                                    // 機能開放を再計算
+                                    const unlocked = [...unlockedFeatures];
+                                    Object.values(FEATURES).forEach(feature => {
+                                        if (feature.trigger === triggerFired && !unlocked.includes(feature.id)) {
+                                            unlocked.push(feature.id);
                                         }
-                                    } else if (addViewType === 'workout') {
-                                        newCompleted.training = true;
-                                        // 運動記録完了後、コンディション誘導ポップアップを表示
-                                        if (!firstTimeCompleted.training) {
-                                            setShowConditionGuidancePopup(true);
-                                        }
-                                    } else if (addViewType === 'condition') {
-                                        newCompleted.condition = true;
+                                    });
+                                    setUnlockedFeatures(unlocked);
+
+                                    // 新機能開放の通知
+                                    const newFeature = Object.values(FEATURES).find(f => f.trigger === triggerFired);
+                                    if (newFeature) {
+                                        alert(`🎉 新機能「${newFeature.name}」が開放されました！\n${newFeature.description}`);
                                     }
-                                    setFirstTimeCompleted(newCompleted);
-                                    localStorage.setItem('yourCoachBeta_firstTimeCompleted', JSON.stringify(newCompleted));
                                 }
 
                                 setShowAddView(false);
-                                setPredictedData(null); // 編集モードをリセット
                                 if (openedFromSettings) {
                                     setShowSettings(true);
                                     setOpenedFromSettings(false);
@@ -1252,68 +1317,45 @@
                         />
                     )}
 
-                    {/* AI食事認識モーダル */}
-                    {showAIFoodRecognition && (
-                        <AIFoodRecognition
-                            onFoodsRecognized={async (foods) => {
-                                // 認識された食事を追加
-                                const currentRecord = await DataService.getDailyRecord(user.uid, currentDate);
-                                let updatedRecord = currentRecord || { meals: [], workouts: [], conditions: null };
-
-                                // 複数の食品を1つのmealとしてまとめて追加
-                                const items = foods.map(food => ({
-                                    id: Date.now() + Math.random(),
-                                    name: food.name,
-                                    calories: food.calories || 0,
-                                    protein: food.protein || 0,
-                                    fat: food.fat || 0,
-                                    carbs: food.carbs || 0,
-                                    amount: food.amount || 100,
-                                    unit: 'g'
-                                }));
-
-                                // 全食材の合計栄養素を計算
-                                const totalCalories = items.reduce((sum, item) => sum + (item.calories || 0), 0);
-                                const totalProtein = items.reduce((sum, item) => sum + (item.protein || 0), 0);
-                                const totalFat = items.reduce((sum, item) => sum + (item.fat || 0), 0);
-                                const totalCarbs = items.reduce((sum, item) => sum + (item.carbs || 0), 0);
-
-                                // 1つの食事エントリーとして追加
-                                const newMeal = {
-                                    id: Date.now(),
-                                    name: `AI認識: ${items.map(i => i.name).join(', ')}`,
-                                    items: items,
-                                    calories: totalCalories,
-                                    protein: totalProtein,
-                                    fat: totalFat,
-                                    carbs: totalCarbs,
-                                    timestamp: new Date().toISOString()
-                                };
-
-                                updatedRecord.meals = [...(updatedRecord.meals || []), newMeal];
-
-                                await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
-                                setDailyRecord(updatedRecord);
-                                setLastUpdate(Date.now());
-
-                                setShowAIFoodRecognition(false);
-                            }}
-                            onClose={() => setShowAIFoodRecognition(false)}
-                        />
-                    )}
-
                     {/* 写真入力オーバーレイ - 仕様書により削除（食事記録はテキスト入力のみ） */}
                     {/* カメラFABボタン - 仕様書により削除 */}
 
                     {/* 分析ビュー */}
                     {showAnalysisView && (
                         <AnalysisView
-                            onClose={() => setShowAnalysisView(false)}
+                            onClose={() => {
+                                setShowAnalysisView(false);
+
+                                // 最初の分析閲覧で指示書機能を開放
+                                const triggers = JSON.parse(localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS) || '{}');
+                                if (!triggers.after_analysis) {
+                                    triggers.after_analysis = true;
+                                    localStorage.setItem(STORAGE_KEYS.ONBOARDING_TRIGGERS, JSON.stringify(triggers));
+
+                                    // 機能開放を再計算
+                                    const unlocked = [...unlockedFeatures];
+                                    Object.values(FEATURES).forEach(feature => {
+                                        if (feature.trigger === 'after_analysis' && !unlocked.includes(feature.id)) {
+                                            unlocked.push(feature.id);
+                                        }
+                                    });
+                                    setUnlockedFeatures(unlocked);
+
+                                    // 新機能開放の通知
+                                    const newFeature = Object.values(FEATURES).find(f => f.trigger === 'after_analysis');
+                                    if (newFeature) {
+                                        setInfoModal({
+                                            show: true,
+                                            title: `🎉 新機能「${newFeature.name}」開放`,
+                                            content: newFeature.description
+                                        });
+                                    }
+                                }
+                            }}
                             userId={user.uid}
                             userProfile={userProfile}
                             dailyRecord={dailyRecord}
                             targetPFC={targetPFC}
-                            setLastUpdate={setLastUpdate}
                         />
                     )}
 
@@ -1347,7 +1389,6 @@
                             userId={user.uid}
                             userProfile={userProfile}
                             usageDays={usageDays}
-                            canPost={unlockedFeatures.includes('community_post')}
                             historyData={(() => {
                                 // LocalStorageから全記録データを取得
                                 const saved = localStorage.getItem(STORAGE_KEYS.DAILY_RECORDS);
@@ -1910,7 +1951,7 @@ AIコーチなどの高度な機能が解放されます。
                                             </div>
                                             <p className="text-sm opacity-90">利用{usageDays}日目 • {currentStage}（{usageDays < 10 ? '基礎' : usageDays < 18 ? '応用' : '独自'}）</p>
                                         </div>
-                                        <button onClick={() => setShowStageInfo(false)} className="w-10 h-10 flex items-center justify-center text-white hover:bg-white hover:bg-opacity-20 rounded-full transition">
+                                        <button onClick={() => setShowStageInfo(false)} className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition">
                                             <Icon name="X" size={24} />
                                         </button>
                                     </div>
@@ -1979,14 +2020,25 @@ AIコーチなどの高度な機能が解放されます。
                             usageDays={usageDays}
                             unlockedFeatures={unlockedFeatures}
                             onOpenAddView={(type) => {
-                                closeAllModals();
-                                setPredictedData(null); // 新規追加モードにリセット
                                 setAddViewType(type);
                                 setShowAddView(true);
                                 setOpenedFromSettings(true);
+                                setShowSettings(false);
                             }}
                             darkMode={darkMode}
                             onToggleDarkMode={() => setDarkMode(!darkMode)}
+                        />
+                    )}
+
+                    {/* チュートリアル */}
+                    {showTutorial && (
+                        <TutorialView
+                            onClose={() => setShowTutorial(false)}
+                            onComplete={() => {
+                                // バッジ再読み込み
+                                const badges = JSON.parse(localStorage.getItem(STORAGE_KEYS.BADGES) || '[]');
+                                setEarnedBadges(badges);
+                            }}
                         />
                     )}
 
@@ -1995,7 +2047,7 @@ AIコーチなどの高度な機能が解放されます。
 
                     {/* サブメニュー（ボトムバーの上に展開） */}
                     {bottomBarExpanded && bottomBarMenu === 'daily' && (
-                        <div className="fixed bottom-16 left-0 right-0 z-[9999] bg-blue-50 border-t shadow-lg px-4 py-3">
+                        <div className="fixed bottom-16 left-0 right-0 z-[9998] bg-blue-50 border-t shadow-lg px-4 py-3">
                             <div className="grid grid-cols-6 gap-2">
                                 <button
                                     onClick={() => {
@@ -2009,8 +2061,6 @@ AIコーチなどの高度な機能が解放されます。
                                 </button>
                                 <button
                                     onClick={() => {
-                                        closeAllModals();
-                                        setPredictedData(null); // 新規追加モードにリセット
                                         setAddViewType('meal');
                                         setShowAddView(true);
                                         setBottomBarMenu(null);
@@ -2022,8 +2072,6 @@ AIコーチなどの高度な機能が解放されます。
                                 </button>
                                 <button
                                     onClick={() => {
-                                        closeAllModals();
-                                        setPredictedData(null); // 新規追加モードにリセット
                                         setAddViewType('workout');
                                         setShowAddView(true);
                                         setBottomBarMenu(null);
@@ -2035,8 +2083,6 @@ AIコーチなどの高度な機能が解放されます。
                                 </button>
                                 <button
                                     onClick={() => {
-                                        closeAllModals();
-                                        setPredictedData(null); // 新規追加モードにリセット
                                         setAddViewType('condition');
                                         setShowAddView(true);
                                         setBottomBarMenu(null);
@@ -2048,7 +2094,6 @@ AIコーチなどの高度な機能が解放されます。
                                 </button>
                                 <button
                                     onClick={() => {
-                                        closeAllModals();
                                         setShowAnalysisView(true);
                                         setBottomBarMenu(null);
                                     }}
@@ -2062,7 +2107,7 @@ AIコーチなどの高度な機能が解放されます。
                     )}
 
                     {bottomBarExpanded && bottomBarMenu === 'pgbase' && (
-                        <div className="fixed bottom-16 left-0 right-0 z-[9999] bg-purple-50 border-t shadow-lg px-4 py-3">
+                        <div className="fixed bottom-16 left-0 right-0 z-[9998] bg-purple-50 border-t shadow-lg px-4 py-3">
                             <div className="grid grid-cols-3 gap-2">
                                 <button
                                     onClick={() => {
@@ -2089,7 +2134,6 @@ AIコーチなどの高度な機能が解放されます。
                                             alert('教科書機能は10日継続で開放されます');
                                             return;
                                         }
-                                        closeAllModals();
                                         setShowPGBaseView(true);
                                         setBottomBarMenu(null);
                                     }}
@@ -2105,21 +2149,20 @@ AIコーチなどの高度な機能が解放されます。
                                 </button>
                                 <button
                                     onClick={() => {
-                                        if (!unlockedFeatures.includes('community_view')) {
-                                            alert('COMY機能は8日継続で開放されます');
+                                        if (!unlockedFeatures.includes('community')) {
+                                            alert('COMY機能は30日継続で開放されます');
                                             return;
                                         }
-                                        closeAllModals();
                                         setShowCOMYView(true);
                                         setBottomBarMenu(null);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
-                                        unlockedFeatures.includes('community_view') ? 'hover:bg-purple-100' : 'opacity-50 cursor-not-allowed'
+                                        unlockedFeatures.includes('community') ? 'hover:bg-purple-100' : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 >
                                     <Icon name="Users" size={18} className="text-purple-600" />
                                     <span className="text-xs text-gray-700">COMY</span>
-                                    {!unlockedFeatures.includes('community_view') && (
+                                    {!unlockedFeatures.includes('community') && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
                                     )}
                                 </button>
@@ -2128,11 +2171,10 @@ AIコーチなどの高度な機能が解放されます。
                     )}
 
                     {bottomBarExpanded && bottomBarMenu === 'settings' && (
-                        <div className="fixed bottom-16 left-0 right-0 z-[9999] bg-orange-50 border-t shadow-lg px-4 py-3">
+                        <div className="fixed bottom-16 left-0 right-0 z-[9998] bg-orange-50 border-t shadow-lg px-4 py-3">
                             <div className="grid grid-cols-3 gap-2">
                                 <button
                                     onClick={() => {
-                                        closeAllModals();
                                         setShowSettings(true);
                                         setBottomBarMenu(null);
                                     }}
@@ -2151,22 +2193,35 @@ AIコーチなどの高度な機能が解放されます。
                                     <Icon name="Award" size={18} className="text-orange-600" />
                                     <span className="text-xs text-gray-700">バッジ</span>
                                 </button>
+                                <button
+                                    onClick={() => {
+                                        setShowTutorial(true);
+                                        setBottomBarMenu(null);
+                                    }}
+                                    className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-orange-100 transition"
+                                >
+                                    <Icon name="HelpCircle" size={18} className="text-orange-600" />
+                                    <span className="text-xs text-gray-700">使い方</span>
+                                </button>
                             </div>
                         </div>
                     )}
 
                     {/* ボトムアプリバー */}
-                    <div className="fixed bottom-0 left-0 right-0 z-[10000] bg-white border-t shadow-lg">
+                    <div className="fixed bottom-0 left-0 right-0 z-[9999] bg-white border-t shadow-lg">
                         {/* 折りたたみトグルボタン - 最上辺に配置 */}
                         <button
                             onClick={() => setBottomBarExpanded(!bottomBarExpanded)}
-                            className="w-full py-2 flex items-center justify-center hover:bg-gray-50 transition border-b border-gray-200"
+                            className="w-full py-1 flex items-center justify-center hover:bg-gray-50 transition border-b border-gray-100"
                         >
                             <Icon
-                                name="ChevronUp"
-                                size={20}
-                                className={`text-gray-700 transition-transform duration-300 ${bottomBarExpanded ? 'rotate-180' : ''}`}
+                                name={bottomBarExpanded ? "ChevronDown" : "ChevronUp"}
+                                size={16}
+                                className="text-gray-400"
                             />
+                            <span className="text-xs text-gray-400 ml-1">
+                                {bottomBarExpanded ? 'メニューを閉じる' : 'メニューを開く'}
+                            </span>
                         </button>
 
                         {/* 展開時のみ表示されるメインボタン（5ボタン） */}
@@ -2184,7 +2239,7 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowAddView(false);
                                         setShowHistoryView(false);
                                         setShowAIInput(false);
-                                        // BABは開いたまま維持
+                                        setBottomBarExpanded(false);
                                     }}
                                     className="flex flex-col items-center gap-1 p-2 rounded-lg transition hover:bg-gray-50"
                                 >
@@ -2197,13 +2252,15 @@ AIコーチなどの高度な機能が解放されます。
                                 {/* ②履歴 */}
                                 <button
                                     onClick={() => {
-                                        // 全てのモーダル/ページを閉じる
-                                        closeAllModals();
+                                        // 他のカテゴリを全て閉じる
+                                        setShowPGBaseView(false);
+                                        setShowCOMYView(false);
+                                        setShowSettings(false);
                                         // 履歴を開く（メニューは開いたまま）
                                         setShowHistoryV10(true);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showHistoryV10 ? 'bg-gray-100' : 'hover:bg-gray-50'
+                                        showHistoryV10 ? 'bg-purple-100' : 'hover:bg-gray-50'
                                     }`}
                                 >
                                     <Icon name="TrendingUp" size={20} className={showHistoryV10 ? 'text-purple-700' : 'text-purple-600'} />
@@ -2219,19 +2276,15 @@ AIコーチなどの高度な機能が解放されます。
                                             alert('PGBASE機能は10日継続で開放されます');
                                             return;
                                         }
-                                        // サブスクリプションチェック
-                                        const access = SubscriptionUtils.canAccessFeature(userProfile, 'pgBase');
-                                        if (!access.allowed) {
-                                            alert(access.message);
-                                            return;
-                                        }
-                                        // 全てのモーダル/ページを閉じる
-                                        closeAllModals();
+                                        // 他のカテゴリを全て閉じる
+                                        setShowHistoryV10(false);
+                                        setShowCOMYView(false);
+                                        setShowSettings(false);
                                         // PGBASEを開く（メニューは開いたまま）
                                         setShowPGBaseView(true);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showPGBaseView ? 'bg-gray-100' : (unlockedFeatures.includes('pg_base') ? 'hover:bg-gray-50' : 'opacity-50')
+                                        showPGBaseView ? 'bg-cyan-100' : (unlockedFeatures.includes('pg_base') ? 'hover:bg-gray-50' : 'opacity-50')
                                     }`}
                                 >
                                     <Icon name="BookOpen" size={20} className={showPGBaseView ? 'text-cyan-700' : 'text-cyan-600'} />
@@ -2243,23 +2296,19 @@ AIコーチなどの高度な機能が解放されます。
                                 {/* ④COMY */}
                                 <button
                                     onClick={() => {
-                                        if (!unlockedFeatures.includes('community_view')) {
-                                            alert('COMY機能は8日継続で開放されます');
+                                        if (!unlockedFeatures.includes('community')) {
+                                            alert('COMY機能は30日継続で開放されます');
                                             return;
                                         }
-                                        // サブスクリプションチェック
-                                        const access = SubscriptionUtils.canAccessFeature(userProfile, 'community');
-                                        if (!access.allowed) {
-                                            alert(access.message);
-                                            return;
-                                        }
-                                        // 全てのモーダル/ページを閉じる
-                                        closeAllModals();
+                                        // 他のカテゴリを全て閉じる
+                                        setShowHistoryV10(false);
+                                        setShowPGBaseView(false);
+                                        setShowSettings(false);
                                         // COMYを開く（メニューは開いたまま）
                                         setShowCOMYView(true);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showCOMYView ? 'bg-gray-100' : (unlockedFeatures.includes('community_view') ? 'hover:bg-gray-50' : 'opacity-50')
+                                        showCOMYView ? 'bg-fuchsia-100' : (unlockedFeatures.includes('community') ? 'hover:bg-gray-50' : 'opacity-50')
                                     }`}
                                 >
                                     <Icon name="Users" size={20} className={showCOMYView ? 'text-fuchsia-700' : 'text-fuchsia-600'} />
@@ -2271,13 +2320,15 @@ AIコーチなどの高度な機能が解放されます。
                                 {/* ⑤設定 */}
                                 <button
                                     onClick={() => {
-                                        // 全てのモーダル/ページを閉じる
-                                        closeAllModals();
+                                        // 他のカテゴリを全て閉じる
+                                        setShowHistoryV10(false);
+                                        setShowPGBaseView(false);
+                                        setShowCOMYView(false);
                                         // 設定を開く（メニューは開いたまま）
                                         setShowSettings(true);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showSettings ? 'bg-gray-100' : 'hover:bg-gray-50'
+                                        showSettings ? 'bg-gray-200' : 'hover:bg-gray-50'
                                     }`}
                                 >
                                     <Icon name="Settings" size={20} className={showSettings ? 'text-gray-800' : 'text-gray-600'} />
@@ -2291,9 +2342,6 @@ AIコーチなどの高度な機能が解放されます。
 
                     {/* Feedback Manager（グローバル） */}
                     <FeedbackManager />
-
-                    {/* Chevron Shortcut（画面端ショートカット） */}
-                    {user && <ChevronShortcut shortcuts={shortcuts} onShortcutClick={handleShortcutAction} />}
                 </div>
             );
         };
