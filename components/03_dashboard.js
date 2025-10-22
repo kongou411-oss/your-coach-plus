@@ -1,5 +1,5 @@
 // ===== Dashboard Component =====
-const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange }) => {
+const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers = {} }) => {
     // 指示書管理
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
@@ -752,65 +752,69 @@ ${Math.round(caloriesPercent)}%
                 </div>
 
                 {/* 運動セクション */}
-                <div id="workout-section" className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                            <Icon name="Dumbbell" size={18} className="text-orange-600" />
-                            運動
-                        </h4>
-                        <button
-                            onClick={() => window.handleQuickAction && window.handleQuickAction('workout')}
-                            className="text-xs px-3 py-1 bg-orange-50 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-100 transition"
-                        >
-                            + 追加
-                        </button>
-                    </div>
-                    {dailyRecord.workouts?.length > 0 ? (
-                        <div className="space-y-3">
-                            {dailyRecord.workouts.map((workout, index) => (
-                                <div key={workout.id || index} className={`border rounded-lg p-4 hover:border-orange-300 transition ${workout.isPredicted ? 'border-blue-300 bg-white' : 'border-gray-200 bg-white'}`}>
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <p className="font-medium">{workout.name}</p>
-                                                {workout.isPredicted && (
-                                                    <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                        <Icon name="Sparkles" size={10} />
-                                                        昨日から
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="text-sm text-gray-500 mb-2">{workout.time}</p>
-                                            {workout.exercises?.map((exercise, i) => (
-                                                <div key={i} className="text-sm text-gray-600">
-                                                    <p className="font-medium">{exercise.name}</p>
-                                                    {exercise.sets?.map((set, si) => (
-                                                        <p key={si} className="text-xs">
-                                                            Set {si + 1}: {set.weight}kg × {set.reps}回
-                                                        </p>
-                                                    ))}
+                {/* 運動セクション - 食事記録完了後に開放 */}
+                {triggers.after_meal && (
+                    <div id="workout-section" className="mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                                <Icon name="Dumbbell" size={18} className="text-orange-600" />
+                                運動
+                            </h4>
+                            <button
+                                onClick={() => window.handleQuickAction && window.handleQuickAction('workout')}
+                                className="text-xs px-3 py-1 bg-orange-50 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-100 transition"
+                            >
+                                + 追加
+                            </button>
+                        </div>
+                        {dailyRecord.workouts?.length > 0 ? (
+                            <div className="space-y-3">
+                                {dailyRecord.workouts.map((workout, index) => (
+                                    <div key={workout.id || index} className={`border rounded-lg p-4 hover:border-orange-300 transition ${workout.isPredicted ? 'border-blue-300 bg-white' : 'border-gray-200 bg-white'}`}>
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <p className="font-medium">{workout.name}</p>
+                                                    {workout.isPredicted && (
+                                                        <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            <Icon name="Sparkles" size={10} />
+                                                            昨日から
+                                                        </span>
+                                                    )}
                                                 </div>
-                                            ))}
-                                        </div>
-                                        <div className="text-right">
-                                            <button
-                                                onClick={() => onDeleteItem('workout', workout.id)}
-                                                className="text-red-500 hover:text-red-700 text-sm"
-                                            >
-                                                <Icon name="Trash2" size={16} />
-                                            </button>
+                                                <p className="text-sm text-gray-500 mb-2">{workout.time}</p>
+                                                {workout.exercises?.map((exercise, i) => (
+                                                    <div key={i} className="text-sm text-gray-600">
+                                                        <p className="font-medium">{exercise.name}</p>
+                                                        {exercise.sets?.map((set, si) => (
+                                                            <p key={si} className="text-xs">
+                                                                Set {si + 1}: {set.weight}kg × {set.reps}回
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="text-right">
+                                                <button
+                                                    onClick={() => onDeleteItem('workout', workout.id)}
+                                                    className="text-red-500 hover:text-red-700 text-sm"
+                                                >
+                                                    <Icon name="Trash2" size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-sm text-gray-400 text-center py-4">運動の記録がありません</p>
-                    )}
-                </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-400 text-center py-4">運動の記録がありません</p>
+                        )}
+                    </div>
+                )}
 
-                {/* 体調セクション - 直接入力 */}
-                <div id="condition-section" className="mb-6">
+                {/* 体調セクション - 運動記録完了後に開放 */}
+                {triggers.after_training && (
+                    <div id="condition-section" className="mb-6">
                     <div className="flex items-center justify-between mb-3">
                         <h4 className="font-bold text-gray-800 flex items-center gap-2">
                             <Icon name="HeartPulse" size={18} className="text-red-600" />
@@ -1140,6 +1144,7 @@ ${Math.round(caloriesPercent)}%
                         />
                     </div>
                 </div>
+                )}
 
                 {/* 分析ボタン */}
                 <div>

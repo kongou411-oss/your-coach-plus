@@ -118,6 +118,12 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
             const [showConditionGuide, setShowConditionGuide] = useState(false); // 運動記録後
             const [showAnalysisGuide, setShowAnalysisGuide] = useState(false);   // コンディション完了後
             const [showDirectiveGuide, setShowDirectiveGuide] = useState(false); // 分析閲覧後
+
+            // トリガー状態管理
+            const [triggers, setTriggers] = useState(() => {
+                const saved = localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS);
+                return saved ? JSON.parse(saved) : {};
+            });
             const [bottomBarMenu, setBottomBarMenu] = useState(null); // 'daily', 'history', 'settings'
             const [bottomBarExpanded, setBottomBarExpanded] = useState(true); // BAB展開状態
             const [showDatePicker, setShowDatePicker] = useState(false); // 日付ピッカーモーダル
@@ -1267,6 +1273,7 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                             user={user}
                             currentDate={currentDate}
                             onDateChange={handleDateChange}
+                            triggers={triggers}
                             onDeleteItem={async (type, itemId) => {
                                 // 現在のstateから削除（DBから再読み込みしない）
                                 const updatedRecord = { ...dailyRecord };
@@ -1340,8 +1347,9 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
 
                                 // トリガーが発火した場合、機能を開放
                                 if (triggerFired) {
-                                    triggers[triggerFired] = true;
-                                    localStorage.setItem(STORAGE_KEYS.ONBOARDING_TRIGGERS, JSON.stringify(triggers));
+                                    const updatedTriggers = { ...triggers, [triggerFired]: true };
+                                    localStorage.setItem(STORAGE_KEYS.ONBOARDING_TRIGGERS, JSON.stringify(updatedTriggers));
+                                    setTriggers(updatedTriggers);
 
                                     // 機能開放を再計算
                                     const unlocked = [...unlockedFeatures];
@@ -1382,10 +1390,10 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                                 setShowAnalysisView(false);
 
                                 // 最初の分析閲覧で指示書機能を開放
-                                const triggers = JSON.parse(localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS) || '{}');
                                 if (!triggers.after_analysis) {
-                                    triggers.after_analysis = true;
-                                    localStorage.setItem(STORAGE_KEYS.ONBOARDING_TRIGGERS, JSON.stringify(triggers));
+                                    const updatedTriggers = { ...triggers, after_analysis: true };
+                                    localStorage.setItem(STORAGE_KEYS.ONBOARDING_TRIGGERS, JSON.stringify(updatedTriggers));
+                                    setTriggers(updatedTriggers);
 
                                     // 機能開放を再計算
                                     const unlocked = [...unlockedFeatures];
