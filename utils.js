@@ -1,5 +1,111 @@
 // ===== ユーティリティ関数 =====
 
+// テーマ管理ユーティリティ
+const ThemeUtils = {
+    // 利用可能なテーマリスト
+    themes: [
+        {
+            id: 'default',
+            name: 'デフォルト',
+            description: 'シンプルで見やすい標準テーマ',
+            cssFile: null,
+            preview: {
+                bgColor: '#f9fafb',
+                primaryColor: '#667eea',
+                textColor: '#1f2937'
+            }
+        },
+        {
+            id: 'dark',
+            name: 'ダークモード',
+            description: '目に優しい暗めのテーマ',
+            cssFile: 'styles_dark.css',
+            preview: {
+                bgColor: '#1a1a1a',
+                primaryColor: '#667eea',
+                textColor: '#e5e5e5'
+            }
+        },
+        {
+            id: 'ocean-deep',
+            name: 'オーシャンディープ',
+            description: '深海の青と波紋アニメーションの神秘的なテーマ',
+            cssFile: 'themes/theme_ocean_deep.css',
+            preview: {
+                bgColor: '#0a1929',
+                primaryColor: '#5ddef4',
+                textColor: '#e3f2fd'
+            }
+        }
+    ],
+
+    // 現在のテーマを取得
+    getCurrentTheme: () => {
+        return localStorage.getItem('app_theme') || 'dark-mode';
+    },
+
+    // テーマを設定
+    setTheme: (themeId) => {
+        const theme = ThemeUtils.themes.find(t => t.id === themeId);
+        if (!theme) {
+            console.error('Theme not found:', themeId);
+            return false;
+        }
+
+        // 既存のテーマクラスをすべて削除
+        document.body.classList.remove('dark-mode', 'theme-ocean-deep');
+
+        // 既存のテーマCSSリンクを削除
+        const existingLinks = document.querySelectorAll('link[data-theme-css]');
+        existingLinks.forEach(link => link.remove());
+
+        // 新しいテーマを適用
+        if (themeId === 'default') {
+            // デフォルトテーマ: 何もしない
+            localStorage.setItem('app_theme', 'default');
+        } else if (themeId === 'dark') {
+            // ダークモード
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('app_theme', 'dark');
+        } else {
+            // ホログラフィックテーマ
+            document.body.classList.add(`theme-${themeId}`);
+
+            // CSSファイルを動的に読み込む
+            if (theme.cssFile) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = theme.cssFile;
+                link.setAttribute('data-theme-css', themeId);
+                document.head.appendChild(link);
+            }
+
+            localStorage.setItem('app_theme', themeId);
+        }
+
+        // テーマ変更イベントを発火
+        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { themeId } }));
+
+        return true;
+    },
+
+    // アプリ起動時にテーマを復元
+    restoreTheme: () => {
+        const savedTheme = ThemeUtils.getCurrentTheme();
+        ThemeUtils.setTheme(savedTheme);
+    },
+
+    // テーマ情報を取得
+    getThemeInfo: (themeId) => {
+        return ThemeUtils.themes.find(t => t.id === themeId);
+    },
+
+    // すべてのテーマ情報を取得
+    getAllThemes: () => {
+        return ThemeUtils.themes;
+    }
+};
+
 // LBM (Lean Body Mass) 計算ユーティリティ
 const LBMUtils = {
     // LBM(除脂肪体重)を計算
@@ -122,24 +228,42 @@ const LBMUtils = {
     },
 
     // 目標PFC計算（完全個別化版 v2.0）
-    calculateTargetPFC: (tdee, weightChangePace, lbm, lifestyle = '一般', purpose = 'メンテナンス', dietStyle = 'バランス') => {
-        // カロリー調整値を目的に応じて設定
+    calculateTargetPFC: (tdee, weightChangePace, lbm, lifestyle = '一般', purpose = 'メンテナンス', dietStyle = 'バランス', customCalorieAdjustment = null, customPFC = null) => {
+        // カロリー調整値を目的に応じて設定（カスタム値がある場合はそれを優先）
         let calorieAdjustment = 0;
-        if (purpose === '減量') calorieAdjustment = -200;
-        else if (purpose === '増量') calorieAdjustment = +200;
+        if (customCalorieAdjustment !== null && customCalorieAdjustment !== undefined) {
+            calorieAdjustment = customCalorieAdjustment;
+        } else {
+            if (purpose === 'ダイエット') calorieAdjustment = -300;
+            else if (purpose === 'バルクアップ') calorieAdjustment = +300;
+        }
 
         const adjustedCalories = tdee + calorieAdjustment;
+
+        // カスタムPFC比率が設定されている場合はそれを使用
+        if (customPFC && customPFC.P && customPFC.F && customPFC.C) {
+            const proteinCal = adjustedCalories * (customPFC.P / 100);
+            const fatCal = adjustedCalories * (customPFC.F / 100);
+            const carbCal = adjustedCalories * (customPFC.C / 100);
+
+            return {
+                calories: Math.round(adjustedCalories),
+                protein: Math.round(proteinCal / 4),
+                fat: Math.round(fatCal / 9),
+                carbs: Math.round(carbCal / 4)
+            };
+        }
 
         // タンパク質係数（LBMあたり）- 一般: 1.0/1.2/1.4、ボディメイカー: 2倍
         let proteinCoefficient = 1.2; // デフォルト
         if (lifestyle === 'ボディメイカー') {
-            if (purpose === '増量') proteinCoefficient = 1.4 * 2;  // 2.8
-            else if (purpose === '減量') proteinCoefficient = 1.2 * 2;  // 2.4
+            if (purpose === 'バルクアップ') proteinCoefficient = 1.4 * 2;  // 2.8
+            else if (purpose === 'ダイエット') proteinCoefficient = 1.2 * 2;  // 2.4
             else proteinCoefficient = 1.0 * 2;  // 2.0
         } else {
             // 一般
-            if (purpose === '増量') proteinCoefficient = 1.4;
-            else if (purpose === '減量') proteinCoefficient = 1.2;
+            if (purpose === 'バルクアップ') proteinCoefficient = 1.4;
+            else if (purpose === 'ダイエット') proteinCoefficient = 1.2;
             else proteinCoefficient = 1.0;
         }
 
@@ -189,7 +313,7 @@ const LBMUtils = {
     calculatePersonalizedMicronutrients: (profile) => {
         const lbm = LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
         const bloodType = profile.bloodType || 'A';
-        const goal = profile.goal || '維持';
+        const goal = profile.goal || 'メンテナンス';
         const lifestyle = profile.lifestyle || '一般';
 
         // LBM係数: 基準50kg、±1kgあたり±2%
@@ -207,11 +331,11 @@ const LBMUtils = {
         // 目的係数
         const goalFactors = {
             'バルクアップ': { energy: 1.3, protein: 1.4, recovery: 1.3 },
-            '減量': { energy: 1.1, protein: 1.2, recovery: 1.1 },
-            '維持': { energy: 1.0, protein: 1.0, recovery: 1.0 },
+            'ダイエット': { energy: 1.1, protein: 1.2, recovery: 1.1 },
+            'メンテナンス': { energy: 1.0, protein: 1.0, recovery: 1.0 },
             'リコンプ': { energy: 1.2, protein: 1.3, recovery: 1.2 }
         };
-        const gFactor = goalFactors[goal] || goalFactors['維持'];
+        const gFactor = goalFactors[goal] || goalFactors['メンテナンス'];
 
         // ライフスタイル係数: ボディメイカーは2倍
         const lifestyleBase = lifestyle === 'ボディメイカー' ? 2.0 : 1.0;
@@ -290,9 +414,9 @@ const LBMUtils = {
                 tannin: Math.round(1000 * lbmFactor * lifestyleBase),
                 polyphenol: Math.round(1000 * lbmFactor * btFactor.antioxidant * lifestyleBase),
                 chlorogenicAcid: Math.round(300 * lbmFactor * btFactor.antioxidant * lifestyleBase),
-                creatine: Math.round((goal === 'バルクアップ' ? 5 : goal === '減量' ? 3 : 3) * lbmFactor * lifestyleBase * 1000),
+                creatine: Math.round((goal === 'バルクアップ' ? 5 : goal === 'ダイエット' ? 3 : 3) * lbmFactor * lifestyleBase * 1000),
                 lArginine: Math.round((goal === 'バルクアップ' ? 6000 : 3000) * lbmFactor * gFactor.protein * lifestyleBase),
-                lCarnitine: Math.round((goal === '減量' ? 2000 : 1000) * lbmFactor * gFactor.energy * lifestyleBase),
+                lCarnitine: Math.round((goal === 'ダイエット' ? 2000 : 1000) * lbmFactor * gFactor.energy * lifestyleBase),
                 EPA: Math.round(1000 * lbmFactor * btFactor.antioxidant * gFactor.recovery * lifestyleBase),
                 DHA: Math.round(1000 * lbmFactor * btFactor.antioxidant * gFactor.recovery * lifestyleBase),
                 coQ10: Math.round(100 * lbmFactor * gFactor.energy * lifestyleBase),
@@ -348,34 +472,168 @@ const DateUtils = {
     }
 };
 
-// 計算ユーティリティ
-const CalcUtils = {
-    // PG-K式カロリー計算
-    calculateSetCalories: (set, exercise) => {
-        if (exercise.exerciseType === 'aerobic') {
-            return 0;
+// サブスクリプション管理ユーティリティ
+const SubscriptionUtils = {
+    // ユーザーがプレミアムかどうかを判定
+    isPremiumUser: (userProfile) => {
+        return userProfile?.subscription?.status === 'active';
+    },
+
+    // 機能へのアクセス権をチェック
+    canAccessFeature: (userProfile, featureName) => {
+        if (SubscriptionUtils.isPremiumUser(userProfile)) {
+            return { allowed: true };
         }
 
-        const g = 9.8;
-        const distance = set.distance || 0.5;
-        const tut = set.tut || 30;
-        const weight = set.weight || 0;
-        const reps = set.reps || 0;
-        const eta = exercise.defaultEta || 0.22;
-        const delta = exercise.defaultDelta || 1.5;
-        const alpha = exercise.defaultAlpha || 0.075;
+        // 初日（利用日数0日）は写真解析とAI分析を無料で利用可能
+        const usageDays = parseInt(localStorage.getItem(STORAGE_KEYS.USAGE_DAYS) || '0', 10);
+        if (usageDays === 0 && (featureName === 'aiAnalysis' || featureName === 'photoAnalysis')) {
+            return { allowed: true };
+        }
 
-        const externalWork = ((weight * g * distance * reps) / (4184 * eta)) * (1 + delta);
-        const internalCost = alpha * tut;
+        // 無料プランの制限をチェック
+        const restrictions = {
+            aiAnalysis: {
+                allowed: false,
+                message: 'AI分析はプレミアムプラン限定の機能です。\n\n初日は無料でお試しいただけました。プレミアムプランにアップグレードすると、AI分析が月100回まで利用できます。'
+            },
+            photoAnalysis: {
+                allowed: false,
+                message: '写真解析はプレミアムプラン限定の機能です。\n\n初日は無料でお試しいただけました。プレミアムプランにアップグレードすると、写真解析が無制限に利用できます。'
+            },
+            community: {
+                allowed: false,
+                message: 'コミュニティ機能はプレミアムプラン限定です。\n\nプレミアムプランにアップグレードして、他のユーザーと交流しましょう。'
+            },
+            pgBase: {
+                allowed: false,
+                message: 'PG BASE教科書はプレミアムプラン限定です。\n\nプレミアムプランにアップグレードして、ボディメイクの知識を深めましょう。'
+            },
+            dataExport: {
+                allowed: false,
+                message: 'データエクスポート機能はプレミアムプラン限定です。'
+            }
+        };
 
-        return externalWork + internalCost;
+        return restrictions[featureName] || { allowed: true };
     },
 
-    // 合計カロリー計算
-    sumCalories: (items) => {
-        return items.reduce((sum, item) => sum + (item.calories || 0), 0);
+    // 履歴表示の日数制限をチェック
+    getHistoryDaysLimit: (userProfile) => {
+        if (SubscriptionUtils.isPremiumUser(userProfile)) {
+            return null; // 無制限
+        }
+        return FREE_PLAN_LIMITS.historyDays; // 7日間
     },
 
+    // テンプレート数の制限をチェック
+    canAddTemplate: (userProfile, currentCount, templateType) => {
+        if (SubscriptionUtils.isPremiumUser(userProfile)) {
+            return { allowed: true };
+        }
+
+        // テンプレートタイプ別の制限
+        let limit = 0;
+        let typeName = '';
+
+        if (templateType === 'meal') {
+            limit = FREE_PLAN_LIMITS.mealTemplates;
+            typeName = '食事';
+        } else if (templateType === 'workout') {
+            limit = FREE_PLAN_LIMITS.workoutTemplates;
+            typeName = '運動';
+        } else if (templateType === 'supplement') {
+            limit = FREE_PLAN_LIMITS.supplementTemplates;
+            typeName = 'サプリメント';
+        }
+
+        if (limit === 0) {
+            return {
+                allowed: false,
+                message: `無料プランでは${typeName}テンプレートは作成できません。\n\nプレミアムプランにアップグレードすると、テンプレートを無制限に作成できます。`
+            };
+        }
+
+        if (currentCount >= limit) {
+            return {
+                allowed: false,
+                message: `無料プランでは${typeName}テンプレートは${limit}個までです。\n\nプレミアムプランにアップグレードすると、テンプレートを無制限に作成できます。`
+            };
+        }
+
+        return { allowed: true };
+    },
+
+    // ルーティン機能へのアクセスをチェック
+    canUseRoutines: (userProfile) => {
+        if (SubscriptionUtils.isPremiumUser(userProfile)) {
+            return { allowed: true };
+        }
+
+        if (FREE_PLAN_LIMITS.routines === false) {
+            return {
+                allowed: false,
+                message: `ルーティン機能はプレミアムプラン限定です。\n\nプレミアムプランにアップグレードすると、ルーティンを無制限に作成できます。`
+            };
+        }
+
+        return { allowed: true };
+    },
+
+    // 履歴データをフィルタリング（無料プランは7日間のみ）
+    filterHistoryByPlan: (userProfile, historyData) => {
+        if (SubscriptionUtils.isPremiumUser(userProfile)) {
+            return historyData; // すべて表示
+        }
+
+        // 無料プランは過去7日間のみ
+        const limit = FREE_PLAN_LIMITS.historyDays;
+        const today = new Date();
+        const cutoffDate = new Date(today);
+        cutoffDate.setDate(today.getDate() - limit);
+
+        return historyData.filter(item => {
+            const itemDate = new Date(item.date);
+            return itemDate >= cutoffDate;
+        });
+    },
+
+    // アップグレード促進メッセージを表示
+    showUpgradePrompt: (featureName) => {
+        const access = SubscriptionUtils.canAccessFeature({}, featureName);
+        if (!access.allowed && access.message) {
+            alert(access.message);
+        }
+    }
+};
+
+// コンディションチェックユーティリティ
+const ConditionUtils = {
+    // コンディションが完全に記録されているか確認（6項目全て）
+    isFullyRecorded: (dailyRecord) => {
+        const conditions = dailyRecord?.conditions;
+        if (!conditions) return false;
+
+        // 6項目全てがnumberで0-4の範囲内にあるか確認
+        const requiredFields = [
+            'sleepHours',    // 睡眠時間
+            'sleepQuality',  // 睡眠の質
+            'appetite',      // 食欲
+            'digestion',     // 消化
+            'focus',         // 集中力
+            'stress'         // ストレス
+        ];
+
+        return requiredFields.every(field =>
+            typeof conditions[field] === 'number' &&
+            conditions[field] >= 0 &&
+            conditions[field] <= 4
+        );
+    }
+};
+
+// 計算ユーティリティ
+const CalcUtils = {
     // 合計栄養素計算
     sumNutrients: (items) => {
         return {
@@ -386,95 +644,13 @@ const CalcUtils = {
         };
     },
 
-    // DIT (食事誘発性熱産生) 計算
-    calculateDIT: (protein, fat, carbs) => {
-        // P: 30%, F: 4%, C: 6% のエネルギーを消費
-        const proteinDIT = protein * 4 * 0.30;
-        const fatDIT = fat * 9 * 0.04;
-        const carbsDIT = carbs * 4 * 0.06;
-        return proteinDIT + fatDIT + carbsDIT;
-    },
-
     // 実質タンパク質量計算（DIAAS適用）
     calculateRealProtein: (protein, diaas = 1.0) => {
         return protein * (diaas / 100);
     },
 
-    // トレーニング強度予測: ルーティン分割ごとに前回の記録から予測
-    predictWorkoutIntensity: (todaySplit, historicalWorkouts) => {
-        // todaySplit: '胸', '背中', '脚' など
-        // historicalWorkouts: 過去のワークアウト記録配列
-
-        if (!historicalWorkouts || historicalWorkouts.length === 0) {
-            return {
-                predictedCalories: 150, // デフォルト
-                confidence: 'low',
-                reason: '予測データなし（デフォルト値）'
-            };
-        }
-
-        // 同じ分割の過去3回分の記録を抽出
-        const sameSplitWorkouts = historicalWorkouts
-            .filter(w => {
-                // ワークアウト名やメモに分割名が含まれるか
-                const nameMatch = (w.name || '').includes(todaySplit);
-                const notesMatch = (w.notes || '').includes(todaySplit);
-                // または種目に該当する部位が含まれるか
-                const exerciseMatch = (w.exercises || []).some(ex =>
-                    (ex.name || '').includes(todaySplit)
-                );
-                return nameMatch || notesMatch || exerciseMatch;
-            })
-            .slice(0, 3); // 最新3回分
-
-        if (sameSplitWorkouts.length === 0) {
-            return {
-                predictedCalories: 150,
-                confidence: 'low',
-                reason: `${todaySplit}の過去記録なし（デフォルト値）`
-            };
-        }
-
-        // 各ワークアウトの総仕事量を計算
-        const workloadHistory = sameSplitWorkouts.map(workout => {
-            let totalCal = 0;
-            (workout.exercises || []).forEach(ex => {
-                (ex.sets || []).forEach(set => {
-                    const exercise = {
-                        exerciseType: ex.exerciseType || 'resistance',
-                        defaultEta: ex.defaultEta || 0.22,
-                        defaultDelta: ex.defaultDelta || 1.5,
-                        defaultAlpha: ex.defaultAlpha || 0.075
-                    };
-                    totalCal += CalcUtils.calculateSetCalories(set, exercise);
-                });
-            });
-            return totalCal;
-        });
-
-        // 平均値を予測値とする
-        const avgWorkload = workloadHistory.reduce((sum, val) => sum + val, 0) / workloadHistory.length;
-
-        // 信頼度を計算（記録数とばらつきに基づく）
-        const variance = workloadHistory.reduce((sum, val) => sum + Math.pow(val - avgWorkload, 2), 0) / workloadHistory.length;
-        const stdDev = Math.sqrt(variance);
-        const cv = stdDev / avgWorkload; // 変動係数
-
-        let confidence;
-        if (sameSplitWorkouts.length >= 3 && cv < 0.2) confidence = 'high';
-        else if (sameSplitWorkouts.length >= 2 && cv < 0.3) confidence = 'medium';
-        else confidence = 'low';
-
-        return {
-            predictedCalories: Math.round(avgWorkload),
-            confidence: confidence,
-            historyCount: sameSplitWorkouts.length,
-            reason: `${todaySplit}の過去${sameSplitWorkouts.length}回の平均: ${Math.round(avgWorkload)}kcal (信頼度: ${confidence})`
-        };
-    },
-
-    // 高度な自動調整 v2.0: トレーニング強度予測を活用
-    calculateAdvancedAdjustments: (profile, dailyRecord, baseTargetPFC, predictedIntensity = null) => {
+    // 高度な自動調整 v2.0
+    calculateAdvancedAdjustments: (profile, dailyRecord, baseTargetPFC) => {
         let adjustments = {
             calorieBoost: 0,
             proteinBoost: 0,
@@ -510,45 +686,8 @@ const CalcUtils = {
             adjustments.reason.push('ボディメイカー: タンパク質係数+0.5');
         }
 
-        // === 2. トレーニングの質（実績または予測） ===
+        // === 2. トレーニング部位による調整 ===
 
-        let totalWorkload = 0;
-
-        // 実績がある場合は実績を使用
-        if (dailyRecord?.workouts && dailyRecord.workouts.length > 0) {
-            (dailyRecord.workouts || []).forEach(workout => {
-                (workout.exercises || []).forEach(ex => {
-                    (ex.sets || []).forEach(set => {
-                        const exercise = {
-                            exerciseType: ex.exerciseType || 'resistance',
-                            defaultEta: 0.22,
-                            defaultDelta: 1.5,
-                            defaultAlpha: 0.075
-                        };
-                        totalWorkload += CalcUtils.calculateSetCalories(set, exercise);
-                    });
-                });
-            });
-        }
-        // 実績がなく予測がある場合は予測を使用
-        else if (predictedIntensity && predictedIntensity.predictedCalories) {
-            totalWorkload = predictedIntensity.predictedCalories;
-            adjustments.reason.push(`予測: ${predictedIntensity.reason}`);
-        }
-
-        if (totalWorkload > 300) {
-            // 高強度トレーニング日: 回復ブースト
-            adjustments.calorieBoost += 100;
-            adjustments.proteinBoost += 0.2;
-            adjustments.carbBoost += 20;
-            adjustments.reason.push(`高強度トレーニング(${totalWorkload.toFixed(0)}kcal): 回復ブースト発動`);
-        } else if (totalWorkload > 150) {
-            adjustments.calorieBoost += 50;
-            adjustments.carbBoost += 10;
-            adjustments.reason.push(`中強度トレーニング(${totalWorkload.toFixed(0)}kcal): 小回復ブースト`);
-        }
-
-        // b. トレーニング部位による調整
         const mainMuscleGroups = ['脚', '背中'];
         let isLargeMuscleDay = false;
         (dailyRecord?.workouts || []).forEach(workout => {
@@ -567,17 +706,17 @@ const CalcUtils = {
         // === 3. ライフスタイル要因 ===
 
         // a. 睡眠の質と時間
-        const sleepHours = dailyRecord?.condition?.sleepHours || 7;
-        const sleepQuality = dailyRecord?.condition?.sleepQuality || 'normal';
+        const sleepHours = dailyRecord?.conditions?.sleepHours || 3;
+        const sleepQuality = dailyRecord?.conditions?.sleepQuality || 3;
 
-        if (sleepHours < 6 || sleepQuality === 'bad') {
+        if (sleepHours <= 2 || sleepQuality <= 2) {
             adjustments.proteinBoost += 0.1; // 回復サポート
             adjustments.reason.push('睡眠不足/質低下: タンパク質+0.1、低GI食材推奨');
         }
 
         // b. ストレスレベル
-        const stressLevel = dailyRecord?.condition?.stress || 'normal';
-        if (stressLevel === 'high') {
+        const stressLevel = dailyRecord?.conditions?.stress || 3;
+        if (stressLevel >= 4) {
             adjustments.reason.push('高ストレス: ビタミンC・マグネシウム推奨、低GI食材推奨');
         }
 
