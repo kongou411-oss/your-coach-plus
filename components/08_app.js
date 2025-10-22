@@ -500,8 +500,9 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
             const handleFABItemClick = (type) => {
                 // 分析
                 if (type === 'analysis') {
-                    if (!unlockedFeatures.includes('analysis')) {
-                        alert('この機能はコンディション記録後に開放されます');
+                    // コンディション記録が完了しているかチェック（6項目全て必須）
+                    if (!ConditionUtils.isFullyRecorded(dailyRecord)) {
+                        alert('この機能はコンディション記録を完了後に開放されます\n（睡眠時間・睡眠の質・食欲・消化・集中力・ストレスの6項目全て）');
                         return;
                     }
                     setShowAnalysisView(true);
@@ -1327,8 +1328,8 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                                     }
                                 } else if (addViewType === 'condition') {
                                     updatedRecord.conditions = item; // コンディションは1日1回
-                                    // 初めてのコンディション記録で分析機能を開放
-                                    if (!triggers.after_condition) {
+                                    // コンディション6項目すべて記録完了で分析機能を開放
+                                    if (!triggers.after_condition && ConditionUtils.isFullyRecorded(updatedRecord)) {
                                         triggerFired = 'after_condition';
                                     }
                                 }
@@ -2376,6 +2377,44 @@ AIコーチなどの高度な機能が解放されます。
                             </div>
                         )}
                     </div>
+
+                    {/* 誘導モーダル群 */}
+                    <GuideModal
+                        show={showTrainingGuide}
+                        title="次は運動を記録しましょう！"
+                        message="OKボタンをクリックすると運動記録セクションに遷移します。&#10;右上の「追加」ボタンから今日のトレーニングを記録してください。"
+                        iconName="Dumbbell"
+                        iconColor="bg-orange-100"
+                        targetSectionId="workout-section"
+                        onClose={() => setShowTrainingGuide(false)}
+                    />
+                    <GuideModal
+                        show={showConditionGuide}
+                        title="コンディションを記録しましょう！"
+                        message="OKボタンをクリックするとコンディション記録セクションに遷移します。&#10;睡眠時間・睡眠の質・食欲・消化・集中力・ストレスの6項目を記録してください。"
+                        iconName="HeartPulse"
+                        iconColor="bg-indigo-100"
+                        targetSectionId="condition-section"
+                        onClose={() => setShowConditionGuide(false)}
+                    />
+                    <GuideModal
+                        show={showAnalysisGuide}
+                        title="🎉 分析機能が開放されました！"
+                        message="コンディション記録が完了しました。&#10;&#10;AIがあなたの記録を分析して、改善点を提案します。&#10;画面右下のメニューボタンから「分析」を選択してください。"
+                        iconName="BarChart3"
+                        iconColor="bg-purple-100"
+                        targetSectionId={null}
+                        onClose={() => setShowAnalysisGuide(false)}
+                    />
+                    <GuideModal
+                        show={showDirectiveGuide}
+                        title="🎉 指示書機能が開放されました！"
+                        message="AIがあなたの分析結果に基づいて、最適な次のアクションを提案します。&#10;&#10;ダッシュボードの「指示書」セクションから確認してください。"
+                        iconName="FileText"
+                        iconColor="bg-blue-100"
+                        targetSectionId="directive-section"
+                        onClose={() => setShowDirectiveGuide(false)}
+                    />
 
                     {/* Feedback Manager（グローバル） */}
                     <FeedbackManager />
