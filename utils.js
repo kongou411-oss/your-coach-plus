@@ -256,6 +256,12 @@ const LBMUtils = {
 
         // タンパク質係数（LBMあたり）- 一般: 1.0/1.2/1.4、ボディメイカー: 2倍
         let proteinCoefficient = 1.2; // デフォルト
+
+        console.log('=== calculateTargetPFC Debug ===');
+        console.log('lifestyle:', lifestyle);
+        console.log('purpose:', purpose);
+        console.log('lbm:', lbm);
+
         if (lifestyle === 'ボディメイカー') {
             if (purpose === 'バルクアップ') proteinCoefficient = 1.4 * 2;  // 2.8
             else if (purpose === 'ダイエット') proteinCoefficient = 1.2 * 2;  // 2.4
@@ -267,8 +273,11 @@ const LBMUtils = {
             else proteinCoefficient = 1.0;
         }
 
+        console.log('proteinCoefficient:', proteinCoefficient);
+
         // タンパク質 (P): LBM × 係数
         const proteinG = lbm * proteinCoefficient;
+        console.log('proteinG:', proteinG);
         const proteinCal = proteinG * 4;
 
         // 食事スタイル別のPFC比率

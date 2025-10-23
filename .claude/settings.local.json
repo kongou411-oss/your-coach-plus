@@ -16,7 +16,17 @@
       "Bash(done)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(taskkill:*)",
+      "Bash(python -m http.server:*)",
+      "Bash(cat:*)",
+      "Bash(node --check:*)",
+      "Read(//c/**)",
+      "Bash(python:*)",
+      "Bash(start http://localhost:8000)"
     ],
     "deny": [],
     "ask": []

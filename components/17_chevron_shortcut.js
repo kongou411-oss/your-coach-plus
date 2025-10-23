@@ -7,9 +7,13 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
         return saved ? JSON.parse(saved) : { left: true, right: true };
     });
 
-    // 表示可能な項目のみフィルタリング（enabled: true のみ）
-    const leftShortcuts = shortcuts.filter(s => s.side === 'left' && s.enabled !== false);
-    const rightShortcuts = shortcuts.filter(s => s.side === 'right' && s.enabled !== false);
+    // 表示可能な項目のみフィルタリング（enabled: true のみ）、orderでソート
+    const leftShortcuts = shortcuts
+        .filter(s => s.side === 'left' && s.enabled !== false)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+    const rightShortcuts = shortcuts
+        .filter(s => s.side === 'right' && s.enabled !== false)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
 
     // 表示/非表示更新イベントリスナー
     React.useEffect(() => {
@@ -47,10 +51,11 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
             'open_meal': 'text-green-600',
             'open_meal_photo': 'text-green-600',
             'open_workout': 'text-orange-600',
+            'open_idea': 'text-yellow-500',
             'open_analysis': 'text-indigo-600',
             'open_history': 'text-purple-600',
             'open_pgbase': 'text-cyan-600',
-            'open_community': 'text-fuchsia-600',
+            'open_community': 'text-pink-600',
             'open_settings': 'text-gray-600'
         };
         return colorMap[action] || 'text-gray-700';
@@ -104,19 +109,29 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
                 </button>
 
                 {expandedSide === 'left' && leftShortcuts.length > 0 && (
-                    <div className="absolute left-12 top-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-3 w-48 border border-gray-200">
-                        <div className="space-y-2">
-                            {leftShortcuts.map((shortcut, index) => (
+                    <div className="absolute left-12 top-1/2 -translate-y-1/2">
+                        {leftShortcuts.map((shortcut, index) => {
+                            const middleIndex = (leftShortcuts.length - 1) / 2;
+                            const buttonHeight = 40; // py-2 (8px*2) + icon height (~24px) = ~40px
+                            const gap = 8;
+                            const offset = (index - middleIndex) * (buttonHeight + gap);
+                            return (
                                 <button
                                     key={index}
                                     onClick={() => handleShortcutItemClick(shortcut.action)}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-100 rounded-lg text-left transition"
+                                    className="absolute left-0 bg-white bg-opacity-95 rounded-lg shadow-lg hover:bg-opacity-100 transition flex items-center gap-2 px-3 py-2"
+                                    style={{
+                                        top: `${offset}px`,
+                                        transform: 'translateY(-50%)',
+                                        animationDelay: `${index * 0.05}s`,
+                                        minWidth: '120px'
+                                    }}
                                 >
-                                    <Icon name={shortcut.icon} size={18} className={getIconColor(shortcut.action)} />
-                                    <span className="text-sm font-medium">{shortcut.label}</span>
+                                    <Icon name={shortcut.icon} size={leftSize.iconSize + 4} className={getIconColor(shortcut.action)} />
+                                    <span className="text-sm font-medium text-gray-700 whitespace-nowrap">{shortcut.label}</span>
                                 </button>
-                            ))}
-                        </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -141,19 +156,29 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
                 </button>
 
                 {expandedSide === 'right' && rightShortcuts.length > 0 && (
-                    <div className="absolute right-12 top-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-3 w-48 border border-gray-200">
-                        <div className="space-y-2">
-                            {rightShortcuts.map((shortcut, index) => (
+                    <div className="absolute right-12 top-1/2 -translate-y-1/2">
+                        {rightShortcuts.map((shortcut, index) => {
+                            const middleIndex = (rightShortcuts.length - 1) / 2;
+                            const buttonHeight = 40; // py-2 (8px*2) + icon height (~24px) = ~40px
+                            const gap = 8;
+                            const offset = (index - middleIndex) * (buttonHeight + gap);
+                            return (
                                 <button
                                     key={index}
                                     onClick={() => handleShortcutItemClick(shortcut.action)}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-100 rounded-lg text-left transition"
+                                    className="absolute right-0 bg-white bg-opacity-95 rounded-lg shadow-lg hover:bg-opacity-100 transition flex items-center gap-2 px-3 py-2"
+                                    style={{
+                                        top: `${offset}px`,
+                                        transform: 'translateY(-50%)',
+                                        animationDelay: `${index * 0.05}s`,
+                                        minWidth: '120px'
+                                    }}
                                 >
-                                    <Icon name={shortcut.icon} size={18} className={getIconColor(shortcut.action)} />
-                                    <span className="text-sm font-medium">{shortcut.label}</span>
+                                    <Icon name={shortcut.icon} size={rightSize.iconSize + 4} className={getIconColor(shortcut.action)} />
+                                    <span className="text-sm font-medium text-gray-700 whitespace-nowrap">{shortcut.label}</span>
                                 </button>
-                            ))}
-                        </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>

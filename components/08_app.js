@@ -112,6 +112,27 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
             const [earnedBadges, setEarnedBadges] = useState([]);
             const [lastUpdate, setLastUpdate] = useState(Date.now());
 
+            // ショートカット設定
+            const [shortcuts, setShortcuts] = useState(() => {
+                const saved = localStorage.getItem('chevronShortcuts');
+                if (saved) return JSON.parse(saved);
+
+                // デフォルト設定（ダッシュボードのアイコンと統一）
+                return [
+                    { side: 'left', position: 'middle', size: 'small', order: 0, enabled: true, action: 'open_body_composition', label: '体組成', icon: 'Activity' },
+                    { side: 'left', position: 'middle', size: 'small', order: 1, enabled: true, action: 'open_meal', label: '食事', icon: 'Utensils' },
+                    { side: 'left', position: 'middle', size: 'small', order: 2, enabled: true, action: 'open_workout', label: '運動', icon: 'Dumbbell' },
+                    { side: 'left', position: 'middle', size: 'small', order: 3, enabled: false, action: 'open_meal_photo', label: '写真解析', icon: 'Camera' },
+                    { side: 'left', position: 'middle', size: 'small', order: 4, enabled: false, action: 'open_history', label: '履歴', icon: 'TrendingUp' },
+                    { side: 'left', position: 'middle', size: 'small', order: 5, enabled: false, action: 'open_settings', label: '設定', icon: 'Settings' },
+                    { side: 'right', position: 'middle', size: 'small', order: 0, enabled: true, action: 'open_condition', label: 'コンディション', icon: 'HeartPulse' },
+                    { side: 'right', position: 'middle', size: 'small', order: 1, enabled: true, action: 'open_idea', label: '閃き', icon: 'Lightbulb' },
+                    { side: 'right', position: 'middle', size: 'small', order: 2, enabled: true, action: 'open_analysis', label: '分析', icon: 'BarChart3' },
+                    { side: 'right', position: 'middle', size: 'small', order: 3, enabled: false, action: 'open_pgbase', label: 'PGBASE', icon: 'Database' },
+                    { side: 'right', position: 'middle', size: 'small', order: 4, enabled: false, action: 'open_community', label: 'COMY', icon: 'Users' }
+                ];
+            });
+
             // 誘導モーダルの状態管理
             const [showMealGuide, setShowMealGuide] = useState(false);       // オンボーディング後
             const [showTrainingGuide, setShowTrainingGuide] = useState(false); // 食事記録後
@@ -580,6 +601,72 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                 setShowPhotoInput(true);
             };
 
+            // ショートカットアクション処理
+            const handleShortcutClick = (action) => {
+                switch (action) {
+                    case 'open_body_composition':
+                        // 体組成セクションへスクロール（ルーティン下に余白を作る）
+                        setTimeout(() => {
+                            const element = document.getElementById('body-composition-section');
+                            if (element) {
+                                const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+                                const offsetPosition = elementPosition - 80; // ルーティン表示の下に余白
+                                window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                            }
+                        }, 100);
+                        break;
+                    case 'open_condition':
+                        // コンディションセクションへスクロール（ルーティン下に余白を作る）
+                        setTimeout(() => {
+                            const element = document.getElementById('condition-section');
+                            if (element) {
+                                const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+                                const offsetPosition = elementPosition - 80; // ルーティン表示の下に余白
+                                window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                            }
+                        }, 100);
+                        break;
+                    case 'open_idea':
+                        // 閃き（指示書）セクションへスクロール（ルーティン下に余白を作る）
+                        setTimeout(() => {
+                            const element = document.getElementById('directive-section');
+                            if (element) {
+                                const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+                                const offsetPosition = elementPosition - 80; // ルーティン表示の下に余白
+                                window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                            }
+                        }, 100);
+                        break;
+                    case 'open_meal':
+                        setAddViewType('meal');
+                        setShowAddView(true);
+                        break;
+                    case 'open_meal_photo':
+                        setAddViewType('meal');
+                        setShowAddView(true);
+                        break;
+                    case 'open_workout':
+                        setAddViewType('workout');
+                        setShowAddView(true);
+                        break;
+                    case 'open_analysis':
+                        setShowAnalysisView(true);
+                        break;
+                    case 'open_history':
+                        setShowHistoryV10(true);
+                        break;
+                    case 'open_pgbase':
+                        setShowPGBaseView(true);
+                        break;
+                    case 'open_community':
+                        setShowCOMYView(true);
+                        break;
+                    case 'open_settings':
+                        setShowSettings(true);
+                        break;
+                }
+            };
+
             // 情報モーダルコンポーネント
             const InfoModal = () => {
                 if (!infoModal.show) return null;
@@ -626,10 +713,31 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
 
             // LBM計算
             const lbm = userProfile.leanBodyMass || LBMUtils.calculateLBM(userProfile.weight, userProfile.bodyFatPercentage || 15);
+            
+            console.log('=== TargetPFC Calculation Debug ===');
+            console.log('userProfile.style:', userProfile.style);
+            console.log('userProfile.purpose:', userProfile.purpose);
+            console.log('lbm:', lbm);
+            console.log('userProfile.proteinRatio:', userProfile.proteinRatio);
+            console.log('userProfile.fatRatioPercent:', userProfile.fatRatioPercent);
+            console.log('userProfile.carbRatio:', userProfile.carbRatio);
+
+            const customPFCParam = userProfile.proteinRatio && userProfile.fatRatioPercent && userProfile.carbRatio ? {
+                P: userProfile.proteinRatio,
+                F: userProfile.fatRatioPercent,
+                C: userProfile.carbRatio
+            } : null;
+            console.log('customPFCParam:', customPFCParam);
+
             const targetPFC = LBMUtils.calculateTargetPFC(
                 userProfile.tdeeBase || 2200,
                 userProfile.weightChangePace || 0,
-                lbm
+                lbm,
+                userProfile.style || '一般',
+                userProfile.purpose || 'メンテナンス',
+                userProfile.dietStyle || 'バランス',
+                userProfile.calorieAdjustment,
+                customPFCParam
             );
 
             // 進捗計算
@@ -690,7 +798,7 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                                                 onClick={() => handleDateChange(todayStr)}
                                                 className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition font-medium"
                                             >
-                                                今日
+                                                今日へ
                                             </button>
                                         );
                                     } else {
@@ -731,27 +839,20 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
 
                                 if (currentRoutine) {
                                     return (
-                                        <div className="w-full px-4 py-3 flex items-center justify-between border-t">
-                                            <div className="flex items-center gap-3">
-                                                <div className="bg-purple-100 p-2 rounded-lg">
-                                                    <Icon name="Dumbbell" size={20} className="text-purple-600" />
-                                                </div>
-                                                <div className="text-left">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-bold text-gray-900">{currentRoutine.name}</span>
-                                                        <span className="text-xs text-gray-500">Day {currentIndex + 1}/{routines.length}</span>
-                                                    </div>
-                                                    <div className="text-xs text-gray-600">今日のルーティン</div>
+                                        <div className="w-full px-4 py-2 flex items-center gap-3 border-t">
+                                            <Icon name="Repeat" size={20} className="text-purple-600" />
+                                            <span className="text-xs text-gray-500">Day {currentIndex + 1}/{routines.length}</span>
+                                            <div className="flex-1 text-left">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-gray-900">{currentRoutine.name}</span>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => {
-                                                    setShowSettings(true);
-                                                }}
-                                                className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-purple-700 transition"
-                                            >
-                                                管理
-                                            </button>
+                                            {!currentRoutine.isRestDay && currentRoutine.splitType && (
+                                                <span className="text-sm font-bold px-3 py-1 bg-purple-100 text-purple-700 rounded-lg">{currentRoutine.splitType}</span>
+                                            )}
+                                            {currentRoutine.isRestDay && (
+                                                <span className="text-sm font-bold px-3 py-1 bg-gray-100 text-gray-600 rounded-lg">休息日</span>
+                                            )}
                                         </div>
                                     );
                                 }
@@ -907,357 +1008,9 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                         </div>
                     )}
 
-                    {/* 指示書・ルーティンセクション */}
+                    {/* ルーティンセクション */}
                     <div className="px-4 pt-4 space-y-3">
-                        {/* 指示書（AI生成提案型 - 分析閲覧後に開放） */}
-                        {unlockedFeatures.includes('directive') && (() => {
-                            const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
-                            const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
-                            // 表示中の日付の指示書を取得
-                            const todayDirective = directives.find(d => d.date === currentDate);
-
-                            const handleSave = () => {
-                                const now = new Date();
-                                const deadline = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24時間後
-                                const newDirective = {
-                                    date: currentDate, // 表示中の日付に保存
-                                    message: directiveText,
-                                    type: directiveType, // タイプを保存
-                                    deadline: deadline.toISOString(),
-                                    createdAt: now.toISOString()
-                                };
-
-                                const updatedDirectives = directives.filter(d => d.date !== currentDate);
-                                updatedDirectives.push(newDirective);
-                                localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
-                                setDirectiveEditing(false);
-                                setDirectiveText('');
-                            };
-
-                            // 編集中
-                            if (directiveEditing) {
-                                return (
-                                    <div className="bg-gradient-to-r from-green-50 to-teal-50 border-2 border-green-500 rounded-xl p-4 shadow-lg slide-up">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-2">
-                                                <Icon name="FileText" size={20} className="text-green-700" />
-                                                <span className="font-bold text-green-900">今日の指示書</span>
-                                            </div>
-                                            <button
-                                                onClick={() => setDirectiveEditing(false)}
-                                                className="text-gray-500 hover:text-gray-700"
-                                            >
-                                                <Icon name="X" size={20} />
-                                            </button>
-                                        </div>
-
-                                        {/* タイプ選択 */}
-                                        <div className="flex gap-2 mb-3">
-                                            <button
-                                                onClick={() => setDirectiveType('meal')}
-                                                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
-                                                    directiveType === 'meal'
-                                                        ? 'bg-emerald-600 text-white'
-                                                        : 'bg-white text-gray-600 hover:bg-gray-100'
-                                                }`}
-                                            >
-                                                <Icon name="Utensils" size={14} className="inline mr-1" />
-                                                食事
-                                            </button>
-                                            <button
-                                                onClick={() => setDirectiveType('exercise')}
-                                                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
-                                                    directiveType === 'exercise'
-                                                        ? 'bg-orange-600 text-white'
-                                                        : 'bg-white text-gray-600 hover:bg-gray-100'
-                                                }`}
-                                            >
-                                                <Icon name="Dumbbell" size={14} className="inline mr-1" />
-                                                運動
-                                            </button>
-                                            <button
-                                                onClick={() => setDirectiveType('condition')}
-                                                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
-                                                    directiveType === 'condition'
-                                                        ? 'bg-indigo-600 text-white'
-                                                        : 'bg-white text-gray-600 hover:bg-gray-100'
-                                                }`}
-                                            >
-                                                <Icon name="Activity" size={14} className="inline mr-1" />
-                                                体調
-                                            </button>
-                                        </div>
-
-                                        <textarea
-                                            value={directiveText}
-                                            onChange={(e) => setDirectiveText(e.target.value)}
-                                            placeholder={
-                                                directiveType === 'meal' ? '例: 鶏むね肉150g追加' :
-                                                directiveType === 'exercise' ? '例: ベンチプレス 80kg×8回×3セット' :
-                                                '例: 睡眠8時間確保、水分2L摂取'
-                                            }
-                                            className="w-full p-3 border border-green-300 rounded-lg text-gray-800 text-sm resize-none focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                            rows="4"
-                                        />
-                                        <div className="flex flex-col gap-2 mt-3">
-                                            <div className="flex justify-end gap-2">
-                                                <button
-                                                    onClick={async () => {
-                                                        // 表示中の日付または最新の分析データを取得
-                                                        const analyses = JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_ANALYSES) || '{}');
-                                                        let latestAnalysis = analyses[currentDate];
-
-                                                        // 表示中の日付のデータがなければ、前日のデータを取得
-                                                        if (!latestAnalysis) {
-                                                            const prevDate = new Date(currentDate + 'T00:00:00');
-                                                            prevDate.setDate(prevDate.getDate() - 1);
-                                                            const prevDateStr = prevDate.toISOString().split('T')[0];
-                                                            latestAnalysis = analyses[prevDateStr];
-                                                        }
-
-                                                        if (!latestAnalysis) {
-                                                            alert('まず分析を実行してください。分析結果に基づいてAIが最適な指示書を提案します。');
-                                                            return;
-                                                        }
-
-                                                        // AI に提案を生成させる（タイプ別）
-                                                        let suggestion = '';
-
-                                                        if (directiveType === 'meal') {
-                                                            // 食事提案（PFC分析ベース）
-                                                            if (latestAnalysis.achievementRates.protein < 90) {
-                                                                const diff = Math.ceil(targetPFC.protein - latestAnalysis.actual.protein);
-                                                                // 鶏むね肉: 100gあたり23g（皮なし）のタンパク質
-                                                                const grams = Math.ceil(diff / 0.23);
-                                                                suggestion = `鶏むね肉${grams}g追加`;
-                                                            } else if (latestAnalysis.achievementRates.carbs > 110) {
-                                                                const diff = Math.ceil(latestAnalysis.actual.carbs - targetPFC.carbs);
-                                                                // 白米: 100gあたり37gの炭水化物
-                                                                const grams = Math.ceil(diff / 0.37);
-                                                                suggestion = `白米-${grams}g減らす`;
-                                                            } else if (latestAnalysis.achievementRates.fat < 90) {
-                                                                const diff = Math.ceil(targetPFC.fat - latestAnalysis.actual.fat);
-                                                                // アボカド: 100gあたり15gの脂質
-                                                                const grams = Math.ceil(diff / 0.15);
-                                                                suggestion = `アボカド${grams}g追加`;
-                                                            } else if (latestAnalysis.achievementRates.overall >= 95 && latestAnalysis.achievementRates.overall <= 105) {
-                                                                suggestion = '昨日の食事を完全再現';
-                                                            } else {
-                                                                suggestion = 'PFC比率を整える';
-                                                            }
-                                                        } else if (directiveType === 'exercise') {
-                                                            // 運動提案（前日のトレーニング履歴と目標ベース）
-                                                            const todayWorkouts = dailyRecord.workouts || [];
-                                                            const hasWorkout = todayWorkouts.length > 0;
-
-                                                            if (!hasWorkout) {
-                                                                // 運動なし
-                                                                if (userProfile.goal === 'diet' || userProfile.goal === 'lose_fat') {
-                                                                    suggestion = 'HIIT 20分 または ウォーキング 60分';
-                                                                } else if (userProfile.goal === 'bulk' || userProfile.goal === 'gain_muscle') {
-                                                                    suggestion = 'コンパウンド種目 4種目×3セット';
-                                                                } else {
-                                                                    suggestion = '中強度トレーニング 30-45分';
-                                                                }
-                                                            } else {
-                                                                // 運動済み
-                                                                const totalExercises = todayWorkouts.reduce((sum, w) => sum + (w.exercises?.length || 0), 0);
-                                                                if (totalExercises < 3) {
-                                                                    suggestion = '種目数を増やす（あと1-2種目）';
-                                                                } else {
-                                                                    suggestion = '今日は休養日。ストレッチ推奨';
-                                                                }
-                                                            }
-                                                        } else if (directiveType === 'condition') {
-                                                            // 体調管理提案（睡眠・ストレスベース）
-                                                            const condition = dailyRecord.conditions;
-                                                            if (condition) {
-                                                                if (condition.sleepHours < 7) {
-                                                                    suggestion = '睡眠時間を8時間確保する';
-                                                                } else if (condition.stress >= 4) {
-                                                                    suggestion = '深呼吸10分、リラックス時間を設ける';
-                                                                } else if (condition.fatigue <= 2) {
-                                                                    suggestion = '休養日を設ける、マッサージ推奨';
-                                                                } else if (condition.appetite <= 2) {
-                                                                    suggestion = '消化の良い食事、少量頻回に変更';
-                                                                } else {
-                                                                    suggestion = '現在の生活習慣を維持';
-                                                                }
-                                                            } else {
-                                                                suggestion = '睡眠8時間、水分2L、ストレス管理';
-                                                            }
-                                                        }
-
-                                                        setDirectiveText(suggestion);
-                                                    }}
-                                                    className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition text-xs font-medium"
-                                                >
-                                                    AI
-                                                </button>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <div className="text-xs text-gray-500">24時間後に期限切れ</div>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => setDirectiveEditing(false)}
-                                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium"
-                                                    >
-                                                        キャンセル
-                                                    </button>
-                                                    <button
-                                                        onClick={handleSave}
-                                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-bold"
-                                                    >
-                                                        保存
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            }
-
-                            // 指示書がある場合
-                            if (todayDirective) {
-                                const deadline = new Date(todayDirective.deadline);
-                                const now = new Date();
-                                const timeLeft = deadline - now;
-                                const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
-                                const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                                const isExpired = timeLeft <= 0;
-
-                                const isCompleted = todayDirective.completed || false;
-
-                                const handleToggleComplete = () => {
-                                    const updatedDirectives = directives.map(d =>
-                                        d.date === currentDate ? {...d, completed: !isCompleted} : d
-                                    );
-                                    localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
-                                    // Reactステートで再レンダリング
-                                    setLastUpdate(Date.now());
-                                };
-
-                                const directiveIconName =
-                                    todayDirective.type === 'meal' ? 'Utensils' :
-                                    todayDirective.type === 'exercise' ? 'Dumbbell' :
-                                    todayDirective.type === 'condition' ? 'Activity' :
-                                    'FileText';
-
-                                const directiveColor =
-                                    todayDirective.type === 'meal' ? 'emerald' :
-                                    todayDirective.type === 'exercise' ? 'orange' :
-                                    todayDirective.type === 'condition' ? 'indigo' :
-                                    'green';
-
-                                return (
-                                    <div className={`border-2 rounded-xl p-4 shadow-lg slide-up ${isCompleted ? 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-400' : `bg-gradient-to-r from-${directiveColor}-50 to-teal-50 border-${directiveColor}-500`}`}>
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="flex items-center gap-2">
-                                                <Icon name={directiveIconName} size={20} className={isCompleted ? "text-gray-500" : `text-${directiveColor}-700`} />
-                                                <span className={`font-bold ${isCompleted ? "text-gray-700 line-through" : `text-${directiveColor}-900`}`}>
-                                                    今日の指示書
-                                                    {todayDirective.type && (
-                                                        <span className="text-xs ml-2 opacity-70">
-                                                            ({todayDirective.type === 'meal' ? '食事' : todayDirective.type === 'exercise' ? '運動' : '体調'})
-                                                        </span>
-                                                    )}
-                                                </span>
-                                                <button
-                                                    onClick={() => setInfoModal({
-                                                        show: true,
-                                                        title: '💡 指示書について',
-                                                        content: '1日1つ目標を決めて、その通りに実行しましょう。\n\n指示書を作成することで、今日やるべきことを明確にし、達成することで自己管理能力が向上します。\n\n例：\n• トレーニング: 脚の日（スクワット5セット）\n• 食事: タンパク質180g摂取\n• 睡眠: 23時までに就寝'
-                                                    })}
-                                                    className="text-indigo-600 hover:text-indigo-800"
-                                                >
-                                                    <Icon name="Info" size={16} />
-                                                </button>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {!isExpired && !isCompleted && (
-                                                    <div className="text-right mr-2">
-                                                        <div className="text-xs text-gray-600">残り時間</div>
-                                                        <div className="font-bold text-red-600">{hoursLeft}h {minutesLeft}m</div>
-                                                    </div>
-                                                )}
-                                                <button
-                                                    onClick={() => {
-                                                        setDirectiveText(todayDirective.message);
-                                                        setDirectiveEditing(true);
-                                                    }}
-                                                    className={isCompleted ? "text-gray-500 hover:text-gray-700" : "text-green-700 hover:text-green-900"}
-                                                >
-                                                    <Icon name="Edit2" size={18} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className={`rounded-lg p-3 mb-3 ${isCompleted ? "bg-gray-100" : "bg-white"}`}>
-                                            <p className={`whitespace-pre-wrap ${isCompleted ? "text-gray-500 line-through" : "text-gray-800"}`}>{todayDirective.message}</p>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                {isExpired && !isCompleted && (
-                                                    <div className="text-sm text-red-600 font-medium">期限切れ</div>
-                                                )}
-                                                {isCompleted && (
-                                                    <div className="text-sm text-gray-600 font-medium flex items-center gap-1">
-                                                        <Icon name="CheckCircle" size={16} className="text-green-600" />
-                                                        完了済み
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <button
-                                                onClick={handleToggleComplete}
-                                                className={`px-4 py-2 rounded-lg font-bold transition text-sm flex items-center gap-2 ${
-                                                    isCompleted
-                                                    ? 'bg-gray-400 text-white hover:bg-gray-500'
-                                                    : 'bg-green-600 text-white hover:bg-green-700'
-                                                }`}
-                                            >
-                                                <Icon name={isCompleted ? "RotateCcw" : "CheckCircle"} size={16} />
-                                                {isCompleted ? '未完了に戻す' : '完了'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            }
-
-                            // 指示書がない場合は AI 生成提案ボタン
-                            return (
-                                <div className="bg-gradient-to-r from-green-50 to-teal-50 border-2 border-green-500 rounded-xl p-4 shadow-lg slide-up">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Icon name="Sparkles" size={20} className="text-green-700" />
-                                            <span className="font-bold text-green-900">今日の指示書</span>
-                                            <button
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: '💡 AI指示書について',
-                                                    content: 'AIがあなたの分析結果に基づいて、今日の最適な目標を提案します。\n\n提案された指示書は編集可能で、自分の状況に合わせてカスタマイズできます。\n\n指示書を達成することで、自己管理能力が向上し、目標達成率が高まります。'
-                                                })}
-                                                className="text-indigo-600 hover:text-indigo-800"
-                                            >
-                                                <Icon name="Info" size={16} />
-                                            </button>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    setDirectiveText('');
-                                                    setDirectiveEditing(true);
-                                                }}
-                                                className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition text-sm"
-                                            >
-                                                手動で作成
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="mt-2 text-sm text-gray-600">
-                                        AIに今日の目標を提案してもらうか、手動で作成できます
-                                    </div>
-                                </div>
-                            );
-                        })()}
+                        {/* ルーティン表示 */}
                     </div>
 
                     {/* メインコンテンツ */}
@@ -1274,6 +1027,8 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                             currentDate={currentDate}
                             onDateChange={handleDateChange}
                             triggers={triggers}
+                            shortcuts={shortcuts}
+                            onShortcutClick={handleShortcutClick}
                             onDeleteItem={async (type, itemId) => {
                                 // 現在のstateから削除（DBから再読み込みしない）
                                 const updatedRecord = { ...dailyRecord };
@@ -2028,15 +1783,6 @@ AIコーチなどの高度な機能が解放されます。
                                 </div>
 
                                 <div className="p-6 space-y-4">
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <h3 className="font-bold mb-2">守破離とは</h3>
-                                        <div className="space-y-2 text-sm text-gray-700">
-                                            <p><strong className="text-green-600">守（0-9日）</strong>: 基礎を学ぶ段階。基本的な記録機能を使いこなします。</p>
-                                            <p><strong className="text-blue-600">破（10-17日）</strong>: 応用・カスタマイズ段階。AIコーチや高度な機能が使えます。</p>
-                                            <p><strong className="text-purple-600">離（18日〜）</strong>: 独自の方法を確立する段階。全機能が開放されます。</p>
-                                        </div>
-                                    </div>
-
                                     <h3 className="font-bold text-lg">機能開放状態</h3>
                                     <div className="space-y-2">
                                         {Object.values(FEATURES).map(feature => {
@@ -2085,6 +1831,7 @@ AIコーチなどの高度な機能が解放されます。
                             onUpdateProfile={async (updatedProfile) => {
                                 await DataService.saveUserProfile(user.uid, updatedProfile);
                                 setUserProfile(updatedProfile);
+                                setLastUpdate(Date.now()); // 強制的に再レンダリング
                             }}
                             userId={user.uid}
                             usageDays={usageDays}
@@ -2097,6 +1844,11 @@ AIコーチなどの高度な機能が解放されます。
                             }}
                             darkMode={darkMode}
                             onToggleDarkMode={() => setDarkMode(!darkMode)}
+                            shortcuts={shortcuts}
+                            onUpdateShortcuts={(updated) => {
+                                setShortcuts(updated);
+                                localStorage.setItem('chevronShortcuts', JSON.stringify(updated));
+                            }}
                         />
                     )}
 

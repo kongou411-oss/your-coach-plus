@@ -1,5 +1,5 @@
 // ===== Dashboard Component =====
-const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers = {} }) => {
+const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers = {}, shortcuts = [], onShortcutClick }) => {
     // 指示書管理
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
@@ -200,6 +200,51 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem,
 
     return (
         <div className="space-y-4">
+            {/* 今日の指示書 */}
+            {todayDirective && (
+                <div id="directive-section" className="bg-green-50 rounded-xl border-2 border-green-200 p-4 slide-up">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <Icon name="Target" size={18} className="text-green-600" />
+                            <h3 className="font-bold text-gray-800">今日の指示書</h3>
+                        </div>
+                        <button
+                            onClick={() => setShowDirectiveEdit(true)}
+                            className="text-gray-400 hover:text-gray-600"
+                        >
+                            <Icon name="Edit3" size={14} />
+                        </button>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-4 border-l-4 border-green-500">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Icon name={getCategoryIcon(todayDirective.type)} size={16} className="text-green-600" />
+                            <span className="text-xs font-bold text-green-700">
+                                【{getCategoryLabel(todayDirective.type)}】
+                            </span>
+                        </div>
+                        <p className={`text-sm font-medium text-gray-800 leading-relaxed ${todayDirective.completed ? 'line-through opacity-60' : ''}`}>
+                            {todayDirective.message}
+                        </p>
+                        {!todayDirective.completed && (
+                            <button
+                                onClick={handleCompleteDirective}
+                                className="mt-3 w-full bg-purple-600 text-white py-2.5 rounded-lg hover:bg-purple-700 transition font-semibold flex items-center justify-center gap-2 text-sm"
+                            >
+                                <Icon name="Check" size={16} />
+                                完了
+                            </button>
+                        )}
+                        {todayDirective.completed && (
+                            <div className="mt-3 flex items-center justify-center gap-2 text-green-600 font-medium text-sm">
+                                <Icon name="CheckCircle" size={16} />
+                                完了済み
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* PFCサマリー */}
             <div className="bg-white rounded-xl shadow-sm p-6 slide-up">
                 <div className="flex items-center gap-2 mb-4">
@@ -258,20 +303,17 @@ ${Math.round(caloriesPercent)}%`
                                 </button>
                             </div>
                             <div className="text-sm text-right">
-                                <div className="font-bold" style={{color: '#7686BA'}}>
+                                <div className="font-bold text-cyan-600">
                                     {Math.round(currentIntake.calories)} / {targetPFC.calories} kcal
                                 </div>
                             </div>
                         </div>
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full transition-all duration-500"
-                                style={{ width: `${Math.min(caloriesPercent, 100)}%`, backgroundColor: '#7686BA' }}
+                                className="h-full bg-cyan-600 transition-all duration-500"
+                                style={{ width: `${Math.min(caloriesPercent, 100)}%` }}
                             ></div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                            摂取カロリー ÷ 目標カロリー
-                        </p>
                     </div>
                     <div>
                         <div className="flex justify-between mb-2">
@@ -461,56 +503,6 @@ ${Math.round(caloriesPercent)}%`
                 )}
             </div>
 
-            {/* 今日の指示書 */}
-            {todayDirective && (
-                <div id="directive-section" className="bg-white rounded-xl shadow-sm p-5 slide-up">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <Icon name="Target" size={20} className="text-purple-600" />
-                            <h3 className="text-lg font-bold text-gray-800">今日の指示書</h3>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
-                                {getTimeRemaining(todayDirective.deadline)}
-                            </span>
-                            <button
-                                onClick={() => setShowDirectiveEdit(true)}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <Icon name="Edit3" size={16} />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className={`bg-gradient-to-r ${getCategoryColor(todayDirective.type).bg} rounded-lg p-4 border-l-4 ${getCategoryColor(todayDirective.type).border} ${todayDirective.completed ? 'opacity-60' : ''}`}>
-                        <div className="flex items-center gap-2 mb-2">
-                            <Icon name={getCategoryIcon(todayDirective.type)} size={16} className={getCategoryColor(todayDirective.type).icon} />
-                            <span className={`text-xs font-bold ${getCategoryColor(todayDirective.type).text}`}>
-                                【{getCategoryLabel(todayDirective.type)}】
-                            </span>
-                        </div>
-                        <p className={`text-sm font-bold text-gray-800 mb-1 ${todayDirective.completed ? 'line-through' : ''}`}>
-                            {todayDirective.message}
-                        </p>
-                        {!todayDirective.completed && (
-                            <button
-                                onClick={handleCompleteDirective}
-                                className="mt-3 w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition font-semibold flex items-center justify-center gap-2 text-sm"
-                            >
-                                <Icon name="Check" size={16} />
-                                完了
-                            </button>
-                        )}
-                        {todayDirective.completed && (
-                            <div className="mt-3 flex items-center justify-center gap-2 text-green-600 font-medium text-sm">
-                                <Icon name="CheckCircle" size={16} />
-                                完了済み
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
             {/* 記録一覧 */}
             <div id="record-section" className="bg-white rounded-xl shadow-sm p-6 slide-up">
                 <div className="flex items-center gap-2 mb-4">
@@ -557,12 +549,15 @@ ${Math.round(caloriesPercent)}%`
                 </div>
 
                 {/* 体組成セクション */}
-                <div className="mb-6">
+                <div id="body-composition-section" className="mb-6">
                     <div className="flex items-center justify-between mb-3">
                         <h4 className="font-bold text-gray-800 flex items-center gap-2">
                             <Icon name="Activity" size={18} className="text-teal-600" />
                             体組成
                         </h4>
+                        <span className="text-sm font-bold text-teal-600">
+                            LBM: {(bodyComposition.weight * (1 - bodyComposition.bodyFatPercentage / 100)).toFixed(1)}kg
+                        </span>
                     </div>
 
                     {/* 体重 */}
@@ -707,7 +702,7 @@ ${Math.round(caloriesPercent)}%`
                         </h4>
                         <button
                             onClick={() => window.handleQuickAction && window.handleQuickAction('meal')}
-                            className="text-xs px-3 py-1 bg-green-50 border border-green-300 text-green-700 rounded-lg hover:bg-green-100 transition"
+                            className="text-sm px-4 py-2 bg-green-100 border border-green-400 text-green-800 rounded-lg hover:bg-green-200 transition font-medium"
                         >
                             + 追加
                         </button>
@@ -735,7 +730,7 @@ ${Math.round(caloriesPercent)}%`
                                             ))}
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold mb-2" style={{color: '#7686BA'}}>{meal.calories} kcal</p>
+                                            <p className="font-bold mb-2 text-cyan-600">{meal.calories} kcal</p>
                                             <div className="flex gap-2 justify-end">
                                                 <button
                                                     onClick={() => {
@@ -770,13 +765,42 @@ ${Math.round(caloriesPercent)}%`
                 {triggers.after_meal && (
                     <div id="workout-section" className="mb-6">
                         <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="Dumbbell" size={18} className="text-orange-600" />
-                                運動
-                            </h4>
+                            <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                                    <Icon name="Dumbbell" size={18} className="text-orange-600" />
+                                    運動
+                                </h4>
+                                {dailyRecord.workouts?.length > 0 && (() => {
+                                    // 総重量と総時間を計算
+                                    let totalWeight = 0;
+                                    let totalDuration = 0;
+
+                                    dailyRecord.workouts.forEach(workout => {
+                                        workout.exercises?.forEach(exercise => {
+                                            exercise.sets?.forEach(set => {
+                                                totalWeight += (set.weight || 0) * (set.reps || 0);
+                                                totalDuration += (set.duration || 0);
+                                            });
+                                        });
+                                    });
+
+                                    return (
+                                        <div className="flex items-center gap-3 text-sm">
+                                            <span className="flex items-center gap-1 text-orange-600 font-medium">
+                                                <Icon name="Weight" size={14} />
+                                                {totalWeight}kg
+                                            </span>
+                                            <span className="flex items-center gap-1 text-orange-600 font-medium">
+                                                <Icon name="Clock" size={14} />
+                                                {totalDuration}分
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
                             <button
                                 onClick={() => window.handleQuickAction && window.handleQuickAction('workout')}
-                                className="text-xs px-3 py-1 bg-orange-50 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-100 transition"
+                                className="text-sm px-4 py-2 bg-orange-100 border border-orange-400 text-orange-800 rounded-lg hover:bg-orange-200 transition font-medium"
                             >
                                 + 追加
                             </button>
@@ -1179,6 +1203,7 @@ ${Math.round(caloriesPercent)}%`
 
             </div>
 
+
             {/* 指示書編集モーダル */}
             {showDirectiveEdit && todayDirective && (
                 <DirectiveEditModal
@@ -1206,6 +1231,11 @@ ${Math.round(caloriesPercent)}%`
                     getCategoryLabel={getCategoryLabel}
                     getCategoryColor={getCategoryColor}
                 />
+            )}
+
+            {/* ショートカット */}
+            {shortcuts && shortcuts.length > 0 && onShortcutClick && (
+                <ChevronShortcut shortcuts={shortcuts} onShortcutClick={onShortcutClick} />
             )}
         </div>
     );
@@ -1293,3 +1323,4 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
         </div>
     );
 };
+

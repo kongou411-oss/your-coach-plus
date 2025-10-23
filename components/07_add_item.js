@@ -20,6 +20,7 @@
             const [showCustomFoodCreator, setShowCustomFoodCreator] = useState(false);
             const [showSearchModal, setShowSearchModal] = useState(false);
             const [foodOrSupplementTab, setFoodOrSupplementTab] = useState('food'); // 'food' or 'supplement'
+            const [exerciseTab, setExerciseTab] = useState('strength'); // 'strength' or 'cardio' or 'stretch'
 
             // 料理作成用のstate
             const [showRecipeCreator, setShowRecipeCreator] = useState(false);
@@ -457,7 +458,7 @@
                                     <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
                                         <div>
                                             <p className="text-gray-600">カロリー</p>
-                                            <p className="font-bold" style={{color: '#7686BA'}}>{selectedItem.calories}kcal</p>
+                                            <p className="font-bold text-cyan-600">{selectedItem.calories}kcal</p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">P</p>
@@ -674,23 +675,74 @@
                                         {/* テンプレート一覧 */}
                                         {supplementTemplates.length > 0 && (
                                             <div className="space-y-2">
-                                                {supplementTemplates.map(template => (
-                                                    <div key={template.id} className="flex items-center gap-2 bg-white p-2 rounded border">
-                                                        <button
-                                                            onClick={() => loadTemplate(template)}
-                                                            className="flex-1 text-left text-sm hover:text-blue-600"
-                                                        >
-                                                            <p className="font-medium">{template.name}</p>
-                                                            <p className="text-xs text-gray-500">{template.items.length}品目</p>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => deleteTemplate(template.id)}
-                                                            className="p-1 text-red-500 hover:text-red-700"
-                                                        >
-                                                            <Icon name="Trash2" size={16} />
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                                {supplementTemplates.map(template => {
+                                                    // 総カロリーとPFCを計算
+                                                    let totalCalories = 0;
+                                                    let totalProtein = 0;
+                                                    let totalFat = 0;
+                                                    let totalCarbs = 0;
+
+                                                    template.items.forEach(item => {
+                                                        totalCalories += item.calories || 0;
+                                                        totalProtein += item.protein || 0;
+                                                        totalFat += item.fat || 0;
+                                                        totalCarbs += item.carbs || 0;
+                                                    });
+
+                                                    return (
+                                                        <details key={template.id} className="bg-white rounded border">
+                                                            <summary className="p-2 cursor-pointer hover:bg-gray-50 rounded">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex-1">
+                                                                        <p className="font-medium text-sm">{template.name}</p>
+                                                                        <p className="text-xs text-gray-600 mt-0.5">
+                                                                            {Math.round(totalCalories)}kcal
+                                                                            <span className="text-red-600 ml-2">P:{Math.round(totalProtein)}g</span>
+                                                                            <span className="text-yellow-600 ml-1">F:{Math.round(totalFat)}g</span>
+                                                                            <span className="text-green-600 ml-1">C:{Math.round(totalCarbs)}g</span>
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1 ml-2">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                loadTemplate(template);
+                                                                            }}
+                                                                            className="p-1 text-blue-500 hover:text-blue-700"
+                                                                        >
+                                                                            <Icon name="Pencil" size={14} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                deleteTemplate(template.id);
+                                                                            }}
+                                                                            className="p-1 text-red-500 hover:text-red-700"
+                                                                        >
+                                                                            <Icon name="Trash2" size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </summary>
+                                                            <div className="px-2 pb-2 space-y-1">
+                                                                {template.items.map((item, idx) => (
+                                                                    <div key={idx} className="text-xs text-gray-700 py-1 border-t border-gray-200">
+                                                                        <span className="font-medium">{item.name}</span>
+                                                                        <span className="text-gray-500 ml-2">{item.amount}</span>
+                                                                        <span className="text-xs text-gray-500 ml-2">
+                                                                            ({Math.round(item.calories)}kcal
+                                                                            <span className="text-red-600 ml-1">P:{Math.round(item.protein)}g</span>
+                                                                            <span className="text-yellow-600 ml-1">F:{Math.round(item.fat)}g</span>
+                                                                            <span className="text-green-600 ml-1">C:{Math.round(item.carbs)}g</span>)
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </details>
+                                                    );
+                                                })}
                                             </div>
                                         )}
 
@@ -1156,65 +1208,422 @@
 
                 return (
                     <div className="space-y-4">
-                        {/* ①検索欄 */}
-                        <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="種目を検索..."
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                        />
+                        {/* ①どうやって記録しますか？ */}
+                        {!currentExercise && !showCustomExerciseForm && (
+                            <div className="space-y-3">
+                                <p className="text-center text-base font-medium text-gray-700 mb-4">どうやって記録しますか？</p>
 
-                        {/* ②折りたたみカテゴリ一覧 */}
-                        {!currentExercise ? (
-                            <div className="space-y-2 max-h-96 overflow-y-auto">
-                                    {(() => {
-                                        const categories = {};
-                                        filteredExercises.forEach(ex => {
-                                            if (!categories[ex.category]) {
-                                                categories[ex.category] = [];
-                                            }
-                                            categories[ex.category].push(ex);
-                                        });
+                                {/* 種目を検索（グレー背景、グレー枠） */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSearchModal(true)}
+                                    className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                >
+                                    <Icon name="Search" size={32} />
+                                    <div className="text-left flex-1">
+                                        <div className="font-bold text-base">種目を検索</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">データベースから選択</div>
+                                    </div>
+                                </button>
 
-                                        return Object.keys(categories).map(category => (
-                                            <div key={category} className="border rounded-lg overflow-hidden">
-                                                <button
-                                                    onClick={() => setExpandedCategories(prev => ({...prev, [category]: !prev[category]}))}
-                                                    className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                >
-                                                    <span className="font-medium">{category}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs text-gray-500">{categories[category].length}種目</span>
-                                                        <Icon name={expandedCategories[category] ? 'ChevronDown' : 'ChevronRight'} size={20} />
-                                                    </div>
-                                                </button>
-                                                {expandedCategories[category] && (
-                                                    <div className="p-2 space-y-1">
-                                                        {categories[category].map(exercise => (
-                                                            <button
-                                                                key={exercise.id}
-                                                                onClick={() => setCurrentExercise(exercise)}
-                                                                className="w-full text-left px-3 py-2 hover:bg-orange-50 rounded-lg transition"
-                                                            >
-                                                                <div className="flex justify-between items-center">
-                                                                    <div>
-                                                                        <p className="font-medium">{exercise.name}</p>
-                                                                        <p className="text-xs text-gray-500">{exercise.subcategory}</p>
+                                {/* 手動で作成（グレー背景、グレー枠） */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCustomExerciseForm(true)}
+                                    className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                >
+                                    <Icon name="Plus" size={32} />
+                                    <div className="text-left flex-1">
+                                        <div className="font-bold text-base">手動で作成</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">カスタム種目を登録</div>
+                                    </div>
+                                </button>
+
+                                {/* テンプレート - 12日以上で開放 */}
+                                {unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTemplates(!showTemplates)}
+                                        className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                    >
+                                        <Icon name="BookTemplate" size={32} />
+                                        <div className="text-left flex-1">
+                                            <div className="font-bold text-base">テンプレート</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">保存したワークアウトを呼び出す</div>
+                                        </div>
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* テンプレートモーダル */}
+                        {showTemplates && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+                                    <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+                                        <h3 className="text-lg font-bold">テンプレート</h3>
+                                        <button
+                                            onClick={() => setShowTemplates(false)}
+                                            className="text-gray-500 hover:text-gray-700"
+                                        >
+                                            <Icon name="X" size={24} />
+                                        </button>
+                                    </div>
+                                    <div className="p-4 space-y-3">
+                                        {/* テンプレート一覧 */}
+                                        {workoutTemplates.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {workoutTemplates.map(template => {
+                                                    // 総重量と総時間を計算
+                                                    let totalWeight = 0;
+                                                    let totalDuration = 0;
+
+                                                    template.exercises?.forEach(exercise => {
+                                                        exercise.sets?.forEach(set => {
+                                                            totalWeight += (set.weight || 0) * (set.reps || 0);
+                                                            totalDuration += set.duration || 0;
+                                                        });
+                                                    });
+
+                                                    return (
+                                                        <details key={template.id} className="bg-gray-50 rounded-lg border border-gray-200">
+                                                            <summary className="p-3 cursor-pointer hover:bg-gray-100 rounded-lg">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex-1">
+                                                                        <p className="font-medium">{template.name}</p>
+                                                                        <p className="text-xs text-gray-600 mt-1">
+                                                                            <span className="text-orange-600">総重量: {totalWeight}kg</span>
+                                                                            <span className="text-orange-600 ml-2">総時間: {totalDuration}分</span>
+                                                                        </p>
                                                                     </div>
-                                                                    <span className="text-xs bg-gray-100 px-2 py-1 rounded-full self-start">
-                                                                        {exercise.exerciseType === 'aerobic' ? '有酸素' : '無酸素'}
-                                                                    </span>
+                                                                    <div className="flex items-center gap-2 ml-2">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                loadTemplate(template);
+                                                                                setShowTemplates(false);
+                                                                            }}
+                                                                            className="p-2 text-blue-500 hover:text-blue-700"
+                                                                        >
+                                                                            <Icon name="Pencil" size={16} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                deleteTemplate(template.id);
+                                                                            }}
+                                                                            className="p-2 text-red-500 hover:text-red-700"
+                                                                        >
+                                                                            <Icon name="Trash2" size={16} />
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                            </summary>
+                                                            <div className="px-3 pb-3 space-y-2">
+                                                                {template.exercises?.map((exercise, exIdx) => (
+                                                                    <div key={exIdx} className="text-sm border-t border-gray-200 pt-2">
+                                                                        <p className="font-medium text-gray-800">{exercise.name}</p>
+                                                                        <div className="ml-2 mt-1 space-y-1">
+                                                                            {exercise.sets?.map((set, setIdx) => (
+                                                                                <p key={setIdx} className="text-xs text-gray-600">
+                                                                                    セット{setIdx + 1}: {set.weight || 0}kg × {set.reps || 0}回
+                                                                                    {set.duration > 0 && ` (${set.duration}分)`}
+                                                                                </p>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </details>
+                                                    );
+                                                })}
                                             </div>
-                                        ));
-                                    })()}
+                                        ) : (
+                                            <p className="text-sm text-gray-500 text-center py-8">保存されたテンプレートはありません</p>
+                                        )}
+
+                                        {/* テンプレート新規保存 */}
+                                        {exercises.length > 0 && (
+                                            <div className="pt-3 border-t border-gray-200">
+                                                <p className="text-sm font-medium mb-2">新しいテンプレートとして保存</p>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={templateName}
+                                                        onChange={(e) => setTemplateName(e.target.value)}
+                                                        placeholder="テンプレート名（例: 胸トレ1）"
+                                                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            saveAsTemplate();
+                                                            setShowTemplates(false);
+                                                        }}
+                                                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
+                                                    >
+                                                        保存
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                        ) : (
+                            </div>
+                        )}
+
+                        {/* 検索モーダル */}
+                        {showSearchModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+                                    {/* ヘッダー */}
+                                    <div className="sticky top-0 bg-white border-b p-4">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-lg font-bold">種目を検索</h3>
+                                            <button
+                                                onClick={() => setShowSearchModal(false)}
+                                                className="text-gray-500 hover:text-gray-700"
+                                            >
+                                                <Icon name="X" size={24} />
+                                            </button>
+                                        </div>
+
+                                        {/* 検索欄 */}
+                                        <input
+                                            type="text"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            placeholder="種目を検索..."
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                        />
+
+                                        {/* 筋トレ/有酸素/ストレッチ タブ */}
+                                        <div className="grid grid-cols-3 mt-3 border-b border-gray-200">
+                                            <button
+                                                onClick={() => setExerciseTab('strength')}
+                                                className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    exerciseTab === 'strength'
+                                                        ? 'border-orange-600 text-orange-600'
+                                                        : 'border-transparent text-gray-600 hover:text-orange-600'
+                                                }`}
+                                            >
+                                                <Icon name="Dumbbell" size={20} />
+                                                <span className="text-sm">筋トレ</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setExerciseTab('cardio')}
+                                                className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    exerciseTab === 'cardio'
+                                                        ? 'border-blue-600 text-blue-600'
+                                                        : 'border-transparent text-gray-600 hover:text-blue-600'
+                                                }`}
+                                            >
+                                                <Icon name="Heart" size={20} />
+                                                <span className="text-sm">有酸素</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setExerciseTab('stretch')}
+                                                className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    exerciseTab === 'stretch'
+                                                        ? 'border-green-600 text-green-600'
+                                                        : 'border-transparent text-gray-600 hover:text-green-600'
+                                                }`}
+                                            >
+                                                <Icon name="Wind" size={20} />
+                                                <span className="text-sm">ストレッチ</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* コンテンツエリア */}
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                        <div className="space-y-2">
+                                            {(() => {
+                                                // 部位ごとにグループ化
+                                                const categorizedExercises = {};
+
+                                                // タブに応じてフィルタリング
+                                                const strengthCategories = ['胸', '背中', '脚', '肩', '腕', '腹筋・体幹', '尻', 'ウエイトリフティング'];
+                                                const cardioCategories = ['有酸素運動'];
+                                                const stretchCategories = ['ストレッチ'];
+
+                                                filteredExercises.forEach(ex => {
+                                                    let shouldInclude = false;
+                                                    if (exerciseTab === 'strength' && strengthCategories.includes(ex.category)) {
+                                                        shouldInclude = true;
+                                                    } else if (exerciseTab === 'cardio' && cardioCategories.includes(ex.category)) {
+                                                        shouldInclude = true;
+                                                    } else if (exerciseTab === 'stretch' && stretchCategories.includes(ex.category)) {
+                                                        shouldInclude = true;
+                                                    }
+
+                                                    if (shouldInclude) {
+                                                        if (!categorizedExercises[ex.category]) {
+                                                            categorizedExercises[ex.category] = {};
+                                                        }
+                                                        if (!categorizedExercises[ex.category][ex.subcategory]) {
+                                                            categorizedExercises[ex.category][ex.subcategory] = [];
+                                                        }
+                                                        categorizedExercises[ex.category][ex.subcategory].push(ex);
+                                                    }
+                                                });
+
+                                                return Object.keys(categorizedExercises).map(category => (
+                                                    <div key={category}>
+                                                        {/* 部位ヘッダー（第1階層） */}
+                                                        <div className="bg-white">
+                                                            <div className="border-t border-gray-200">
+                                                                {/* 部位ボタン */}
+                                                                <button
+                                                                    onClick={() => setExpandedCategories(prev => ({...prev, [category]: !prev[category]}))}
+                                                                    className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
+                                                                >
+                                                                    <span className="font-medium text-sm">{category}</span>
+                                                                    <Icon name={expandedCategories[category] ? 'ChevronDown' : 'ChevronRight'} size={18} />
+                                                                </button>
+
+                                                                {/* 部位を展開したら種類（サブカテゴリ）を表示 */}
+                                                                {expandedCategories[category] && (
+                                                                    <div className="bg-gray-50">
+                                                                        {Object.keys(categorizedExercises[category]).map(subcategory => (
+                                                                            <div key={subcategory}>
+                                                                                {/* 種類ボタン（第2階層） */}
+                                                                                <button
+                                                                                    onClick={() => setExpandedCategories(prev => ({...prev, [category + '_' + subcategory]: !prev[category + '_' + subcategory]}))}
+                                                                                    className="w-full px-4 py-2 bg-white hover:bg-gray-50 flex justify-between items-center border-t border-gray-200"
+                                                                                >
+                                                                                    <span className="text-sm text-gray-700 pl-4">{subcategory}</span>
+                                                                                    <Icon name={expandedCategories[category + '_' + subcategory] ? 'ChevronDown' : 'ChevronRight'} size={16} />
+                                                                                </button>
+
+                                                                                {/* 種類を展開したらアイテム一覧を表示 */}
+                                                                                {expandedCategories[category + '_' + subcategory] && (
+                                                                                    <div className="p-2 space-y-1 bg-gray-50">
+                                                                                        {categorizedExercises[category][subcategory].map(exercise => (
+                                                                                            <button
+                                                                                                key={exercise.id}
+                                                                                                onClick={() => {
+                                                                                                    setCurrentExercise(exercise);
+                                                                                                    setShowSearchModal(false);
+                                                                                                }}
+                                                                                                className="w-full text-left px-3 py-3 hover:bg-orange-50 transition border-b last:border-b-0 border-gray-100 bg-white rounded"
+                                                                                            >
+                                                                                                <div className="flex justify-between items-center">
+                                                                                                    <div>
+                                                                                                        <p className="font-medium text-sm">{exercise.name}</p>
+                                                                                                        <p className="text-xs text-gray-500">{exercise.equipment}</p>
+                                                                                                    </div>
+                                                                                                    <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                                                                                                        {exercise.difficulty}
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                            </button>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* カスタム種目作成フォーム */}
+                        {showCustomExerciseForm && (
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-300">
+                                <h4 className="font-bold mb-3">カスタム種目を作成</h4>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">種目名</label>
+                                        <input
+                                            type="text"
+                                            value={customExerciseData.name}
+                                            onChange={(e) => setCustomExerciseData({...customExerciseData, name: e.target.value})}
+                                            placeholder="例: マイトレーニング"
+                                            className="w-full px-3 py-2 border rounded-lg"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">カテゴリ</label>
+                                        <select
+                                            value={customExerciseData.category}
+                                            onChange={(e) => setCustomExerciseData({...customExerciseData, category: e.target.value})}
+                                            className="w-full px-3 py-2 border rounded-lg"
+                                        >
+                                            <option value="胸">胸</option>
+                                            <option value="背中">背中</option>
+                                            <option value="脚">脚</option>
+                                            <option value="肩">肩</option>
+                                            <option value="腕">腕</option>
+                                            <option value="腹筋・体幹">腹筋・体幹</option>
+                                            <option value="尻">尻</option>
+                                            <option value="有酸素運動">有酸素運動</option>
+                                            <option value="ストレッチ">ストレッチ</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">種類</label>
+                                        <select
+                                            value={customExerciseData.subcategory}
+                                            onChange={(e) => setCustomExerciseData({...customExerciseData, subcategory: e.target.value})}
+                                            className="w-full px-3 py-2 border rounded-lg"
+                                        >
+                                            <option value="コンパウンド">コンパウンド</option>
+                                            <option value="アイソレーション">アイソレーション</option>
+                                            <option value="持久系">持久系</option>
+                                            <option value="HIIT">HIIT</option>
+                                            <option value="ダイナミックストレッチ">ダイナミックストレッチ</option>
+                                            <option value="スタティックストレッチ">スタティックストレッチ</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => {
+                                                if (!customExerciseData.name.trim()) {
+                                                    alert('種目名を入力してください');
+                                                    return;
+                                                }
+                                                const customExercise = {
+                                                    id: Date.now(),
+                                                    name: customExerciseData.name,
+                                                    category: customExerciseData.category,
+                                                    subcategory: customExerciseData.subcategory,
+                                                    exerciseType: 'anaerobic',
+                                                    isCustom: true
+                                                };
+                                                setCurrentExercise(customExercise);
+                                                setShowCustomExerciseForm(false);
+                                                setCustomExerciseData({ name: '', category: '胸', subcategory: 'コンパウンド' });
+                                            }}
+                                            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
+                                        >
+                                            作成して選択
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowCustomExerciseForm(false);
+                                                setCustomExerciseData({ name: '', category: '胸', subcategory: 'コンパウンド' });
+                                            }}
+                                            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition"
+                                        >
+                                            キャンセル
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 種目選択後の入力フォーム */}
+                        {currentExercise && (
                             <div className="space-y-4">
                                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                                     <div className="flex justify-between items-start mb-2">
@@ -1610,52 +2019,105 @@
                             </div>
                         )}
 
-                        {/* 記録済み種目一覧 */}
-                        {exercises.length > 0 && (
-                            <div className="bg-white p-4 rounded-lg shadow">
-                                <h4 className="font-bold mb-3">記録済み種目</h4>
-                                {exercises.map((ex, index) => (
-                                    <div key={index} className="border-b py-3 last:border-0">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div>
-                                                <p className="font-medium">{ex.exercise.name}</p>
-                                                <p className="text-xs text-gray-600">{ex.sets.length}セット</p>
+                        {/* 追加済み種目リスト */}
+                        {exercises.length > 0 && !currentExercise && (
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <p className="text-sm font-bold text-blue-700 mb-3">追加済み（{exercises.length}種目）</p>
+
+                                {/* 種目一覧 */}
+                                <div className="space-y-2 mb-3">
+                                    {exercises.map((ex, index) => {
+                                        // 総重量計算（全セットの重量×回数の合計）
+                                        const totalVolume = ex.sets.reduce((sum, set) => {
+                                            return sum + (set.weight || 0) * (set.reps || 0);
+                                        }, 0);
+
+                                        // 総時間計算
+                                        const totalDuration = ex.sets.reduce((sum, set) => {
+                                            return sum + (set.duration || 0);
+                                        }, 0);
+
+                                        return (
+                                            <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-sm">{ex.exercise.name}</p>
+                                                        <p className="text-xs text-gray-600">{ex.sets.length}セット - {totalVolume}kg</p>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                // 編集：該当種目をcurrentExerciseに戻す
+                                                                setCurrentExercise(ex.exercise);
+                                                                setSets(ex.sets);
+                                                                setExercises(exercises.filter((_, i) => i !== index));
+                                                            }}
+                                                            className="text-blue-600 hover:text-blue-800"
+                                                        >
+                                                            <Icon name="Edit2" size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setExercises(exercises.filter((_, i) => i !== index))}
+                                                            className="text-red-500 hover:text-red-700"
+                                                        >
+                                                            <Icon name="Trash2" size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <button
-                                                onClick={() => setExercises(exercises.filter((_, i) => i !== index))}
-                                                className="text-red-500 hover:text-red-700"
-                                            >
-                                                <Icon name="Trash2" size={18} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                        );
+                                    })}
+                                </div>
 
-                        <button
-                            onClick={handleWorkoutSave}
-                            disabled={exercises.length === 0}
-                            className="w-full bg-orange-600 text-white font-bold py-4 rounded-lg hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            <Icon name="Check" size={24} />
-                            <span>運動を保存</span>
-                        </button>
-
-                        {/* 運動履歴画面 */}
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                            <h4 className="font-bold mb-3">今日の運動記録</h4>
-                            <div className="space-y-2">
-                                {(dailyRecord.exercises || []).map((exercise, index) => (
-                                    <div key={index} className="bg-white p-3 rounded-lg shadow-sm">
-                                        <p className="font-medium">{exercise.name}</p>
-                                        <p className="text-sm text-gray-600">
-                                            {exercise.sets?.length || 0}セット
+                                {/* 総重量・総時間の表示 */}
+                                <div className="grid grid-cols-2 gap-4 p-3 bg-white rounded-lg border border-gray-200 mb-3">
+                                    <div className="text-center">
+                                        <p className="text-xs text-gray-600 mb-1">総重量</p>
+                                        <p className="text-lg font-bold text-orange-600">
+                                            {exercises.reduce((sum, ex) => {
+                                                return sum + ex.sets.reduce((setSum, set) => {
+                                                    return setSum + (set.weight || 0) * (set.reps || 0);
+                                                }, 0);
+                                            }, 0)}kg
                                         </p>
                                     </div>
-                                ))}
+                                    <div className="text-center">
+                                        <p className="text-xs text-gray-600 mb-1">総時間</p>
+                                        <p className="text-lg font-bold text-blue-600">
+                                            {exercises.reduce((sum, ex) => {
+                                                return sum + ex.sets.reduce((setSum, set) => {
+                                                    return setSum + (set.duration || 0);
+                                                }, 0);
+                                            }, 0)}分
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* 種目を追加ボタン */}
+                                <button
+                                    onClick={() => setShowSearchModal(true)}
+                                    className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition mb-2"
+                                >
+                                    種目を追加
+                                </button>
+
+                                {/* 記録ボタン */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={handleWorkoutSave}
+                                        className="bg-orange-600 text-white font-bold py-3 rounded-lg hover:bg-orange-700 transition"
+                                    >
+                                        記録
+                                    </button>
+                                    <button
+                                        onClick={onClose}
+                                        className="bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400 transition"
+                                    >
+                                        キャンセル
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 );
             };
@@ -1933,22 +2395,22 @@
                                         <div className="text-xs text-gray-500 mt-0.5">カスタム食材を登録</div>
                                     </div>
                                 </button>
-                            </div>
-                        )}
 
-                        {/* テンプレート - 12日以上で開放（新デザイン） */}
-                        {!selectedItem && !showAIFoodRecognition && !showCustomSupplementForm && unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id) && (
-                            <button
-                                type="button"
-                                onClick={() => setShowTemplates(!showTemplates)}
-                                className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-4 px-4 rounded-lg hover:bg-gray-200 transition flex flex-col items-center justify-center gap-2"
-                            >
-                                <Icon name="BookTemplate" size={28} />
-                                <div className="text-center">
-                                    <div className="font-bold text-base">テンプレート</div>
-                                    <div className="text-xs text-gray-600 mt-1">保存した食事を呼び出す</div>
-                                </div>
-                            </button>
+                                {/* テンプレート - 12日以上で開放 */}
+                                {unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTemplates(!showTemplates)}
+                                        className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                    >
+                                        <Icon name="BookTemplate" size={32} />
+                                        <div className="text-left flex-1">
+                                            <div className="font-bold text-base">テンプレート</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">保存した食事を呼び出す</div>
+                                        </div>
+                                    </button>
+                                )}
+                            </div>
                         )}
 
                         {/* テンプレートモーダル */}
@@ -1968,26 +2430,75 @@
                                         {/* テンプレート一覧 */}
                                         {mealTemplates.length > 0 ? (
                                             <div className="space-y-2">
-                                                {mealTemplates.map(template => (
-                                                    <div key={template.id} className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                                        <button
-                                                            onClick={() => {
-                                                                loadTemplate(template);
-                                                                setShowTemplates(false);
-                                                            }}
-                                                            className="flex-1 text-left hover:text-indigo-600"
-                                                        >
-                                                            <p className="font-medium">{template.name}</p>
-                                                            <p className="text-xs text-gray-500">{template.items.length}品目</p>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => deleteTemplate(template.id)}
-                                                            className="p-2 text-red-500 hover:text-red-700"
-                                                        >
-                                                            <Icon name="Trash2" size={18} />
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                                {mealTemplates.map(template => {
+                                                    // 総カロリーとPFCを計算
+                                                    let totalCalories = 0;
+                                                    let totalProtein = 0;
+                                                    let totalFat = 0;
+                                                    let totalCarbs = 0;
+
+                                                    template.items.forEach(item => {
+                                                        totalCalories += item.calories || 0;
+                                                        totalProtein += item.protein || 0;
+                                                        totalFat += item.fat || 0;
+                                                        totalCarbs += item.carbs || 0;
+                                                    });
+
+                                                    return (
+                                                        <details key={template.id} className="bg-gray-50 rounded-lg border border-gray-200">
+                                                            <summary className="p-3 cursor-pointer hover:bg-gray-100 rounded-lg">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex-1">
+                                                                        <p className="font-medium">{template.name}</p>
+                                                                        <p className="text-xs text-gray-600 mt-1">
+                                                                            {Math.round(totalCalories)}kcal
+                                                                            <span className="text-red-600 ml-2">P:{Math.round(totalProtein)}g</span>
+                                                                            <span className="text-yellow-600 ml-1">F:{Math.round(totalFat)}g</span>
+                                                                            <span className="text-green-600 ml-1">C:{Math.round(totalCarbs)}g</span>
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2 ml-2">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                loadTemplate(template);
+                                                                                setShowTemplates(false);
+                                                                            }}
+                                                                            className="p-2 text-blue-500 hover:text-blue-700"
+                                                                        >
+                                                                            <Icon name="Pencil" size={16} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                deleteTemplate(template.id);
+                                                                            }}
+                                                                            className="p-2 text-red-500 hover:text-red-700"
+                                                                        >
+                                                                            <Icon name="Trash2" size={16} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </summary>
+                                                            <div className="px-3 pb-3 space-y-1">
+                                                                {template.items.map((item, idx) => (
+                                                                    <div key={idx} className="text-sm text-gray-700 py-1 border-t border-gray-200">
+                                                                        <span className="font-medium">{item.name}</span>
+                                                                        <span className="text-gray-500 ml-2">{item.amount}</span>
+                                                                        <span className="text-xs text-gray-500 ml-2">
+                                                                            ({Math.round(item.calories)}kcal
+                                                                            <span className="text-red-600 ml-1">P:{Math.round(item.protein)}g</span>
+                                                                            <span className="text-yellow-600 ml-1">F:{Math.round(item.fat)}g</span>
+                                                                            <span className="text-green-600 ml-1">C:{Math.round(item.carbs)}g</span>)
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </details>
+                                                    );
+                                                })}
                                             </div>
                                         ) : (
                                             <p className="text-sm text-gray-500 text-center py-8">保存されたテンプレートはありません</p>
@@ -2047,21 +2558,21 @@
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                         />
 
-                                        {/* 選択中アイテムリスト */}
-                                        {selectedFoods.length > 0 && (
-                                            <div className="mt-3">
-                                                <p className="text-sm font-bold text-blue-700 mb-2">選択中 ({selectedFoods.length}品目)</p>
+                                        {/* 追加済みアイテムリスト */}
+                                        {addedItems.length > 0 && (
+                                            <div className="mt-3 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                                                <p className="text-sm font-bold text-blue-700 mb-2">追加済み ({addedItems.length}品目)</p>
                                                 <div className="space-y-1 max-h-32 overflow-y-auto">
-                                                    {selectedFoods.map((food, index) => (
-                                                        <div key={index} className="bg-blue-50 px-3 py-1.5 rounded flex justify-between items-center">
+                                                    {addedItems.map((item, index) => (
+                                                        <div key={index} className="bg-white px-3 py-1.5 rounded flex justify-between items-center">
                                                             <div className="flex-1">
-                                                                <span className="text-xs font-medium">{food.name}</span>
+                                                                <span className="text-xs font-medium">{item.name}</span>
                                                                 <span className="text-xs text-gray-600 ml-2">
-                                                                    {food.calories}kcal
+                                                                    {item.amount}
                                                                 </span>
                                                             </div>
                                                             <button
-                                                                onClick={() => setSelectedFoods(selectedFoods.filter((_, i) => i !== index))}
+                                                                onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
                                                                 className="text-red-500 hover:text-red-700 ml-2"
                                                             >
                                                                 <Icon name="X" size={14} />
@@ -2069,28 +2580,6 @@
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <button
-                                                    onClick={() => {
-                                                        // 選択した全アイテムをデフォルト100gで追加済みリストに追加
-                                                        const newItems = selectedFoods.map(food => ({
-                                                            name: food.name,
-                                                            amount: 100,
-                                                            protein: food.protein,
-                                                            fat: food.fat,
-                                                            carbs: food.carbs,
-                                                            calories: food.calories,
-                                                            vitamins: food.vitamins || {},
-                                                            minerals: food.minerals || {},
-                                                            otherNutrients: {}
-                                                        }));
-                                                        setAddedItems([...addedItems, ...newItems]);
-                                                        setSelectedFoods([]);
-                                                        setShowSearchModal(false);
-                                                    }}
-                                                    className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition text-sm mt-2"
-                                                >
-                                                    選択したアイテムを追加
-                                                </button>
                                             </div>
                                         )}
 
@@ -2181,39 +2670,34 @@
                                                 <div className="bg-white">
                                                     {Object.keys(subcategories).map(subCategory => (
                                                         <div key={subCategory} className="border-t border-gray-200">
-                                                            {/* カテゴリボタン */}
-                                                            <button
-                                                                onClick={() => setExpandedCategories(prev => ({...prev, [subCategory]: !prev[subCategory]}))}
-                                                                className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                            >
+                                                            {/* カテゴリ見出し */}
+                                                            <div className="w-full px-4 py-2 bg-gray-50">
                                                                 <span className="font-medium text-sm">{subCategory}</span>
-                                                                <Icon name={expandedCategories[subCategory] ? 'ChevronDown' : 'ChevronRight'} size={18} />
-                                                            </button>
+                                                            </div>
 
-                                                            {/* アイテム一覧 */}
-                                                            {expandedCategories[subCategory] && (
-                                                                    <div className="p-2 space-y-1 bg-gray-50">
-                                                                        {subcategories[subCategory].map(foodName => {
-                                                                            // カスタム食材・カスタム料理の場合はlocalStorageから取得
-                                                                            let food;
-                                                                            let actualCategory;
-                                                                            const isCustom = subCategory === 'カスタム食材' || subCategory === 'カスタム料理';
+                                                            {/* アイテム一覧 - 常に展開表示 */}
+                                                            <div className="p-2 space-y-1 bg-gray-50">
+                                                                {subcategories[subCategory].map(foodName => {
+                                                                    // カスタム食材・カスタム料理の場合はlocalStorageから取得
+                                                                    let food;
+                                                                    let actualCategory;
+                                                                    const isCustom = subCategory === 'カスタム食材' || subCategory === 'カスタム料理';
 
-                                                                            if (isCustom) {
-                                                                                const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
-                                                                                food = customFoods.find(f => f.name === foodName);
-                                                                                actualCategory = subCategory;
-                                                                            } else if (topCategory === 'サプリメント') {
-                                                                                // サプリメントの場合
-                                                                                food = foodDB['サプリメント'][foodName];
-                                                                                actualCategory = 'サプリメント';
-                                                                            } else {
-                                                                                // 通常の食材
-                                                                                if (foodDB[subCategory] && foodDB[subCategory][foodName]) {
-                                                                                    food = foodDB[subCategory][foodName];
-                                                                                    actualCategory = subCategory;
-                                                                                }
-                                                                            }
+                                                                    if (isCustom) {
+                                                                        const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
+                                                                        food = customFoods.find(f => f.name === foodName);
+                                                                        actualCategory = subCategory;
+                                                                    } else if (topCategory === 'サプリメント' || subCategory === 'ドリンク') {
+                                                                        // サプリメント・ドリンクの場合はサプリメントカテゴリから取得
+                                                                        food = foodDB['サプリメント'][foodName];
+                                                                        actualCategory = subCategory === 'ドリンク' ? 'ドリンク' : 'サプリメント';
+                                                                    } else {
+                                                                        // 通常の食材
+                                                                        if (foodDB[subCategory] && foodDB[subCategory][foodName]) {
+                                                                            food = foodDB[subCategory][foodName];
+                                                                            actualCategory = subCategory;
+                                                                        }
+                                                                    }
 
                                                                             if (!food) return null;
 
@@ -2229,65 +2713,65 @@
                                                                             else if (maxCal === fCal) borderColor = 'border-yellow-500';
                                                                             else if (maxCal === cCal) borderColor = 'border-green-500';
 
-                                                                            const isSelected = selectedFoods.some(f => f.name === foodName);
+                                                                            // 複数選択用の処理
+                                                                            const nutrients = isCustom
+                                                                                ? (food.vitamins && food.minerals ? { vitamins: food.vitamins, minerals: food.minerals } : { vitamins: {}, minerals: {} })
+                                                                                : mapNutrients(food);
+
+                                                                            const foodData = {
+                                                                                id: foodName, // IDとして名前を使用
+                                                                                name: foodName,
+                                                                                calories: food.calories,
+                                                                                protein: parseFloat(food.protein),
+                                                                                fat: parseFloat(food.fat),
+                                                                                carbs: parseFloat(food.carbs),
+                                                                                category: subCategory === 'カスタム料理' ? '料理' : actualCategory,
+                                                                                isCustom: isCustom,
+                                                                                unit: food.unit,
+                                                                                servingSize: food.servingSize,
+                                                                                servingUnit: food.servingUnit,
+                                                                                ...nutrients
+                                                                            };
 
                                                                             return (
                                                                                 <button
                                                                                     key={foodName}
                                                                                     onClick={() => {
-                                                                                        const nutrients = isCustom
-                                                                                            ? (food.vitamins && food.minerals ? { vitamins: food.vitamins, minerals: food.minerals } : { vitamins: {}, minerals: {} })
-                                                                                            : mapNutrients(food);
-
-                                                                                        const foodData = {
-                                                                                            name: foodName,
-                                                                                            calories: food.calories,
-                                                                                            protein: parseFloat(food.protein),
-                                                                                            fat: parseFloat(food.fat),
-                                                                                            carbs: parseFloat(food.carbs),
-                                                                                            category: subCategory === 'カスタム料理' ? '料理' : actualCategory,
-                                                                                            isCustom: isCustom,
-                                                                                            unit: food.unit,
-                                                                                            servingSize: food.servingSize,
-                                                                                            servingUnit: food.servingUnit,
-                                                                                            ...nutrients
-                                                                                        };
-
-                                                                                        // アイテムを選択して詳細画面を表示
                                                                                         setSelectedItem(foodData);
-                                                                                        setAmount('100');
+                                                                                        setShowSearchModal(false);
                                                                                     }}
-                                                                                    className={`w-full text-left rounded-lg transition hover:bg-gray-50 border-l-4 ${borderColor} ${isSelected ? 'bg-blue-50 border-2 border-blue-500' : 'bg-white'}`}
+                                                                                    className={`w-full text-left rounded-lg transition hover:bg-gray-50 border-l-4 ${borderColor} bg-white`}
                                                                                 >
                                                                                     <div className="px-3 py-2">
-                                                                                        <div className="flex justify-between items-start mb-1">
-                                                                                            <span className="text-sm font-medium">{foodName}</span>
-                                                                                            <span className="text-xs font-bold text-cyan-600">
-                                                                                                {food.calories}kcal
-                                                                                            </span>
-                                                                                        </div>
-                                                                                        <div className="flex justify-between items-center">
-                                                                                            <div className="flex gap-2 text-xs">
-                                                                                                <span className="text-red-600">P:{food.protein}g</span>
-                                                                                                <span className="text-yellow-600">F:{food.fat}g</span>
-                                                                                                <span className="text-green-600">C:{food.carbs}g</span>
+                                                                                        <div className="flex-1">
+                                                                                            <div className="flex justify-between items-start mb-1">
+                                                                                                <span className="text-sm font-medium">{foodName}</span>
+                                                                                                <span className="text-xs font-bold text-cyan-600">
+                                                                                                    {food.calories}kcal
+                                                                                                </span>
                                                                                             </div>
-                                                                                            <span className="text-xs text-gray-400">
-                                                                                                ※{(food.servingSize !== undefined && food.servingUnit !== undefined)
-                                                                                                    ? `${food.servingSize}${food.servingUnit}`
-                                                                                                    : (food.unit === 'g' || food.unit === 'ml')
-                                                                                                        ? `100${food.unit}`
-                                                                                                        : (food.unit && (food.unit.includes('個') || food.unit.includes('本') || food.unit.includes('枚')))
-                                                                                                            ? food.unit
-                                                                                                            : `1${food.unit || '個'}`}あたり
-                                                                                            </span>
+                                                                                            <div className="flex justify-between items-center">
+                                                                                                <div className="flex gap-2 text-xs">
+                                                                                                    <span className="text-red-600">P:{food.protein}g</span>
+                                                                                                    <span className="text-yellow-600">F:{food.fat}g</span>
+                                                                                                    <span className="text-green-600">C:{food.carbs}g</span>
+                                                                                                </div>
+                                                                                                <span className="text-xs text-gray-400">
+                                                                                                    ※{(food.servingSize !== undefined && food.servingUnit !== undefined)
+                                                                                                        ? `${food.servingSize}${food.servingUnit}`
+                                                                                                        : (food.unit === 'g' || food.unit === 'ml')
+                                                                                                            ? `100${food.unit}`
+                                                                                                            : (food.unit && (food.unit.includes('個') || food.unit.includes('本') || food.unit.includes('枚')))
+                                                                                                                ? food.unit
+                                                                                                                : food.unit || '1個'}あたり
+                                                                                                </span>
+                                                                                            </div>
                                                                                         </div>
                                                                                     </div>
                                                                                 </button>
                                                                             );
                                                                         })}
-                                                                    </div>
-                                                                )}
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -2834,7 +3318,7 @@
                                     <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
                                         <div>
                                             <p className="text-gray-600">カロリー</p>
-                                            <p className="font-bold" style={{color: '#7686BA'}}>{selectedItem.calories}kcal</p>
+                                            <p className="font-bold text-cyan-600">{selectedItem.calories}kcal</p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">P</p>

@@ -6,24 +6,32 @@ const TutorialView = ({ onClose, onComplete }) => {
 
 
 // ===== 設定画面 =====
-const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays, unlockedFeatures, onOpenAddView, darkMode, onToggleDarkMode }) => {
+const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays, unlockedFeatures, onOpenAddView, darkMode, onToggleDarkMode, shortcuts = [], onUpdateShortcuts }) => {
     const [profile, setProfile] = useState({...userProfile});
     const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'data', 'advanced'
     const [showCustomMultiplierInput, setShowCustomMultiplierInput] = useState(false);
     const [customMultiplierInputValue, setCustomMultiplierInputValue] = useState('');
     const [infoModal, setInfoModal] = useState({ show: false, title: '', content: '' });
     const [visualGuideModal, setVisualGuideModal] = useState({ show: false, gender: '男性', selectedLevel: 5 });
-    const [showWearableIntegration, setShowWearableIntegration] = useState(false);
+
+    // userProfileが変更されたときにprofile stateを更新
+    useEffect(() => {
+        setProfile({...userProfile});
+    }, [userProfile]);
 
     // 詳細設定用のstate（デフォルト値をプロフィールから取得）
     const [advancedSettings, setAdvancedSettings] = useState({
         proteinCoefficient: userProfile.proteinCoefficient || 2.5,
         fatRatio: userProfile.fatRatio || 0.25,
+        proteinRatio: userProfile.proteinRatio || 30,
+        fatRatioPercent: userProfile.fatRatioPercent || 25,
+        carbRatio: userProfile.carbRatio || 45,
         ageProteinBoost: userProfile.ageProteinBoost !== undefined ? userProfile.ageProteinBoost : true,
         bodymakerBoost: userProfile.bodymakerBoost !== undefined ? userProfile.bodymakerBoost : true,
         trainingBoost: userProfile.trainingBoost !== undefined ? userProfile.trainingBoost : true,
         sleepAdjustment: userProfile.sleepAdjustment !== undefined ? userProfile.sleepAdjustment : true,
-        stressAdjustment: userProfile.stressAdjustment !== undefined ? userProfile.stressAdjustment : true
+        stressAdjustment: userProfile.stressAdjustment !== undefined ? userProfile.stressAdjustment : true,
+        usePurposeBased: userProfile.usePurposeBased !== false // デフォルトは目的別モード（falseが明示的に設定されていない限り）
     });
     const [localRoutines, setLocalRoutines] = useState(() => {
         const saved = localStorage.getItem(STORAGE_KEYS.ROUTINES);
@@ -53,16 +61,44 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         const bmr = LBMUtils.calculateBMR(lbm);
         const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier);
 
+        // 目的別モードの場合はカスタムPFC比率をクリア、カスタムモードの場合は保持
+        const pfcSettings = advancedSettings.usePurposeBased !== false
+            ? {
+                // 目的別モード：カスタムPFC比率をクリア
+                proteinRatio: undefined,
+                fatRatioPercent: undefined,
+                carbRatio: undefined
+            }
+            : {
+                // カスタムモード：カスタムPFC比率を保持
+                proteinRatio: advancedSettings.proteinRatio,
+                fatRatioPercent: advancedSettings.fatRatioPercent,
+                carbRatio: advancedSettings.carbRatio
+            };
+
         const updatedProfile = {
             ...profile,
             ...advancedSettings, // 詳細設定を統合
+            ...pfcSettings, // PFC設定を上書き
             leanBodyMass: lbm,
             bmr: bmr,
             tdeeBase: tdeeBase
         };
 
+        console.log('=== Profile Save Debug ===');
+        console.log('profile.style:', profile.style);
+        console.log('advancedSettings.usePurposeBased:', advancedSettings.usePurposeBased);
+        console.log('pfcSettings:', pfcSettings);
+        console.log('updatedProfile.style:', updatedProfile.style);
+        console.log('updatedProfile:', updatedProfile);
+
         onUpdateProfile(updatedProfile);
         onClose();
+
+        // スタイル変更後、ダッシュボードの推奨量を更新するためにリロード
+        setTimeout(() => {
+            window.location.reload();
+        }, 100);
     };
 
     const handleExportData = async () => {
@@ -115,18 +151,18 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                 {/* 設定メニュー（折りたたみ式一覧） */}
                 <div className="p-6 space-y-3">
                     {/* 使い方 */}
-                    <details className="border rounded-lg border-indigo-300 bg-indigo-50">
-                        <summary className="cursor-pointer p-4 hover:bg-indigo-100 font-medium flex items-center gap-2">
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="BookOpen" size={18} className="text-indigo-600" />
                             使い方
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
-                        <div className="p-4 pt-0 border-t border-indigo-200">
+                        <div className="p-4 pt-0 border-t">
                             <div className="space-y-4">
                                 <p className="text-sm text-gray-700 font-semibold">YourCoachの基本フロー</p>
 
                                 {/* フローチャート */}
-                                <div className="bg-white p-4 rounded-lg border-2 border-indigo-200 space-y-3">
+                                <div className="bg-white p-4 rounded-lg border-2 border-gray-200 space-y-3">
                                     {/* ステップ1 */}
                                     <div className="flex items-start gap-3">
                                         <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
@@ -176,57 +212,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* 守破離システム説明 */}
-                                <div className="bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 p-4 rounded-lg border border-gray-200">
-                                    <p className="font-bold text-sm mb-2 flex items-center gap-2">
-                                        <Icon name="TrendingUp" size={16} />
-                                        守破離システム
-                                    </p>
-                                    <div className="space-y-2 text-xs">
-                                        <p><span className="font-bold text-green-700">守(0-9日)</span>: 基礎記録機能で習慣化</p>
-                                        <p><span className="font-bold text-blue-700">破(10-17日)</span>: AIコーチ・分析機能が開放</p>
-                                        <p><span className="font-bold text-purple-700">離(18日~)</span>: 全機能開放、独自メソッド確立</p>
-                                    </div>
-                                </div>
-
-                                {/* ポイント */}
-                                <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                                    <p className="font-bold text-yellow-900 text-xs mb-1">💡 重要ポイント</p>
-                                    <ul className="text-xs text-gray-700 space-y-1 list-disc list-inside">
-                                        <li>基準値はLBM・血液型・目的で完全個別化</li>
-                                        <li>筋肉の新陳代謝周期は50日、焦らず継続</li>
-                                        <li>テンプレート・ルーティン機能で効率化</li>
-                                    </ul>
-                                </div>
                             </div>
                         </div>
                     </details>
-{/* ウェアラブルデバイス連携 */}
-                    <details className="border rounded-lg border-gray-300 bg-gradient-to-br from-green-50 to-teal-50">
-                        <summary className="cursor-pointer p-4 hover:bg-green-100 font-medium flex items-center gap-2">
-                            <Icon name="Watch" size={18} className="text-green-600" />
-                            ウェアラブルデバイス連携
-                            <span className="ml-auto text-xs bg-green-600 text-white px-2 py-1 rounded-full">NEW</span>
-                            <Icon name="ChevronDown" size={16} className="ml-2 text-gray-400" />
-                        </summary>
-                        <div className="p-4 pt-0 border-t border-green-200">
-                            <div className="space-y-3">
-                                <p className="text-sm text-gray-600">
-                                    Apple WatchやAndroidスマートウォッチと連携して、睡眠データを自動で記録
-                                </p>
-                                <button
-                                    onClick={() => setShowWearableIntegration(true)}
-                                    className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white font-bold py-3 rounded-lg hover:from-green-700 hover:to-teal-700 transition flex items-center justify-center gap-2"
-                                >
-                                    <Icon name="Watch" size={18} />
-                                    デバイスを接続
-                                </button>
-                            </div>
-                        </div>
-                    </details>
-
-                    {/* 表示設定 */}                    <details className="border rounded-lg border-gray-300 bg-gray-50">                        <summary className="cursor-pointer p-4 hover:bg-gray-100 font-medium flex items-center gap-2">                            <Icon name="Monitor" size={18} className="text-gray-600" />                            表示設定                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />                        </summary>                        <div className="p-4 pt-0 border-t border-gray-200">                            <div className="space-y-4">                                {/* ダークモード切り替え */}                                <div className="flex items-center justify-between p-3 bg-white rounded-lg border">                                    <div className="flex items-center gap-3">                                        <Icon name={darkMode ? "Moon" : "Sun"} size={20} className={darkMode ? "text-indigo-600" : "text-yellow-600"} />                                        <div>                                            <p className="font-medium">{darkMode ? "ダークモード" : "ライトモード"}</p>                                            <p className="text-xs text-gray-500">画面の配色を切り替え</p>                                        </div>                                    </div>                                    <button                                        onClick={onToggleDarkMode}                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${darkMode ? "bg-indigo-600" : "bg-gray-300"}`}                                    >                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${darkMode ? "translate-x-6" : "translate-x-1"}`} />                                    </button>                                </div>                            </div>                        </div>                    </details>
 
                     {/* プロフィール */}
                     <details className="border rounded-lg">
@@ -238,200 +226,80 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         <div className="p-4 pt-0 border-t">
                             {/* プロフィール内容 */}
                             <div className="space-y-3">
-                            {/* 基本情報 */}
-                            <details className="border rounded-lg" style={{marginTop: '1.5rem'}}>
-                                <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium flex items-center gap-2">
-                                    <Icon name="User" size={16} />
-                                    基本情報
-                                </summary>
-                                <div className="p-4 pt-0 space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">ニックネーム</label>
-                                        <input
-                                            type="text"
-                                            value={profile.nickname}
-                                            onChange={(e) => setProfile({...profile, nickname: e.target.value})}
-                                            className="w-full px-4 py-3 border rounded-lg"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">年齢</label>
-                                            <input
-                                                type="number"
-                                                value={profile.age}
-                                                onChange={(e) => setProfile({...profile, age: e.target.value === '' ? '' : e.target.value === '' ? '' : Number(e.target.value)})}
-                                                className="w-full px-4 py-3 border rounded-lg"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">性別</label>
-                                            <select
-                                                value={profile.gender}
-                                                onChange={(e) => setProfile({...profile, gender: e.target.value})}
-                                                className="w-full px-4 py-3 border rounded-lg"
-                                            >
-                                                <option value="男性">男性</option>
-                                                <option value="女性">女性</option>
-                                                <option value="その他">その他</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">食文化</label>
-                                        <div className="space-y-2">
-                                            <p className="text-xs text-gray-600">
-                                                あなたの食生活に近いものを複数選択してください。好みに合った、継続しやすい食材を優先的に提案します。
-                                            </p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {['アジア', '欧米', 'ラテン', 'その他'].map(culture => (
-                                                    <label key={culture} className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={(profile.culturalRoots || []).includes(culture)}
-                                                            onChange={(e) => {
-                                                                const roots = profile.culturalRoots || [];
-                                                                if (e.target.checked) {
-                                                                    setProfile({...profile, culturalRoots: [...roots, culture]});
-                                                                } else {
-                                                                    setProfile({...profile, culturalRoots: roots.filter(r => r !== culture)});
-                                                                }
-                                                            }}
-                                                            className="rounded"
-                                                        />
-                                                        <span className="text-sm">{culture}</span>
-                                                    </label>
-                                                ))}
+
+                                    {/* STEP 1: 個人情報 */}
+                                    <div className="border-l-4 border-blue-500 pl-4">
+                                        <h4 className="text-xs font-bold text-blue-700 mb-2">STEP 1: 個人情報</h4>
+                                        <div className="space-y-2.5">
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1.5">ニックネーム</label>
+                                                <input
+                                                    type="text"
+                                                    value={profile.nickname}
+                                                    onChange={(e) => setProfile({...profile, nickname: e.target.value})}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-1.5">年齢</label>
+                                                    <input
+                                                        type="number"
+                                                        value={profile.age}
+                                                        onChange={(e) => setProfile({...profile, age: e.target.value === '' ? '' : Number(e.target.value)})}
+                                                        className="w-full px-3 py-2 border rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-1.5">性別</label>
+                                                    <select
+                                                        value={profile.gender}
+                                                        onChange={(e) => setProfile({...profile, gender: e.target.value})}
+                                                        className="w-full px-3 py-2 border rounded-lg"
+                                                    >
+                                                        <option value="男性">男性</option>
+                                                        <option value="女性">女性</option>
+                                                        <option value="その他">その他</option>
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">スタイル</label>
-                                        <select
-                                            value={profile.style || '一般'}
-                                            onChange={(e) => setProfile({...profile, style: e.target.value})}
-                                            className="w-full px-4 py-3 border rounded-lg"
-                                        >
-                                            <option value="一般">一般</option>
-                                            <option value="ボディメイカー">ボディメイカー</option>
-                                        </select>
-                                        <p className="text-xs text-gray-600 mt-1">
-                                            {profile.style === 'ボディメイカー' ? '高タンパク・精密な栄養管理基準' : '標準的な栄養基準'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </details>
 
-
-                            {/* 体組成 */}
-                            <details className="border rounded-lg">
-                                <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium flex items-center gap-2">
-                                    <Icon name="Activity" size={16} />
-                                    体組成
-                                </summary>
-                                <div className="p-4 pt-0 space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">身長 (cm)</label>
-                                            <input
-                                                type="number"
-                                                value={profile.height}
-                                                onChange={(e) => setProfile({...profile, height: e.target.value === '' ? '' : Number(e.target.value)})}
-                                                className="w-full px-4 py-3 border rounded-lg"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">体重 (kg)</label>
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                value={profile.weight}
-                                                onChange={(e) => setProfile({...profile, weight: e.target.value === '' ? '' : Number(e.target.value)})}
-                                                className="w-full px-4 py-3 border rounded-lg"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                            体脂肪率 (%)
+                                    {/* STEP 2: 活動量 */}
+                                    <div className="border-l-4 border-green-500 pl-4">
+                                        <h4 className="text-xs font-bold text-green-700 mb-2">STEP 2: 活動量</h4>
+                                        <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
+                                            活動レベル
                                             <button
                                                 type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: 'LBM（除脂肪体重）とは？',
-                                                    content: `体重から脂肪の重さを除いた、筋肉や骨、内臓などの総量です。身体を動かすエンジンのようなものであり、基礎代謝量を決定する最も重要な指標です。
+                                                onClick={() => {
+                                                    const lbm = LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
+                                                    const bmr = LBMUtils.calculateBMR(lbm);
+                                                    const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier);
+                                                    const multipliers = {1: 1.05, 2: 1.225, 3: 1.4, 4: 1.575, 5: 1.75};
+                                                    const multiplier = profile.customActivityMultiplier || multipliers[profile.activityLevel] || 1.4;
 
-『Your Coach+』では、身長と体重のみで算出されるBMIを完全に排除し、あなたの身体の「質」を正しく評価するために、すべての計算基準にLBMを採用しています。
+                                                    setInfoModal({
+                                                        show: true,
+                                                        title: '活動レベルとTDEE計算',
+                                                        content: `あなたの日常生活がどれだけ活動的かを数値化したものです。この係数を基礎代謝量に掛けることで、1日の大まかな消費カロリー（TDEE）を算出します。
 
-【体組成の測定方法】
-**体組成計での測定を強く推奨します**
+【TDEE計算式】
+TDEE = 基礎代謝(BMR) × 活動レベル係数
 
-• ジムの体組成計（InBodyなど）
-  → 最も正確。多くのジムで無料測定可能
-• 家庭用体組成計
-  → 手軽で毎日測定可能（例: タニタ、オムロン）
-• 測定タイミング
-  → 朝、起床後・トイレ後・空腹時に測定
+【現在の計算結果】
+• 基礎代謝(BMR): ${Math.round(bmr)}kcal
+• 活動レベル係数: ${multiplier.toFixed(2)}x
+• TDEE: ${Math.round(tdee)}kcal
 
-【計算式】
-LBM = 体重 × (1 - 体脂肪率 / 100)
-
-例: 体重70kg、体脂肪率15%の場合
-LBM = 70 × (1 - 0.15) = 59.5kg
-
-**重要**: 正確な体脂肪率の測定が、PFCバランスの精度を大きく左右します。`
-                                                })}
-                                                className="text-indigo-600 hover:text-indigo-800"
-                                            >
-                                                <Icon name="Info" size={16} />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setVisualGuideModal({
-                                                    show: true,
-                                                    gender: profile.gender || '男性',
-                                                    selectedLevel: 5
-                                                })}
-                                                className="text-orange-600 hover:text-orange-800"
-                                                title="外見から推定"
-                                            >
-                                                <Icon name="Eye" size={16} />
-                                            </button>
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            value={profile.bodyFatPercentage}
-                                            onChange={(e) => setProfile({...profile, bodyFatPercentage: e.target.value === '' ? '' : Number(e.target.value)})}
-                                            className="w-full px-4 py-3 border rounded-lg"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            <Icon name="Eye" size={12} className="inline" /> = 体組成計がない場合は外見から推定できます
-                                        </p>
-                                    </div>
-                                </div>
-                            </details>
-
-                            {/* 活動レベル・目的 */}
-                            <details className="border rounded-lg">
-                                <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium flex items-center gap-2">
-                                    <Icon name="Target" size={16} />
-                                    活動レベル・目的
-                                </summary>
-                                <div className="p-4 pt-0 space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                            生活スタイル
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: '活動レベル係数とは？',
-                                                    content: `あなたの日常生活がどれだけ活動的かを数値化したものです。この係数を基礎代謝量に掛けることで、1日の大まかな消費カロリー（TDEE）を算出します。
+【計算の内訳】
+${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
 
 【重要】
 これはあくまで日常生活の活動量であり、トレーニングによる消費カロリーは、より精密な『PG式』で別途計算されます。より正確な設定をしたい方は、係数を直接入力することも可能です。`
-                                                })}
+                                                    });
+                                                }}
                                                 className="text-indigo-600 hover:text-indigo-800"
                                             >
                                                 <Icon name="Info" size={16} />
@@ -441,7 +309,7 @@ LBM = 70 × (1 - 0.15) = 59.5kg
                                             <select
                                                 value={profile.activityLevel}
                                                 onChange={(e) => setProfile({...profile, activityLevel: e.target.value === '' ? '' : Number(e.target.value)})}
-                                                className="w-full px-4 py-3 border rounded-lg"
+                                                className="w-full px-3 py-2 border rounded-lg"
                                                 disabled={profile.customActivityMultiplier}
                                             >
                                                 <option value={1}>デスクワーク中心 - 1.05x</option>
@@ -518,8 +386,11 @@ LBM = 70 × (1 - 0.15) = 59.5kg
                                             {profile.customActivityMultiplier ? '5段階選択に戻す' : showCustomMultiplierInput ? '入力を閉じる' : 'または、活動レベル係数を直接入力する'}
                                         </button>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+
+                                    {/* STEP 3: 目的・カロリー設定 */}
+                                    <div className="border-l-4 border-orange-500 pl-4">
+                                        <h4 className="text-xs font-bold text-orange-700 mb-2">STEP 3: 目的・カロリー設定</h4>
+                                        <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
                                             目的
                                             <button
                                                 type="button"
@@ -547,6 +418,12 @@ LBM = 70 × (1 - 0.15) = 59.5kg
 • 炭水化物: 多め（筋肉合成のエネルギー）
 • 推奨ペース: 週0.5kg増
 
+【リコンプ（体組成改善）】
+• 目標: 脂肪を落としながら筋肉をつける
+• カロリー: メンテナンスカロリー ±0kcal
+• タンパク質: 非常に高め
+• トレーニング強度が最重要
+
 目的はいつでも変更できます。`
                                                 })}
                                                 className="text-indigo-600 hover:text-indigo-800"
@@ -554,40 +431,74 @@ LBM = 70 × (1 - 0.15) = 59.5kg
                                                 <Icon name="Info" size={14} />
                                             </button>
                                         </label>
-                                        <select
-                                            value={profile.purpose}
-                                            onChange={(e) => {
-                                                const purpose = e.target.value;
-                                                let pace = 0;
-                                                let calorieAdjust = 0;
-                                                if (purpose === 'ダイエット') {
-                                                    pace = -1;
-                                                    calorieAdjust = -300;
-                                                } else if (purpose === 'バルクアップ') {
-                                                    pace = 1;
-                                                    calorieAdjust = 300;
-                                                }
-                                                setProfile({...profile, purpose, weightChangePace: pace, calorieAdjustment: calorieAdjust});
-                                            }}
-                                            className="w-full px-4 py-3 border rounded-lg"
-                                        >
-                                            <option value="ダイエット">ダイエット（脂肪を落とす）</option>
-                                            <option value="メンテナンス">メンテナンス（現状維持）</option>
-                                            <option value="バルクアップ">バルクアップ（筋肉をつける）</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                            <span>
-                                                カロリー調整値（kcal/日）
-                                                <span className="text-xs text-gray-500 ml-2">メンテナンスから±調整</span>
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: 'カロリー調整値',
-                                                    content: `メンテナンスカロリーからの調整値を設定します。
+
+                                        {/* 目的選択ボタン（縦並び） */}
+                                        <div className="space-y-2 mb-3">
+                                            {[
+                                                { value: 'ダイエット', label: 'ダイエット', sub: '脂肪を落とす', adjust: -300 },
+                                                { value: 'メンテナンス', label: 'メンテナンス', sub: '現状維持', adjust: 0 },
+                                                { value: 'バルクアップ', label: 'バルクアップ', sub: '筋肉をつける', adjust: 300 },
+                                                { value: 'リコンプ', label: 'リコンプ', sub: '体組成改善', adjust: 0 }
+                                            ].map(({ value, label, sub, adjust }) => (
+                                                <button
+                                                    key={value}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        let pace = 0;
+                                                        if (value === 'ダイエット') pace = -1;
+                                                        else if (value === 'バルクアップ') pace = 1;
+                                                        setProfile({...profile, purpose: value, weightChangePace: pace, calorieAdjustment: adjust});
+                                                    }}
+                                                    className={`w-full p-2 rounded-lg border-2 transition flex items-center justify-between ${
+                                                        profile.purpose === value
+                                                            ? 'border-orange-500 bg-orange-50 shadow-md'
+                                                            : 'border-gray-200 bg-white hover:border-orange-300 hover:shadow'
+                                                    }`}
+                                                >
+                                                    <div className="text-left">
+                                                        <div className="font-bold text-sm">{label}</div>
+                                                        <div className="text-xs text-gray-600">{sub}</div>
+                                                    </div>
+                                                    <div className={`text-xs font-bold px-2 py-0.5 rounded ${
+                                                        adjust > 0 ? 'bg-green-100 text-green-700' :
+                                                        adjust < 0 ? 'bg-red-100 text-red-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                        {adjust > 0 ? '+' : ''}{adjust}kcal
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* カロリー調整値 */}
+                                        <div className="mt-3">
+                                            <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
+                                                <span>
+                                                    カロリー調整値（kcal/日）
+                                                    <span className="text-xs text-gray-500 ml-2">メンテナンスから±調整</span>
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const lbm = LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
+                                                        const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier);
+                                                        const targetCalories = tdee + (profile.calorieAdjustment || 0);
+
+                                                        setInfoModal({
+                                                            show: true,
+                                                            title: 'カロリー調整値と目標摂取カロリー',
+                                                            content: `メンテナンスカロリー（TDEE）からの調整値を設定します。
+
+【目標摂取カロリー計算式】
+目標摂取カロリー = TDEE + カロリー調整値
+
+【現在の計算結果】
+• TDEE: ${Math.round(tdee)}kcal
+• カロリー調整値: ${profile.calorieAdjustment >= 0 ? '+' : ''}${profile.calorieAdjustment || 0}kcal
+• 目標摂取カロリー: ${Math.round(targetCalories)}kcal/日
+
+【計算の内訳】
+${Math.round(tdee)}kcal ${profile.calorieAdjustment >= 0 ? '+' : ''} ${profile.calorieAdjustment || 0}kcal = ${Math.round(targetCalories)}kcal
 
 【推奨範囲: ±300kcal】
 安全で持続可能なペースで体重を変化させるための推奨範囲です。
@@ -605,316 +516,274 @@ LBM = 70 × (1 - 0.15) = 59.5kg
 【メンテナンス時】
 • 0kcal: 現状維持
 
+【リコンプ時】
+• 0kcal: 体組成改善（トレーニングが重要）
+
 【注意】
 極端なカロリー調整は、代謝の低下、筋肉の減少、リバウンドのリスクを高めます。±200〜300kcalの範囲で調整することを強く推奨します。`
-                                                })}
-                                                className="text-indigo-600 hover:text-indigo-800"
-                                            >
-                                                <Icon name="Info" size={14} />
-                                            </button>
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="50"
-                                            value={profile.calorieAdjustment !== undefined ? profile.calorieAdjustment : 0}
-                                            onChange={(e) => {
-                                                const value = e.target.value === '' ? 0 : e.target.value === '' ? '' : Number(e.target.value);
-                                                setProfile({...profile, calorieAdjustment: value});
-                                            }}
-                                            className="w-full px-4 py-3 border rounded-lg"
-                                            placeholder="0"
-                                        />
-                                        <p className="text-xs text-gray-600 mt-1">
-                                            プラス値で増量、マイナス値で減量。±200kcalが標準的な調整幅です。
-                                        </p>
-                                    </div>
-                                </div>
-                            </details>
-
-                            {/* 詳細設定（高度な設定） */}
-                            <details className="border rounded-lg border-purple-300 bg-purple-50">
-                                <summary className="cursor-pointer p-3 hover:bg-purple-100 font-medium flex items-center gap-2">
-                                    <Icon name="Settings" size={16} className="text-purple-700" />
-                                    <span className="text-purple-900">詳細設定（高度な設定）</span>
-                                </summary>
-                                <div className="p-4 pt-0 space-y-4 bg-white">
-                                    <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-xs">
-                                        <p className="font-bold text-yellow-900 mb-1">⚙️ 高度な設定</p>
-                                        <p className="text-gray-700">すべての変数を任意に変更できます。デフォルト値は自動算出されています。</p>
+                                                        });
+                                                    }}
+                                                    className="text-indigo-600 hover:text-indigo-800"
+                                                >
+                                                    <Icon name="Info" size={14} />
+                                                </button>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                step="50"
+                                                value={profile.calorieAdjustment !== undefined ? profile.calorieAdjustment : 0}
+                                                onChange={(e) => {
+                                                    const value = e.target.value === '' ? 0 : Number(e.target.value);
+                                                    setProfile({...profile, calorieAdjustment: value});
+                                                }}
+                                                className="w-full px-3 py-2 border rounded-lg"
+                                                placeholder="0"
+                                            />
+                                        </div>
                                     </div>
 
-                                    {/* タンパク質係数 */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                            タンパク質係数（g/kg LBM）
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: 'タンパク質係数とは？',
-                                                    content: `除脂肪体重（LBM）1kgあたりのタンパク質必要量を設定します。
+                                    {/* STEP 4: PFCバランス設定 */}
+                                    <div className="border-l-4 border-purple-500 pl-4">
+                                        <h4 className="text-xs font-bold text-purple-700 mb-2">STEP 4: PFCバランス設定</h4>
 
-【推奨値】
-• 一般的なトレーニング: 2.0〜2.5g/kg LBM
-• 本格的な筋肥大: 2.5〜3.0g/kg LBM
-• 減量中: 2.5〜3.0g/kg LBM（筋肉維持）
-• メンテナンス: 2.0〜2.2g/kg LBM
+                                        {/* スタイル選択 */}
+                                        <div className="mb-3">
+                                            <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
+                                                スタイル
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setInfoModal({
+                                                        show: true,
+                                                        title: 'スタイルとタンパク質係数',
+                                                        content: `スタイルによってタンパク質の推奨係数が変わります。
 
-【例】
-LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
+【一般】
+・LBM × 1.0倍のタンパク質係数
+・健康維持や日常的なトレーニングを行う方向け
 
-デフォルト値（2.5）は科学的根拠に基づく最適値です。個別のニーズに応じて調整してください。`
-                                                })}
-                                                className="text-purple-600 hover:text-purple-800"
+【ボディメイカー】
+・LBM × 2.0倍のタンパク質係数（一般の2倍）
+・筋肥大や体づくりを重視する方向け
+・高強度のトレーニングを行う方向け`
+                                                    })}
+                                                    className="text-indigo-600 hover:text-indigo-800"
+                                                >
+                                                    <Icon name="Info" size={14} />
+                                                </button>
+                                            </label>
+                                            <select
+                                                value={profile.style || '一般'}
+                                                onChange={(e) => setProfile({...profile, style: e.target.value})}
+                                                className="w-full px-3 py-2 border rounded-lg"
                                             >
-                                                <Icon name="Info" size={14} />
-                                            </button>
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            value={advancedSettings.proteinCoefficient}
-                                            onChange={(e) => setAdvancedSettings({...advancedSettings, proteinCoefficient: e.target.value === '' ? '' : Number(e.target.value)})}
-                                            className="w-full px-4 py-3 border rounded-lg"
-                                        />
-                                        <p className="text-xs text-gray-600 mt-1">推奨範囲: 2.0〜3.0（デフォルト: 2.5）</p>
-                                    </div>
-
-                                    {/* 脂質比率 */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                            脂質カロリー比率
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: '脂質カロリー比率とは？',
-                                                    content: `総カロリーに占める脂質の割合を設定します。
-
-【推奨値】
-• バランス型: 0.25（25%）
-• 低脂質・高炭水化物: 0.20〜0.22（20〜22%）
-• ケトジェニック以外: 0.30以下を推奨
-
-【計算例】
-総カロリー2000kcal、比率0.25の場合:
-• 脂質: 2000 × 0.25 = 500kcal
-• 脂質グラム: 500 ÷ 9 = 約55g
-
-【重要】
-脂質は細胞膜やホルモン生成に必須です。極端に低い設定（0.15未満）は避けてください。`
-                                                })}
-                                                className="text-purple-600 hover:text-purple-800"
-                                            >
-                                                <Icon name="Info" size={14} />
-                                            </button>
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.05"
-                                            value={advancedSettings.fatRatio}
-                                            onChange={(e) => setAdvancedSettings({...advancedSettings, fatRatio: e.target.value === '' ? '' : Number(e.target.value)})}
-                                            className="w-full px-4 py-3 border rounded-lg"
-                                        />
-                                        <p className="text-xs text-gray-600 mt-1">推奨範囲: 0.20〜0.30（デフォルト: 0.25 = 25%）</p>
-                                    </div>
-
-
-                                    {/* 自動調整ON/OFF */}
-                                    <div className="space-y-2 border-t pt-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <p className="font-medium text-sm">自動調整機能</p>
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: '自動調整機能とは？',
-                                                    content: `コンディション記録に基づいて、目標カロリーやマクロ栄養素を自動で微調整する機能です。
-
-【調整される項目と反映箇所】
-
-1. **年齢によるタンパク質ブースト**
-   • 反映箇所: タンパク質目標値（P）
-   • 40歳以上で+0.2g/kg LBM
-   • ダッシュボード上部の目標PFC円グラフに即時反映
-
-2. **ボディメイカーブースト**
-   • 反映箇所: タンパク質目標値（P）
-   • +0.5g/kg LBM
-   • 本格的な筋肥大を目指す方向け
-
-3. **トレーニング強度による回復ブースト**
-   • 反映箇所: タンパク質目標値（P）
-   • 高強度日: +10%、複数部位: +5%
-   • トレーニング記録後に自動適用
-
-4. **睡眠による自動調整**
-   • 反映箇所: 基礎代謝・総カロリー目標
-   • 睡眠6h以下: -5%、8h以上: +3%
-   • コンディション記録後に自動適用
-
-5. **ストレスレベルによる自動調整**
-   • 反映箇所: 総カロリー目標
-   • 高ストレス: +100kcal、中程度: +50kcal
-   • コンディション記録後に自動適用
-
-【確認方法】
-ダッシュボード上部のPFC円グラフで、調整後の目標値を確認できます。より精密な管理をしたい方は、個別にON/OFFを切り替えることができます。`
-                                                })}
-                                                className="text-indigo-600 hover:text-indigo-800"
-                                            >
-                                                <Icon name="Info" size={16} />
-                                            </button>
+                                                <option value="一般">一般</option>
+                                                <option value="ボディメイカー">ボディメイカー</option>
+                                            </select>
                                         </div>
 
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={advancedSettings.ageProteinBoost}
-                                                onChange={(e) => setAdvancedSettings({...advancedSettings, ageProteinBoost: e.target.checked})}
-                                                className="w-4 h-4"
-                                            />
-                                            <span className="text-sm">年齢による自動調整（40歳以上: +0.2g/kg）</span>
+                                        <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
+                                            PFCバランス（目標比率）
                                             <button
                                                 type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: '年齢による自動調整',
-                                                    content: `40歳以上の場合、タンパク質係数を自動で+0.2g/kg増やします。
+                                                onClick={() => {
+                                                    const lbm = profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
+                                                    const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier);
+                                                    const targetCalories = tdeeBase + (profile.calorieAdjustment || 0);
+                                                    const lifestyle = profile.style || '一般';
+                                                    const purpose = profile.purpose || 'メンテナンス';
+                                                    const dietStyle = profile.dietStyle || 'バランス';
 
-【理由】
-加齢に伴い筋肉合成能力が低下するため、より多くのタンパク質が必要になります。40歳以上では基礎代謝の低下と筋肉量の維持が重要になります。
+                                                    let coefficient = 1.0;
+                                                    if (lifestyle === 'ボディメイカー') {
+                                                        if (purpose === 'バルクアップ') coefficient = 2.8;
+                                                        else if (purpose === 'ダイエット') coefficient = 2.4;
+                                                        else coefficient = 2.0;
+                                                    } else {
+                                                        if (purpose === 'バルクアップ') coefficient = 1.4;
+                                                        else if (purpose === 'ダイエット') coefficient = 1.2;
+                                                        else coefficient = 1.0;
+                                                    }
 
-【効果】
-筋肉の減少を防ぎ、代謝を維持することで健康的な体組成を保ちます。`
-                                                })}
-                                                className="text-purple-600 hover:text-purple-800"
+                                                    const proteinG = Math.round(lbm * coefficient);
+                                                    const proteinCal = proteinG * 4;
+
+                                                    let fatRatio = 0.25;
+                                                    if (dietStyle === '低脂質') fatRatio = 0.15;
+                                                    else if (dietStyle === '低炭水化物') fatRatio = 0.35;
+                                                    else if (dietStyle === 'ケトジェニック') fatRatio = 0.60;
+
+                                                    const fatCal = targetCalories * fatRatio;
+                                                    const fatG = Math.round(fatCal / 9);
+                                                    const carbCal = targetCalories - proteinCal - fatCal;
+                                                    const carbG = Math.round(carbCal / 4);
+                                                    const proteinPercent = Math.round((proteinCal / targetCalories) * 100);
+                                                    const fatPercent = Math.round((fatCal / targetCalories) * 100);
+                                                    const carbPercent = Math.round((carbCal / targetCalories) * 100);
+
+                                                    setInfoModal({
+                                                        show: true,
+                                                        title: 'PFCバランスと目的別推奨値',
+                                                        content: `タンパク質(P)、脂質(F)、炭水化物(C)の目標比率を設定します。
+
+【📊 目的別推奨値】
+${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
+
+🔴 タンパク質: ${proteinG}g (${proteinCal}kcal, ${proteinPercent}%)
+🟡 脂質: ${fatG}g (${Math.round(fatCal)}kcal, ${fatPercent}%)
+🟢 炭水化物: ${carbG}g (${Math.round(carbCal)}kcal, ${carbPercent}%)
+━━━━━━━━━━━━━━━━━━━━━
+合計: ${Math.round(targetCalories)}kcal
+
+【カスタム比率のデフォルト値】
+🔴 タンパク質: 30%
+🟡 脂質: 25%
+🟢 炭水化物: 45%
+
+合計は必ず100%になるように自動調整されます。`
+                                                    });
+                                                }}
+                                                className="text-indigo-600 hover:text-indigo-800"
                                             >
-                                                <Icon name="Info" size={12} />
+                                                <Icon name="Info" size={14} />
                                             </button>
                                         </label>
 
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={advancedSettings.bodymakerBoost}
-                                                onChange={(e) => setAdvancedSettings({...advancedSettings, bodymakerBoost: e.target.checked})}
-                                                className="w-4 h-4"
-                                            />
-                                            <span className="text-sm">ボディメイカーブースト（+0.5g/kg）</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: 'ボディメイカーブースト',
-                                                    content: `本格的な筋肥大を目指す方向けに、タンパク質係数を+0.5g/kg増やします。
+                                        {/* モード選択 */}
+                                        <div className="mb-2">
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setAdvancedSettings({
+                                                            ...advancedSettings,
+                                                            usePurposeBased: true
+                                                        });
+                                                    }}
+                                                    className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition ${
+                                                        advancedSettings.usePurposeBased === true
+                                                            ? 'bg-blue-600 text-white'
+                                                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                                    }`}
+                                                >
+                                                    デフォルト比率
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setAdvancedSettings({
+                                                            ...advancedSettings,
+                                                            usePurposeBased: false
+                                                        });
+                                                    }}
+                                                    className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition ${
+                                                        advancedSettings.usePurposeBased === false
+                                                            ? 'bg-indigo-600 text-white'
+                                                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                                    }`}
+                                                >
+                                                    カスタム比率
+                                                </button>
+                                            </div>
+                                        </div>
 
-【推奨対象】
-• 週4回以上の高強度トレーニング実施者
-• 競技ボディビルダー・フィジーク選手
-• 短期間で筋肉量を大幅に増やしたい方
-
-【効果】
-筋肉合成を最大化し、トレーニング効果を最大限引き出します。`
-                                                })}
-                                                className="text-purple-600 hover:text-purple-800"
-                                            >
-                                                <Icon name="Info" size={12} />
-                                            </button>
-                                        </label>
-
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={advancedSettings.trainingBoost}
-                                                onChange={(e) => setAdvancedSettings({...advancedSettings, trainingBoost: e.target.checked})}
-                                                className="w-4 h-4"
-                                            />
-                                            <span className="text-sm">トレーニング強度による回復ブースト</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: 'トレーニング強度による回復ブースト',
-                                                    content: `トレーニング記録に基づき、タンパク質を自動調整します。
-
-【調整基準】
-• 高強度トレーニング日: タンパク質+10%
-• 複数部位のトレーニング日: タンパク質+5%
-
-【効果】
-トレーニングで損傷した筋繊維の修復を促進し、超回復を最適化します。`
-                                                })}
-                                                className="text-purple-600 hover:text-purple-800"
-                                            >
-                                                <Icon name="Info" size={12} />
-                                            </button>
-                                        </label>
-
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={advancedSettings.sleepAdjustment}
-                                                onChange={(e) => setAdvancedSettings({...advancedSettings, sleepAdjustment: e.target.checked})}
-                                                className="w-4 h-4"
-                                            />
-                                            <span className="text-sm">睡眠による自動調整</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: '睡眠による自動調整',
-                                                    content: `睡眠の質に基づき、代謝とカロリーを自動調整します。
-
-【調整基準】
-• 睡眠時間6h以下: 基礎代謝-5%
-• 睡眠の質が悪い: 回復能力低下を考慮
-• 睡眠時間8h以上: 代謝効率+3%
-
-【効果】
-睡眠不足時は過剰なカロリー摂取を防ぎ、十分な睡眠時は筋肉合成を促進します。`
-                                                })}
-                                                className="text-purple-600 hover:text-purple-800"
-                                            >
-                                                <Icon name="Info" size={12} />
-                                            </button>
-                                        </label>
-
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={advancedSettings.stressAdjustment}
-                                                onChange={(e) => setAdvancedSettings({...advancedSettings, stressAdjustment: e.target.checked})}
-                                                className="w-4 h-4"
-                                            />
-                                            <span className="text-sm">ストレスレベルによる自動調整</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setInfoModal({
-                                                    show: true,
-                                                    title: 'ストレスレベルによる自動調整',
-                                                    content: `ストレスレベルに基づき、カロリーと栄養素を自動調整します。
-
-【調整基準】
-• 高ストレス時: カロリー+100kcal（コルチゾール対策）
-• 中程度のストレス: カロリー+50kcal
-• タンパク質を微増（筋肉分解防止）
-
-【効果】
-ストレスによる筋肉の異化（分解）を防ぎ、体組成の維持をサポートします。`
-                                                })}
-                                                className="text-purple-600 hover:text-purple-800"
-                                            >
-                                                <Icon name="Info" size={12} />
-                                            </button>
-                                        </label>
+                                        {/* カスタム比率設定（カスタムモード時のみ表示） */}
+                                        {advancedSettings.usePurposeBased === false && (
+                                        <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
+                                            {/* タンパク質 */}
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-sm font-medium text-green-700">タンパク質 (P)</span>
+                                                    <span className="text-sm font-bold">{advancedSettings.proteinRatio || 30}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="15"
+                                                    max="50"
+                                                    step="1"
+                                                    value={advancedSettings.proteinRatio || 30}
+                                                    onChange={(e) => {
+                                                        const newP = Number(e.target.value);
+                                                        const currentF = advancedSettings.fatRatioPercent || 25;
+                                                        const newC = 100 - newP - currentF;
+                                                        if (newC >= 15 && newC <= 60) {
+                                                            setAdvancedSettings({
+                                                                ...advancedSettings,
+                                                                proteinRatio: newP,
+                                                                carbRatio: newC
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="w-full"
+                                                />
+                                            </div>
+                                            {/* 脂質 */}
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-sm font-medium text-yellow-700">脂質 (F)</span>
+                                                    <span className="text-sm font-bold">{advancedSettings.fatRatioPercent || 25}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="15"
+                                                    max="40"
+                                                    step="1"
+                                                    value={advancedSettings.fatRatioPercent || 25}
+                                                    onChange={(e) => {
+                                                        const newF = Number(e.target.value);
+                                                        const currentP = advancedSettings.proteinRatio || 30;
+                                                        const newC = 100 - currentP - newF;
+                                                        if (newC >= 15 && newC <= 60) {
+                                                            setAdvancedSettings({
+                                                                ...advancedSettings,
+                                                                fatRatioPercent: newF,
+                                                                carbRatio: newC
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="w-full"
+                                                />
+                                            </div>
+                                            {/* 炭水化物 */}
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-sm font-medium text-orange-700">炭水化物 (C)</span>
+                                                    <span className="text-sm font-bold">{advancedSettings.carbRatio || 45}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="15"
+                                                    max="60"
+                                                    step="1"
+                                                    value={advancedSettings.carbRatio || 45}
+                                                    onChange={(e) => {
+                                                        const newC = Number(e.target.value);
+                                                        const currentP = advancedSettings.proteinRatio || 30;
+                                                        const newF = 100 - currentP - newC;
+                                                        if (newF >= 15 && newF <= 40) {
+                                                            setAdvancedSettings({
+                                                                ...advancedSettings,
+                                                                carbRatio: newC,
+                                                                fatRatioPercent: newF
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="w-full"
+                                                />
+                                            </div>
+                                            <div className="text-xs text-gray-600 pt-2 border-t">
+                                                合計: {(advancedSettings.proteinRatio || 30) + (advancedSettings.fatRatioPercent || 25) + (advancedSettings.carbRatio || 45)}%
+                                                {((advancedSettings.proteinRatio || 30) + (advancedSettings.fatRatioPercent || 25) + (advancedSettings.carbRatio || 45)) === 100 &&
+                                                    <span className="text-green-600 ml-2">✓ バランス良好</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        )}
                                     </div>
-                                </div>
-                            </details>
+
 
                             <button
                                 onClick={handleSave}
-                                className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition"
                             >
                                 保存
                             </button>
@@ -922,6 +791,343 @@ LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
                         </div>
                     </details>
 
+                    {/* ショートカット */}
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="Zap" size={18} className="text-purple-600" />
+                            ショートカット
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t">
+                            <p className="text-sm text-gray-600 mb-4">画面左右のショートカットボタンをカスタマイズできます。各項目の表示位置と順番を変更できます。</p>
+
+                            {/* 表示/非表示切り替え */}
+                            <div className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        defaultChecked={(() => {
+                                            const saved = localStorage.getItem('chevronShortcutsVisibility');
+                                            return saved ? JSON.parse(saved).left : true;
+                                        })()}
+                                        onChange={(e) => {
+                                            const saved = localStorage.getItem('chevronShortcutsVisibility');
+                                            const visibility = saved ? JSON.parse(saved) : { left: true, right: true };
+                                            visibility.left = e.target.checked;
+                                            localStorage.setItem('chevronShortcutsVisibility', JSON.stringify(visibility));
+                                            window.dispatchEvent(new CustomEvent('shortcutsVisibilityUpdated', { detail: visibility }));
+                                        }}
+                                        className="w-4 h-4"
+                                    />
+                                    <Icon name="ChevronRight" size={16} className="text-purple-600" />
+                                    <span className="text-sm font-medium">左側を表示</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        defaultChecked={(() => {
+                                            const saved = localStorage.getItem('chevronShortcutsVisibility');
+                                            return saved ? JSON.parse(saved).right : true;
+                                        })()}
+                                        onChange={(e) => {
+                                            const saved = localStorage.getItem('chevronShortcutsVisibility');
+                                            const visibility = saved ? JSON.parse(saved) : { left: true, right: true };
+                                            visibility.right = e.target.checked;
+                                            localStorage.setItem('chevronShortcutsVisibility', JSON.stringify(visibility));
+                                            window.dispatchEvent(new CustomEvent('shortcutsVisibilityUpdated', { detail: visibility }));
+                                        }}
+                                        className="w-4 h-4"
+                                    />
+                                    <Icon name="ChevronLeft" size={16} className="text-purple-600" />
+                                    <span className="text-sm font-medium">右側を表示</span>
+                                </label>
+                            </div>
+
+                            {/* 左側ショートカット */}
+                            <div className="mb-6">
+                                <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                    <Icon name="ChevronRight" size={16} className="text-purple-600" />
+                                    左側
+                                </h4>
+                                <div className="grid grid-cols-2 gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">位置</label>
+                                        <select
+                                            value={shortcuts.find(s => s.side === 'left')?.position || 'middle'}
+                                            onChange={(e) => {
+                                                const updated = shortcuts.map(s =>
+                                                    s.side === 'left' ? { ...s, position: e.target.value } : s
+                                                );
+                                                onUpdateShortcuts(updated);
+                                            }}
+                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                        >
+                                            <option value="top">上</option>
+                                            <option value="middle">中</option>
+                                            <option value="bottom">下</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">サイズ</label>
+                                        <select
+                                            value={shortcuts.find(s => s.side === 'left')?.size || 'small'}
+                                            onChange={(e) => {
+                                                const updated = shortcuts.map(s =>
+                                                    s.side === 'left' ? { ...s, size: e.target.value } : s
+                                                );
+                                                onUpdateShortcuts(updated);
+                                            }}
+                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                        >
+                                            <option value="small">小</option>
+                                            <option value="medium">中</option>
+                                            <option value="large">大</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <details className="border rounded-lg bg-white">
+                                    <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium text-sm flex items-center gap-2">
+                                        選択可能な項目
+                                        <Icon name="ChevronDown" size={14} className="ml-auto text-gray-400" />
+                                    </summary>
+                                    <div className="p-3 pt-0 space-y-2">
+                                        {(() => {
+                                            const allItems = [
+                                                { action: 'open_body_composition', label: '体組成', icon: 'Activity', color: 'text-teal-600' },
+                                                { action: 'open_meal', label: '食事', icon: 'Utensils', color: 'text-green-600' },
+                                                { action: 'open_meal_photo', label: '写真解析', icon: 'Camera', color: 'text-green-600' },
+                                                { action: 'open_workout', label: '運動', icon: 'Dumbbell', color: 'text-orange-600' },
+                                                { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
+                                                { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
+                                                { action: 'open_analysis', label: '分析', icon: 'BarChart3', color: 'text-indigo-600' },
+                                                { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
+                                                { action: 'open_pgbase', label: 'PGBASE', icon: 'Database', color: 'text-cyan-600' },
+                                                { action: 'open_community', label: 'COMY', icon: 'Users', color: 'text-pink-600' },
+                                                { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
+                                            ];
+
+                                            // 左側で有効な項目をorder順にソート
+                                            const leftShortcuts = shortcuts
+                                                .filter(s => s.side === 'left' && s.enabled)
+                                                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                                                .map(s => allItems.find(item => item.action === s.action))
+                                                .filter(Boolean);
+
+                                            const [draggedIndex, setDraggedIndex] = React.useState(null);
+
+                                            return leftShortcuts.map((item, index) => {
+                                                const shortcut = shortcuts.find(s => s.action === item.action);
+                                                const isChecked = shortcut?.side === 'left' && shortcut?.enabled;
+                                                const isDragging = draggedIndex === index;
+
+                                                return (
+                                                    <div
+                                                        key={item.action}
+                                                        draggable
+                                                        onDragStart={(e) => {
+                                                            setDraggedIndex(index);
+                                                            e.dataTransfer.effectAllowed = 'move';
+                                                        }}
+                                                        onDragOver={(e) => {
+                                                            e.preventDefault();
+                                                            e.dataTransfer.dropEffect = 'move';
+                                                        }}
+                                                        onDrop={(e) => {
+                                                            e.preventDefault();
+                                                            if (draggedIndex === null || draggedIndex === index) return;
+
+                                                            // 並び替え処理
+                                                            const newLeftShortcuts = [...leftShortcuts];
+                                                            const [draggedItem] = newLeftShortcuts.splice(draggedIndex, 1);
+                                                            newLeftShortcuts.splice(index, 0, draggedItem);
+
+                                                            // order値を更新
+                                                            const updated = shortcuts.map(s => {
+                                                                const newIndex = newLeftShortcuts.findIndex(item => item.action === s.action);
+                                                                if (newIndex !== -1 && s.side === 'left' && s.enabled) {
+                                                                    return { ...s, order: newIndex };
+                                                                }
+                                                                return s;
+                                                            });
+
+                                                            onUpdateShortcuts(updated);
+                                                            setDraggedIndex(null);
+                                                        }}
+                                                        onDragEnd={() => setDraggedIndex(null)}
+                                                        className={`flex items-center gap-3 p-2 rounded cursor-move ${
+                                                            isDragging ? 'opacity-50 bg-gray-100' : 'hover:bg-gray-50'
+                                                        }`}
+                                                    >
+                                                        <Icon name="GripVertical" size={16} className="text-gray-400" />
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={(e) => {
+                                                                const updated = shortcuts.map(s =>
+                                                                    s.action === item.action
+                                                                        ? { ...s, side: 'left', enabled: e.target.checked }
+                                                                        : s
+                                                                );
+                                                                onUpdateShortcuts(updated);
+                                                            }}
+                                                            className="w-4 h-4"
+                                                        />
+                                                        <Icon name={item.icon} size={18} className={isChecked ? item.color : 'text-gray-400'} />
+                                                        <span className={`text-sm ${isChecked ? 'text-gray-800 font-medium' : 'text-gray-500'}`}>
+                                                            {item.label}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                </details>
+                            </div>
+
+                            {/* 右側ショートカット */}
+                            <div className="mb-4">
+                                <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                    <Icon name="ChevronLeft" size={16} className="text-purple-600" />
+                                    右側
+                                </h4>
+                                <div className="grid grid-cols-2 gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">位置</label>
+                                        <select
+                                            value={shortcuts.find(s => s.side === 'right')?.position || 'middle'}
+                                            onChange={(e) => {
+                                                const updated = shortcuts.map(s =>
+                                                    s.side === 'right' ? { ...s, position: e.target.value } : s
+                                                );
+                                                onUpdateShortcuts(updated);
+                                            }}
+                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                        >
+                                            <option value="top">上</option>
+                                            <option value="middle">中</option>
+                                            <option value="bottom">下</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">サイズ</label>
+                                        <select
+                                            value={shortcuts.find(s => s.side === 'right')?.size || 'small'}
+                                            onChange={(e) => {
+                                                const updated = shortcuts.map(s =>
+                                                    s.side === 'right' ? { ...s, size: e.target.value } : s
+                                                );
+                                                onUpdateShortcuts(updated);
+                                            }}
+                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                        >
+                                            <option value="small">小</option>
+                                            <option value="medium">中</option>
+                                            <option value="large">大</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <details className="border rounded-lg bg-white">
+                                    <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium text-sm flex items-center gap-2">
+                                        選択可能な項目
+                                        <Icon name="ChevronDown" size={14} className="ml-auto text-gray-400" />
+                                    </summary>
+                                    <div className="p-3 pt-0 space-y-2">
+                                        {(() => {
+                                            const allItems = [
+                                                { action: 'open_body_composition', label: '体組成', icon: 'Activity', color: 'text-teal-600' },
+                                                { action: 'open_meal', label: '食事', icon: 'Utensils', color: 'text-green-600' },
+                                                { action: 'open_meal_photo', label: '写真解析', icon: 'Camera', color: 'text-green-600' },
+                                                { action: 'open_workout', label: '運動', icon: 'Dumbbell', color: 'text-orange-600' },
+                                                { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
+                                                { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
+                                                { action: 'open_analysis', label: '分析', icon: 'BarChart3', color: 'text-indigo-600' },
+                                                { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
+                                                { action: 'open_pgbase', label: 'PGBASE', icon: 'Database', color: 'text-cyan-600' },
+                                                { action: 'open_community', label: 'COMY', icon: 'Users', color: 'text-pink-600' },
+                                                { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
+                                            ];
+
+                                            // 右側で有効な項目をorder順にソート
+                                            const rightShortcuts = shortcuts
+                                                .filter(s => s.side === 'right' && s.enabled)
+                                                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                                                .map(s => allItems.find(item => item.action === s.action))
+                                                .filter(Boolean);
+
+                                            const [draggedIndex, setDraggedIndex] = React.useState(null);
+
+                                            return rightShortcuts.map((item, index) => {
+                                                const shortcut = shortcuts.find(s => s.action === item.action);
+                                                const isChecked = shortcut?.side === 'right' && shortcut?.enabled;
+                                                const isDragging = draggedIndex === index;
+
+                                                return (
+                                                    <div
+                                                        key={item.action}
+                                                        draggable
+                                                        onDragStart={(e) => {
+                                                            setDraggedIndex(index);
+                                                            e.dataTransfer.effectAllowed = 'move';
+                                                        }}
+                                                        onDragOver={(e) => {
+                                                            e.preventDefault();
+                                                            e.dataTransfer.dropEffect = 'move';
+                                                        }}
+                                                        onDrop={(e) => {
+                                                            e.preventDefault();
+                                                            if (draggedIndex === null || draggedIndex === index) return;
+
+                                                            // 並び替え処理
+                                                            const newRightShortcuts = [...rightShortcuts];
+                                                            const [draggedItem] = newRightShortcuts.splice(draggedIndex, 1);
+                                                            newRightShortcuts.splice(index, 0, draggedItem);
+
+                                                            // order値を更新
+                                                            const updated = shortcuts.map(s => {
+                                                                const newIndex = newRightShortcuts.findIndex(item => item.action === s.action);
+                                                                if (newIndex !== -1 && s.side === 'right' && s.enabled) {
+                                                                    return { ...s, order: newIndex };
+                                                                }
+                                                                return s;
+                                                            });
+
+                                                            onUpdateShortcuts(updated);
+                                                            setDraggedIndex(null);
+                                                        }}
+                                                        onDragEnd={() => setDraggedIndex(null)}
+                                                        className={`flex items-center gap-3 p-2 rounded cursor-move ${
+                                                            isDragging ? 'opacity-50 bg-gray-100' : 'hover:bg-gray-50'
+                                                        }`}
+                                                    >
+                                                        <Icon name="GripVertical" size={16} className="text-gray-400" />
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={(e) => {
+                                                                const updated = shortcuts.map(s =>
+                                                                    s.action === item.action
+                                                                        ? { ...s, side: 'right', enabled: e.target.checked }
+                                                                        : s
+                                                                );
+                                                                onUpdateShortcuts(updated);
+                                                            }}
+                                                            className="w-4 h-4"
+                                                        />
+                                                        <Icon name={item.icon} size={18} className={isChecked ? item.color : 'text-gray-400'} />
+                                                        <span className={`text-sm ${isChecked ? 'text-gray-800 font-medium' : 'text-gray-500'}`}>
+                                                            {item.label}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+                    </details>
 
                     {/* テンプレート */}
                     <details className="border rounded-lg">
@@ -936,12 +1142,9 @@ LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
 
                             {/* 食事テンプレート */}
                             <div className="border rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div>
-                                        <h3 className="font-semibold text-green-800">🍽️ 食事テンプレート</h3>
-                                        <p className="text-xs text-gray-600">よく食べる食事の組み合わせを保存</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
+                                <div className="mb-3">
+                                    <h3 className="font-semibold text-green-800 mb-2">食事テンプレート</h3>
+                                    <div className="flex items-center justify-between">
                                         <span className="text-sm text-gray-500">{mealTemplates.length}件</span>
                                         <button
                                             onClick={() => onOpenAddView && onOpenAddView('meal')}
@@ -971,18 +1174,30 @@ LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
                                                                 {template.items?.length || 0}品目 | {Math.round(totalCals)}kcal
                                                             </p>
                                                         </div>
-                                                        <button
-                                                            onClick={async (e) => {
-                                                                e.preventDefault();
-                                                                if (confirm('このテンプレートを削除しますか？')) {
-                                                                    await DataService.deleteMealTemplate(userId, template.id);
-                                                                    await loadTemplates();
-                                                                }
-                                                            }}
-                                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition ml-2"
-                                                        >
-                                                            <Icon name="Trash2" size={16} />
-                                                        </button>
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    // TODO: 編集機能の実装
+                                                                    alert('編集機能は開発中です');
+                                                                }}
+                                                                className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                            >
+                                                                <Icon name="Edit" size={16} />
+                                                            </button>
+                                                            <button
+                                                                onClick={async (e) => {
+                                                                    e.preventDefault();
+                                                                    if (confirm('このテンプレートを削除しますか？')) {
+                                                                        await DataService.deleteMealTemplate(userId, template.id);
+                                                                        await loadTemplates();
+                                                                    }
+                                                                }}
+                                                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                            >
+                                                                <Icon name="Trash2" size={16} />
+                                                            </button>
+                                                        </div>
                                                     </summary>
                                                     <div className="mt-3 space-y-2 border-t pt-3">
                                                         <div className="grid grid-cols-4 gap-2 text-xs bg-white p-2 rounded">
@@ -1019,14 +1234,11 @@ LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
                                 )}
                             </div>
 
-                            {/* トレーニングテンプレート */}
+                            {/* 運動テンプレート */}
                             <div className="border rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div>
-                                        <h3 className="font-semibold text-orange-800">💪 トレーニングテンプレート</h3>
-                                        <p className="text-xs text-gray-600">よく行う種目とセット数を保存</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
+                                <div className="mb-3">
+                                    <h3 className="font-semibold text-orange-800 mb-2">運動テンプレート</h3>
+                                    <div className="flex items-center justify-between">
                                         <span className="text-sm text-gray-500">{workoutTemplates.length}件</span>
                                         <button
                                             onClick={() => onOpenAddView && onOpenAddView('workout')}
@@ -1053,18 +1265,30 @@ LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
                                                                 {template.exercise?.name || '種目不明'} | {template.sets?.length || 0}セット | {Math.round(totalCals)}kcal
                                                             </p>
                                                         </div>
-                                                        <button
-                                                            onClick={async (e) => {
-                                                                e.preventDefault();
-                                                                if (confirm('このテンプレートを削除しますか？')) {
-                                                                    await DataService.deleteWorkoutTemplate(userId, template.id);
-                                                                    await loadTemplates();
-                                                                }
-                                                            }}
-                                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition ml-2"
-                                                        >
-                                                            <Icon name="Trash2" size={16} />
-                                                        </button>
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    // TODO: 編集機能の実装
+                                                                    alert('編集機能は開発中です');
+                                                                }}
+                                                                className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                            >
+                                                                <Icon name="Edit" size={16} />
+                                                            </button>
+                                                            <button
+                                                                onClick={async (e) => {
+                                                                    e.preventDefault();
+                                                                    if (confirm('このテンプレートを削除しますか？')) {
+                                                                        await DataService.deleteWorkoutTemplate(userId, template.id);
+                                                                        await loadTemplates();
+                                                                    }
+                                                                }}
+                                                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                            >
+                                                                <Icon name="Trash2" size={16} />
+                                                            </button>
+                                                        </div>
                                                     </summary>
                                                     <div className="mt-3 space-y-2 border-t pt-3">
                                                         {(template.sets || []).map((set, idx) => (
@@ -1090,61 +1314,6 @@ LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
                                 )}
                             </div>
 
-                            {/* サプリメントテンプレート */}
-                            <div className="border rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div>
-                                        <h3 className="font-semibold text-blue-800">💊 サプリメントテンプレート</h3>
-                                        <p className="text-xs text-gray-600">よく使うサプリの組み合わせを保存</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-500">{supplementTemplates.length}件</span>
-                                        <button
-                                            onClick={() => onOpenAddView && onOpenAddView('supplement')}
-                                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
-                                        >
-                                            <Icon name="Plus" size={14} />
-                                            新規作成
-                                        </button>
-                                    </div>
-                                </div>
-                                {supplementTemplates.length === 0 ? (
-                                    <p className="text-sm text-gray-500">保存されたテンプレートはありません</p>
-                                ) : (
-                                    <div className="space-y-2 mt-3">
-                                        {supplementTemplates.map(template => (
-                                            <details key={template.id} className="bg-gray-50 p-3 rounded-lg">
-                                                <summary className="flex items-center justify-between cursor-pointer hover:bg-gray-100 -m-3 p-3 rounded-lg">
-                                                    <div className="flex-1">
-                                                        <p className="font-medium text-sm">{template.name}</p>
-                                                        <p className="text-xs text-gray-600">{template.items?.length || 0}品目</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={async (e) => {
-                                                            e.preventDefault();
-                                                            if (confirm('このテンプレートを削除しますか？')) {
-                                                                await DataService.deleteSupplementTemplate(userId, template.id);
-                                                                await loadTemplates();
-                                                            }
-                                                        }}
-                                                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition ml-2"
-                                                    >
-                                                        <Icon name="Trash2" size={16} />
-                                                    </button>
-                                                </summary>
-                                                <div className="mt-3 space-y-2 border-t pt-3">
-                                                    {(template.items || []).map((item, idx) => (
-                                                        <div key={idx} className="text-xs bg-white p-2 rounded flex justify-between">
-                                                            <span className="font-medium">{item.name}</span>
-                                                            <span className="text-gray-600">{item.amount}{item.unit}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </details>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
                         </div>
                         </div>
                     </details>
@@ -1152,7 +1321,7 @@ LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
                     {/* ルーティン */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Calendar" size={18} className="text-indigo-600" />
+                            <Icon name="Repeat" size={18} className="text-indigo-600" />
                             ルーティン
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -1309,20 +1478,6 @@ LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
                                                                             </select>
                                                                         </div>
 
-                                                                        {/* サプリメントテンプレート */}
-                                                                        <div>
-                                                                            <label className="text-xs text-gray-600">サプリメント</label>
-                                                                            <select
-                                                                                value={routine.supplementTemplateId || ''}
-                                                                                onChange={(e) => updateRoutine(routine.id, { supplementTemplateId: e.target.value || null })}
-                                                                                className="w-full mt-1 p-2 border rounded text-sm"
-                                                                            >
-                                                                                <option value="">テンプレートなし</option>
-                                                                                {supplementTemplates.map(t => (
-                                                                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                                                                ))}
-                                                                            </select>
-                                                                        </div>
                                                                     </div>
                                                                     <p className="text-xs text-yellow-700 mt-2">
                                                                         紐づけたテンプレートは、記録画面で自動的に読み込まれます
@@ -1447,20 +1602,6 @@ LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
                                                                                 </select>
                                                                             </div>
 
-                                                                            {/* サプリメントテンプレート */}
-                                                                            <div>
-                                                                                <label className="text-xs text-gray-600">サプリメント</label>
-                                                                                <select
-                                                                                    value={routine.supplementTemplateId || ''}
-                                                                                    onChange={(e) => updateRoutine(routine.id, { supplementTemplateId: e.target.value || null })}
-                                                                                    className="w-full mt-1 p-2 border rounded text-sm"
-                                                                                >
-                                                                                    <option value="">テンプレートなし</option>
-                                                                                    {supplementTemplates.map(t => (
-                                                                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            </div>
                                                                         </div>
                                                                         <p className="text-xs text-yellow-700 mt-2">
                                                                             紐づけたテンプレートは、記録画面で自動的に読み込まれます
@@ -1675,20 +1816,6 @@ LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
                                 </div>
                             </div>
 
-                            {/* ミニマムタスク */}
-                            <div className="border-t pt-3">
-                                <label className="block text-sm font-medium mb-2">ミニマムタスク</label>
-                                <input
-                                    type="text"
-                                    value={profile.minimumTask || ''}
-                                    onChange={(e) => setProfile({...profile, minimumTask: e.target.value})}
-                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                    placeholder="例: 腕立て1回"
-                                />
-                                <p className="text-xs text-gray-600 mt-1">
-                                    「少しだけなら頑張れる」ときに提案する最低限のタスクを設定してください。
-                                </p>
-                            </div>
                         </div>
                     </details>
 
@@ -2073,14 +2200,6 @@ LBM 60kgで係数2.5の場合: 60 × 2.5 = 150g/日
             </div>
         )}
 
-        {/* ウェアラブル連携モーダル */}
-        {showWearableIntegration && (
-            <WearableIntegration
-                onClose={() => setShowWearableIntegration(false)}
-                userId={userId}
-                userProfile={profile}
-            />
-        )}
         </>
     );
 };
