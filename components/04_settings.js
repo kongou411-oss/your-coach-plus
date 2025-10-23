@@ -8,8 +8,11 @@ const TutorialView = ({ onClose, onComplete }) => {
 // ===== 設定画面 =====
 const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays, unlockedFeatures, onOpenAddView, darkMode, onToggleDarkMode, shortcuts = [], onUpdateShortcuts, reopenTemplateEditModal = false, reopenTemplateEditType = null, onTemplateEditModalOpened }) => {
     const [profile, setProfile] = useState({...userProfile});
-    const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'data', 'advanced'
+    const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'premium', 'account', 'data', 'advanced'
     const [showCustomMultiplierInput, setShowCustomMultiplierInput] = useState(false);
+
+    // クレジット情報state
+    const [creditInfo, setCreditInfo] = useState(null);
     const [customMultiplierInputValue, setCustomMultiplierInputValue] = useState('');
     const [infoModal, setInfoModal] = useState({ show: false, title: '', content: '' });
     const [visualGuideModal, setVisualGuideModal] = useState({ show: false, gender: '男性', selectedLevel: 5 });
@@ -48,6 +51,20 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     useEffect(() => {
         loadTemplates();
     }, []);
+
+    // クレジット情報読み込み
+    useEffect(() => {
+        loadCreditInfo();
+    }, [userId, userProfile]);
+
+    const loadCreditInfo = async () => {
+        try {
+            const accessCheck = await CreditService.canAccessAnalysis(userId, userProfile);
+            setCreditInfo(accessCheck);
+        } catch (error) {
+            console.error('[Settings] Error loading credit info:', error);
+        }
+    };
 
     // AddItemViewから戻ってきた時にテンプレート編集モーダルを再度開く
     useEffect(() => {
@@ -224,6 +241,159 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    {/* プレミアム */}
+                    <details className="border rounded-lg border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+                        <summary className="cursor-pointer p-4 hover:bg-purple-100 font-medium flex items-center gap-2">
+                            <Icon name="Crown" size={18} className="text-purple-600" />
+                            プレミアム
+                            {creditInfo && creditInfo.tier === 'premium' && (
+                                <span className="ml-2 px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full">Premium会員</span>
+                            )}
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t border-purple-200">
+                            {creditInfo ? (
+                                <div className="space-y-4">
+                                    {/* 無料会員 */}
+                                    {creditInfo.tier === 'free' && (
+                                        <>
+                                            {creditInfo.freeTrialActive ? (
+                                                <div className="bg-white p-4 rounded-lg border border-blue-200">
+                                                    <div className="flex items-center gap-3 mb-3">
+                                                        <Icon name="Gift" size={24} className="text-blue-600" />
+                                                        <div>
+                                                            <p className="font-bold text-gray-800">無料トライアル中</p>
+                                                            <p className="text-sm text-gray-600">残り {creditInfo.freeTrialDaysRemaining} 日</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                                                        <p className="text-sm font-medium text-gray-700 mb-1">分析クレジット</p>
+                                                        <p className="text-2xl font-bold text-indigo-600">{creditInfo.remainingCredits} 回</p>
+                                                    </div>
+                                                    <button
+                                                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
+                                                        onClick={() => alert('サブスクリプション画面（実装予定）')}
+                                                    >
+                                                        月額740円でPremium登録
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                                                    <div className="flex items-center gap-3 mb-3">
+                                                        <Icon name="AlertCircle" size={24} className="text-red-600" />
+                                                        <div>
+                                                            <p className="font-bold text-gray-800">無料期間終了</p>
+                                                            <p className="text-sm text-gray-600">分析を続けるにはPremium登録が必要です</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <button
+                                                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
+                                                            onClick={() => alert('サブスクリプション画面（実装予定）')}
+                                                        >
+                                                            月額740円でPremium登録
+                                                        </button>
+                                                        <button
+                                                            className="w-full bg-gray-600 text-white font-bold py-3 rounded-lg hover:bg-gray-700"
+                                                            onClick={() => alert('クレジット購入画面（実装予定）')}
+                                                        >
+                                                            クレジット追加購入
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {/* Premium会員 */}
+                                    {creditInfo.tier === 'premium' && (
+                                        <div className="bg-white p-4 rounded-lg border border-purple-200">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <Icon name="Crown" size={24} className="text-purple-600" />
+                                                <div>
+                                                    <p className="font-bold text-gray-800">Premium会員</p>
+                                                    <p className="text-sm text-gray-600">すべての機能が利用可能</p>
+                                                </div>
+                                            </div>
+                                            <div className="bg-purple-50 p-3 rounded-lg mb-3">
+                                                <p className="text-sm font-medium text-gray-700 mb-1">今月の分析クレジット</p>
+                                                <p className="text-2xl font-bold text-purple-600">{creditInfo.remainingCredits} / 100 回</p>
+                                                <p className="text-xs text-gray-500 mt-1">毎月1日に100クレジット付与</p>
+                                            </div>
+                                            {creditInfo.remainingCredits < 20 && (
+                                                <button
+                                                    className="w-full bg-purple-600 text-white font-bold py-2 rounded-lg hover:bg-purple-700 mb-2"
+                                                    onClick={() => alert('クレジット追加購入画面（実装予定）')}
+                                                >
+                                                    クレジット追加購入
+                                                </button>
+                                            )}
+                                            <button
+                                                className="w-full bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300"
+                                                onClick={() => confirm('サブスクリプションを解約しますか？') && alert('解約処理（実装予定）')}
+                                            >
+                                                サブスクリプション解約
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* 開発モード表示 */}
+                                    {creditInfo.devMode && (
+                                        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                                            <p className="text-sm text-yellow-800">
+                                                <Icon name="Code" size={16} className="inline mr-1" />
+                                                開発モード: すべてのPremium機能が有効
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-600">読み込み中...</p>
+                            )}
+                        </div>
+                    </details>
+
+                    {/* アカウント */}
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="UserCircle" size={18} className="text-green-600" />
+                            アカウント
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t">
+                            <div className="space-y-4">
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">メールアドレス</label>
+                                            <p className="text-sm font-medium text-gray-800">{userProfile.email || '未設定'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">氏名</label>
+                                            <p className="text-sm font-medium text-gray-800">{userProfile.displayName || '未設定'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">登録日</label>
+                                            <p className="text-sm font-medium text-gray-800">
+                                                {userProfile.createdAt ? new Date(userProfile.createdAt).toLocaleDateString('ja-JP') : '不明'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700"
+                                    onClick={() => {
+                                        if (confirm('本当にログアウトしますか？')) {
+                                            auth.signOut();
+                                        }
+                                    }}
+                                >
+                                    ログアウト
+                                </button>
                             </div>
                         </div>
                     </details>

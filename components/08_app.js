@@ -47,6 +47,82 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
     );
 };
 
+// ===== Premium Restriction Modal Component =====
+const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
+    if (!show) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
+                {/* ヘッダー（紫グラデーション） */}
+                <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white text-center relative">
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition"
+                    >
+                        <Icon name="X" size={20} />
+                    </button>
+                    <div className="mb-3">
+                        <Icon name="Lock" size={48} className="mx-auto mb-2" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2">Premium会員限定</h2>
+                    <p className="text-sm opacity-90">{featureName}はPremium会員専用の機能です</p>
+                </div>
+
+                {/* コンテンツ */}
+                <div className="p-6 space-y-4">
+                    {/* Premium会員の特典 */}
+                    <div className="space-y-3">
+                        <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                            <Icon name="Crown" size={18} className="text-purple-600" />
+                            Premium会員になると...
+                        </h3>
+                        <div className="space-y-2">
+                            {[
+                                { icon: 'BarChart3', text: '毎月100回の分析クレジット', color: 'text-indigo-600' },
+                                { icon: 'BookOpen', text: 'PG BASE 教科書で理論を学習', color: 'text-green-600' },
+                                { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-purple-600' },
+                                { icon: 'BookTemplate', text: '無制限のテンプレート保存', color: 'text-blue-600' },
+                                { icon: 'Users', text: 'コミュニティで仲間と刺激し合う', color: 'text-pink-600' },
+                                { icon: 'Zap', text: 'ショートカット機能で効率アップ', color: 'text-yellow-600' }
+                            ].map((feature, idx) => (
+                                <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
+                                    <Icon name={feature.icon} size={18} className={feature.color} />
+                                    <span className="text-sm text-gray-700">{feature.text}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 価格表示 */}
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 text-center">
+                        <p className="text-sm text-gray-600 mb-1">月額</p>
+                        <p className="text-4xl font-bold text-purple-600 mb-1">¥740</p>
+                        <p className="text-xs text-gray-600">1日あたり約24円</p>
+                    </div>
+
+                    {/* CTA ボタン */}
+                    <button
+                        onClick={onUpgrade}
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg flex items-center justify-center gap-2"
+                    >
+                        <Icon name="Crown" size={20} />
+                        Premium会員に登録する
+                    </button>
+
+                    {/* 閉じる */}
+                    <button
+                        onClick={onClose}
+                        className="w-full text-gray-600 text-sm hover:text-gray-800 transition"
+                    >
+                        閉じる
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ===== Main App Component =====
         const App = () => {
             const [user, setUser] = useState(null);
@@ -101,6 +177,7 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
             const [showPGBaseView, setShowPGBaseView] = useState(false);
             const [showCOMYView, setShowCOMYView] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
+            const [showSubscriptionView, setShowSubscriptionView] = useState(false);
             const [showStageInfo, setShowStageInfo] = useState(false);
             const [showContinuitySupport, setShowContinuitySupport] = useState(false); // 継続支援システム
             const [aiSuggestion, setAiSuggestion] = useState(null); // オートパイロットのAI提案
@@ -115,6 +192,10 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
             const [isAdmin, setIsAdmin] = useState(false);
             const [earnedBadges, setEarnedBadges] = useState([]);
             const [lastUpdate, setLastUpdate] = useState(Date.now());
+
+            // Premium制限モーダル
+            const [showPremiumRestriction, setShowPremiumRestriction] = useState(false);
+            const [restrictedFeatureName, setRestrictedFeatureName] = useState('');
 
             // ショートカット設定
             const [shortcuts, setShortcuts] = useState(() => {
@@ -605,8 +686,26 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                 setShowPhotoInput(true);
             };
 
+            // Premium機能アクセスチェック
+            const checkPremiumAccess = async (featureName) => {
+                // 開発モードではPremium機能を許可
+                if (typeof DEV_PREMIUM_MODE !== 'undefined' && DEV_PREMIUM_MODE) {
+                    return true;
+                }
+
+                // Premium会員チェック
+                if (userProfile && userProfile.subscriptionTier === 'premium') {
+                    return true;
+                }
+
+                // 無料ユーザーは制限モーダルを表示
+                setRestrictedFeatureName(featureName);
+                setShowPremiumRestriction(true);
+                return false;
+            };
+
             // ショートカットアクション処理
-            const handleShortcutClick = (action) => {
+            const handleShortcutClick = async (action) => {
                 switch (action) {
                     case 'open_body_composition':
                         // 体組成セクションへスクロール（ルーティン下に余白を作る）
@@ -665,12 +764,16 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                         setBottomBarExpanded(false);
                         break;
                     case 'open_pgbase':
-                        setShowPGBaseView(true);
-                        setBottomBarExpanded(false);
+                        if (await checkPremiumAccess('PG BASE 教科書')) {
+                            setShowPGBaseView(true);
+                            setBottomBarExpanded(false);
+                        }
                         break;
                     case 'open_community':
-                        setShowCOMYView(true);
-                        setBottomBarExpanded(false);
+                        if (await checkPremiumAccess('コミュニティ')) {
+                            setShowCOMYView(true);
+                            setBottomBarExpanded(false);
+                        }
                         break;
                     case 'open_settings':
                         setShowSettings(true);
@@ -1201,6 +1304,10 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                             userProfile={userProfile}
                             dailyRecord={dailyRecord}
                             targetPFC={targetPFC}
+                            onUpgradeClick={() => {
+                                setShowAnalysisView(false);
+                                setShowSubscriptionView(true);
+                            }}
                         />
                     )}
 
@@ -2122,18 +2229,20 @@ AIコーチなどの高度な機能が解放されます。
 
                                 {/* ③PGBASE */}
                                 <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         if (!unlockedFeatures.includes('pg_base')) {
                                             alert('PGBASE機能は10日継続で開放されます');
                                             return;
                                         }
-                                        // 他のカテゴリを全て閉じる
-                                        setShowHistoryV10(false);
-                                        setShowCOMYView(false);
-                                        setShowSettings(false);
-                                        // PGBASEを開く
-                                        setShowPGBaseView(true);
-                                        setBottomBarExpanded(false);
+                                        if (await checkPremiumAccess('PG BASE 教科書')) {
+                                            // 他のカテゴリを全て閉じる
+                                            setShowHistoryV10(false);
+                                            setShowCOMYView(false);
+                                            setShowSettings(false);
+                                            // PGBASEを開く
+                                            setShowPGBaseView(true);
+                                            setBottomBarExpanded(false);
+                                        }
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showPGBaseView ? 'bg-cyan-100' : (unlockedFeatures.includes('pg_base') ? 'hover:bg-gray-50' : 'opacity-50')
@@ -2147,18 +2256,20 @@ AIコーチなどの高度な機能が解放されます。
 
                                 {/* ④COMY */}
                                 <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         if (!unlockedFeatures.includes('community')) {
                                             alert('COMY機能は30日継続で開放されます');
                                             return;
                                         }
-                                        // 他のカテゴリを全て閉じる
-                                        setShowHistoryV10(false);
-                                        setShowPGBaseView(false);
-                                        setShowSettings(false);
-                                        // COMYを開く
-                                        setShowCOMYView(true);
-                                        setBottomBarExpanded(false);
+                                        if (await checkPremiumAccess('コミュニティ')) {
+                                            // 他のカテゴリを全て閉じる
+                                            setShowHistoryV10(false);
+                                            setShowPGBaseView(false);
+                                            setShowSettings(false);
+                                            // COMYを開く
+                                            setShowCOMYView(true);
+                                            setBottomBarExpanded(false);
+                                        }
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showCOMYView ? 'bg-fuchsia-100' : (unlockedFeatures.includes('community') ? 'hover:bg-gray-50' : 'opacity-50')
@@ -2231,6 +2342,26 @@ AIコーチなどの高度な機能が解放されます。
                         targetSectionId="directive-section"
                         onClose={() => setShowDirectiveGuide(false)}
                     />
+
+                    {/* Premium制限モーダル */}
+                    <PremiumRestrictionModal
+                        show={showPremiumRestriction}
+                        featureName={restrictedFeatureName}
+                        onClose={() => setShowPremiumRestriction(false)}
+                        onUpgrade={() => {
+                            setShowPremiumRestriction(false);
+                            setShowSubscriptionView(true);
+                        }}
+                    />
+
+                    {/* サブスクリプション画面 */}
+                    {showSubscriptionView && (
+                        <SubscriptionView
+                            onClose={() => setShowSubscriptionView(false)}
+                            userId={user.uid}
+                            userProfile={userProfile}
+                        />
+                    )}
 
                     {/* Feedback Manager（グローバル） */}
                     <FeedbackManager />

@@ -1,5 +1,5 @@
 // ===== Analysis Components =====
-const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, setLastUpdate }) => {
+const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, setLastUpdate, onUpgradeClick }) => {
     const [loading, setLoading] = useState(true);
     const [analysis, setAnalysis] = useState(null);
     const [historicalInsights, setHistoricalInsights] = useState(null);
@@ -12,6 +12,11 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     const [conversationHistory, setConversationHistory] = useState([]);
     const [qaLoading, setQaLoading] = useState(false);
     const chatEndRef = useRef(null);
+
+    // クレジット関連state
+    const [creditInfo, setCreditInfo] = useState(null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [isFirstAnalysis, setIsFirstAnalysis] = useState(false);
 
     const getTodayDate = () => {
         const today = new Date();
@@ -35,6 +40,36 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
     const performAnalysis = async () => {
         setLoading(true);
+
+        let firstAnalysisFlag = false; // ローカル変数で保持
+
+        try {
+            // クレジットチェック
+            const accessCheck = await CreditService.canAccessAnalysis(userId, userProfile);
+            setCreditInfo(accessCheck);
+
+            if (!accessCheck.allowed) {
+                setLoading(false);
+                alert('分析クレジットが不足しています。Premium会員に登録するか、クレジットを購入してください。');
+                onClose();
+                return;
+            }
+
+            // クレジット消費
+            const consumeResult = await CreditService.consumeCredit(userId, userProfile);
+            firstAnalysisFlag = consumeResult.isFirstAnalysis; // ローカル変数に保存
+            setIsFirstAnalysis(consumeResult.isFirstAnalysis);
+            console.log('[Analysis] Credit consumed. Is first analysis:', consumeResult.isFirstAnalysis);
+
+        } catch (error) {
+            console.error('[Analysis] Credit error:', error);
+            setLoading(false);
+            if (error.message === 'NO_CREDITS') {
+                alert('分析クレジットが不足しています');
+                onClose();
+                return;
+            }
+        }
 
         const totalCalories = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
         const totalProtein = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
@@ -90,7 +125,8 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             setMicroLearningContent(microLearningTriggered);
         }
 
-        generateAIAnalysis(analysisData, insights);
+        // AI分析を実行（初回フラグを渡す）
+        generateAIAnalysis(analysisData, insights, firstAnalysisFlag);
     };
 
     const generateAIDirective = (currentAnalysis, aiText) => {
@@ -145,53 +181,48 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     };
 
     // AI分析生成
-    const generateAIAnalysis = async (currentAnalysis, insights) => {
+    const generateAIAnalysis = async (currentAnalysis, insights, isFirstAnalysis = false) => {
         setAiLoading(true);
 
         // 既存のAI分析をクリア
         setAiAnalysis(null);
 
-        // 過去30日分のログデータを準備
-        const dailyLogsForPrompt = [];
-        for (let i = 29; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            const record = await DataService.getDailyRecord(userId, dateStr);
+        console.log('[Analysis] generateAIAnalysis called with isFirstAnalysis:', isFirstAnalysis);
 
-            if (record && record.meals && record.meals.length > 0) {
-                const totalProtein = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
-                const totalFat = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
-                const totalCarbs = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
-                const totalCalories = (record.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
+        // 当日のデータのみを準備（デイリー分析用）
+        const today = getTodayDate();
+        const todayRecord = dailyRecord; // 既に取得済みの当日データを使用
 
-                dailyLogsForPrompt.push({
-                    date: dateStr,
-                    routine: record.routine || { type: "休息日", is_rest_day: true },
-                    diet: {
-                        protein_g: Math.round(totalProtein),
-                        fat_g: Math.round(totalFat),
-                        carbs_g: Math.round(totalCarbs),
-                        total_calories: Math.round(totalCalories),
-                        supplements: [] // サプリメントデータがあれば追加
-                    },
-                    workout: {
-                        exercise_count: (record.workouts || []).length,
-                        total_time_min: 0, // 必要に応じて計算
-                        exercises: (record.workouts || []).map(w => w.name).join(', ')
-                    },
-                    condition: {
-                        sleep_hours: record.conditions?.sleepHours || 0,
-                        sleep_quality: record.conditions?.sleepQuality || 0,
-                        appetite: record.conditions?.appetite || 0,
-                        gut_health: record.conditions?.digestion || 0,
-                        concentration: record.conditions?.focus || 0,
-                        stress_level: record.conditions?.stress || 0
-                    },
-                    memo: record.notes || null
-                });
-            }
-        }
+        // 当日のPFC計算
+        const totalProtein = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
+        const totalFat = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
+        const totalCarbs = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
+        const totalCalories = (todayRecord.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
+
+        // 当日データのみを構造化
+        const todayData = {
+            date: today,
+            routine: todayRecord.routine || { type: "休息日", is_rest_day: true },
+            diet: {
+                protein_g: Math.round(totalProtein),
+                fat_g: Math.round(totalFat),
+                carbs_g: Math.round(totalCarbs),
+                total_calories: Math.round(totalCalories)
+            },
+            workout: {
+                exercise_count: (todayRecord.workouts || []).length,
+                exercises: (todayRecord.workouts || []).map(w => w.name).slice(0, 5).join(', ') // 最大5種目
+            },
+            condition: {
+                sleep_hours: todayRecord.conditions?.sleepHours || 0,
+                sleep_quality: todayRecord.conditions?.sleepQuality || 0,
+                appetite: todayRecord.conditions?.appetite || 0,
+                gut_health: todayRecord.conditions?.digestion || 0,
+                concentration: todayRecord.conditions?.focus || 0,
+                stress_level: todayRecord.conditions?.stress || 0
+            },
+            memo: todayRecord.notes || null
+        };
 
         const promptData = {
             user_profile: {
@@ -201,8 +232,21 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
                 lean_body_mass_kg: userProfile.leanBodyMass || 60,
                 style: userProfile.style || "一般"
             },
-            daily_logs: dailyLogsForPrompt
+            today: todayData
         };
+
+        // 文字数制限チェック（6,000文字以内）
+        const promptDataStr = JSON.stringify(promptData, null, 2);
+        const charCount = promptDataStr.length;
+        console.log(`[Analysis] Prompt data character count: ${charCount}`);
+
+        if (charCount > 6000) {
+            console.warn('[Analysis] Prompt data exceeds 6000 characters, truncating...');
+            // 運動名を省略
+            todayData.workout.exercises = (todayRecord.workouts || []).map(w => w.name).slice(0, 3).join(', ');
+            // メモを省略
+            todayData.memo = null;
+        }
 
         // セクション1: パフォーマンスレポート
         const section1Prompt = `## 役割とゴール
@@ -239,51 +283,10 @@ ${JSON.stringify(promptData, null, 2)}
 - 「承知いたしました」などの返答は不要
 `;
 
-        // セクション2: トレンド分析
+        console.log('[Analysis] Section1 prompt length:', section1Prompt.length, 'characters');
+
+        // セクション2: 指示書プラン生成
         const section2Prompt = `## 役割とゴール
-
-あなたは、データサイエンティスト兼エリートパーソナルコーチです。
-ユーザーのLBM向上のため、過去のデータから勝ちパターンと負けパターンを分析します。
-
-## インプットデータ
-
-${JSON.stringify(promptData, null, 2)}
-
-## データ不足時の対応
-
-もし過去のdaily_logsが空または不足している場合:
-- 「現時点では過去データが不足しているため、トレンド分析はできません」と正直に伝える
-- データが蓄積された後に分析できることを説明する
-- 今後のデータ記録を続けることを推奨する
-
-## タスク
-
-過去30日分のデータを基に、中長期トレンド分析を生成してください。
-データが十分にある場合のみ、パターン分析を行ってください。
-
-### 出力形式（この形式を厳守）
-
-② 中長期トレンド分析 (LBM向上への道筋)
-
-📈 過去7日間の勝ちパターン:
-- [相関関係に基づき、パフォーマンスが良かった際の共通点を記述]
-- [もう一つの共通点を記述]
-
-📉 過去30日間の負けパターン:
-- [相関関係に基づき、パフォーマンスが低下した際の共通点を記述]
-- [もう一つの共通点を記述]
-
-重要:
-- 箇条書きには「-」のみを使用（アスタリスク不可）
-- 各項目は1文1行で完結
-- ルーティン（例：「脚の日」「胸の日」）による違いを考慮
-- 観測可能な事実と結果の相関関係に焦点を当てる
-- 「承知いたしました」などの返答は不要
-- 簡潔に記述
-`;
-
-        // セクション3: 指示書プラン生成
-        const section3Prompt = `## 役割とゴール
 
 あなたは、エリートパーソナルコーチです。
 ユーザーのLBM向上のため、明日実行すべき具体的なアクションプランを1行で提案します。
@@ -305,7 +308,7 @@ ${dailyRecord.notes ? `
 
 ### 出力形式（この形式を厳守）
 
-③ 明日の指示書プラン
+② 明日の指示書プラン
 
 - [食事/運動/睡眠のいずれかのカテゴリーに関する、具体的で実行可能な1行のアクションプラン]
 
@@ -323,6 +326,8 @@ ${dailyRecord.notes ? `
 - 「承知いたしました」などの返答は不要
 `;
 
+        console.log('[Analysis] Section2 prompt length:', section2Prompt.length, 'characters');
+
         try {
             let fullAnalysis = '';
 
@@ -335,19 +340,10 @@ ${dailyRecord.notes ? `
                 throw new Error(response1.error || 'セクション1の生成に失敗');
             }
 
-            // セクション2: トレンド分析を生成
+            // セクション2: 指示書プランを生成
             const response2 = await GeminiAPI.sendMessage(section2Prompt, [], userProfile, 'gemini-2.5-pro');
             if (response2.success) {
-                fullAnalysis += response2.text + '\n\n---\n\n';
-                setAiAnalysis(fullAnalysis);
-            } else {
-                throw new Error(response2.error || 'セクション2の生成に失敗');
-            }
-
-            // セクション3: 指示書プランを生成
-            const response3 = await GeminiAPI.sendMessage(section3Prompt, [], userProfile, 'gemini-2.5-pro');
-            if (response3.success) {
-                fullAnalysis += response3.text;
+                fullAnalysis += response2.text;
                 setAiAnalysis(fullAnalysis);
 
                 // AI分析の結果をLocalStorageに永続化
@@ -359,7 +355,7 @@ ${dailyRecord.notes ? `
                 }
 
                 // 指示書プランを翌日の指示書として保存
-                const directiveText = response3.text;
+                const directiveText = response2.text;
                 // 「- 【カテゴリー】内容」の形式から抽出
                 const directiveMatch = directiveText.match(/【(.+?)】(.+)/);
                 if (directiveMatch) {
@@ -401,7 +397,7 @@ ${dailyRecord.notes ? `
                     window.dispatchEvent(new Event('directiveUpdated'));
                 }
             } else {
-                throw new Error(response3.error || 'セクション3の生成に失敗');
+                throw new Error(response2.error || 'セクション2の生成に失敗');
             }
         } catch (error) {
             console.error('AI分析エラー:', error);
@@ -409,6 +405,14 @@ ${dailyRecord.notes ? `
         }
 
         setAiLoading(false);
+
+        // 初回分析後に販促モーダルを表示（AI分析完了後）
+        if (isFirstAnalysis && !DEV_PREMIUM_MODE) {
+            console.log('[Analysis] First analysis completed. Showing upgrade modal in 2 seconds...');
+            setTimeout(() => {
+                setShowUpgradeModal(true);
+            }, 2000); // 2秒後に表示
+        }
     };
 
     // 対話型Q&A機能
@@ -659,6 +663,35 @@ ${aiAnalysis || '（レポート生成中または未生成）'}
                 </button>
             </header>
 
+            {/* クレジット表示バー */}
+            {creditInfo && (
+                <div className={`px-4 py-2 border-b flex items-center justify-between ${
+                    creditInfo.tier === 'premium' ? 'bg-gradient-to-r from-purple-50 to-pink-50' : 'bg-blue-50'
+                }`}>
+                    <div className="flex items-center gap-2">
+                        {creditInfo.tier === 'premium' ? (
+                            <Icon name="Crown" size={16} className="text-purple-600" />
+                        ) : (
+                            <Icon name="Gift" size={16} className="text-blue-600" />
+                        )}
+                        <span className="text-sm font-medium text-gray-700">
+                            {creditInfo.tier === 'premium' ? 'Premium会員' : '無料トライアル'}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600">分析クレジット:</span>
+                        <span className={`text-sm font-bold ${
+                            creditInfo.remainingCredits <= 3 ? 'text-red-600' :
+                            creditInfo.remainingCredits <= 10 ? 'text-orange-600' :
+                            'text-green-600'
+                        }`}>
+                            {creditInfo.devMode ? '∞' : creditInfo.remainingCredits}
+                            {creditInfo.tier === 'premium' && !creditInfo.devMode && ' / 100'}
+                        </span>
+                    </div>
+                </div>
+            )}
+
             <div className="p-4 flex-grow overflow-y-auto space-y-3">
                 {/* 日付バッジ */}
                 <div className="flex justify-center">
@@ -819,6 +852,98 @@ ${aiAnalysis || '（レポート生成中または未生成）'}
                     dailyRecord={dailyRecord}
                     analysis={analysis}
                 />
+            )}
+
+            {/* 初回分析後の販促モーダル */}
+            {showUpgradeModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
+                        {/* ヘッダー（紫グラデーション） */}
+                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white text-center relative">
+                            <button
+                                onClick={() => setShowUpgradeModal(false)}
+                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition"
+                            >
+                                <Icon name="X" size={20} />
+                            </button>
+                            <div className="mb-3">
+                                <Icon name="Crown" size={48} className="mx-auto mb-2" />
+                            </div>
+                            <h2 className="text-2xl font-bold mb-2">🎉 初回分析完了！</h2>
+                            <p className="text-sm opacity-90">AIがあなた専用の分析レポートを作成しました</p>
+                        </div>
+
+                        {/* コンテンツ */}
+                        <div className="p-6 space-y-4">
+                            {/* 無料トライアル残り回数 */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                                <p className="text-sm text-gray-700 mb-1">無料トライアル残り</p>
+                                <p className="text-3xl font-bold text-blue-600">
+                                    {creditInfo ? creditInfo.remainingCredits : 6} 回
+                                </p>
+                                <p className="text-xs text-gray-600 mt-1">
+                                    {creditInfo && creditInfo.freeTrialDaysRemaining && (
+                                        <>あと {creditInfo.freeTrialDaysRemaining} 日間</>
+                                    )}
+                                </p>
+                            </div>
+
+                            {/* Premium会員の特典 */}
+                            <div className="space-y-3">
+                                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                                    <Icon name="Sparkles" size={18} className="text-purple-600" />
+                                    Premium会員になると...
+                                </h3>
+                                <div className="space-y-2">
+                                    {[
+                                        { icon: 'BarChart3', text: '毎月100回の分析クレジット', color: 'text-indigo-600' },
+                                        { icon: 'BookOpen', text: 'PG BASE 教科書で理論を学習', color: 'text-green-600' },
+                                        { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-purple-600' },
+                                        { icon: 'BookTemplate', text: '無制限のテンプレート保存', color: 'text-blue-600' },
+                                        { icon: 'Users', text: 'コミュニティで仲間と刺激し合う', color: 'text-pink-600' },
+                                        { icon: 'Zap', text: 'ショートカット機能で効率アップ', color: 'text-yellow-600' }
+                                    ].map((feature, idx) => (
+                                        <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
+                                            <Icon name={feature.icon} size={18} className={feature.color} />
+                                            <span className="text-sm text-gray-700">{feature.text}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 価格表示 */}
+                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 text-center">
+                                <p className="text-sm text-gray-600 mb-1">月額</p>
+                                <p className="text-4xl font-bold text-purple-600 mb-1">¥740</p>
+                                <p className="text-xs text-gray-600">1日あたり約24円</p>
+                            </div>
+
+                            {/* CTA ボタン */}
+                            <button
+                                onClick={() => {
+                                    setShowUpgradeModal(false);
+                                    if (onUpgradeClick) {
+                                        onUpgradeClick();
+                                    } else {
+                                        alert('サブスクリプション画面は準備中です');
+                                    }
+                                }}
+                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg flex items-center justify-center gap-2"
+                            >
+                                <Icon name="Crown" size={20} />
+                                Premium会員に登録する
+                            </button>
+
+                            {/* 後で */}
+                            <button
+                                onClick={() => setShowUpgradeModal(false)}
+                                className="w-full text-gray-600 text-sm hover:text-gray-800 transition"
+                            >
+                                後で確認する
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

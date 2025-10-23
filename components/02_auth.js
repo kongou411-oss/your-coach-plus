@@ -91,6 +91,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
     const [step, setStep] = useState(0); // Start from 0 for goal selection
     const [profile, setProfile] = useState({
         nickname: '',
+        displayName: '', // 氏名（フルネーム）
         gender: '男性',
         age: 25,
         height: 170,
@@ -109,14 +110,46 @@ const OnboardingScreen = ({ user, onComplete }) => {
         const bmr = LBMUtils.calculateBMR(lbm);
         const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier);
 
+        // 無料トライアル終了日（7日後）
+        const now = new Date();
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + 7);
+
         const completeProfile = {
             ...profile,
+            // 基本情報
+            email: user.email,
+            displayName: profile.displayName || profile.nickname || '',
+            age: profile.age || 25,
+            gender: profile.gender || '男性',
+
+            // 体組成
             leanBodyMass: lbm,
             bmr: bmr,
             tdeeBase: tdeeBase,
-            joinDate: new Date().toISOString()
+
+            // サブスクリプション情報
+            subscriptionTier: 'free',
+            subscriptionStatus: 'none',
+
+            // クレジットシステム（7回分付与）
+            analysisCredits: 7,
+            totalAnalysisUsed: 0,
+            currentMonthUsed: 0,
+            lifetimeCreditsPurchased: 0,
+
+            // 無料トライアル
+            freeTrialStartDate: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now),
+            freeTrialEndDate: DEV_MODE ? trialEndDate.toISOString() : firebase.firestore.Timestamp.fromDate(trialEndDate),
+            freeTrialCreditsUsed: 0,
+            isFreeTrialExpired: false,
+
+            // 登録日
+            joinDate: new Date().toISOString(),
+            createdAt: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now)
         };
 
+        console.log('[Auth] Creating new user with 7 free credits, trial ends:', trialEndDate);
         await DataService.saveUserProfile(user.uid, completeProfile);
         if (onComplete) onComplete(completeProfile);
     };
@@ -204,7 +237,19 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 {step === 1 && (
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium mb-2">ニックネーム</label>
+                            <label className="block text-sm font-medium mb-2">氏名</label>
+                            <input
+                                type="text"
+                                value={profile.displayName}
+                                onChange={(e) => setProfile({...profile, displayName: e.target.value})}
+                                className="w-full px-4 py-3 border rounded-lg"
+                                placeholder="例: 山田 太郎"
+                                required
+                            />
+                            <p className="text-xs text-gray-500 mt-1">※本名をご入力ください</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-2">ニックネーム（任意）</label>
                             <input
                                 type="text"
                                 value={profile.nickname}
@@ -212,6 +257,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 className="w-full px-4 py-3 border rounded-lg"
                                 placeholder="例: トレーニー太郎"
                             />
+                            <p className="text-xs text-gray-500 mt-1">※アプリ内で表示される名前</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-2">性別</label>

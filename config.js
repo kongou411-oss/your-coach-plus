@@ -4,6 +4,7 @@
 // 開発モード設定
 const DEV_MODE = true;
 const DEV_USER_ID = 'dev-user-001';
+const DEV_PREMIUM_MODE = true; // 開発中はPremium機能を有効化
 
 // Gemini API Key (本番環境では環境変数から読み込むこと)
 const GEMINI_API_KEY = 'AIzaSyAntR-6FU5HEB2aiUcjYHZczKIc4LUhqGI';

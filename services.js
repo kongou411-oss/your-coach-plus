@@ -894,7 +894,7 @@ ${userProfile ? `
                         temperature: 0.7,
                         topK: 40,
                         topP: 0.95,
-                        maxOutputTokens: 2048
+                        maxOutputTokens: 2048  // 出力トークン上限を元に戻す
                     },
                     safetySettings: safetySettings
                 })
@@ -917,6 +917,15 @@ ${userProfile ? `
 
             const data = await response.json();
 
+            // トークン使用量をログ出力
+            if (data.usageMetadata) {
+                console.log('[Gemini API] Token usage:', {
+                    promptTokens: data.usageMetadata.promptTokenCount,
+                    candidatesTokens: data.usageMetadata.candidatesTokenCount,
+                    totalTokens: data.usageMetadata.totalTokenCount
+                });
+            }
+
             if (!data || !data.candidates || data.candidates.length === 0) {
                 if (data.promptFeedback && data.promptFeedback.blockReason) {
                     return {
@@ -933,9 +942,11 @@ ${userProfile ? `
             const candidate = data.candidates[0];
 
             if (candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                const responseText = candidate.content.parts[0].text;
+                console.log('[Gemini API] Response length:', responseText.length, 'characters');
                 return {
                     success: true,
-                    text: candidate.content.parts[0].text
+                    text: responseText
                 };
             } else {
                 const reason = candidate.finishReason || '不明';
@@ -1067,5 +1078,165 @@ ${userProfile ? `
         });
 
         return { success: true, remaining: updatedCredits.remaining };
+    }
+};
+
+// ===== クレジット管理システム =====
+const CreditService = {
+    // 無料トライアル期間チェック
+    checkFreeTrialStatus: (userProfile) => {
+        if (userProfile.subscriptionTier === 'premium') {
+            return { isActive: false, daysRemaining: 0 };
+        }
+
+        const trialStart = userProfile.freeTrialStartDate;
+        const trialEnd = userProfile.freeTrialEndDate;
+        const now = new Date();
+
+        if (!trialStart || !trialEnd) {
+            return { isActive: false, daysRemaining: 0 };
+        }
+
+        // Firestore Timestampの場合
+        const trialEndDate = trialEnd.toDate ? trialEnd.toDate() : new Date(trialEnd);
+        const isActive = now < trialEndDate;
+        const daysRemaining = Math.ceil((trialEndDate - now) / (1000 * 60 * 60 * 24));
+
+        return { isActive, daysRemaining: isActive ? daysRemaining : 0 };
+    },
+
+    // 無料期間終了時の処理
+    expireFreeTrialIfNeeded: async (userId, userProfile) => {
+        const trialStatus = CreditService.checkFreeTrialStatus(userProfile);
+
+        if (!trialStatus.isActive && !userProfile.isFreeTrialExpired) {
+            // 無料期間終了：残りクレジットを0にする
+            await DataService.saveUserProfile(userId, {
+                ...userProfile,
+                analysisCredits: 0,
+                isFreeTrialExpired: true
+            });
+
+            console.log(`[Credit] User ${userId} free trial expired. Credits cleared.`);
+            return true; // 期限切れ処理実行
+        }
+
+        return false;
+    },
+
+    // 分析アクセス可否チェック
+    canAccessAnalysis: async (userId, userProfile) => {
+        // 開発モード：Premium機能有効化
+        if (typeof DEV_PREMIUM_MODE !== 'undefined' && DEV_PREMIUM_MODE) {
+            return {
+                allowed: true,
+                remainingCredits: 999,
+                tier: 'premium',
+                freeTrialActive: false,
+                freeTrialDaysRemaining: 0,
+                profile: userProfile,
+                devMode: true
+            };
+        }
+
+        // 無料期間チェック & 期限切れ処理
+        await CreditService.expireFreeTrialIfNeeded(userId, userProfile);
+
+        // 再取得（期限切れ処理で更新された可能性があるため）
+        const updatedProfile = await DataService.getUserProfile(userId);
+        const hasCredits = (updatedProfile.analysisCredits || 0) > 0;
+        const trialStatus = CreditService.checkFreeTrialStatus(updatedProfile);
+
+        return {
+            allowed: hasCredits,
+            remainingCredits: updatedProfile.analysisCredits || 0,
+            tier: updatedProfile.subscriptionTier,
+            freeTrialActive: trialStatus.isActive,
+            freeTrialDaysRemaining: trialStatus.daysRemaining,
+            profile: updatedProfile // 更新後のプロファイルを返す
+        };
+    },
+
+    // クレジット消費
+    consumeCredit: async (userId, userProfile) => {
+        // 開発モード：クレジット消費をスキップ
+        if (typeof DEV_PREMIUM_MODE !== 'undefined' && DEV_PREMIUM_MODE) {
+            console.log(`[Credit] DEV MODE: Skipping credit consumption`);
+            return {
+                success: true,
+                remainingCredits: 999,
+                isFirstAnalysis: (userProfile.totalAnalysisUsed || 0) === 0,
+                devMode: true
+            };
+        }
+
+        const accessCheck = await CreditService.canAccessAnalysis(userId, userProfile);
+
+        if (!accessCheck.allowed) {
+            throw new Error('NO_CREDITS');
+        }
+
+        const profile = accessCheck.profile;
+        const newCredits = profile.analysisCredits - 1;
+
+        await DataService.saveUserProfile(userId, {
+            ...profile,
+            analysisCredits: newCredits,
+            totalAnalysisUsed: (profile.totalAnalysisUsed || 0) + 1,
+            currentMonthUsed: (profile.currentMonthUsed || 0) + 1,
+            freeTrialCreditsUsed: profile.subscriptionTier === 'free'
+                ? (profile.freeTrialCreditsUsed || 0) + 1
+                : profile.freeTrialCreditsUsed
+        });
+
+        console.log(`[Credit] User ${userId} consumed 1 credit. Remaining: ${newCredits}`);
+
+        return {
+            success: true,
+            remainingCredits: newCredits,
+            isFirstAnalysis: (profile.totalAnalysisUsed || 0) === 0 // 初回分析判定
+        };
+    },
+
+    // Premium会員の月次クレジットリセット
+    checkAndResetMonthlyCredits: async (userId, userProfile) => {
+        if (userProfile.subscriptionTier !== 'premium') return false;
+
+        const now = new Date();
+        const lastReset = userProfile.creditsResetDate;
+
+        // Firestore Timestampの場合
+        const lastResetDate = lastReset && lastReset.toDate ? lastReset.toDate() : lastReset ? new Date(lastReset) : null;
+
+        // 今日が1日 かつ 前回リセットが先月以前
+        if (now.getDate() === 1 && (!lastResetDate || now.getMonth() !== lastResetDate.getMonth())) {
+            const timestamp = DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.now();
+
+            await DataService.saveUserProfile(userId, {
+                ...userProfile,
+                analysisCredits: 100, // 毎月100クレジット付与
+                currentMonthUsed: 0,
+                creditsResetDate: timestamp
+            });
+
+            console.log(`[Credit] Premium user ${userId} received 100 credits for new month`);
+            return true;
+        }
+
+        return false;
+    },
+
+    // クレジット追加購入
+    addPurchasedCredits: async (userId, amount) => {
+        const userProfile = await DataService.getUserProfile(userId);
+
+        await DataService.saveUserProfile(userId, {
+            ...userProfile,
+            analysisCredits: (userProfile.analysisCredits || 0) + amount,
+            lifetimeCreditsPurchased: (userProfile.lifetimeCreditsPurchased || 0) + amount
+        });
+
+        console.log(`[Credit] User ${userId} purchased ${amount} credits`);
+        return { success: true, totalCredits: (userProfile.analysisCredits || 0) + amount };
     }
 };
