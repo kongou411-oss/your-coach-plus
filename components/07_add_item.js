@@ -1,5 +1,5 @@
 // ===== Add Item Component =====
-        const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord }) => {
+        const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate }) => {
             // 食事とサプリを統合する場合、itemTypeで管理
             const isMealOrSupplement = type === 'meal' || type === 'supplement';
 
@@ -88,6 +88,41 @@
                     DataService.getSupplementTemplates(user.uid).then(setSupplementTemplates);
                 }
             }, [type]);
+
+            // テンプレート編集モードの初期化
+            useEffect(() => {
+                // テンプレート編集モードの場合、既存のテンプレートデータを読み込む
+                if (editingTemplate) {
+                    // カテゴリ展開状態を初期化（折りたたんだ状態にリセット）
+                    setExpandedCategories({});
+
+                    // 既存のテンプレートデータを各stateに設定
+                    if (type === 'meal' && editingTemplate.items) {
+                        setAddedItems(editingTemplate.items);
+                        setMealName(editingTemplate.name || '');
+                    } else if (type === 'workout' && editingTemplate.exercises) {
+                        setExercises(editingTemplate.exercises);
+                        setMealName(editingTemplate.name || '');
+                    }
+                }
+            }, [editingTemplate]);
+
+            // selectedItemが変更されたときにデフォルト量を設定
+            useEffect(() => {
+                if (selectedItem) {
+                    // servingSizeとservingUnitが定義されている場合はそれを使用
+                    if (selectedItem.servingSize !== undefined && selectedItem.servingUnit !== undefined) {
+                        setAmount(String(selectedItem.servingSize));
+                    } else {
+                        // 定義されていない場合は従来通り100gまたは1個
+                        if (type === 'supplement') {
+                            setAmount('1');
+                        } else {
+                            setAmount('100');
+                        }
+                    }
+                }
+            }, [selectedItem]);
 
             const renderConditionInput = () => {
                 const [condition, setCondition] = useState({
@@ -1053,6 +1088,20 @@
                         {addedItems.length > 0 && !selectedItem && (
                             <button
                                 onClick={async () => {
+                                    // テンプレート編集モードの場合
+                                    if (editingTemplate) {
+                                        const updatedTemplate = {
+                                            ...editingTemplate,
+                                            items: addedItems,
+                                            name: mealName || editingTemplate.name
+                                        };
+                                        await DataService.saveSupplementTemplate(user.uid, updatedTemplate);
+                                        alert('テンプレートを更新しました');
+                                        onClose();
+                                        return;
+                                    }
+
+                                    // 通常の記録モード
                                     const newSupplement = {
                                         id: Date.now(),
                                         time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
@@ -1078,7 +1127,7 @@
                                 }}
                                 className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                記録する
+                                {editingTemplate ? 'テンプレートを更新' : '記録する'}
                             </button>
                         )}
                     </div>
@@ -1171,6 +1220,20 @@
                         return;
                     }
 
+                    // テンプレート編集モードの場合
+                    if (editingTemplate) {
+                        const updatedTemplate = {
+                            ...editingTemplate,
+                            exercises: exercises,
+                            name: mealName || editingTemplate.name
+                        };
+                        await DataService.saveWorkoutTemplate(user.uid, updatedTemplate);
+                        alert('テンプレートを更新しました');
+                        onClose();
+                        return;
+                    }
+
+                    // 通常の記録モード
                     // 全ての種目を1つのworkoutオブジェクトにまとめる
                     const workoutData = {
                         id: Date.now(),
@@ -2568,7 +2631,7 @@
                                                             <div className="flex-1">
                                                                 <span className="text-xs font-medium">{item.name}</span>
                                                                 <span className="text-xs text-gray-600 ml-2">
-                                                                    {item.amount}
+                                                                    {item.amount}{item.unit || 'g'}
                                                                 </span>
                                                             </div>
                                                             <button
@@ -2671,11 +2734,19 @@
                                                     {Object.keys(subcategories).map(subCategory => (
                                                         <div key={subCategory} className="border-t border-gray-200">
                                                             {/* カテゴリ見出し */}
-                                                            <div className="w-full px-4 py-2 bg-gray-50">
+                                                            <button
+                                                                onClick={() => setExpandedCategories(prev => ({...prev, [subCategory]: !prev[subCategory]}))}
+                                                                className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
+                                                            >
                                                                 <span className="font-medium text-sm">{subCategory}</span>
-                                                            </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs text-gray-500">{subcategories[subCategory].length}品目</span>
+                                                                    <Icon name={expandedCategories[subCategory] ? 'ChevronDown' : 'ChevronRight'} size={18} />
+                                                                </div>
+                                                            </button>
 
-                                                            {/* アイテム一覧 - 常に展開表示 */}
+                                                            {/* アイテム一覧 - 折りたたみ可能 */}
+                                                            {expandedCategories[subCategory] && (
                                                             <div className="p-2 space-y-1 bg-gray-50">
                                                                 {subcategories[subCategory].map(foodName => {
                                                                     // カスタム食材・カスタム料理の場合はlocalStorageから取得
@@ -2772,6 +2843,7 @@
                                                                             );
                                                                         })}
                                                             </div>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -2818,12 +2890,18 @@
                                                     <p className="font-bold text-green-600">{selectedItem.carbs}g</p>
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-2">※100gあたり</p>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                ※{selectedItem.servingSize && selectedItem.servingUnit
+                                                    ? `${selectedItem.servingSize}${selectedItem.servingUnit}あたり`
+                                                    : '100gあたり'}
+                                            </p>
                                         </div>
 
                                         {/* 量調整 */}
                                         <div>
-                                            <label className="block text-sm font-medium mb-2">量 (g)</label>
+                                            <label className="block text-sm font-medium mb-2">
+                                                量 ({selectedItem.servingUnit || 'g'})
+                                            </label>
 
                                             {/* スライダー */}
                                             <div className="mb-3">
@@ -2840,12 +2918,12 @@
                                                     }}
                                                 />
                                                 <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                                    <span onClick={() => setAmount(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0g</span>
-                                                    <span onClick={() => setAmount(100)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">100g</span>
-                                                    <span onClick={() => setAmount(200)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">200g</span>
-                                                    <span onClick={() => setAmount(300)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">300g</span>
-                                                    <span onClick={() => setAmount(400)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">400g</span>
-                                                    <span onClick={() => setAmount(500)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">500g</span>
+                                                    <span onClick={() => setAmount(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0{selectedItem.servingUnit || 'g'}</span>
+                                                    <span onClick={() => setAmount(100)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">100{selectedItem.servingUnit || 'g'}</span>
+                                                    <span onClick={() => setAmount(200)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">200{selectedItem.servingUnit || 'g'}</span>
+                                                    <span onClick={() => setAmount(300)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">300{selectedItem.servingUnit || 'g'}</span>
+                                                    <span onClick={() => setAmount(400)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">400{selectedItem.servingUnit || 'g'}</span>
+                                                    <span onClick={() => setAmount(500)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">500{selectedItem.servingUnit || 'g'}</span>
                                                 </div>
                                             </div>
 
@@ -2926,7 +3004,9 @@
                                         <button
                                             onClick={() => {
                                                 const numAmount = Number(amount);
-                                                const ratio = numAmount / 100;
+                                                // servingSizeが定義されている場合はそれを基準に、なければ100gを基準にする
+                                                const baseAmount = selectedItem.servingSize || 100;
+                                                const ratio = numAmount / baseAmount;
 
                                                 const vitamins = {};
                                                 const minerals = {};
@@ -2956,6 +3036,7 @@
                                                 const newItem = {
                                                     name: selectedItem.name,
                                                     amount: numAmount,
+                                                    unit: selectedItem.servingUnit || 'g', // 単位を保存
                                                     protein: selectedItem.protein * ratio,
                                                     fat: selectedItem.fat * ratio,
                                                     carbs: selectedItem.carbs * ratio,
@@ -2975,7 +3056,8 @@
                                                 }
 
                                                 setSelectedItem(null);
-                                                setAmount('100');
+                                                // デフォルト量にリセット（selectedItemがnullになるとuseEffectは発火しないので手動で設定）
+                                                setAmount(type === 'supplement' ? '1' : '100');
                                             }}
                                             className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
                                         >
@@ -3616,6 +3698,20 @@
                                 <div className="flex gap-2 mt-3">
                                     <button
                                         onClick={async () => {
+                                            // テンプレート編集モードの場合
+                                            if (editingTemplate) {
+                                                const updatedTemplate = {
+                                                    ...editingTemplate,
+                                                    items: addedItems,
+                                                    name: mealName || editingTemplate.name
+                                                };
+                                                await DataService.saveMealTemplate(user.uid, updatedTemplate);
+                                                alert('テンプレートを更新しました');
+                                                onClose();
+                                                return;
+                                            }
+
+                                            // 通常の記録モード
                                             const totalCalories = addedItems.reduce((sum, item) => sum + item.calories, 0);
                                             const newMeal = {
                                                 id: Date.now(),
@@ -3637,7 +3733,7 @@
                                         }}
                                         className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
                                     >
-                                        記録
+                                        {editingTemplate ? 'テンプレートを更新' : '記録'}
                                     </button>
                                     <button
                                         onClick={() => {

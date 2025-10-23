@@ -59,6 +59,10 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
             const [showAddView, setShowAddView] = useState(false);
             const [addViewType, setAddViewType] = useState('meal');
             const [openedFromSettings, setOpenedFromSettings] = useState(false);
+            const [openedFromTemplateEditModal, setOpenedFromTemplateEditModal] = useState(false); // テンプレート編集モーダルから開いたか
+            const [reopenTemplateEditModal, setReopenTemplateEditModal] = useState(false); // AddItemView閉じた後にテンプレート編集モーダルを再度開く
+            const [reopenTemplateEditType, setReopenTemplateEditType] = useState(null); // 再度開くテンプレート編集モーダルのタイプ
+            const [editingTemplate, setEditingTemplate] = useState(null); // 編集対象のテンプレート
             const [dailyRecord, setDailyRecord] = useState({
                 meals: [],
                 workouts: [],
@@ -127,8 +131,8 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                     { side: 'left', position: 'middle', size: 'small', order: 5, enabled: false, action: 'open_settings', label: '設定', icon: 'Settings' },
                     { side: 'right', position: 'middle', size: 'small', order: 0, enabled: true, action: 'open_condition', label: 'コンディション', icon: 'HeartPulse' },
                     { side: 'right', position: 'middle', size: 'small', order: 1, enabled: true, action: 'open_idea', label: '閃き', icon: 'Lightbulb' },
-                    { side: 'right', position: 'middle', size: 'small', order: 2, enabled: true, action: 'open_analysis', label: '分析', icon: 'BarChart3' },
-                    { side: 'right', position: 'middle', size: 'small', order: 3, enabled: false, action: 'open_pgbase', label: 'PGBASE', icon: 'Database' },
+                    { side: 'right', position: 'middle', size: 'small', order: 2, enabled: true, action: 'open_analysis', label: '分析', icon: 'PieChart' },
+                    { side: 'right', position: 'middle', size: 'small', order: 3, enabled: false, action: 'open_pgbase', label: 'PGBASE', icon: 'BookOpen' },
                     { side: 'right', position: 'middle', size: 'small', order: 4, enabled: false, action: 'open_community', label: 'COMY', icon: 'Users' }
                 ];
             });
@@ -640,29 +644,37 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                     case 'open_meal':
                         setAddViewType('meal');
                         setShowAddView(true);
+                        setBottomBarExpanded(false);
                         break;
                     case 'open_meal_photo':
                         setAddViewType('meal');
                         setShowAddView(true);
+                        setBottomBarExpanded(false);
                         break;
                     case 'open_workout':
                         setAddViewType('workout');
                         setShowAddView(true);
+                        setBottomBarExpanded(false);
                         break;
                     case 'open_analysis':
                         setShowAnalysisView(true);
+                        setBottomBarExpanded(false);
                         break;
                     case 'open_history':
                         setShowHistoryV10(true);
+                        setBottomBarExpanded(false);
                         break;
                     case 'open_pgbase':
                         setShowPGBaseView(true);
+                        setBottomBarExpanded(false);
                         break;
                     case 'open_community':
                         setShowCOMYView(true);
+                        setBottomBarExpanded(false);
                         break;
                     case 'open_settings':
                         setShowSettings(true);
+                        setBottomBarExpanded(false);
                         break;
                 }
             };
@@ -1050,11 +1062,19 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                     {showAddView && (
                         <AddItemView
                             type={addViewType}
+                            editingTemplate={editingTemplate}
                             onClose={() => {
                                 setShowAddView(false);
+                                setEditingTemplate(null); // 編集テンプレートをクリア
                                 if (openedFromSettings) {
                                     setShowSettings(true);
                                     setOpenedFromSettings(false);
+                                    // テンプレート編集モーダルから開いた場合は、そのモーダルに戻るフラグを設定
+                                    if (openedFromTemplateEditModal) {
+                                        setReopenTemplateEditModal(true);
+                                        setReopenTemplateEditType(addViewType);
+                                        setOpenedFromTemplateEditModal(false);
+                                    }
                                 }
                             }}
                             predictedData={predictedData}
@@ -1836,11 +1856,13 @@ AIコーチなどの高度な機能が解放されます。
                             userId={user.uid}
                             usageDays={usageDays}
                             unlockedFeatures={unlockedFeatures}
-                            onOpenAddView={(type) => {
+                            onOpenAddView={(type, fromTemplateEdit = false, templateToEdit = null) => {
                                 setAddViewType(type);
                                 setShowAddView(true);
                                 setOpenedFromSettings(true);
-                                setShowSettings(false);
+                                setOpenedFromTemplateEditModal(fromTemplateEdit);
+                                setEditingTemplate(templateToEdit);
+                                setShowSettings(false); // 常に設定画面を閉じる
                             }}
                             darkMode={darkMode}
                             onToggleDarkMode={() => setDarkMode(!darkMode)}
@@ -1848,6 +1870,12 @@ AIコーチなどの高度な機能が解放されます。
                             onUpdateShortcuts={(updated) => {
                                 setShortcuts(updated);
                                 localStorage.setItem('chevronShortcuts', JSON.stringify(updated));
+                            }}
+                            reopenTemplateEditModal={reopenTemplateEditModal}
+                            reopenTemplateEditType={reopenTemplateEditType}
+                            onTemplateEditModalOpened={() => {
+                                setReopenTemplateEditModal(false);
+                                setReopenTemplateEditType(null);
                             }}
                         />
                     )}
@@ -1865,6 +1893,7 @@ AIコーチなどの高度な機能が解放されます。
                                     onClick={() => {
                                         setShowAIInput(true);
                                         setBottomBarMenu(null);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className="flex flex-col items-center gap-1 p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg hover:from-purple-600 hover:to-pink-600 transition shadow-md"
                                 >
@@ -1876,6 +1905,7 @@ AIコーチなどの高度な機能が解放されます。
                                         setAddViewType('meal');
                                         setShowAddView(true);
                                         setBottomBarMenu(null);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-green-100 transition"
                                 >
@@ -1887,6 +1917,7 @@ AIコーチなどの高度な機能が解放されます。
                                         setAddViewType('workout');
                                         setShowAddView(true);
                                         setBottomBarMenu(null);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-orange-100 transition"
                                 >
@@ -1898,6 +1929,7 @@ AIコーチなどの高度な機能が解放されます。
                                         setAddViewType('condition');
                                         setShowAddView(true);
                                         setBottomBarMenu(null);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-red-100 transition"
                                 >
@@ -1908,6 +1940,7 @@ AIコーチなどの高度な機能が解放されます。
                                     onClick={() => {
                                         setShowAnalysisView(true);
                                         setBottomBarMenu(null);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-indigo-100 transition"
                                 >
@@ -1929,6 +1962,7 @@ AIコーチなどの高度な機能が解放されます。
                                         }
                                         setShowHistoryView(true);
                                         setBottomBarMenu(null);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
                                         unlockedFeatures.includes('history_graph') ? 'hover:bg-purple-100' : 'opacity-50 cursor-not-allowed'
@@ -1948,6 +1982,7 @@ AIコーチなどの高度な機能が解放されます。
                                         }
                                         setShowPGBaseView(true);
                                         setBottomBarMenu(null);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
                                         unlockedFeatures.includes('pg_base') ? 'hover:bg-purple-100' : 'opacity-50 cursor-not-allowed'
@@ -1967,6 +2002,7 @@ AIコーチなどの高度な機能が解放されます。
                                         }
                                         setShowCOMYView(true);
                                         setBottomBarMenu(null);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
                                         unlockedFeatures.includes('community') ? 'hover:bg-purple-100' : 'opacity-50 cursor-not-allowed'
@@ -1989,6 +2025,7 @@ AIコーチなどの高度な機能が解放されます。
                                     onClick={() => {
                                         setShowSettings(true);
                                         setBottomBarMenu(null);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-orange-100 transition"
                                 >
@@ -1999,6 +2036,7 @@ AIコーチなどの高度な機能が解放されます。
                                     onClick={() => {
                                         setShowStageInfo(true);
                                         setBottomBarMenu(null);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-orange-100 transition"
                                 >
@@ -2068,8 +2106,9 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowPGBaseView(false);
                                         setShowCOMYView(false);
                                         setShowSettings(false);
-                                        // 履歴を開く（メニューは開いたまま）
+                                        // 履歴を開く
                                         setShowHistoryV10(true);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showHistoryV10 ? 'bg-purple-100' : 'hover:bg-gray-50'
@@ -2092,8 +2131,9 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowHistoryV10(false);
                                         setShowCOMYView(false);
                                         setShowSettings(false);
-                                        // PGBASEを開く（メニューは開いたまま）
+                                        // PGBASEを開く
                                         setShowPGBaseView(true);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showPGBaseView ? 'bg-cyan-100' : (unlockedFeatures.includes('pg_base') ? 'hover:bg-gray-50' : 'opacity-50')
@@ -2116,8 +2156,9 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowHistoryV10(false);
                                         setShowPGBaseView(false);
                                         setShowSettings(false);
-                                        // COMYを開く（メニューは開いたまま）
+                                        // COMYを開く
                                         setShowCOMYView(true);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showCOMYView ? 'bg-fuchsia-100' : (unlockedFeatures.includes('community') ? 'hover:bg-gray-50' : 'opacity-50')
@@ -2136,8 +2177,9 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowHistoryV10(false);
                                         setShowPGBaseView(false);
                                         setShowCOMYView(false);
-                                        // 設定を開く（メニューは開いたまま）
+                                        // 設定を開く
                                         setShowSettings(true);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showSettings ? 'bg-gray-200' : 'hover:bg-gray-50'

@@ -6,7 +6,7 @@ const TutorialView = ({ onClose, onComplete }) => {
 
 
 // ===== 設定画面 =====
-const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays, unlockedFeatures, onOpenAddView, darkMode, onToggleDarkMode, shortcuts = [], onUpdateShortcuts }) => {
+const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays, unlockedFeatures, onOpenAddView, darkMode, onToggleDarkMode, shortcuts = [], onUpdateShortcuts, reopenTemplateEditModal = false, reopenTemplateEditType = null, onTemplateEditModalOpened }) => {
     const [profile, setProfile] = useState({...userProfile});
     const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'data', 'advanced'
     const [showCustomMultiplierInput, setShowCustomMultiplierInput] = useState(false);
@@ -40,11 +40,23 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const [mealTemplates, setMealTemplates] = useState([]);
     const [workoutTemplates, setWorkoutTemplates] = useState([]);
     const [supplementTemplates, setSupplementTemplates] = useState([]);
+    const [showTemplateEditModal, setShowTemplateEditModal] = useState(false); // テンプレート編集モーダル表示
+    const [templateEditType, setTemplateEditType] = useState(null); // 'meal' or 'workout'
+    const [selectedTemplateForEdit, setSelectedTemplateForEdit] = useState(null); // 編集対象のテンプレート
 
     // テンプレート読み込み
     useEffect(() => {
         loadTemplates();
     }, []);
+
+    // AddItemViewから戻ってきた時にテンプレート編集モーダルを再度開く
+    useEffect(() => {
+        if (reopenTemplateEditModal && reopenTemplateEditType) {
+            setTemplateEditType(reopenTemplateEditType);
+            setShowTemplateEditModal(true);
+            onTemplateEditModalOpened && onTemplateEditModalOpened();
+        }
+    }, [reopenTemplateEditModal, reopenTemplateEditType]);
 
     const loadTemplates = async () => {
         const meals = await DataService.getMealTemplates(userId);
@@ -473,10 +485,10 @@ ${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
                                         {/* カロリー調整値 */}
                                         <div className="mt-3">
                                             <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
-                                                <span>
-                                                    カロリー調整値（kcal/日）
-                                                    <span className="text-xs text-gray-500 ml-2">メンテナンスから±調整</span>
-                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span>カロリー調整値（kcal/日）</span>
+                                                    <span className="text-xs text-gray-500 font-normal mt-0.5">メンテナンスから±調整</span>
+                                                </div>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -886,103 +898,139 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                     </div>
                                 </div>
 
-                                <details className="border rounded-lg bg-white">
-                                    <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium text-sm flex items-center gap-2">
-                                        選択可能な項目
-                                        <Icon name="ChevronDown" size={14} className="ml-auto text-gray-400" />
-                                    </summary>
-                                    <div className="p-3 pt-0 space-y-2">
-                                        {(() => {
-                                            const allItems = [
-                                                { action: 'open_body_composition', label: '体組成', icon: 'Activity', color: 'text-teal-600' },
-                                                { action: 'open_meal', label: '食事', icon: 'Utensils', color: 'text-green-600' },
-                                                { action: 'open_meal_photo', label: '写真解析', icon: 'Camera', color: 'text-green-600' },
-                                                { action: 'open_workout', label: '運動', icon: 'Dumbbell', color: 'text-orange-600' },
-                                                { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
-                                                { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
-                                                { action: 'open_analysis', label: '分析', icon: 'BarChart3', color: 'text-indigo-600' },
-                                                { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
-                                                { action: 'open_pgbase', label: 'PGBASE', icon: 'Database', color: 'text-cyan-600' },
-                                                { action: 'open_community', label: 'COMY', icon: 'Users', color: 'text-pink-600' },
-                                                { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
-                                            ];
+                                <div className="space-y-2">
+                                    {(() => {
+                                        const allItems = [
+                                            { action: 'open_body_composition', label: '体組成', icon: 'Activity', color: 'text-teal-600' },
+                                            { action: 'open_meal', label: '食事', icon: 'Utensils', color: 'text-green-600' },
+                                            { action: 'open_meal_photo', label: '写真解析', icon: 'Camera', color: 'text-green-600' },
+                                            { action: 'open_workout', label: '運動', icon: 'Dumbbell', color: 'text-orange-600' },
+                                            { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
+                                            { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
+                                            { action: 'open_analysis', label: '分析', icon: 'PieChart', color: 'text-indigo-600' },
+                                            { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
+                                            { action: 'open_pgbase', label: 'PGBASE', icon: 'BookOpen', color: 'text-cyan-600' },
+                                            { action: 'open_community', label: 'COMY', icon: 'Users', color: 'text-pink-600' },
+                                            { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
+                                        ];
 
-                                            // 左側で有効な項目をorder順にソート
-                                            const leftShortcuts = shortcuts
-                                                .filter(s => s.side === 'left' && s.enabled)
-                                                .sort((a, b) => (a.order || 0) - (b.order || 0))
-                                                .map(s => allItems.find(item => item.action === s.action))
-                                                .filter(Boolean);
+                                        // 左側の項目リストを取得
+                                        const leftShortcuts = shortcuts
+                                            .filter(s => s.side === 'left' && s.enabled)
+                                            .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-                                            const [draggedIndex, setDraggedIndex] = React.useState(null);
+                                        const [draggedIndex, setDraggedIndex] = React.useState(null);
 
-                                            return leftShortcuts.map((item, index) => {
-                                                const shortcut = shortcuts.find(s => s.action === item.action);
-                                                const isChecked = shortcut?.side === 'left' && shortcut?.enabled;
-                                                const isDragging = draggedIndex === index;
+                                        return (
+                                            <>
+                                                {leftShortcuts.map((shortcut, index) => {
+                                                    const item = allItems.find(i => i.action === shortcut.action);
+                                                    if (!item) return null;
+                                                    const isDragging = draggedIndex === index;
 
-                                                return (
-                                                    <div
-                                                        key={item.action}
-                                                        draggable
-                                                        onDragStart={(e) => {
-                                                            setDraggedIndex(index);
-                                                            e.dataTransfer.effectAllowed = 'move';
-                                                        }}
-                                                        onDragOver={(e) => {
-                                                            e.preventDefault();
-                                                            e.dataTransfer.dropEffect = 'move';
-                                                        }}
-                                                        onDrop={(e) => {
-                                                            e.preventDefault();
-                                                            if (draggedIndex === null || draggedIndex === index) return;
+                                                    return (
+                                                        <div
+                                                            key={`${shortcut.action}-${index}`}
+                                                            draggable
+                                                            onDragStart={(e) => {
+                                                                setDraggedIndex(index);
+                                                                e.dataTransfer.effectAllowed = 'move';
+                                                            }}
+                                                            onDragOver={(e) => {
+                                                                e.preventDefault();
+                                                                e.dataTransfer.dropEffect = 'move';
+                                                            }}
+                                                            onDrop={(e) => {
+                                                                e.preventDefault();
+                                                                if (draggedIndex === null || draggedIndex === index) return;
 
-                                                            // 並び替え処理
-                                                            const newLeftShortcuts = [...leftShortcuts];
-                                                            const [draggedItem] = newLeftShortcuts.splice(draggedIndex, 1);
-                                                            newLeftShortcuts.splice(index, 0, draggedItem);
+                                                                const updated = [...shortcuts];
+                                                                const leftItems = updated.filter(s => s.side === 'left' && s.enabled);
+                                                                const [draggedItem] = leftItems.splice(draggedIndex, 1);
+                                                                leftItems.splice(index, 0, draggedItem);
 
-                                                            // order値を更新
-                                                            const updated = shortcuts.map(s => {
-                                                                const newIndex = newLeftShortcuts.findIndex(item => item.action === s.action);
-                                                                if (newIndex !== -1 && s.side === 'left' && s.enabled) {
-                                                                    return { ...s, order: newIndex };
-                                                                }
-                                                                return s;
-                                                            });
+                                                                // order値を更新
+                                                                leftItems.forEach((item, i) => {
+                                                                    const idx = updated.findIndex(s => s === item);
+                                                                    if (idx !== -1) updated[idx].order = i;
+                                                                });
+
+                                                                onUpdateShortcuts(updated);
+                                                                setDraggedIndex(null);
+                                                            }}
+                                                            onDragEnd={() => setDraggedIndex(null)}
+                                                            className={`flex items-center gap-3 p-2 bg-white border rounded-lg ${
+                                                                isDragging ? 'opacity-50' : ''
+                                                            }`}
+                                                        >
+                                                            <Icon name="GripHorizontal" size={16} className="text-gray-400 cursor-move" />
+                                                            <Icon name={item.icon} size={18} className={item.color} />
+                                                            <span className="flex-1 text-sm font-medium text-gray-800">
+                                                                {item.label}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const updated = shortcuts.map(s =>
+                                                                        s === shortcut ? { ...s, enabled: false } : s
+                                                                    );
+                                                                    onUpdateShortcuts(updated);
+                                                                }}
+                                                                className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                            >
+                                                                <Icon name="X" size={16} />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+
+                                                {/* 項目を追加ボタン */}
+                                                <div className="flex items-center gap-2 p-2 bg-gray-50 border border-dashed rounded-lg">
+                                                    <Icon name="Plus" size={16} className="text-gray-400" />
+                                                    <select
+                                                        onChange={(e) => {
+                                                            if (!e.target.value) return;
+                                                            const action = e.target.value;
+                                                            const maxOrder = Math.max(...shortcuts.filter(s => s.side === 'left' && s.enabled).map(s => s.order || 0), -1);
+
+                                                            // 既存の項目を探す
+                                                            const existingIndex = shortcuts.findIndex(s => s.action === action);
+                                                            let updated;
+
+                                                            if (existingIndex !== -1) {
+                                                                // 既存項目を有効化
+                                                                updated = shortcuts.map((s, i) =>
+                                                                    i === existingIndex ? { ...s, side: 'left', enabled: true, order: maxOrder + 1 } : s
+                                                                );
+                                                            } else {
+                                                                // 新規追加
+                                                                updated = [...shortcuts, {
+                                                                    action,
+                                                                    side: 'left',
+                                                                    enabled: true,
+                                                                    order: maxOrder + 1,
+                                                                    position: 'middle',
+                                                                    size: 'small'
+                                                                }];
+                                                            }
 
                                                             onUpdateShortcuts(updated);
-                                                            setDraggedIndex(null);
+                                                            e.target.value = '';
                                                         }}
-                                                        onDragEnd={() => setDraggedIndex(null)}
-                                                        className={`flex items-center gap-3 p-2 rounded cursor-move ${
-                                                            isDragging ? 'opacity-50 bg-gray-100' : 'hover:bg-gray-50'
-                                                        }`}
+                                                        className="flex-1 px-3 py-1.5 text-sm border-none bg-transparent text-gray-600 cursor-pointer"
+                                                        defaultValue=""
                                                     >
-                                                        <Icon name="GripVertical" size={16} className="text-gray-400" />
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isChecked}
-                                                            onChange={(e) => {
-                                                                const updated = shortcuts.map(s =>
-                                                                    s.action === item.action
-                                                                        ? { ...s, side: 'left', enabled: e.target.checked }
-                                                                        : s
-                                                                );
-                                                                onUpdateShortcuts(updated);
-                                                            }}
-                                                            className="w-4 h-4"
-                                                        />
-                                                        <Icon name={item.icon} size={18} className={isChecked ? item.color : 'text-gray-400'} />
-                                                        <span className={`text-sm ${isChecked ? 'text-gray-800 font-medium' : 'text-gray-500'}`}>
-                                                            {item.label}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            });
-                                        })()}
-                                    </div>
-                                </details>
+                                                        <option value="">項目を追加...</option>
+                                                        {allItems.map(item => (
+                                                            <option key={item.action} value={item.action}>
+                                                                {item.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
                             </div>
 
                             {/* 右側ショートカット */}
@@ -1028,103 +1076,139 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                     </div>
                                 </div>
 
-                                <details className="border rounded-lg bg-white">
-                                    <summary className="cursor-pointer p-3 hover:bg-gray-50 font-medium text-sm flex items-center gap-2">
-                                        選択可能な項目
-                                        <Icon name="ChevronDown" size={14} className="ml-auto text-gray-400" />
-                                    </summary>
-                                    <div className="p-3 pt-0 space-y-2">
-                                        {(() => {
-                                            const allItems = [
-                                                { action: 'open_body_composition', label: '体組成', icon: 'Activity', color: 'text-teal-600' },
-                                                { action: 'open_meal', label: '食事', icon: 'Utensils', color: 'text-green-600' },
-                                                { action: 'open_meal_photo', label: '写真解析', icon: 'Camera', color: 'text-green-600' },
-                                                { action: 'open_workout', label: '運動', icon: 'Dumbbell', color: 'text-orange-600' },
-                                                { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
-                                                { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
-                                                { action: 'open_analysis', label: '分析', icon: 'BarChart3', color: 'text-indigo-600' },
-                                                { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
-                                                { action: 'open_pgbase', label: 'PGBASE', icon: 'Database', color: 'text-cyan-600' },
-                                                { action: 'open_community', label: 'COMY', icon: 'Users', color: 'text-pink-600' },
-                                                { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
-                                            ];
+                                <div className="space-y-2">
+                                    {(() => {
+                                        const allItems = [
+                                            { action: 'open_body_composition', label: '体組成', icon: 'Activity', color: 'text-teal-600' },
+                                            { action: 'open_meal', label: '食事', icon: 'Utensils', color: 'text-green-600' },
+                                            { action: 'open_meal_photo', label: '写真解析', icon: 'Camera', color: 'text-green-600' },
+                                            { action: 'open_workout', label: '運動', icon: 'Dumbbell', color: 'text-orange-600' },
+                                            { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
+                                            { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
+                                            { action: 'open_analysis', label: '分析', icon: 'PieChart', color: 'text-indigo-600' },
+                                            { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
+                                            { action: 'open_pgbase', label: 'PGBASE', icon: 'BookOpen', color: 'text-cyan-600' },
+                                            { action: 'open_community', label: 'COMY', icon: 'Users', color: 'text-pink-600' },
+                                            { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
+                                        ];
 
-                                            // 右側で有効な項目をorder順にソート
-                                            const rightShortcuts = shortcuts
-                                                .filter(s => s.side === 'right' && s.enabled)
-                                                .sort((a, b) => (a.order || 0) - (b.order || 0))
-                                                .map(s => allItems.find(item => item.action === s.action))
-                                                .filter(Boolean);
+                                        // 右側の項目リストを取得
+                                        const rightShortcuts = shortcuts
+                                            .filter(s => s.side === 'right' && s.enabled)
+                                            .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-                                            const [draggedIndex, setDraggedIndex] = React.useState(null);
+                                        const [draggedIndex, setDraggedIndex] = React.useState(null);
 
-                                            return rightShortcuts.map((item, index) => {
-                                                const shortcut = shortcuts.find(s => s.action === item.action);
-                                                const isChecked = shortcut?.side === 'right' && shortcut?.enabled;
-                                                const isDragging = draggedIndex === index;
+                                        return (
+                                            <>
+                                                {rightShortcuts.map((shortcut, index) => {
+                                                    const item = allItems.find(i => i.action === shortcut.action);
+                                                    if (!item) return null;
+                                                    const isDragging = draggedIndex === index;
 
-                                                return (
-                                                    <div
-                                                        key={item.action}
-                                                        draggable
-                                                        onDragStart={(e) => {
-                                                            setDraggedIndex(index);
-                                                            e.dataTransfer.effectAllowed = 'move';
-                                                        }}
-                                                        onDragOver={(e) => {
-                                                            e.preventDefault();
-                                                            e.dataTransfer.dropEffect = 'move';
-                                                        }}
-                                                        onDrop={(e) => {
-                                                            e.preventDefault();
-                                                            if (draggedIndex === null || draggedIndex === index) return;
+                                                    return (
+                                                        <div
+                                                            key={`${shortcut.action}-${index}`}
+                                                            draggable
+                                                            onDragStart={(e) => {
+                                                                setDraggedIndex(index);
+                                                                e.dataTransfer.effectAllowed = 'move';
+                                                            }}
+                                                            onDragOver={(e) => {
+                                                                e.preventDefault();
+                                                                e.dataTransfer.dropEffect = 'move';
+                                                            }}
+                                                            onDrop={(e) => {
+                                                                e.preventDefault();
+                                                                if (draggedIndex === null || draggedIndex === index) return;
 
-                                                            // 並び替え処理
-                                                            const newRightShortcuts = [...rightShortcuts];
-                                                            const [draggedItem] = newRightShortcuts.splice(draggedIndex, 1);
-                                                            newRightShortcuts.splice(index, 0, draggedItem);
+                                                                const updated = [...shortcuts];
+                                                                const rightItems = updated.filter(s => s.side === 'right' && s.enabled);
+                                                                const [draggedItem] = rightItems.splice(draggedIndex, 1);
+                                                                rightItems.splice(index, 0, draggedItem);
 
-                                                            // order値を更新
-                                                            const updated = shortcuts.map(s => {
-                                                                const newIndex = newRightShortcuts.findIndex(item => item.action === s.action);
-                                                                if (newIndex !== -1 && s.side === 'right' && s.enabled) {
-                                                                    return { ...s, order: newIndex };
-                                                                }
-                                                                return s;
-                                                            });
+                                                                // order値を更新
+                                                                rightItems.forEach((item, i) => {
+                                                                    const idx = updated.findIndex(s => s === item);
+                                                                    if (idx !== -1) updated[idx].order = i;
+                                                                });
+
+                                                                onUpdateShortcuts(updated);
+                                                                setDraggedIndex(null);
+                                                            }}
+                                                            onDragEnd={() => setDraggedIndex(null)}
+                                                            className={`flex items-center gap-3 p-2 bg-white border rounded-lg ${
+                                                                isDragging ? 'opacity-50' : ''
+                                                            }`}
+                                                        >
+                                                            <Icon name="GripHorizontal" size={16} className="text-gray-400 cursor-move" />
+                                                            <Icon name={item.icon} size={18} className={item.color} />
+                                                            <span className="flex-1 text-sm font-medium text-gray-800">
+                                                                {item.label}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const updated = shortcuts.map(s =>
+                                                                        s === shortcut ? { ...s, enabled: false } : s
+                                                                    );
+                                                                    onUpdateShortcuts(updated);
+                                                                }}
+                                                                className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                            >
+                                                                <Icon name="X" size={16} />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+
+                                                {/* 項目を追加ボタン */}
+                                                <div className="flex items-center gap-2 p-2 bg-gray-50 border border-dashed rounded-lg">
+                                                    <Icon name="Plus" size={16} className="text-gray-400" />
+                                                    <select
+                                                        onChange={(e) => {
+                                                            if (!e.target.value) return;
+                                                            const action = e.target.value;
+                                                            const maxOrder = Math.max(...shortcuts.filter(s => s.side === 'right' && s.enabled).map(s => s.order || 0), -1);
+
+                                                            // 既存の項目を探す
+                                                            const existingIndex = shortcuts.findIndex(s => s.action === action);
+                                                            let updated;
+
+                                                            if (existingIndex !== -1) {
+                                                                // 既存項目を有効化
+                                                                updated = shortcuts.map((s, i) =>
+                                                                    i === existingIndex ? { ...s, side: 'right', enabled: true, order: maxOrder + 1 } : s
+                                                                );
+                                                            } else {
+                                                                // 新規追加
+                                                                updated = [...shortcuts, {
+                                                                    action,
+                                                                    side: 'right',
+                                                                    enabled: true,
+                                                                    order: maxOrder + 1,
+                                                                    position: 'middle',
+                                                                    size: 'small'
+                                                                }];
+                                                            }
 
                                                             onUpdateShortcuts(updated);
-                                                            setDraggedIndex(null);
+                                                            e.target.value = '';
                                                         }}
-                                                        onDragEnd={() => setDraggedIndex(null)}
-                                                        className={`flex items-center gap-3 p-2 rounded cursor-move ${
-                                                            isDragging ? 'opacity-50 bg-gray-100' : 'hover:bg-gray-50'
-                                                        }`}
+                                                        className="flex-1 px-3 py-1.5 text-sm border-none bg-transparent text-gray-600 cursor-pointer"
+                                                        defaultValue=""
                                                     >
-                                                        <Icon name="GripVertical" size={16} className="text-gray-400" />
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isChecked}
-                                                            onChange={(e) => {
-                                                                const updated = shortcuts.map(s =>
-                                                                    s.action === item.action
-                                                                        ? { ...s, side: 'right', enabled: e.target.checked }
-                                                                        : s
-                                                                );
-                                                                onUpdateShortcuts(updated);
-                                                            }}
-                                                            className="w-4 h-4"
-                                                        />
-                                                        <Icon name={item.icon} size={18} className={isChecked ? item.color : 'text-gray-400'} />
-                                                        <span className={`text-sm ${isChecked ? 'text-gray-800 font-medium' : 'text-gray-500'}`}>
-                                                            {item.label}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            });
-                                        })()}
-                                    </div>
-                                </details>
+                                                        <option value="">項目を追加...</option>
+                                                        {allItems.map(item => (
+                                                            <option key={item.action} value={item.action}>
+                                                                {item.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
                             </div>
                         </div>
                     </details>
@@ -1178,8 +1262,8 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
-                                                                    // TODO: 編集機能の実装
-                                                                    alert('編集機能は開発中です');
+                                                                    setTemplateEditType('meal');
+                                                                    setShowTemplateEditModal(true);
                                                                 }}
                                                                 className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
                                                             >
@@ -1269,8 +1353,8 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
-                                                                    // TODO: 編集機能の実装
-                                                                    alert('編集機能は開発中です');
+                                                                    setTemplateEditType('workout');
+                                                                    setShowTemplateEditModal(true);
                                                                 }}
                                                                 className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
                                                             >
@@ -2072,6 +2156,204 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
             </div>
             </div>
         </div>
+
+        {/* テンプレート編集選択モーダル */}
+        {showTemplateEditModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                    {/* ヘッダー */}
+                    <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center rounded-t-2xl">
+                        <h3 className="text-lg font-bold">
+                            {templateEditType === 'meal' ? '食事テンプレート編集' : '運動テンプレート編集'}
+                        </h3>
+                        <button
+                            onClick={() => {
+                                setShowTemplateEditModal(false);
+                                setTemplateEditType(null);
+                            }}
+                            className="text-white hover:text-gray-200 transition"
+                        >
+                            <Icon name="X" size={24} />
+                        </button>
+                    </div>
+
+                    {/* コンテンツ */}
+                    <div className="p-4 space-y-3">
+                        {/* 新しいテンプレートを作成 */}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setShowTemplateEditModal(false);
+                                onOpenAddView && onOpenAddView(templateEditType === 'meal' ? 'meal' : 'workout', true);
+                            }}
+                            className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                        >
+                            <Icon name="Plus" size={32} />
+                            <div className="text-left flex-1">
+                                <div className="font-bold text-base">新しいテンプレートを作成</div>
+                                <div className="text-xs text-gray-500 mt-0.5">新規作成画面を開く</div>
+                            </div>
+                        </button>
+
+                        {/* テンプレート一覧 */}
+                        {templateEditType === 'meal' && mealTemplates.length > 0 && (
+                            <div className="mt-4 pt-4 border-t">
+                                <h4 className="font-medium text-sm text-gray-700 mb-2">保存済みテンプレート</h4>
+                                <div className="space-y-2">
+                                    {mealTemplates.map(template => {
+                                        const totalCals = (template.items || []).reduce((sum, i) => sum + (i.calories || 0), 0);
+                                        const totalProtein = (template.items || []).reduce((sum, i) => sum + (i.protein || 0), 0);
+                                        const totalFat = (template.items || []).reduce((sum, i) => sum + (i.fat || 0), 0);
+                                        const totalCarbs = (template.items || []).reduce((sum, i) => sum + (i.carbs || 0), 0);
+
+                                        return (
+                                            <details key={template.id} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                                <summary className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 -m-3 p-3 rounded-lg">
+                                                    <Icon name="Utensils" size={18} className="text-green-600" />
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-sm">{template.name}</p>
+                                                        <p className="text-xs text-gray-600">
+                                                            {template.items?.length || 0}品目 | {Math.round(totalCals)}kcal
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                setShowTemplateEditModal(false);
+                                                                onOpenAddView && onOpenAddView('meal', true, template);
+                                                            }}
+                                                            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                        >
+                                                            <Icon name="Edit" size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.preventDefault();
+                                                                if (confirm(`「${template.name}」を削除しますか？`)) {
+                                                                    await DataService.deleteMealTemplate(userId, template.id);
+                                                                    await loadTemplates();
+                                                                }
+                                                            }}
+                                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                        >
+                                                            <Icon name="Trash2" size={16} />
+                                                        </button>
+                                                    </div>
+                                                </summary>
+                                                <div className="mt-3 space-y-2 border-t pt-3">
+                                                    <div className="grid grid-cols-4 gap-2 text-xs bg-white p-2 rounded">
+                                                        <div className="text-center">
+                                                            <div className="font-medium text-gray-500">カロリー</div>
+                                                            <div className="font-bold">{Math.round(totalCals)}</div>
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <div className="font-medium text-gray-500">P</div>
+                                                            <div className="font-bold">{totalProtein.toFixed(1)}g</div>
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <div className="font-medium text-gray-500">F</div>
+                                                            <div className="font-bold">{totalFat.toFixed(1)}g</div>
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <div className="font-medium text-gray-500">C</div>
+                                                            <div className="font-bold">{totalCarbs.toFixed(1)}g</div>
+                                                        </div>
+                                                    </div>
+                                                    {(template.items || []).map((item, idx) => (
+                                                        <div key={idx} className="text-xs bg-white p-2 rounded flex justify-between">
+                                                            <span className="font-medium">{item.name} ({item.amount}g)</span>
+                                                            <span className="text-gray-600">
+                                                                {Math.round(item.calories)}kcal | P{item.protein.toFixed(1)} F{item.fat.toFixed(1)} C{item.carbs.toFixed(1)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </details>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {templateEditType === 'workout' && workoutTemplates.length > 0 && (
+                            <div className="mt-4 pt-4 border-t">
+                                <h4 className="font-medium text-sm text-gray-700 mb-2">保存済みテンプレート</h4>
+                                <div className="space-y-2">
+                                    {workoutTemplates.map(template => {
+                                        // 新形式（複数種目）と旧形式（単一種目）の両方に対応
+                                        const exercises = template.exercises || (template.exercise ? [{ exercise: template.exercise, sets: template.sets || [] }] : []);
+                                        const totalCals = exercises.reduce((sum, ex) => sum + (ex.sets || []).reduce((s, set) => s + (set.calories || 0), 0), 0);
+
+                                        return (
+                                            <details key={template.id} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                                <summary className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 -m-3 p-3 rounded-lg">
+                                                    <Icon name="Dumbbell" size={18} className="text-orange-600" />
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-sm">{template.name}</p>
+                                                        <p className="text-xs text-gray-600">
+                                                            {exercises.length}種目 | {exercises.reduce((sum, ex) => sum + (ex.sets?.length || 0), 0)}セット | {Math.round(totalCals)}kcal
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                setShowTemplateEditModal(false);
+                                                                onOpenAddView && onOpenAddView('workout', true, template);
+                                                            }}
+                                                            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                        >
+                                                            <Icon name="Edit" size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.preventDefault();
+                                                                if (confirm(`「${template.name}」を削除しますか？`)) {
+                                                                    await DataService.deleteWorkoutTemplate(userId, template.id);
+                                                                    await loadTemplates();
+                                                                }
+                                                            }}
+                                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                        >
+                                                            <Icon name="Trash2" size={16} />
+                                                        </button>
+                                                    </div>
+                                                </summary>
+                                                <div className="mt-3 space-y-3 border-t pt-3">
+                                                    {exercises.map((ex, exIdx) => (
+                                                        <div key={exIdx} className="bg-white p-2 rounded">
+                                                            <p className="font-medium text-xs text-gray-700 mb-2">{ex.exercise?.name || '種目不明'}</p>
+                                                            <div className="space-y-1">
+                                                                {(ex.sets || []).map((set, idx) => (
+                                                                    <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
+                                                                        <div className="flex justify-between mb-1">
+                                                                            <span className="font-medium">セット{idx + 1}</span>
+                                                                            <span className="text-gray-600">{Math.round(set.calories || 0)}kcal</span>
+                                                                        </div>
+                                                                        <div className="text-gray-600 space-x-2">
+                                                                            <span>{set.weight}kg</span>
+                                                                            <span>×{set.reps}回</span>
+                                                                            {set.distance > 0 && <span>| {set.distance}m</span>}
+                                                                            <span>| TUT {set.tut}秒</span>
+                                                                            <span>| Rest {set.restInterval}秒</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </details>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
 
         {/* 情報モーダル */}
         {infoModal.show && (
