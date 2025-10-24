@@ -1109,26 +1109,33 @@ ${userProfile ? `
 
 // ===== クレジット管理システム =====
 const CreditService = {
-    // 無料トライアル期間チェック
+    // 7日間無料トライアル期間チェック
     checkFreeTrialStatus: (userProfile) => {
         if (userProfile.subscriptionTier === 'premium') {
-            return { isActive: false, daysRemaining: 0 };
+            return { isActive: false, daysRemaining: 0, isInTrial: false };
         }
 
-        const trialStart = userProfile.freeTrialStartDate;
-        const trialEnd = userProfile.freeTrialEndDate;
+        // 登録日から7日間が無料トライアル期間
+        const registrationDate = userProfile.registrationDate ||
+            (DEV_MODE ? localStorage.getItem(STORAGE_KEYS.REGISTRATION_DATE) : null);
+
+        if (!registrationDate) {
+            return { isActive: false, daysRemaining: 0, isInTrial: false };
+        }
+
+        const regDate = new Date(registrationDate);
+        const trialEndDate = new Date(regDate);
+        trialEndDate.setDate(trialEndDate.getDate() + 7); // 登録日から7日後
+
         const now = new Date();
-
-        if (!trialStart || !trialEnd) {
-            return { isActive: false, daysRemaining: 0 };
-        }
-
-        // Firestore Timestampの場合
-        const trialEndDate = trialEnd.toDate ? trialEnd.toDate() : new Date(trialEnd);
         const isActive = now < trialEndDate;
         const daysRemaining = Math.ceil((trialEndDate - now) / (1000 * 60 * 60 * 24));
 
-        return { isActive, daysRemaining: isActive ? daysRemaining : 0 };
+        return {
+            isActive,
+            daysRemaining: isActive ? Math.max(0, daysRemaining) : 0,
+            isInTrial: now < trialEndDate
+        };
     },
 
     // 無料期間終了時の処理

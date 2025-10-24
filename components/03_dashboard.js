@@ -4,6 +4,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
 
+    // 機能開放モーダル（1つのモーダルで3ページ）
+    const [showFeatureUnlockModal, setShowFeatureUnlockModal] = useState(false);
+    const [currentModalPage, setCurrentModalPage] = useState(1); // 1, 2, 3
+
     // 体組成の状態管理
     const [bodyComposition, setBodyComposition] = useState({
         weight: profile?.weight || 0,
@@ -23,6 +27,21 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             bodyFatPercentage: profile?.bodyFatPercentage || 0
         });
     }, [profile]);
+
+    // 機能開放モーダルのフラグをチェック（分析ページから戻った時に表示）
+    useEffect(() => {
+        // ダッシュボードが表示されるたびにチェック
+        const shouldShow = localStorage.getItem('showFeatureUnlockModals');
+        console.log('[Dashboard] Checking showFeatureUnlockModals flag:', shouldShow);
+        if (shouldShow === 'true') {
+            console.log('[Dashboard] Flag found! Showing feature unlock modal...');
+            setTimeout(() => {
+                setCurrentModalPage(1); // ページ1から開始
+                setShowFeatureUnlockModal(true);
+                localStorage.removeItem('showFeatureUnlockModals');
+            }, 300); // 少し遅延させてスムーズに表示
+        }
+    }); // 依存配列を空にせず、毎回実行
 
     // 指示書を読み込む
     useEffect(() => {
@@ -1310,6 +1329,154 @@ ${Math.round(caloriesPercent)}%`
             {/* ショートカット */}
             {shortcuts && shortcuts.length > 0 && onShortcutClick && (
                 <ChevronShortcut shortcuts={shortcuts} onShortcutClick={onShortcutClick} />
+            )}
+
+            {/* 機能開放モーダル（1つのモーダルで3ページ構成） */}
+            {showFeatureUnlockModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl max-w-md w-full shadow-xl">
+                        <div className="p-6 space-y-4">
+                            {/* アイコン */}
+                            <div className="flex justify-center">
+                                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <Icon name="Sparkles" size={32} className="text-purple-600" />
+                                </div>
+                            </div>
+
+                            {/* ページ1: 指示書・履歴 */}
+                            {currentModalPage === 1 && (
+                                <>
+                                    <h3 className="text-xl font-bold text-center text-gray-800">
+                                        🎉 新機能が開放されました！
+                                    </h3>
+                                    <div className="text-sm text-gray-600 space-y-3">
+                                        <p className="text-center">分析完了おめでとうございます！</p>
+                                        <div className="bg-purple-50 rounded-lg p-4 space-y-2">
+                                            <div className="flex items-start gap-2">
+                                                <Icon name="FileText" size={18} className="text-purple-600 mt-0.5" />
+                                                <div>
+                                                    <div className="font-bold text-gray-800">指示書</div>
+                                                    <div className="text-xs text-gray-600">明日の行動指針をAIが提案</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <Icon name="History" size={18} className="text-purple-600 mt-0.5" />
+                                                <div>
+                                                    <div className="font-bold text-gray-800">履歴</div>
+                                                    <div className="text-xs text-gray-600">グラフで進捗を確認</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* ページ2: PG BASE・COMY */}
+                            {currentModalPage === 2 && (
+                                <>
+                                    <h3 className="text-xl font-bold text-center text-gray-800">
+                                        🎉 さらに機能が開放！
+                                    </h3>
+                                    <div className="text-sm text-gray-600 space-y-3">
+                                        <div className="bg-purple-50 rounded-lg p-4 space-y-2">
+                                            <div className="flex items-start gap-2">
+                                                <Icon name="BookOpen" size={18} className="text-purple-600 mt-0.5" />
+                                                <div>
+                                                    <div className="font-bold text-gray-800">PG BASE</div>
+                                                    <div className="text-xs text-gray-600">ボディメイクの基礎知識</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <Icon name="Users" size={18} className="text-purple-600 mt-0.5" />
+                                                <div>
+                                                    <div className="font-bold text-gray-800">COMY</div>
+                                                    <div className="text-xs text-gray-600">仲間と刺激し合う</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* ページ3: テンプレート・ルーティン・ショートカット */}
+                            {currentModalPage === 3 && (
+                                <>
+                                    <h3 className="text-xl font-bold text-center text-gray-800">
+                                        🎉 全機能開放完了！
+                                    </h3>
+                                    <div className="text-sm text-gray-600 space-y-3">
+                                        <p className="text-center">すべての機能が使えるようになりました！</p>
+                                        <div className="bg-purple-50 rounded-lg p-4 space-y-2">
+                                            <div className="flex items-start gap-2">
+                                                <Icon name="BookTemplate" size={18} className="text-purple-600 mt-0.5" />
+                                                <div>
+                                                    <div className="font-bold text-gray-800">テンプレート</div>
+                                                    <div className="text-xs text-gray-600">食事・運動を保存</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <Icon name="Calendar" size={18} className="text-purple-600 mt-0.5" />
+                                                <div>
+                                                    <div className="font-bold text-gray-800">ルーティン</div>
+                                                    <div className="text-xs text-gray-600">曜日別トレーニング計画</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <Icon name="Zap" size={18} className="text-purple-600 mt-0.5" />
+                                                <div>
+                                                    <div className="font-bold text-gray-800">ショートカット</div>
+                                                    <div className="text-xs text-gray-600">素早い記録入力</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p className="text-center text-xs text-gray-500">
+                                            7日間はすべての機能が無料で使えます
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* ページインジケーター */}
+                            <div className="flex justify-center gap-2">
+                                {[1, 2, 3].map(page => (
+                                    <div
+                                        key={page}
+                                        className={`w-2 h-2 rounded-full ${
+                                            page === currentModalPage ? 'bg-purple-600' : 'bg-gray-300'
+                                        }`}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* ナビゲーションボタン */}
+                            <div className="flex gap-3">
+                                {currentModalPage > 1 && (
+                                    <button
+                                        onClick={() => setCurrentModalPage(currentModalPage - 1)}
+                                        className="w-1/3 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors"
+                                    >
+                                        戻る
+                                    </button>
+                                )}
+                                {currentModalPage < 3 ? (
+                                    <button
+                                        onClick={() => setCurrentModalPage(currentModalPage + 1)}
+                                        className={`${currentModalPage === 1 ? 'w-full' : 'w-2/3'} bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors`}
+                                    >
+                                        次へ
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowFeatureUnlockModal(false)}
+                                        className="w-2/3 bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors"
+                                    >
+                                        確認しました
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

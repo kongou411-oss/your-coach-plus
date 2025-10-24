@@ -53,6 +53,37 @@ const markFeatureCompleted = async (userId, featureId) => {
     return status;
 };
 
+// 機能開放モーダル表示履歴を取得
+const getUnlockModalsShown = (userId) => {
+    if (DEV_MODE) {
+        const stored = localStorage.getItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN);
+        return stored ? JSON.parse(stored) : {};
+    }
+    // TODO: Firestore実装
+    return {};
+};
+
+// 機能開放モーダル表示履歴を保存
+const saveUnlockModalsShown = (userId, modalsShown) => {
+    if (DEV_MODE) {
+        localStorage.setItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN, JSON.stringify(modalsShown));
+    }
+    // TODO: Firestore実装
+};
+
+// 特定のモーダルが表示済みかチェック
+const isUnlockModalShown = (userId, modalId) => {
+    const modalsShown = getUnlockModalsShown(userId);
+    return modalsShown[modalId] === true;
+};
+
+// モーダルを表示済みとしてマーク
+const markUnlockModalShown = (userId, modalId) => {
+    const modalsShown = getUnlockModalsShown(userId);
+    modalsShown[modalId] = true;
+    saveUnlockModalsShown(userId, modalsShown);
+};
+
 // コンディション記録が6項目全て入力されているかチェック
 const checkConditionComplete = (todayRecord) => {
     if (!todayRecord || !todayRecord.conditions) return false;
@@ -130,52 +161,52 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
         unlocked.push('analysis');
     }
 
-    // 5. 分析を1回使用したら指示書を開放
-    if (completionStatus.analysis) {
-        unlocked.push('directive');
+    // 5. 初回分析後：すべての機能を開放（05_analysis.jsで実行）
+    // - 指示書、履歴（モーダル①）
+    // - PG BASE、COMY（モーダル②）
+    // - テンプレート、ルーティン、ショートカット、履歴分析（モーダル③）
+    if (completionStatus.directive) unlocked.push('directive');
+    if (completionStatus.history) unlocked.push('history');
+    if (completionStatus.pg_base) unlocked.push('pg_base');
+    if (completionStatus.community) unlocked.push('community');
+    if (completionStatus.template) unlocked.push('template');
+    if (completionStatus.routine) unlocked.push('routine');
+    if (completionStatus.shortcut) unlocked.push('shortcut');
+    if (completionStatus.history_analysis) unlocked.push('history_analysis');
+
+    // 8日目以降：Premium機能制限
+    // トライアル期間（0-7日）は全機能利用可能
+    // 8日目以降は以下の機能をPremium会員限定に制限
+    const isTrialActive = daysSinceReg < 7;
+    if (daysSinceReg >= 7 && !isPremium && !DEV_PREMIUM_MODE) {
+        // 8日目以降の無料ユーザーは以下の機能をロック
+        // directive, pg_base, template, routine, shortcut, history, history_analysis, community
+        // これらは既に配列に追加されているので、削除する
+        const restrictedFeatures = [
+            'directive', 'pg_base', 'template', 'routine', 'shortcut',
+            'history', 'history_analysis', 'community'
+        ];
+        restrictedFeatures.forEach(feature => {
+            const index = unlocked.indexOf(feature);
+            if (index > -1) {
+                unlocked.splice(index, 1);
+            }
+        });
     }
 
-    // 6. 指示書を1回確認したらPG BASEを開放
-    if (completionStatus.directive) {
-        unlocked.push('pg_base');
-    }
-
-    // 3日目：テンプレート → ルーティン → ショートカット（段階的）
-    if (daysSinceReg >= 3) {
-        unlocked.push('template');
-
-        if (completionStatus.template) {
-            unlocked.push('routine');
-        }
-
-        if (completionStatus.routine) {
-            unlocked.push('shortcut');
-        }
-    }
-
-    // 7日目：履歴 → 履歴分析（段階的）
-    if (daysSinceReg >= 7) {
-        unlocked.push('history');
-
-        if (completionStatus.history) {
-            unlocked.push('history_analysis');
-        }
-    }
-
-    // Premium機能
+    // Premium専用機能（トライアル期間中も利用不可）
     if (isPremium || DEV_PREMIUM_MODE) {
-        unlocked.push('community');
         unlocked.push('micronutrients');
         unlocked.push('community_view');
         unlocked.push('community_post');
     }
 
-    // 旧互換性
-    if (daysSinceReg >= 7) {
-        unlocked.push('history_graph'); // 履歴と同じ扱い（7日目）
+    // 旧互換性（8日目以降の制限を考慮）
+    if (daysSinceReg >= 7 && (isPremium || DEV_PREMIUM_MODE || isTrialActive)) {
+        unlocked.push('history_graph'); // 履歴と同じ扱い（7日目、Premium制限あり）
     }
-    if (daysSinceReg >= 3) {
-        unlocked.push('training_template');
+    if (daysSinceReg >= 3 && (isPremium || DEV_PREMIUM_MODE || isTrialActive)) {
+        unlocked.push('training_template'); // テンプレートと同じ扱い（3日目、Premium制限あり）
     }
 
     return unlocked;
@@ -197,13 +228,13 @@ const getNextFeatureToUnlock = (userId, todayRecord) => {
         return { feature: FEATURES.CONDITION, message: 'コンディション6項目を全て入力すると分析が開放されます' };
     }
     if (!completionStatus.analysis) {
-        return { feature: FEATURES.ANALYSIS, message: '分析を1回使用すると指示書が開放されます' };
+        return { feature: FEATURES.ANALYSIS, message: '分析を1回使用すると指示書とPG BASEが開放されます' };
     }
     if (!completionStatus.directive) {
-        return { feature: FEATURES.DIRECTIVE, message: '指示書を1回確認するとPG BASEが開放されます' };
+        return { feature: FEATURES.DIRECTIVE, message: '指示書を確認しましょう（明日の行動指針が記載されています）' };
     }
     if (!completionStatus.pg_base) {
-        return { feature: FEATURES.PG_BASE, message: 'PG BASEを確認してボディメイクの基礎を学びましょう' };
+        return { feature: FEATURES.PG_BASE, message: 'PG BASEでボディメイクの基礎を学びましょう' };
     }
 
     // 3日目の段階的開放
@@ -264,4 +295,51 @@ const checkAndCompleteFeatures = async (userId, todayRecord) => {
     }
 
     return updated;
+};
+
+// 8日目以降のPremium機能制限チェック
+const checkPremiumAccessRequired = (userId, featureId, userProfile) => {
+    const daysSinceReg = calculateDaysSinceRegistration(userId);
+    const isPremium = userProfile?.subscriptionTier === 'premium' || DEV_PREMIUM_MODE;
+
+    // トライアル期間中（0-7日）は全機能アクセス可能
+    if (daysSinceReg < 7) {
+        return { allowed: true, reason: 'trial' };
+    }
+
+    // 8日目以降にPremium制限がかかる機能（7日間無料トライアル）
+    const premiumRestrictedFeatures = [
+        'directive', 'pg_base', 'template', 'routine', 'shortcut',
+        'history', 'history_analysis', 'community', 'analysis', 'micronutrients'
+    ];
+
+    // 該当機能がPremium制限対象かチェック
+    if (premiumRestrictedFeatures.includes(featureId)) {
+        if (isPremium) {
+            return { allowed: true, reason: 'premium' };
+        } else {
+            return {
+                allowed: false,
+                reason: 'premium_required',
+                message: 'この機能は8日目以降、Premium会員限定となります'
+            };
+        }
+    }
+
+    // 常時Premium専用機能
+    const alwaysPremiumFeatures = ['community_post'];
+    if (alwaysPremiumFeatures.includes(featureId)) {
+        if (isPremium) {
+            return { allowed: true, reason: 'premium' };
+        } else {
+            return {
+                allowed: false,
+                reason: 'premium_only',
+                message: 'この機能はPremium会員専用です'
+            };
+        }
+    }
+
+    // その他の機能は常にアクセス可能
+    return { allowed: true, reason: 'free' };
 };

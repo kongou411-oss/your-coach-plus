@@ -16,6 +16,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     // クレジット関連state
     const [creditInfo, setCreditInfo] = useState(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [showCreditInfoModal, setShowCreditInfoModal] = useState(false);
     const [isFirstAnalysis, setIsFirstAnalysis] = useState(false);
 
     // BAB連動state
@@ -101,11 +102,18 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         }, 0);
         const exerciseCount = workouts.length;
 
+        // 休養日判定（ルーティンで明示的に設定されている場合）
+        const isRestDay = record.routine?.is_rest_day === true;
+
         // 運動スコア計算（ボディメイカー/一般で基準が異なる）
         let durationScore = 0;
         let exerciseCountScore = 0;
 
-        if (isBodymaker) {
+        // 休養日の場合は運動スコアを100点として扱う（計画的な休養）
+        if (isRestDay) {
+            durationScore = 100;
+            exerciseCountScore = 100;
+        } else if (isBodymaker) {
             // ボディメイカー基準
             if (totalDuration === 0) durationScore = 0;
             else if (totalDuration >= 120) durationScore = 100; // 2時間以上
@@ -329,13 +337,13 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     };
 
     // AI分析生成
-    const generateAIAnalysis = async (currentAnalysis, insights, isFirstAnalysis = false, scores = null) => {
+    const generateAIAnalysis = async (currentAnalysis, insights, isFirstAnalysisParam = false, scores = null) => {
         setAiLoading(true);
 
         // 既存のAI分析をクリア
         setAiAnalysis(null);
 
-        console.log('[Analysis] generateAIAnalysis called with isFirstAnalysis:', isFirstAnalysis);
+        console.log('[Analysis] generateAIAnalysis called with isFirstAnalysisParam:', isFirstAnalysisParam);
 
         // 当日のデータのみを準備（デイリー分析用）
         const today = getTodayDate();
@@ -476,6 +484,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 - カロリー: ${Math.round(totalCalories)}kcal / 目標: ${Math.round(targetPFC.calories)}kcal
 
 ### 運動
+- ルーティン: ${todayRecord.routine?.is_rest_day ? '休養日（計画的な休息）' : (todayRecord.routine?.type || 'なし')}
 - 実施種目: ${(todayRecord.workouts || []).length}種目
 
 ### コンディション
@@ -560,11 +569,18 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 - カロリー: ${Math.round(totalCalories)}kcal / 目標: ${Math.round(targetPFC.calories)}kcal
 - 睡眠: ${Math.round((actualSleepHours/idealSleepHours)*100)}%
 - 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5
+- ルーティン: ${todayRecord.routine?.is_rest_day ? '休養日（計画的な休息）' : (todayRecord.routine?.type || 'なし')}
 - 運動: ${(todayRecord.workouts || []).length}種目
 
 ${dailyRecord.notes ? `
 ユーザーの気づき: 「${dailyRecord.notes}」
 ` : ''}
+
+## 重要な判定基準
+
+**運動の評価:**
+- ルーティンで「休養日」が設定されている場合 → 計画的な休息として評価（問題なし）
+- ルーティン未設定かつ運動記録なし → 「運動未実施」として改善対象
 
 ## 目的別の優先順位
 
@@ -572,19 +588,19 @@ ${currentPurpose === '増量' ? `
 **増量の優先順位:**
 1. カロリー不足 → 食材+量を指定してオーバーカロリーを達成
 2. タンパク質<90% → 食材+量を指定
-3. 運動未実施 → 種目+重量+回数を指定（筋肥大のため）
+3. 運動未実施（※休養日を除く） → 種目+重量+回数を指定（筋肥大のため）
 4. 睡眠<85%または睡眠の質≤3 → 改善策を指定（回復のため）
 ` : currentPurpose === '減量' ? `
 **減量の優先順位:**
 1. カロリー超過 → 食材の見直しでアンダーカロリーを達成
 2. タンパク質<90% → 食材+量を指定（筋肉維持のため）
-3. 運動未実施 → 種目+重量+回数を指定（代謝維持のため）
+3. 運動未実施（※休養日を除く） → 種目+重量+回数を指定（代謝維持のため）
 4. 睡眠<85%または睡眠の質≤3 → 改善策を指定（回復のため）
 ` : `
 **メンテナンスの優先順位:**
 1. カロリー乖離>10% → 食材の調整でカロリー均衡を達成
 2. タンパク質<90% → 食材+量を指定
-3. 運動未実施 → 種目+重量+回数を指定
+3. 運動未実施（※休養日を除く） → 種目+重量+回数を指定
 4. 睡眠<85%または睡眠の質≤3 → 改善策を指定
 `}
 
@@ -703,12 +719,38 @@ ${currentPurpose === '増量' ? `
 
         setAiLoading(false);
 
-        // 初回分析後に販促モーダルを表示（AI分析完了後）
-        if (isFirstAnalysis && !DEV_PREMIUM_MODE) {
-            console.log('[Analysis] First analysis completed. Showing upgrade modal in 2 seconds...');
+        // 分析完了をマーク
+        await markFeatureCompleted(userId, 'analysis');
+
+        // 初回分析後：全機能を開放
+        console.log('[Analysis] isFirstAnalysisParam value:', isFirstAnalysisParam);
+        if (isFirstAnalysisParam) {
+            console.log('[Analysis] First analysis completed. Unlocking all features...');
+
+            // モーダル①: 指示書・履歴
+            await markFeatureCompleted(userId, 'directive');
+            await markFeatureCompleted(userId, 'history');
+
+            // モーダル②: PG BASE・COMY
+            await markFeatureCompleted(userId, 'pg_base');
+            await markFeatureCompleted(userId, 'community');
+
+            // モーダル③: テンプレート・ルーティン・ショートカット
+            await markFeatureCompleted(userId, 'template');
+            await markFeatureCompleted(userId, 'routine');
+            await markFeatureCompleted(userId, 'shortcut');
+            await markFeatureCompleted(userId, 'history_analysis');
+
+            // ダッシュボードで3つのモーダル表示用のフラグを設定
+            localStorage.setItem('showFeatureUnlockModals', 'true');
+            console.log('[Analysis] Set showFeatureUnlockModals flag');
+        }
+
+        // Premium販促モーダル（初回分析後）
+        if (isFirstAnalysisParam && !DEV_PREMIUM_MODE) {
             setTimeout(() => {
                 setShowUpgradeModal(true);
-            }, 2000); // 2秒後に表示
+            }, 3000); // 誘導モーダル後に表示
         }
     };
 
@@ -952,7 +994,7 @@ ${conversationContext}
                             <Icon name="Gift" size={16} className="text-blue-600" />
                         )}
                         <span className="text-sm font-medium text-gray-700">
-                            {creditInfo.tier === 'premium' ? 'Premium会員' : '無料トライアル'}
+                            {creditInfo.tier === 'premium' ? 'Premium会員' : '無料プラン'}
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -965,6 +1007,12 @@ ${conversationContext}
                             {creditInfo.devMode ? '∞' : creditInfo.remainingCredits}
                             {creditInfo.tier === 'premium' && !creditInfo.devMode && ' / 100'}
                         </span>
+                        <button
+                            onClick={() => setShowCreditInfoModal(true)}
+                            className="p-1 hover:bg-white/50 rounded transition"
+                        >
+                            <Icon name="Info" size={16} className="text-gray-500" />
+                        </button>
                     </div>
                 </div>
             )}
@@ -1155,6 +1203,89 @@ ${conversationContext}
                 </div>
             )}
 
+            {/* クレジット消費説明モーダル */}
+            {showCreditInfoModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={() => setShowCreditInfoModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <Icon name="Info" size={24} className="text-indigo-600" />
+                                クレジットについて
+                            </h3>
+                            <button onClick={() => setShowCreditInfoModal(false)} className="text-gray-400 hover:text-gray-600">
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+                        <div className="space-y-4 text-sm text-gray-700">
+                            {/* クレジット消費ルール */}
+                            <div>
+                                <p className="font-bold text-indigo-600 mb-2">📊 クレジット消費ルール</p>
+                                <p className="text-xs text-gray-600 mb-3">すべての分析機能で1クレジットを消費します</p>
+                                <ul className="space-y-2 pl-4">
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-indigo-400 flex-shrink-0">•</span>
+                                        <span><span className="font-medium">レポート生成：</span>1クレジット</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-indigo-400 flex-shrink-0">•</span>
+                                        <span><span className="font-medium">質問1回：</span>1クレジット</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-indigo-400 flex-shrink-0">•</span>
+                                        <span><span className="font-medium">履歴分析1項目：</span>1クレジット</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            {/* 無料プラン */}
+                            <div className="pt-4 border-t border-gray-200">
+                                <p className="font-bold text-green-600 mb-2">🎁 無料プラン</p>
+                                <ul className="space-y-2 pl-4">
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-400 flex-shrink-0">•</span>
+                                        <span><span className="font-medium">月21クレジット</span></span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-400 flex-shrink-0">•</span>
+                                        <span className="text-xs text-gray-600">毎月1日に付与、月末に失効</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-400 flex-shrink-0">•</span>
+                                        <span className="text-xs text-gray-600">クレジットは共有（何回でも同じ分析可能）</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-400 flex-shrink-0">•</span>
+                                        <span className="text-xs text-gray-600">7日間はすべての機能が利用可能</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            {/* Premium会員 */}
+                            <div className="pt-4 border-t border-gray-200">
+                                <p className="font-bold text-purple-600 mb-2 flex items-center gap-1">
+                                    <Icon name="Crown" size={16} />
+                                    8日目以降（Premium会員）
+                                </p>
+                                <ul className="space-y-2 pl-4">
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-purple-400 flex-shrink-0">•</span>
+                                        <span><span className="font-medium">月100クレジット付与</span></span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-purple-400 flex-shrink-0">•</span>
+                                        <span>すべての機能が無制限</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-purple-400 flex-shrink-0">•</span>
+                                        <span className="text-xs text-gray-600">指示書、PG BASE、COMYなど</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* マイクロラーニングポップアップ */}
             {microLearningContent && (
                 <MicroLearningPopup
@@ -1199,16 +1330,14 @@ ${conversationContext}
 
                         {/* コンテンツ */}
                         <div className="p-6 space-y-4">
-                            {/* 無料トライアル残り回数 */}
+                            {/* 残りクレジット */}
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                                <p className="text-sm text-gray-700 mb-1">無料トライアル残り</p>
+                                <p className="text-sm text-gray-700 mb-1">今月の残りクレジット</p>
                                 <p className="text-3xl font-bold text-blue-600">
-                                    {creditInfo ? creditInfo.remainingCredits : 6} 回
+                                    {creditInfo ? creditInfo.remainingCredits : 20} 回
                                 </p>
                                 <p className="text-xs text-gray-600 mt-1">
-                                    {creditInfo && creditInfo.freeTrialDaysRemaining && (
-                                        <>あと {creditInfo.freeTrialDaysRemaining} 日間</>
-                                    )}
+                                    毎月1日に付与、月末に失効
                                 </p>
                             </div>
 
@@ -1224,7 +1353,7 @@ ${conversationContext}
                                         { icon: 'BookOpen', text: 'PG BASE 教科書で理論を学習', color: 'text-green-600' },
                                         { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-purple-600' },
                                         { icon: 'BookTemplate', text: '無制限のテンプレート保存', color: 'text-blue-600' },
-                                        { icon: 'Users', text: 'コミュニティで仲間と刺激し合う', color: 'text-pink-600' },
+                                        { icon: 'Users', text: 'COMYで仲間と刺激し合う', color: 'text-pink-600' },
                                         { icon: 'Zap', text: 'ショートカット機能で効率アップ', color: 'text-yellow-600' }
                                     ].map((feature, idx) => (
                                         <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">

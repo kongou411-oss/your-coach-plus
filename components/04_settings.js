@@ -182,7 +182,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {/* 使い方 */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="BookOpen" size={18} className="text-indigo-600" />
+                            <Icon name="BookOpen" size={18} className="text-purple-600" />
                             使い方
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -360,7 +360,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {/* アカウント */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="UserCircle" size={18} className="text-green-600" />
+                            <Icon name="UserCircle" size={18} className="text-purple-600" />
                             アカウント
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -401,7 +401,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {/* プロフィール */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="User" size={18} className="text-indigo-600" />
+                            <Icon name="User" size={18} className="text-purple-600" />
                             プロフィール
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -1475,7 +1475,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                     {/* テンプレート */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="BookTemplate" size={18} className="text-indigo-600" />
+                            <Icon name="BookTemplate" size={18} className="text-purple-600" />
                             テンプレート
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -1664,7 +1664,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                     {/* ルーティン */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Repeat" size={18} className="text-indigo-600" />
+                            <Icon name="Repeat" size={18} className="text-purple-600" />
                             ルーティン
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -2227,6 +2227,113 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                 </p>
                             </div>
 
+                            {/* Premium有効/無効切り替え */}
+                            <div className="border rounded-lg p-6 bg-yellow-50">
+                                <h4 className="font-bold mb-4 flex items-center gap-2">
+                                    <Icon name="Crown" size={18} className="text-yellow-600" />
+                                    Premium状態切り替え
+                                </h4>
+                                <div className="space-y-3">
+                                    <div className="bg-white p-4 rounded-lg border border-yellow-200">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium text-gray-700">現在の状態</span>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                                DEV_PREMIUM_MODE ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {DEV_PREMIUM_MODE ? '👑 Premium' : '無料ユーザー'}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-gray-600">
+                                            {DEV_PREMIUM_MODE
+                                                ? '全機能が利用可能です（開発モード）'
+                                                : 'トライアル期間後は機能制限がかかります'}
+                                        </p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => {
+                                                localStorage.setItem('DEV_PREMIUM_MODE', 'false');
+                                                window.location.reload();
+                                            }}
+                                            className={`px-4 py-3 rounded-lg font-medium transition ${
+                                                !DEV_PREMIUM_MODE
+                                                    ? 'bg-gray-600 text-white'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            無料モード
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                localStorage.setItem('DEV_PREMIUM_MODE', 'true');
+                                                window.location.reload();
+                                            }}
+                                            className={`px-4 py-3 rounded-lg font-medium transition flex items-center justify-center gap-1 ${
+                                                DEV_PREMIUM_MODE
+                                                    ? 'bg-yellow-600 text-white'
+                                                    : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                            }`}
+                                        >
+                                            <Icon name="Crown" size={16} />
+                                            Premiumモード
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 機能開放設定 */}
+                            <div className="border rounded-lg p-6">
+                                <h4 className="font-bold mb-4 flex items-center gap-2">
+                                    <Icon name="Zap" size={18} />
+                                    機能開放設定
+                                </h4>
+                                <div className="space-y-3">
+                                    {/* 説明 */}
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                        <p className="text-xs text-gray-700">
+                                            <Icon name="Info" size={14} className="inline text-blue-600 mr-1" />
+                                            デフォルト：初日段階的→3日目→7日目開放
+                                        </p>
+                                    </div>
+
+                                    {/* 全機能即時開放 */}
+                                    <button
+                                        onClick={() => {
+                                            if (confirm('すべての機能を即時開放しますか？')) {
+                                                const allCompleted = {
+                                                    food: true, training: true, condition: true, analysis: true,
+                                                    directive: true, pg_base: true, template: true, routine: true,
+                                                    shortcut: true, history: true, history_analysis: true
+                                                };
+                                                localStorage.setItem(STORAGE_KEYS.FEATURES_COMPLETED, JSON.stringify(allCompleted));
+                                                const allModalsShown = { day3: true, day7: true };
+                                                localStorage.setItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN, JSON.stringify(allModalsShown));
+                                                window.location.reload();
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition text-sm font-bold flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="Unlock" size={16} />
+                                        全機能即時開放
+                                    </button>
+
+                                    {/* 開放状態リセット */}
+                                    <button
+                                        onClick={() => {
+                                            if (confirm('機能開放状態をリセットしますか？')) {
+                                                localStorage.removeItem(STORAGE_KEYS.FEATURES_COMPLETED);
+                                                localStorage.removeItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN);
+                                                window.location.reload();
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="RefreshCw" size={16} />
+                                        開放状態リセット
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* 日付手動進行 */}
                             <div className="border rounded-lg p-6">
                                 <h4 className="font-bold mb-4 flex items-center gap-2">
@@ -2240,11 +2347,15 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                             <span className="text-2xl font-bold text-indigo-600">{usageDays}日</span>
                                         </div>
                                         <div className="text-xs text-gray-500">
-                                            現在のステージ: {
-                                                usageDays < 10 ? '守 (基礎)' :
-                                                usageDays < 18 ? '破 (応用)' :
-                                                '離 (独自)'
-                                            }
+                                            {usageDays < 7 ? (
+                                                <span className="text-green-600 font-medium">
+                                                    🎁 無料トライアル中（残り{7 - usageDays}日）
+                                                </span>
+                                            ) : (
+                                                <span className="text-red-600 font-medium">
+                                                    🔒 トライアル終了（Premium会員機能制限中）
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 
@@ -2276,9 +2387,8 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                     <div className="grid grid-cols-2 gap-2 mb-2">
                                         <button
                                             onClick={() => {
-                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '0');
-                                                // 機能開放状態もリセット
-                                                localStorage.removeItem(STORAGE_KEYS.UNLOCKED_FEATURES);
+                                                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, new Date().toISOString());
+                                                localStorage.removeItem(STORAGE_KEYS.FEATURES_COMPLETED);
                                                 window.location.reload();
                                             }}
                                             className="px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition font-medium"
@@ -2287,44 +2397,64 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                         </button>
                                         <button
                                             onClick={() => {
-                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '30');
-                                                // 全機能開放
-                                                const allFeatures = Object.values(FEATURES).map(f => f.id);
-                                                localStorage.setItem(STORAGE_KEYS.UNLOCKED_FEATURES, JSON.stringify(allFeatures));
+                                                const date = new Date();
+                                                date.setDate(date.getDate() - 10);
+                                                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, date.toISOString());
+                                                // 全機能完了マーク
+                                                const allCompleted = {
+                                                    food: true,
+                                                    training: true,
+                                                    condition: true,
+                                                    analysis: true,
+                                                    directive: true,
+                                                    pg_base: true,
+                                                    template: true,
+                                                    routine: true,
+                                                    shortcut: true,
+                                                    history: true,
+                                                    history_analysis: true
+                                                };
+                                                localStorage.setItem(STORAGE_KEYS.FEATURES_COMPLETED, JSON.stringify(allCompleted));
                                                 window.location.reload();
                                             }}
                                             className="px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition font-medium"
                                         >
-                                            30日 (全開放)
+                                            10日 (全開放)
                                         </button>
                                     </div>
                                     <div className="grid grid-cols-3 gap-2">
                                         <button
                                             onClick={() => {
-                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '5');
+                                                const date = new Date();
+                                                date.setDate(date.getDate() - 1);
+                                                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, date.toISOString());
+                                                window.location.reload();
+                                            }}
+                                            className="px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition"
+                                        >
+                                            1日
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const date = new Date();
+                                                date.setDate(date.getDate() - 3);
+                                                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, date.toISOString());
                                                 window.location.reload();
                                             }}
                                             className="px-3 py-2 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition"
                                         >
-                                            5日 (守)
+                                            3日
                                         </button>
                                         <button
                                             onClick={() => {
-                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '12');
+                                                const date = new Date();
+                                                date.setDate(date.getDate() - 7);
+                                                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, date.toISOString());
                                                 window.location.reload();
                                             }}
                                             className="px-3 py-2 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition"
                                         >
-                                            12日 (破)
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, '25');
-                                                window.location.reload();
-                                            }}
-                                            className="px-3 py-2 bg-purple-100 text-purple-700 rounded text-sm hover:bg-purple-200 transition"
-                                        >
-                                            25日 (離)
+                                            7日
                                         </button>
                                     </div>
                                 </div>
@@ -2336,38 +2466,204 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                     <Icon name="Lock" size={18} />
                                     機能開放状態
                                 </h4>
-                                <div className="space-y-2">
-                                    {Object.values(FEATURES).map(feature => {
-                                        const isUnlocked = usageDays >= feature.requiredDays;
-                                        const stageColor =
-                                            feature.stage === '守' ? 'bg-green-100 text-green-700' :
-                                            feature.stage === '破' ? 'bg-blue-100 text-blue-700' :
-                                            'bg-purple-100 text-purple-700';
-                                        return (
-                                            <div key={feature.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                <div className="flex items-center gap-3">
-                                                    <span className={`text-xs px-2 py-1 rounded-full ${stageColor} font-bold`}>
-                                                        {feature.stage}
-                                                    </span>
-                                                    <span className="font-medium">{feature.name}</span>
-                                                    <span className="text-xs text-gray-500">({feature.requiredDays}日〜)</span>
-                                                </div>
-                                                <div>
-                                                    {isUnlocked ? (
-                                                        <span className="text-green-600 flex items-center gap-1">
-                                                            <Icon name="CheckCircle" size={18} />
-                                                            <span className="text-sm font-medium">開放済み</span>
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-gray-400 flex items-center gap-1">
-                                                            <Icon name="Lock" size={18} />
-                                                            <span className="text-sm">未開放</span>
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                <div className="space-y-3">
+                                    {/* 初日（段階的開放） */}
+                                    <div>
+                                        <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">初日</span>
+                                            段階的開放
+                                        </div>
+                                        <div className="space-y-1 ml-4">
+                                            {[
+                                                { id: 'food', name: '食事記録', condition: '常に開放' },
+                                                { id: 'training', name: '運動記録', condition: '食事1回記録' },
+                                                { id: 'condition', name: 'コンディション記録', condition: '運動1回記録' },
+                                                { id: 'analysis', name: '分析', condition: 'コンディション6項目入力' },
+                                                { id: 'directive', name: '指示書', condition: '分析1回使用' },
+                                                { id: 'pg_base', name: 'PG BASE', condition: '分析1回使用（指示書と同時）' }
+                                            ].map(feature => {
+                                                const completionStatus = getFeatureCompletionStatus(userId);
+                                                const isCompleted = completionStatus[feature.id] === true;
+                                                return (
+                                                    <div key={feature.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium">{feature.name}</span>
+                                                            <span className="text-xs text-gray-500">({feature.condition})</span>
+                                                        </div>
+                                                        {isCompleted ? (
+                                                            <span className="text-green-600 flex items-center gap-1">
+                                                                <Icon name="CheckCircle" size={16} />
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400">
+                                                                <Icon name="Lock" size={16} />
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 3日目（同時開放） */}
+                                    <div>
+                                        <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                            <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">3日目</span>
+                                            同時開放
+                                        </div>
+                                        <div className="space-y-1 ml-4">
+                                            {[
+                                                { id: 'template', name: 'テンプレート', condition: '3日目到達' },
+                                                { id: 'routine', name: 'ルーティン', condition: '3日目到達' },
+                                                { id: 'shortcut', name: 'ショートカット', condition: '3日目到達' }
+                                            ].map(feature => {
+                                                const daysSinceReg = calculateDaysSinceRegistration(userId);
+                                                const isDayReached = daysSinceReg >= 3;
+                                                return (
+                                                    <div key={feature.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium">{feature.name}</span>
+                                                            <span className="text-xs text-gray-500">({feature.condition})</span>
+                                                        </div>
+                                                        {isDayReached ? (
+                                                            <span className="text-blue-600 flex items-center gap-1">
+                                                                <Icon name="Unlock" size={16} />
+                                                                <span className="text-xs">開放済</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400 flex items-center gap-1">
+                                                                <Icon name="Lock" size={16} />
+                                                                <span className="text-xs">未開放</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 7日目（同時開放） */}
+                                    <div>
+                                        <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                            <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">7日目</span>
+                                            同時開放（無料トライアル終了）
+                                        </div>
+                                        <div className="space-y-1 ml-4">
+                                            {[
+                                                { id: 'history', name: '履歴', condition: '7日目到達' },
+                                                { id: 'community', name: 'COMY閲覧', condition: '7日目到達' },
+                                                { id: 'history_analysis', name: '履歴分析', condition: '7日目到達' }
+                                            ].map(feature => {
+                                                const daysSinceReg = calculateDaysSinceRegistration(userId);
+                                                const isDayReached = daysSinceReg >= 7;
+                                                return (
+                                                    <div key={feature.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium">{feature.name}</span>
+                                                            <span className="text-xs text-gray-500">({feature.condition})</span>
+                                                        </div>
+                                                        {isDayReached ? (
+                                                            <span className="text-purple-600 flex items-center gap-1">
+                                                                <Icon name="Unlock" size={16} />
+                                                                <span className="text-xs">開放済</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400 flex items-center gap-1">
+                                                                <Icon name="Lock" size={16} />
+                                                                <span className="text-xs">未開放</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 8日目以降（Premium制限） */}
+                                    <div>
+                                        <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                            <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs">8日目以降</span>
+                                            Premium会員限定
+                                        </div>
+                                        <div className="space-y-1 ml-4">
+                                            {[
+                                                { name: '指示書', locked: true },
+                                                { name: 'PG BASE', locked: true },
+                                                { name: 'COMY閲覧', locked: true },
+                                                { name: 'テンプレート', locked: true },
+                                                { name: 'ルーティン', locked: true },
+                                                { name: 'ショートカット', locked: true },
+                                                { name: '履歴', locked: true },
+                                                { name: '履歴分析', locked: true },
+                                                { name: '分析機能（月100クレジット）', locked: true },
+                                                { name: 'ビタミン・ミネラル分析', locked: true }
+                                            ].map((feature, idx) => {
+                                                const daysSinceReg = calculateDaysSinceRegistration(userId);
+                                                const isPremium = DEV_PREMIUM_MODE;
+                                                const isTrialActive = daysSinceReg < 7;
+                                                const isLocked = daysSinceReg >= 7 && !isPremium;
+                                                return (
+                                                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium">{feature.name}</span>
+                                                        </div>
+                                                        {isPremium ? (
+                                                            <span className="text-yellow-600 flex items-center gap-1">
+                                                                <Icon name="Crown" size={16} />
+                                                                <span className="text-xs">Premium</span>
+                                                            </span>
+                                                        ) : isTrialActive ? (
+                                                            <span className="text-green-600 flex items-center gap-1">
+                                                                <Icon name="CheckCircle" size={16} />
+                                                                <span className="text-xs">トライアル中</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-red-600 flex items-center gap-1">
+                                                                <Icon name="Lock" size={16} />
+                                                                <span className="text-xs">制限中</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 常時Premium専用機能 */}
+                                    <div>
+                                        <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                            <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs flex items-center gap-1">
+                                                <Icon name="Crown" size={12} />
+                                                常時Premium
+                                            </span>
+                                            トライアル期間中も利用不可
+                                        </div>
+                                        <div className="space-y-1 ml-4">
+                                            {[
+                                                { id: 'community_post', name: 'COMY投稿機能' }
+                                            ].map(feature => {
+                                                const isPremium = DEV_PREMIUM_MODE;
+                                                return (
+                                                    <div key={feature.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium">{feature.name}</span>
+                                                        </div>
+                                                        {isPremium ? (
+                                                            <span className="text-yellow-600 flex items-center gap-1">
+                                                                <Icon name="Crown" size={16} />
+                                                                <span className="text-xs">Premium</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400 flex items-center gap-1">
+                                                                <Icon name="Lock" size={16} />
+                                                                <span className="text-xs">制限中</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

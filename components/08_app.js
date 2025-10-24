@@ -83,7 +83,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 { icon: 'BookOpen', text: 'PG BASE 教科書で理論を学習', color: 'text-green-600' },
                                 { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-purple-600' },
                                 { icon: 'BookTemplate', text: '無制限のテンプレート保存', color: 'text-blue-600' },
-                                { icon: 'Users', text: 'コミュニティで仲間と刺激し合う', color: 'text-pink-600' },
+                                { icon: 'Users', text: 'COMYで仲間と刺激し合う', color: 'text-pink-600' },
                                 { icon: 'Zap', text: 'ショートカット機能で効率アップ', color: 'text-yellow-600' }
                             ].map((feature, idx) => (
                                 <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
@@ -599,8 +599,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 // PG BASE
                 if (type === 'pgbase') {
                     if (!unlockedFeatures.includes('pg_base')) {
-                        alert(`この機能は${FEATURES.PG_BASE.requiredDays}日継続で開放されます（残り${Math.max(0, FEATURES.PG_BASE.requiredDays - usageDays)}日）`);
-                        return;
+                        const accessCheck = checkPremiumAccessRequired(
+                            DEV_MODE ? DEV_USER_ID : user?.uid,
+                            'pg_base',
+                            userProfile
+                        );
+                        if (!accessCheck.allowed) {
+                            setRestrictedFeatureName('PG BASE');
+                            setShowPremiumRestriction(true);
+                            setFabOpen(false);
+                            return;
+                        }
                     }
                     setShowPGBaseView(true);
                     setFabOpen(false);
@@ -610,8 +619,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 // 履歴
                 if (type === 'history') {
                     if (!unlockedFeatures.includes('history_graph')) {
-                        alert(`この機能は${FEATURES.HISTORY_GRAPH.requiredDays}日継続で開放されます（残り${Math.max(0, FEATURES.HISTORY_GRAPH.requiredDays - usageDays)}日）`);
-                        return;
+                        const accessCheck = checkPremiumAccessRequired(
+                            DEV_MODE ? DEV_USER_ID : user?.uid,
+                            'history',
+                            userProfile
+                        );
+                        if (!accessCheck.allowed) {
+                            setRestrictedFeatureName('履歴');
+                            setShowPremiumRestriction(true);
+                            setFabOpen(false);
+                            return;
+                        }
                     }
                     setShowHistoryView(true);
                     setFabOpen(false);
@@ -621,8 +639,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 // COMY
                 if (type === 'comy') {
                     if (!unlockedFeatures.includes('community')) {
-                        alert(`この機能は${FEATURES.COMMUNITY.requiredDays}日継続で開放されます（残り${Math.max(0, FEATURES.COMMUNITY.requiredDays - usageDays)}日）`);
-                        return;
+                        const accessCheck = checkPremiumAccessRequired(
+                            DEV_MODE ? DEV_USER_ID : user?.uid,
+                            'community',
+                            userProfile
+                        );
+                        if (!accessCheck.allowed) {
+                            setRestrictedFeatureName('COMY');
+                            setShowPremiumRestriction(true);
+                            setFabOpen(false);
+                            return;
+                        }
                     }
                     setShowCOMYView(true);
                     setFabOpen(false);
@@ -658,24 +685,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             // 写真撮影
             const handlePhotoCapture = () => {
                 setShowPhotoInput(true);
-            };
-
-            // Premium機能アクセスチェック
-            const checkPremiumAccess = async (featureName) => {
-                // 開発モードではPremium機能を許可
-                if (typeof DEV_PREMIUM_MODE !== 'undefined' && DEV_PREMIUM_MODE) {
-                    return true;
-                }
-
-                // Premium会員チェック
-                if (userProfile && userProfile.subscriptionTier === 'premium') {
-                    return true;
-                }
-
-                // 無料ユーザーは制限モーダルを表示
-                setRestrictedFeatureName(featureName);
-                setShowPremiumRestriction(true);
-                return false;
             };
 
             // ショートカットアクション処理
@@ -738,15 +747,31 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         setBottomBarExpanded(false);
                         break;
                     case 'open_pgbase':
-                        if (await checkPremiumAccess('PG BASE 教科書')) {
+                        const pgBaseAccessCheck = checkPremiumAccessRequired(
+                            DEV_MODE ? DEV_USER_ID : user?.uid,
+                            'pg_base',
+                            userProfile
+                        );
+                        if (pgBaseAccessCheck.allowed) {
                             setShowPGBaseView(true);
                             setBottomBarExpanded(false);
+                        } else {
+                            setRestrictedFeatureName('PG BASE');
+                            setShowPremiumRestriction(true);
                         }
                         break;
                     case 'open_community':
-                        if (await checkPremiumAccess('コミュニティ')) {
+                        const comyAccessCheck = checkPremiumAccessRequired(
+                            DEV_MODE ? DEV_USER_ID : user?.uid,
+                            'community',
+                            userProfile
+                        );
+                        if (comyAccessCheck.allowed) {
                             setShowCOMYView(true);
                             setBottomBarExpanded(false);
+                        } else {
+                            setRestrictedFeatureName('COMY');
+                            setShowPremiumRestriction(true);
                         }
                         break;
                     case 'open_settings':
@@ -1992,7 +2017,15 @@ AIコーチなどの高度な機能が解放されます。
                                 <button
                                     onClick={() => {
                                         if (!unlockedFeatures.includes('history_graph')) {
-                                            alert('履歴機能は2日継続で開放されます');
+                                            const accessCheck = checkPremiumAccessRequired(
+                                                DEV_MODE ? DEV_USER_ID : user?.uid,
+                                                'history',
+                                                userProfile
+                                            );
+                                            if (!accessCheck.allowed) {
+                                                setRestrictedFeatureName('履歴');
+                                                setShowPremiumRestriction(true);
+                                            }
                                             return;
                                         }
                                         setShowHistoryView(true);
@@ -2012,7 +2045,15 @@ AIコーチなどの高度な機能が解放されます。
                                 <button
                                     onClick={() => {
                                         if (!unlockedFeatures.includes('pg_base')) {
-                                            alert('教科書機能は10日継続で開放されます');
+                                            const accessCheck = checkPremiumAccessRequired(
+                                                DEV_MODE ? DEV_USER_ID : user?.uid,
+                                                'pg_base',
+                                                userProfile
+                                            );
+                                            if (!accessCheck.allowed) {
+                                                setRestrictedFeatureName('PG BASE');
+                                                setShowPremiumRestriction(true);
+                                            }
                                             return;
                                         }
                                         setShowPGBaseView(true);
@@ -2032,7 +2073,15 @@ AIコーチなどの高度な機能が解放されます。
                                 <button
                                     onClick={() => {
                                         if (!unlockedFeatures.includes('community')) {
-                                            alert('COMY機能は30日継続で開放されます');
+                                            const accessCheck = checkPremiumAccessRequired(
+                                                DEV_MODE ? DEV_USER_ID : user?.uid,
+                                                'community',
+                                                userProfile
+                                            );
+                                            if (!accessCheck.allowed) {
+                                                setRestrictedFeatureName('COMY');
+                                                setShowPremiumRestriction(true);
+                                            }
                                             return;
                                         }
                                         setShowCOMYView(true);
@@ -2159,7 +2208,17 @@ AIコーチなどの高度な機能が解放されます。
                                 <button
                                     onClick={async () => {
                                         if (!unlockedFeatures.includes('pg_base')) {
-                                            alert('PGBASE機能は10日継続で開放されます');
+                                            // Premium制限チェック
+                                            const accessCheck = checkPremiumAccessRequired(
+                                                DEV_MODE ? DEV_USER_ID : user.uid,
+                                                'pg_base',
+                                                userProfile
+                                            );
+                                            if (!accessCheck.allowed) {
+                                                setRestrictedFeatureName('PG BASE');
+                                                setShowPremiumRestriction(true);
+                                                return;
+                                            }
                                             return;
                                         }
                                         if (await checkPremiumAccess('PG BASE 教科書')) {
@@ -2186,10 +2245,19 @@ AIコーチなどの高度な機能が解放されます。
                                 <button
                                     onClick={async () => {
                                         if (!unlockedFeatures.includes('community')) {
-                                            alert('COMY機能は30日継続で開放されます');
+                                            const accessCheck = checkPremiumAccessRequired(
+                                                DEV_MODE ? DEV_USER_ID : user.uid,
+                                                'community',
+                                                userProfile
+                                            );
+                                            if (!accessCheck.allowed) {
+                                                setRestrictedFeatureName('COMY');
+                                                setShowPremiumRestriction(true);
+                                                return;
+                                            }
                                             return;
                                         }
-                                        if (await checkPremiumAccess('コミュニティ')) {
+                                        if (await checkPremiumAccess('COMY')) {
                                             // 他のカテゴリを全て閉じる
                                             setShowHistoryV10(false);
                                             setShowPGBaseView(false);

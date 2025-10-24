@@ -146,8 +146,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
             subscriptionTier: 'free',
             subscriptionStatus: 'none',
 
-            // クレジットシステム（7回分付与）
-            analysisCredits: 7,
+            // クレジットシステム（21回分付与：レポート7+質問7+履歴分析7）
+            analysisCredits: 21,
             totalAnalysisUsed: 0,
             currentMonthUsed: 0,
             lifetimeCreditsPurchased: 0,

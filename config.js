@@ -32,6 +32,7 @@ const STORAGE_KEYS = {
     UNLOCKED_FEATURES: 'yourCoachBeta_unlockedFeatures',
     FEATURES_COMPLETED: 'yourCoachBeta_featuresCompleted', // 機能完了状態
     REGISTRATION_DATE: 'yourCoachBeta_registrationDate', // 登録日
+    UNLOCK_MODALS_SHOWN: 'yourCoachBeta_unlockModalsShown', // 機能開放モーダル表示履歴
     WORKOUT_TEMPLATES: 'yourCoachBeta_workoutTemplates',
     MEAL_TEMPLATES: 'yourCoachBeta_mealTemplates',
     SUPPLEMENT_TEMPLATES: 'yourCoachBeta_supplementTemplates',
