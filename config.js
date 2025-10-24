@@ -30,6 +30,8 @@ const STORAGE_KEYS = {
     DAILY_ANALYSES: 'yourCoachBeta_dailyAnalyses',
     USAGE_DAYS: 'yourCoachBeta_usageDays',
     UNLOCKED_FEATURES: 'yourCoachBeta_unlockedFeatures',
+    FEATURES_COMPLETED: 'yourCoachBeta_featuresCompleted', // 機能完了状態
+    REGISTRATION_DATE: 'yourCoachBeta_registrationDate', // 登録日
     WORKOUT_TEMPLATES: 'yourCoachBeta_workoutTemplates',
     MEAL_TEMPLATES: 'yourCoachBeta_mealTemplates',
     SUPPLEMENT_TEMPLATES: 'yourCoachBeta_supplementTemplates',
@@ -158,101 +160,164 @@ const BADGES = {
     }
 };
 
-// 機能開放システム（動的オンボーディング + 日数ベースの段階的機能開放）
+// 機能開放システム（段階的オンボーディング + 日数ベースの開放）
 const FEATURES = {
-    // 初期開放：食事記録のみ
+    // 0日目（初日）：段階的開放（前の機能を完了すると次が開放される）
     FOOD: {
         id: 'food',
         name: '食事記録',
         trigger: 'initial',
         icon: 'Utensils',
-        description: '食事内容を記録してPFCバランスを管理'
+        description: '食事内容を記録してPFCバランスを管理',
+        completionCondition: 'meal_once', // 1回記録で完了
+        nextFeature: 'training'
     },
-
-    // 動的オンボーディング：食事→運動→コンディション→分析
     TRAINING: {
         id: 'training',
         name: '運動記録',
-        trigger: 'after_meal',
+        trigger: 'after_food',
         icon: 'Dumbbell',
-        description: 'トレーニング内容を記録して進捗を可視化'
+        description: 'トレーニング内容を記録して進捗を可視化',
+        completionCondition: 'training_once', // 1回記録で完了
+        nextFeature: 'condition'
     },
     CONDITION: {
         id: 'condition',
         name: 'コンディション記録',
         trigger: 'after_training',
         icon: 'Activity',
-        description: '体調・睡眠・疲労度を記録して体の声を聞く'
+        description: '体調・睡眠・疲労度を記録して体の声を聞く',
+        completionCondition: 'condition_all_six', // 6項目全て入力で完了
+        nextFeature: 'analysis'
     },
     ANALYSIS: {
         id: 'analysis',
         name: '分析',
         trigger: 'after_condition',
         icon: 'BarChart3',
-        description: '記録データを分析して改善点を発見'
+        description: '記録データを分析して改善点を発見',
+        completionCondition: 'analysis_once', // 1回使用で完了
+        nextFeature: 'directive'
     },
     DIRECTIVE: {
         id: 'directive',
         name: '指示書',
         trigger: 'after_analysis',
         icon: 'FileText',
-        description: 'AI が分析結果に基づいて最適な次のアクションを提案'
+        description: 'AIが分析結果に基づいて最適な次のアクションを提案',
+        completionCondition: 'directive_once', // 1回確認で完了
+        nextFeature: 'pg_base'
     },
-
-    // 初期開放：PG BASE
     PG_BASE: {
         id: 'pg_base',
         name: 'PG BASE',
-        trigger: 'initial',
+        trigger: 'after_directive',
         icon: 'BookOpen',
-        description: 'ボディメイクの理論と知識を学ぶ'
+        description: 'ボディメイクの理論と知識を学ぶ',
+        completionCondition: 'pg_base_once' // 1回確認で完了
     },
 
-    // 2日目：テンプレート・ルーティン
-    TRAINING_TEMPLATE: {
-        id: 'training_template',
+    // 3日目：ログイン時に開放（段階的）
+    TEMPLATE: {
+        id: 'template',
         name: 'テンプレート',
         trigger: 'days',
-        requiredDays: 2,
+        requiredDays: 3,
         icon: 'BookTemplate',
-        description: 'よく使う食事・トレーニングをテンプレート化して効率化'
+        description: 'よく使う食事・トレーニングをテンプレート化して効率化',
+        completionCondition: 'template_once', // 1回使用で完了
+        nextFeature: 'routine'
     },
     ROUTINE: {
         id: 'routine',
         name: 'ルーティン',
-        trigger: 'days',
-        requiredDays: 2,
+        trigger: 'after_template',
+        requiredDays: 3,
         icon: 'Calendar',
-        description: '分割法を設定して計画的にトレーニング'
+        description: '分割法を設定して計画的にトレーニング',
+        completionCondition: 'routine_once', // 1回使用で完了
+        nextFeature: 'shortcut'
+    },
+    SHORTCUT: {
+        id: 'shortcut',
+        name: 'ショートカット',
+        trigger: 'after_routine',
+        requiredDays: 3,
+        icon: 'Zap',
+        description: 'よく使う機能に素早くアクセス',
+        completionCondition: 'shortcut_once' // 1回使用で完了
     },
 
-    // 8日目：コミュニティ閲覧
-    COMMUNITY_VIEW: {
-        id: 'community_view',
-        name: 'COMY（閲覧）',
+    // 7日目：ログイン時に開放（段階的）
+    HISTORY: {
+        id: 'history',
+        name: '履歴',
         trigger: 'days',
-        requiredDays: 8,
-        icon: 'Users',
-        description: 'コミュニティのフィードを閲覧'
+        requiredDays: 7,
+        icon: 'History',
+        description: '過去の記録を振り返る',
+        completionCondition: 'history_once', // 1回使用で完了
+        nextFeature: 'history_analysis'
+    },
+    HISTORY_ANALYSIS: {
+        id: 'history_analysis',
+        name: '履歴分析',
+        trigger: 'after_history',
+        requiredDays: 7,
+        icon: 'TrendingUp',
+        description: '長期的なトレンドを分析',
+        completionCondition: 'history_analysis_once' // 1回使用で完了
     },
 
-    // 18日目：ビタミン・ミネラル詳細
+    // その他の機能（Premium機能など）
+    COMMUNITY: {
+        id: 'community',
+        name: 'コミュニティ',
+        trigger: 'premium',
+        icon: 'Users',
+        description: 'コミュニティで成果を共有し、仲間と刺激し合う',
+        requiredPremium: true
+    },
     MICRONUTRIENTS: {
         id: 'micronutrients',
         name: 'ビタミン・ミネラル詳細',
-        trigger: 'days',
-        requiredDays: 18,
+        trigger: 'premium',
         icon: 'Droplets',
-        description: 'ビタミン・ミネラルの詳細な摂取状況を確認'
+        description: 'ビタミン・ミネラルの詳細な摂取状況を確認',
+        requiredPremium: true
     },
 
-    // 30日目：コミュニティ投稿
+    // 旧互換性のため残す（削除予定）
+    TRAINING_TEMPLATE: {
+        id: 'training_template',
+        name: 'テンプレート（旧）',
+        trigger: 'days',
+        requiredDays: 3,
+        icon: 'BookTemplate',
+        description: 'テンプレート機能（旧定義）'
+    },
+    COMMUNITY_VIEW: {
+        id: 'community_view',
+        name: 'COMY（閲覧）',
+        trigger: 'premium',
+        icon: 'Users',
+        description: 'コミュニティ閲覧（旧定義）',
+        requiredPremium: true
+    },
     COMMUNITY_POST: {
         id: 'community_post',
         name: 'COMY（投稿）',
-        trigger: 'days',
-        requiredDays: 30,
+        trigger: 'premium',
         icon: 'MessageSquare',
-        description: 'コミュニティで成果を共有し、仲間と刺激し合う'
+        description: 'コミュニティ投稿（旧定義）',
+        requiredPremium: true
+    },
+    HISTORY_GRAPH: {
+        id: 'history_graph',
+        name: '履歴グラフ（旧）',
+        trigger: 'days',
+        requiredDays: 7,
+        icon: 'TrendingUp',
+        description: '履歴グラフ（旧定義）'
     }
 };

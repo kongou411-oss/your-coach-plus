@@ -288,30 +288,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             if (manualDays !== null) {
                                 days = parseInt(manualDays, 10);
                             } else {
-                                const joinDate = new Date(profile.joinDate);
-                                const today = new Date();
-                                days = Math.floor((today - joinDate) / (1000 * 60 * 60 * 24));
+                                days = calculateDaysSinceRegistration(DEV_USER_ID);
                             }
                             setUsageDays(days);
 
-                            // 動的オンボーディング + 日数ベースの機能開放
-                            const unlocked = ['food']; // 食事記録は最初から開放
-                            const triggers = JSON.parse(localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS) || '{}');
+                            // 今日の記録を取得（機能開放判定に必要）
+                            const today = getTodayDate();
+                            const todayRecord = await DataService.getDailyRecord(DEV_USER_ID, today);
 
-                            Object.values(FEATURES).forEach(feature => {
-                                if (feature.trigger === 'initial') {
-                                    // initial: 最初から開放
-                                    if (!unlocked.includes(feature.id)) unlocked.push(feature.id);
-                                } else if (feature.trigger === 'days') {
-                                    // days: 日数ベースで開放
-                                    if (days >= feature.requiredDays && !unlocked.includes(feature.id)) {
-                                        unlocked.push(feature.id);
-                                    }
-                                } else if (feature.trigger && triggers[feature.trigger]) {
-                                    // 動的トリガー: トリガーが発火済みなら開放
-                                    if (!unlocked.includes(feature.id)) unlocked.push(feature.id);
-                                }
-                            });
+                            // 新しい機能開放システムで開放状態を計算
+                            const isPremium = profile.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                            const unlocked = calculateUnlockedFeatures(DEV_USER_ID, todayRecord, isPremium);
                             setUnlockedFeatures(unlocked);
 
                             // 守破離の段階を更新（21日で離、7日で破）
@@ -351,29 +338,16 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             const profile = await DataService.getUserProfile(firebaseUser.uid);
                             if (profile) {
                                 setUserProfile(profile);
-                                const joinDate = new Date(profile.joinDate);
-                                const today = new Date();
-                                const days = Math.floor((today - joinDate) / (1000 * 60 * 60 * 24));
+                                const days = calculateDaysSinceRegistration(firebaseUser.uid);
                                 setUsageDays(days);
 
-                                // 動的オンボーディング + 日数ベースの機能開放
-                                const unlocked = ['food']; // 食事記録は最初から開放
-                                const triggers = JSON.parse(localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS) || '{}');
+                                // 今日の記録を取得（機能開放判定に必要）
+                                const today = getTodayDate();
+                                const todayRecord = await DataService.getDailyRecord(firebaseUser.uid, today);
 
-                                Object.values(FEATURES).forEach(feature => {
-                                    if (feature.trigger === 'initial') {
-                                        // initial: 最初から開放
-                                        if (!unlocked.includes(feature.id)) unlocked.push(feature.id);
-                                    } else if (feature.trigger === 'days') {
-                                        // days: 日数ベースで開放
-                                        if (days >= feature.requiredDays && !unlocked.includes(feature.id)) {
-                                            unlocked.push(feature.id);
-                                        }
-                                    } else if (feature.trigger && triggers[feature.trigger]) {
-                                        // 動的トリガー: トリガーが発火済みなら開放
-                                        if (!unlocked.includes(feature.id)) unlocked.push(feature.id);
-                                    }
-                                });
+                                // 新しい機能開放システムで開放状態を計算
+                                const isPremium = profile.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                const unlocked = calculateUnlockedFeatures(firebaseUser.uid, todayRecord, isPremium);
                                 setUnlockedFeatures(unlocked);
 
                                 // 守破離の段階を更新（21日で離、7日で破）
@@ -828,21 +802,12 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
             // LBM計算
             const lbm = userProfile.leanBodyMass || LBMUtils.calculateLBM(userProfile.weight, userProfile.bodyFatPercentage || 15);
-            
-            console.log('=== TargetPFC Calculation Debug ===');
-            console.log('userProfile.style:', userProfile.style);
-            console.log('userProfile.purpose:', userProfile.purpose);
-            console.log('lbm:', lbm);
-            console.log('userProfile.proteinRatio:', userProfile.proteinRatio);
-            console.log('userProfile.fatRatioPercent:', userProfile.fatRatioPercent);
-            console.log('userProfile.carbRatio:', userProfile.carbRatio);
 
             const customPFCParam = userProfile.proteinRatio && userProfile.fatRatioPercent && userProfile.carbRatio ? {
                 P: userProfile.proteinRatio,
                 F: userProfile.fatRatioPercent,
                 C: userProfile.carbRatio
             } : null;
-            console.log('customPFCParam:', customPFCParam);
 
             const targetPFC = LBMUtils.calculateTargetPFC(
                 userProfile.tdeeBase || 2200,
@@ -1134,6 +1099,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             dailyRecord={dailyRecord}
                             targetPFC={targetPFC}
                             unlockedFeatures={unlockedFeatures}
+                            setUnlockedFeatures={setUnlockedFeatures}
                             profile={userProfile}
                             setInfoModal={setInfoModal}
                             yesterdayRecord={yesterdayRecord}
@@ -1144,6 +1110,11 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             triggers={triggers}
                             shortcuts={shortcuts}
                             onShortcutClick={handleShortcutClick}
+                            onFeatureUnlocked={(featureId) => {
+                                if (featureId === 'analysis') {
+                                    setShowAnalysisGuide(true);
+                                }
+                            }}
                             onDeleteItem={async (type, itemId) => {
                                 // 現在のstateから削除（DBから再読み込みしない）
                                 const updatedRecord = { ...dailyRecord };
@@ -1188,84 +1159,51 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             usageDays={usageDays}
                             dailyRecord={dailyRecord}
                             onAdd={async (item) => {
-                                console.log('📥 App.js onAdd実行開始');
-                                console.log('  - addViewType:', addViewType);
-                                console.log('  - item:', item);
+                                const userId = user?.uid || DEV_USER_ID;
 
-                                // 表示中の日付（currentDate）に記録を保存
-                                const currentRecord = await DataService.getDailyRecord(user.uid, currentDate);
-                                console.log('  - currentRecord:', currentRecord);
+                                try {
+                                    // 表示中の日付（currentDate）に記録を保存
+                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
+                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
 
-                                let updatedRecord = currentRecord || { meals: [], workouts: [], conditions: null };
-
-                                // トリガー判定用の変数
-                                let triggerFired = null;
-
-                                // 既存のトリガー状態を取得
-                                const triggers = JSON.parse(localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS) || '{}');
-                                console.log('  - 既存トリガー:', triggers);
-
-                                if (addViewType === 'meal') {
-                                    updatedRecord.meals = [...(updatedRecord.meals || []), item];
-                                    // 初めての食事記録でトレーニング機能を開放
-                                    if (!triggers.after_meal) {
-                                        triggerFired = 'after_meal';
+                                    if (addViewType === 'meal') {
+                                        updatedRecord.meals = [...(updatedRecord.meals || []), item];
+                                    } else if (addViewType === 'workout') {
+                                        updatedRecord.workouts = [...(updatedRecord.workouts || []), item];
+                                    } else if (addViewType === 'supplement') {
+                                        updatedRecord.supplements = [...(updatedRecord.supplements || []), item];
+                                    } else if (addViewType === 'condition') {
+                                        updatedRecord.conditions = item;
                                     }
-                                } else if (addViewType === 'workout') {
-                                    console.log('  ✅ workoutタイプ検出');
-                                    updatedRecord.workouts = [...(updatedRecord.workouts || []), item];
-                                    console.log('  - updatedRecord.workouts:', updatedRecord.workouts);
-                                    // 初めてのトレーニング記録でコンディション機能を開放
-                                    if (!triggers.after_training) {
-                                        triggerFired = 'after_training';
-                                        console.log('  ✅ after_trainingトリガー発火');
-                                    }
-                                } else if (addViewType === 'condition') {
-                                    updatedRecord.conditions = item; // コンディションは1日1回
-                                    console.log('  - updatedRecord.conditions:', updatedRecord.conditions);
-                                    console.log('  - isFullyRecorded:', ConditionUtils.isFullyRecorded(updatedRecord));
-                                    // コンディション6項目すべて記録完了で分析機能を開放
-                                    if (!triggers.after_condition && ConditionUtils.isFullyRecorded(updatedRecord)) {
-                                        triggerFired = 'after_condition';
-                                        console.log('  ✅ after_conditionトリガー発火');
-                                    }
-                                }
 
-                                console.log('  - 保存前のupdatedRecord:', updatedRecord);
-                                await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
-                                console.log('  ✅ DataService.saveDailyRecord完了');
-                                setDailyRecord(updatedRecord);
-                                setLastUpdate(Date.now());
+                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
+                                    setDailyRecord(updatedRecord);
+                                    setLastUpdate(Date.now());
 
-                                // トリガーが発火した場合、機能を開放
-                                if (triggerFired) {
-                                    const updatedTriggers = { ...triggers, [triggerFired]: true };
-                                    localStorage.setItem(STORAGE_KEYS.ONBOARDING_TRIGGERS, JSON.stringify(updatedTriggers));
-                                    setTriggers(updatedTriggers);
+                                    // 新しい機能開放システム：記録追加後に完了チェックと機能開放状態を再計算
+                                    const oldUnlocked = [...unlockedFeatures];
 
-                                    // 機能開放を再計算
-                                    const unlocked = [...unlockedFeatures];
-                                    Object.values(FEATURES).forEach(feature => {
-                                        if (feature.trigger === triggerFired && !unlocked.includes(feature.id)) {
-                                            unlocked.push(feature.id);
-                                        }
-                                    });
-                                    setUnlockedFeatures(unlocked);
+                                    await checkAndCompleteFeatures(userId, updatedRecord);
+                                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                    const newUnlocked = calculateUnlockedFeatures(userId, updatedRecord, isPremium);
+                                    setUnlockedFeatures(newUnlocked);
 
-                                    // 誘導モーダルを表示
-                                    if (triggerFired === 'after_meal') {
+                                    // 新しく開放された機能があれば誘導モーダルを表示
+                                    if (!oldUnlocked.includes('training') && newUnlocked.includes('training')) {
                                         setShowTrainingGuide(true);
-                                    } else if (triggerFired === 'after_training') {
+                                    } else if (!oldUnlocked.includes('condition') && newUnlocked.includes('condition')) {
                                         setShowConditionGuide(true);
-                                    } else if (triggerFired === 'after_condition') {
+                                    } else if (!oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
                                         setShowAnalysisGuide(true);
                                     }
-                                }
 
-                                setShowAddView(false);
-                                if (openedFromSettings) {
-                                    setShowSettings(true);
-                                    setOpenedFromSettings(false);
+                                    setShowAddView(false);
+                                    if (openedFromSettings) {
+                                        setShowSettings(true);
+                                        setOpenedFromSettings(false);
+                                    }
+                                } catch (error) {
+                                    console.error('onAddエラー:', error);
                                 }
                             }}
                             userProfile={userProfile}
@@ -1278,26 +1216,16 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     {/* 分析ビュー */}
                     {showAnalysisView && (
                         <AnalysisView
-                            onClose={() => {
+                            onClose={async () => {
                                 setShowAnalysisView(false);
 
-                                // 最初の分析閲覧で指示書機能を開放
-                                if (!triggers.after_analysis) {
-                                    const updatedTriggers = { ...triggers, after_analysis: true };
-                                    localStorage.setItem(STORAGE_KEYS.ONBOARDING_TRIGGERS, JSON.stringify(updatedTriggers));
-                                    setTriggers(updatedTriggers);
-
-                                    // 機能開放を再計算
-                                    const unlocked = [...unlockedFeatures];
-                                    Object.values(FEATURES).forEach(feature => {
-                                        if (feature.trigger === 'after_analysis' && !unlocked.includes(feature.id)) {
-                                            unlocked.push(feature.id);
-                                        }
-                                    });
+                                // 新しい機能開放システム：分析を閲覧したら完了マーク
+                                const userId = user?.uid || DEV_USER_ID;
+                                if (!isFeatureCompleted(userId, 'analysis')) {
+                                    await markFeatureCompleted(userId, 'analysis');
+                                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                    const unlocked = calculateUnlockedFeatures(userId, dailyRecord, isPremium);
                                     setUnlockedFeatures(unlocked);
-
-                                    // 指示書誘導モーダルを表示
-                                    setShowDirectiveGuide(true);
                                 }
                             }}
                             userId={user.uid}
@@ -2327,9 +2255,9 @@ AIコーチなどの高度な機能が解放されます。
                     <GuideModal
                         show={showAnalysisGuide}
                         title="🎉 分析機能が開放されました！"
-                        message="コンディション記録が完了しました。&#10;&#10;AIがあなたの記録を分析して、改善点を提案します。&#10;画面右下のメニューボタンから「分析」を選択してください。"
-                        iconName="BarChart3"
-                        iconColor="bg-purple-100"
+                        message="コンディション記録が完了しました。&#10;&#10;AIがあなたの記録を分析して、改善点を提案します。&#10;「＋分析」ボタンをタップして詳細を確認してください。"
+                        iconName="PieChart"
+                        iconColor="bg-indigo-100"
                         targetSectionId={null}
                         onClose={() => setShowAnalysisGuide(false)}
                     />

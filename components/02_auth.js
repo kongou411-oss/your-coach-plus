@@ -94,9 +94,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
         displayName: '', // 氏名（フルネーム）
         gender: '男性',
         age: 25,
+        idealSleepHours: 4, // 理想の睡眠時間（1:5h以下、2:6h、3:7h、4:8h、5:9h以上）
         height: 170,
         weight: 70,
         bodyFatPercentage: 15,
+        idealWeight: 70, // 理想の体重
+        idealBodyFatPercentage: 15, // 理想の体脂肪率
+        idealLBM: null, // 理想のLBM（自動計算）
+        style: '一般', // トレーニングスタイル
         activityLevel: 3,
         customActivityMultiplier: null, // カスタム活動レベル係数
         purpose: 'メンテナンス',
@@ -224,6 +229,76 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 className="w-full px-3 py-2 border rounded-lg"
                             />
                         </div>
+                        <div className="border-l-4 border-blue-500 pl-4">
+                            <label className="block text-sm font-medium mb-2">理想の睡眠時間</label>
+                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5">
+                                {[
+                                    { value: 1, label: '5h以下' },
+                                    { value: 2, label: '6h' },
+                                    { value: 3, label: '7h' },
+                                    { value: 4, label: '8h' },
+                                    { value: 5, label: '9h以上' }
+                                ].map(item => (
+                                    <button
+                                        key={item.value}
+                                        type="button"
+                                        onClick={() => setProfile({...profile, idealSleepHours: item.value})}
+                                        className={`flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 ${
+                                            item.value === (profile.idealSleepHours || 4)
+                                                ? 'bg-blue-500 text-white'
+                                                : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">※成人の推奨睡眠時間は7-8時間です</p>
+                        </div>
+
+                        <div className="border-l-4 border-blue-500 pl-4">
+                            <label className="block text-sm font-medium mb-2">トレーニングスタイル</label>
+                            <div className="space-y-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setProfile({...profile, style: '一般'})}
+                                    className={`w-full p-3 rounded-lg border-2 transition ${
+                                        profile.style === '一般'
+                                            ? 'border-blue-500 bg-blue-50 shadow-md'
+                                            : 'border-gray-200 bg-white hover:border-blue-300'
+                                    }`}
+                                >
+                                    <div className="font-bold text-sm">一般</div>
+                                    <div className="text-xs text-gray-600">健康維持・日常フィットネス</div>
+                                </button>
+                                {['筋肥大', '筋力', '持久力', 'バランス'].map(styleOption => (
+                                    <button
+                                        key={styleOption}
+                                        type="button"
+                                        onClick={() => setProfile({...profile, style: styleOption})}
+                                        className={`w-full p-3 rounded-lg border-2 transition ${
+                                            profile.style === styleOption
+                                                ? 'border-purple-500 bg-purple-50 shadow-md'
+                                                : 'border-gray-200 bg-white hover:border-purple-300'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-left">
+                                                <div className="font-bold text-sm">{styleOption}</div>
+                                                <div className="text-xs text-gray-600">
+                                                    {styleOption === '筋肥大' && 'ボディメイク・筋肉増強'}
+                                                    {styleOption === '筋力' && '最大筋力・パワー向上'}
+                                                    {styleOption === '持久力' && '有酸素・スタミナ重視'}
+                                                    {styleOption === 'バランス' && '総合的な身体能力'}
+                                                </div>
+                                            </div>
+                                            <span className="text-xs text-purple-600 font-medium">ボディメイカー</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">※ボディメイカーは高度なトレーニング向け</p>
+                        </div>
                     </div>
                 )}
 
@@ -268,10 +343,68 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <p className="text-sm text-gray-500 mt-1">不明な場合は推定値でOKです</p>
                         </div>
                         <div className="bg-cyan-50 p-4 rounded-lg border border-cyan-200">
-                            <p className="text-sm font-medium text-cyan-800">計算結果</p>
+                            <p className="text-sm font-medium text-cyan-800">現在のLBM</p>
                             <p className="text-2xl font-bold text-cyan-900 mt-2">
-                                LBM: {LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage).toFixed(1)} kg
+                                {LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage).toFixed(1)} kg
                             </p>
+                        </div>
+
+                        <div className="bg-purple-50 p-4 rounded-lg border-2 border-purple-300">
+                            <h3 className="text-sm font-bold text-purple-800 mb-3">理想の体型目標</h3>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-purple-700">理想の体重 (kg)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={profile.idealWeight}
+                                        onChange={(e) => {
+                                            const newIdealWeight = e.target.value === '' ? '' : Number(e.target.value);
+                                            setProfile({
+                                                ...profile,
+                                                idealWeight: newIdealWeight,
+                                                idealLBM: newIdealWeight && profile.idealBodyFatPercentage
+                                                    ? LBMUtils.calculateLBM(newIdealWeight, profile.idealBodyFatPercentage)
+                                                    : null
+                                            });
+                                        }}
+                                        className="w-full px-3 py-2 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-purple-700">理想の体脂肪率 (%)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={profile.idealBodyFatPercentage}
+                                        onChange={(e) => {
+                                            const newIdealBF = e.target.value === '' ? '' : Number(e.target.value);
+                                            setProfile({
+                                                ...profile,
+                                                idealBodyFatPercentage: newIdealBF,
+                                                idealLBM: profile.idealWeight && newIdealBF
+                                                    ? LBMUtils.calculateLBM(profile.idealWeight, newIdealBF)
+                                                    : null
+                                            });
+                                        }}
+                                        className="w-full px-3 py-2 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                {profile.idealLBM && (
+                                    <div className="bg-white p-3 rounded-lg border border-purple-300">
+                                        <p className="text-xs font-medium text-purple-700">理想のLBM（自動計算）</p>
+                                        <p className="text-xl font-bold text-purple-900 mt-1">
+                                            {profile.idealLBM.toFixed(1)} kg
+                                        </p>
+                                        <p className="text-xs text-purple-600 mt-1">
+                                            現在より {(profile.idealLBM - LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage)).toFixed(1)} kg
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

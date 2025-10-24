@@ -232,6 +232,28 @@ git commit -m "チャット内容の説明"
 
 ## 重要な注意事項
 
+### UI/UX重要事項
+
+#### BAB（Bottom Action Bar）について
+- **正しい定義**: BABは画面下部の「ホーム、履歴、PGBASE、COMY、設定」のタブバーのこと
+- **絶対に「FAB」と呼ばない**: FAB（Floating Action Button）は削除済みで存在しない
+- **BABの実装**: `components/08_app.js`の2096行目から実装されている
+- **BABの構造**:
+  - クラス: `fixed bottom-0 left-0 right-0 z-[9999] bg-white border-t shadow-lg`
+  - 折りたたみボタン（ChevronUp/ChevronDown）で展開/格納を切り替え
+  - `bottomBarExpanded`状態で展開時はメニューが表示される
+  - 格納時の高さ: 約40px
+  - 展開時の高さ: 約120-150px（メニュー内容により変動）
+- **BABとの干渉回避**:
+  - 固定配置のUI要素（入力欄など）は、`position: fixed; bottom: ${babHeight}px`でBABの高さに応じて位置を動的に調整する
+  - ResizeObserverでBABの高さ変化を監視し、即時連動させる
+  - スクロールコンテナには下部に`padding-bottom: ${babHeight + 余白}px`を確保する
+
+#### シェブロンショートカットについて
+- **BABとは別物**: 画面左右の端にある展開式ショートカットメニュー
+- **実装**: `components/17_chevron_shortcut.js`に実装されている
+- **位置**: 画面左右の端（`top-[85%]`の位置）にシェブロンボタンがあり、クリックで展開
+
 ### セキュリティ
 - **APIキー**: `config.js`の機密情報は公開リポジトリにコミットしない
 - **Firebase Rules**: Firestoreセキュリティルールを適切に設定

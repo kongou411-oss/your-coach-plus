@@ -445,6 +445,84 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     </select>
                                                 </div>
                                             </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1.5">理想の睡眠時間</label>
+                                                <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5">
+                                                    {[
+                                                        { value: 1, label: '5h以下' },
+                                                        { value: 2, label: '6h' },
+                                                        { value: 3, label: '7h' },
+                                                        { value: 4, label: '8h' },
+                                                        { value: 5, label: '9h以上' }
+                                                    ].map(item => (
+                                                        <button
+                                                            key={item.value}
+                                                            type="button"
+                                                            onClick={() => setProfile({...profile, idealSleepHours: item.value})}
+                                                            className={`flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 ${
+                                                                item.value === (profile.idealSleepHours || 4)
+                                                                    ? 'bg-blue-500 text-white'
+                                                                    : 'text-gray-500 hover:text-gray-800'
+                                                            }`}
+                                                        >
+                                                            {item.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-1">※成人の推奨睡眠時間は7-8時間です</p>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1.5">理想の体重 (kg)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={profile.idealWeight || ''}
+                                                    onChange={(e) => {
+                                                        const newIdealWeight = e.target.value === '' ? '' : Number(e.target.value);
+                                                        setProfile({
+                                                            ...profile,
+                                                            idealWeight: newIdealWeight,
+                                                            idealLBM: newIdealWeight && profile.idealBodyFatPercentage
+                                                                ? LBMUtils.calculateLBM(newIdealWeight, profile.idealBodyFatPercentage)
+                                                                : null
+                                                        });
+                                                    }}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1.5">理想の体脂肪率 (%)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={profile.idealBodyFatPercentage || ''}
+                                                    onChange={(e) => {
+                                                        const newIdealBF = e.target.value === '' ? '' : Number(e.target.value);
+                                                        setProfile({
+                                                            ...profile,
+                                                            idealBodyFatPercentage: newIdealBF,
+                                                            idealLBM: profile.idealWeight && newIdealBF
+                                                                ? LBMUtils.calculateLBM(profile.idealWeight, newIdealBF)
+                                                                : null
+                                                        });
+                                                    }}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                />
+                                            </div>
+
+                                            {profile.idealLBM && (
+                                                <div className="bg-purple-50 p-3 rounded-lg border border-purple-300">
+                                                    <p className="text-xs font-medium text-purple-700">理想のLBM（自動計算）</p>
+                                                    <p className="text-lg font-bold text-purple-900 mt-1">
+                                                        {profile.idealLBM.toFixed(1)} kg
+                                                    </p>
+                                                    <p className="text-xs text-purple-600 mt-1">
+                                                        現在より {(profile.idealLBM - (profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15))).toFixed(1)} kg
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -731,22 +809,28 @@ ${Math.round(tdee)}kcal ${profile.calorieAdjustment >= 0 ? '+' : ''} ${profile.c
                                         {/* スタイル選択 */}
                                         <div className="mb-3">
                                             <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
-                                                スタイル
+                                                トレーニングスタイル
                                                 <button
                                                     type="button"
                                                     onClick={() => setInfoModal({
                                                         show: true,
-                                                        title: 'スタイルとタンパク質係数',
-                                                        content: `スタイルによってタンパク質の推奨係数が変わります。
+                                                        title: 'トレーニングスタイル',
+                                                        content: `スタイルによってタンパク質の推奨係数とAI分析の評価基準が変わります。
 
 【一般】
 ・LBM × 1.0倍のタンパク質係数
-・健康維持や日常的なトレーニングを行う方向け
+・健康維持や日常的なトレーニング向け
+・運動基準: 15分〜1時間
 
-【ボディメイカー】
-・LBM × 2.0倍のタンパク質係数（一般の2倍）
-・筋肥大や体づくりを重視する方向け
-・高強度のトレーニングを行う方向け`
+【ボディメイカー系】
+・LBM × 2.0倍のタンパク質係数
+・高強度のトレーニング向け
+・運動基準: 30分〜2時間以上
+
+  筋肥大: 高重量・ボリューム重視
+  筋力: 最大筋力・パワー向上
+  持久力: 有酸素・スタミナ重視
+  バランス: 総合的な身体能力`
                                                     })}
                                                     className="text-indigo-600 hover:text-indigo-800"
                                                 >
@@ -758,8 +842,13 @@ ${Math.round(tdee)}kcal ${profile.calorieAdjustment >= 0 ? '+' : ''} ${profile.c
                                                 onChange={(e) => setProfile({...profile, style: e.target.value})}
                                                 className="w-full px-3 py-2 border rounded-lg"
                                             >
-                                                <option value="一般">一般</option>
-                                                <option value="ボディメイカー">ボディメイカー</option>
+                                                <option value="一般">一般（健康維持）</option>
+                                                <optgroup label="ボディメイカー">
+                                                    <option value="筋肥大">筋肥大（高重量・ボリューム）</option>
+                                                    <option value="筋力">筋力（最大筋力）</option>
+                                                    <option value="持久力">持久力（有酸素）</option>
+                                                    <option value="バランス">バランス（総合）</option>
+                                                </optgroup>
                                             </select>
                                         </div>
 

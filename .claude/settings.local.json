@@ -26,7 +26,10 @@
       "Bash(node --check:*)",
       "Read(//c/**)",
       "Bash(python:*)",
-      "Bash(start http://localhost:8000)"
+      "Bash(start http://localhost:8000)",
+      "Bash(powershell -Command \"Get-Content ''C:\\Users\\yourc\\yourcoach_new\\components\\04_settings.js'' | Measure-Object -Line | Select-Object -ExpandProperty Lines\")",
+      "Bash(powershell:*)",
+      "Bash(node -c:*)"
     ],
     "deny": [],
     "ask": []

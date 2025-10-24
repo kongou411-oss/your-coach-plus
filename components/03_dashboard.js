@@ -1,5 +1,5 @@
 // ===== Dashboard Component =====
-const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers = {}, shortcuts = [], onShortcutClick }) => {
+const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers = {}, shortcuts = [], onShortcutClick, onFeatureUnlocked }) => {
     // 指示書管理
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
@@ -762,7 +762,7 @@ ${Math.round(caloriesPercent)}%`
 
                 {/* 運動セクション */}
                 {/* 運動セクション - 食事記録完了後に開放 */}
-                {triggers.after_meal && (
+                {unlockedFeatures.includes('training') && (
                     <div id="workout-section" className="mb-6">
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
@@ -851,7 +851,7 @@ ${Math.round(caloriesPercent)}%`
                 )}
 
                 {/* 体調セクション - 運動記録完了後に開放 */}
-                {triggers.after_training && (
+                {unlockedFeatures.includes('condition') && (
                     <div id="condition-section" className="mb-6">
                     <div className="flex items-center justify-between mb-3">
                         <h4 className="font-bold text-gray-800 flex items-center gap-2">
@@ -896,6 +896,18 @@ ${Math.round(caloriesPercent)}%`
                                             setDailyRecord(updated);
                                             const userId = user?.uid || DEV_USER_ID;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
+
+                                            // 機能開放チェック
+                                            const oldUnlocked = [...unlockedFeatures];
+                                            await checkAndCompleteFeatures(userId, updated);
+                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            setUnlockedFeatures(newUnlocked);
+
+                                            // 新しく開放された機能があればコールバック
+                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                                onFeatureUnlocked('analysis');
+                                            }
                                         }}
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.sleepHours) || 0)
@@ -945,6 +957,18 @@ ${Math.round(caloriesPercent)}%`
                                             setDailyRecord(updated);
                                             const userId = user?.uid || DEV_USER_ID;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
+
+                                            // 機能開放チェック
+                                            const oldUnlocked = [...unlockedFeatures];
+                                            await checkAndCompleteFeatures(userId, updated);
+                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            setUnlockedFeatures(newUnlocked);
+
+                                            // 新しく開放された機能があればコールバック
+                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                                onFeatureUnlocked('analysis');
+                                            }
                                         }}
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.sleepQuality) || 0)
@@ -994,6 +1018,18 @@ ${Math.round(caloriesPercent)}%`
                                             setDailyRecord(updated);
                                             const userId = user?.uid || DEV_USER_ID;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
+
+                                            // 機能開放チェック
+                                            const oldUnlocked = [...unlockedFeatures];
+                                            await checkAndCompleteFeatures(userId, updated);
+                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            setUnlockedFeatures(newUnlocked);
+
+                                            // 新しく開放された機能があればコールバック
+                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                                onFeatureUnlocked('analysis');
+                                            }
                                         }}
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.appetite) || 0)
@@ -1043,6 +1079,18 @@ ${Math.round(caloriesPercent)}%`
                                             setDailyRecord(updated);
                                             const userId = user?.uid || DEV_USER_ID;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
+
+                                            // 機能開放チェック
+                                            const oldUnlocked = [...unlockedFeatures];
+                                            await checkAndCompleteFeatures(userId, updated);
+                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            setUnlockedFeatures(newUnlocked);
+
+                                            // 新しく開放された機能があればコールバック
+                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                                onFeatureUnlocked('analysis');
+                                            }
                                         }}
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.digestion) || 0)
@@ -1092,6 +1140,18 @@ ${Math.round(caloriesPercent)}%`
                                             setDailyRecord(updated);
                                             const userId = user?.uid || DEV_USER_ID;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
+
+                                            // 機能開放チェック
+                                            const oldUnlocked = [...unlockedFeatures];
+                                            await checkAndCompleteFeatures(userId, updated);
+                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            setUnlockedFeatures(newUnlocked);
+
+                                            // 新しく開放された機能があればコールバック
+                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                                onFeatureUnlocked('analysis');
+                                            }
                                         }}
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.focus) || 0)
@@ -1141,6 +1201,18 @@ ${Math.round(caloriesPercent)}%`
                                             setDailyRecord(updated);
                                             const userId = user?.uid || DEV_USER_ID;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
+
+                                            // 機能開放チェック
+                                            const oldUnlocked = [...unlockedFeatures];
+                                            await checkAndCompleteFeatures(userId, updated);
+                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            setUnlockedFeatures(newUnlocked);
+
+                                            // 新しく開放された機能があればコールバック
+                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                                onFeatureUnlocked('analysis');
+                                            }
                                         }}
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.stress) || 0)
@@ -1184,22 +1256,24 @@ ${Math.round(caloriesPercent)}%`
                     </div>
                 )}
 
-                {/* 分析ボタン */}
-                <div>
-                    <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                            <Icon name="PieChart" size={18} className="text-indigo-600" />
-                            分析
-                        </h4>
-                        <button
-                            onClick={() => window.handleQuickAction && window.handleQuickAction('analysis')}
-                            className="text-xs px-3 py-1 bg-indigo-50 border border-indigo-300 text-indigo-700 rounded-lg hover:bg-indigo-100 transition"
-                        >
-                            詳細を見る
-                        </button>
+                {/* 分析ボタン - コンディション完了後に開放 */}
+                {unlockedFeatures.includes('analysis') && (
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                                <Icon name="PieChart" size={18} className="text-indigo-600" />
+                                分析
+                            </h4>
+                            <button
+                                onClick={() => window.handleQuickAction && window.handleQuickAction('analysis')}
+                                className="text-sm px-4 py-2 bg-indigo-100 border border-indigo-400 text-indigo-800 rounded-lg hover:bg-indigo-200 transition font-medium"
+                            >
+                                + 分析
+                            </button>
+                        </div>
+                        <p className="text-sm text-gray-500">AIによる詳細な栄養分析を確認できます</p>
                     </div>
-                    <p className="text-sm text-gray-500">AIによる詳細な栄養分析を確認できます</p>
-                </div>
+                )}
 
             </div>
 

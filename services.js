@@ -844,125 +844,151 @@ ${userProfile ? `
 簡潔で実用的な回答を心がけてください。`;
     },
 
-    // Gemini APIを呼び出し（マルチモデル対応）
-    // model: 使用するモデル名（デフォルト: gemini-2.5-pro）
-    sendMessage: async (message, conversationHistory = [], userProfile = null, model = 'gemini-2.5-pro') => {
-        try {
-            if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
-                return {
-                    success: false,
-                    error: 'Gemini APIキーが設定されていません。'
-                };
-            }
+    // Gemini APIを呼び出し（マルチモデル対応、リトライ機能付き）
+    // model: 使用するモデル名（デフォルト: gemini-2.5-flash）
+    sendMessage: async (message, conversationHistory = [], userProfile = null, model = 'gemini-2.5-flash') => {
+        const maxRetries = 3;
+        const retryDelay = 2000; // 2秒
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-
-            const contents = [];
-            if (conversationHistory.length === 0) {
-                contents.push({
-                    role: 'user',
-                    parts: [{ text: GeminiAPI.getSystemPrompt(userProfile) + '\n\n' + message }]
-                });
-            } else {
-                conversationHistory.forEach(msg => {
-                    contents.push({
-                        role: msg.role === 'user' ? 'user' : 'model',
-                        parts: [{ text: msg.content }]
-                    });
-                });
-                contents.push({
-                    role: 'user',
-                    parts: [{ text: message }]
-                });
-            }
-
-            const safetySettings = [
-                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
-            ];
-
-            const response = await fetch(`${apiUrl}?key=${GEMINI_API_KEY}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    contents: contents,
-                    generationConfig: {
-                        temperature: 0.7,
-                        topK: 40,
-                        topP: 0.95,
-                        maxOutputTokens: 2048  // 出力トークン上限を元に戻す
-                    },
-                    safetySettings: safetySettings
-                })
-            });
-
-            if (!response.ok) {
-                let errorData;
-                try {
-                    errorData = await response.json();
-                } catch (e) {
-                    errorData = { error: { message: response.statusText } };
-                }
-                console.error('Gemini API Error:', errorData);
-                const errorMessage = `Status ${response.status}: ${errorData?.error?.message || 'Unknown error'}`;
-                return {
-                    success: false,
-                    error: `API通信エラーが発生しました。(${errorMessage})`
-                };
-            }
-
-            const data = await response.json();
-
-            // トークン使用量をログ出力
-            if (data.usageMetadata) {
-                console.log('[Gemini API] Token usage:', {
-                    promptTokens: data.usageMetadata.promptTokenCount,
-                    candidatesTokens: data.usageMetadata.candidatesTokenCount,
-                    totalTokens: data.usageMetadata.totalTokenCount
-                });
-            }
-
-            if (!data || !data.candidates || data.candidates.length === 0) {
-                if (data.promptFeedback && data.promptFeedback.blockReason) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
                     return {
                         success: false,
-                        error: `リクエストがブロックされました。理由: ${data.promptFeedback.blockReason}`
+                        error: 'Gemini APIキーが設定されていません。'
                     };
                 }
+
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+                const contents = [];
+                if (conversationHistory.length === 0) {
+                    contents.push({
+                        role: 'user',
+                        parts: [{ text: GeminiAPI.getSystemPrompt(userProfile) + '\n\n' + message }]
+                    });
+                } else {
+                    conversationHistory.forEach(msg => {
+                        contents.push({
+                            role: msg.role === 'user' ? 'user' : 'model',
+                            parts: [{ text: msg.content }]
+                        });
+                    });
+                    contents.push({
+                        role: 'user',
+                        parts: [{ text: message }]
+                    });
+                }
+
+                const safetySettings = [
+                    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+                ];
+
+                const response = await fetch(`${apiUrl}?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: contents,
+                        generationConfig: {
+                            temperature: 0.7,
+                            topK: 40,
+                            topP: 0.95,
+                            maxOutputTokens: 8192  // 出力トークン上限を拡大
+                        },
+                        safetySettings: safetySettings
+                    })
+                });
+
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = await response.json();
+                    } catch (e) {
+                        errorData = { error: { message: response.statusText } };
+                    }
+
+                    // 503エラー（過負荷）の場合はリトライ
+                    if (response.status === 503 && attempt < maxRetries) {
+                        console.warn(`Gemini API 503エラー (試行 ${attempt}/${maxRetries}). ${retryDelay/1000}秒後にリトライします...`);
+                        await new Promise(resolve => setTimeout(resolve, retryDelay * attempt)); // 指数バックオフ
+                        continue;
+                    }
+
+                    console.error('Gemini API Error:', errorData);
+                    const errorMessage = `Status ${response.status}: ${errorData?.error?.message || 'Unknown error'}`;
+                    return {
+                        success: false,
+                        error: `API通信エラーが発生しました。(${errorMessage})`
+                    };
+                }
+
+                const data = await response.json();
+
+                // トークン使用量をログ出力
+                if (data.usageMetadata) {
+                    console.log('[Gemini API] Token usage:', {
+                        promptTokens: data.usageMetadata.promptTokenCount,
+                        candidatesTokens: data.usageMetadata.candidatesTokenCount,
+                        totalTokens: data.usageMetadata.totalTokenCount
+                    });
+                }
+
+                if (!data || !data.candidates || data.candidates.length === 0) {
+                    if (data.promptFeedback && data.promptFeedback.blockReason) {
+                        return {
+                            success: false,
+                            error: `リクエストがブロックされました。理由: ${data.promptFeedback.blockReason}`
+                        };
+                    }
+                    return {
+                        success: false,
+                        error: 'AIからの応答が空でした。'
+                    };
+                }
+
+                const candidate = data.candidates[0];
+
+                if (candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                    const responseText = candidate.content.parts[0].text;
+                    console.log('[Gemini API] Response length:', responseText.length, 'characters');
+                    return {
+                        success: true,
+                        text: responseText
+                    };
+                } else {
+                    const reason = candidate.finishReason || '不明';
+                    const safetyInfo = (candidate.safetyRatings || []).map(r => `${r.category}: ${r.probability}`).join(', ');
+                    return {
+                        success: false,
+                        error: `AIが応答を生成できませんでした。理由: ${reason}。${safetyInfo ? `詳細: ${safetyInfo}` : '不適切なコンテンツと判断された可能性があります。'}`
+                    };
+                }
+            } catch (error) {
+                // リトライ可能なエラーの場合
+                if (attempt < maxRetries) {
+                    console.warn(`Gemini APIエラー (試行 ${attempt}/${maxRetries}). ${retryDelay/1000}秒後にリトライします...`, error.message);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+                    continue;
+                }
+
+                console.error('Gemini API Error:', error);
                 return {
                     success: false,
-                    error: 'AIからの応答が空でした。'
+                    error: 'AIとの通信中にネットワークエラーが発生しました。接続を確認してください。'
                 };
             }
-
-            const candidate = data.candidates[0];
-
-            if (candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                const responseText = candidate.content.parts[0].text;
-                console.log('[Gemini API] Response length:', responseText.length, 'characters');
-                return {
-                    success: true,
-                    text: responseText
-                };
-            } else {
-                const reason = candidate.finishReason || '不明';
-                const safetyInfo = (candidate.safetyRatings || []).map(r => `${r.category}: ${r.probability}`).join(', ');
-                return {
-                    success: false,
-                    error: `AIが応答を生成できませんでした。理由: ${reason}。${safetyInfo ? `詳細: ${safetyInfo}` : '不適切なコンテンツと判断された可能性があります。'}`
-                };
-            }
-        } catch (error) {
-            console.error('Gemini API Error:', error);
-            return {
-                success: false,
-                error: 'AIとの通信中にネットワークエラーが発生しました。接続を確認してください。'
-            };
         }
+
+        // 全リトライ失敗
+        return {
+            success: false,
+            error: 'AIとの通信に失敗しました。しばらく時間をおいてから再度お試しください。'
+        };
     },
 
     // AIクレジット管理

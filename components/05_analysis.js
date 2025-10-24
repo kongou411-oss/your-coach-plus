@@ -18,6 +18,10 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [isFirstAnalysis, setIsFirstAnalysis] = useState(false);
 
+    // BAB連動state
+    const [babHeight, setBabHeight] = useState(64); // 初期値: 格納時の高さ
+    const [showHelpModal, setShowHelpModal] = useState(false);
+
     const getTodayDate = () => {
         const today = new Date();
         const year = today.getFullYear();
@@ -30,12 +34,152 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         performAnalysis();
     }, []);
 
+    // BABの高さを監視して入力欄の位置を動的に調整
+    useEffect(() => {
+        const updateBabHeight = () => {
+            const babElement = document.querySelector('.fixed.bottom-0.z-\\[9999\\]');
+            if (babElement) {
+                const height = babElement.offsetHeight;
+                setBabHeight(height);
+            }
+        };
+
+        // 初回計測
+        updateBabHeight();
+
+        // ResizeObserverでBABの高さ変化を監視
+        const babElement = document.querySelector('.fixed.bottom-0.z-\\[9999\\]');
+        if (babElement) {
+            const resizeObserver = new ResizeObserver(updateBabHeight);
+            resizeObserver.observe(babElement);
+
+            return () => {
+                resizeObserver.disconnect();
+            };
+        }
+
+        // BAB要素が見つからない場合のフォールバック
+        const intervalId = setInterval(updateBabHeight, 500);
+        return () => clearInterval(intervalId);
+    }, []);
+
     const handleClose = () => {
         if (aiLoading) {
             alert('AI分析が完了するまでお待ちください。');
             return;
         }
         onClose();
+    };
+
+    // スコア計算関数
+    const calculateScores = (profile, record, target) => {
+        // スタイル判定（一般 or ボディメイカー系）
+        const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス'];
+        const isBodymaker = bodymakerStyles.includes(profile.style);
+
+        // 食事データ
+        const totalCalories = (record.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
+        const totalProtein = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
+        const totalFat = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
+        const totalCarbs = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
+
+        // 食事スコア計算
+        const proteinRate = Math.min(100, target.protein > 0 ? (totalProtein / target.protein) * 100 : 0);
+        const fatRate = Math.min(100, target.fat > 0 ? (totalFat / target.fat) * 100 : 0);
+        const carbsRate = Math.min(100, target.carbs > 0 ? (totalCarbs / target.carbs) * 100 : 0);
+        const pfcBalance = (proteinRate + fatRate + carbsRate) / 3;
+
+        const calorieDeviation = Math.abs(totalCalories - target.calories) / target.calories;
+        const calorieScore = Math.max(0, 100 - calorieDeviation * 100);
+
+        const foodScore = Math.round(pfcBalance * 0.7 + calorieScore * 0.3);
+
+        // 運動データ
+        const workouts = record.workouts || [];
+        const totalDuration = workouts.reduce((sum, w) => {
+            return sum + (w.sets || []).reduce((s, set) => s + (set.duration || 0), 0);
+        }, 0);
+        const exerciseCount = workouts.length;
+
+        // 運動スコア計算（ボディメイカー/一般で基準が異なる）
+        let durationScore = 0;
+        let exerciseCountScore = 0;
+
+        if (isBodymaker) {
+            // ボディメイカー基準
+            if (totalDuration === 0) durationScore = 0;
+            else if (totalDuration >= 120) durationScore = 100; // 2時間以上
+            else if (totalDuration >= 90) durationScore = 75;   // 1.5時間以上
+            else if (totalDuration >= 60) durationScore = 50;   // 1時間以上
+            else if (totalDuration >= 30) durationScore = 25;   // 30分以上
+            else durationScore = 0;
+
+            if (exerciseCount === 0) exerciseCountScore = 0;
+            else if (exerciseCount >= 5) exerciseCountScore = 100;
+            else if (exerciseCount === 4) exerciseCountScore = 80;
+            else if (exerciseCount === 3) exerciseCountScore = 60;
+            else if (exerciseCount === 2) exerciseCountScore = 40;
+            else if (exerciseCount === 1) exerciseCountScore = 20;
+        } else {
+            // 一般基準
+            if (totalDuration === 0) durationScore = 0;
+            else if (totalDuration >= 60) durationScore = 100;  // 1時間以上
+            else if (totalDuration >= 45) durationScore = 75;   // 45分以上
+            else if (totalDuration >= 30) durationScore = 50;   // 30分以上
+            else if (totalDuration >= 15) durationScore = 25;   // 15分以上
+            else durationScore = 0;
+
+            if (exerciseCount === 0) exerciseCountScore = 0;
+            else if (exerciseCount >= 3) exerciseCountScore = 100;
+            else if (exerciseCount === 2) exerciseCountScore = 66;
+            else if (exerciseCount === 1) exerciseCountScore = 33;
+        }
+
+        const exerciseScore = Math.round((durationScore + exerciseCountScore) / 2);
+
+        // コンディションデータ
+        const idealSleepHoursMap = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
+        const idealSleepHours = idealSleepHoursMap[profile.idealSleepHours] || 8;
+        const actualSleepHoursMap = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
+        const actualSleepHours = actualSleepHoursMap[record.conditions?.sleepHours] || 0;
+
+        // コンディションスコア計算
+        const sleepRate = Math.min(100, idealSleepHours > 0 ? (actualSleepHours / idealSleepHours) * 100 : 0);
+
+        const sleepQuality = record.conditions?.sleepQuality || 0;
+        const appetite = record.conditions?.appetite || 0;
+        const digestion = record.conditions?.digestion || 0;
+        const focus = record.conditions?.focus || 0;
+        const stress = record.conditions?.stress || 0;
+        const invertedStress = 6 - stress; // ストレスは逆転（5が最悪→1、1が最良→5）
+
+        const metricsAverage = ((sleepQuality + appetite + digestion + focus + invertedStress) / 5) * 20; // 5段階→100点換算
+
+        const conditionScore = Math.round(sleepRate * 0.4 + metricsAverage * 0.6);
+
+        return {
+            food: {
+                score: foodScore,
+                protein: Math.round(proteinRate),
+                fat: Math.round(fatRate),
+                carbs: Math.round(carbsRate),
+                calories: Math.round(calorieScore)
+            },
+            exercise: {
+                score: exerciseScore,
+                duration: Math.round(durationScore),
+                exerciseCount: Math.round(exerciseCountScore),
+                totalMinutes: totalDuration,
+                count: exerciseCount
+            },
+            condition: {
+                score: conditionScore,
+                sleep: Math.round(sleepRate),
+                metrics: Math.round(metricsAverage),
+                actualSleepHours: actualSleepHours,
+                idealSleepHours: idealSleepHours
+            }
+        };
     };
 
     const performAnalysis = async () => {
@@ -70,6 +214,10 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
                 return;
             }
         }
+
+        // スコア計算（AI呼び出し前に実行）
+        const scores = calculateScores(userProfile, dailyRecord, targetPFC);
+        console.log('[Analysis] Calculated scores:', scores);
 
         const totalCalories = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
         const totalProtein = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
@@ -125,8 +273,8 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             setMicroLearningContent(microLearningTriggered);
         }
 
-        // AI分析を実行（初回フラグを渡す）
-        generateAIAnalysis(analysisData, insights, firstAnalysisFlag);
+        // AI分析を実行（初回フラグとスコアを渡す）
+        generateAIAnalysis(analysisData, insights, firstAnalysisFlag, scores);
     };
 
     const generateAIDirective = (currentAnalysis, aiText) => {
@@ -181,7 +329,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     };
 
     // AI分析生成
-    const generateAIAnalysis = async (currentAnalysis, insights, isFirstAnalysis = false) => {
+    const generateAIAnalysis = async (currentAnalysis, insights, isFirstAnalysis = false, scores = null) => {
         setAiLoading(true);
 
         // 既存のAI分析をクリア
@@ -224,12 +372,21 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             memo: todayRecord.notes || null
         };
 
+        // 理想の睡眠時間を実時間に変換
+        const idealSleepHoursMap = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
+        const idealSleepHours = idealSleepHoursMap[userProfile.idealSleepHours] || 8;
+
+        // 実際の睡眠時間を実時間に変換（推定）
+        const actualSleepHoursMap = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
+        const actualSleepHours = actualSleepHoursMap[todayRecord.conditions?.sleepHours] || 0;
+
         const promptData = {
             user_profile: {
                 height_cm: userProfile.height || 170,
                 weight_kg: userProfile.weight || 70,
                 body_fat_percentage: userProfile.bodyFatPercentage || 15,
                 lean_body_mass_kg: userProfile.leanBodyMass || 60,
+                ideal_sleep_hours: idealSleepHours,
                 style: userProfile.style || "一般"
             },
             today: todayData
@@ -248,82 +405,222 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             todayData.memo = null;
         }
 
+        // 目的別の評価基準を定義
+        const purposeGuidelines = {
+            '増量': {
+                calorieCriteria: totalCalories >= targetPFC.calories ? '達成' : '不足',
+                proteinCriteria: totalProtein >= targetPFC.protein * 0.9 ? '達成' : '不足',
+                focus: 'オーバーカロリー + 高タンパク + 運動実施'
+            },
+            '減量': {
+                calorieCriteria: totalCalories <= targetPFC.calories ? '達成' : '超過',
+                proteinCriteria: totalProtein >= targetPFC.protein * 0.9 ? '達成' : '不足',
+                focus: 'アンダーカロリー + タンパク質維持 + 運動実施'
+            },
+            'メンテナンス': {
+                calorieCriteria: Math.abs(totalCalories - targetPFC.calories) <= targetPFC.calories * 0.1 ? '達成' : '乖離',
+                proteinCriteria: totalProtein >= targetPFC.protein * 0.9 ? '達成' : '不足',
+                focus: 'カロリー均衡 + PFCバランス + 運動・睡眠維持'
+            }
+        };
+
+        const currentPurpose = userProfile.purpose || 'メンテナンス';
+        const guidelines = purposeGuidelines[currentPurpose] || purposeGuidelines['メンテナンス'];
+
+        // スタイル別の評価指針
+        const userStyle = userProfile.style || '一般';
+        const styleGuidelines = {
+            '一般': '健康維持・日常フィットネスを重視',
+            '筋肥大': '高重量・高ボリューム・筋肥大種目（ベンチプレス、スクワット、デッドリフト等）を重視',
+            '筋力': '最大筋力・パワー向上・低レップ高重量を重視',
+            '持久力': '有酸素運動・持久系種目・軽重量高レップを重視',
+            'バランス': '全面的な身体能力向上・多様な種目を重視'
+        };
+        const styleFocus = styleGuidelines[userStyle] || styleGuidelines['一般'];
+
+        // 理想の体型目標
+        const idealWeight = userProfile.idealWeight || userProfile.weight;
+        const idealLBM = userProfile.idealLBM || LBMUtils.calculateLBM(userProfile.weight, userProfile.bodyFatPercentage);
+        const currentLBM = LBMUtils.calculateLBM(userProfile.weight, userProfile.bodyFatPercentage);
+        const lbmGap = idealLBM - currentLBM;
+
         // セクション1: パフォーマンスレポート
-        const section1Prompt = `## 役割とゴール
+        const section1Prompt = `## 役割
 
-あなたは、トップアスリートから成長期の学生までを指導する、データサイエンティスト兼エリートパーソナルコーチです。
-あなたの最重要ミッションは、ユーザーのLBM（除脂肪体重）を維持・向上させることです。
+トップアスリート指導のエリートパーソナルコーチとして、ユーザーの目的とトレーニングスタイルに最適化された簡潔で実践的なフィードバックを提供します。
 
-## インプットデータ
+## 評価の基本原則
 
-${JSON.stringify(promptData, null, 2)}
+**最重要**: ユーザーの目的（${currentPurpose}）とスタイル（${userStyle}）の達成に必要な「食事・運動・睡眠」の3要素が満たされているかを評価してください。
 
-## タスク
+**目的: ${currentPurpose}**
+- 重点: ${guidelines.focus}
+- カロリー: ${guidelines.calorieCriteria}
+- タンパク質: ${guidelines.proteinCriteria}
 
-最新日のデータを基に、本日のパフォーマンスレポートを生成してください。
+**スタイル: ${userStyle}**
+- 評価指針: ${styleFocus}
 
-### 出力形式（この形式を厳守）
+**理想の体型目標**
+- 理想の体重: ${idealWeight.toFixed(1)}kg（現在: ${userProfile.weight}kg、差: ${(idealWeight - userProfile.weight).toFixed(1)}kg）
+- 理想のLBM: ${idealLBM.toFixed(1)}kg（現在: ${currentLBM.toFixed(1)}kg、差: ${lbmGap.toFixed(1)}kg）
 
-① 本日のパフォーマンスレポート (スコア: [0-100の整数] 点)
+**注意**: LBM（除脂肪体重）は結果指標です。食事・運動・睡眠の反復で自然に変化するものであり、評価基準ではありません。
 
-評価:
-- [ポジティブな評価点1を1文1行で記述]
-- [ポジティブな評価点2を1文1行で記述]
-- [ポジティブな評価点3を1文1行で記述]
+## 本日のデータ
 
-改善提案:
-- [今日の状態をさらに良くするための具体的アクションを1文1行で記述]
+### 栄養
+- タンパク質: ${Math.round(totalProtein)}g / 目標: ${Math.round(targetPFC.protein)}g (${Math.round((totalProtein/targetPFC.protein)*100)}%)
+- 脂質: ${Math.round(totalFat)}g / 目標: ${Math.round(targetPFC.fat)}g (${Math.round((totalFat/targetPFC.fat)*100)}%)
+- 炭水化物: ${Math.round(totalCarbs)}g / 目標: ${Math.round(targetPFC.carbs)}g (${Math.round((totalCarbs/targetPFC.carbs)*100)}%)
+- カロリー: ${Math.round(totalCalories)}kcal / 目標: ${Math.round(targetPFC.calories)}kcal
 
-重要:
-- 箇条書きには「-」のみを使用（アスタリスク不可）
-- 評価点は3項目、各1文1行で完結
-- 改善提案は1項目、1文1行で完結
-- LBM至上主義: すべての評価はLBMを基準に
-- 専門用語を避け、高校生にも理解できる言葉で
-- 「承知いたしました」などの返答は不要
+### 運動
+- 実施種目: ${(todayRecord.workouts || []).length}種目
+
+### コンディション
+- 睡眠: ${actualSleepHours}時間 / 理想: ${idealSleepHours}時間 (${Math.round((actualSleepHours/idealSleepHours)*100)}%)
+- 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5
+- 食欲: ${todayRecord.conditions?.appetite || 0}/5
+- 腸内環境: ${todayRecord.conditions?.digestion || 0}/5
+- 集中力: ${todayRecord.conditions?.focus || 0}/5
+- ストレス: ${todayRecord.conditions?.stress || 0}/5
+
+## 計算済みスコア（事前計算済み、そのまま使用）
+
+- 食事スコア: ${scores ? scores.food.score : 0}/100
+- 運動スコア: ${scores ? scores.exercise.score : 0}/100
+- コンディションスコア: ${scores ? scores.condition.score : 0}/100
+
+## 出力形式（厳守）
+
+本日もお疲れ様でした！
+
+**本日の目標**
+- 目的: ${currentPurpose}
+- タンパク質: ${Math.round(targetPFC.protein)}g
+- 脂質: ${Math.round(targetPFC.fat)}g
+- 炭水化物: ${Math.round(targetPFC.carbs)}g
+- カロリー: ${Math.round(targetPFC.calories)}kcal
+- 睡眠: ${idealSleepHours}時間
+
+---
+
+① 結論
+
+**食事（スコア: ${scores ? scores.food.score : 0}/100）**
+[評価コメント1文]
+
+**運動（スコア: ${scores ? scores.exercise.score : 0}/100）**
+[評価コメント1文]
+
+**コンディション（スコア: ${scores ? scores.condition.score : 0}/100）**
+[評価コメント1文]
+
+---
+
+② 根拠
+
+[上記3項目の評価理由を2-3文で簡潔に説明。データを根拠に示す]
+
+ルール:
+- 冒頭は必ず「本日もお疲れ様でした！」から開始
+- スコアは計算済みの値をそのまま表示（計算不要）
+- 食事・運動・コンディションの3項目を必ず評価
+- 数値必須（g、kg、回数、時間）
+- 各項目1文で完結
+- 「良い」「悪い」等の抽象表現禁止
+- 食材名・運動種目名を具体的に記載
+- LBMの言及は不要（結果指標のため）
+- **重要**: 必ず「本日」「今日」のみ使用し、「昨日」は絶対に使わない（このレポートは本日の分析です）
+- **書式統一**: リスト表記は必ず「-」を使用（他の記号は使わない）
+- **参考文献禁止**: 参考文献、注釈、アスタリスク（*）による補足説明は一切記載しない
+- **太字**: **太字**は継続使用可能（見出しや強調のため）
 `;
 
         console.log('[Analysis] Section1 prompt length:', section1Prompt.length, 'characters');
 
         // セクション2: 指示書プラン生成
-        const section2Prompt = `## 役割とゴール
+        const section2Prompt = `## タスク
 
-あなたは、エリートパーソナルコーチです。
-ユーザーのLBM向上のため、明日実行すべき具体的なアクションプランを1行で提案します。
+ユーザーの目的（${currentPurpose}）達成のために、本日の達成率から最優先の改善点1つを特定し、明日の指示書を生成してください。
 
-## インプットデータ
+## ユーザーの目的と評価基準
 
-${JSON.stringify(promptData, null, 2)}
+**目的: ${currentPurpose}**
+- 重点: ${guidelines.focus}
+- 食事・運動・睡眠の3要素を満たすことが最優先です
+- LBMは結果指標であり、評価基準ではありません
+
+## 本日の達成率
+
+- タンパク質: ${Math.round((totalProtein/targetPFC.protein)*100)}%
+- 脂質: ${Math.round((totalFat/targetPFC.fat)*100)}%
+- 炭水化物: ${Math.round((totalCarbs/targetPFC.carbs)*100)}%
+- カロリー: ${Math.round(totalCalories)}kcal / 目標: ${Math.round(targetPFC.calories)}kcal
+- 睡眠: ${Math.round((actualSleepHours/idealSleepHours)*100)}%
+- 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5
+- 運動: ${(todayRecord.workouts || []).length}種目
 
 ${dailyRecord.notes ? `
-## ユーザーの気づき
-
-ユーザーは「${dailyRecord.notes}」という気づきを記録しています。
-この気づきを最大限に尊重し、仮説検証をサポートする形で提案してください。
+ユーザーの気づき: 「${dailyRecord.notes}」
 ` : ''}
 
-## タスク
+## 目的別の優先順位
 
-過去のデータ分析と最新の状態を踏まえ、明日実行すべき指示書プランを1行で生成してください。
+${currentPurpose === '増量' ? `
+**増量の優先順位:**
+1. カロリー不足 → 食材+量を指定してオーバーカロリーを達成
+2. タンパク質<90% → 食材+量を指定
+3. 運動未実施 → 種目+重量+回数を指定（筋肥大のため）
+4. 睡眠<85%または睡眠の質≤3 → 改善策を指定（回復のため）
+` : currentPurpose === '減量' ? `
+**減量の優先順位:**
+1. カロリー超過 → 食材の見直しでアンダーカロリーを達成
+2. タンパク質<90% → 食材+量を指定（筋肉維持のため）
+3. 運動未実施 → 種目+重量+回数を指定（代謝維持のため）
+4. 睡眠<85%または睡眠の質≤3 → 改善策を指定（回復のため）
+` : `
+**メンテナンスの優先順位:**
+1. カロリー乖離>10% → 食材の調整でカロリー均衡を達成
+2. タンパク質<90% → 食材+量を指定
+3. 運動未実施 → 種目+重量+回数を指定
+4. 睡眠<85%または睡眠の質≤3 → 改善策を指定
+`}
 
-### 出力形式（この形式を厳守）
+## 出力形式（厳守）
 
-② 明日の指示書プラン
+---
 
-- [食事/運動/睡眠のいずれかのカテゴリーに関する、具体的で実行可能な1行のアクションプラン]
+③ 明日の指示書
+
+**結論**
+【カテゴリー】具体的な内容（食材名/運動種目名 + 数値）
+
+**根拠**
+[上記指示書の理由を1-2文で簡潔に説明。${currentPurpose}の目的達成のために必要な理由を記載]
 
 例:
-- 【食事】夕食に鶏むね肉150gを追加してタンパク質を目標値に近づける
-- 【運動】ベンチプレス80kg×8回×3セットで胸のトレーニングを行う
-- 【睡眠】23時までに就寝して8時間睡眠を確保する
+**結論**
+【睡眠】22時30分就寝で8時間確保
 
-重要:
-- 必ず【カテゴリー】を先頭につける
-- 1行で完結させる（改行不可）
-- 具体的な数値を含める
-- 実行可能で明確な指示にする
-- 箇条書きには「-」のみを使用（アスタリスク不可）
-- 「承知いたしました」などの返答は不要
+**根拠**
+本日の睡眠時間は6時間で理想8時間に対して75%でした。${currentPurpose}のために筋肉回復を最大化する必要があり、明日は8時間睡眠を確保してください。
+
+ルール:
+- 必ず「---」の区切り線の後に「③ 明日の指示書」見出しを表示
+- ${currentPurpose}の目的達成に最も重要な改善点を1つ選択
+- 結論と根拠の両方を記載
+- 【カテゴリー】必須
+- 数値必須（g、kg、回数、時間）
+- 結論は1行完結
+- LBMの言及は不要（結果指標のため）
+- **重要**: 「本日」のデータを基に「明日」の指示を出す（「昨日」は絶対に使わない）
+- **書式統一**: リスト表記は必ず「-」を使用（他の記号は使わない）
+- **参考文献禁止**: 参考文献、注釈、アスタリスク（*）による補足説明は一切記載しない
+- **太字**: **太字**は継続使用可能（見出しや強調のため）
+- **PGBASE提案（任意）**: もし役立つと思われる場合のみ、控えめに「詳しく知りたい方はPGBASEもご覧ください」程度の提案を1文で追加可能（押しつけ禁止）
+- **レポートの最後**: 指示書の後に区切り線「---」を入れ、最後の1行に「ナイストライ！」と表示する（応援メッセージはこの1行のみ）
 `;
 
         console.log('[Analysis] Section2 prompt length:', section2Prompt.length, 'characters');
@@ -332,16 +629,16 @@ ${dailyRecord.notes ? `
             let fullAnalysis = '';
 
             // セクション1: パフォーマンスレポートを生成
-            const response1 = await GeminiAPI.sendMessage(section1Prompt, [], userProfile, 'gemini-2.5-pro');
+            const response1 = await GeminiAPI.sendMessage(section1Prompt, [], userProfile, 'gemini-2.5-flash');
             if (response1.success) {
-                fullAnalysis += response1.text + '\n\n---\n\n';
+                fullAnalysis += response1.text + '\n\n';
                 setAiAnalysis(fullAnalysis);
             } else {
                 throw new Error(response1.error || 'セクション1の生成に失敗');
             }
 
             // セクション2: 指示書プランを生成
-            const response2 = await GeminiAPI.sendMessage(section2Prompt, [], userProfile, 'gemini-2.5-pro');
+            const response2 = await GeminiAPI.sendMessage(section2Prompt, [], userProfile, 'gemini-2.5-flash');
             if (response2.success) {
                 fullAnalysis += response2.text;
                 setAiAnalysis(fullAnalysis);
@@ -431,76 +728,52 @@ ${dailyRecord.notes ? `
         }];
         setConversationHistory(newHistory);
 
+        // 質問送信直後に最下部までスクロール
+        setTimeout(() => {
+            chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+
         try {
-            // 過去30日分のログデータを準備（Q&A用）
-            const dailyLogsForQA = [];
-            for (let i = 29; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                const record = await DataService.getDailyRecord(userId, dateStr);
-
-                if (record && record.meals && record.meals.length > 0) {
-                    const totalProtein = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
-                    const totalFat = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
-                    const totalCarbs = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
-                    const totalCalories = (record.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
-
-                    dailyLogsForQA.push({
-                        date: dateStr,
-                        routine: record.routine || { type: "休息日", is_rest_day: true },
-                        diet: {
-                            protein_g: Math.round(totalProtein),
-                            fat_g: Math.round(totalFat),
-                            carbs_g: Math.round(totalCarbs),
-                            total_calories: Math.round(totalCalories)
-                        },
-                        workout: {
-                            exercise_count: (record.workouts || []).length,
-                            exercises: (record.workouts || []).map(w => w.name).join(', ')
-                        },
-                        condition: {
-                            sleep_hours: record.conditions?.sleepHours || 0,
-                            sleep_quality: record.conditions?.sleepQuality || 0,
-                            appetite: record.conditions?.appetite || 0,
-                            gut_health: record.conditions?.digestion || 0,
-                            concentration: record.conditions?.focus || 0,
-                            stress_level: record.conditions?.stress || 0
-                        },
-                        memo: record.notes || null
-                    });
-                }
-            }
-
-            const qaPromptData = {
-                user_profile: {
-                    height_cm: userProfile.height || 170,
-                    weight_kg: userProfile.weight || 70,
-                    body_fat_percentage: userProfile.bodyFatPercentage || 15,
-                    lean_body_mass_kg: userProfile.leanBodyMass || 60,
-                    style: userProfile.style || "一般"
-                },
-                daily_logs: dailyLogsForQA
-            };
+            // 会話履歴を整形
+            const conversationContext = conversationHistory.length > 0
+                ? conversationHistory.map(msg => {
+                    if (msg.type === 'user') {
+                        return `**ユーザー**: ${msg.content}`;
+                    } else {
+                        return `**あなた（AIコーチ）**: ${msg.content}`;
+                    }
+                }).join('\n\n')
+                : 'まだ会話は始まっていません。';
 
             // 文脈を含むプロンプトを作成
             const contextPrompt = `## 役割
 あなたは、ユーザーの質問に答える、親身で優秀なAIパフォーマンスコーチです。
 
-## 文脈
-あなたは以前、以下のユーザーデータに基づいて、下記の「AIコーチングレポート」を生成しました。この会話は、そのレポートに関するユーザーからの質問です。
+## 重要な前提
+あなたは既に以下のレポートを生成しています。このレポートの内容を**絶対的な前提**として、ユーザーの質問に回答してください。
+レポートに書かれている情報と矛盾する回答や、独自に再計算・再評価した回答は絶対にしないでください。
 
-### ユーザープロファイルと全データ
-${JSON.stringify(qaPromptData, null, 2)}
-
-### あなたが生成したレポート
+### あなたが生成したレポート全文
 ${aiAnalysis || '（レポート生成中または未生成）'}
 
-## ユーザーからの質問
+## これまでの会話履歴
+${conversationContext}
+
+## ユーザーからの新しい質問
 「${question}」
 
 ## タスク
-上記の文脈をすべて踏まえ、ユーザーの質問に対して、専門用語を避け、高校生にも理解できるような言葉で、簡潔かつ丁寧な回答を生成してください。
+**必ず上記のレポート内容と会話履歴を前提として**、ユーザーの新しい質問に回答してください。
+
+- ✅ レポートに書かれている評価やスコアをそのまま引用する
+- ✅ これまでの会話の文脈を踏まえて回答する（過去の質問で既に説明した内容は「先ほどお伝えした通り...」と参照可能）
+- ✅ レポートの分析結果を基に、質問に対する補足説明や深堀りをする
+- ✅ レポートで言及されていない内容は「レポートには記載がありませんが...」と前置きする
+- ❌ レポートと異なる評価や数値を提示しない
+- ❌ レポートや会話履歴を無視して独自に分析しない
+- ❌ 同じ説明を何度も繰り返さない（会話履歴を参照して簡潔に）
+
+専門用語を避け、高校生にも理解できるような言葉で、簡潔かつ丁寧に回答してください。
 `;
 
             const response = await GeminiAPI.sendMessage(contextPrompt, [], userProfile, 'gemini-2.5-pro');
@@ -658,7 +931,11 @@ ${aiAnalysis || '（レポート生成中または未生成）'}
                     <h1 className="text-xl font-bold text-white">AIコーチ</h1>
                     <p className="text-xs text-white opacity-80">トップアスリート育成プログラム</p>
                 </div>
-                <button onClick={() => generateAIAnalysis(analysis, historicalInsights)} className="text-white">
+                <button onClick={() => {
+                    // スコアを再計算して渡す
+                    const freshScores = calculateScores(userProfile, dailyRecord, targetPFC);
+                    generateAIAnalysis(analysis, historicalInsights, false, freshScores);
+                }} className="text-white">
                     <Icon name="RefreshCw" size={20} />
                 </button>
             </header>
@@ -692,7 +969,7 @@ ${aiAnalysis || '（レポート生成中または未生成）'}
                 </div>
             )}
 
-            <div className="p-4 flex-grow overflow-y-auto space-y-3">
+            <div className="p-4 flex-grow overflow-y-auto space-y-3" style={{ paddingBottom: `${babHeight + 80}px` }}>
                 {/* 日付バッジ */}
                 <div className="flex justify-center">
                     <div className="bg-gray-200 rounded-full px-4 py-1.5 text-xs text-gray-700 font-medium flex items-center gap-2">
@@ -804,10 +1081,19 @@ ${aiAnalysis || '（レポート生成中または未生成）'}
 
             </div>
 
-            {/* 質問入力エリア（固定） */}
+            {/* 質問入力エリア（BAB連動固定） */}
             {!aiLoading && aiAnalysis && (
-                <div className="border-t bg-white p-4 flex-shrink-0">
-                    <div className="flex items-center gap-2">
+                <div
+                    className="fixed left-0 right-0 border-t bg-white shadow-lg z-[9990]"
+                    style={{ bottom: `${babHeight}px` }}
+                >
+                    <div className="flex items-center gap-2 p-3">
+                        <button
+                            onClick={() => setShowHelpModal(true)}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition flex-shrink-0"
+                        >
+                            <Icon name="Info" size={20} />
+                        </button>
                         <input
                             type="text"
                             value={userQuestion}
@@ -820,14 +1106,52 @@ ${aiAnalysis || '（レポート生成中または未生成）'}
                         <button
                             onClick={handleUserQuestion}
                             disabled={!userQuestion.trim() || qaLoading}
-                            className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                         >
                             <Icon name="Send" size={20} />
                         </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                        💡 例: 「タンパク質が不足する原因は？」「この改善提案をもっと詳しく教えて」
-                    </p>
+                </div>
+            )}
+
+            {/* ヘルプモーダル */}
+            {showHelpModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={() => setShowHelpModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <Icon name="HelpCircle" size={24} className="text-indigo-600" />
+                                質問機能の使い方
+                            </h3>
+                            <button onClick={() => setShowHelpModal(false)} className="text-gray-400 hover:text-gray-600">
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+                        <div className="space-y-3 text-sm text-gray-700">
+                            <p className="font-medium text-indigo-600">💡 質問例</p>
+                            <ul className="space-y-2 pl-4">
+                                <li className="flex items-start gap-2">
+                                    <span className="text-indigo-400 flex-shrink-0">•</span>
+                                    <span>「タンパク質が不足する原因は？」</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-indigo-400 flex-shrink-0">•</span>
+                                    <span>「この改善提案をもっと詳しく教えて」</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-indigo-400 flex-shrink-0">•</span>
+                                    <span>「睡眠の質を上げる方法は？」</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-indigo-400 flex-shrink-0">•</span>
+                                    <span>「目的達成のために何を優先すべき？」</span>
+                                </li>
+                            </ul>
+                            <p className="text-xs text-gray-500 mt-4 pt-4 border-t">
+                                AIコーチがレポート内容に基づいて、あなたの疑問に答えます。
+                            </p>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -1188,7 +1512,12 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
     const targetPFC = LBMUtils.calculateTargetPFC(
         userProfile.tdeeBase || 2200,
         userProfile.weightChangePace || 0,
-        userProfile.leanBodyMass || 60
+        userProfile.leanBodyMass || 60,
+        userProfile.style || '一般',
+        userProfile.purpose || 'メンテナンス',
+        userProfile.dietStyle || 'バランス',
+        userProfile.calorieAdjustment,
+        userProfile.customPFC
     );
 
     const maxCalories = Math.max(...historyData.map(d => d.calories), targetPFC.calories);
