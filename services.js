@@ -190,11 +190,17 @@ const DataService = {
             const doc = await userRef.get();
 
             if (!doc.exists) {
-                // 新規ユーザー: 作成日時も追加
+                // 新規ユーザー: 作成日時と初期クレジットを追加
                 authData.createdAt = new Date().toISOString();
                 authData.joinDate = new Date().toISOString();
+                authData.registrationDate = new Date().toISOString();
+                authData.experience = 0;
+                authData.level = 1;
+                authData.freeCredits = 14; // 初回クレジット
+                authData.paidCredits = 0;
+                authData.processedScoreDates = [];
                 await userRef.set(authData);
-                console.log('New user created:', userId);
+                console.log('New user created:', userId, 'with 14 initial credits');
             } else {
                 // 既存ユーザー: lastLoginAtとupdatedAtのみ更新
                 await userRef.update({
@@ -1271,5 +1277,264 @@ const CreditService = {
 
         console.log(`[Credit] User ${userId} purchased ${amount} credits`);
         return { success: true, totalCredits: (userProfile.analysisCredits || 0) + amount };
+    }
+};
+
+// ===== 経験値・レベル・クレジット管理システム =====
+const ExperienceService = {
+    // 初期値
+    INITIAL_CREDITS: 14,
+    LEVEL_UP_CREDITS: 3,
+    MILESTONE_INTERVAL: 10,
+    MILESTONE_CREDITS: 10,
+
+    // レベルアップに必要な累計経験値を計算
+    // LvN到達に必要な累計経験値 = 100 * N * (N-1) / 2
+    getRequiredExpForLevel: (level) => {
+        return 100 * level * (level - 1) / 2;
+    },
+
+    // 現在の経験値から現在のレベルを計算
+    calculateLevel: (experience) => {
+        let level = 1;
+        while (ExperienceService.getRequiredExpForLevel(level + 1) <= experience) {
+            level++;
+        }
+        return level;
+    },
+
+    // 次のレベルまでの必要経験値を計算
+    getExpToNextLevel: (currentLevel, currentExp) => {
+        const nextLevelRequired = ExperienceService.getRequiredExpForLevel(currentLevel + 1);
+        const currentLevelRequired = ExperienceService.getRequiredExpForLevel(currentLevel);
+        return {
+            current: currentExp - currentLevelRequired,
+            required: nextLevelRequired - currentLevelRequired,
+            total: nextLevelRequired
+        };
+    },
+
+    // ユーザーの経験値・レベル・クレジット情報を取得
+    getUserExperience: async (userId) => {
+        const profile = await DataService.getUserProfile(userId);
+
+        const experience = profile?.experience || 0;
+        const level = profile?.level || 1;
+        const freeCredits = profile?.freeCredits || 0;
+        const paidCredits = profile?.paidCredits || 0;
+        const registrationDate = profile?.registrationDate || profile?.joinDate || new Date().toISOString();
+
+        return {
+            experience,
+            level,
+            freeCredits,
+            paidCredits,
+            totalCredits: freeCredits + paidCredits,
+            registrationDate
+        };
+    },
+
+    // 経験値を追加してレベルアップをチェック
+    addExperience: async (userId, expPoints) => {
+        const profile = await DataService.getUserProfile(userId);
+
+        const currentExp = profile?.experience || 0;
+        const currentLevel = profile?.level || 1;
+        const newExp = currentExp + expPoints;
+        const newLevel = ExperienceService.calculateLevel(newExp);
+
+        // レベルアップの判定
+        const leveledUp = newLevel > currentLevel;
+        const levelsGained = newLevel - currentLevel;
+
+        // レベルアップ報酬の計算
+        let creditsEarned = 0;
+        let milestoneReached = [];
+
+        if (leveledUp) {
+            // 通常レベルアップ報酬
+            creditsEarned = levelsGained * ExperienceService.LEVEL_UP_CREDITS;
+
+            // マイルストーン報酬（10, 20, 30...レベル）
+            for (let i = currentLevel + 1; i <= newLevel; i++) {
+                if (i % ExperienceService.MILESTONE_INTERVAL === 0) {
+                    creditsEarned += ExperienceService.MILESTONE_CREDITS;
+                    milestoneReached.push(i);
+                }
+            }
+        }
+
+        // プロフィール更新
+        const updatedProfile = {
+            ...profile,
+            experience: newExp,
+            level: newLevel,
+            freeCredits: (profile?.freeCredits || 0) + creditsEarned
+        };
+
+        await DataService.saveUserProfile(userId, updatedProfile);
+
+        console.log(`[Experience] User ${userId} gained ${expPoints} XP. New level: ${newLevel} (${leveledUp ? '+' + levelsGained : 'no change'})`);
+        if (leveledUp) {
+            console.log(`[Experience] Level up! Earned ${creditsEarned} credits (${levelsGained * ExperienceService.LEVEL_UP_CREDITS} from levels + ${creditsEarned - levelsGained * ExperienceService.LEVEL_UP_CREDITS} from milestones)`);
+        }
+
+        return {
+            success: true,
+            experience: newExp,
+            level: newLevel,
+            leveledUp,
+            levelsGained,
+            creditsEarned,
+            milestoneReached,
+            totalCredits: (profile?.freeCredits || 0) + creditsEarned + (profile?.paidCredits || 0)
+        };
+    },
+
+    // クレジットを消費（無料→有料の順）
+    consumeCredits: async (userId, amount) => {
+        const profile = await DataService.getUserProfile(userId);
+
+        let freeCredits = profile?.freeCredits || 0;
+        let paidCredits = profile?.paidCredits || 0;
+        const totalCredits = freeCredits + paidCredits;
+
+        if (totalCredits < amount) {
+            return {
+                success: false,
+                error: 'クレジットが不足しています',
+                freeCredits,
+                paidCredits,
+                totalCredits
+            };
+        }
+
+        // 無料クレジットから優先的に消費
+        let remaining = amount;
+        if (freeCredits >= remaining) {
+            freeCredits -= remaining;
+            remaining = 0;
+        } else {
+            remaining -= freeCredits;
+            freeCredits = 0;
+            paidCredits -= remaining;
+        }
+
+        await DataService.saveUserProfile(userId, {
+            ...profile,
+            freeCredits,
+            paidCredits
+        });
+
+        console.log(`[Experience] User ${userId} consumed ${amount} credits. Remaining: ${freeCredits + paidCredits} (free: ${freeCredits}, paid: ${paidCredits})`);
+
+        return {
+            success: true,
+            freeCredits,
+            paidCredits,
+            totalCredits: freeCredits + paidCredits
+        };
+    },
+
+    // 有料クレジットを追加
+    addPaidCredits: async (userId, amount) => {
+        const profile = await DataService.getUserProfile(userId);
+
+        const newPaidCredits = (profile?.paidCredits || 0) + amount;
+
+        await DataService.saveUserProfile(userId, {
+            ...profile,
+            paidCredits: newPaidCredits
+        });
+
+        console.log(`[Experience] User ${userId} purchased ${amount} paid credits. Total paid: ${newPaidCredits}`);
+
+        return {
+            success: true,
+            paidCredits: newPaidCredits,
+            totalCredits: (profile?.freeCredits || 0) + newPaidCredits
+        };
+    },
+
+    // 日次スコアから経験値を計算して加算
+    processDailyScore: async (userId, date, scores) => {
+        // スコアの合計を経験値として加算
+        const totalScore = (scores.food?.score || 0) + (scores.exercise?.score || 0) + (scores.condition?.score || 0);
+
+        if (totalScore <= 0) {
+            console.log(`[Experience] No score to process for ${date}`);
+            return { success: false, error: 'No score available' };
+        }
+
+        // 既にこの日付のスコアを処理済みかチェック
+        const profile = await DataService.getUserProfile(userId);
+        const processedDates = profile?.processedScoreDates || [];
+
+        if (processedDates.includes(date)) {
+            console.log(`[Experience] Score for ${date} already processed`);
+            return { success: false, error: 'Already processed', alreadyProcessed: true };
+        }
+
+        // 経験値を追加
+        const result = await ExperienceService.addExperience(userId, totalScore);
+
+        // 処理済み日付リストに追加
+        processedDates.push(date);
+        await DataService.saveUserProfile(userId, {
+            ...profile,
+            experience: result.experience,
+            level: result.level,
+            freeCredits: result.totalCredits - (profile?.paidCredits || 0),
+            processedScoreDates: processedDates
+        });
+
+        console.log(`[Experience] Processed score for ${date}: ${totalScore} XP`);
+
+        return {
+            ...result,
+            scoreDate: date,
+            scoreTotal: totalScore
+        };
+    },
+
+    // マイルストーン（リワード）一覧を取得
+    getMilestones: async (userId) => {
+        const { level } = await ExperienceService.getUserExperience(userId);
+
+        const milestones = [];
+        for (let i = ExperienceService.MILESTONE_INTERVAL; i <= 100; i += ExperienceService.MILESTONE_INTERVAL) {
+            milestones.push({
+                level: i,
+                reward: ExperienceService.MILESTONE_CREDITS,
+                achieved: level >= i
+            });
+        }
+
+        return milestones;
+    },
+
+    // Gemini API呼び出しラッパー（クレジット消費を自動実行）
+    callGeminiWithCredit: async (userId, message, conversationHistory = [], userProfile = null, model = 'gemini-2.5-flash') => {
+        // クレジットチェック
+        const { totalCredits } = await ExperienceService.getUserExperience(userId);
+
+        if (totalCredits < 1) {
+            return {
+                success: false,
+                error: 'クレジットが不足しています。レベルアップまたは追加購入でクレジットを獲得してください。',
+                noCredits: true
+            };
+        }
+
+        // Gemini API呼び出し
+        const result = await GeminiAPI.sendMessage(message, conversationHistory, userProfile, model);
+
+        // 成功した場合のみクレジット消費
+        if (result.success) {
+            await ExperienceService.consumeCredits(userId, 1);
+            console.log(`[Experience] Consumed 1 credit for Gemini API call. User: ${userId}`);
+        }
+
+        return result;
     }
 };

@@ -719,6 +719,32 @@ ${currentPurpose === '増量' ? `
 
         setAiLoading(false);
 
+        // 経験値システム：スコアを経験値として加算
+        if (scores) {
+            try {
+                const today = getTodayDate();
+                const expResult = await ExperienceService.processDailyScore(userId, today, scores);
+                console.log('[Analysis] Experience processing result:', expResult);
+
+                // レベルアップ時の通知
+                if (expResult.leveledUp) {
+                    console.log(`[Analysis] Level up! New level: ${expResult.level}, Credits earned: ${expResult.creditsEarned}`);
+                    // レベルアップモーダルを表示する処理は後ほど実装
+                    // グローバルイベントを発火してダッシュボードに通知
+                    window.dispatchEvent(new CustomEvent('levelUp', {
+                        detail: {
+                            level: expResult.level,
+                            creditsEarned: expResult.creditsEarned,
+                            milestoneReached: expResult.milestoneReached
+                        }
+                    }));
+                }
+            } catch (expError) {
+                console.error('[Analysis] Failed to process experience:', expError);
+                // エラーが発生しても分析自体は成功しているので、ユーザーには通知しない
+            }
+        }
+
         // 分析完了をマーク
         await markFeatureCompleted(userId, 'analysis');
 

@@ -241,6 +241,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [aiProcessing, setAiProcessing] = useState(false);
             const [aiParsedData, setAiParsedData] = useState(null);
 
+            // クレジット0警告モーダル
+            const [showCreditWarning, setShowCreditWarning] = useState(false);
+
             // チュートリアル初回起動チェック
             useEffect(() => {
                 // チュートリアル機能は削除されました
@@ -270,6 +273,29 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     }, 100);
                 }
             }, [userProfile, loading]);
+
+            // クレジット0警告チェック（アプリ起動時のみ）
+            useEffect(() => {
+                const checkCredits = async () => {
+                    if (!user || !userProfile) return;
+
+                    // sessionStorageで既に表示済みかチェック
+                    const alreadyShown = sessionStorage.getItem('creditWarningShown');
+                    if (alreadyShown) return;
+
+                    try {
+                        const expData = await ExperienceService.getUserExperience(user.uid);
+                        if (expData.totalCredits === 0) {
+                            setShowCreditWarning(true);
+                            sessionStorage.setItem('creditWarningShown', 'true');
+                        }
+                    } catch (error) {
+                        console.error('[App] Failed to check credits:', error);
+                    }
+                };
+
+                checkCredits();
+            }, [user, userProfile]);
 
             // 認証状態監視（開発モードではスキップ）
             useEffect(() => {
@@ -851,6 +877,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
             return (
                 <div className="min-h-screen bg-gray-50 pb-24">
+                    {/* レベル・経験値バナー */}
+                    <LevelBanner user={user} setInfoModal={setInfoModal} />
+
                     {/* 日付ナビゲーション＋ルーティン統合ヘッダー */}
                     <div className="bg-white shadow-md sticky top-0 z-30">
                         {/* 日付ナビゲーション */}
@@ -2349,6 +2378,48 @@ AIコーチなどの高度な機能が解放されます。
                             setShowSubscriptionView(true);
                         }}
                     />
+
+                    {/* クレジット0警告モーダル */}
+                    {showCreditWarning && (
+                        <div className="fixed inset-0 bg-black/70 z-[10001] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
+                                <div className="bg-gradient-to-r from-red-500 to-pink-500 p-6 text-center">
+                                    <Icon name="AlertCircle" size={48} className="text-white mx-auto mb-3" />
+                                    <h2 className="text-2xl font-bold text-white mb-2">クレジットが不足しています</h2>
+                                    <p className="text-white/90 text-sm">AI機能（分析・写真解析）を利用するにはクレジットが必要です</p>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
+                                        <p className="text-sm text-gray-700 mb-3">
+                                            <strong className="text-yellow-700">クレジットの獲得方法：</strong>
+                                        </p>
+                                        <ul className="space-y-2 text-sm text-gray-700">
+                                            <li className="flex items-start gap-2">
+                                                <Icon name="Award" size={16} className="text-purple-600 flex-shrink-0 mt-0.5" />
+                                                <span><strong>レベルアップ</strong>：3クレジット/回</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <Icon name="Trophy" size={16} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+                                                <span><strong>リワード</strong>：10/20/30...レベル到達で10クレジット</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <Icon name="TrendingUp" size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                                                <span><strong>経験値獲得</strong>：食事・運動・コンディションを記録して分析実行</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div className="text-center">
+                                        <button
+                                            onClick={() => setShowCreditWarning(false)}
+                                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-bold hover:opacity-90 transition"
+                                        >
+                                            記録を開始する
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* サブスクリプション画面 */}
                     {showSubscriptionView && (

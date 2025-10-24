@@ -30,7 +30,8 @@
       "Bash(powershell -Command \"Get-Content ''C:\\Users\\yourc\\yourcoach_new\\components\\04_settings.js'' | Measure-Object -Line | Select-Object -ExpandProperty Lines\")",
       "Bash(powershell:*)",
       "Bash(node -c:*)",
-      "Bash(start /B python:*)"
+      "Bash(start /B python:*)",
+      "Bash(timeout 2 python:*)"
     ],
     "deny": [],
     "ask": []

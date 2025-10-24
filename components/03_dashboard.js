@@ -43,6 +43,20 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         }
     }); // 依存配列を空にせず、毎回実行
 
+    // 経験値・レベル情報の状態管理
+    const [expData, setExpData] = useState({
+        level: 1,
+        experience: 0,
+        totalCredits: 0,
+        freeCredits: 0,
+        paidCredits: 0,
+        expProgress: 0
+    });
+
+    // レベルアップモーダル
+    const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+    const [levelUpData, setLevelUpData] = useState(null);
+
     // 指示書を読み込む
     useEffect(() => {
         loadDirective();
@@ -50,6 +64,41 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         window.addEventListener('directiveUpdated', loadDirective);
         return () => window.removeEventListener('directiveUpdated', loadDirective);
     }, [currentDate]);
+
+    // 経験値・レベル情報を読み込む
+    useEffect(() => {
+        loadExperienceData();
+        // レベルアップイベントをリッスン
+        const handleLevelUp = (event) => {
+            setLevelUpData(event.detail);
+            setShowLevelUpModal(true);
+            loadExperienceData();
+        };
+        window.addEventListener('levelUp', handleLevelUp);
+        return () => window.removeEventListener('levelUp', handleLevelUp);
+    }, [user]);
+
+    const loadExperienceData = async () => {
+        if (!user) return;
+        try {
+            const data = await ExperienceService.getUserExperience(user.uid);
+            const expToNext = ExperienceService.getExpToNextLevel(data.level, data.experience);
+            const progress = Math.round((expToNext.current / expToNext.required) * 100);
+
+            setExpData({
+                level: data.level,
+                experience: data.experience,
+                totalCredits: data.totalCredits,
+                freeCredits: data.freeCredits,
+                paidCredits: data.paidCredits,
+                expProgress: progress,
+                expCurrent: expToNext.current,
+                expRequired: expToNext.required
+            });
+        } catch (error) {
+            console.error('[Dashboard] Failed to load experience data:', error);
+        }
+    };
 
     const loadDirective = () => {
         const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
@@ -219,9 +268,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     return (
         <div className="space-y-4">
+
             {/* 今日の指示書 */}
             {todayDirective && (
-                <div id="directive-section" className="bg-green-50 rounded-xl border-2 border-green-200 p-4 slide-up">
+                <div id="directive-section" className="bg-green-50 rounded-xl border-2 border-green-200 p-4 slide-up mt-4">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <Icon name="Target" size={18} className="text-green-600" />
@@ -1478,6 +1528,185 @@ ${Math.round(caloriesPercent)}%`
                     </div>
                 </div>
             )}
+
+            {/* レベルアップモーダル */}
+            {showLevelUpModal && levelUpData && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
+                    <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl animate-bounce-in">
+                        {/* ヘッダー */}
+                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
+                            <div className="relative z-10">
+                                <Icon name="Trophy" size={48} className="text-yellow-300 mx-auto mb-3" />
+                                <h2 className="text-2xl font-bold text-white mb-1">レベルアップ！</h2>
+                                <p className="text-purple-100 text-sm">おめでとうございます</p>
+                            </div>
+                        </div>
+
+                        {/* コンテンツ */}
+                        <div className="p-6 space-y-6">
+                            {/* 新しいレベル */}
+                            <div className="text-center">
+                                <p className="text-sm text-gray-600 mb-2">あなたの新しいレベル</p>
+                                <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-full px-6 py-3">
+                                    <div className="bg-purple-600 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl">
+                                        {levelUpData.level}
+                                    </div>
+                                    <span className="text-2xl font-bold text-purple-600">Level {levelUpData.level}</span>
+                                </div>
+                            </div>
+
+                            {/* 獲得クレジット */}
+                            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-semibold text-gray-700">獲得クレジット</span>
+                                    <Icon name="Award" size={20} className="text-yellow-600" />
+                                </div>
+                                <div className="text-3xl font-bold text-yellow-600 text-center">
+                                    +{levelUpData.creditsEarned}
+                                </div>
+                                <p className="text-xs text-center text-gray-600 mt-2">
+                                    Gemini API {levelUpData.creditsEarned}回分
+                                </p>
+                            </div>
+
+                            {/* マイルストーン達成 */}
+                            {levelUpData.milestoneReached && levelUpData.milestoneReached.length > 0 && (
+                                <div className="bg-gradient-to-r from-pink-50 to-purple-50 border-2 border-pink-200 rounded-xl p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Icon name="Star" size={18} className="text-pink-600" />
+                                        <span className="text-sm font-bold text-gray-700">マイルストーン達成！</span>
+                                    </div>
+                                    <p className="text-xs text-gray-600">
+                                        Level {levelUpData.milestoneReached.join(', ')} 到達ボーナス獲得
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* 閉じるボタン */}
+                            <button
+                                onClick={() => {
+                                    setShowLevelUpModal(false);
+                                    setLevelUpData(null);
+                                }}
+                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3.5 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
+                            >
+                                確認しました
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ===== Level Banner Component =====
+const LevelBanner = ({ user, setInfoModal }) => {
+    const [expData, setExpData] = useState({
+        level: 1,
+        experience: 0,
+        totalCredits: 0,
+        freeCredits: 0,
+        paidCredits: 0,
+        expProgress: 0
+    });
+
+    useEffect(() => {
+        loadExperienceData();
+        const handleLevelUp = (event) => {
+            loadExperienceData();
+        };
+        window.addEventListener('levelUp', handleLevelUp);
+        return () => window.removeEventListener('levelUp', handleLevelUp);
+    }, [user]);
+
+    const loadExperienceData = async () => {
+        if (!user) return;
+        try {
+            const data = await ExperienceService.getUserExperience(user.uid);
+            const expToNext = ExperienceService.getExpToNextLevel(data.level, data.experience);
+            const progress = Math.round((expToNext.current / expToNext.required) * 100);
+
+            setExpData({
+                level: data.level,
+                experience: data.experience,
+                totalCredits: data.totalCredits,
+                freeCredits: data.freeCredits,
+                paidCredits: data.paidCredits,
+                expProgress: progress,
+                expCurrent: expToNext.current,
+                expRequired: expToNext.required
+            });
+        } catch (error) {
+            console.error('[LevelBanner] Failed to load experience data:', error);
+        }
+    };
+
+    return (
+        <div className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-md">
+            <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-2">
+                    <div className="bg-white text-purple-600 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm">
+                        {expData.level}
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-1.5">
+                            <h3 className="font-bold text-white text-sm">Level {expData.level}</h3>
+                            <span className="text-xs text-purple-200">{expData.expCurrent || 0} / {expData.expRequired || 100} XP</span>
+                        </div>
+                        <div className="relative w-32 bg-white/20 rounded-full h-1.5 overflow-hidden mt-1">
+                            <div
+                                className="absolute top-0 left-0 h-full bg-white rounded-full transition-all duration-500"
+                                style={{ width: `${Math.min(expData.expProgress || 0, 100)}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <div className="text-right">
+                        <div className="flex items-center gap-1 justify-end">
+                            <Icon name="Award" size={12} className="text-white" />
+                            <span className="text-xs text-white">クレジット</span>
+                        </div>
+                        <div className="text-lg font-bold text-white">
+                            {expData.totalCredits}
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setInfoModal({
+                            show: true,
+                            title: '💳 クレジットシステム',
+                            content: `クレジットはGemini API（AI機能）を利用する際に消費されるポイントです。
+
+【消費されるタイミング】
+• 分析機能（1回につき1クレジット）
+• 写真解析機能（1回につき1クレジット）
+
+【獲得方法】
+• 初回登録：14クレジット付与
+• レベルアップ：3クレジット/回
+• リワード：10/20/30...レベル到達で10クレジット
+
+【経験値の獲得】
+• 分析実行後、食事・運動・コンディションのスコアが経験値として加算されます
+• 1日最大300XP（各項目100点満点）
+• レベルアップ必要経験値は累進（Lv2=100XP、Lv3=200XP...）
+
+【クレジットの種類】
+• 無料付与：レベルアップ等で獲得
+• 有料購入：追加購入分
+※消費時は無料→有料の順に使用されます
+
+【実質無料期間】
+毎日分析1回+写真解析1回の場合、約28日間完全無料で利用可能です。`
+                        })}
+                        className="text-white hover:text-purple-100 transition-colors"
+                    >
+                        <Icon name="Info" size={14} />
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

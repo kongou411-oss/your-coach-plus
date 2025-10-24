@@ -8,6 +8,10 @@ const TutorialView = ({ onClose, onComplete }) => {
 // ===== 設定画面 =====
 const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays, unlockedFeatures, onOpenAddView, darkMode, onToggleDarkMode, shortcuts = [], onUpdateShortcuts, reopenTemplateEditModal = false, reopenTemplateEditType = null, onTemplateEditModalOpened }) => {
     const [profile, setProfile] = useState({...userProfile});
+
+    // 経験値・レベル・クレジット情報
+    const [expData, setExpData] = useState(null);
+    const [milestones, setMilestones] = useState([]);
     const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'premium', 'account', 'data', 'advanced'
     const [showCustomMultiplierInput, setShowCustomMultiplierInput] = useState(false);
 
@@ -21,6 +25,33 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     useEffect(() => {
         setProfile({...userProfile});
     }, [userProfile]);
+
+    // 経験値・レベル・クレジット・リワード情報を取得
+    useEffect(() => {
+        loadExperienceData();
+        // レベルアップイベントをリッスン
+        window.addEventListener('levelUp', loadExperienceData);
+        return () => window.removeEventListener('levelUp', loadExperienceData);
+    }, [userId]);
+
+    const loadExperienceData = async () => {
+        if (!userId) return;
+        try {
+            const data = await ExperienceService.getUserExperience(userId);
+            const expToNext = ExperienceService.getExpToNextLevel(data.level, data.experience);
+            const milestonesData = await ExperienceService.getMilestones(userId);
+
+            setExpData({
+                ...data,
+                expCurrent: expToNext.current,
+                expRequired: expToNext.required,
+                expProgress: Math.round((expToNext.current / expToNext.required) * 100)
+            });
+            setMilestones(milestonesData);
+        } catch (error) {
+            console.error('[Settings] Failed to load experience data:', error);
+        }
+    };
 
     // 詳細設定用のstate（デフォルト値をプロフィールから取得）
     const [advancedSettings, setAdvancedSettings] = useState({
@@ -384,6 +415,106 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* 経験値・レベル情報 */}
+                                {expData && (
+                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 p-4 rounded-lg">
+                                        <h4 className="text-xs font-bold text-gray-600 mb-3 flex items-center gap-1.5">
+                                            <Icon name="Award" size={14} className="text-purple-600" />
+                                            経験値・レベル
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs text-gray-600">現在のレベル</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="bg-purple-600 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm">
+                                                        {expData.level}
+                                                    </div>
+                                                    <span className="font-bold text-purple-600">Level {expData.level}</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="flex justify-between text-xs text-gray-600 mb-1.5">
+                                                    <span>次のレベルまで</span>
+                                                    <span className="font-semibold">{expData.expCurrent} / {expData.expRequired} XP</span>
+                                                </div>
+                                                <div className="relative w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                                    <div
+                                                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+                                                        style={{ width: `${Math.min(expData.expProgress || 0, 100)}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between pt-2 border-t border-purple-200">
+                                                <span className="text-xs text-gray-600">累計経験値</span>
+                                                <span className="font-bold text-gray-800">{expData.experience.toLocaleString()} XP</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* クレジット残高 */}
+                                {expData && (
+                                    <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded-lg">
+                                        <h4 className="text-xs font-bold text-gray-600 mb-3 flex items-center gap-1.5">
+                                            <Icon name="Coins" size={14} className="text-blue-600" />
+                                            クレジット残高
+                                        </h4>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs text-gray-600">合計</span>
+                                                <span className="text-2xl font-bold text-blue-600">{expData.totalCredits}</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200">
+                                                <div className="bg-white p-2 rounded">
+                                                    <p className="text-xs text-gray-600 mb-0.5">無料付与</p>
+                                                    <p className="font-bold text-green-600">{expData.freeCredits}</p>
+                                                </div>
+                                                <div className="bg-white p-2 rounded">
+                                                    <p className="text-xs text-gray-600 mb-0.5">有料購入</p>
+                                                    <p className="font-bold text-purple-600">{expData.paidCredits}</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-gray-500 pt-2">
+                                                ※ Gemini API利用1回につき1クレジット消費
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* リワード一覧 */}
+                                {milestones.length > 0 && (
+                                    <div className="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-lg">
+                                        <h4 className="text-xs font-bold text-gray-600 mb-3 flex items-center gap-1.5">
+                                            <Icon name="Trophy" size={14} className="text-yellow-600" />
+                                            リワード
+                                        </h4>
+                                        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                            {milestones.map((milestone, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className={`flex items-center justify-between p-2 rounded ${
+                                                        milestone.achieved ? 'bg-green-100 border border-green-300' : 'bg-white border border-gray-200'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Icon
+                                                            name={milestone.achieved ? "CheckCircle" : "Circle"}
+                                                            size={14}
+                                                            className={milestone.achieved ? "text-green-600" : "text-gray-400"}
+                                                        />
+                                                        <span className={`text-xs font-semibold ${milestone.achieved ? 'text-green-800' : 'text-gray-600'}`}>
+                                                            Level {milestone.level}
+                                                        </span>
+                                                    </div>
+                                                    <span className={`text-xs font-bold ${milestone.achieved ? 'text-green-700' : 'text-gray-500'}`}>
+                                                        +{milestone.reward} クレジット
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 <button
                                     className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700"
                                     onClick={() => {
