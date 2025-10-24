@@ -1807,19 +1807,36 @@
         }
 
         async function analyzeWithGemini() {
+            console.log('[AI分析] ボタンクリック');
+            console.log('currentSubCategory:', currentSubCategory);
+            console.log('currentMainCategory:', currentMainCategory);
+
             // 現在のカテゴリとデータを取得
             const metric = metricInfo[currentSubCategory];
             const data1 = currentData[1];
             const period1 = currentPeriods[1];
+
+            console.log('data1:', data1);
+            console.log('data1 length:', data1 ? data1.length : 'undefined');
+
+            // データの存在確認
+            if (!data1 || data1.length === 0) {
+                console.error('[AI分析] データが空です');
+                alert('分析するデータがありません。記録を追加してから再度お試しください。');
+                return;
+            }
 
             // データの統計情報を計算
             const avg = (data1.reduce((a, b) => a + b, 0) / data1.length).toFixed(1);
             const max = Math.max(...data1).toFixed(1);
             const min = Math.min(...data1).toFixed(1);
             const trend = (data1[data1.length - 1] - data1[0]).toFixed(1);
-            const trendPercent = ((trend / data1[0]) * 100).toFixed(1);
+            const trendPercent = data1[0] !== 0 ? ((trend / data1[0]) * 100).toFixed(1) : '0.0';
+
+            console.log('[AI分析] 統計情報:', { avg, max, min, trend, trendPercent });
 
             // 親ウィンドウ（React）にメッセージを送信
+            console.log('[AI分析] postMessage送信');
             window.parent.postMessage({
                 type: 'REQUEST_AI_ANALYSIS',
                 category: currentMainCategory,

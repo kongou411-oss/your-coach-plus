@@ -279,6 +279,13 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 const checkCredits = async () => {
                     if (!user || !userProfile) return;
 
+                    // オンボーディング完了直後はスキップ
+                    const justCompleted = sessionStorage.getItem('onboardingJustCompleted');
+                    if (justCompleted) {
+                        sessionStorage.removeItem('onboardingJustCompleted');
+                        return;
+                    }
+
                     // sessionStorageで既に表示済みかチェック
                     const alreadyShown = sessionStorage.getItem('creditWarningShown');
                     if (alreadyShown) return;
@@ -295,6 +302,60 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 };
 
                 checkCredits();
+            }, [user, userProfile]);
+
+            // 履歴ページからのAI分析リクエストを受信
+            useEffect(() => {
+                const handleMessage = async (event) => {
+                    // セキュリティチェック：同じoriginからのメッセージのみ受け入れる
+                    if (event.origin !== window.location.origin) return;
+
+                    if (event.data.type === 'REQUEST_AI_ANALYSIS') {
+                        console.log('[App] AI分析リクエスト受信:', event.data);
+
+                        const { category, subCategory, metricInfo, data, period, stats } = event.data;
+
+                        // AI分析メッセージを生成
+                        const analysisPrompt = `以下のデータを分析してください：
+
+カテゴリ: ${category} - ${subCategory}
+期間: ${period}
+
+統計情報:
+- 平均: ${stats.avg}
+- 最大: ${stats.max}
+- 最小: ${stats.min}
+- 変化: ${stats.trend} (${stats.trendPercent}%)
+
+データ: ${JSON.stringify(data)}
+
+この${metricInfo.name}のデータから読み取れる傾向、改善点、アドバイスを簡潔に教えてください。`;
+
+                        try {
+                            // Gemini APIを呼び出し
+                            const result = await ExperienceService.callGeminiWithCredit(
+                                user.uid,
+                                analysisPrompt,
+                                [],
+                                userProfile
+                            );
+
+                            if (result.success) {
+                                alert(`AI分析結果:\n\n${result.text}`);
+                            } else if (result.noCredits) {
+                                alert('クレジットが不足しています。レベルアップでクレジットを獲得してください。');
+                            } else {
+                                alert('AI分析に失敗しました。もう一度お試しください。');
+                            }
+                        } catch (error) {
+                            console.error('[App] AI分析エラー:', error);
+                            alert('AI分析中にエラーが発生しました。');
+                        }
+                    }
+                };
+
+                window.addEventListener('message', handleMessage);
+                return () => window.removeEventListener('message', handleMessage);
             }, [user, userProfile]);
 
             // 認証状態監視（開発モードではスキップ）
@@ -848,7 +909,15 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             }
 
             if (!userProfile) {
-                return <OnboardingScreen user={user} onComplete={(profile) => setUserProfile(profile)} />;
+                return <OnboardingScreen user={user} onComplete={(profile) => {
+                    setUserProfile(profile);
+                    // オンボーディング完了フラグを設定（クレジット不足モーダルを表示しない）
+                    sessionStorage.setItem('onboardingJustCompleted', 'true');
+                    // オンボーディング完了後、食事記録誘導モーダルを表示
+                    setTimeout(() => {
+                        setShowMealGuide(true);
+                    }, 500);
+                }} />;
             }
 
             // LBM計算
@@ -1275,11 +1344,23 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                                 // 新しい機能開放システム：分析を閲覧したら完了マーク
                                 const userId = user?.uid || DEV_USER_ID;
+                                const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+
+                                // 常にunlockedFeaturesを再計算（機能開放状態を最新に保つ）
+                                const unlocked = calculateUnlockedFeatures(userId, dailyRecord, isPremium);
+                                setUnlockedFeatures(unlocked);
+                                console.log('[App] Updated unlocked features after analysis:', unlocked);
+
+                                // 初回分析の場合のみ、追加の処理
                                 if (!isFeatureCompleted(userId, 'analysis')) {
                                     await markFeatureCompleted(userId, 'analysis');
-                                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
-                                    const unlocked = calculateUnlockedFeatures(userId, dailyRecord, isPremium);
-                                    setUnlockedFeatures(unlocked);
+
+                                    // 分析完了後、指示書が既に開放されていない場合のみモーダルを表示
+                                    if (!isFeatureCompleted(userId, 'directive')) {
+                                        setTimeout(() => {
+                                            setShowDirectiveGuide(true);
+                                        }, 500);
+                                    }
                                 }
                             }}
                             userId={user.uid}
@@ -2332,6 +2413,15 @@ AIコーチなどの高度な機能が解放されます。
 
                     {/* 誘導モーダル群 */}
                     <GuideModal
+                        show={showMealGuide}
+                        title="まずは食事を記録しましょう！"
+                        message="OKボタンをクリックすると食事記録セクションに遷移します。&#10;右上の「追加」ボタンから今日の食事を記録してください。"
+                        iconName="Utensils"
+                        iconColor="bg-green-100"
+                        targetSectionId="meal-section"
+                        onClose={() => setShowMealGuide(false)}
+                    />
+                    <GuideModal
                         show={showTrainingGuide}
                         title="次は運動を記録しましょう！"
                         message="OKボタンをクリックすると運動記録セクションに遷移します。&#10;右上の「追加」ボタンから今日のトレーニングを記録してください。"
@@ -2360,8 +2450,8 @@ AIコーチなどの高度な機能が解放されます。
                     />
                     <GuideModal
                         show={showDirectiveGuide}
-                        title="🎉 指示書機能が開放されました！"
-                        message="AIがあなたの分析結果に基づいて、最適な次のアクションを提案します。&#10;&#10;ダッシュボードの「指示書」セクションから確認してください。"
+                        title="🎉 新機能が開放されました！"
+                        message="【指示書】&#10;AIがあなたの分析結果に基づいて、最適な次のアクションを提案します。&#10;ダッシュボードの「指示書」セクションから確認してください。&#10;&#10;【閃き】&#10;思いついたアイデアや気づきを自由に記録できます。&#10;ダッシュボードの「閃き」セクションから記録してください。"
                         iconName="FileText"
                         iconColor="bg-blue-100"
                         targetSectionId="directive-section"

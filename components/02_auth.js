@@ -152,6 +152,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
             currentMonthUsed: 0,
             lifetimeCreditsPurchased: 0,
 
+            // 経験値・レベル・クレジットシステム（新）
+            experience: 0,
+            level: 1,
+            freeCredits: 14, // 初回クレジット
+            paidCredits: 0,
+            processedScoreDates: [],
+            processedDirectiveDates: [],
+
             // 無料トライアル
             freeTrialStartDate: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now),
             freeTrialEndDate: DEV_MODE ? trialEndDate.toISOString() : firebase.firestore.Timestamp.fromDate(trialEndDate),
@@ -160,6 +168,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
 
             // 登録日
             joinDate: new Date().toISOString(),
+            registrationDate: new Date().toISOString(),
             createdAt: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now)
         };
 

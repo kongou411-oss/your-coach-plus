@@ -1,7 +1,7 @@
 // ===== AI Food Recognition Component =====
 // AI搭載の食事認識機能（写真から食品を自動認識）
 
-const AIFoodRecognition = ({ onFoodsRecognized, onClose }) => {
+const AIFoodRecognition = ({ onFoodsRecognized, onClose, userId, userProfile }) => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [recognizing, setRecognizing] = useState(false);
@@ -52,6 +52,24 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose }) => {
         setError(null);
 
         try {
+            // ユーザーID取得（DEV_MODEの場合はDEV_USER_IDを使用）
+            const effectiveUserId = userId || DEV_USER_ID;
+            console.log('[AIFoodRecognition] userId:', userId, 'effectiveUserId:', effectiveUserId, 'DEV_MODE:', DEV_MODE);
+
+            if (!effectiveUserId) {
+                setError('ユーザー情報が取得できませんでした');
+                setRecognizing(false);
+                return;
+            }
+
+            // クレジットチェック
+            const expInfo = await ExperienceService.getUserExperience(effectiveUserId);
+            if (expInfo.totalCredits <= 0) {
+                setError('クレジットが不足しています。レベルアップでクレジットを獲得してください。');
+                setRecognizing(false);
+                return;
+            }
+
             // 画像をBase64に変換
             const base64Image = await imageToBase64(selectedImage);
 
@@ -175,6 +193,10 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose }) => {
                     isUnknown: true
                 };
             });
+
+            // 認識成功後、クレジット消費
+            await ExperienceService.consumeCredits(effectiveUserId, 1);
+            console.log('[AI Food Recognition] 1 credit consumed');
 
             setRecognizedFoods(matchedFoods);
 

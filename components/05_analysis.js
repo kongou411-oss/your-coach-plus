@@ -193,35 +193,43 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     const performAnalysis = async () => {
         setLoading(true);
 
-        let firstAnalysisFlag = false; // ローカル変数で保持
-
+        // クレジットチェック（新システム） - 最優先で実行
         try {
-            // クレジットチェック
-            const accessCheck = await CreditService.canAccessAnalysis(userId, userProfile);
-            setCreditInfo(accessCheck);
+            const expInfo = await ExperienceService.getUserExperience(userId);
+            const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
 
-            if (!accessCheck.allowed) {
+            setCreditInfo({
+                tier: isPremium ? 'premium' : 'free',
+                totalCredits: expInfo.totalCredits,
+                freeCredits: expInfo.freeCredits,
+                paidCredits: expInfo.paidCredits,
+                remainingCredits: expInfo.totalCredits,
+                devMode: DEV_MODE,
+                allowed: expInfo.totalCredits > 0
+            });
+
+            if (expInfo.totalCredits <= 0) {
                 setLoading(false);
-                alert('分析クレジットが不足しています。Premium会員に登録するか、クレジットを購入してください。');
+                alert('分析クレジットが不足しています。レベルアップでクレジットを獲得してください。');
                 onClose();
-                return;
+                return; // ここで関数全体を終了
             }
-
-            // クレジット消費
-            const consumeResult = await CreditService.consumeCredit(userId, userProfile);
-            firstAnalysisFlag = consumeResult.isFirstAnalysis; // ローカル変数に保存
-            setIsFirstAnalysis(consumeResult.isFirstAnalysis);
-            console.log('[Analysis] Credit consumed. Is first analysis:', consumeResult.isFirstAnalysis);
-
         } catch (error) {
             console.error('[Analysis] Credit error:', error);
             setLoading(false);
-            if (error.message === 'NO_CREDITS') {
-                alert('分析クレジットが不足しています');
-                onClose();
-                return;
-            }
+            alert('クレジット確認中にエラーが発生しました');
+            onClose();
+            return; // ここで関数全体を終了
         }
+
+        // 初回分析判定: analysisが完了済みかチェック
+        const isAnalysisCompleted = isFeatureCompleted(userId, 'analysis');
+        const firstAnalysisFlag = !isAnalysisCompleted; // analysis未完了なら初回
+        console.log('[Analysis] First analysis check:', {
+            analysisCompleted: isAnalysisCompleted,
+            isFirstAnalysis: firstAnalysisFlag
+        });
+        setIsFirstAnalysis(firstAnalysisFlag);
 
         // スコア計算（AI呼び出し前に実行）
         const scores = calculateScores(userProfile, dailyRecord, targetPFC);
@@ -755,6 +763,7 @@ ${currentPurpose === '増量' ? `
 
             // モーダル①: 指示書・履歴
             await markFeatureCompleted(userId, 'directive');
+            await markFeatureCompleted(userId, 'idea'); // 閃きを開放
             await markFeatureCompleted(userId, 'history');
 
             // モーダル②: PG BASE・COMY
@@ -1026,12 +1035,14 @@ ${conversationContext}
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-600">分析クレジット:</span>
                         <span className={`text-sm font-bold ${
-                            creditInfo.remainingCredits <= 3 ? 'text-red-600' :
-                            creditInfo.remainingCredits <= 10 ? 'text-orange-600' :
+                            creditInfo.totalCredits <= 3 ? 'text-red-600' :
+                            creditInfo.totalCredits <= 10 ? 'text-orange-600' :
                             'text-green-600'
                         }`}>
-                            {creditInfo.devMode ? '∞' : creditInfo.remainingCredits}
-                            {creditInfo.tier === 'premium' && !creditInfo.devMode && ' / 100'}
+                            {creditInfo.totalCredits}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                            (無料:{creditInfo.freeCredits} / 有料:{creditInfo.paidCredits})
                         </span>
                         <button
                             onClick={() => setShowCreditInfoModal(true)}

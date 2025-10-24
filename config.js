@@ -207,6 +207,15 @@ const FEATURES = {
         icon: 'FileText',
         description: 'AIが分析結果に基づいて最適な次のアクションを提案',
         completionCondition: 'directive_once', // 1回確認で完了
+        nextFeature: 'idea'
+    },
+    IDEA: {
+        id: 'idea',
+        name: '閃き',
+        trigger: 'after_directive',
+        icon: 'Lightbulb',
+        description: '今日の気づきやメモを記録',
+        completionCondition: 'idea_once', // 1回使用で完了
         nextFeature: 'pg_base'
     },
     PG_BASE: {

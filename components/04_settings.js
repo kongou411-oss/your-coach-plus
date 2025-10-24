@@ -83,15 +83,26 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         loadTemplates();
     }, []);
 
-    // クレジット情報読み込み
+    // クレジット情報読み込み（新システム）
     useEffect(() => {
         loadCreditInfo();
     }, [userId, userProfile]);
 
     const loadCreditInfo = async () => {
         try {
-            const accessCheck = await CreditService.canAccessAnalysis(userId, userProfile);
-            setCreditInfo(accessCheck);
+            // 新しい経験値システムから取得
+            const expInfo = await ExperienceService.getUserExperience(userId);
+
+            // Premium会員かどうか判定
+            const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
+
+            setCreditInfo({
+                tier: isPremium ? 'premium' : 'free',
+                totalCredits: expInfo.totalCredits,
+                freeCredits: expInfo.freeCredits,
+                paidCredits: expInfo.paidCredits,
+                devMode: DEV_MODE
+            });
         } catch (error) {
             console.error('[Settings] Error loading credit info:', error);
         }
@@ -350,12 +361,29 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <p className="text-sm text-gray-600">すべての機能が利用可能</p>
                                                 </div>
                                             </div>
-                                            <div className="bg-purple-50 p-3 rounded-lg mb-3">
-                                                <p className="text-sm font-medium text-gray-700 mb-1">今月の分析クレジット</p>
-                                                <p className="text-2xl font-bold text-purple-600">{creditInfo.remainingCredits} / 100 回</p>
-                                                <p className="text-xs text-gray-500 mt-1">毎月1日に100クレジット付与</p>
+
+                                            {/* クレジット残高表示 */}
+                                            <div className="space-y-2 mb-3">
+                                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-lg border border-purple-200">
+                                                    <p className="text-sm font-medium text-gray-700 mb-2">合計クレジット</p>
+                                                    <p className="text-3xl font-bold text-purple-600">{creditInfo.totalCredits}</p>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="bg-blue-50 p-2.5 rounded-lg border border-blue-200">
+                                                        <p className="text-xs font-medium text-gray-600 mb-1">無料クレジット</p>
+                                                        <p className="text-xl font-bold text-blue-600">{creditInfo.freeCredits}</p>
+                                                        <p className="text-xs text-gray-500 mt-1">レベルアップで獲得</p>
+                                                    </div>
+                                                    <div className="bg-green-50 p-2.5 rounded-lg border border-green-200">
+                                                        <p className="text-xs font-medium text-gray-600 mb-1">有料クレジット</p>
+                                                        <p className="text-xl font-bold text-green-600">{creditInfo.paidCredits}</p>
+                                                        <p className="text-xs text-gray-500 mt-1">追加購入分</p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            {creditInfo.remainingCredits < 20 && (
+
+                                            {creditInfo.totalCredits < 20 && (
                                                 <button
                                                     className="w-full bg-purple-600 text-white font-bold py-2 rounded-lg hover:bg-purple-700 mb-2"
                                                     onClick={() => alert('クレジット追加購入画面（実装予定）')}
@@ -2588,6 +2616,71 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                             7日
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* クレジット手動追加 */}
+                            <div className="border rounded-lg p-6">
+                                <h4 className="font-bold mb-4 flex items-center gap-2">
+                                    <Icon name="Award" size={18} />
+                                    クレジット手動追加
+                                </h4>
+                                <div className="space-y-4">
+                                    <p className="text-sm text-gray-600">
+                                        開発モード: クレジットを手動で追加できます（無料クレジットとして付与）
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={async () => {
+                                                const result = await ExperienceService.addFreeCredits(userId, 10);
+                                                if (result.success) {
+                                                    alert('10クレジットを追加しました');
+                                                    loadExperienceData();
+                                                    loadCreditInfo();
+                                                } else {
+                                                    alert('クレジット追加に失敗しました');
+                                                }
+                                            }}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                        >
+                                            +10 クレジット
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                const result = await ExperienceService.addFreeCredits(userId, 50);
+                                                if (result.success) {
+                                                    alert('50クレジットを追加しました');
+                                                    loadExperienceData();
+                                                    loadCreditInfo();
+                                                } else {
+                                                    alert('クレジット追加に失敗しました');
+                                                }
+                                            }}
+                                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                                        >
+                                            +50 クレジット
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                const result = await ExperienceService.addFreeCredits(userId, 100);
+                                                if (result.success) {
+                                                    alert('100クレジットを追加しました');
+                                                    loadExperienceData();
+                                                    loadCreditInfo();
+                                                } else {
+                                                    alert('クレジット追加に失敗しました');
+                                                }
+                                            }}
+                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                                        >
+                                            +100 クレジット
+                                        </button>
+                                    </div>
+                                    {expData && (
+                                        <div className="text-sm text-gray-600">
+                                            現在の無料クレジット: <span className="font-bold text-blue-600">{expData.freeCredits}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

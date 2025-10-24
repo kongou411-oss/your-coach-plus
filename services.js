@@ -181,6 +181,35 @@ const DataService = {
 
         if (DEV_MODE) {
             // DEV_MODEでは認証情報をLocalStorageに保存
+            // getUserProfileはSTORAGE_KEYS.USER_PROFILEを使うので、そこからクレジット情報を取得
+            const existingProfile = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+
+            if (!existingProfile) {
+                // 新規ユーザーの場合、初期クレジットを追加
+                authData.createdAt = new Date().toISOString();
+                authData.joinDate = new Date().toISOString();
+                authData.registrationDate = new Date().toISOString();
+                authData.experience = 0;
+                authData.level = 1;
+                authData.freeCredits = 14; // 初回クレジット
+                authData.paidCredits = 0;
+                authData.processedScoreDates = [];
+                authData.processedDirectiveDates = [];
+
+                // STORAGE_KEYS.USER_PROFILEに保存（getUserProfileが参照する）
+                localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(authData));
+                console.log('[DEV] New user created:', userId, 'with 14 initial credits');
+            } else {
+                // 既存ユーザーの場合、保存済みデータをマージ
+                const existingData = JSON.parse(existingProfile);
+                authData = { ...existingData, ...authData }; // 既存データを保持しつつログイン情報を更新
+
+                // STORAGE_KEYS.USER_PROFILEに保存（getUserProfileが参照する）
+                localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(authData));
+                console.log('[DEV] User login updated:', userId, 'freeCredits:', authData.freeCredits, 'paidCredits:', authData.paidCredits);
+            }
+
+            // 認証情報も別途保存
             localStorage.setItem('yourCoachBeta_authUser', JSON.stringify(authData));
             return true;
         }
@@ -825,6 +854,124 @@ const DataService = {
             console.error('Error fetching all workout history:', error);
             return [];
         }
+    },
+
+    // スコア計算関数（ダッシュボード・分析で使用）
+    calculateScores: (profile, record, target) => {
+        // スタイル判定（一般 or ボディメイカー系）
+        const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス'];
+        const isBodymaker = bodymakerStyles.includes(profile.style);
+
+        // 食事データ
+        const totalCalories = (record.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
+        const totalProtein = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
+        const totalFat = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
+        const totalCarbs = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
+
+        // 食事スコア計算
+        const proteinRate = Math.min(100, target.protein > 0 ? (totalProtein / target.protein) * 100 : 0);
+        const fatRate = Math.min(100, target.fat > 0 ? (totalFat / target.fat) * 100 : 0);
+        const carbsRate = Math.min(100, target.carbs > 0 ? (totalCarbs / target.carbs) * 100 : 0);
+        const pfcBalance = (proteinRate + fatRate + carbsRate) / 3;
+
+        const calorieDeviation = Math.abs(totalCalories - target.calories) / target.calories;
+        const calorieScore = Math.max(0, 100 - calorieDeviation * 100);
+
+        const foodScore = Math.round(pfcBalance * 0.7 + calorieScore * 0.3);
+
+        // 運動データ
+        const workouts = record.workouts || [];
+        const totalDuration = workouts.reduce((sum, w) => {
+            return sum + (w.sets || []).reduce((s, set) => s + (set.duration || 0), 0);
+        }, 0);
+        const exerciseCount = workouts.length;
+
+        // 休養日判定（ルーティンで明示的に設定されている場合）
+        const isRestDay = record.routine?.is_rest_day === true;
+
+        // 運動スコア計算（ボディメイカー/一般で基準が異なる）
+        let durationScore = 0;
+        let exerciseCountScore = 0;
+
+        // 休養日の場合は運動スコアを100点として扱う（計画的な休養）
+        if (isRestDay) {
+            durationScore = 100;
+            exerciseCountScore = 100;
+        } else if (isBodymaker) {
+            // ボディメイカー基準
+            if (totalDuration === 0) durationScore = 0;
+            else if (totalDuration >= 120) durationScore = 100; // 2時間以上
+            else if (totalDuration >= 90) durationScore = 75;   // 1.5時間以上
+            else if (totalDuration >= 60) durationScore = 50;   // 1時間以上
+            else if (totalDuration >= 30) durationScore = 25;   // 30分以上
+            else durationScore = 0;
+
+            if (exerciseCount === 0) exerciseCountScore = 0;
+            else if (exerciseCount >= 5) exerciseCountScore = 100;
+            else if (exerciseCount === 4) exerciseCountScore = 80;
+            else if (exerciseCount === 3) exerciseCountScore = 60;
+            else if (exerciseCount === 2) exerciseCountScore = 40;
+            else if (exerciseCount === 1) exerciseCountScore = 20;
+        } else {
+            // 一般基準
+            if (totalDuration === 0) durationScore = 0;
+            else if (totalDuration >= 60) durationScore = 100;  // 1時間以上
+            else if (totalDuration >= 45) durationScore = 75;   // 45分以上
+            else if (totalDuration >= 30) durationScore = 50;   // 30分以上
+            else if (totalDuration >= 15) durationScore = 25;   // 15分以上
+            else durationScore = 0;
+
+            if (exerciseCount === 0) exerciseCountScore = 0;
+            else if (exerciseCount >= 3) exerciseCountScore = 100;
+            else if (exerciseCount === 2) exerciseCountScore = 66;
+            else if (exerciseCount === 1) exerciseCountScore = 33;
+        }
+
+        const exerciseScore = Math.round((durationScore + exerciseCountScore) / 2);
+
+        // コンディションデータ
+        const idealSleepHoursMap = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
+        const idealSleepHours = idealSleepHoursMap[profile.idealSleepHours] || 8;
+        const actualSleepHoursMap = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
+        const actualSleepHours = actualSleepHoursMap[record.conditions?.sleepHours] || 0;
+
+        // コンディションスコア計算
+        const sleepRate = Math.min(100, idealSleepHours > 0 ? (actualSleepHours / idealSleepHours) * 100 : 0);
+
+        const sleepQuality = record.conditions?.sleepQuality || 0;
+        const appetite = record.conditions?.appetite || 0;
+        const digestion = record.conditions?.digestion || 0;
+        const focus = record.conditions?.focus || 0;
+        const stress = record.conditions?.stress || 0;
+        const invertedStress = 6 - stress; // ストレスは逆転（5が最悪→1、1が最良→5）
+
+        const metricsAverage = ((sleepQuality + appetite + digestion + focus + invertedStress) / 5) * 20; // 5段階→100点換算
+
+        const conditionScore = Math.round(sleepRate * 0.4 + metricsAverage * 0.6);
+
+        return {
+            food: {
+                score: foodScore,
+                protein: Math.round(proteinRate),
+                fat: Math.round(fatRate),
+                carbs: Math.round(carbsRate),
+                calories: Math.round(calorieScore)
+            },
+            exercise: {
+                score: exerciseScore,
+                duration: Math.round(durationScore),
+                exerciseCount: Math.round(exerciseCountScore),
+                totalMinutes: totalDuration,
+                count: exerciseCount
+            },
+            condition: {
+                score: conditionScore,
+                sleep: Math.round(sleepRate),
+                metrics: Math.round(metricsAverage),
+                actualSleepHours: actualSleepHours,
+                idealSleepHours: idealSleepHours
+            }
+        };
     }
 };
 
@@ -1318,6 +1465,22 @@ const ExperienceService = {
     getUserExperience: async (userId) => {
         const profile = await DataService.getUserProfile(userId);
 
+        // 既存ユーザーでクレジット情報がない場合、初期化する
+        if (profile && profile.freeCredits === undefined) {
+            console.log('[ExperienceService] Existing user without credits detected. Initializing...');
+            profile.experience = 0;
+            profile.level = 1;
+            profile.freeCredits = 14; // 初回クレジット
+            profile.paidCredits = 0;
+            profile.processedScoreDates = [];
+            profile.processedDirectiveDates = [];
+            profile.registrationDate = profile.joinDate || new Date().toISOString();
+
+            // 保存
+            await DataService.saveUserProfile(userId, profile);
+            console.log('[ExperienceService] Initialized credits for existing user:', userId);
+        }
+
         const experience = profile?.experience || 0;
         const level = profile?.level || 1;
         const freeCredits = profile?.freeCredits || 0;
@@ -1536,5 +1699,109 @@ const ExperienceService = {
         }
 
         return result;
+    },
+
+    // 指示書完了で経験値付与（1日1回のみ）
+    processDirectiveCompletion: async (userId, date) => {
+        try {
+            const userRef = DEV_MODE
+                ? { id: userId }
+                : db.collection('users').doc(userId);
+
+            let userData;
+            if (DEV_MODE) {
+                const stored = localStorage.getItem(`user_${userId}`);
+                userData = stored ? JSON.parse(stored) : null;
+            } else {
+                const userDoc = await userRef.get();
+                userData = userDoc.exists ? userDoc.data() : null;
+            }
+
+            if (!userData) {
+                console.error('[Experience] User not found');
+                return { success: false, error: 'User not found' };
+            }
+
+            // 既に処理済みかチェック
+            const processedDates = userData.processedDirectiveDates || [];
+            if (processedDates.includes(date)) {
+                console.log(`[Experience] Directive already processed for date: ${date}`);
+                return { success: false, alreadyProcessed: true };
+            }
+
+            // 10XP付与
+            const expResult = await ExperienceService.addExperience(userId, 10);
+
+            // 処理済み日付を記録
+            processedDates.push(date);
+
+            if (DEV_MODE) {
+                userData.processedDirectiveDates = processedDates;
+                localStorage.setItem(`user_${userId}`, JSON.stringify(userData));
+            } else {
+                await userRef.update({
+                    processedDirectiveDates: processedDates
+                });
+            }
+
+            console.log(`[Experience] Directive completion processed for ${date}: +10 XP`);
+
+            return {
+                success: true,
+                experience: expResult.experience,
+                level: expResult.level,
+                leveledUp: expResult.leveledUp,
+                creditsEarned: expResult.creditsEarned,
+                milestoneReached: expResult.milestoneReached
+            };
+        } catch (error) {
+            console.error('[Experience] Failed to process directive completion:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // 無料クレジットを手動追加（開発モード用）
+    addFreeCredits: async (userId, amount) => {
+        try {
+            const userRef = DEV_MODE
+                ? { id: userId }
+                : db.collection('users').doc(userId);
+
+            let userData;
+            if (DEV_MODE) {
+                const stored = localStorage.getItem(`user_${userId}`);
+                userData = stored ? JSON.parse(stored) : null;
+            } else {
+                const userDoc = await userRef.get();
+                userData = userDoc.exists ? userDoc.data() : null;
+            }
+
+            if (!userData) {
+                console.error('[Experience] User not found');
+                return { success: false, error: 'User not found' };
+            }
+
+            const newFreeCredits = (userData.freeCredits || 0) + amount;
+
+            if (DEV_MODE) {
+                userData.freeCredits = newFreeCredits;
+                localStorage.setItem(`user_${userId}`, JSON.stringify(userData));
+            } else {
+                await userRef.update({
+                    freeCredits: newFreeCredits
+                });
+            }
+
+            console.log(`[Experience] Added ${amount} free credits. Total free: ${newFreeCredits}`);
+
+            return {
+                success: true,
+                freeCredits: newFreeCredits,
+                totalCredits: newFreeCredits + (userData.paidCredits || 0)
+            };
+        } catch (error) {
+            console.error('[Experience] Failed to add free credits:', error);
+            return { success: false, error: error.message };
+        }
     }
 };

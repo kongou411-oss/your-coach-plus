@@ -2003,7 +2003,9 @@
                                     <div className="grid grid-cols-2 gap-2">
                                         <button
                                             onClick={() => {
-                                                setSets([...sets, { ...currentSet, setType: 'warmup' }]);
+                                                const newSet = { ...currentSet, setType: 'warmup' };
+                                                console.log('[AddItem] Adding warmup set:', newSet);
+                                                setSets([...sets, newSet]);
                                             }}
                                             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2"
                                         >
@@ -2012,7 +2014,9 @@
                                         </button>
                                         <button
                                             onClick={() => {
-                                                setSets([...sets, { ...currentSet, setType: 'main' }]);
+                                                const newSet = { ...currentSet, setType: 'main' };
+                                                console.log('[AddItem] Adding main set:', newSet);
+                                                setSets([...sets, newSet]);
                                             }}
                                             className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2"
                                         >
@@ -2047,9 +2051,18 @@
                                                         </button>
                                                     </div>
                                                     <div className="text-xs text-gray-600 space-y-0.5">
-                                                        <div><span>重量: {set.weight}kg</span></div>
-                                                        <div><span>回数: {set.reps}回</span></div>
-                                                        <div><span>体積: {calculateSetVolume(set)} kg×reps</span></div>
+                                                        <div className="flex justify-between">
+                                                            <span>重量:</span>
+                                                            <span className="font-medium">{set.weight || 0}kg</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>回数:</span>
+                                                            <span className="font-medium">{set.reps || 0}回</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>体積:</span>
+                                                            <span className="font-medium">{calculateSetVolume(set)} kg×reps</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -3758,6 +3771,8 @@
                             <AIFoodRecognition
                                 onFoodsRecognized={handleFoodsRecognized}
                                 onClose={() => setShowAIFoodRecognition(false)}
+                                userId={user?.uid}
+                                userProfile={userProfile}
                             />
                         )}
 

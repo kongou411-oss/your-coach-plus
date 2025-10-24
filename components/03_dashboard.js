@@ -120,6 +120,39 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         );
         localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updated));
         setTodayDirective({ ...todayDirective, completed: true });
+
+        // 経験値付与（1日1回のみ10XP）
+        if (user) {
+            try {
+                const expResult = await ExperienceService.processDirectiveCompletion(user.uid, currentDate);
+                if (expResult.success) {
+                    console.log('[Dashboard] Directive completion: +10 XP');
+
+                    // 経験値更新イベントを発火（レベルバナーをリアルタイム更新）
+                    window.dispatchEvent(new CustomEvent('experienceUpdated', {
+                        detail: {
+                            experience: expResult.experience,
+                            level: expResult.level
+                        }
+                    }));
+
+                    // レベルアップ時の通知
+                    if (expResult.leveledUp) {
+                        window.dispatchEvent(new CustomEvent('levelUp', {
+                            detail: {
+                                level: expResult.level,
+                                creditsEarned: expResult.creditsEarned,
+                                milestoneReached: expResult.milestoneReached
+                            }
+                        }));
+                    }
+                } else if (expResult.alreadyProcessed) {
+                    console.log('[Dashboard] Directive already completed today');
+                }
+            } catch (error) {
+                console.error('[Dashboard] Failed to process directive completion:', error);
+            }
+        }
     };
 
     // 残り時間を計算
@@ -1296,32 +1329,34 @@ ${Math.round(caloriesPercent)}%`
                         </div>
                         </div>
 
-                        {/* 閃きセクション */}
-                        <div className="space-y-2 mt-4">
-                            <div className="py-2 px-3 bg-gray-50 rounded-lg">
-                                <div className="mb-2">
-                                    <span className="text-sm text-gray-700 font-bold flex items-center gap-2">
-                                        <Icon name="Lightbulb" size={16} className="text-yellow-500" />
-                                        閃き
-                                    </span>
+                        {/* 閃きセクション - 初回分析完了後に開放 */}
+                        {unlockedFeatures.includes('idea') && (
+                            <div className="space-y-2 mt-4">
+                                <div className="py-2 px-3 bg-gray-50 rounded-lg">
+                                    <div className="mb-2">
+                                        <span className="text-sm text-gray-700 font-bold flex items-center gap-2">
+                                            <Icon name="Lightbulb" size={16} className="text-yellow-500" />
+                                            閃き
+                                        </span>
+                                    </div>
+                                    <textarea
+                                        value={dailyRecord.notes || ''}
+                                        onChange={async (e) => {
+                                            const updated = {
+                                                ...dailyRecord,
+                                                notes: e.target.value
+                                            };
+                                            setDailyRecord(updated);
+                                            const userId = user?.uid || DEV_USER_ID;
+                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                        }}
+                                        placeholder="今日の気づき、メモなど..."
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none text-sm"
+                                        rows="3"
+                                    />
                                 </div>
-                                <textarea
-                                    value={dailyRecord.notes || ''}
-                                    onChange={async (e) => {
-                                        const updated = {
-                                            ...dailyRecord,
-                                            notes: e.target.value
-                                        };
-                                        setDailyRecord(updated);
-                                        const userId = user?.uid || DEV_USER_ID;
-                                        await DataService.saveDailyRecord(userId, currentDate, updated);
-                                    }}
-                                    placeholder="今日の気づき、メモなど..."
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none text-sm"
-                                    rows="3"
-                                />
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
 
@@ -1340,6 +1375,31 @@ ${Math.round(caloriesPercent)}%`
                                 + 分析
                             </button>
                         </div>
+
+                        {/* 当日のスコア表示 */}
+                        {(() => {
+                            const scores = DataService.calculateScores(profile, dailyRecord, targetPFC);
+                            return (
+                                <div className="grid grid-cols-3 gap-2 mb-3">
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                                        <div className="text-xs text-green-700 mb-1">食事</div>
+                                        <div className="text-2xl font-bold text-green-600">{scores.food.score}</div>
+                                        <div className="text-xs text-gray-500">/100</div>
+                                    </div>
+                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
+                                        <div className="text-xs text-orange-700 mb-1">運動</div>
+                                        <div className="text-2xl font-bold text-orange-600">{scores.exercise.score}</div>
+                                        <div className="text-xs text-gray-500">/100</div>
+                                    </div>
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                                        <div className="text-xs text-blue-700 mb-1">コンディション</div>
+                                        <div className="text-2xl font-bold text-blue-600">{scores.condition.score}</div>
+                                        <div className="text-xs text-gray-500">/100</div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         <p className="text-sm text-gray-500">AIによる詳細な栄養分析を確認できます</p>
                     </div>
                 )}
@@ -1407,6 +1467,13 @@ ${Math.round(caloriesPercent)}%`
                                                 <div>
                                                     <div className="font-bold text-gray-800">指示書</div>
                                                     <div className="text-xs text-gray-600">明日の行動指針をAIが提案</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <Icon name="Lightbulb" size={18} className="text-yellow-500 mt-0.5" />
+                                                <div>
+                                                    <div className="font-bold text-gray-800">閃き</div>
+                                                    <div className="text-xs text-gray-600">今日の気づきやメモを記録</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-2">
@@ -1603,22 +1670,26 @@ ${Math.round(caloriesPercent)}%`
 
 // ===== Level Banner Component =====
 const LevelBanner = ({ user, setInfoModal }) => {
-    const [expData, setExpData] = useState({
-        level: 1,
-        experience: 0,
-        totalCredits: 0,
-        freeCredits: 0,
-        paidCredits: 0,
-        expProgress: 0
-    });
+    const [expData, setExpData] = useState(null);
 
     useEffect(() => {
         loadExperienceData();
+
+        // レベルアップイベントと経験値更新イベントをリッスン
         const handleLevelUp = (event) => {
             loadExperienceData();
         };
+        const handleExperienceUpdate = (event) => {
+            loadExperienceData();
+        };
+
         window.addEventListener('levelUp', handleLevelUp);
-        return () => window.removeEventListener('levelUp', handleLevelUp);
+        window.addEventListener('experienceUpdated', handleExperienceUpdate);
+
+        return () => {
+            window.removeEventListener('levelUp', handleLevelUp);
+            window.removeEventListener('experienceUpdated', handleExperienceUpdate);
+        };
     }, [user]);
 
     const loadExperienceData = async () => {
@@ -1642,6 +1713,10 @@ const LevelBanner = ({ user, setInfoModal }) => {
             console.error('[LevelBanner] Failed to load experience data:', error);
         }
     };
+
+    if (!expData) {
+        return null; // ローディング中は何も表示しない
+    }
 
     return (
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-md">

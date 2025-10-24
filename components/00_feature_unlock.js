@@ -166,6 +166,7 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
     // - PG BASE、COMY（モーダル②）
     // - テンプレート、ルーティン、ショートカット、履歴分析（モーダル③）
     if (completionStatus.directive) unlocked.push('directive');
+    if (completionStatus.idea) unlocked.push('idea'); // 閃き
     if (completionStatus.history) unlocked.push('history');
     if (completionStatus.pg_base) unlocked.push('pg_base');
     if (completionStatus.community) unlocked.push('community');
@@ -232,6 +233,9 @@ const getNextFeatureToUnlock = (userId, todayRecord) => {
     }
     if (!completionStatus.directive) {
         return { feature: FEATURES.DIRECTIVE, message: '指示書を確認しましょう（明日の行動指針が記載されています）' };
+    }
+    if (!completionStatus.idea) {
+        return { feature: FEATURES.IDEA, message: '閃きを記録して気づきを残しましょう' };
     }
     if (!completionStatus.pg_base) {
         return { feature: FEATURES.PG_BASE, message: 'PG BASEでボディメイクの基礎を学びましょう' };
