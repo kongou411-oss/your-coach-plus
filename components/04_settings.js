@@ -727,7 +727,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             >
                                                 <option value={1}>デスクワーク中心- 1.05x</option>
                                                 <option value={2}>立ち仕事が多い - 1.225x</option>
-                                                <option value={3}>軽い体労僁E- 1.4x</option>
+                                                <option value={3}>軽い体労働 - 1.4x</option>
                                                 <option value={4}>重い肉体労働- 1.575x</option>
                                                 <option value={5}>非常に激しい肉体労働- 1.75x</option>
                                             </select>
@@ -1014,7 +1014,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 🔴 タンパク質: ${proteinG}g (${proteinCal}kcal, ${proteinPercent}%)
 🟡 脂質: ${fatG}g (${Math.round(fatCal)}kcal, ${fatPercent}%)
 🟢 炭水化物: ${carbG}g (${Math.round(carbCal)}kcal, ${carbPercent}%)
-━━━━━━━━━━━━━━━━━━━━━E合計 ${Math.round(targetCalories)}kcal
+━━━━━━━━━━━━━━━━━━━━━
+合計: ${Math.round(targetCalories)}kcal
 
 【カスタム比率のデフォルト値。🔴 タンパク質: 30%
 🟡 脂質: 25%
@@ -1282,7 +1283,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
                                         ];
 
-                                        // 左側の項目リストを取得                                        const leftShortcuts = shortcuts
+                                        // 左側の項目リストを取得
+                                        const leftShortcuts = shortcuts
                                             .filter(s => s.side === 'left' && s.enabled)
                                             .sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -1359,11 +1361,13 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             const action = e.target.value;
                                                             const maxOrder = Math.max(...shortcuts.filter(s => s.side === 'left' && s.enabled).map(s => s.order || 0), -1);
 
-                                                            // 既存の項目を探す                                                            const existingIndex = shortcuts.findIndex(s => s.action === action);
+                                                            // 既存の項目を探す
+                                                            const existingIndex = shortcuts.findIndex(s => s.action === action);
                                                             let updated;
 
                                                             if (existingIndex !== -1) {
-                                                                // 既存項目を有効化                                                                updated = shortcuts.map((s, i) =>
+                                                                // 既存項目を有効化
+                                                                updated = shortcuts.map((s, i) =>
                                                                     i === existingIndex ? { ...s, side: 'left', enabled: true, order: maxOrder + 1 } : s
                                                                 );
                                                             } else {
@@ -1457,7 +1461,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
                                         ];
 
-                                        // 右側の項目リストを取得                                        const rightShortcuts = shortcuts
+                                        // 右側の項目リストを取得
+                                        const rightShortcuts = shortcuts
                                             .filter(s => s.side === 'right' && s.enabled)
                                             .sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -1534,11 +1539,13 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             const action = e.target.value;
                                                             const maxOrder = Math.max(...shortcuts.filter(s => s.side === 'right' && s.enabled).map(s => s.order || 0), -1);
 
-                                                            // 既存の項目を探す                                                            const existingIndex = shortcuts.findIndex(s => s.action === action);
+                                                            // 既存の項目を探す
+                                                            const existingIndex = shortcuts.findIndex(s => s.action === action);
                                                             let updated;
 
                                                             if (existingIndex !== -1) {
-                                                                // 既存項目を有効化                                                                updated = shortcuts.map((s, i) =>
+                                                                // 既存項目を有効化
+                                                                updated = shortcuts.map((s, i) =>
                                                                     i === existingIndex ? { ...s, side: 'right', enabled: true, order: maxOrder + 1 } : s
                                                                 );
                                                             } else {
@@ -1633,7 +1640,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             <button
                                                                 onClick={async (e) => {
                                                                     e.preventDefault();
-                                                                    if (confirm('このテンプレートを削除しますか？)) {
+                                                                    if (confirm('このテンプレートを削除しますか？')) {
                                                                         await DataService.deleteMealTemplate(userId, template.id);
                                                                         await loadTemplates();
                                                                     }
@@ -1724,7 +1731,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             <button
                                                                 onClick={async (e) => {
                                                                     e.preventDefault();
-                                                                    if (confirm('このテンプレートを削除しますか？)) {
+                                                                    if (confirm('このテンプレートを削除しますか？')) {
                                                                         await DataService.deleteWorkoutTemplate(userId, template.id);
                                                                         await loadTemplates();
                                                                     }
@@ -1792,7 +1799,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                 const addRoutine = () => {
                                     if (localRoutines.length >= 12) {
-                                        alert('ルーティンは最大12個！ay7 + 追加5枠）まで設定できます);
+                                        alert('ルーティンは最大12個（Day7 + 追加5枠）まで設定できます');
                                         return;
                                     }
                                     const nextId = Math.max(...localRoutines.map(r => r.id), 0) + 1;
@@ -1811,7 +1818,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         alert('Day1~7は削除できません');
                                         return;
                                     }
-                                    if (confirm('この追加枠を削除しますか？)) {
+                                    if (confirm('この追加枠を削除しますか？')) {
                                         const updated = localRoutines.filter(r => r.id !== id);
                                         saveRoutines(updated);
                                     }
@@ -2062,20 +2069,21 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 className="w-full py-3 border-2 border-dashed border-purple-300 rounded-lg text-purple-600 hover:bg-purple-50 transition font-medium"
                                             >
                                                 <Icon name="Plus" size={18} className="inline mr-2" />
-                                                追加枠を追加をlocalRoutines.length - 7}/5を                                            </button>
+                                                追加枠を追加 ({localRoutines.length - 7}/5)
+                                            </button>
                                         )}
 
                                         {localRoutines.length === 0 && (
                                             <div className="text-center py-8">
-                                                <p className="text-gray-500 mb-4">ルーティンが設定されていてせん</p>
+                                                <p className="text-gray-500 mb-4">ルーティンが設定されていません</p>
                                                 <button
                                                     onClick={() => {
                                                         const defaultRoutines = [
                                                             { id: 1, name: '①月曜日', splitType: '胸', isRestDay: false },
                                                             { id: 2, name: '②火曜日', splitType: '背中', isRestDay: false },
-                                                            { id: 3, name: '③水曜日', splitType: '脁E, isRestDay: false },
+                                                            { id: 3, name: '③水曜日', splitType: '脚', isRestDay: false },
                                                             { id: 4, name: '④木曜日', splitType: '休み', isRestDay: true },
-                                                            { id: 5, name: '⑤金曜日', splitType: '肩・腁E, isRestDay: false },
+                                                            { id: 5, name: '⑤金曜日', splitType: '肩・腕', isRestDay: false },
                                                             { id: 6, name: '⑥土曜日', splitType: '全身', isRestDay: false },
                                                             { id: 7, name: '⑦日曜日', splitType: '休み', isRestDay: true }
                                                         ];
@@ -2095,7 +2103,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <div className="flex gap-3 pt-4 border-t">
                                                 <button
                                                     onClick={() => {
-                                                        if (confirm('ルーティンをリセットしますか？)) {
+                                                        if (confirm('ルーティンをリセットしますか？')) {
                                                             localStorage.removeItem(STORAGE_KEYS.ROUTINES);
                                                             localStorage.removeItem(STORAGE_KEYS.ROUTINE_START_DATE);
                                                             localStorage.removeItem(STORAGE_KEYS.ROUTINE_ACTIVE);
@@ -2334,7 +2342,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <p className="text-xs text-gray-600">
                                             {DEV_PREMIUM_MODE
                                                 ? '月額支払い時にクレジット100付与+全機能利用可能'
-                                                : '11-7日目は全機能無料8日目以降は機能制限}
+                                                : '1-7日目は全機能無料、8日目以降は機能制限'}
                                         </p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
@@ -2353,12 +2361,13 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         </button>
                                         <button
                                             onClick={async () => {
-                                                // Premium会員に分析切切替えてクレジット100付与                                                localStorage.setItem('DEV_PREMIUM_MODE', 'true');
+                                                // Premium会員に切替えてクレジット100付与
+                                                localStorage.setItem('DEV_PREMIUM_MODE', 'true');
                                                 const result = await ExperienceService.addPaidCredits(userId, 100);
                                                 if (result.success) {
-                                                    alert('Premium会員に分析切替え、クレジット100を付与しました');
+                                                    alert('Premium会員に切替え、クレジット100を付与しました');
                                                 } else {
-                                                    alert('Premium会員に分析切替えました');
+                                                    alert('Premium会員に切替えました');
                                                 }
                                                 window.location.reload();
                                             }}
@@ -2397,7 +2406,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             { id: 'directive', name: '指示書', unlocked: completionStatus.analysis, premium: !isTrial && !isPremium },
                                             { id: 'pg_base', name: 'PG BASE', unlocked: completionStatus.analysis, premium: !isTrial && !isPremium },
                                             { id: 'community', name: 'COMY', unlocked: completionStatus.analysis, premium: !isTrial && !isPremium },
-                                            { id: 'template', name: 'テンプレート, unlocked: completionStatus.analysis && currentDay >= 3, premium: !isTrial && !isPremium },
+                                            { id: 'template', name: 'テンプレート', unlocked: completionStatus.analysis && currentDay >= 3, premium: !isTrial && !isPremium },
                                             { id: 'routine', name: 'ルーティン', unlocked: completionStatus.template && currentDay >= 3, premium: !isTrial && !isPremium },
                                             { id: 'shortcut', name: 'ショートカット', unlocked: completionStatus.routine && currentDay >= 3, premium: !isTrial && !isPremium },
                                             { id: 'history', name: '履歴', unlocked: currentDay >= 7, premium: !isTrial && !isPremium },
@@ -2419,7 +2428,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             feature.premium ? 'bg-red-100 text-red-700' :
                                                             feature.unlocked ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
                                                         }`}>
-                                                            {feature.premium ? '🔒Premium必須 : (feature.unlocked ? '✓開放済み' : '⏳未開放')}
+                                                            {feature.premium ? '🔒Premium必須' : (feature.unlocked ? '✓開放済み' : '⏳未開放')}
                                                         </span>
                                                     </div>
                                                 ))}
@@ -2559,7 +2568,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 { id: 'condition', name: 'コンディション記録', condition: '運動1回記録' },
                                                 { id: 'analysis', name: '分析', condition: 'コンディション6項目入力' },
                                                 { id: 'directive', name: '指示書', condition: '分析1回使用' },
-                                                { id: 'pg_base', name: 'PG BASE', condition: '分析1回使用（指示書と同時）'
+                                                { id: 'pg_base', name: 'PG BASE', condition: '分析1回使用（指示書と同時）' }
                                             ].map(feature => {
                                                 const completionStatus = getFeatureCompletionStatus(userId);
                                                 const isCompleted = completionStatus[feature.id] === true;
@@ -2592,9 +2601,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         </div>
                                         <div className="space-y-1 ml-4">
                                             {[
-                                                { id: 'template', name: 'テンプレート, condition: '3日目到達 },
-                                                { id: 'routine', name: 'ルーティン', condition: '3日目到達 },
-                                                { id: 'shortcut', name: 'ショートカット', condition: '3日目到達 }
+                                                { id: 'template', name: 'テンプレート', condition: '3日目到達' },
+                                                { id: 'routine', name: 'ルーティン', condition: '3日目到達' },
+                                                { id: 'shortcut', name: 'ショートカット', condition: '3日目到達' }
                                             ].map(feature => {
                                                 const daysSinceReg = calculateDaysSinceRegistration(userId);
                                                 const isDayReached = daysSinceReg >= 3;
@@ -2628,9 +2637,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             同時開放：無料トライアル終了時                                        </div>
                                         <div className="space-y-1 ml-4">
                                             {[
-                                                { id: 'history', name: '履歴', condition: '7日目到達 },
-                                                { id: 'community', name: 'COMY閲覧', condition: '7日目到達 },
-                                                { id: 'history_analysis', name: '履歴分析', condition: '7日目到達 }
+                                                { id: 'history', name: '履歴', condition: '7日目到達' },
+                                                { id: 'community', name: 'COMY閲覧', condition: '7日目到達' },
+                                                { id: 'history_analysis', name: '履歴分析', condition: '7日目到達' }
                                             ].map(feature => {
                                                 const daysSinceReg = calculateDaysSinceRegistration(userId);
                                                 const isDayReached = daysSinceReg >= 7;
@@ -2667,12 +2676,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 { name: '指示書', locked: true },
                                                 { name: 'PG BASE', locked: true },
                                                 { name: 'COMY閲覧', locked: true },
-                                                { name: 'テンプレート, locked: true },
+                                                { name: 'テンプレート', locked: true },
                                                 { name: 'ルーティン', locked: true },
                                                 { name: 'ショートカット', locked: true },
                                                 { name: '履歴', locked: true },
                                                 { name: '履歴分析', locked: true },
-                                                { name: '分析機能：月100クレジット, locked: true },
+                                                { name: '分析機能：月100クレジット', locked: true },
                                                 { name: 'ビタミン・ミネラル分析', locked: true }
                                             ].map((feature, idx) => {
                                                 const daysSinceReg = calculateDaysSinceRegistration(userId);
@@ -2794,7 +2803,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {/* ヘッダー */}
                     <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center rounded-t-2xl">
                         <h3 className="text-lg font-bold">
-                            {templateEditType === 'meal' ? '食事テンプレート編集 : '運動テンプレート編集}
+                            {templateEditType === 'meal' ? '食事テンプレート編集' : '運動テンプレート編集'}
                         </h3>
                         <button
                             onClick={() => {
