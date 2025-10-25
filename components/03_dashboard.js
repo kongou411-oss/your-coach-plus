@@ -34,6 +34,35 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         });
     }, [profile]);
 
+    // 体組成を更新する共通ハンドラー
+    const updateBodyComposition = async (newWeight, newBodyFat) => {
+        const updated = {
+            weight: newWeight,
+            bodyFatPercentage: newBodyFat
+        };
+        setBodyComposition(updated);
+
+        // userProfileを更新
+        const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
+        const updatedProfile = { ...savedProfile, weight: newWeight, bodyFatPercentage: newBodyFat };
+        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedProfile));
+        window.dispatchEvent(new Event('profileUpdated'));
+
+        // dailyRecordにも保存（履歴ページでLBM表示用）
+        try {
+            const todayDate = getTodayDate();
+            const currentRecord = await DataService.getDailyRecord(user.uid, todayDate) || {};
+            const updatedRecord = {
+                ...currentRecord,
+                bodyComposition: updated
+            };
+            await DataService.saveDailyRecord(user.uid, todayDate, updatedRecord);
+            setDailyRecord(updatedRecord);
+        } catch (error) {
+            console.error('[Dashboard] Failed to save body composition to dailyRecord:', error);
+        }
+    };
+
     // 機能開放モーダルのフラグをチェック（分析ページから戻った時に表示）
     useEffect(() => {
         // ダッシュボードが表示されるたびにチェック
@@ -726,11 +755,7 @@ ${Math.round(caloriesPercent)}%`
                             <button
                                 onClick={() => {
                                     const newWeight = Math.max(0, bodyComposition.weight - 1);
-                                    const updated = { ...bodyComposition, weight: newWeight };
-                                    setBodyComposition(updated);
-                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, weight: newWeight }));
-                                    window.dispatchEvent(new Event('profileUpdated'));
+                                    updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -738,12 +763,8 @@ ${Math.round(caloriesPercent)}%`
                             </button>
                             <button
                                 onClick={() => {
-                                    const newWeight = Math.max(0, bodyComposition.weight - 0.1);
-                                    const updated = { ...bodyComposition, weight: parseFloat(newWeight.toFixed(1)) };
-                                    setBodyComposition(updated);
-                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, weight: parseFloat(newWeight.toFixed(1)) }));
-                                    window.dispatchEvent(new Event('profileUpdated'));
+                                    const newWeight = Math.max(0, parseFloat((bodyComposition.weight - 0.1).toFixed(1)));
+                                    updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -755,12 +776,8 @@ ${Math.round(caloriesPercent)}%`
                             </div>
                             <button
                                 onClick={() => {
-                                    const newWeight = bodyComposition.weight + 0.1;
-                                    const updated = { ...bodyComposition, weight: parseFloat(newWeight.toFixed(1)) };
-                                    setBodyComposition(updated);
-                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, weight: parseFloat(newWeight.toFixed(1)) }));
-                                    window.dispatchEvent(new Event('profileUpdated'));
+                                    const newWeight = parseFloat((bodyComposition.weight + 0.1).toFixed(1));
+                                    updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -769,11 +786,7 @@ ${Math.round(caloriesPercent)}%`
                             <button
                                 onClick={() => {
                                     const newWeight = bodyComposition.weight + 1;
-                                    const updated = { ...bodyComposition, weight: newWeight };
-                                    setBodyComposition(updated);
-                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, weight: newWeight }));
-                                    window.dispatchEvent(new Event('profileUpdated'));
+                                    updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -792,11 +805,7 @@ ${Math.round(caloriesPercent)}%`
                             <button
                                 onClick={() => {
                                     const newBodyFat = Math.max(0, bodyComposition.bodyFatPercentage - 1);
-                                    const updated = { ...bodyComposition, bodyFatPercentage: newBodyFat };
-                                    setBodyComposition(updated);
-                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, bodyFatPercentage: newBodyFat }));
-                                    window.dispatchEvent(new Event('profileUpdated'));
+                                    updateBodyComposition(bodyComposition.weight, newBodyFat);
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -804,12 +813,8 @@ ${Math.round(caloriesPercent)}%`
                             </button>
                             <button
                                 onClick={() => {
-                                    const newBodyFat = Math.max(0, bodyComposition.bodyFatPercentage - 0.1);
-                                    const updated = { ...bodyComposition, bodyFatPercentage: parseFloat(newBodyFat.toFixed(1)) };
-                                    setBodyComposition(updated);
-                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, bodyFatPercentage: parseFloat(newBodyFat.toFixed(1)) }));
-                                    window.dispatchEvent(new Event('profileUpdated'));
+                                    const newBodyFat = Math.max(0, parseFloat((bodyComposition.bodyFatPercentage - 0.1).toFixed(1)));
+                                    updateBodyComposition(bodyComposition.weight, newBodyFat);
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -821,12 +826,8 @@ ${Math.round(caloriesPercent)}%`
                             </div>
                             <button
                                 onClick={() => {
-                                    const newBodyFat = bodyComposition.bodyFatPercentage + 0.1;
-                                    const updated = { ...bodyComposition, bodyFatPercentage: parseFloat(newBodyFat.toFixed(1)) };
-                                    setBodyComposition(updated);
-                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, bodyFatPercentage: parseFloat(newBodyFat.toFixed(1)) }));
-                                    window.dispatchEvent(new Event('profileUpdated'));
+                                    const newBodyFat = parseFloat((bodyComposition.bodyFatPercentage + 0.1).toFixed(1));
+                                    updateBodyComposition(bodyComposition.weight, newBodyFat);
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -835,11 +836,7 @@ ${Math.round(caloriesPercent)}%`
                             <button
                                 onClick={() => {
                                     const newBodyFat = bodyComposition.bodyFatPercentage + 1;
-                                    const updated = { ...bodyComposition, bodyFatPercentage: newBodyFat };
-                                    setBodyComposition(updated);
-                                    const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ...savedProfile, bodyFatPercentage: newBodyFat }));
-                                    window.dispatchEvent(new Event('profileUpdated'));
+                                    updateBodyComposition(bodyComposition.weight, newBodyFat);
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
