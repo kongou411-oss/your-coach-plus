@@ -1476,7 +1476,7 @@ ${Math.round(caloriesPercent)}%`
 
                 {/* 分析ボタン - コンディション完了後に開放 */}
                 {unlockedFeatures.includes('analysis') && (
-                    <div>
+                    <div id="analysis-section">
                         <div className="flex items-center justify-between mb-3">
                             <h4 className="font-bold text-gray-800 flex items-center gap-2">
                                 <Icon name="PieChart" size={18} className="text-indigo-600" />
@@ -1703,6 +1703,15 @@ ${Math.round(caloriesPercent)}%`
                                             // 新機能開放モーダル完了フラグを設定（初回分析完了モーダル表示トリガー）
                                             localStorage.setItem('featureUnlockModalsCompleted', 'true');
                                             console.log('[Dashboard] Feature unlock modals completed. Set flag for upgrade modal.');
+
+                                            // 分析セクションまで自動スクロール
+                                            setTimeout(() => {
+                                                const analysisSection = document.getElementById('analysis-section');
+                                                if (analysisSection) {
+                                                    analysisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                    console.log('[Dashboard] Scrolled to analysis section');
+                                                }
+                                            }, 300);
                                         }}
                                         className="w-2/3 bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors"
                                     >

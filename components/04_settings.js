@@ -1172,7 +1172,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                     </details>
 
-                    {/* ショートカット */}
+                    {/* ショートカット - 初回分析後に開放 */}
+                    {unlockedFeatures.includes('shortcut') && (
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Zap" size={18} className="text-purple-600" />
@@ -1581,8 +1582,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             </div>
                         </div>
                     </details>
+                    )}
 
-                    {/* テンプレート*/}
+                    {/* テンプレート - 初回分析後に開放 */}
+                    {unlockedFeatures.includes('template') && (
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="BookTemplate" size={18} className="text-purple-600" />
@@ -1769,8 +1772,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                         </div>
                     </details>
+                    )}
 
-                    {/* ルーティン */}
+                    {/* ルーティン - 初回分析後に開放 */}
+                    {unlockedFeatures.includes('routine') && (
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Repeat" size={18} className="text-purple-600" />
@@ -2133,6 +2138,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             </div>
                         </div>
                     </details>
+                    )}
 
                     {/* 通知設定*/}
                     <details className="border rounded-lg">
@@ -2403,14 +2409,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             { id: 'training', name: '運動記録', unlocked: completionStatus.food },
                                             { id: 'condition', name: 'コンディション', unlocked: completionStatus.training },
                                             { id: 'analysis', name: '分析', unlocked: completionStatus.condition, premium: !isTrial && !isPremium },
-                                            { id: 'directive', name: '指示書', unlocked: completionStatus.analysis, premium: !isTrial && !isPremium },
-                                            { id: 'pg_base', name: 'PG BASE', unlocked: completionStatus.analysis, premium: !isTrial && !isPremium },
-                                            { id: 'community', name: 'COMY', unlocked: completionStatus.analysis, premium: !isTrial && !isPremium },
-                                            { id: 'template', name: 'テンプレート', unlocked: completionStatus.analysis && currentDay >= 3, premium: !isTrial && !isPremium },
-                                            { id: 'routine', name: 'ルーティン', unlocked: completionStatus.template && currentDay >= 3, premium: !isTrial && !isPremium },
-                                            { id: 'shortcut', name: 'ショートカット', unlocked: completionStatus.routine && currentDay >= 3, premium: !isTrial && !isPremium },
-                                            { id: 'history', name: '履歴', unlocked: currentDay >= 7, premium: !isTrial && !isPremium },
-                                            { id: 'history_analysis', name: '履歴分析', unlocked: completionStatus.history && currentDay >= 7, premium: !isTrial && !isPremium }
+                                            { id: 'directive', name: '指示書', unlocked: completionStatus.directive, premium: !isTrial && !isPremium },
+                                            { id: 'pg_base', name: 'PG BASE', unlocked: completionStatus.pg_base, premium: !isTrial && !isPremium },
+                                            { id: 'community', name: 'COMY', unlocked: completionStatus.community, premium: !isTrial && !isPremium },
+                                            { id: 'template', name: 'テンプレート', unlocked: completionStatus.template, premium: !isTrial && !isPremium },
+                                            { id: 'routine', name: 'ルーティン', unlocked: completionStatus.routine, premium: !isTrial && !isPremium },
+                                            { id: 'shortcut', name: 'ショートカット', unlocked: completionStatus.shortcut, premium: !isTrial && !isPremium },
+                                            { id: 'history', name: '履歴', unlocked: completionStatus.history, premium: !isTrial && !isPremium },
+                                            { id: 'history_analysis', name: '履歴分析', unlocked: completionStatus.history_analysis, premium: !isTrial && !isPremium }
                                         ];
 
                                         return (
@@ -2600,20 +2606,21 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             同時開放
                                         </div>
                                         <div className="space-y-1 ml-4">
-                                            {[
-                                                { id: 'template', name: 'テンプレート', condition: '3日目到達' },
-                                                { id: 'routine', name: 'ルーティン', condition: '3日目到達' },
-                                                { id: 'shortcut', name: 'ショートカット', condition: '3日目到達' }
-                                            ].map(feature => {
-                                                const daysSinceReg = calculateDaysSinceRegistration(userId);
-                                                const isDayReached = daysSinceReg >= 3;
+                                            {(() => {
+                                                const completionStatus = getFeatureCompletionStatus(userId);
+                                                return [
+                                                    { id: 'template', name: 'テンプレート', condition: '初回分析後' },
+                                                    { id: 'routine', name: 'ルーティン', condition: '初回分析後' },
+                                                    { id: 'shortcut', name: 'ショートカット', condition: '初回分析後' }
+                                                ].map(feature => {
+                                                    const isUnlocked = completionStatus[feature.id];
                                                 return (
                                                     <div key={feature.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
                                                         <div className="flex items-center gap-2">
                                                             <span className="font-medium">{feature.name}</span>
                                                             <span className="text-xs text-gray-500">({feature.condition})</span>
                                                         </div>
-                                                        {isDayReached ? (
+                                                        {isUnlocked ? (
                                                             <span className="text-blue-600 flex items-center gap-1">
                                                                 <Icon name="Unlock" size={16} />
                                                                 <span className="text-xs">開放済</span>
@@ -2626,7 +2633,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         )}
                                                     </div>
                                                 );
-                                            })}
+                                                });
+                                            })()}
                                         </div>
                                     </div>
 

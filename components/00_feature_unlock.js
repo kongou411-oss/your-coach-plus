@@ -142,38 +142,100 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
     const daysSinceReg = calculateDaysSinceRegistration(userId);
     const unlocked = [];
 
+    console.log('[機能開放] calculateUnlockedFeatures 開始');
+    console.log('  - userId:', userId);
+    console.log('  - completionStatus:', completionStatus);
+    console.log('  - daysSinceReg:', daysSinceReg);
+    console.log('  - isPremium:', isPremium);
+
     // 0日目（初日）：段階的開放
     // 1. 食事記録は常に開放
     unlocked.push('food');
+    console.log('  ✅ food: 常に開放');
 
     // 2. 食事記録を1回完了したら運動記録を開放
     if (completionStatus.food || checkMealComplete(todayRecord)) {
         unlocked.push('training');
+        console.log('  ✅ training: 開放 (food完了 or 食事記録あり)');
+    } else {
+        console.log('  ❌ training: 未開放 (食事記録待ち)');
     }
 
     // 3. 運動記録を1回完了したらコンディション記録を開放
     if (completionStatus.training || checkTrainingComplete(todayRecord)) {
         unlocked.push('condition');
+        console.log('  ✅ condition: 開放 (training完了 or 運動記録あり)');
+    } else {
+        console.log('  ❌ condition: 未開放 (運動記録待ち)');
     }
 
     // 4. コンディション記録を6項目全て入力したら分析を開放
     if (completionStatus.condition || checkConditionComplete(todayRecord)) {
         unlocked.push('analysis');
+        console.log('  ✅ analysis: 開放 (condition完了 or コンディション6項目入力済み)');
+    } else {
+        console.log('  ❌ analysis: 未開放 (コンディション記録待ち)');
     }
 
     // 5. 初回分析後：すべての機能を開放（05_analysis.jsで実行）
     // - 指示書、履歴（モーダル①）
     // - PG BASE、COMY（モーダル②）
     // - テンプレート、ルーティン、ショートカット、履歴分析（モーダル③）
-    if (completionStatus.directive) unlocked.push('directive');
-    if (completionStatus.idea) unlocked.push('idea'); // 閃き
-    if (completionStatus.history) unlocked.push('history');
-    if (completionStatus.pg_base) unlocked.push('pg_base');
-    if (completionStatus.community) unlocked.push('community');
-    if (completionStatus.template) unlocked.push('template');
-    if (completionStatus.routine) unlocked.push('routine');
-    if (completionStatus.shortcut) unlocked.push('shortcut');
-    if (completionStatus.history_analysis) unlocked.push('history_analysis');
+    console.log('  --- 初回分析後の機能チェック ---');
+    if (completionStatus.directive) {
+        unlocked.push('directive');
+        console.log('  ✅ directive: 開放済み');
+    } else {
+        console.log('  ❌ directive: 未開放 (初回分析待ち)');
+    }
+    if (completionStatus.idea) {
+        unlocked.push('idea');
+        console.log('  ✅ idea: 開放済み');
+    } else {
+        console.log('  ❌ idea: 未開放 (初回分析待ち)');
+    }
+    if (completionStatus.history) {
+        unlocked.push('history');
+        console.log('  ✅ history: 開放済み');
+    } else {
+        console.log('  ❌ history: 未開放 (初回分析待ち)');
+    }
+    if (completionStatus.pg_base) {
+        unlocked.push('pg_base');
+        console.log('  ✅ pg_base: 開放済み');
+    } else {
+        console.log('  ❌ pg_base: 未開放 (初回分析待ち)');
+    }
+    if (completionStatus.community) {
+        unlocked.push('community');
+        console.log('  ✅ community: 開放済み');
+    } else {
+        console.log('  ❌ community: 未開放 (初回分析待ち)');
+    }
+    if (completionStatus.template) {
+        unlocked.push('template');
+        console.log('  ✅ template: 開放済み');
+    } else {
+        console.log('  ❌ template: 未開放 (初回分析待ち)');
+    }
+    if (completionStatus.routine) {
+        unlocked.push('routine');
+        console.log('  ✅ routine: 開放済み');
+    } else {
+        console.log('  ❌ routine: 未開放 (初回分析待ち)');
+    }
+    if (completionStatus.shortcut) {
+        unlocked.push('shortcut');
+        console.log('  ✅ shortcut: 開放済み');
+    } else {
+        console.log('  ❌ shortcut: 未開放 (初回分析待ち)');
+    }
+    if (completionStatus.history_analysis) {
+        unlocked.push('history_analysis');
+        console.log('  ✅ history_analysis: 開放済み');
+    } else {
+        console.log('  ❌ history_analysis: 未開放 (初回分析待ち)');
+    }
 
     // 8日目以降：Premium機能制限
     // トライアル期間（0-7日）は全機能利用可能
@@ -202,13 +264,19 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
         unlocked.push('community_post');
     }
 
-    // 旧互換性（8日目以降の制限を考慮）
-    if (daysSinceReg >= 7 && (isPremium || DEV_PREMIUM_MODE || isTrialActive)) {
-        unlocked.push('history_graph'); // 履歴と同じ扱い（7日目、Premium制限あり）
+    // 旧互換性: history_graph と training_template は初回分析後の history と template に統合
+    // 日数ベースの自動開放は削除し、初回分析後のモーダル経由でのみ開放
+    if (completionStatus.history) {
+        unlocked.push('history_graph');
+        console.log('  ✅ history_graph: 開放済み (history連動)');
     }
-    if (daysSinceReg >= 3 && (isPremium || DEV_PREMIUM_MODE || isTrialActive)) {
-        unlocked.push('training_template'); // テンプレートと同じ扱い（3日目、Premium制限あり）
+    if (completionStatus.template) {
+        unlocked.push('training_template');
+        console.log('  ✅ training_template: 開放済み (template連動)');
     }
+
+    console.log('[機能開放] 最終結果:', unlocked);
+    console.log('[機能開放] calculateUnlockedFeatures 終了\n');
 
     return unlocked;
 };
@@ -241,35 +309,27 @@ const getNextFeatureToUnlock = (userId, todayRecord) => {
         return { feature: FEATURES.PG_BASE, message: 'PG BASEでボディメイクの基礎を学びましょう' };
     }
 
-    // 3日目の段階的開放
-    if (daysSinceReg >= 3) {
+    // 初回分析後の段階的開放（3ページモーダル経由）
+    if (completionStatus.analysis) {
+        // 初回分析は完了しているが、以降の機能が未開放の場合
+        if (!completionStatus.directive) {
+            return { feature: FEATURES.DIRECTIVE, message: '初回分析後に指示書が開放されます' };
+        }
+        if (!completionStatus.history) {
+            return { feature: FEATURES.HISTORY, message: '初回分析後に履歴が開放されます' };
+        }
         if (!completionStatus.template) {
-            return { feature: FEATURES.TEMPLATE, message: 'テンプレートを1回使用するとルーティンが開放されます' };
+            return { feature: FEATURES.TEMPLATE, message: '初回分析後にテンプレートが開放されます' };
         }
         if (!completionStatus.routine) {
-            return { feature: FEATURES.ROUTINE, message: 'ルーティンを1回使用するとショートカットが開放されます' };
+            return { feature: FEATURES.ROUTINE, message: '初回分析後にルーティンが開放されます' };
         }
         if (!completionStatus.shortcut) {
-            return { feature: FEATURES.SHORTCUT, message: 'ショートカットを設定して効率的に記録しましょう' };
-        }
-    }
-
-    // 7日目の段階的開放
-    if (daysSinceReg >= 7) {
-        if (!completionStatus.history) {
-            return { feature: FEATURES.HISTORY, message: '履歴を1回確認すると履歴分析が開放されます' };
+            return { feature: FEATURES.SHORTCUT, message: '初回分析後にショートカットが開放されます' };
         }
         if (!completionStatus.history_analysis) {
-            return { feature: FEATURES.HISTORY_ANALYSIS, message: '履歴分析で長期的なトレンドを確認しましょう' };
+            return { feature: FEATURES.HISTORY_ANALYSIS, message: '初回分析後に履歴分析が開放されます' };
         }
-    }
-
-    // 次の日数ベース開放を案内
-    if (daysSinceReg < 3) {
-        return { feature: null, message: `あと${3 - daysSinceReg}日でテンプレート機能が開放されます` };
-    }
-    if (daysSinceReg < 7) {
-        return { feature: null, message: `あと${7 - daysSinceReg}日で履歴機能が開放されます` };
     }
 
     return null;

@@ -206,14 +206,14 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 // デフォルト設定（ダッシュボードのアイコンと統一）
                 return [
                     { side: 'left', position: 'middle', size: 'small', order: 0, enabled: true, action: 'open_body_composition', label: '体組成', icon: 'Activity' },
-                    { side: 'left', position: 'middle', size: 'small', order: 1, enabled: true, action: 'open_meal', label: '食事', icon: 'Utensils' },
-                    { side: 'left', position: 'middle', size: 'small', order: 2, enabled: true, action: 'open_workout', label: '運動', icon: 'Dumbbell' },
+                    { side: 'left', position: 'middle', size: 'small', order: 1, enabled: false, action: 'open_meal', label: '食事', icon: 'Utensils' },
+                    { side: 'left', position: 'middle', size: 'small', order: 2, enabled: false, action: 'open_workout', label: '運動', icon: 'Dumbbell' },
                     { side: 'left', position: 'middle', size: 'small', order: 3, enabled: false, action: 'open_meal_photo', label: '写真解析', icon: 'Camera' },
                     { side: 'left', position: 'middle', size: 'small', order: 4, enabled: false, action: 'open_history', label: '履歴', icon: 'TrendingUp' },
                     { side: 'left', position: 'middle', size: 'small', order: 5, enabled: false, action: 'open_settings', label: '設定', icon: 'Settings' },
-                    { side: 'right', position: 'middle', size: 'small', order: 0, enabled: true, action: 'open_condition', label: 'コンディション', icon: 'HeartPulse' },
-                    { side: 'right', position: 'middle', size: 'small', order: 1, enabled: true, action: 'open_idea', label: '閃き', icon: 'Lightbulb' },
-                    { side: 'right', position: 'middle', size: 'small', order: 2, enabled: true, action: 'open_analysis', label: '分析', icon: 'PieChart' },
+                    { side: 'right', position: 'middle', size: 'small', order: 0, enabled: false, action: 'open_condition', label: 'コンディション', icon: 'HeartPulse' },
+                    { side: 'right', position: 'middle', size: 'small', order: 1, enabled: false, action: 'open_idea', label: '閃き', icon: 'Lightbulb' },
+                    { side: 'right', position: 'middle', size: 'small', order: 2, enabled: false, action: 'open_analysis', label: '分析', icon: 'PieChart' },
                     { side: 'right', position: 'middle', size: 'small', order: 3, enabled: false, action: 'open_pgbase', label: 'PGBASE', icon: 'BookOpen' },
                     { side: 'right', position: 'middle', size: 'small', order: 4, enabled: false, action: 'open_community', label: 'COMY', icon: 'Users' }
                 ];
@@ -537,6 +537,80 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 } else {
                     setCurrentRoutine(null);
                 }
+            }, [unlockedFeatures]);
+
+            // ショートカットの enabled を機能開放状態に連動
+            useEffect(() => {
+                console.log('🔄 [Shortcut Update] useEffect実行');
+                console.log('  現在のunlockedFeatures:', unlockedFeatures);
+
+                setShortcuts(prevShortcuts => {
+                    console.log('  更新前のショートカット数:', prevShortcuts.length);
+
+                    const updatedShortcuts = prevShortcuts.map(shortcut => {
+                        // 体組成は常に有効
+                        if (shortcut.action === 'open_body_composition') {
+                            return { ...shortcut, enabled: true };
+                        }
+                        // 食事のショートカット
+                        if (shortcut.action === 'open_meal') {
+                            const enabled = unlockedFeatures.includes('food');
+                            console.log(`  - 食事: enabled=${enabled} (before: ${shortcut.enabled})`);
+                            return { ...shortcut, enabled };
+                        }
+                        // 運動のショートカット
+                        if (shortcut.action === 'open_workout') {
+                            const enabled = unlockedFeatures.includes('training');
+                            console.log(`  - 運動: enabled=${enabled} (before: ${shortcut.enabled})`);
+                            return { ...shortcut, enabled };
+                        }
+                        // コンディションのショートカット
+                        if (shortcut.action === 'open_condition') {
+                            const enabled = unlockedFeatures.includes('condition');
+                            console.log(`  - コンディション: enabled=${enabled} (before: ${shortcut.enabled})`);
+                            return { ...shortcut, enabled };
+                        }
+                        // 閃きは初回分析後
+                        if (shortcut.action === 'open_idea') {
+                            const enabled = unlockedFeatures.includes('analysis');
+                            console.log(`  - 閃き: enabled=${enabled} (before: ${shortcut.enabled})`);
+                            return { ...shortcut, enabled };
+                        }
+                        // 分析のショートカット
+                        if (shortcut.action === 'open_analysis') {
+                            const enabled = unlockedFeatures.includes('analysis');
+                            console.log(`  - 分析: enabled=${enabled} (before: ${shortcut.enabled})`);
+                            return { ...shortcut, enabled };
+                        }
+                        // 履歴のショートカット
+                        if (shortcut.action === 'open_history') {
+                            const enabled = unlockedFeatures.includes('history');
+                            console.log(`  - 履歴: enabled=${enabled} (before: ${shortcut.enabled})`);
+                            return { ...shortcut, enabled };
+                        }
+                        // PGBASEのショートカット
+                        if (shortcut.action === 'open_pgbase') {
+                            const enabled = unlockedFeatures.includes('pg_base');
+                            console.log(`  - PGBASE: enabled=${enabled} (before: ${shortcut.enabled})`);
+                            return { ...shortcut, enabled };
+                        }
+                        // COMYのショートカット
+                        if (shortcut.action === 'open_community') {
+                            const enabled = unlockedFeatures.includes('community');
+                            console.log(`  - COMY: enabled=${enabled} (before: ${shortcut.enabled})`);
+                            return { ...shortcut, enabled };
+                        }
+                        return shortcut;
+                    });
+
+                    console.log('  更新後のショートカット:', updatedShortcuts.map(s => ({
+                        action: s.action,
+                        label: s.label,
+                        enabled: s.enabled
+                    })));
+
+                    return updatedShortcuts;
+                });
             }, [unlockedFeatures]);
 
             // 日付変更ハンドラ
@@ -2366,6 +2440,10 @@ AIコーチなどの高度な機能が解放されます。
                                 {/* ②履歴 */}
                                 <button
                                     onClick={() => {
+                                        if (!unlockedFeatures.includes('history')) {
+                                            // 機能未開放の場合は開けない
+                                            return;
+                                        }
                                         // 他のカテゴリを全て閉じる
                                         setShowPGBaseView(false);
                                         setShowCOMYView(false);
@@ -2375,7 +2453,7 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showHistoryV10 ? 'bg-purple-100' : 'hover:bg-gray-50'
+                                        showHistoryV10 ? 'bg-purple-100' : (unlockedFeatures.includes('history') ? 'hover:bg-gray-50' : 'opacity-50')
                                     }`}
                                 >
                                     <Icon name="TrendingUp" size={20} className={showHistoryV10 ? 'text-purple-700' : 'text-purple-600'} />
@@ -2492,7 +2570,7 @@ AIコーチなどの高度な機能が解放されます。
                         message="コンディション記録が完了しました。&#10;&#10;AIがあなたの記録を分析して、改善点を提案します。&#10;「＋分析」ボタンをタップして詳細を確認してください。"
                         iconName="PieChart"
                         iconColor="bg-indigo-100"
-                        targetSectionId={null}
+                        targetSectionId="analysis-section"
                         onClose={() => setShowAnalysisGuide(false)}
                     />
                     <GuideModal

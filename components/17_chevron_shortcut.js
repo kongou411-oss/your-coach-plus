@@ -7,13 +7,42 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
         return saved ? JSON.parse(saved) : { left: true, right: true };
     });
 
+    // デバッグログ：受け取ったショートカットを表示
+    React.useEffect(() => {
+        console.log('📍 [ChevronShortcut] 受け取ったショートカット:', shortcuts.map(s => ({
+            action: s.action,
+            label: s.label,
+            side: s.side,
+            enabled: s.enabled
+        })));
+    }, [shortcuts]);
+
     // 表示可能な項目のみフィルタリング（enabled: true のみ）、orderでソート
     const leftShortcuts = shortcuts
-        .filter(s => s.side === 'left' && s.enabled !== false)
+        .filter(s => {
+            const passes = s.side === 'left' && s.enabled !== false;
+            if (s.side === 'left') {
+                console.log(`  フィルタ判定 (${s.label}): side=left, enabled=${s.enabled}, passes=${passes}`);
+            }
+            return passes;
+        })
         .sort((a, b) => (a.order || 0) - (b.order || 0));
     const rightShortcuts = shortcuts
-        .filter(s => s.side === 'right' && s.enabled !== false)
+        .filter(s => {
+            const passes = s.side === 'right' && s.enabled !== false;
+            if (s.side === 'right') {
+                console.log(`  フィルタ判定 (${s.label}): side=right, enabled=${s.enabled}, passes=${passes}`);
+            }
+            return passes;
+        })
         .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    // デバッグログ：フィルタ後のショートカットを表示
+    React.useEffect(() => {
+        console.log('📍 [ChevronShortcut] フィルタ後:');
+        console.log('  左側:', leftShortcuts.map(s => s.label));
+        console.log('  右側:', rightShortcuts.map(s => s.label));
+    }, [leftShortcuts, rightShortcuts]);
 
     // 表示/非表示更新イベントリスナー
     React.useEffect(() => {
