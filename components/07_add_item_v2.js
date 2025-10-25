@@ -2364,7 +2364,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             </div>
                                     </div>
 
-                                    {/* RM更新記録（常設） */}
+                                    {/* RM更新記録（構造化） */}
                                     <div>
                                         <label className="block text-sm font-medium mb-1 flex items-center gap-2">
                                             RM更新記録（任意）
@@ -2381,29 +2381,43 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
 • 10RM: 10回だけ挙げられる最大重量
 
 【記録例】
-• ベンチプレス 1reps × 100kg
-• スクワット 5reps × 120kg
-• デッドリフト 3reps × 150kg
+• ベンチプレス 1RM × 100kg
+• スクワット 5RM × 120kg
+• デッドリフト 3RM × 150kg
 
 【活用方法】
 履歴画面でRM更新の記録を確認でき、筋力の成長を可視化できます。目標達成のモチベーション維持に役立ちます。
 
-【入力形式】
-「種目名 回数reps × 重量kg」の形式で入力すると見やすくなります。
-例: ベンチプレス 1reps × 100kg`
+【入力方法】
+RM回数と重量を別々に入力してください。`
                                                 })}
                                                 className="text-indigo-600 hover:text-indigo-800"
                                             >
                                                 <Icon name="Info" size={14} />
                                             </button>
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={currentSet.rmUpdate || ''}
-                                            onChange={(e) => setCurrentSet({...currentSet, rmUpdate: e.target.value})}
-                                            placeholder="例: ベンチプレス 1reps × 100kg"
-                                            className="w-full px-3 py-2 border rounded-lg"
-                                        />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="text-xs text-gray-600 block mb-1">RM回数</label>
+                                                <input
+                                                    type="number"
+                                                    value={currentSet.rm || ''}
+                                                    onChange={(e) => setCurrentSet({...currentSet, rm: e.target.value === '' ? '' : Number(e.target.value)})}
+                                                    placeholder="1, 3, 5..."
+                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-600 block mb-1">重量 (kg)</label>
+                                                <input
+                                                    type="number"
+                                                    value={currentSet.rmWeight || ''}
+                                                    onChange={(e) => setCurrentSet({...currentSet, rmWeight: e.target.value === '' ? '' : Number(e.target.value)})}
+                                                    placeholder="100"
+                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* 総時間（常設） */}
@@ -2511,6 +2525,11 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                                 <div><span>重量: {set.weight}kg</span></div>
                                                                 <div><span>回数: {set.reps}回</span></div>
                                                                 <div><span>体積: {calculateSetVolume(set)} kg×reps</span></div>
+                                                                {set.rm && set.rmWeight && (
+                                                                    <div className="text-orange-600 font-medium">
+                                                                        <span>🏆 RM更新: {set.rm}RM × {set.rmWeight}kg</span>
+                                                                    </div>
+                                                                )}
                                                             </>
                                                         ) : (
                                                             <div><span>時間: {set.duration || 0}分</span></div>
@@ -2600,6 +2619,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             }, 0);
                                         }
 
+                                        // RM更新があるかチェック
+                                        const rmUpdates = !isCardioOrStretch && ex.sets ? ex.sets.filter(set => set.rm && set.rmWeight) : [];
+
                                         return (
                                             <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
                                                 <div className="flex justify-between items-start mb-1">
@@ -2608,7 +2630,14 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                         {isCardioOrStretch ? (
                                                             <p className="text-xs text-gray-600">{totalDuration}分</p>
                                                         ) : (
-                                                            <p className="text-xs text-gray-600">{ex.sets.length}セット - {totalVolume}kg</p>
+                                                            <>
+                                                                <p className="text-xs text-gray-600">{ex.sets.length}セット - {totalVolume}kg</p>
+                                                                {rmUpdates.length > 0 && (
+                                                                    <p className="text-xs text-orange-600 font-medium">
+                                                                        🏆 {rmUpdates.map(s => `${s.rm}RM×${s.rmWeight}kg`).join(', ')}
+                                                                    </p>
+                                                                )}
+                                                            </>
                                                         )}
                                                     </div>
                                                     <div className="flex gap-2">
@@ -3673,66 +3702,66 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                             </div>
                                                         </div>
 
-                                                        {/* Row 3: カテゴリと重量 */}
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            <div>
-                                                                <label className="text-xs font-medium text-gray-700 mb-1 block">カテゴリ</label>
-                                                                {customSupplementData.itemType === 'recipe' ? (
-                                                                    <input
-                                                                        type="text"
-                                                                        value="料理"
-                                                                        disabled
-                                                                        className="w-full px-3 py-2 text-sm border rounded-lg bg-gray-100"
-                                                                    />
-                                                                ) : (
-                                                                    <select
-                                                                        value={customSupplementData.category}
-                                                                        onChange={(e) => setCustomSupplementData({...customSupplementData, category: e.target.value})}
-                                                                        className="w-full px-3 py-2 text-sm border rounded-lg"
-                                                                    >
-                                                                        {customSupplementData.itemType === 'supplement' ? (
-                                                                            <>
-                                                                                <option value="ビタミン・ミネラル">ビタミン・ミネラル</option>
-                                                                                <option value="プロテイン">プロテイン</option>
-                                                                                <option value="アミノ酸">アミノ酸</option>
-                                                                                <option value="ドリンク">ドリンク</option>
-                                                                                <option value="その他">その他</option>
-                                                                            </>
-                                                                        ) : (
-                                                                            <>
-                                                                                <option value="穀類">穀類</option>
-                                                                                <option value="肉類">肉類</option>
-                                                                                <option value="魚介類">魚介類</option>
-                                                                                <option value="野菜類">野菜類</option>
-                                                                                <option value="果物類">果物類</option>
-                                                                                <option value="乳製品">乳製品</option>
-                                                                                <option value="調味料">調味料</option>
-                                                                                <option value="その他">その他</option>
-                                                                            </>
-                                                                        )}
-                                                                    </select>
-                                                                )}
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-xs font-medium text-gray-700 mb-1 block">1回分の量</label>
-                                                                <div className="flex gap-2">
-                                                                    <input
-                                                                        type="number"
-                                                                        value={customSupplementData.servingSize}
-                                                                        onChange={(e) => setCustomSupplementData({...customSupplementData, servingSize: e.target.value === '' ? '' : (parseFloat(e.target.value) || 1)})}
-                                                                        placeholder="量"
-                                                                        className="flex-1 px-3 py-2 text-sm border rounded-lg"
-                                                                    />
-                                                                    <select
-                                                                        value={customSupplementData.servingUnit}
-                                                                        onChange={(e) => setCustomSupplementData({...customSupplementData, servingUnit: e.target.value})}
-                                                                        className="px-3 py-2 text-sm border rounded-lg"
-                                                                    >
-                                                                        <option value="g">g</option>
-                                                                        <option value="mg">mg</option>
-                                                                        <option value="ml">ml</option>
-                                                                    </select>
-                                                                </div>
+                                                        {/* Row 3: カテゴリ */}
+                                                        <div>
+                                                            <label className="text-xs font-medium text-gray-700 mb-1 block">カテゴリ</label>
+                                                            {customSupplementData.itemType === 'recipe' ? (
+                                                                <input
+                                                                    type="text"
+                                                                    value="料理"
+                                                                    disabled
+                                                                    className="w-full px-3 py-2 text-sm border rounded-lg bg-gray-100"
+                                                                />
+                                                            ) : (
+                                                                <select
+                                                                    value={customSupplementData.category}
+                                                                    onChange={(e) => setCustomSupplementData({...customSupplementData, category: e.target.value})}
+                                                                    className="w-full px-3 py-2 text-sm border rounded-lg"
+                                                                >
+                                                                    {customSupplementData.itemType === 'supplement' ? (
+                                                                        <>
+                                                                            <option value="ビタミン・ミネラル">ビタミン・ミネラル</option>
+                                                                            <option value="プロテイン">プロテイン</option>
+                                                                            <option value="アミノ酸">アミノ酸</option>
+                                                                            <option value="ドリンク">ドリンク</option>
+                                                                            <option value="その他">その他</option>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <option value="穀類">穀類</option>
+                                                                            <option value="肉類">肉類</option>
+                                                                            <option value="魚介類">魚介類</option>
+                                                                            <option value="野菜類">野菜類</option>
+                                                                            <option value="果物類">果物類</option>
+                                                                            <option value="乳製品">乳製品</option>
+                                                                            <option value="調味料">調味料</option>
+                                                                            <option value="その他">その他</option>
+                                                                        </>
+                                                                    )}
+                                                                </select>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Row 4: 1回分の量と単位 */}
+                                                        <div>
+                                                            <label className="text-xs font-medium text-gray-700 mb-1 block">1回分の量</label>
+                                                            <div className="flex gap-2">
+                                                                <input
+                                                                    type="number"
+                                                                    value={customSupplementData.servingSize}
+                                                                    onChange={(e) => setCustomSupplementData({...customSupplementData, servingSize: e.target.value === '' ? '' : (parseFloat(e.target.value) || 1)})}
+                                                                    placeholder="量"
+                                                                    className="flex-1 px-3 py-2 text-sm border rounded-lg"
+                                                                />
+                                                                <select
+                                                                    value={customSupplementData.servingUnit}
+                                                                    onChange={(e) => setCustomSupplementData({...customSupplementData, servingUnit: e.target.value})}
+                                                                    className="px-3 py-2 text-sm border rounded-lg"
+                                                                >
+                                                                    <option value="g">g</option>
+                                                                    <option value="mg">mg</option>
+                                                                    <option value="ml">ml</option>
+                                                                </select>
                                                             </div>
                                                         </div>
 
@@ -3799,11 +3828,18 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                         <div className="border-t pt-2">
                                                             <p className="text-xs font-medium text-gray-700 mb-2">その他栄養素</p>
                                                             {customSupplementData.otherNutrients.map((nutrient, idx) => (
-                                                                <div key={idx} className="flex gap-1 mb-2">
-                                                                    <input type="text" value={nutrient.name} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].name = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="名" className="flex-1 px-2 py-1 text-xs border rounded" />
-                                                                    <input type="number" value={nutrient.amount} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].amount = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="量" className="w-16 px-2 py-1 text-xs border rounded" />
-                                                                    <input type="text" value={nutrient.unit} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].unit = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="単位" className="w-12 px-1 py-1 text-xs border rounded" />
-                                                                    <button onClick={() => { const updated = customSupplementData.otherNutrients.filter((_, i) => i !== idx); setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} className="text-red-500 px-1"><Icon name="X" size={14} /></button>
+                                                                <div key={idx} className="mb-3 p-2 border rounded-lg bg-gray-50">
+                                                                    <div className="flex justify-between items-center mb-1">
+                                                                        <label className="text-xs font-medium text-gray-600">名</label>
+                                                                        <button onClick={() => { const updated = customSupplementData.otherNutrients.filter((_, i) => i !== idx); setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} className="text-red-500 px-1"><Icon name="X" size={14} /></button>
+                                                                    </div>
+                                                                    <input type="text" value={nutrient.name} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].name = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="栄養素名" className="w-full px-2 py-1 text-xs border rounded mb-2" />
+
+                                                                    <label className="text-xs font-medium text-gray-600 block mb-1">量と単位</label>
+                                                                    <div className="flex gap-2">
+                                                                        <input type="number" value={nutrient.amount} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].amount = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="量" className="flex-1 px-2 py-1 text-xs border rounded" />
+                                                                        <input type="text" value={nutrient.unit} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].unit = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="単位" className="w-16 px-2 py-1 text-xs border rounded" />
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                             <button onClick={() => setCustomSupplementData({...customSupplementData, otherNutrients: [...customSupplementData.otherNutrients, {name: '', amount: '', unit: ''}]})} className="w-full px-2 py-1.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 text-xs">+ 追加</button>

@@ -168,25 +168,19 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
         const exerciseScore = Math.round((durationScore + exerciseCountScore) / 2);
 
-        // コンディションデータ
-        const idealSleepHoursMap = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
-        const idealSleepHours = idealSleepHoursMap[profile.idealSleepHours] || 8;
-        const actualSleepHoursMap = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
-        const actualSleepHours = actualSleepHoursMap[record.conditions?.sleepHours] || 0;
-
-        // コンディションスコア計算
-        const sleepRate = Math.min(100, idealSleepHours > 0 ? (actualSleepHours / idealSleepHours) * 100 : 0);
-
+        // コンディションデータ（全項目1-5の値として扱う）
+        const sleepHours = record.conditions?.sleepHours || 0;
         const sleepQuality = record.conditions?.sleepQuality || 0;
         const appetite = record.conditions?.appetite || 0;
         const digestion = record.conditions?.digestion || 0;
         const focus = record.conditions?.focus || 0;
         const stress = record.conditions?.stress || 0;
-        const invertedStress = 6 - stress; // ストレスは逆転（5が最悪→1、1が最良→5）
 
-        const metricsAverage = ((sleepQuality + appetite + digestion + focus + invertedStress) / 5) * 20; // 5段階→100点換算
-
-        const conditionScore = Math.round(sleepRate * 0.4 + metricsAverage * 0.6);
+        // コンディションスコア計算（6項目すべてが5なら100点）
+        // 各項目1-5点 → 平均 → 20倍して100点満点に
+        const conditionScore = Math.round(
+            ((sleepHours + sleepQuality + appetite + digestion + focus + stress) / 6) * 20
+        );
 
         return {
             food: {
@@ -205,10 +199,12 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             },
             condition: {
                 score: conditionScore,
-                sleep: Math.round(sleepRate),
-                metrics: Math.round(metricsAverage),
-                actualSleepHours: actualSleepHours,
-                idealSleepHours: idealSleepHours
+                sleep: Math.round((sleepHours / 5) * 100),
+                quality: Math.round((sleepQuality / 5) * 100),
+                appetite: Math.round((appetite / 5) * 100),
+                digestion: Math.round((digestion / 5) * 100),
+                focus: Math.round((focus / 5) * 100),
+                stress: Math.round((stress / 5) * 100)
             }
         };
     };
@@ -519,7 +515,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 - 実施種目: ${(todayRecord.workouts || []).length}種目
 
 ### コンディション
-- 睡眠: ${actualSleepHours}時間 / 理想: ${idealSleepHours}時間 (${Math.round((actualSleepHours/idealSleepHours)*100)}%)
+- 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5
 - 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5
 - 食欲: ${todayRecord.conditions?.appetite || 0}/5
 - 腸内環境: ${todayRecord.conditions?.digestion || 0}/5
@@ -598,7 +594,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 - 脂質: ${Math.round((totalFat/targetPFC.fat)*100)}%
 - 炭水化物: ${Math.round((totalCarbs/targetPFC.carbs)*100)}%
 - カロリー: ${Math.round(totalCalories)}kcal / 目標: ${Math.round(targetPFC.calories)}kcal
-- 睡眠: ${Math.round((actualSleepHours/idealSleepHours)*100)}%
+- 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5
 - 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5
 - ルーティン: ${todayRecord.routine?.is_rest_day ? '休養日（計画的な休息）' : (todayRecord.routine?.type || 'なし')}
 - 運動: ${(todayRecord.workouts || []).length}種目

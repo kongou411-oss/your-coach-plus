@@ -1276,7 +1276,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             { action: 'open_meal_photo', label: '写真解析', icon: 'Camera', color: 'text-green-600' },
                                             { action: 'open_workout', label: '運動', icon: 'Dumbbell', color: 'text-orange-600' },
                                             { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
-                                            { action: 'open_idea', label: '思い', icon: 'Lightbulb', color: 'text-yellow-500' },
+                                            { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
                                             { action: 'open_analysis', label: '分析', icon: 'PieChart', color: 'text-indigo-600' },
                                             { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
                                             { action: 'open_pgbase', label: 'PGBASE', icon: 'BookOpen', color: 'text-cyan-600' },
@@ -1454,7 +1454,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             { action: 'open_meal_photo', label: '写真解析', icon: 'Camera', color: 'text-green-600' },
                                             { action: 'open_workout', label: '運動', icon: 'Dumbbell', color: 'text-orange-600' },
                                             { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
-                                            { action: 'open_idea', label: '思い', icon: 'Lightbulb', color: 'text-yellow-500' },
+                                            { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
                                             { action: 'open_analysis', label: '分析', icon: 'PieChart', color: 'text-indigo-600' },
                                             { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
                                             { action: 'open_pgbase', label: 'PGBASE', icon: 'BookOpen', color: 'text-cyan-600' },
@@ -2099,7 +2099,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     }}
                                                     className="px-6 py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition"
                                                 >
-                                                    デフォルトルーティンで始                                                </button>
+                                                    デフォルトルーティンで始める                                                </button>
                                             </div>
                                         )}
 
@@ -2393,7 +2393,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             {/* 機能開放状況*/}
                             <div className="border rounded-lg p-6">
                                 <h4 className="font-bold mb-4 flex items-center gap-2">
-                                    <Icon name="List" size={18} />
+                                    <Icon name="Lock" size={18} />
                                     機能開放状況                                </h4>
                                 <div className="space-y-2">
                                     {/* 進行状況に応じた機能一覧 */}
@@ -2554,212 +2554,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     </div>
                                 </div>
                             </div>
-
-                            {/* 機能開放状況*/}
-                            <div className="border rounded-lg p-6">
-                                <h4 className="font-bold mb-4 flex items-center gap-2">
-                                    <Icon name="Lock" size={18} />
-                                    機能開放状況                                </h4>
-                                <div className="space-y-3">
-                                    {/* 初日）段階的開放を*/}
-                                    <div>
-                                        <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">初日</span>
-                                            段階的開放
-                                        </div>
-                                        <div className="space-y-1 ml-4">
-                                            {[
-                                                { id: 'food', name: '食事記録', condition: '常に開放' },
-                                                { id: 'training', name: '運動記録', condition: '食事回記録' },
-                                                { id: 'condition', name: 'コンディション記録', condition: '運動1回記録' },
-                                                { id: 'analysis', name: '分析', condition: 'コンディション6項目入力' },
-                                                { id: 'directive', name: '指示書', condition: '分析1回使用' },
-                                                { id: 'pg_base', name: 'PG BASE', condition: '分析1回使用（指示書と同時）' }
-                                            ].map(feature => {
-                                                const completionStatus = getFeatureCompletionStatus(userId);
-                                                const isCompleted = completionStatus[feature.id] === true;
-                                                return (
-                                                    <div key={feature.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-medium">{feature.name}</span>
-                                                            <span className="text-xs text-gray-500">({feature.condition})</span>
-                                                        </div>
-                                                        {isCompleted ? (
-                                                            <span className="text-green-600 flex items-center gap-1">
-                                                                <Icon name="CheckCircle" size={16} />
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-gray-400">
-                                                                <Icon name="Lock" size={16} />
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* 3日目）同時開放を*/}
-                                    <div>
-                                        <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                            <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">3日目</span>
-                                            同時開放
-                                        </div>
-                                        <div className="space-y-1 ml-4">
-                                            {(() => {
-                                                const completionStatus = getFeatureCompletionStatus(userId);
-                                                return [
-                                                    { id: 'template', name: 'テンプレート', condition: '初回分析後' },
-                                                    { id: 'routine', name: 'ルーティン', condition: '初回分析後' },
-                                                    { id: 'shortcut', name: 'ショートカット', condition: '初回分析後' }
-                                                ].map(feature => {
-                                                    const isUnlocked = completionStatus[feature.id];
-                                                return (
-                                                    <div key={feature.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-medium">{feature.name}</span>
-                                                            <span className="text-xs text-gray-500">({feature.condition})</span>
-                                                        </div>
-                                                        {isUnlocked ? (
-                                                            <span className="text-blue-600 flex items-center gap-1">
-                                                                <Icon name="Unlock" size={16} />
-                                                                <span className="text-xs">開放済</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-gray-400 flex items-center gap-1">
-                                                                <Icon name="Lock" size={16} />
-                                                                <span className="text-xs">未開放</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                );
-                                                });
-                                            })()}
-                                        </div>
-                                    </div>
-
-                                    {/* 7日目）同時開放を*/}
-                                    <div>
-                                        <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                            <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">7日目</span>
-                                            同時開放：無料トライアル終了時                                        </div>
-                                        <div className="space-y-1 ml-4">
-                                            {[
-                                                { id: 'history', name: '履歴', condition: '7日目到達' },
-                                                { id: 'community', name: 'COMY閲覧', condition: '7日目到達' },
-                                                { id: 'history_analysis', name: '履歴分析', condition: '7日目到達' }
-                                            ].map(feature => {
-                                                const daysSinceReg = calculateDaysSinceRegistration(userId);
-                                                const isDayReached = daysSinceReg >= 7;
-                                                return (
-                                                    <div key={feature.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-medium">{feature.name}</span>
-                                                            <span className="text-xs text-gray-500">({feature.condition})</span>
-                                                        </div>
-                                                        {isDayReached ? (
-                                                            <span className="text-purple-600 flex items-center gap-1">
-                                                                <Icon name="Unlock" size={16} />
-                                                                <span className="text-xs">開放済</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-gray-400 flex items-center gap-1">
-                                                                <Icon name="Lock" size={16} />
-                                                                <span className="text-xs">未開放</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* 8日目以降！remium制限！*/}
-                                    <div>
-                                        <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                            <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs">8日目以降</span>
-                                            Premium会員限定                                        </div>
-                                        <div className="space-y-1 ml-4">
-                                            {[
-                                                { name: '指示書', locked: true },
-                                                { name: 'PG BASE', locked: true },
-                                                { name: 'COMY閲覧', locked: true },
-                                                { name: 'テンプレート', locked: true },
-                                                { name: 'ルーティン', locked: true },
-                                                { name: 'ショートカット', locked: true },
-                                                { name: '履歴', locked: true },
-                                                { name: '履歴分析', locked: true },
-                                                { name: '分析機能：月100クレジット', locked: true },
-                                                { name: 'ビタミン・ミネラル分析', locked: true }
-                                            ].map((feature, idx) => {
-                                                const daysSinceReg = calculateDaysSinceRegistration(userId);
-                                                const isPremium = DEV_PREMIUM_MODE;
-                                                const isTrialActive = daysSinceReg < 7;
-                                                const isLocked = daysSinceReg >= 7 && !isPremium;
-                                                return (
-                                                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-medium">{feature.name}</span>
-                                                        </div>
-                                                        {isPremium ? (
-                                                            <span className="text-yellow-600 flex items-center gap-1">
-                                                                <Icon name="Crown" size={16} />
-                                                                <span className="text-xs">Premium</span>
-                                                            </span>
-                                                        ) : isTrialActive ? (
-                                                            <span className="text-green-600 flex items-center gap-1">
-                                                                <Icon name="CheckCircle" size={16} />
-                                                                <span className="text-xs">トライアル中</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-red-600 flex items-center gap-1">
-                                                                <Icon name="Lock" size={16} />
-                                                                <span className="text-xs">制限中</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* 常時Premium専用機能 */}
-                                    <div>
-                                        <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                            <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs flex items-center gap-1">
-                                                <Icon name="Crown" size={12} />
-                                                常時Premium
-                                            </span>
-                                            トライアル期間中も利用不可
-                                        </div>
-                                        <div className="space-y-1 ml-4">
-                                            {[
-                                                { id: 'community_post', name: 'COMY投稿機能' }
-                                            ].map(feature => {
-                                                const isPremium = DEV_PREMIUM_MODE;
-                                                return (
-                                                    <div key={feature.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-medium">{feature.name}</span>
-                                                        </div>
-                                                        {isPremium ? (
-                                                            <span className="text-yellow-600 flex items-center gap-1">
-                                                                <Icon name="Crown" size={16} />
-                                                                <span className="text-xs">Premium</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-gray-400 flex items-center gap-1">
-                                                                <Icon name="Lock" size={16} />
-                                                                <span className="text-xs">制限中</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                         </div>
                     </details>
@@ -2804,7 +2598,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             </div>
         </div>
 
-        {/* テンプレート編集��択モーダル */}
+        {/* テンプレート編集  択モーダル */}
         {showTemplateEditModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">

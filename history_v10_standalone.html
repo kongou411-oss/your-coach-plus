@@ -21,6 +21,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- App Services -->
+    <script src="config.js"></script>
+    <script src="services.js"></script>
     <!-- 目標ライン・メモ機能 -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1"></script>
     <!-- カスタム期間選択 -->
@@ -499,9 +502,18 @@
                             </div>
                         </div>
                         <div>
-                            <div class="text-xs font-semibold text-orange-900 mb-1">種目を選択</div>
-                            <div id="rm-exercise-buttons" class="flex flex-wrap gap-1">
-                                <!-- 動的に生成 -->
+                            <button
+                                type="button"
+                                onclick="document.getElementById('rm-exercise-list').classList.toggle('hidden'); lucide.createIcons();"
+                                class="w-full flex items-center justify-between text-xs font-semibold text-orange-900 mb-1 px-2 py-1 hover:bg-orange-100 rounded transition"
+                            >
+                                <span>種目を選択</span>
+                                <i data-lucide="chevron-down" class="w-3 h-3"></i>
+                            </button>
+                            <div id="rm-exercise-list" class="hidden">
+                                <div id="rm-exercise-buttons" class="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                                    <!-- 動的に生成 -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1297,10 +1309,6 @@
         // 閃きメモデータを保存する変数（日付 -> メモのマップ）
         let dailyNotes = {};
 
-        // Gemini API設定（デモ用 - 実際はconfig.jsから取得）
-        const GEMINI_API_KEY = 'YOUR_API_KEY_HERE';
-        const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
-
         // 指標の日本語名とメタ情報
         const metricInfo = {
             // パフォーマンス
@@ -1324,12 +1332,60 @@
             total_weight: { name: '総重量', unit: 'kg', category: 'training', icon: '💪' },
 
             // コンディション
-            sleep_duration: { name: '睡眠時間', unit: '時間', category: 'condition' },
-            sleep_quality: { name: '睡眠の質', unit: '点', category: 'condition' },
-            appetite: { name: '食欲', unit: '点', category: 'condition' },
-            gut_health: { name: '腸内環境', unit: '点', category: 'condition' },
-            focus: { name: '集中力', unit: '点', category: 'condition' },
-            stress: { name: 'ストレス', unit: '点', category: 'condition' }
+            sleep_duration: {
+                name: '睡眠時間',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', '5時間', '6時間', '7時間', '8時間', '9時間'];
+                    return labels[value] || `${value}点`;
+                }
+            },
+            sleep_quality: {
+                name: '睡眠の質',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', '非常に悪い', '悪い', '普通', '良い', '非常に良い'];
+                    return labels[value] || `${value}点`;
+                }
+            },
+            appetite: {
+                name: '食欲',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', '全くない', 'あまりない', '普通', 'ある', '非常にある'];
+                    return labels[value] || `${value}点`;
+                }
+            },
+            gut_health: {
+                name: '腸内環境',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', '非常に悪い', '悪い', '普通', '良い', '非常に良い'];
+                    return labels[value] || `${value}点`;
+                }
+            },
+            focus: {
+                name: '集中力',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', '全くない', '低い', '普通', '高い', '非常に高い'];
+                    return labels[value] || `${value}点`;
+                }
+            },
+            stress: {
+                name: 'ストレス',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', '非常に低い', '低い', '普通', '高い', '非常に高い'];
+                    return labels[value] || `${value}点`;
+                }
+            }
         };
 
         // 実際のデータを読み込む関数
@@ -1363,15 +1419,46 @@
                 stress: []
             };
 
-            // 全期間のデータを取得（過去50年分 = 約18,250日）
-            for (let i = 18249; i >= 0; i--) {
+            // ローカルタイムゾーンで日付を取得する関数
+            const getLocalDateString = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            // 全期間のデータを取得（過去90日分）
+            const today = getLocalDateString(new Date());
+            console.log('[履歴データ取得] 開始 - userId:', userId, 'today:', today);
+
+            // LocalStorageの内容を確認（DEV_MODE用）
+            if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
+                const storageKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.DAILY_RECORDS : 'yourCoachBeta_dailyRecords';
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    const records = JSON.parse(saved);
+                    console.log('[履歴データ取得] LocalStorage内の日付一覧:', Object.keys(records));
+                    console.log('[履歴データ取得] 今日のデータ:', records[today]);
+                } else {
+                    console.log('[履歴データ取得] LocalStorageにデータなし');
+                }
+            }
+
+            for (let i = 89; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(date.getDate() - i);
-                const dateStr = date.toISOString().split('T')[0];
+                const dateStr = getLocalDateString(date);
 
                 let record = null;
                 if (typeof DataService !== 'undefined') {
                     record = await DataService.getDailyRecord(userId, dateStr);
+                }
+
+                if (record) {
+                    console.log(`[履歴データ取得] ${dateStr} (${i}日前): meals=${record.meals?.length || 0}, workouts=${record.workouts?.length || 0}, conditions=${record.conditions ? 'あり' : 'なし'}`);
+                } else if (i <= 7) {
+                    // 過去7日分はログ出力（デバッグ用）
+                    console.log(`[履歴データ取得] ${dateStr} (${i}日前): データなし`);
                 }
 
                 if (record) {
@@ -1407,19 +1494,51 @@
 
                     workouts.forEach(workout => {
                         totalTime += workout.duration || 0;
-                        const exerciseName = workout.name || 'unknown';
 
-                        (workout.sets || []).forEach(set => {
-                            const weight = set.weight || 0;
-                            const reps = set.reps || 0;
-                            totalWeight += weight * reps;
+                        // exercisesプロパティがある場合（新形式）
+                        if (workout.exercises) {
+                            workout.exercises.forEach(exercise => {
+                                const exerciseName = exercise.exercise?.name || exercise.name || 'unknown';
 
-                            // 回数×種目別にRM記録を保存
-                            if (reps > 0 && weight > 0) {
-                                const key = `${reps}_${exerciseName}`;
-                                rmData[key] = Math.max(rmData[key] || 0, weight);
-                            }
-                        });
+                                (exercise.sets || []).forEach(set => {
+                                    const weight = set.weight || 0;
+                                    const reps = set.reps || 0;
+                                    totalWeight += weight * reps;
+
+                                    // RM記録があればそちらを使用（優先）
+                                    if (set.rm && set.rmWeight) {
+                                        const key = `${set.rm}_${exerciseName}`;
+                                        rmData[key] = Math.max(rmData[key] || 0, set.rmWeight);
+                                    }
+                                    // RM記録がない場合は通常のセットデータから推定
+                                    else if (reps > 0 && weight > 0) {
+                                        const key = `${reps}_${exerciseName}`;
+                                        rmData[key] = Math.max(rmData[key] || 0, weight);
+                                    }
+                                });
+                            });
+                        }
+                        // 旧形式（setsが直接workoutの下にある）
+                        else {
+                            const exerciseName = workout.name || 'unknown';
+
+                            (workout.sets || []).forEach(set => {
+                                const weight = set.weight || 0;
+                                const reps = set.reps || 0;
+                                totalWeight += weight * reps;
+
+                                // RM記録があればそちらを使用（優先）
+                                if (set.rm && set.rmWeight) {
+                                    const key = `${set.rm}_${exerciseName}`;
+                                    rmData[key] = Math.max(rmData[key] || 0, set.rmWeight);
+                                }
+                                // RM記録がない場合は通常のセットデータから推定
+                                else if (reps > 0 && weight > 0) {
+                                    const key = `${reps}_${exerciseName}`;
+                                    rmData[key] = Math.max(rmData[key] || 0, weight);
+                                }
+                            });
+                        }
                     });
                     allData.total_time.push(totalTime);
                     allData.total_exercises.push(totalExercises);
@@ -1476,6 +1595,11 @@
                     });
                 }
             }
+
+            // データ取得完了のログ
+            console.log('[履歴データ取得] 完了 - カロリーデータ数:', allData.calories.length);
+            console.log('[履歴データ取得] 最後の7日分のカロリー:', allData.calories.slice(-7));
+            console.log('[履歴データ取得] 最後の7日分の運動時間:', allData.total_time.slice(-7));
 
             return allData;
         }
@@ -1581,16 +1705,16 @@
         // ラベル生成
         function generateLabels(days) {
             if (days <= 7) {
-                // 7日以内: 数字のみ（単位は表示時に追加）
-                const labels = Array.from({ length: days }, (_, i) => `${days - i}`);
+                // 7日以内: 数字のみ（単位は表示時に追加）0=今日
+                const labels = Array.from({ length: days }, (_, i) => `${days - 1 - i}`);
                 return labels;
             } else if (days <= 30) {
-                // 30日以内: 数字のみ（単位は表示時に追加）
-                const labels = Array.from({ length: days }, (_, i) => `${days - i}`);
+                // 30日以内: 数字のみ（単位は表示時に追加）0=今日
+                const labels = Array.from({ length: days }, (_, i) => `${days - 1 - i}`);
                 return labels;
             } else {
-                // 30日以上: 数字のみ（単位は表示時に追加）
-                const labels = Array.from({ length: days }, (_, i) => `${days - i}`);
+                // 30日以上: 数字のみ（単位は表示時に追加）0=今日
+                const labels = Array.from({ length: days }, (_, i) => `${days - 1 - i}`);
                 return labels;
             }
         }
@@ -2309,6 +2433,11 @@
                 const valueText = (typeof currentValue === 'number' && currentValue === 1) ? '✓ 完了' : '✗ 未完了';
                 document.getElementById(`chart-value-${chartNum}`).textContent = valueText;
                 document.getElementById(`chart-unit-${chartNum}`).textContent = '';
+            } else if (metric.getLabel && typeof currentValue === 'number') {
+                // 段階説明がある場合
+                const valueText = metric.getLabel(currentValue);
+                document.getElementById(`chart-value-${chartNum}`).textContent = valueText;
+                document.getElementById(`chart-unit-${chartNum}`).textContent = '';
             } else {
                 const valueText = (typeof currentValue === 'number' && !isNaN(currentValue))
                     ? `${currentValue.toFixed(1)}${metric.unit}`
@@ -2633,7 +2762,7 @@
                         // 日付情報
                         const today = new Date();
                         const totalDays = chart.data.labels.length;
-                        const daysAgo = totalDays - lastClickedIndex[chartNum];
+                        const daysAgo = totalDays - 1 - lastClickedIndex[chartNum];
                         const targetDate = new Date(today);
                         targetDate.setDate(today.getDate() - daysAgo);
                         const dateStr = `${targetDate.getMonth() + 1}/${targetDate.getDate()}`;
@@ -2644,7 +2773,10 @@
 
                         // 値のフォーマット
                         let displayValue;
-                        if (typeof value === 'number') {
+                        if (metric.getLabel && typeof value === 'number') {
+                            // 段階説明がある場合
+                            displayValue = metric.getLabel(value);
+                        } else if (typeof value === 'number') {
                             displayValue = value % 1 === 0 ? value.toString() : value.toFixed(1);
                         } else {
                             displayValue = value || '-';
@@ -2817,9 +2949,9 @@
                                             return '';
                                         }
 
-                                        // 最後のラベル（右端）にのみ「日前」を追加
+                                        // 最後のラベル（右端）にのみ単位を追加
                                         if (index === totalDays - 1) {
-                                            return label + '日前';
+                                            return label === '0' ? '今日' : label + '日前';
                                         }
 
                                         return label;
@@ -3569,7 +3701,11 @@
             // 日付をフォーマット (10/15形式 と YYYY-MM-DD形式)
             const dateString = `${targetDate.getMonth() + 1}/${targetDate.getDate()}`;
             const daysAgoString = daysAgo === 0 ? '今日' : `${daysAgo}日前`;
-            const dateKey = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD形式
+            // ローカルタイムゾーンで日付を取得
+            const year = targetDate.getFullYear();
+            const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const day = String(targetDate.getDate()).padStart(2, '0');
+            const dateKey = `${year}-${month}-${day}`; // YYYY-MM-DD形式
 
             // モーダルの内容を更新
             document.getElementById('drilldown-title').textContent = `${dateString} (${daysAgoString})`;
@@ -3579,6 +3715,9 @@
             // 値の表示（バイナリデータの場合は完了/未完了に変換）
             if (metric.isBinary) {
                 document.getElementById('drilldown-value').textContent = value === 1 ? '✅ 完了' : '❌ 未完了';
+            } else if (metric.getLabel && typeof value === 'number') {
+                // 段階説明がある場合
+                document.getElementById('drilldown-value').textContent = metric.getLabel(value);
             } else {
                 document.getElementById('drilldown-value').textContent = `${value.toFixed(1)} ${metric.unit}`;
             }
@@ -3680,6 +3819,21 @@
 
         // 初期表示
         async function init() {
+            // DEV_MODEの確認
+            const isDevMode = typeof DEV_MODE !== 'undefined' && DEV_MODE;
+
+            // 現在のユーザー情報を取得
+            if (isDevMode) {
+                // DEV_MODE: LocalStorageを使用
+                window.currentUser = { uid: DEV_USER_ID || 'demo_user' };
+            } else if (typeof firebase !== 'undefined' && firebase.auth) {
+                // 本番モード: Firebaseを使用
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    window.currentUser = { uid: user.uid };
+                }
+            }
+
             loadGoals(); // 目標データを読み込み
             loadAnnotations(); // メモデータを読み込み
 
@@ -3721,7 +3875,7 @@
             // 日付情報を取得
             const today = new Date();
             const totalDays = chart.data.labels.length;
-            const daysAgo = totalDays - index;
+            const daysAgo = totalDays - 1 - index;
             const targetDate = new Date(today);
             targetDate.setDate(today.getDate() - daysAgo);
             const dateStr = `${targetDate.getMonth() + 1}/${targetDate.getDate()}`;
@@ -3737,7 +3891,11 @@
 
             // 値のフォーマット
             let displayValue;
-            if (typeof value === 'number') {
+            const metric = metricInfo[categoryToUse];
+            if (metric && metric.getLabel && typeof value === 'number') {
+                // 段階説明がある場合
+                displayValue = metric.getLabel(value);
+            } else if (typeof value === 'number') {
                 displayValue = value % 1 === 0 ? value.toString() : value.toFixed(1);
             } else {
                 displayValue = value || '-';

@@ -11,6 +11,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     // Premium誘導モーダル
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+    // 採点基準説明モーダル
+    const [showScoringGuideModal, setShowScoringGuideModal] = useState(false);
+
     // 体組成の状態管理
     const [bodyComposition, setBodyComposition] = useState({
         weight: profile?.weight || 0,
@@ -1033,9 +1036,16 @@ ${Math.round(caloriesPercent)}%`
                                                                 // 筋トレ: セット詳細と総重量を表示
                                                                 <>
                                                                     {exercise.sets?.map((set, si) => (
-                                                                        <p key={si} className="text-xs">
-                                                                            Set {si + 1}: {set.weight}kg × {set.reps}回
-                                                                        </p>
+                                                                        <div key={si}>
+                                                                            <p className="text-xs">
+                                                                                Set {si + 1}: {set.weight}kg × {set.reps}回
+                                                                            </p>
+                                                                            {set.rm && set.rmWeight && (
+                                                                                <p className="text-xs text-orange-600 font-medium">
+                                                                                    🏆 RM更新: {set.rm}RM × {set.rmWeight}kg
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
                                                                     ))}
                                                                     {totalVolume > 0 && (
                                                                         <p className="text-xs text-orange-600 font-medium mt-1">
@@ -1481,6 +1491,13 @@ ${Math.round(caloriesPercent)}%`
                             <h4 className="font-bold text-gray-800 flex items-center gap-2">
                                 <Icon name="PieChart" size={18} className="text-indigo-600" />
                                 分析
+                                <button
+                                    onClick={() => setShowScoringGuideModal(true)}
+                                    className="p-1 hover:bg-gray-100 rounded-full transition"
+                                    title="採点基準を見る"
+                                >
+                                    <Icon name="Info" size={16} className="text-gray-500" />
+                                </button>
                             </h4>
                             <button
                                 onClick={() => window.handleQuickAction && window.handleQuickAction('analysis')}
@@ -1548,6 +1565,99 @@ ${Math.round(caloriesPercent)}%`
                     getCategoryLabel={getCategoryLabel}
                     getCategoryColor={getCategoryColor}
                 />
+            )}
+
+            {/* 採点基準説明モーダル */}
+            {showScoringGuideModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 space-y-4">
+                            {/* ヘッダー */}
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                    <Icon name="Info" size={20} className="text-indigo-600" />
+                                    採点基準
+                                </h3>
+                                <button
+                                    onClick={() => setShowScoringGuideModal(false)}
+                                    className="p-1 hover:bg-gray-100 rounded-full transition"
+                                >
+                                    <Icon name="X" size={20} className="text-gray-500" />
+                                </button>
+                            </div>
+
+                            {/* 食事スコア */}
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Utensils" size={18} className="text-green-600" />
+                                    <h4 className="font-bold text-green-800">食事スコア（100点満点）</h4>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-1">
+                                    <p><strong>PFCバランス</strong>（70%）</p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1">
+                                        <li>タンパク質：目標値に対する達成率</li>
+                                        <li>脂質：目標値に対する達成率</li>
+                                        <li>炭水化物：目標値に対する達成率</li>
+                                        <li>3項目の平均が高いほど高得点</li>
+                                    </ul>
+                                    <p className="mt-2"><strong>カロリー達成度</strong>（30%）</p>
+                                    <ul className="list-disc list-inside ml-2">
+                                        <li>目標カロリーとのズレが少ないほど高得点</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* 運動スコア */}
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Dumbbell" size={18} className="text-orange-600" />
+                                    <h4 className="font-bold text-orange-800">運動スコア（100点満点）</h4>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-1">
+                                    <p><strong>運動時間</strong>（50%）</p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1">
+                                        <li>ボディメイカー：2時間以上で満点</li>
+                                        <li>一般：1時間以上で満点</li>
+                                    </ul>
+                                    <p className="mt-2"><strong>種目数</strong>（50%）</p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1">
+                                        <li>ボディメイカー：5種目以上で満点</li>
+                                        <li>一般：3種目以上で満点</li>
+                                    </ul>
+                                    <p className="mt-2 text-xs text-orange-700">※休養日に設定した日は自動的に100点</p>
+                                </div>
+                            </div>
+
+                            {/* コンディションスコア */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="HeartPulse" size={18} className="text-blue-600" />
+                                    <h4 className="font-bold text-blue-800">コンディションスコア（100点満点）</h4>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-1">
+                                    <p><strong>6項目の平均で評価</strong></p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1">
+                                        <li>睡眠時間（1-5段階）</li>
+                                        <li>睡眠の質（1-5段階）</li>
+                                        <li>食欲（1-5段階）</li>
+                                        <li>腸内環境（1-5段階）</li>
+                                        <li>集中力（1-5段階）</li>
+                                        <li>ストレス（1-5段階、低いほど良い）</li>
+                                    </ul>
+                                    <p className="mt-2 text-xs text-blue-700">※すべての項目が最高値（5）の場合、100点になります</p>
+                                </div>
+                            </div>
+
+                            {/* 閉じるボタン */}
+                            <button
+                                onClick={() => setShowScoringGuideModal(false)}
+                                className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* ショートカット */}
