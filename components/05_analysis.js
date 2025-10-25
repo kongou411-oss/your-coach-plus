@@ -64,6 +64,29 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         return () => clearInterval(intervalId);
     }, []);
 
+    // 新機能開放モーダル完了後、Premium誘導モーダルを表示
+    useEffect(() => {
+        const checkUpgradeModalFlag = () => {
+            const featureUnlockCompleted = localStorage.getItem('featureUnlockModalsCompleted');
+            const upgradeModalPending = localStorage.getItem('showUpgradeModalPending');
+
+            if (featureUnlockCompleted === 'true' && upgradeModalPending === 'true') {
+                console.log('[Analysis] Feature unlock completed. Showing upgrade modal...');
+                setShowUpgradeModal(true);
+                localStorage.removeItem('featureUnlockModalsCompleted');
+                localStorage.removeItem('showUpgradeModalPending');
+            }
+        };
+
+        // 初回チェック
+        checkUpgradeModalFlag();
+
+        // 定期的にチェック（500ms間隔）
+        const intervalId = setInterval(checkUpgradeModalFlag, 500);
+
+        return () => clearInterval(intervalId);
+    }, []);
+
     const handleClose = () => {
         if (aiLoading) {
             alert('AI分析が完了するまでお待ちください。');
@@ -809,10 +832,10 @@ ${currentPurpose === '増量' ? `
         }
 
         // Premium販促モーダル（初回分析後）
+        // 新機能開放モーダルが完了した後に表示するためのフラグを設定
         if (isFirstAnalysisParam && !DEV_PREMIUM_MODE) {
-            setTimeout(() => {
-                setShowUpgradeModal(true);
-            }, 3000); // 誘導モーダル後に表示
+            localStorage.setItem('showUpgradeModalPending', 'true');
+            console.log('[Analysis] Set showUpgradeModalPending flag for later display');
         }
     };
 

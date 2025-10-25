@@ -1,5 +1,5 @@
 // ===== Add Item Component =====
-        const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate }) => {
+        const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate, editingMeal }) => {
             // 食事とサプリを統合する場合、itemTypeで管理
             const isMealOrSupplement = type === 'meal' || type === 'supplement';
 
@@ -106,6 +106,18 @@
                     }
                 }
             }, [editingTemplate]);
+
+            // 食事編集モードの場合、既存の食事データを読み込む
+            useEffect(() => {
+                if (editingMeal && type === 'meal') {
+                    console.log('📝 食事編集モード: データ読み込み', editingMeal);
+                    // 既存の食事アイテムを設定
+                    if (editingMeal.items && editingMeal.items.length > 0) {
+                        setAddedItems(editingMeal.items);
+                        setMealName(editingMeal.name || '');
+                    }
+                }
+            }, [editingMeal, type]);
 
             // selectedItemが変更されたときにデフォルト量を設定
             useEffect(() => {
@@ -1688,11 +1700,12 @@
                         {/* 種目選択後の入力フォーム */}
                         {currentExercise && (
                             <div className="space-y-4">
+                                {console.log('🔍 currentExercise:', currentExercise, 'exerciseType:', currentExercise.exerciseType)}
                                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
                                             <h4 className="font-bold text-lg">{currentExercise.name}</h4>
-                                            <p className="text-sm text-gray-600">{currentExercise.category}</p>
+                                            <p className="text-sm text-gray-600">{currentExercise.category} {currentExercise.exerciseType && `[${currentExercise.exerciseType}]`}</p>
                                         </div>
                                         <button
                                             onClick={() => {
@@ -1707,6 +1720,117 @@
                                 </div>
 
                                 <div className="space-y-3">
+                                    {/* ストレッチ専用UI */}
+                                    {currentExercise.exerciseType === 'stretch' ? (
+                                        <>
+                                            {/* 総時間入力 */}
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                                                    総時間 (分)
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setWorkoutInfoModal({
+                                                            show: true,
+                                                            title: 'ストレッチ時間入力の使い方',
+                                                            content: `ストレッチを実施した総時間を分単位で入力します。
+
+【入力方法】
+1. スライダーをドラッグして時間を設定（1～60分）
+2. 目盛り数値（10分、20分など）をタップで即座に設定
+3. 入力欄に直接数値を入力
+4. 増減ボタン（-5/-1/+1/+5）で微調整
+
+【入力の目安】
+• ウォームアップ: 5～10分
+• メインストレッチ: 10～20分
+• クールダウン: 5～15分
+• リカバリーストレッチ: 20～40分
+
+ストレッチは柔軟性向上と怪我予防に重要です。無理のない範囲で継続的に実施しましょう。`
+                                                        })}
+                                                        className="text-indigo-600 hover:text-indigo-800"
+                                                    >
+                                                        <Icon name="Info" size={14} />
+                                                    </button>
+                                                </label>
+                                                {/* スライダー - 総時間 */}
+                                                <div className="mb-3">
+                                                    <input
+                                                        type="range"
+                                                        min="1"
+                                                        max="60"
+                                                        step="1"
+                                                        value={currentSet.duration || 10}
+                                                        onChange={(e) => setCurrentSet({...currentSet, duration: Number(e.target.value)})}
+                                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                                                        style={{
+                                                            background: `linear-gradient(to right, #ea580c 0%, #ea580c ${((currentSet.duration || 10)/60)*100}%, #e5e7eb ${((currentSet.duration || 10)/60)*100}%, #e5e7eb 100%)`
+                                                        }}
+                                                    />
+                                                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                        <span onClick={() => setCurrentSet({...currentSet, duration: 5})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">5分</span>
+                                                        <span onClick={() => setCurrentSet({...currentSet, duration: 10})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">10分</span>
+                                                        <span onClick={() => setCurrentSet({...currentSet, duration: 20})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">20分</span>
+                                                        <span onClick={() => setCurrentSet({...currentSet, duration: 30})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">30分</span>
+                                                        <span onClick={() => setCurrentSet({...currentSet, duration: 45})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">45分</span>
+                                                        <span onClick={() => setCurrentSet({...currentSet, duration: 60})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">60分</span>
+                                                    </div>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    value={currentSet.duration || 10}
+                                                    onChange={(e) => setCurrentSet({...currentSet, duration: e.target.value === '' ? '' : Number(e.target.value)})}
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                                />
+                                                {/* 増減ボタン */}
+                                                <div className="grid grid-cols-6 gap-1 mt-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCurrentSet({...currentSet, duration: Math.max(1, Number(currentSet.duration || 10) - 5)})}
+                                                        className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                                                    >
+                                                        -5
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCurrentSet({...currentSet, duration: Math.max(1, Number(currentSet.duration || 10) - 1)})}
+                                                        className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                    >
+                                                        -1
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCurrentSet({...currentSet, duration: 10})}
+                                                        className="py-1.5 bg-gray-100 text-gray-600 rounded text-xs hover:bg-gray-200 font-medium"
+                                                    >
+                                                        10
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCurrentSet({...currentSet, duration: 20})}
+                                                        className="py-1.5 bg-gray-100 text-gray-600 rounded text-xs hover:bg-gray-200 font-medium"
+                                                    >
+                                                        20
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCurrentSet({...currentSet, duration: Number(currentSet.duration || 10) + 1})}
+                                                        className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                    >
+                                                        +1
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCurrentSet({...currentSet, duration: Number(currentSet.duration || 10) + 5})}
+                                                        className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                                                    >
+                                                        +5
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
                                     {/* 重量入力 */}
                                     <div>
                                         <label className="block text-sm font-medium mb-1 flex items-center gap-2">
@@ -1998,7 +2122,40 @@
                                             className="w-full px-3 py-2 border rounded-lg"
                                         />
                                     </div>
+                                    </>
+                                    )}
 
+                                    {/* セット追加ボタン（ストレッチの場合は「追加」ボタン） */}
+                                    {currentExercise.exerciseType === 'stretch' ? (
+                                        <div>
+                                            <button
+                                                onClick={() => {
+                                                    // ストレッチは1回のみ記録（セットなし）
+                                                    const stretchRecord = {
+                                                        ...currentExercise,
+                                                        duration: currentSet.duration || 10,
+                                                        totalDuration: currentSet.duration || 10
+                                                    };
+                                                    console.log('[AddItem] ストレッチを追加:', stretchRecord);
+                                                    setExercises([...exercises, stretchRecord]);
+                                                    setCurrentExercise(null);
+                                                    setCurrentSet({
+                                                        weight: 50,
+                                                        reps: 10,
+                                                        distance: 0.5,
+                                                        tut: 30,
+                                                        restInterval: 90,
+                                                        duration: 10
+                                                    });
+                                                }}
+                                                className="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2 font-bold"
+                                            >
+                                                <Icon name="Check" size={20} />
+                                                <span>ストレッチを追加</span>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                    <>
                                     {/* セット追加ボタン */}
                                     <div className="grid grid-cols-2 gap-2">
                                         <button
@@ -2074,7 +2231,6 @@
                                             </div>
                                         </div>
                                     )}
-                                </div>
 
                                 <button
                                     onClick={() => {
@@ -2092,6 +2248,8 @@
                                 >
                                     種目を追加
                                 </button>
+                                </>
+                                )}
                             </div>
                         )}
 
@@ -2428,8 +2586,8 @@
                             />
                         </div>
 
-                        {/* ②どうやって記録しますか？ */}
-                        {!selectedItem && !showAIFoodRecognition && !showCustomSupplementForm && (
+                        {/* ②どうやって記録しますか？（編集モードでは表示しない） */}
+                        {!selectedItem && !showAIFoodRecognition && !showCustomSupplementForm && !editingMeal && addedItems.length === 0 && (
                             <div className="space-y-3">
                                 <p className="text-center text-base font-medium text-gray-700 mb-4">どうやって記録しますか？</p>
 

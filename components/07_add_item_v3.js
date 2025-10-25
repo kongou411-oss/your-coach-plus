@@ -1,325 +1,5 @@
-// ===== Edit Meal Modal (食事編集専用モーダル) =====
-const EditMealModal = ({ meal, onClose, onUpdate }) => {
-    const [amount, setAmount] = useState(100);
-    const [foodData, setFoodData] = useState(null);
-    const [bottleSize, setBottleSize] = useState(null); // 1本の容量（ml）
-
-    // foodDatabaseから元の食品情報を取得
-    useEffect(() => {
-        if (meal && meal.items && meal.items.length > 0) {
-            const item = meal.items[0]; // 最初のアイテムを編集対象とする
-            console.log('📝 EditMealModal: 編集対象アイテム', item);
-
-            // 「本」単位の特殊処理
-            if (item.unit === '本') {
-                console.log('📦 本単位のアイテム:', item);
-                // 本単位の場合、item自体の栄養素を「1本あたり」として使用
-                setFoodData({
-                    name: item.name,
-                    servingSize: 1, // 1本あたり
-                    unit: '本',
-                    calories: item.calories || 0,
-                    protein: item.protein || 0,
-                    fat: item.fat || 0,
-                    carbs: item.carbs || 0
-                });
-                setAmount(1); // デフォルト1本
-                setBottleSize(null); // bottleSizeは使わない
-                return;
-            }
-
-            // foodDatabaseから元データを検索（通常の食材）
-            let found = null;
-            Object.keys(foodDatabase).forEach(category => {
-                if (foodDatabase[category][item.name]) {
-                    const dbItem = foodDatabase[category][item.name];
-                    console.log('✅ データベースから取得:', dbItem);
-                    found = {
-                        ...dbItem,
-                        name: item.name,
-                        servingSize: 100, // foodDatabase_v2は全て100gあたり
-                        unit: dbItem.unit || 'g'
-                    };
-                }
-            });
-
-            if (found) {
-                console.log('✅ 最終的なfoodData:', found);
-                setFoodData(found);
-                setBottleSize(null);
-                setAmount(parseFloat(item.amount) || 100);
-            } else {
-                console.error('❌ foodDatabaseから食品が見つかりません:', item.name);
-                // データベースにない場合は、アイテム自体のデータを使用
-                setFoodData({
-                    name: item.name,
-                    servingSize: 100,
-                    unit: item.unit || 'g',
-                    calories: item.calories || 0,
-                    protein: item.protein || 0,
-                    fat: item.fat || 0,
-                    carbs: item.carbs || 0
-                });
-                setAmount(parseFloat(item.amount) || 100);
-                setBottleSize(null);
-            }
-        }
-    }, [meal]);
-
-    if (!foodData) {
-        return null;
-    }
-
-    // 計算後の栄養情報
-    const ratio = amount / (foodData.servingSize || 1);
-    const calculatedCalories = Math.round((foodData.calories || 0) * ratio);
-    const calculatedProtein = ((foodData.protein || 0) * ratio).toFixed(1);
-    const calculatedFat = ((foodData.fat || 0) * ratio).toFixed(1);
-    const calculatedCarbs = ((foodData.carbs || 0) * ratio).toFixed(1);
-
-    console.log('🧮 計算:', {
-        amount,
-        servingSize: foodData.servingSize,
-        ratio,
-        calories: foodData.calories,
-        calculatedCalories
-    });
-
-    const handleUpdate = () => {
-        const updatedMeal = {
-            ...meal,
-            items: [{
-                name: foodData.name,
-                amount: amount,
-                unit: foodData.unit || 'g',
-                protein: (foodData.protein || 0) * ratio,
-                fat: (foodData.fat || 0) * ratio,
-                carbs: (foodData.carbs || 0) * ratio,
-                calories: (foodData.calories || 0) * ratio
-            }]
-        };
-        console.log('💾 更新データ:', updatedMeal);
-        onUpdate(updatedMeal);
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
-                    <h2 className="text-xl font-bold">食事を編集</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                        <Icon name="X" size={24} />
-                    </button>
-                </div>
-
-                <div className="p-6 space-y-6">
-                    {/* 食品名 */}
-                    <div>
-                        <h3 className="text-lg font-bold mb-2">{foodData.name}</h3>
-                        <p className="text-sm text-gray-600">{foodData.servingSize}{foodData.unit || 'g'} あたり</p>
-                    </div>
-
-                    {/* 100gあたりの栄養情報 */}
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm font-medium mb-2">基本栄養素（{foodData.servingSize || 100}{foodData.unit || 'g'}あたり）</p>
-                        <div className="grid grid-cols-4 gap-2">
-                            <div>
-                                <p className="text-xs text-gray-600">カロリー</p>
-                                <p className="font-bold" style={{color: '#7686BA'}}>{foodData.calories || 0}kcal</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-600">P</p>
-                                <p className="font-bold text-red-600">{foodData.protein || 0}g</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-600">F</p>
-                                <p className="font-bold text-yellow-600">{foodData.fat || 0}g</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-600">C</p>
-                                <p className="font-bold text-green-600">{foodData.carbs || 0}g</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 量調整 */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2">
-                            量 ({foodData.unit || 'g'})
-                        </label>
-
-                        {/* スライダー */}
-                        <div className="mb-3">
-                            <input
-                                type="range"
-                                min="0"
-                                max={foodData.unit === '本' ? 10 : 500}
-                                step={foodData.unit === '本' ? 0.1 : 5}
-                                value={amount}
-                                onChange={(e) => setAmount(Number(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                                style={{
-                                    background: `linear-gradient(to right, #4f46e5 0%, #4f46e5 ${(amount/(foodData.unit === '本' ? 10 : 500))*100}%, #e5e7eb ${(amount/(foodData.unit === '本' ? 10 : 500))*100}%, #e5e7eb 100%)`
-                                }}
-                            />
-                            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                {foodData.unit === '本' ? (
-                                    <>
-                                        <span onClick={() => setAmount(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0本</span>
-                                        <span onClick={() => setAmount(1)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">1本</span>
-                                        <span onClick={() => setAmount(2)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">2本</span>
-                                        <span onClick={() => setAmount(5)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">5本</span>
-                                        <span onClick={() => setAmount(10)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">10本</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <span onClick={() => setAmount(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0{foodData.unit || 'g'}</span>
-                                        <span onClick={() => setAmount(100)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">100{foodData.unit || 'g'}</span>
-                                        <span onClick={() => setAmount(200)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">200{foodData.unit || 'g'}</span>
-                                        <span onClick={() => setAmount(300)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">300{foodData.unit || 'g'}</span>
-                                        <span onClick={() => setAmount(400)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">400{foodData.unit || 'g'}</span>
-                                        <span onClick={() => setAmount(500)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">500{foodData.unit || 'g'}</span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-
-                        <input
-                            type="number"
-                            value={amount}
-                            onChange={(e) => setAmount(Number(e.target.value))}
-                            step={foodData.unit === '本' ? 0.1 : 1}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2"
-                        />
-
-                        {/* 増減ボタン */}
-                        {foodData.unit === '本' ? (
-                            <div className="grid grid-cols-6 gap-1">
-                                <button
-                                    onClick={() => setAmount(Math.max(0, amount - 1))}
-                                    className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
-                                >
-                                    -1
-                                </button>
-                                <button
-                                    onClick={() => setAmount(Math.max(0, amount - 0.5))}
-                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
-                                >
-                                    -0.5
-                                </button>
-                                <button
-                                    onClick={() => setAmount(Math.max(0, amount - 0.1))}
-                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
-                                >
-                                    -0.1
-                                </button>
-                                <button
-                                    onClick={() => setAmount(amount + 0.1)}
-                                    className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
-                                >
-                                    +0.1
-                                </button>
-                                <button
-                                    onClick={() => setAmount(amount + 0.5)}
-                                    className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
-                                >
-                                    +0.5
-                                </button>
-                                <button
-                                    onClick={() => setAmount(amount + 1)}
-                                    className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
-                                >
-                                    +1
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-6 gap-1">
-                                <button
-                                    onClick={() => setAmount(Math.max(0, amount - 100))}
-                                    className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
-                                >
-                                    -100
-                                </button>
-                                <button
-                                    onClick={() => setAmount(Math.max(0, amount - 50))}
-                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
-                                >
-                                    -50
-                                </button>
-                                <button
-                                    onClick={() => setAmount(Math.max(0, amount - 10))}
-                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
-                                >
-                                    -10
-                                </button>
-                                <button
-                                onClick={() => setAmount(amount + 10)}
-                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
-                            >
-                                +10
-                            </button>
-                            <button
-                                onClick={() => setAmount(amount + 50)}
-                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
-                            >
-                                +50
-                            </button>
-                            <button
-                                onClick={() => setAmount(amount + 100)}
-                                className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
-                            >
-                                +100
-                            </button>
-                        </div>
-                        )}
-                    </div>
-
-                    {/* 計算後の栄養情報 */}
-                    <div className="bg-indigo-50 p-4 rounded-lg">
-                        <p className="text-sm font-medium mb-2">摂取量（{amount}{foodData.unit || 'g'}）</p>
-                        <div className="grid grid-cols-4 gap-2">
-                            <div>
-                                <p className="text-xs text-gray-600">カロリー</p>
-                                <p className="font-bold" style={{color: '#7686BA'}}>{calculatedCalories}kcal</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-600">P</p>
-                                <p className="font-bold text-red-600">{calculatedProtein}g</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-600">F</p>
-                                <p className="font-bold text-yellow-600">{calculatedFat}g</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-600">C</p>
-                                <p className="font-bold text-green-600">{calculatedCarbs}g</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ボタン */}
-                    <div className="flex gap-3">
-                        <button
-                            onClick={onClose}
-                            className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
-                        >
-                            キャンセル
-                        </button>
-                        <button
-                            onClick={handleUpdate}
-                            className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
-                        >
-                            更新
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 // ===== Add Item Component =====
-const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate, editingMeal }) => {
+        const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate }) => {
             // 食事とサプリを統合する場合、itemTypeで管理
             const isMealOrSupplement = type === 'meal' || type === 'supplement';
 
@@ -426,22 +106,6 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                     }
                 }
             }, [editingTemplate]);
-
-            // 食事編集時：既存データをロード
-            useEffect(() => {
-                if (editingMeal && type === 'meal') {
-                    console.log('📝 食事編集モード: データ読み込み', editingMeal);
-                    if (editingMeal.items && editingMeal.items.length > 0) {
-                        // amountが文字列の場合は数値に変換
-                        const normalizedItems = editingMeal.items.map(item => ({
-                            ...item,
-                            amount: typeof item.amount === 'string' ? parseFloat(item.amount) || 100 : item.amount
-                        }));
-                        setAddedItems(normalizedItems);
-                        setMealName(editingMeal.name || '');
-                    }
-                }
-            }, [editingMeal, type]);
 
             // selectedItemが変更されたときにデフォルト量を設定
             useEffect(() => {
@@ -2042,86 +1706,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                     </div>
                                 </div>
 
-                                {/* ストレッチ・有酸素種目の場合：時間のみ入力 */}
-                                {(currentExercise.exerciseType === 'stretch' || currentExercise.exerciseType === 'aerobic') ? (
-                                    <div className="space-y-3">
-                                        {/* 総時間入力 */}
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-                                                総時間 (分)
-                                            </label>
-                                            <div className="mb-3">
-                                                <input
-                                                    type="range"
-                                                    min="0"
-                                                    max="120"
-                                                    step="1"
-                                                    value={currentSet.duration || 0}
-                                                    onChange={(e) => setCurrentSet({...currentSet, duration: Number(e.target.value)})}
-                                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                                                    style={{
-                                                        background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((currentSet.duration || 0)/120)*100}%, #e5e7eb ${((currentSet.duration || 0)/120)*100}%, #e5e7eb 100%)`
-                                                    }}
-                                                />
-                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                                    <span onClick={() => setCurrentSet({...currentSet, duration: 0})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">0分</span>
-                                                    <span onClick={() => setCurrentSet({...currentSet, duration: 30})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">30分</span>
-                                                    <span onClick={() => setCurrentSet({...currentSet, duration: 60})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">60分</span>
-                                                    <span onClick={() => setCurrentSet({...currentSet, duration: 90})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">90分</span>
-                                                    <span onClick={() => setCurrentSet({...currentSet, duration: 120})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">120分</span>
-                                                </div>
-                                            </div>
-                                            <input
-                                                type="number"
-                                                value={currentSet.duration || 0}
-                                                onChange={(e) => setCurrentSet({...currentSet, duration: Number(e.target.value)})}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                            />
-                                        </div>
-
-                                        {/* セット追加ボタン */}
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (!currentSet.duration || currentSet.duration === 0) {
-                                                    alert('時間を入力してください');
-                                                    return;
-                                                }
-                                                setSets([...sets, {...currentSet}]);
-                                                setCurrentSet({ duration: currentSet.duration });
-                                            }}
-                                            className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
-                                        >
-                                            <Icon name="Plus" size={18} />
-                                            セットを追加
-                                        </button>
-
-                                        {/* 追加済みセットリスト */}
-                                        {sets.length > 0 && (
-                                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                                                <p className="text-xs font-bold text-blue-700 mb-2">追加済み（{sets.length}セット）</p>
-                                                <div className="space-y-1">
-                                                    {sets.map((set, idx) => (
-                                                        <div key={idx} className="flex justify-between items-center text-sm bg-white p-2 rounded">
-                                                            <span className="font-medium">セット{idx + 1}</span>
-                                                            <span className="text-gray-600">{set.duration}分</span>
-                                                            <button
-                                                                onClick={() => setSets(sets.filter((_, i) => i !== idx))}
-                                                                className="text-red-500 hover:text-red-700"
-                                                            >
-                                                                <Icon name="X" size={16} />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {/* 通常の運動：重量・回数・可動距離入力 */}
-                                        {/* 重量入力 */}
-                                        <div>
+                                <div className="space-y-3">
+                                    {/* 重量入力 */}
+                                    <div>
                                         <label className="block text-sm font-medium mb-1 flex items-center gap-2">
                                             重量 (kg)
                                                 <button
@@ -2158,11 +1745,11 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                     min="0"
                                                     max="500"
                                                     step="2.5"
-                                                    value={currentSet.weight || 0}
-                                                    onChange={(e) => setCurrentSet({...currentSet, weight: e.target.value === '' ? 0 : Number(e.target.value)})}
+                                                    value={currentSet.weight}
+                                                    onChange={(e) => setCurrentSet({...currentSet, weight: e.target.value === '' ? '' : Number(e.target.value)})}
                                                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
                                                     style={{
-                                                        background: `linear-gradient(to right, #ea580c 0%, #ea580c ${((currentSet.weight || 0)/500)*100}%, #e5e7eb ${((currentSet.weight || 0)/500)*100}%, #e5e7eb 100%)`
+                                                        background: `linear-gradient(to right, #ea580c 0%, #ea580c ${(currentSet.weight/500)*100}%, #e5e7eb ${(currentSet.weight/500)*100}%, #e5e7eb 100%)`
                                                     }}
                                                 />
                                                 <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -2176,8 +1763,8 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             </div>
                                             <input
                                                 type="number"
-                                                value={currentSet.weight || 0}
-                                                onChange={(e) => setCurrentSet({...currentSet, weight: e.target.value === '' ? 0 : Number(e.target.value)})}
+                                                value={currentSet.weight}
+                                                onChange={(e) => setCurrentSet({...currentSet, weight: e.target.value === '' ? '' : Number(e.target.value)})}
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                                             />
                                             {/* 増減ボタン */}
@@ -2265,11 +1852,11 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                     min="1"
                                                     max="50"
                                                     step="1"
-                                                    value={currentSet.reps || 1}
-                                                    onChange={(e) => setCurrentSet({...currentSet, reps: e.target.value === '' ? 1 : Number(e.target.value)})}
+                                                    value={currentSet.reps}
+                                                    onChange={(e) => setCurrentSet({...currentSet, reps: e.target.value === '' ? '' : Number(e.target.value)})}
                                                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
                                                     style={{
-                                                        background: `linear-gradient(to right, #ea580c 0%, #ea580c ${((currentSet.reps || 1)/50)*100}%, #e5e7eb ${((currentSet.reps || 1)/50)*100}%, #e5e7eb 100%)`
+                                                        background: `linear-gradient(to right, #ea580c 0%, #ea580c ${(currentSet.reps/50)*100}%, #e5e7eb ${(currentSet.reps/50)*100}%, #e5e7eb 100%)`
                                                     }}
                                                 />
                                                 <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -2283,8 +1870,8 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             </div>
                                             <input
                                                 type="number"
-                                                value={currentSet.reps || 1}
-                                                onChange={(e) => setCurrentSet({...currentSet, reps: e.target.value === '' ? 1 : Number(e.target.value)})}
+                                                value={currentSet.reps}
+                                                onChange={(e) => setCurrentSet({...currentSet, reps: e.target.value === '' ? '' : Number(e.target.value)})}
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                                             />
                                             {/* 増減ボタン */}
@@ -2412,39 +1999,27 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                         />
                                     </div>
 
-                                    {/* セット追加ボタン（筋トレのみ：アップセット/メインセット） */}
-                                    {currentExercise.exerciseType === 'anaerobic' ? (
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    setSets([...sets, { ...currentSet, setType: 'warmup' }]);
-                                                }}
-                                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2"
-                                            >
-                                                <Icon name="Zap" size={20} />
-                                                <span>アップセット追加</span>
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setSets([...sets, { ...currentSet, setType: 'main' }]);
-                                                }}
-                                                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2"
-                                            >
-                                                <Icon name="Plus" size={20} />
-                                                <span>メインセット追加</span>
-                                            </button>
-                                        </div>
-                                    ) : (
+                                    {/* セット追加ボタン */}
+                                    <div className="grid grid-cols-2 gap-2">
                                         <button
                                             onClick={() => {
-                                                setSets([...sets, { ...currentSet }]);
+                                                setSets([...sets, { ...currentSet, setType: 'warmup' }]);
                                             }}
-                                            className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2"
+                                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2"
+                                        >
+                                            <Icon name="Zap" size={20} />
+                                            <span>アップセット追加</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setSets([...sets, { ...currentSet, setType: 'main' }]);
+                                            }}
+                                            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2"
                                         >
                                             <Icon name="Plus" size={20} />
-                                            <span>セット追加</span>
+                                            <span>メインセット追加</span>
                                         </button>
-                                    )}
+                                    </div>
 
                                     {sets.length > 0 && (
                                         <div className="bg-gray-50 p-3 rounded-lg">
@@ -2454,18 +2029,14 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                     <div className="flex justify-between items-center mb-1">
                                                         <div className="flex items-center gap-2">
                                                             <span className="font-medium">Set {index + 1}</span>
-                                                            {currentExercise.exerciseType === 'anaerobic' && (
-                                                                <>
-                                                                    {set.setType === 'warmup' ? (
-                                                                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                                                                            アップ
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
-                                                                            メイン
-                                                                        </span>
-                                                                    )}
-                                                                </>
+                                                            {set.setType === 'warmup' ? (
+                                                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                                                    アップ
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+                                                                    メイン
+                                                                </span>
                                                             )}
                                                         </div>
                                                         <button
@@ -2476,54 +2047,29 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                         </button>
                                                     </div>
                                                     <div className="text-xs text-gray-600 space-y-0.5">
-                                                        {currentExercise.exerciseType === 'anaerobic' ? (
-                                                            <>
-                                                                <div><span>重量: {set.weight}kg</span></div>
-                                                                <div><span>回数: {set.reps}回</span></div>
-                                                                <div><span>体積: {calculateSetVolume(set)} kg×reps</span></div>
-                                                            </>
-                                                        ) : (
-                                                            <div><span>時間: {set.duration || 0}分</span></div>
-                                                        )}
+                                                        <div><span>重量: {set.weight}kg</span></div>
+                                                        <div><span>回数: {set.reps}回</span></div>
+                                                        <div><span>体積: {calculateSetVolume(set)} kg×reps</span></div>
                                                     </div>
                                                 </div>
                                             ))}
-                                            {currentExercise.exerciseType === 'anaerobic' && (
-                                                <div className="border-t mt-2 pt-2 space-y-1">
-                                                    <div className="flex justify-between text-sm text-gray-600">
-                                                        <span>総体積</span>
-                                                        <span>{sets.reduce((sum, s) => sum + calculateSetVolume(s), 0)} kg×reps</span>
-                                                    </div>
+                                            <div className="border-t mt-2 pt-2 space-y-1">
+                                                <div className="flex justify-between text-sm text-gray-600">
+                                                    <span>総体積</span>
+                                                    <span>{sets.reduce((sum, s) => sum + calculateSetVolume(s), 0)} kg×reps</span>
                                                 </div>
-                                            )}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
-                                )}
 
                                 <button
                                     onClick={() => {
                                         if (sets.length === 0) return;
-
-                                        // 有酸素・ストレッチの場合は、種目名と総時間のみ記録
-                                        let newExercise;
-                                        if (currentExercise.exerciseType === 'aerobic' || currentExercise.exerciseType === 'stretch') {
-                                            // 総時間を計算
-                                            const totalDuration = sets.reduce((sum, set) => sum + (set.duration || 0), 0);
-                                            newExercise = {
-                                                exercise: currentExercise,
-                                                duration: totalDuration, // 総時間のみ
-                                                exerciseType: currentExercise.exerciseType
-                                            };
-                                        } else {
-                                            // 筋トレの場合は従来通り（セット詳細を含む）
-                                            newExercise = {
-                                                exercise: currentExercise,
-                                                sets: sets,
-                                                exerciseType: currentExercise.exerciseType
-                                            };
-                                        }
-
+                                        const newExercise = {
+                                            exercise: currentExercise,
+                                            sets: sets
+                                        };
                                         setExercises([...exercises, newExercise]);
                                         setCurrentExercise(null);
                                         setSets([]);
@@ -2544,47 +2090,29 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                 {/* 種目一覧 */}
                                 <div className="space-y-2 mb-3">
                                     {exercises.map((ex, index) => {
-                                        // 有酸素・ストレッチの場合は総時間のみ、筋トレの場合は総重量も計算
-                                        const isCardioOrStretch = ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch';
+                                        // 総重量計算（全セットの重量×回数の合計）
+                                        const totalVolume = ex.sets.reduce((sum, set) => {
+                                            return sum + (set.weight || 0) * (set.reps || 0);
+                                        }, 0);
 
-                                        let totalVolume = 0;
-                                        let totalDuration = 0;
-
-                                        if (isCardioOrStretch) {
-                                            // 有酸素・ストレッチ: durationのみ
-                                            totalDuration = ex.duration || 0;
-                                        } else {
-                                            // 筋トレ: setsから計算
-                                            totalVolume = ex.sets.reduce((sum, set) => {
-                                                return sum + (set.weight || 0) * (set.reps || 0);
-                                            }, 0);
-                                            totalDuration = ex.sets.reduce((sum, set) => {
-                                                return sum + (set.duration || 0);
-                                            }, 0);
-                                        }
+                                        // 総時間計算
+                                        const totalDuration = ex.sets.reduce((sum, set) => {
+                                            return sum + (set.duration || 0);
+                                        }, 0);
 
                                         return (
                                             <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
                                                 <div className="flex justify-between items-start mb-1">
                                                     <div className="flex-1">
                                                         <p className="font-medium text-sm">{ex.exercise.name}</p>
-                                                        {isCardioOrStretch ? (
-                                                            <p className="text-xs text-gray-600">{totalDuration}分</p>
-                                                        ) : (
-                                                            <p className="text-xs text-gray-600">{ex.sets.length}セット - {totalVolume}kg</p>
-                                                        )}
+                                                        <p className="text-xs text-gray-600">{ex.sets.length}セット - {totalVolume}kg</p>
                                                     </div>
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => {
                                                                 // 編集：該当種目をcurrentExerciseに戻す
                                                                 setCurrentExercise(ex.exercise);
-                                                                if (isCardioOrStretch) {
-                                                                    // 有酸素・ストレッチは時間を1セットとして扱う
-                                                                    setSets([{ duration: ex.duration }]);
-                                                                } else {
-                                                                    setSets(ex.sets);
-                                                                }
+                                                                setSets(ex.sets);
                                                                 setExercises(exercises.filter((_, i) => i !== index));
                                                             }}
                                                             className="text-blue-600 hover:text-blue-800"
@@ -2606,37 +2134,23 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
 
                                 {/* 総重量・総時間の表示 */}
                                 <div className="grid grid-cols-2 gap-4 p-3 bg-white rounded-lg border border-gray-200 mb-3">
-                                    {/* 総重量: 筋トレのみ表示 */}
-                                    {exercises.some(ex => ex.exerciseType === 'anaerobic') && (
-                                        <div className="text-center">
-                                            <p className="text-xs text-gray-600 mb-1">総重量</p>
-                                            <p className="text-lg font-bold text-orange-600">
-                                                {exercises.reduce((sum, ex) => {
-                                                    if (ex.exerciseType === 'anaerobic' && ex.sets) {
-                                                        return sum + ex.sets.reduce((setSum, set) => {
-                                                            return setSum + (set.weight || 0) * (set.reps || 0);
-                                                        }, 0);
-                                                    }
-                                                    return sum;
-                                                }, 0)}kg
-                                            </p>
-                                        </div>
-                                    )}
-                                    {/* 総時間: すべての種目で表示 */}
+                                    <div className="text-center">
+                                        <p className="text-xs text-gray-600 mb-1">総重量</p>
+                                        <p className="text-lg font-bold text-orange-600">
+                                            {exercises.reduce((sum, ex) => {
+                                                return sum + ex.sets.reduce((setSum, set) => {
+                                                    return setSum + (set.weight || 0) * (set.reps || 0);
+                                                }, 0);
+                                            }, 0)}kg
+                                        </p>
+                                    </div>
                                     <div className="text-center">
                                         <p className="text-xs text-gray-600 mb-1">総時間</p>
                                         <p className="text-lg font-bold text-blue-600">
                                             {exercises.reduce((sum, ex) => {
-                                                if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
-                                                    // 有酸素・ストレッチ: durationを直接加算
-                                                    return sum + (ex.duration || 0);
-                                                } else if (ex.sets) {
-                                                    // 筋トレ: setsから計算
-                                                    return sum + ex.sets.reduce((setSum, set) => {
-                                                        return setSum + (set.duration || 0);
-                                                    }, 0);
-                                                }
-                                                return sum;
+                                                return sum + ex.sets.reduce((setSum, set) => {
+                                                    return setSum + (set.duration || 0);
+                                                }, 0);
                                             }, 0)}分
                                         </p>
                                     </div>
@@ -2902,7 +2416,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                         </div>
 
                         {/* ②どうやって記録しますか？ */}
-                        {!selectedItem && !showAIFoodRecognition && !showCustomSupplementForm && !editingMeal && (
+                        {!selectedItem && !showAIFoodRecognition && !showCustomSupplementForm && (
                             <div className="space-y-3">
                                 <p className="text-center text-base font-medium text-gray-700 mb-4">どうやって記録しますか？</p>
 
@@ -4229,7 +3743,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                     <button
                                         onClick={() => {
                                             setAddedItems([]);
-                                            onClose();
+                                            setShowModal(false);
                                         }}
                                         className="px-4 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
                                     >

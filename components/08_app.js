@@ -139,6 +139,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [reopenTemplateEditModal, setReopenTemplateEditModal] = useState(false); // AddItemView閉じた後にテンプレート編集モーダルを再度開く
             const [reopenTemplateEditType, setReopenTemplateEditType] = useState(null); // 再度開くテンプレート編集モーダルのタイプ
             const [editingTemplate, setEditingTemplate] = useState(null); // 編集対象のテンプレート
+            const [editingMeal, setEditingMeal] = useState(null); // 編集対象の食事
             const [dailyRecord, setDailyRecord] = useState({
                 meals: [],
                 workouts: [],
@@ -260,6 +261,19 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 };
                 document.addEventListener('openAdminPanel', handleOpenAdminPanel);
                 return () => document.removeEventListener('openAdminPanel', handleOpenAdminPanel);
+            }, []);
+
+            // 食事編集用グローバル関数を定義
+            useEffect(() => {
+                window.handleEditMeal = (meal) => {
+                    console.log('🍽️ 食事編集開始:', meal);
+                    setEditingMeal(meal);
+                    setAddViewType('meal');
+                    setShowAddView(true);
+                };
+                return () => {
+                    delete window.handleEditMeal;
+                };
             }, []);
 
             // URLパラメータチェック（投稿リンク対応）
@@ -1257,14 +1271,68 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         />
                     </div>
 
+                    {/* 食事編集モーダル（EditMealModal） */}
+                    {editingMeal && addViewType === 'meal' && (
+                        <EditMealModal
+                            meal={editingMeal}
+                            onClose={() => {
+                                setEditingMeal(null);
+                                setShowAddView(false);
+                            }}
+                            onUpdate={async (updatedMeal) => {
+                                const userId = user?.uid || DEV_USER_ID;
+                                try {
+                                    // 表示中の日付（currentDate）の記録を取得
+                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
+                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+
+                                    // 元の食事を見つけて削除し、新しい食事を追加（上書き）
+                                    const mealIndex = updatedRecord.meals.findIndex(m =>
+                                        m.timestamp === editingMeal.timestamp && m.name === editingMeal.name
+                                    );
+
+                                    if (mealIndex !== -1) {
+                                        // 元の食事を削除
+                                        updatedRecord.meals.splice(mealIndex, 1);
+                                    }
+
+                                    // 新しい食事を追加（timestampは維持）
+                                    updatedRecord.meals.push({
+                                        ...updatedMeal,
+                                        timestamp: editingMeal.timestamp // 元のタイムスタンプを維持
+                                    });
+
+                                    // 保存
+                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
+
+                                    // 状態を更新
+                                    if (currentDate === today) {
+                                        setDailyRecord(updatedRecord);
+                                    }
+
+                                    // モーダルを閉じる
+                                    setEditingMeal(null);
+                                    setShowAddView(false);
+
+                                    alert('食事を更新しました！');
+                                } catch (error) {
+                                    console.error('食事更新エラー:', error);
+                                    alert('食事の更新に失敗しました。');
+                                }
+                            }}
+                        />
+                    )}
+
                     {/* 追加ビュー */}
-                    {showAddView && (
+                    {showAddView && !editingMeal && (
                         <AddItemView
                             type={addViewType}
                             editingTemplate={editingTemplate}
+                            editingMeal={editingMeal}
                             onClose={() => {
                                 setShowAddView(false);
                                 setEditingTemplate(null); // 編集テンプレートをクリア
+                                setEditingMeal(null); // 編集食事をクリア
                                 if (openedFromSettings) {
                                     setShowSettings(true);
                                     setOpenedFromSettings(false);
@@ -2320,28 +2388,16 @@ AIコーチなどの高度な機能が解放されます。
                                 <button
                                     onClick={async () => {
                                         if (!unlockedFeatures.includes('pg_base')) {
-                                            // Premium制限チェック
-                                            const accessCheck = checkPremiumAccessRequired(
-                                                DEV_MODE ? DEV_USER_ID : user.uid,
-                                                'pg_base',
-                                                userProfile
-                                            );
-                                            if (!accessCheck.allowed) {
-                                                setRestrictedFeatureName('PG BASE');
-                                                setShowPremiumRestriction(true);
-                                                return;
-                                            }
+                                            // 機能未開放の場合は開けない
                                             return;
                                         }
-                                        if (await checkPremiumAccess('PG BASE 教科書')) {
-                                            // 他のカテゴリを全て閉じる
-                                            setShowHistoryV10(false);
-                                            setShowCOMYView(false);
-                                            setShowSettings(false);
-                                            // PGBASEを開く
-                                            setShowPGBaseView(true);
-                                            setBottomBarExpanded(false);
-                                        }
+                                        // 他のカテゴリを全て閉じる
+                                        setShowHistoryV10(false);
+                                        setShowCOMYView(false);
+                                        setShowSettings(false);
+                                        // PGBASEを開く
+                                        setShowPGBaseView(true);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showPGBaseView ? 'bg-cyan-100' : (unlockedFeatures.includes('pg_base') ? 'hover:bg-gray-50' : 'opacity-50')
@@ -2357,27 +2413,16 @@ AIコーチなどの高度な機能が解放されます。
                                 <button
                                     onClick={async () => {
                                         if (!unlockedFeatures.includes('community')) {
-                                            const accessCheck = checkPremiumAccessRequired(
-                                                DEV_MODE ? DEV_USER_ID : user.uid,
-                                                'community',
-                                                userProfile
-                                            );
-                                            if (!accessCheck.allowed) {
-                                                setRestrictedFeatureName('COMY');
-                                                setShowPremiumRestriction(true);
-                                                return;
-                                            }
+                                            // 機能未開放の場合は開けない
                                             return;
                                         }
-                                        if (await checkPremiumAccess('COMY')) {
-                                            // 他のカテゴリを全て閉じる
-                                            setShowHistoryV10(false);
-                                            setShowPGBaseView(false);
-                                            setShowSettings(false);
-                                            // COMYを開く
-                                            setShowCOMYView(true);
-                                            setBottomBarExpanded(false);
-                                        }
+                                        // 他のカテゴリを全て閉じる
+                                        setShowHistoryV10(false);
+                                        setShowPGBaseView(false);
+                                        setShowSettings(false);
+                                        // COMYを開く
+                                        setShowCOMYView(true);
+                                        setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showCOMYView ? 'bg-fuchsia-100' : (unlockedFeatures.includes('community') ? 'hover:bg-gray-50' : 'opacity-50')

@@ -8,6 +8,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     const [showFeatureUnlockModal, setShowFeatureUnlockModal] = useState(false);
     const [currentModalPage, setCurrentModalPage] = useState(1); // 1, 2, 3
 
+    // Premium誘導モーダル
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
     // 体組成の状態管理
     const [bodyComposition, setBodyComposition] = useState({
         weight: profile?.weight || 0,
@@ -42,6 +45,29 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             }, 300); // 少し遅延させてスムーズに表示
         }
     }); // 依存配列を空にせず、毎回実行
+
+    // 新機能開放モーダル完了後、Premium誘導モーダルを表示
+    useEffect(() => {
+        const checkUpgradeModalFlag = () => {
+            const featureUnlockCompleted = localStorage.getItem('featureUnlockModalsCompleted');
+            const upgradeModalPending = localStorage.getItem('showUpgradeModalPending');
+
+            if (featureUnlockCompleted === 'true' && upgradeModalPending === 'true') {
+                console.log('[Dashboard] Feature unlock completed. Showing upgrade modal...');
+                setShowUpgradeModal(true);
+                localStorage.removeItem('featureUnlockModalsCompleted');
+                localStorage.removeItem('showUpgradeModalPending');
+            }
+        };
+
+        // 初回チェック
+        checkUpgradeModalFlag();
+
+        // 定期的にチェック（500ms間隔）
+        const intervalId = setInterval(checkUpgradeModalFlag, 500);
+
+        return () => clearInterval(intervalId);
+    }, []);
 
     // 経験値・レベル情報の状態管理
     const [expData, setExpData] = useState({
@@ -904,10 +930,26 @@ ${Math.round(caloriesPercent)}%`
 
                                     dailyRecord.workouts.forEach(workout => {
                                         workout.exercises?.forEach(exercise => {
-                                            exercise.sets?.forEach(set => {
-                                                totalWeight += (set.weight || 0) * (set.reps || 0);
-                                                totalDuration += (set.duration || 0);
-                                            });
+                                            const isCardioOrStretch = exercise.exerciseType === 'aerobic' || exercise.exerciseType === 'stretch';
+
+                                            if (isCardioOrStretch) {
+                                                // 有酸素・ストレッチ: 新旧両方のデータ構造に対応
+                                                if (exercise.duration) {
+                                                    // 新形式: exercise.duration を直接加算
+                                                    totalDuration += exercise.duration;
+                                                } else if (exercise.sets) {
+                                                    // 旧形式: sets の中の duration を加算
+                                                    exercise.sets.forEach(set => {
+                                                        totalDuration += (set.duration || 0);
+                                                    });
+                                                }
+                                            } else {
+                                                // 筋トレ: sets の中の duration と weight を加算
+                                                exercise.sets?.forEach(set => {
+                                                    totalWeight += (set.weight || 0) * (set.reps || 0);
+                                                    totalDuration += (set.duration || 0);
+                                                });
+                                            }
                                         });
                                     });
 
@@ -948,16 +990,47 @@ ${Math.round(caloriesPercent)}%`
                                                     )}
                                                 </div>
                                                 <p className="text-sm text-gray-500 mb-2">{workout.time}</p>
-                                                {workout.exercises?.map((exercise, i) => (
-                                                    <div key={i} className="text-sm text-gray-600">
-                                                        <p className="font-medium">{exercise.name}</p>
-                                                        {exercise.sets?.map((set, si) => (
-                                                            <p key={si} className="text-xs">
-                                                                Set {si + 1}: {set.weight}kg × {set.reps}回
-                                                            </p>
-                                                        ))}
-                                                    </div>
-                                                ))}
+                                                {workout.exercises?.map((exercise, i) => {
+                                                    const isCardioOrStretch = exercise.exerciseType === 'aerobic' || exercise.exerciseType === 'stretch';
+
+                                                    // 総重量を計算（筋トレのみ）
+                                                    let totalVolume = 0;
+                                                    if (!isCardioOrStretch && exercise.sets) {
+                                                        totalVolume = exercise.sets.reduce((sum, set) => {
+                                                            return sum + (set.weight || 0) * (set.reps || 0);
+                                                        }, 0);
+                                                    }
+
+                                                    return (
+                                                        <div key={i} className="text-sm text-gray-600 mb-2">
+                                                            <p className="font-medium">{exercise.exercise?.name || exercise.name}</p>
+                                                            {isCardioOrStretch ? (
+                                                                // 有酸素・ストレッチ: 総時間のみ表示（新旧両データ構造対応）
+                                                                <p className="text-xs text-blue-600">
+                                                                    {exercise.duration
+                                                                        ? `${exercise.duration}分`
+                                                                        : exercise.sets
+                                                                            ? `${exercise.sets.reduce((sum, set) => sum + (set.duration || 0), 0)}分`
+                                                                            : '0分'}
+                                                                </p>
+                                                            ) : (
+                                                                // 筋トレ: セット詳細と総重量を表示
+                                                                <>
+                                                                    {exercise.sets?.map((set, si) => (
+                                                                        <p key={si} className="text-xs">
+                                                                            Set {si + 1}: {set.weight}kg × {set.reps}回
+                                                                        </p>
+                                                                    ))}
+                                                                    {totalVolume > 0 && (
+                                                                        <p className="text-xs text-orange-600 font-medium mt-1">
+                                                                            総重量: {totalVolume}kg
+                                                                        </p>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                             <div className="text-right">
                                                 <button
@@ -1609,13 +1682,93 @@ ${Math.round(caloriesPercent)}%`
                                     </button>
                                 ) : (
                                     <button
-                                        onClick={() => setShowFeatureUnlockModal(false)}
+                                        onClick={() => {
+                                            setShowFeatureUnlockModal(false);
+                                            // 新機能開放モーダル完了フラグを設定（初回分析完了モーダル表示トリガー）
+                                            localStorage.setItem('featureUnlockModalsCompleted', 'true');
+                                            console.log('[Dashboard] Feature unlock modals completed. Set flag for upgrade modal.');
+                                        }}
                                         className="w-2/3 bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors"
                                     >
                                         確認しました
                                     </button>
                                 )}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 初回分析完了＋Premium誘導モーダル */}
+            {showUpgradeModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
+                        {/* ヘッダー（紫グラデーション） */}
+                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white text-center relative">
+                            <button
+                                onClick={() => setShowUpgradeModal(false)}
+                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition"
+                            >
+                                <Icon name="X" size={20} />
+                            </button>
+                            <div className="mb-3">
+                                <Icon name="Crown" size={48} className="mx-auto mb-2" />
+                            </div>
+                            <h2 className="text-2xl font-bold mb-2">🎉 初回分析完了！</h2>
+                            <p className="text-sm opacity-90">AIがあなた専用の分析レポートを作成しました</p>
+                        </div>
+
+                        {/* コンテンツ */}
+                        <div className="p-6 space-y-4">
+                            {/* Premium会員の特典 */}
+                            <div className="space-y-3">
+                                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                                    <Icon name="Sparkles" size={18} className="text-purple-600" />
+                                    Premium会員になると...
+                                </h3>
+                                <div className="space-y-2">
+                                    {[
+                                        { icon: 'BarChart3', text: '毎月100回の分析クレジット', color: 'text-indigo-600' },
+                                        { icon: 'BookOpen', text: 'PG BASE 教科書で理論を学習', color: 'text-green-600' },
+                                        { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-purple-600' },
+                                        { icon: 'BookTemplate', text: '無制限のテンプレート保存', color: 'text-blue-600' },
+                                        { icon: 'Users', text: 'COMYで仲間と刺激し合う', color: 'text-pink-600' },
+                                        { icon: 'Zap', text: 'ショートカット機能で効率アップ', color: 'text-yellow-600' }
+                                    ].map((feature, idx) => (
+                                        <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
+                                            <Icon name={feature.icon} size={18} className={feature.color} />
+                                            <span className="text-sm text-gray-700">{feature.text}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 価格表示 */}
+                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 text-center">
+                                <p className="text-sm text-gray-600 mb-1">月額</p>
+                                <p className="text-4xl font-bold text-purple-600 mb-1">¥740</p>
+                                <p className="text-xs text-gray-600">1日あたり約24円</p>
+                            </div>
+
+                            {/* CTA ボタン */}
+                            <button
+                                onClick={() => {
+                                    setShowUpgradeModal(false);
+                                    alert('サブスクリプション画面は準備中です');
+                                }}
+                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg flex items-center justify-center gap-2"
+                            >
+                                <Icon name="Crown" size={20} />
+                                Premium会員に登録する
+                            </button>
+
+                            {/* 後で */}
+                            <button
+                                onClick={() => setShowUpgradeModal(false)}
+                                className="w-full text-gray-600 text-sm hover:text-gray-800 transition"
+                            >
+                                後で確認する
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -65,7 +65,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         trainingBoost: userProfile.trainingBoost !== undefined ? userProfile.trainingBoost : true,
         sleepAdjustment: userProfile.sleepAdjustment !== undefined ? userProfile.sleepAdjustment : true,
         stressAdjustment: userProfile.stressAdjustment !== undefined ? userProfile.stressAdjustment : true,
-        usePurposeBased: userProfile.usePurposeBased !== false // デフォルトは目的別モード（falseが明示的に設定されていない限り）
+        usePurposeBased: userProfile.usePurposeBased !== false // デフォルトは目的別モード（falseが明示的に設定されている場合のみfalse）
     });
     const [localRoutines, setLocalRoutines] = useState(() => {
         const saved = localStorage.getItem(STORAGE_KEYS.ROUTINES);
@@ -77,7 +77,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const [showTemplateEditModal, setShowTemplateEditModal] = useState(false); // テンプレート編集モーダル表示
     const [templateEditType, setTemplateEditType] = useState(null); // 'meal' or 'workout'
     const [selectedTemplateForEdit, setSelectedTemplateForEdit] = useState(null); // 編集対象のテンプレート
-
     // テンプレート読み込み
     useEffect(() => {
         loadTemplates();
@@ -93,7 +92,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             // 新しい経験値システムから取得
             const expInfo = await ExperienceService.getUserExperience(userId);
 
-            // Premium会員かどうか判定
+            // Premium会員かどうかの判定
             const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
 
             setCreditInfo({
@@ -219,13 +218,13 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     </button>
                 </div>
 
-                {/* 設定メニュー（折りたたみ式一覧） */}
+                {/* 設定メニュー）折りたたみ式一覧を*/}
                 <div className="p-6 space-y-3">
-                    {/* 使い方 */}
+                    {/* 使用 */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="BookOpen" size={18} className="text-purple-600" />
-                            使い方
+                            使用
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
@@ -239,7 +238,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
                                         <div>
                                             <p className="font-bold text-indigo-900">プロフィール設定</p>
-                                            <p className="text-xs text-gray-600">体重・体脂肪率・目的を入力 → LBM自動計算 → 個別化基準値決定</p>
+                                            <p className="text-xs text-gray-600">体重・体脂肪率・目標を入力→LBM自動計算→個別化基準値決定</p>
                                         </div>
                                     </div>
                                     <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
@@ -249,7 +248,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
                                         <div>
                                             <p className="font-bold text-indigo-900">毎日の記録</p>
-                                            <p className="text-xs text-gray-600">食事・トレーニング・サプリを記録 → PFC・ビタミン・ミネラル自動集計</p>
+                                            <p className="text-xs text-gray-600">食事・トレーニング・サプリを記録→PFC・ビタミン・ミネラル自動集計</p>
                                         </div>
                                     </div>
                                     <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
@@ -259,7 +258,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
                                         <div>
                                             <p className="font-bold text-indigo-900">達成状況を確認</p>
-                                            <p className="text-xs text-gray-600">ダッシュボードで目標値との比較 → 不足栄養素を特定</p>
+                                            <p className="text-xs text-gray-600">ダッシュボードで目標値との比較→不足栄養素を特定</p>
                                         </div>
                                     </div>
                                     <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
@@ -269,7 +268,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">4</div>
                                         <div>
                                             <p className="font-bold text-indigo-900">調整・最適化</p>
-                                            <p className="text-xs text-gray-600">食事内容を調整 → 1-12週間サイクルで継続</p>
+                                            <p className="text-xs text-gray-600">食事内容を調整→1-12週間サイクルで継続</p>
                                         </div>
                                     </div>
                                     <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
@@ -279,7 +278,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm">✓</div>
                                         <div>
                                             <p className="font-bold text-green-900">目標達成</p>
-                                            <p className="text-xs text-gray-600">理想の身体へ！365日継続でキープ</p>
+                                            <p className="text-xs text-gray-600">理想の身体へ→65日継続でキープ</p>
                                         </div>
                                     </div>
                                 </div>
@@ -313,14 +312,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         </div>
                                                     </div>
                                                     <div className="bg-gray-50 p-3 rounded-lg mb-3">
-                                                        <p className="text-sm font-medium text-gray-700 mb-1">分析クレジット</p>
+                                                        <p className="text-sm font-medium text-gray-700 mb-1">残りクレジット</p>
                                                         <p className="text-2xl font-bold text-indigo-600">{creditInfo.remainingCredits} 回</p>
                                                     </div>
                                                     <button
                                                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
-                                                        onClick={() => alert('サブスクリプション画面（実装予定）')}
+                                                        onClick={() => alert('サブスクリプション画面は実装予定！')}
                                                     >
-                                                        月額740円でPremium登録
+                                                        月額400円でPremium登録
                                                     </button>
                                                 </div>
                                             ) : (
@@ -329,19 +328,19 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         <Icon name="AlertCircle" size={24} className="text-red-600" />
                                                         <div>
                                                             <p className="font-bold text-gray-800">無料期間終了</p>
-                                                            <p className="text-sm text-gray-600">分析を続けるにはPremium登録が必要です</p>
+                                                            <p className="text-sm text-gray-600">残りを続けるにはPremium登録が必要です</p>
                                                         </div>
                                                     </div>
                                                     <div className="space-y-2">
                                                         <button
                                                             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
-                                                            onClick={() => alert('サブスクリプション画面（実装予定）')}
+                                                            onClick={() => alert('サブスクリプション画面は実装予定！')}
                                                         >
-                                                            月額740円でPremium登録
+                                                            月額400円でPremium登録
                                                         </button>
                                                         <button
                                                             className="w-full bg-gray-600 text-white font-bold py-3 rounded-lg hover:bg-gray-700"
-                                                            onClick={() => alert('クレジット購入画面（実装予定）')}
+                                                            onClick={() => alert('クレジット購入画面は実装予定！')}
                                                         >
                                                             クレジット追加購入
                                                         </button>
@@ -386,14 +385,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             {creditInfo.totalCredits < 20 && (
                                                 <button
                                                     className="w-full bg-purple-600 text-white font-bold py-2 rounded-lg hover:bg-purple-700 mb-2"
-                                                    onClick={() => alert('クレジット追加購入画面（実装予定）')}
+                                                    onClick={() => alert('クレジット追加購入画面は実装予定！')}
                                                 >
                                                     クレジット追加購入
                                                 </button>
                                             )}
                                             <button
                                                 className="w-full bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300"
-                                                onClick={() => confirm('サブスクリプションを解約しますか？') && alert('解約処理（実装予定）')}
+                                                onClick={() => confirm('サブスクリプションを解約しますか？') && alert('解約処理は実装予定！')}
                                             >
                                                 サブスクリプション解約
                                             </button>
@@ -405,7 +404,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                                             <p className="text-sm text-yellow-800">
                                                 <Icon name="Code" size={16} className="inline mr-1" />
-                                                開発モード: すべてのPremium機能が有効
+                                                開発モード：すべてのPremium機能が有効
                                             </p>
                                         </div>
                                     )}
@@ -504,7 +503,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
                                             </div>
                                             <p className="text-xs text-gray-500 pt-2">
-                                                ※ Gemini API利用1回につき1クレジット消費
+                                                ※ Gemini API利用1回につきクレジット消費
                                             </p>
                                         </div>
                                     </div>
@@ -565,7 +564,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
-                            {/* プロフィール内容 */}
+                            {/* プロフィール入力 */}
                             <div className="space-y-3">
 
                                     {/* STEP 1: 個人情報 */}
@@ -652,7 +651,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-medium mb-1.5">理想の体脂肪率 (%)</label>
+                                                <label className="block text-sm font-medium mb-1.5">理想の体脂肪率(%)</label>
                                                 <input
                                                     type="number"
                                                     step="0.1"
@@ -673,7 +672,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                             {profile.idealLBM && (
                                                 <div className="bg-purple-50 p-3 rounded-lg border border-purple-300">
-                                                    <p className="text-xs font-medium text-purple-700">理想のLBM（自動計算）</p>
+                                                    <p className="text-xs font-medium text-purple-700">理想のLBMを自動計算！</p>
                                                     <p className="text-lg font-bold text-purple-900 mt-1">
                                                         {profile.idealLBM.toFixed(1)} kg
                                                     </p>
@@ -703,20 +702,15 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         show: true,
                                                         title: '活動レベルとTDEE計算',
                                                         content: `あなたの日常生活がどれだけ活動的かを数値化したものです。この係数を基礎代謝量に掛けることで、1日の大まかな消費カロリー（TDEE）を算出します。
+【TDEE計算式】TDEE = 基礎代謝（BMR) × 活動レベル係数
 
-【TDEE計算式】
-TDEE = 基礎代謝(BMR) × 活動レベル係数
-
-【現在の計算結果】
-• 基礎代謝(BMR): ${Math.round(bmr)}kcal
+【現在の計算結果】• 基礎代謝（BMR): ${Math.round(bmr)}kcal
 • 活動レベル係数: ${multiplier.toFixed(2)}x
 • TDEE: ${Math.round(tdee)}kcal
 
-【計算の内訳】
-${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
+【計算の詳細】${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
 
-【重要】
-これはあくまで日常生活の活動量であり、トレーニングによる消費カロリーは、より精密な『PG式』で別途計算されます。より正確な設定をしたい方は、係数を直接入力することも可能です。`
+【重要】これはあくまで日常生活の活動量であり、トレーニングによる消費カロリーは、より精密な『PG式』で別途計算されます。より正確な設定をしたい場合は、係数を直接入力することも可能です。`
                                                     });
                                                 }}
                                                 className="text-indigo-600 hover:text-indigo-800"
@@ -731,11 +725,11 @@ ${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
                                                 className="w-full px-3 py-2 border rounded-lg"
                                                 disabled={profile.customActivityMultiplier}
                                             >
-                                                <option value={1}>デスクワーク中心 - 1.05x</option>
+                                                <option value={1}>デスクワーク中心- 1.05x</option>
                                                 <option value={2}>立ち仕事が多い - 1.225x</option>
-                                                <option value={3}>軽い肉体労働 - 1.4x</option>
-                                                <option value={4}>重い肉体労働 - 1.575x</option>
-                                                <option value={5}>非常に激しい肉体労働 - 1.75x</option>
+                                                <option value={3}>軽い体労僁E- 1.4x</option>
+                                                <option value={4}>重い肉体労働- 1.575x</option>
+                                                <option value={5}>非常に激しい肉体労働- 1.75x</option>
                                             </select>
                                         )}
                                         {profile.customActivityMultiplier && (
@@ -747,7 +741,7 @@ ${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
                                         )}
                                         {showCustomMultiplierInput && !profile.customActivityMultiplier && (
                                             <div className="mt-2 p-3 bg-gray-50 border rounded-lg space-y-2">
-                                                <label className="block text-sm font-medium">係数を入力 (1.0〜2.5)</label>
+                                                <label className="block text-sm font-medium">係数を入力(1.0〜2.5)</label>
                                                 <input
                                                     type="number"
                                                     step="0.01"
@@ -756,7 +750,7 @@ ${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
                                                     value={customMultiplierInputValue}
                                                     onChange={(e) => setCustomMultiplierInputValue(e.target.value)}
                                                     className="w-full px-3 py-2 border rounded-lg"
-                                                    placeholder="例: 1.45"
+                                                    placeholder="例 1.45"
                                                 />
                                                 <div className="flex gap-2">
                                                     <button
@@ -773,8 +767,7 @@ ${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
                                                         }}
                                                         className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                                                     >
-                                                        設定
-                                                    </button>
+                                                        設定                                                    </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => {
@@ -806,43 +799,30 @@ ${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
                                         </button>
                                     </div>
 
-                                    {/* STEP 3: 目的・カロリー設定 */}
+                                    {/* STEP 3: 目的別カロリー設定*/}
                                     <div className="border-l-4 border-orange-500 pl-4">
-                                        <h4 className="text-xs font-bold text-orange-700 mb-2">STEP 3: 目的・カロリー設定</h4>
+                                        <h4 className="text-xs font-bold text-orange-700 mb-2">STEP 3: 目的別カロリー設定</h4>
                                         <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
-                                            目的
-                                            <button
+                                            目的                                            <button
                                                 type="button"
                                                 onClick={() => setInfoModal({
                                                     show: true,
-                                                    title: '目的の設定',
+                                                    title: '目的別設定',
                                                     content: `あなたのボディメイクの目的を選択してください。目的に応じて推奨カロリーとPFCバランスが自動調整されます。
-
-【ダイエット（脂肪を落とす）】
-• 目標: 体脂肪を減らし、引き締まった体を作る
+【ダイエット（脂肪を落とす）】• 目標： 体脂肪を減らし、引き締まった体を作る
 • カロリー: メンテナンスカロリー -300kcal
-• タンパク質: 高め（筋肉維持のため）
-• 推奨ペース: 週0.5〜0.7kg減
-
-【メンテナンス（現状維持）】
-• 目標: 現在の体重・体組成を維持
+• タンパク質: 高め（筋肉維持のため）• 推奨ペース: 週0.5〜0.7kg減
+【メンテナンス（現状維持）】• 目標： 現在の体重・体組成を維持
 • カロリー: メンテナンスカロリー ±0kcal
-• バランス型の栄養配分
-• 健康的な生活習慣の維持
-
-【バルクアップ（筋肉をつける）】
-• 目標: 筋肉量を増やし、体を大きくする
+• バランス型の栄養配分• 健康的生活習慣の維持
+【バルクアップ（筋肉をつける）】• 目標： 筋肉量を増やし、体を大きくする
 • カロリー: メンテナンスカロリー +300kcal
 • タンパク質: 非常に高め
-• 炭水化物: 多め（筋肉合成のエネルギー）
-• 推奨ペース: 週0.5kg増
-
-【リコンプ（体組成改善）】
-• 目標: 脂肪を落としながら筋肉をつける
+• 炭水化物: 多め（筋肉合成のエネルギー）• 推奨ペース: 週0.5kg増
+【リコンプ（体組成改善）】• 目標： 脂肪を落としながら筋肉をつける
 • カロリー: メンテナンスカロリー ±0kcal
 • タンパク質: 非常に高め
 • トレーニング強度が最重要
-
 目的はいつでも変更できます。`
                                                 })}
                                                 className="text-indigo-600 hover:text-indigo-800"
@@ -851,7 +831,7 @@ ${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
                                             </button>
                                         </label>
 
-                                        {/* 目的選択ボタン（縦並び） */}
+                                        {/* 目的選択（ボタン、縦並び）*/}
                                         <div className="space-y-2 mb-3">
                                             {[
                                                 { value: 'ダイエット', label: 'ダイエット', sub: '脂肪を落とす', adjust: -300 },
@@ -893,7 +873,7 @@ ${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
                                         <div className="mt-3">
                                             <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
                                                 <div className="flex flex-col">
-                                                    <span>カロリー調整値（kcal/日）</span>
+                                                    <span>カロリー調整値kcal/日</span>
                                                     <span className="text-xs text-gray-500 font-normal mt-0.5">メンテナンスから±調整</span>
                                                 </div>
                                                 <button
@@ -906,40 +886,23 @@ ${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
                                                         setInfoModal({
                                                             show: true,
                                                             title: 'カロリー調整値と目標摂取カロリー',
-                                                            content: `メンテナンスカロリー（TDEE）からの調整値を設定します。
+                                                            content: `メンテナンスカロリーをDEE）からの調整値を設定します。
+【目標摂取カロリー計算式。目標摂取カロリー = TDEE + カロリー調整値
 
-【目標摂取カロリー計算式】
-目標摂取カロリー = TDEE + カロリー調整値
-
-【現在の計算結果】
-• TDEE: ${Math.round(tdee)}kcal
+【現在の計算結果。• TDEE: ${Math.round(tdee)}kcal
 • カロリー調整値: ${profile.calorieAdjustment >= 0 ? '+' : ''}${profile.calorieAdjustment || 0}kcal
 • 目標摂取カロリー: ${Math.round(targetCalories)}kcal/日
 
-【計算の内訳】
-${Math.round(tdee)}kcal ${profile.calorieAdjustment >= 0 ? '+' : ''} ${profile.calorieAdjustment || 0}kcal = ${Math.round(targetCalories)}kcal
+【計算の詳細】${Math.round(tdee)}kcal ${profile.calorieAdjustment >= 0 ? '+' : ''} ${profile.calorieAdjustment || 0}kcal = ${Math.round(targetCalories)}kcal
 
-【推奨範囲: ±300kcal】
-安全で持続可能なペースで体重を変化させるための推奨範囲です。
-
-【ダイエット時（マイナス値）】
-• -200kcal: 穏やか（週0.5kg減）
-• -300kcal: 標準的（週0.7kg減）★推奨
-• -400kcal以上: 急激（リバウンドリスク高）
-
-【バルクアップ時（プラス値）】
-• +200kcal: 控えめ（週0.25kg増）
-• +300kcal: 標準的（週0.5kg増）★推奨
-• +400kcal以上: 積極的（脂肪増加リスク高）
-
-【メンテナンス時】
-• 0kcal: 現状維持
-
-【リコンプ時】
-• 0kcal: 体組成改善（トレーニングが重要）
-
-【注意】
-極端なカロリー調整は、代謝の低下、筋肉の減少、リバウンドのリスクを高めます。±200〜300kcalの範囲で調整することを強く推奨します。`
+【推奨範囲: ±300kcal。安全で持続可能なペースで体重を変化させるための推奨範囲です。
+【ダイエット時（マイナス値）】• -200kcal: 穏やか（週0.5kg減）• -300kcal: 標準的（週0.7kg減）を推奨
+• -400kcal以上： 急激（リバウンドリスク高）
+【バルクアップ時（プラス値）】• +200kcal: 控えめ（週0.25kg増）• +300kcal: 標準的（週0.5kg増）を推奨
+• +400kcal以上： 積極的（脂肪増加リスク高）
+【メンテナンス時】• 0kcal: 現状維持
+【リコンプ時】• 0kcal: 体組成改善はトレーニングが重要
+【注意】極端なカロリー調整は、代謝の低下、筋肉の減少、リバウンドのリスクを高めます。±200〜300kcalの範囲で調整することを強く推奨します。`
                                                         });
                                                     }}
                                                     className="text-indigo-600 hover:text-indigo-800"
@@ -961,11 +924,11 @@ ${Math.round(tdee)}kcal ${profile.calorieAdjustment >= 0 ? '+' : ''} ${profile.c
                                         </div>
                                     </div>
 
-                                    {/* STEP 4: PFCバランス設定 */}
+                                    {/* STEP 4: PFCバランス設定*/}
                                     <div className="border-l-4 border-purple-500 pl-4">
                                         <h4 className="text-xs font-bold text-purple-700 mb-2">STEP 4: PFCバランス設定</h4>
 
-                                        {/* スタイル選択 */}
+                                        {/* スタイル選択*/}
                                         <div className="mb-3">
                                             <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
                                                 トレーニングスタイル
@@ -975,21 +938,14 @@ ${Math.round(tdee)}kcal ${profile.calorieAdjustment >= 0 ? '+' : ''} ${profile.c
                                                         show: true,
                                                         title: 'トレーニングスタイル',
                                                         content: `スタイルによってタンパク質の推奨係数とAI分析の評価基準が変わります。
+【一般。・LBM ×1.0倍のタンパク質係数
+・健康維持や日常的トレーニング向け
+・運動基準 15分以上の時間
 
-【一般】
-・LBM × 1.0倍のタンパク質係数
-・健康維持や日常的なトレーニング向け
-・運動基準: 15分〜1時間
-
-【ボディメイカー系】
-・LBM × 2.0倍のタンパク質係数
+【ボディメイカー系。・LBM ×2.0倍のタンパク質係数
 ・高強度のトレーニング向け
-・運動基準: 30分〜2時間以上
-
-  筋肥大: 高重量・ボリューム重視
-  筋力: 最大筋力・パワー向上
-  持久力: 有酸素・スタミナ重視
-  バランス: 総合的な身体能力`
+・運動基準 30分以上の時間
+  筋肥大: 高重量のボリューム重視  筋力: 最大筋力・パワー向上  持久力: 有酸素・スタミナ重視  バランス: 総合的身体向き`
                                                     })}
                                                     className="text-indigo-600 hover:text-indigo-800"
                                                 >
@@ -1003,7 +959,7 @@ ${Math.round(tdee)}kcal ${profile.calorieAdjustment >= 0 ? '+' : ''} ${profile.c
                                             >
                                                 <option value="一般">一般（健康維持）</option>
                                                 <optgroup label="ボディメイカー">
-                                                    <option value="筋肥大">筋肥大（高重量・ボリューム）</option>
+                                                    <option value="筋肥大">筋肥大（高重量のボリューム）</option>
                                                     <option value="筋力">筋力（最大筋力）</option>
                                                     <option value="持久力">持久力（有酸素）</option>
                                                     <option value="バランス">バランス（総合）</option>
@@ -1012,8 +968,7 @@ ${Math.round(tdee)}kcal ${profile.calorieAdjustment >= 0 ? '+' : ''} ${profile.c
                                         </div>
 
                                         <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
-                                            PFCバランス（目標比率）
-                                            <button
+                                            PFCバランス）目標比率を                                            <button
                                                 type="button"
                                                 onClick={() => {
                                                     const lbm = profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
@@ -1052,24 +1007,20 @@ ${Math.round(tdee)}kcal ${profile.calorieAdjustment >= 0 ? '+' : ''} ${profile.c
 
                                                     setInfoModal({
                                                         show: true,
-                                                        title: 'PFCバランスと目的別推奨値',
+                                                        title: 'PFCバランスと目的推奨値',
                                                         content: `タンパク質(P)、脂質(F)、炭水化物(C)の目標比率を設定します。
-
-【📊 目的別推奨値】
-${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
+【📌 目的別推奨値】${lifestyle} ×${purpose} (LBM ${lbm.toFixed(1)}kg ×${coefficient}倍
 
 🔴 タンパク質: ${proteinG}g (${proteinCal}kcal, ${proteinPercent}%)
 🟡 脂質: ${fatG}g (${Math.round(fatCal)}kcal, ${fatPercent}%)
 🟢 炭水化物: ${carbG}g (${Math.round(carbCal)}kcal, ${carbPercent}%)
-━━━━━━━━━━━━━━━━━━━━━
-合計: ${Math.round(targetCalories)}kcal
+━━━━━━━━━━━━━━━━━━━━━E合計 ${Math.round(targetCalories)}kcal
 
-【カスタム比率のデフォルト値】
-🔴 タンパク質: 30%
+【カスタム比率のデフォルト値。🔴 タンパク質: 30%
 🟡 脂質: 25%
 🟢 炭水化物: 45%
 
-合計は必ず100%になるように自動調整されます。`
+合計は必須100%になるように自動調整されます。`
                                                     });
                                                 }}
                                                 className="text-indigo-600 hover:text-indigo-800"
@@ -1078,7 +1029,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                             </button>
                                         </label>
 
-                                        {/* モード選択 */}
+                                        {/* モード選択*/}
                                         <div className="mb-2">
                                             <div className="flex gap-2">
                                                 <button
@@ -1116,7 +1067,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                             </div>
                                         </div>
 
-                                        {/* カスタム比率設定（カスタムモード時のみ表示） */}
+                                        {/* カスタム比率設定（カスタムモード時のみ表示を*/}
                                         {advancedSettings.usePurposeBased === false && (
                                         <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
                                             {/* タンパク質 */}
@@ -1201,9 +1152,9 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                 />
                                             </div>
                                             <div className="text-xs text-gray-600 pt-2 border-t">
-                                                合計: {(advancedSettings.proteinRatio || 30) + (advancedSettings.fatRatioPercent || 25) + (advancedSettings.carbRatio || 45)}%
+                                                合計 {(advancedSettings.proteinRatio || 30) + (advancedSettings.fatRatioPercent || 25) + (advancedSettings.carbRatio || 45)}%
                                                 {((advancedSettings.proteinRatio || 30) + (advancedSettings.fatRatioPercent || 25) + (advancedSettings.carbRatio || 45)) === 100 &&
-                                                    <span className="text-green-600 ml-2">✓ バランス良好</span>
+                                                    <span className="text-green-600 ml-2">✓バランス良好</span>
                                                 }
                                             </div>
                                         </div>
@@ -1215,8 +1166,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                 onClick={handleSave}
                                 className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition"
                             >
-                                保存
-                            </button>
+                                保存                            </button>
                             </div>
                         </div>
                     </details>
@@ -1229,9 +1179,9 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
-                            <p className="text-sm text-gray-600 mb-4">画面左右のショートカットボタンをカスタマイズできます。各項目の表示位置と順番を変更できます。</p>
+                            <p className="text-sm text-gray-600 mb-4">画面左右のショートカットボタンをカスタマイズできます。各項目の表示位置と項目を変更できます。</p>
 
-                            {/* 表示/非表示切り替え */}
+                            {/* 表示/非表示分析切替*/}
                             <div className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
@@ -1324,7 +1274,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                             { action: 'open_meal_photo', label: '写真解析', icon: 'Camera', color: 'text-green-600' },
                                             { action: 'open_workout', label: '運動', icon: 'Dumbbell', color: 'text-orange-600' },
                                             { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
-                                            { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
+                                            { action: 'open_idea', label: '思い', icon: 'Lightbulb', color: 'text-yellow-500' },
                                             { action: 'open_analysis', label: '分析', icon: 'PieChart', color: 'text-indigo-600' },
                                             { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
                                             { action: 'open_pgbase', label: 'PGBASE', icon: 'BookOpen', color: 'text-cyan-600' },
@@ -1332,8 +1282,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                             { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
                                         ];
 
-                                        // 左側の項目リストを取得
-                                        const leftShortcuts = shortcuts
+                                        // 左側の項目リストを取得                                        const leftShortcuts = shortcuts
                                             .filter(s => s.side === 'left' && s.enabled)
                                             .sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -1410,13 +1359,11 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                             const action = e.target.value;
                                                             const maxOrder = Math.max(...shortcuts.filter(s => s.side === 'left' && s.enabled).map(s => s.order || 0), -1);
 
-                                                            // 既存の項目を探す
-                                                            const existingIndex = shortcuts.findIndex(s => s.action === action);
+                                                            // 既存の項目を探す                                                            const existingIndex = shortcuts.findIndex(s => s.action === action);
                                                             let updated;
 
                                                             if (existingIndex !== -1) {
-                                                                // 既存項目を有効化
-                                                                updated = shortcuts.map((s, i) =>
+                                                                // 既存項目を有効化                                                                updated = shortcuts.map((s, i) =>
                                                                     i === existingIndex ? { ...s, side: 'left', enabled: true, order: maxOrder + 1 } : s
                                                                 );
                                                             } else {
@@ -1502,7 +1449,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                             { action: 'open_meal_photo', label: '写真解析', icon: 'Camera', color: 'text-green-600' },
                                             { action: 'open_workout', label: '運動', icon: 'Dumbbell', color: 'text-orange-600' },
                                             { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
-                                            { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
+                                            { action: 'open_idea', label: '思い', icon: 'Lightbulb', color: 'text-yellow-500' },
                                             { action: 'open_analysis', label: '分析', icon: 'PieChart', color: 'text-indigo-600' },
                                             { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
                                             { action: 'open_pgbase', label: 'PGBASE', icon: 'BookOpen', color: 'text-cyan-600' },
@@ -1510,8 +1457,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                             { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
                                         ];
 
-                                        // 右側の項目リストを取得
-                                        const rightShortcuts = shortcuts
+                                        // 右側の項目リストを取得                                        const rightShortcuts = shortcuts
                                             .filter(s => s.side === 'right' && s.enabled)
                                             .sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -1588,13 +1534,11 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                             const action = e.target.value;
                                                             const maxOrder = Math.max(...shortcuts.filter(s => s.side === 'right' && s.enabled).map(s => s.order || 0), -1);
 
-                                                            // 既存の項目を探す
-                                                            const existingIndex = shortcuts.findIndex(s => s.action === action);
+                                                            // 既存の項目を探す                                                            const existingIndex = shortcuts.findIndex(s => s.action === action);
                                                             let updated;
 
                                                             if (existingIndex !== -1) {
-                                                                // 既存項目を有効化
-                                                                updated = shortcuts.map((s, i) =>
+                                                                // 既存項目を有効化                                                                updated = shortcuts.map((s, i) =>
                                                                     i === existingIndex ? { ...s, side: 'right', enabled: true, order: maxOrder + 1 } : s
                                                                 );
                                                             } else {
@@ -1631,18 +1575,17 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                         </div>
                     </details>
 
-                    {/* テンプレート */}
+                    {/* テンプレート*/}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="BookTemplate" size={18} className="text-purple-600" />
-                            テンプレート
-                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                            テンプレート                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
                         <div className="space-y-4">
                             <p className="text-sm text-gray-600">保存したテンプレートを管理できます。ルーティンに紐づけて使用することも可能です。</p>
 
-                            {/* 食事テンプレート */}
+                            {/* 食事テンプレート*/}
                             <div className="border rounded-lg p-4">
                                 <div className="mb-3">
                                     <h3 className="font-semibold text-green-800 mb-2">食事テンプレート</h3>
@@ -1690,7 +1633,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                             <button
                                                                 onClick={async (e) => {
                                                                     e.preventDefault();
-                                                                    if (confirm('このテンプレートを削除しますか？')) {
+                                                                    if (confirm('このテンプレートを削除しますか？)) {
                                                                         await DataService.deleteMealTemplate(userId, template.id);
                                                                         await loadTemplates();
                                                                     }
@@ -1736,7 +1679,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                 )}
                             </div>
 
-                            {/* 運動テンプレート */}
+                            {/* 運動テンプレート*/}
                             <div className="border rounded-lg p-4">
                                 <div className="mb-3">
                                     <h3 className="font-semibold text-orange-800 mb-2">運動テンプレート</h3>
@@ -1781,7 +1724,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                             <button
                                                                 onClick={async (e) => {
                                                                     e.preventDefault();
-                                                                    if (confirm('このテンプレートを削除しますか？')) {
+                                                                    if (confirm('このテンプレートを削除しますか？)) {
                                                                         await DataService.deleteWorkoutTemplate(userId, template.id);
                                                                         await loadTemplates();
                                                                     }
@@ -1828,13 +1771,12 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
-                            {/* ルーティン内容 */}
+                            {/* ルーティン作成 */}
                             <div className="space-y-4">
                             <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
                                 <h4 className="font-bold text-purple-900 mb-2">ルーティン管理</h4>
                                 <p className="text-sm text-purple-700">
-                                    Day1~7のデフォルトルーティンと、最大5つまで追加可能な追加枠を設定できます。
-                                </p>
+                                    Day1~7のデフォルトルーティンと、最大5つまで追加可能な追加枠を設定できます。                                </p>
                             </div>
 
                             {(() => {
@@ -1850,7 +1792,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
 
                                 const addRoutine = () => {
                                     if (localRoutines.length >= 12) {
-                                        alert('ルーティンは最大12個（Day7 + 追加5枠）まで設定できます');
+                                        alert('ルーティンは最大12個！ay7 + 追加5枠）まで設定できます);
                                         return;
                                     }
                                     const nextId = Math.max(...localRoutines.map(r => r.id), 0) + 1;
@@ -1869,7 +1811,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                         alert('Day1~7は削除できません');
                                         return;
                                     }
-                                    if (confirm('この追加枠を削除しますか？')) {
+                                    if (confirm('この追加枠を削除しますか？)) {
                                         const updated = localRoutines.filter(r => r.id !== id);
                                         saveRoutines(updated);
                                     }
@@ -1900,18 +1842,18 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                                     })}
                                                                     className="rounded"
                                                                 />
-                                                                休息日
+                                                                休養日
                                                             </label>
                                                         </div>
                                                         {!routine.isRestDay && (
                                                             <div className="space-y-3">
                                                                 <div>
-                                                                    <label className="font-medium text-sm">分割法</label>
+                                                                    <label className="font-medium text-sm">分類</label>
                                                                     <select
                                                                         value={routine.splitType}
                                                                         onChange={(e) => {
                                                                             if (e.target.value === '__custom__') {
-                                                                                const custom = prompt('分割法を入力してください（例: 胸・三頭・肩）', routine.splitType);
+                                                                                const custom = prompt('分割法を入力してください（例：胸・三頭・肩）', routine.splitType);
                                                                                 if (custom !== null) {
                                                                                     updateRoutine(routine.id, { splitType: custom });
                                                                                 }
@@ -1924,9 +1866,9 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                                         <option value="">選択してください</option>
                                                                         <option value="胸">胸</option>
                                                                         <option value="背中">背中</option>
-                                                                        <option value="脚">脚</option>
+                                                                        <option value="胸">胸</option>
                                                                         <option value="肩">肩</option>
-                                                                        <option value="腕">腕</option>
+                                                                        <option value="背">背</option>
                                                                         <option value="尻">尻</option>
                                                                         <option value="腹筋・体幹">腹筋・体幹</option>
                                                                         <option value="上半身">上半身</option>
@@ -1938,19 +1880,18 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                                         <option value="胸・三頭">胸・三頭</option>
                                                                         <option value="背中・二頭">背中・二頭</option>
                                                                         <option value="肩・腕">肩・腕</option>
-                                                                        <option value="__custom__">✏️ カスタム入力...</option>
+                                                                        <option value="__custom__">✏️ カスタム入力..</option>
                                                                     </select>
                                                                 </div>
 
-                                                                {/* テンプレート紐づけ */}
+                                                                {/* テンプレート紐づけ*/}
                                                                 <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                                                     <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
                                                                         <Icon name="BookTemplate" size={14} />
-                                                                        テンプレート紐づけ
-                                                                        <Icon name="ChevronDown" size={14} className="ml-auto" />
+                                                                        テンプレート紐づけ                                                                        <Icon name="ChevronDown" size={14} className="ml-auto" />
                                                                     </summary>
                                                                     <div className="space-y-2 mt-3">
-                                                                        {/* 食事テンプレート */}
+                                                                        {/* 食事テンプレート*/}
                                                                         <div>
                                                                             <label className="text-xs text-gray-600">食事</label>
                                                                             <select
@@ -1965,7 +1906,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                                             </select>
                                                                         </div>
 
-                                                                        {/* トレーニングテンプレート */}
+                                                                        {/* トレーニングテンプレート*/}
                                                                         <div>
                                                                             <label className="text-xs text-gray-600">トレーニング</label>
                                                                             <select
@@ -1982,8 +1923,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
 
                                                                     </div>
                                                                     <p className="text-xs text-yellow-700 mt-2">
-                                                                        紐づけたテンプレートは、記録画面で自動的に読み込まれます
-                                                                    </p>
+                                                                        紐づけたテンプレートは、記録画面で自動的に読み込まれます                                                                    </p>
                                                                 </details>
                                                             </div>
                                                         )}
@@ -2024,18 +1964,18 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                                         })}
                                                                         className="rounded"
                                                                     />
-                                                                    休息日
+                                                                    休養日
                                                                 </label>
                                                             </div>
                                                             {!routine.isRestDay && (
                                                                 <div className="space-y-3">
                                                                     <div>
-                                                                        <label className="font-medium text-sm">分割法</label>
+                                                                        <label className="font-medium text-sm">分類</label>
                                                                         <select
                                                                             value={routine.splitType}
                                                                             onChange={(e) => {
                                                                                 if (e.target.value === '__custom__') {
-                                                                                    const custom = prompt('分割法を入力してください（例: 胸・三頭・肩）', routine.splitType);
+                                                                                    const custom = prompt('分割法を入力してください（例：胸・三頭・肩）', routine.splitType);
                                                                                     if (custom !== null) {
                                                                                         updateRoutine(routine.id, { splitType: custom });
                                                                                     }
@@ -2048,9 +1988,9 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                                             <option value="">選択してください</option>
                                                                             <option value="胸">胸</option>
                                                                             <option value="背中">背中</option>
-                                                                            <option value="脚">脚</option>
+                                                                            <option value="胸">胸</option>
                                                                             <option value="肩">肩</option>
-                                                                            <option value="腕">腕</option>
+                                                                            <option value="背">背</option>
                                                                             <option value="尻">尻</option>
                                                                             <option value="腹筋・体幹">腹筋・体幹</option>
                                                                             <option value="上半身">上半身</option>
@@ -2062,19 +2002,18 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                                             <option value="胸・三頭">胸・三頭</option>
                                                                             <option value="背中・二頭">背中・二頭</option>
                                                                             <option value="肩・腕">肩・腕</option>
-                                                                            <option value="__custom__">✏️ カスタム入力...</option>
+                                                                            <option value="__custom__">✏️ カスタム入力..</option>
                                                                         </select>
                                                                     </div>
 
-                                                                    {/* テンプレート紐づけ */}
+                                                                    {/* テンプレート紐づけ*/}
                                                                     <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                                                         <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
                                                                             <Icon name="BookTemplate" size={14} />
-                                                                            テンプレート紐づけ
-                                                                            <Icon name="ChevronDown" size={14} className="ml-auto" />
+                                                                            テンプレート紐づけ                                                                            <Icon name="ChevronDown" size={14} className="ml-auto" />
                                                                         </summary>
                                                                         <div className="space-y-2 mt-3">
-                                                                            {/* 食事テンプレート */}
+                                                                            {/* 食事テンプレート*/}
                                                                             <div>
                                                                                 <label className="text-xs text-gray-600">食事</label>
                                                                                 <select
@@ -2089,7 +2028,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                                                 </select>
                                                                             </div>
 
-                                                                            {/* トレーニングテンプレート */}
+                                                                            {/* トレーニングテンプレート*/}
                                                                             <div>
                                                                                 <label className="text-xs text-gray-600">トレーニング</label>
                                                                                 <select
@@ -2106,8 +2045,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
 
                                                                         </div>
                                                                         <p className="text-xs text-yellow-700 mt-2">
-                                                                            紐づけたテンプレートは、記録画面で自動的に読み込まれます
-                                                                        </p>
+                                                                            紐づけたテンプレートは、記録画面で自動的に読み込まれます                                                                        </p>
                                                                     </details>
                                                                 </div>
                                                             )}
@@ -2124,21 +2062,20 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                 className="w-full py-3 border-2 border-dashed border-purple-300 rounded-lg text-purple-600 hover:bg-purple-50 transition font-medium"
                                             >
                                                 <Icon name="Plus" size={18} className="inline mr-2" />
-                                                追加枠を追加（{localRoutines.length - 7}/5）
-                                            </button>
+                                                追加枠を追加をlocalRoutines.length - 7}/5を                                            </button>
                                         )}
 
                                         {localRoutines.length === 0 && (
                                             <div className="text-center py-8">
-                                                <p className="text-gray-500 mb-4">ルーティンが設定されていません</p>
+                                                <p className="text-gray-500 mb-4">ルーティンが設定されていてせん</p>
                                                 <button
                                                     onClick={() => {
                                                         const defaultRoutines = [
                                                             { id: 1, name: '①月曜日', splitType: '胸', isRestDay: false },
                                                             { id: 2, name: '②火曜日', splitType: '背中', isRestDay: false },
-                                                            { id: 3, name: '③水曜日', splitType: '脚', isRestDay: false },
+                                                            { id: 3, name: '③水曜日', splitType: '脁E, isRestDay: false },
                                                             { id: 4, name: '④木曜日', splitType: '休み', isRestDay: true },
-                                                            { id: 5, name: '⑤金曜日', splitType: '肩・腕', isRestDay: false },
+                                                            { id: 5, name: '⑤金曜日', splitType: '肩・腁E, isRestDay: false },
                                                             { id: 6, name: '⑥土曜日', splitType: '全身', isRestDay: false },
                                                             { id: 7, name: '⑦日曜日', splitType: '休み', isRestDay: true }
                                                         ];
@@ -2149,17 +2086,16 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                     }}
                                                     className="px-6 py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition"
                                                 >
-                                                    デフォルトルーティンで開始
-                                                </button>
+                                                    デフォルトルーティンで始                                                </button>
                                             </div>
                                         )}
 
-                                        {/* 管理ボタン */}
+                                        {/* 管理用ボタン */}
                                         {localRoutines.length > 0 && (
                                             <div className="flex gap-3 pt-4 border-t">
                                                 <button
                                                     onClick={() => {
-                                                        if (confirm('ルーティンをリセットしますか？')) {
+                                                        if (confirm('ルーティンをリセットしますか？)) {
                                                             localStorage.removeItem(STORAGE_KEYS.ROUTINES);
                                                             localStorage.removeItem(STORAGE_KEYS.ROUTINE_START_DATE);
                                                             localStorage.removeItem(STORAGE_KEYS.ROUTINE_ACTIVE);
@@ -2190,12 +2126,11 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                         </div>
                     </details>
 
-                    {/* 通知設定 */}
+                    {/* 通知設定*/}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Bell" size={18} className="text-indigo-600" />
-                            通知設定
-                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                            通知設定                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t space-y-4">
                             {/* ルーティン通知 */}
@@ -2238,7 +2173,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                 </div>
                             </div>
 
-                            {/* 記録リマインド */}
+                            {/* 記録リマインダー*/}
                             <div className="border rounded-lg p-3">
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2">
@@ -2321,12 +2256,11 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                         </div>
                     </details>
 
-                    {/* データ管理 */}
+                    {/* データ管理*/}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Database" size={18} className="text-indigo-600" />
-                            データ管理
-                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                            データ管理                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
                         <div className="space-y-4">
@@ -2336,8 +2270,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                     <div className="flex-1">
                                         <h4 className="font-bold mb-2 text-red-800">全データの削除</h4>
                                         <p className="text-sm text-gray-600 mb-3">
-                                            すべてのデータを削除します。この操作は取り消せません。
-                                        </p>
+                                            すべてのデータを削除します。この操作は取り消せません。                                        </p>
                                         <button
                                             onClick={handleClearData}
                                             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
@@ -2365,33 +2298,29 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                         </div>
                     </details>
 
-                    {/* 開発者 */}
+                    {/* 開発者*/}
                     {DEV_MODE && (
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Settings" size={18} className="text-orange-600" />
-                            開発者
-                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                            開発者                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
-                            {/* 開発者モードコンテンツ */}
+                            {/* 開発者ハードコンテンツ*/}
                             <div className="space-y-6">
                             <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
                                 <h4 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
                                     <Icon name="AlertTriangle" size={18} />
-                                    開発者モード
-                                </h4>
+                                    開発者用ツール                                </h4>
                                 <p className="text-sm text-orange-700">
-                                    このタブは開発中のみ表示されます。守破離機能のテストや日付の手動操作が可能です。
-                                </p>
+                                    このタブは開発中のみ表示されます。守破離機能のテストや日付の手動操作が可能です。                                </p>
                             </div>
 
-                            {/* Premium有効/無効切り替え */}
+                            {/* Premium有効/無効分析切替*/}
                             <div className="border rounded-lg p-6 bg-yellow-50">
                                 <h4 className="font-bold mb-4 flex items-center gap-2">
                                     <Icon name="Crown" size={18} className="text-yellow-600" />
-                                    Premium状態切り替え
-                                </h4>
+                                    Premium会員分析切替                                </h4>
                                 <div className="space-y-3">
                                     <div className="bg-white p-4 rounded-lg border border-yellow-200">
                                         <div className="flex items-center justify-between mb-2">
@@ -2399,18 +2328,18 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                                                 DEV_PREMIUM_MODE ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'
                                             }`}>
-                                                {DEV_PREMIUM_MODE ? '👑 Premium' : '無料ユーザー'}
+                                                {DEV_PREMIUM_MODE ? '👑 Premium会員' : '無料会員'}
                                             </span>
                                         </div>
                                         <p className="text-xs text-gray-600">
                                             {DEV_PREMIUM_MODE
-                                                ? '全機能が利用可能です（開発モード）'
-                                                : 'トライアル期間後は機能制限がかかります'}
+                                                ? '月額支払い時にクレジット100付与+全機能利用可能'
+                                                : '11-7日目は全機能無料8日目以降は機能制限}
                                         </p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                         <button
-                                            onClick={() => {
+                                            onClick={async () => {
                                                 localStorage.setItem('DEV_PREMIUM_MODE', 'false');
                                                 window.location.reload();
                                             }}
@@ -2420,11 +2349,17 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                             }`}
                                         >
-                                            無料モード
+                                            無料会員
                                         </button>
                                         <button
-                                            onClick={() => {
-                                                localStorage.setItem('DEV_PREMIUM_MODE', 'true');
+                                            onClick={async () => {
+                                                // Premium会員に分析切切替えてクレジット100付与                                                localStorage.setItem('DEV_PREMIUM_MODE', 'true');
+                                                const result = await ExperienceService.addPaidCredits(userId, 100);
+                                                if (result.success) {
+                                                    alert('Premium会員に分析切替え、クレジット100を付与しました');
+                                                } else {
+                                                    alert('Premium会員に分析切替えました');
+                                                }
                                                 window.location.reload();
                                             }}
                                             className={`px-4 py-3 rounded-lg font-medium transition flex items-center justify-center gap-1 ${
@@ -2434,62 +2369,63 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                             }`}
                                         >
                                             <Icon name="Crown" size={16} />
-                                            Premiumモード
+                                            Premium会員
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* 機能開放設定 */}
+                            {/* 機能開放状況*/}
                             <div className="border rounded-lg p-6">
                                 <h4 className="font-bold mb-4 flex items-center gap-2">
-                                    <Icon name="Zap" size={18} />
-                                    機能開放設定
-                                </h4>
-                                <div className="space-y-3">
-                                    {/* 説明 */}
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                        <p className="text-xs text-gray-700">
-                                            <Icon name="Info" size={14} className="inline text-blue-600 mr-1" />
-                                            デフォルト：初日段階的→3日目→7日目開放
-                                        </p>
-                                    </div>
+                                    <Icon name="List" size={18} />
+                                    機能開放状況                                </h4>
+                                <div className="space-y-2">
+                                    {/* 進行状況に応じた機能一覧 */}
+                                    {(() => {
+                                        const completionStatus = getFeatureCompletionStatus(userId);
+                                        const daysSinceReg = calculateDaysSinceRegistration(userId);
+                                        const currentDay = daysSinceReg + 1; // 1日目から表示
+                                        const isPremium = DEV_PREMIUM_MODE;
+                                        const isTrial = currentDay <= 7;
 
-                                    {/* 全機能即時開放 */}
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('すべての機能を即時開放しますか？')) {
-                                                const allCompleted = {
-                                                    food: true, training: true, condition: true, analysis: true,
-                                                    directive: true, pg_base: true, template: true, routine: true,
-                                                    shortcut: true, history: true, history_analysis: true
-                                                };
-                                                localStorage.setItem(STORAGE_KEYS.FEATURES_COMPLETED, JSON.stringify(allCompleted));
-                                                const allModalsShown = { day3: true, day7: true };
-                                                localStorage.setItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN, JSON.stringify(allModalsShown));
-                                                window.location.reload();
-                                            }
-                                        }}
-                                        className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition text-sm font-bold flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="Unlock" size={16} />
-                                        全機能即時開放
-                                    </button>
+                                        const featureList = [
+                                            { id: 'food', name: '食事記録', unlocked: true },
+                                            { id: 'training', name: '運動記録', unlocked: completionStatus.food },
+                                            { id: 'condition', name: 'コンディション', unlocked: completionStatus.training },
+                                            { id: 'analysis', name: '分析', unlocked: completionStatus.condition, premium: !isTrial && !isPremium },
+                                            { id: 'directive', name: '指示書', unlocked: completionStatus.analysis, premium: !isTrial && !isPremium },
+                                            { id: 'pg_base', name: 'PG BASE', unlocked: completionStatus.analysis, premium: !isTrial && !isPremium },
+                                            { id: 'community', name: 'COMY', unlocked: completionStatus.analysis, premium: !isTrial && !isPremium },
+                                            { id: 'template', name: 'テンプレート, unlocked: completionStatus.analysis && currentDay >= 3, premium: !isTrial && !isPremium },
+                                            { id: 'routine', name: 'ルーティン', unlocked: completionStatus.template && currentDay >= 3, premium: !isTrial && !isPremium },
+                                            { id: 'shortcut', name: 'ショートカット', unlocked: completionStatus.routine && currentDay >= 3, premium: !isTrial && !isPremium },
+                                            { id: 'history', name: '履歴', unlocked: currentDay >= 7, premium: !isTrial && !isPremium },
+                                            { id: 'history_analysis', name: '履歴分析', unlocked: completionStatus.history && currentDay >= 7, premium: !isTrial && !isPremium }
+                                        ];
 
-                                    {/* 開放状態リセット */}
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('機能開放状態をリセットしますか？')) {
-                                                localStorage.removeItem(STORAGE_KEYS.FEATURES_COMPLETED);
-                                                localStorage.removeItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN);
-                                                window.location.reload();
-                                            }
-                                        }}
-                                        className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="RefreshCw" size={16} />
-                                        開放状態リセット
-                                    </button>
+                                        return (
+                                            <>
+                                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                                                    <p className="text-xs text-gray-700">
+                                                        <Icon name="Info" size={14} className="inline text-blue-600 mr-1" />
+                                                        現在: {currentDay}日目 ({isTrial ? `無料期間：残り${8-currentDay}日` : (isPremium ? 'Premium会員' : '無料会員・機能制限中')})
+                                                    </p>
+                                                </div>
+                                                {featureList.map((feature) => (
+                                                    <div key={feature.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                                                        <span className="text-sm">{feature.name}</span>
+                                                        <span className={`text-xs px-2 py-1 rounded ${
+                                                            feature.premium ? 'bg-red-100 text-red-700' :
+                                                            feature.unlocked ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
+                                                        }`}>
+                                                            {feature.premium ? '🔒Premium必須 : (feature.unlocked ? '✓開放済み' : '⏳未開放')}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </div>
 
@@ -2500,198 +2436,117 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                     日付手動進行
                                 </h4>
                                 <div className="space-y-4">
+                                    {/* 現在の日数表示 */}
                                     <div className="bg-gray-50 p-4 rounded-lg">
                                         <div className="flex justify-between items-center mb-3">
-                                            <span className="text-sm text-gray-600">現在の利用日数</span>
-                                            <span className="text-2xl font-bold text-indigo-600">{usageDays}日</span>
+                                            <span className="text-sm text-gray-600">現在</span>
+                                            <span className="text-2xl font-bold text-indigo-600">
+                                                {(() => {
+                                                    const daysSinceReg = calculateDaysSinceRegistration(userId);
+                                                    return `${daysSinceReg + 1}日目`;
+                                                })()}
+                                            </span>
                                         </div>
                                         <div className="text-xs text-gray-500">
-                                            {usageDays < 7 ? (
-                                                <span className="text-green-600 font-medium">
-                                                    🎁 無料トライアル中（残り{7 - usageDays}日）
-                                                </span>
-                                            ) : (
-                                                <span className="text-red-600 font-medium">
-                                                    🔒 トライアル終了（Premium会員機能制限中）
-                                                </span>
-                                            )}
+                                            {(() => {
+                                                const daysSinceReg = calculateDaysSinceRegistration(userId);
+                                                const currentDay = daysSinceReg + 1;
+                                                const isTrial = currentDay <= 7;
+                                                const isPremium = DEV_PREMIUM_MODE;
+
+                                                if (isTrial) {
+                                                    return (
+                                                        <span className="text-green-600 font-medium">
+                                                            🎁 無料トライアル中（残り{8 - currentDay}日）
+                                                        </span>
+                                                    );
+                                                } else if (isPremium) {
+                                                    return (
+                                                        <span className="text-yellow-600 font-medium">
+                                                            👑 Premium会員（全機能利用可能）
+                                                        </span>
+                                                    );
+                                                } else {
+                                                    return (
+                                                        <span className="text-red-600 font-medium">
+                                                            🔒 トライアル終了・Premium機能制限中
+                                                        </span>
+                                                    );
+                                                }
+                                            })()}
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
+                                    {/* 日付操作ボタン */}
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                onClick={() => {
+                                                    // 1日目（登録日）に戻る
+                                                    localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, new Date().toISOString());
+                                                    localStorage.removeItem(STORAGE_KEYS.FEATURES_COMPLETED);
+                                                    window.location.reload();
+                                                }}
+                                                className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+                                            >
+                                                <Icon name="RotateCcw" size={18} className="inline mr-1" />
+                                                1日目へ戻る（登録日）
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    // 8日目（Premium制限開始）へジャンプ
+                                                    const date = new Date();
+                                                    date.setDate(date.getDate() - 7); // 7日前に登録したことにする
+                                                    localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, date.toISOString());
+                                                    // 全機能完了マーク
+                                                    const allCompleted = {
+                                                        food: true,
+                                                        training: true,
+                                                        condition: true,
+                                                        analysis: true,
+                                                        directive: true,
+                                                        pg_base: true,
+                                                        template: true,
+                                                        routine: true,
+                                                        shortcut: true,
+                                                        history: true,
+                                                        history_analysis: true,
+                                                        idea: true,
+                                                        community: true
+                                                    };
+                                                    localStorage.setItem(STORAGE_KEYS.FEATURES_COMPLETED, JSON.stringify(allCompleted));
+                                                    window.location.reload();
+                                                }}
+                                                className="px-4 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition font-medium"
+                                            >
+                                                <Icon name="FastForward" size={18} className="inline mr-1" />
+                                                8日目へ（Premium制限開始）
+                                            </button>
+                                        </div>
                                         <button
                                             onClick={() => {
-                                                const newDays = Math.max(0, usageDays - 1);
-                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, newDays.toString());
+                                                // +7日進める（登録日を7日前に移動）
+                                                const currentReg = new Date(getRegistrationDate(userId));
+                                                currentReg.setDate(currentReg.getDate() - 7);
+                                                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, currentReg.toISOString());
                                                 window.location.reload();
                                             }}
-                                            className="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
-                                        >
-                                            <Icon name="ChevronLeft" size={18} className="inline mr-1" />
-                                            -1日
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                const newDays = usageDays + 1;
-                                                localStorage.setItem(STORAGE_KEYS.USAGE_DAYS, newDays.toString());
-                                                window.location.reload();
-                                            }}
-                                            className="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                                            className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
                                         >
                                             <Icon name="ChevronRight" size={18} className="inline mr-1" />
-                                            +1日
-                                        </button>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2 mb-2">
-                                        <button
-                                            onClick={() => {
-                                                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, new Date().toISOString());
-                                                localStorage.removeItem(STORAGE_KEYS.FEATURES_COMPLETED);
-                                                window.location.reload();
-                                            }}
-                                            className="px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition font-medium"
-                                        >
-                                            0日 (初期状態)
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                const date = new Date();
-                                                date.setDate(date.getDate() - 10);
-                                                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, date.toISOString());
-                                                // 全機能完了マーク
-                                                const allCompleted = {
-                                                    food: true,
-                                                    training: true,
-                                                    condition: true,
-                                                    analysis: true,
-                                                    directive: true,
-                                                    pg_base: true,
-                                                    template: true,
-                                                    routine: true,
-                                                    shortcut: true,
-                                                    history: true,
-                                                    history_analysis: true
-                                                };
-                                                localStorage.setItem(STORAGE_KEYS.FEATURES_COMPLETED, JSON.stringify(allCompleted));
-                                                window.location.reload();
-                                            }}
-                                            className="px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition font-medium"
-                                        >
-                                            10日 (全開放)
-                                        </button>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <button
-                                            onClick={() => {
-                                                const date = new Date();
-                                                date.setDate(date.getDate() - 1);
-                                                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, date.toISOString());
-                                                window.location.reload();
-                                            }}
-                                            className="px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition"
-                                        >
-                                            1日
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                const date = new Date();
-                                                date.setDate(date.getDate() - 3);
-                                                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, date.toISOString());
-                                                window.location.reload();
-                                            }}
-                                            className="px-3 py-2 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition"
-                                        >
-                                            3日
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                const date = new Date();
-                                                date.setDate(date.getDate() - 7);
-                                                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, date.toISOString());
-                                                window.location.reload();
-                                            }}
-                                            className="px-3 py-2 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition"
-                                        >
-                                            7日
+                                            +7日進める
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* クレジット手動追加 */}
-                            <div className="border rounded-lg p-6">
-                                <h4 className="font-bold mb-4 flex items-center gap-2">
-                                    <Icon name="Award" size={18} />
-                                    クレジット手動追加
-                                </h4>
-                                <div className="space-y-4">
-                                    <p className="text-sm text-gray-600">
-                                        開発モード: クレジットを手動で追加できます（無料クレジットとして付与）
-                                    </p>
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={async () => {
-                                                const result = await ExperienceService.addFreeCredits(userId, 10);
-                                                if (result.success) {
-                                                    alert('10クレジットを追加しました');
-                                                    loadExperienceData();
-                                                    loadCreditInfo();
-                                                } else {
-                                                    alert('クレジット追加に失敗しました');
-                                                }
-                                            }}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                                        >
-                                            +10 クレジット
-                                        </button>
-                                        <button
-                                            onClick={async () => {
-                                                const result = await ExperienceService.addFreeCredits(userId, 50);
-                                                if (result.success) {
-                                                    alert('50クレジットを追加しました');
-                                                    loadExperienceData();
-                                                    loadCreditInfo();
-                                                } else {
-                                                    alert('クレジット追加に失敗しました');
-                                                }
-                                            }}
-                                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-                                        >
-                                            +50 クレジット
-                                        </button>
-                                        <button
-                                            onClick={async () => {
-                                                const result = await ExperienceService.addFreeCredits(userId, 100);
-                                                if (result.success) {
-                                                    alert('100クレジットを追加しました');
-                                                    loadExperienceData();
-                                                    loadCreditInfo();
-                                                } else {
-                                                    alert('クレジット追加に失敗しました');
-                                                }
-                                            }}
-                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                                        >
-                                            +100 クレジット
-                                        </button>
-                                    </div>
-                                    {expData && (
-                                        <div className="text-sm text-gray-600">
-                                            現在の無料クレジット: <span className="font-bold text-blue-600">{expData.freeCredits}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* 機能開放状態 */}
+                            {/* 機能開放状況*/}
                             <div className="border rounded-lg p-6">
                                 <h4 className="font-bold mb-4 flex items-center gap-2">
                                     <Icon name="Lock" size={18} />
-                                    機能開放状態
-                                </h4>
+                                    機能開放状況                                </h4>
                                 <div className="space-y-3">
-                                    {/* 初日（段階的開放） */}
+                                    {/* 初日）段階的開放を*/}
                                     <div>
                                         <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                             <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">初日</span>
@@ -2700,11 +2555,11 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                         <div className="space-y-1 ml-4">
                                             {[
                                                 { id: 'food', name: '食事記録', condition: '常に開放' },
-                                                { id: 'training', name: '運動記録', condition: '食事1回記録' },
+                                                { id: 'training', name: '運動記録', condition: '食事回記録' },
                                                 { id: 'condition', name: 'コンディション記録', condition: '運動1回記録' },
                                                 { id: 'analysis', name: '分析', condition: 'コンディション6項目入力' },
                                                 { id: 'directive', name: '指示書', condition: '分析1回使用' },
-                                                { id: 'pg_base', name: 'PG BASE', condition: '分析1回使用（指示書と同時）' }
+                                                { id: 'pg_base', name: 'PG BASE', condition: '分析1回使用（指示書と同時）'
                                             ].map(feature => {
                                                 const completionStatus = getFeatureCompletionStatus(userId);
                                                 const isCompleted = completionStatus[feature.id] === true;
@@ -2729,7 +2584,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                         </div>
                                     </div>
 
-                                    {/* 3日目（同時開放） */}
+                                    {/* 3日目）同時開放を*/}
                                     <div>
                                         <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                             <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">3日目</span>
@@ -2737,9 +2592,9 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                         </div>
                                         <div className="space-y-1 ml-4">
                                             {[
-                                                { id: 'template', name: 'テンプレート', condition: '3日目到達' },
-                                                { id: 'routine', name: 'ルーティン', condition: '3日目到達' },
-                                                { id: 'shortcut', name: 'ショートカット', condition: '3日目到達' }
+                                                { id: 'template', name: 'テンプレート, condition: '3日目到達 },
+                                                { id: 'routine', name: 'ルーティン', condition: '3日目到達 },
+                                                { id: 'shortcut', name: 'ショートカット', condition: '3日目到達 }
                                             ].map(feature => {
                                                 const daysSinceReg = calculateDaysSinceRegistration(userId);
                                                 const isDayReached = daysSinceReg >= 3;
@@ -2766,17 +2621,16 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                         </div>
                                     </div>
 
-                                    {/* 7日目（同時開放） */}
+                                    {/* 7日目）同時開放を*/}
                                     <div>
                                         <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                             <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">7日目</span>
-                                            同時開放（無料トライアル終了）
-                                        </div>
+                                            同時開放：無料トライアル終了時                                        </div>
                                         <div className="space-y-1 ml-4">
                                             {[
-                                                { id: 'history', name: '履歴', condition: '7日目到達' },
-                                                { id: 'community', name: 'COMY閲覧', condition: '7日目到達' },
-                                                { id: 'history_analysis', name: '履歴分析', condition: '7日目到達' }
+                                                { id: 'history', name: '履歴', condition: '7日目到達 },
+                                                { id: 'community', name: 'COMY閲覧', condition: '7日目到達 },
+                                                { id: 'history_analysis', name: '履歴分析', condition: '7日目到達 }
                                             ].map(feature => {
                                                 const daysSinceReg = calculateDaysSinceRegistration(userId);
                                                 const isDayReached = daysSinceReg >= 7;
@@ -2803,23 +2657,22 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                         </div>
                                     </div>
 
-                                    {/* 8日目以降（Premium制限） */}
+                                    {/* 8日目以降！remium制限！*/}
                                     <div>
                                         <div className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                             <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs">8日目以降</span>
-                                            Premium会員限定
-                                        </div>
+                                            Premium会員限定                                        </div>
                                         <div className="space-y-1 ml-4">
                                             {[
                                                 { name: '指示書', locked: true },
                                                 { name: 'PG BASE', locked: true },
                                                 { name: 'COMY閲覧', locked: true },
-                                                { name: 'テンプレート', locked: true },
+                                                { name: 'テンプレート, locked: true },
                                                 { name: 'ルーティン', locked: true },
                                                 { name: 'ショートカット', locked: true },
                                                 { name: '履歴', locked: true },
                                                 { name: '履歴分析', locked: true },
-                                                { name: '分析機能（月100クレジット）', locked: true },
+                                                { name: '分析機能：月100クレジット, locked: true },
                                                 { name: 'ビタミン・ミネラル分析', locked: true }
                                             ].map((feature, idx) => {
                                                 const daysSinceReg = calculateDaysSinceRegistration(userId);
@@ -2900,14 +2753,13 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                         <details className="border rounded-lg border-red-300 bg-red-50">
                             <summary className="cursor-pointer p-4 hover:bg-red-100 font-medium flex items-center gap-2">
                                 <Icon name="Shield" size={18} className="text-red-600" />
-                                管理者機能
+                                管理者パネル
                                 <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                             </summary>
                             <div className="p-4 pt-0 border-t border-red-200">
                                 <div className="space-y-3">
                                     <p className="text-sm text-red-700 mb-3">
-                                        🔒 管理者機能へのアクセスには認証が必要です
-                                    </p>
+                                        🔒 管理者パネルへのアクセスには認証が必須です                                    </p>
                                     <button
                                         onClick={() => {
                                             const password = prompt('管理者パスワードを入力してください:');
@@ -2923,8 +2775,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                                         className="w-full py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold flex items-center justify-center gap-2"
                                     >
                                         <Icon name="Shield" size={18} />
-                                        COMY投稿承認パネルを開く
-                                    </button>
+                                        COMY投稿承認パネルを開く                                    </button>
                                     <p className="text-xs text-gray-600 mt-2">
                                         ※ 本番環境では、Firebase Authenticationのカスタムクレームでadminロールを付与してください
                                     </p>
@@ -2936,14 +2787,14 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
             </div>
         </div>
 
-        {/* テンプレート編集選択モーダル */}
+        {/* テンプレート編集��択モーダル */}
         {showTemplateEditModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
                     {/* ヘッダー */}
                     <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center rounded-t-2xl">
                         <h3 className="text-lg font-bold">
-                            {templateEditType === 'meal' ? '食事テンプレート編集' : '運動テンプレート編集'}
+                            {templateEditType === 'meal' ? '食事テンプレート編集 : '運動テンプレート編集}
                         </h3>
                         <button
                             onClick={() => {
@@ -2956,7 +2807,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                         </button>
                     </div>
 
-                    {/* コンテンツ */}
+                    {/* コンテンツ*/}
                     <div className="p-4 space-y-3">
                         {/* 新しいテンプレートを作成 */}
                         <button
@@ -3164,8 +3015,7 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
                     <div className="p-6 space-y-4">
                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                             <p className="text-sm text-yellow-800 font-medium">
-                                ⚠️ この推定値は外見に基づく主観的評価であり、実際の体脂肪率と±3-5%の誤差があります。正確な測定には体組成計の使用を強く推奨します。
-                            </p>
+                                ⚠️ この推定値は外見に基づく主観的評価であり、実際の体脂肪率は±3-5%の誤差があります。正確な測定には体組成計の使用を強く推奨します。                            </p>
                         </div>
 
                         <div>
@@ -3264,8 +3114,5 @@ ${lifestyle} × ${purpose} (LBM ${lbm.toFixed(1)}kg × ${coefficient}倍)
         </>
     );
 };
-// ===========================
-// Analysis and History Components
-// Extracted from index_beta.html
-// ===========================
 
+window.SettingsView = SettingsView;
