@@ -650,6 +650,30 @@ ${currentPurpose === '増量' ? `
         console.log('[Analysis] Section2 prompt length:', section2Prompt.length, 'characters');
 
         try {
+            // AI分析開始前にクレジット消費（1回のみ）
+            console.log('[Analysis] Consuming 1 credit for daily analysis');
+            const creditResult = await ExperienceService.consumeCredits(userId, 1);
+            if (!creditResult.success) {
+                setAiLoading(false);
+                alert('クレジットが不足しています。レベルアップまたは追加購入でクレジットを獲得してください。');
+                return;
+            }
+            console.log('[Analysis] Credit consumed successfully. Remaining:', creditResult.remaining);
+
+            // クレジット消費後、更新された情報を取得して表示
+            const updatedExpInfo = await ExperienceService.getUserExperience(userId);
+            const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
+            setCreditInfo({
+                tier: isPremium ? 'premium' : 'free',
+                totalCredits: updatedExpInfo.totalCredits,
+                freeCredits: updatedExpInfo.freeCredits,
+                paidCredits: updatedExpInfo.paidCredits,
+                remainingCredits: updatedExpInfo.totalCredits,
+                devMode: DEV_MODE,
+                allowed: updatedExpInfo.totalCredits > 0
+            });
+            console.log('[Analysis] Updated credit info displayed:', updatedExpInfo.totalCredits);
+
             let fullAnalysis = '';
 
             // セクション1: パフォーマンスレポートを生成
@@ -726,6 +750,9 @@ ${currentPurpose === '増量' ? `
         }
 
         setAiLoading(false);
+
+        // クレジット消費後、ダッシュボードの表示を更新するイベントを発火
+        window.dispatchEvent(new CustomEvent('creditUpdated'));
 
         // 経験値システム：スコアを経験値として加算
         if (scores) {
@@ -853,6 +880,34 @@ ${conversationContext}
 専門用語を避け、高校生にも理解できるような言葉で、簡潔かつ丁寧に回答してください。
 `;
 
+            // 質問1回につき1クレジット消費
+            console.log('[Analysis Q&A] Consuming 1 credit for question');
+            const creditResult = await ExperienceService.consumeCredits(userId, 1);
+            if (!creditResult.success) {
+                setConversationHistory([...newHistory, {
+                    type: 'ai',
+                    content: 'クレジットが不足しています。レベルアップまたは追加購入でクレジットを獲得してください。',
+                    timestamp: new Date().toISOString()
+                }]);
+                setQaLoading(false);
+                return;
+            }
+            console.log('[Analysis Q&A] Credit consumed successfully. Remaining:', creditResult.remaining);
+
+            // クレジット消費後、更新された情報を取得して表示
+            const updatedExpInfo = await ExperienceService.getUserExperience(userId);
+            const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
+            setCreditInfo({
+                tier: isPremium ? 'premium' : 'free',
+                totalCredits: updatedExpInfo.totalCredits,
+                freeCredits: updatedExpInfo.freeCredits,
+                paidCredits: updatedExpInfo.paidCredits,
+                remainingCredits: updatedExpInfo.totalCredits,
+                devMode: DEV_MODE,
+                allowed: updatedExpInfo.totalCredits > 0
+            });
+            console.log('[Analysis Q&A] Updated credit info displayed:', updatedExpInfo.totalCredits);
+
             const response = await GeminiAPI.sendMessage(contextPrompt, [], userProfile, 'gemini-2.5-pro');
 
             if (response.success) {
@@ -884,6 +939,9 @@ ${conversationContext}
         }
 
         setQaLoading(false);
+
+        // クレジット消費後、ダッシュボードの表示を更新するイベントを発火
+        window.dispatchEvent(new CustomEvent('creditUpdated'));
     };
 
     // 過去データから体質・傾向・相関を分析

@@ -342,6 +342,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                             if (result.success) {
                                 alert(`AI分析結果:\n\n${result.text}`);
+                                // クレジット消費後、ダッシュボードの表示を更新
+                                window.dispatchEvent(new CustomEvent('creditUpdated'));
                             } else if (result.noCredits) {
                                 alert('クレジットが不足しています。レベルアップでクレジットを獲得してください。');
                             } else {

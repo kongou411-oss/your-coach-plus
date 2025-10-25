@@ -198,6 +198,10 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, userId, userProfile }) 
             await ExperienceService.consumeCredits(effectiveUserId, 1);
             console.log('[AI Food Recognition] 1 credit consumed');
 
+            // クレジット消費直後にイベントを発火してダッシュボードを更新
+            window.dispatchEvent(new CustomEvent('creditUpdated'));
+            console.log('[AI Food Recognition] creditUpdated event dispatched');
+
             setRecognizedFoods(matchedFoods);
 
         } catch (err) {
@@ -223,6 +227,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, userId, userProfile }) 
     // 確定して親コンポーネントに渡す
     const confirmFoods = () => {
         onFoodsRecognized(recognizedFoods);
+        // Note: creditUpdatedイベントはクレジット消費直後(198行目)に既に発火済み
     };
 
     // 食材検索
