@@ -1575,16 +1575,46 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                         id: Date.now(),
                         time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
                         name: exercises.length === 1
-                            ? exercises[0].exercise.name
-                            : `${exercises[0].exercise.category}トレーニング`, // 複数種目の場合はカテゴリ名
-                        category: exercises[0].exercise.category,
-                        exercises: exercises.map(ex => ({
-                            name: ex.exercise.name,
-                            sets: ex.sets
-                        }))
+                            ? (exercises[0].exercise?.name || exercises[0].name)
+                            : `${exercises[0].exercise?.category || exercises[0].category}トレーニング`, // 複数種目の場合はカテゴリ名
+                        category: exercises[0].exercise?.category || exercises[0].category,
+                        exercises: exercises.map(ex => {
+                            console.log('[保存処理] exercise:', ex);
+
+                            // 有酸素・ストレッチの場合（exercise プロパティがない）
+                            if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
+                                console.log('  → 有酸素/ストレッチとして保存:', {
+                                    name: ex.name,
+                                    exerciseType: ex.exerciseType,
+                                    duration: ex.duration
+                                });
+                                return {
+                                    exercise: {
+                                        name: ex.name,
+                                        category: ex.category,
+                                        exerciseType: ex.exerciseType
+                                    },
+                                    exerciseType: ex.exerciseType,
+                                    duration: ex.duration,
+                                    totalDuration: ex.totalDuration || ex.duration
+                                };
+                            }
+
+                            // 筋トレの場合（exercise プロパティがある）
+                            console.log('  → 筋トレとして保存:', {
+                                name: ex.exercise.name,
+                                sets: ex.sets
+                            });
+                            return {
+                                exercise: ex.exercise,
+                                exerciseType: ex.exercise?.exerciseType || 'anaerobic',
+                                name: ex.exercise.name,
+                                sets: ex.sets
+                            };
+                        })
                     };
 
-                    console.log('  - workoutData:', workoutData);
+                    console.log('[保存処理] 最終workoutData:', JSON.stringify(workoutData, null, 2));
                     console.log('  - onAdd関数:', typeof onAdd);
 
                     // 1つのworkoutとして追加
@@ -2505,6 +2535,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                     onClick={() => {
                                         if (sets.length === 0) return;
 
+                                        console.log('[種目を追加] currentExercise:', currentExercise);
+                                        console.log('[種目を追加] sets:', sets);
+
                                         // 有酸素・ストレッチの場合は、種目名と総時間のみ記録
                                         let newExercise;
                                         if (currentExercise.exerciseType === 'aerobic' || currentExercise.exerciseType === 'stretch') {
@@ -2513,8 +2546,10 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             newExercise = {
                                                 exercise: currentExercise,
                                                 duration: totalDuration, // 総時間のみ
+                                                totalDuration: totalDuration,
                                                 exerciseType: currentExercise.exerciseType
                                             };
+                                            console.log('[種目を追加] 有酸素/ストレッチ newExercise:', newExercise);
                                         } else {
                                             // 筋トレの場合は従来通り（セット詳細を含む）
                                             newExercise = {
@@ -2522,8 +2557,10 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                 sets: sets,
                                                 exerciseType: currentExercise.exerciseType
                                             };
+                                            console.log('[種目を追加] 筋トレ newExercise:', newExercise);
                                         }
 
+                                        console.log('[種目を追加] exercises配列に追加:', newExercise);
                                         setExercises([...exercises, newExercise]);
                                         setCurrentExercise(null);
                                         setSets([]);

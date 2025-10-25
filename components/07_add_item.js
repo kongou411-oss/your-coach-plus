@@ -1251,16 +1251,37 @@
                         id: Date.now(),
                         time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
                         name: exercises.length === 1
-                            ? exercises[0].exercise.name
-                            : `${exercises[0].exercise.category}トレーニング`, // 複数種目の場合はカテゴリ名
-                        category: exercises[0].exercise.category,
-                        exercises: exercises.map(ex => ({
-                            name: ex.exercise.name,
-                            sets: ex.sets
-                        }))
+                            ? (exercises[0].exercise?.name || exercises[0].name)
+                            : `${exercises[0].exercise?.category || exercises[0].category}トレーニング`, // 複数種目の場合はカテゴリ名
+                        category: exercises[0].exercise?.category || exercises[0].category,
+                        exercises: exercises.map(ex => {
+                            console.log('[保存処理] exercise:', ex);
+
+                            // 有酸素・ストレッチの場合（exercise プロパティがない）
+                            if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
+                                return {
+                                    exercise: {
+                                        name: ex.name,
+                                        category: ex.category,
+                                        exerciseType: ex.exerciseType
+                                    },
+                                    exerciseType: ex.exerciseType,
+                                    duration: ex.duration,
+                                    totalDuration: ex.totalDuration || ex.duration
+                                };
+                            }
+
+                            // 筋トレの場合（exercise プロパティがある）
+                            return {
+                                exercise: ex.exercise,
+                                exerciseType: ex.exercise?.exerciseType || 'anaerobic',
+                                name: ex.exercise.name,
+                                sets: ex.sets
+                            };
+                        })
                     };
 
-                    console.log('  - workoutData:', workoutData);
+                    console.log('[保存処理] 最終workoutData:', JSON.stringify(workoutData, null, 2));
                     console.log('  - onAdd関数:', typeof onAdd);
 
                     // 1つのworkoutとして追加
@@ -1667,12 +1688,20 @@
                                                     alert('種目名を入力してください');
                                                     return;
                                                 }
+                                                // カテゴリに応じてexerciseTypeを設定
+                                                let exerciseType = 'anaerobic';
+                                                if (customExerciseData.category === '有酸素運動') {
+                                                    exerciseType = 'aerobic';
+                                                } else if (customExerciseData.category === 'ストレッチ') {
+                                                    exerciseType = 'stretch';
+                                                }
+
                                                 const customExercise = {
                                                     id: Date.now(),
                                                     name: customExerciseData.name,
                                                     category: customExerciseData.category,
                                                     subcategory: customExerciseData.subcategory,
-                                                    exerciseType: 'anaerobic',
+                                                    exerciseType: exerciseType,
                                                     isCustom: true
                                                 };
                                                 setCurrentExercise(customExercise);
@@ -1720,8 +1749,8 @@
                                 </div>
 
                                 <div className="space-y-3">
-                                    {/* ストレッチ専用UI */}
-                                    {currentExercise.exerciseType === 'stretch' ? (
+                                    {/* ストレッチ・有酸素運動専用UI */}
+                                    {(currentExercise.exerciseType === 'stretch' || currentExercise.exerciseType === 'aerobic') ? (
                                         <>
                                             {/* 総時間入力 */}
                                             <div>
@@ -1731,8 +1760,9 @@
                                                         type="button"
                                                         onClick={() => setWorkoutInfoModal({
                                                             show: true,
-                                                            title: 'ストレッチ時間入力の使い方',
-                                                            content: `ストレッチを実施した総時間を分単位で入力します。
+                                                            title: currentExercise.exerciseType === 'stretch' ? 'ストレッチ時間入力の使い方' : '有酸素運動時間入力の使い方',
+                                                            content: currentExercise.exerciseType === 'stretch'
+                                                                ? `ストレッチを実施した総時間を分単位で入力します。
 
 【入力方法】
 1. スライダーをドラッグして時間を設定（1～60分）
@@ -1747,6 +1777,21 @@
 • リカバリーストレッチ: 20～40分
 
 ストレッチは柔軟性向上と怪我予防に重要です。無理のない範囲で継続的に実施しましょう。`
+                                                                : `有酸素運動を実施した総時間を分単位で入力します。
+
+【入力方法】
+1. スライダーをドラッグして時間を設定（1～60分）
+2. 目盛り数値（10分、20分など）をタップで即座に設定
+3. 入力欄に直接数値を入力
+4. 増減ボタン（-5/-1/+1/+5）で微調整
+
+【入力の目安】
+• ウォームアップジョグ: 5～10分
+• 有酸素メイン: 20～45分
+• HIIT: 10～20分
+• クールダウン: 5～10分
+
+有酸素運動は心肺機能の向上と脂肪燃焼に効果的です。目標心拍数を意識して実施しましょう。`
                                                         })}
                                                         className="text-indigo-600 hover:text-indigo-800"
                                                     >
@@ -2125,19 +2170,19 @@
                                     </>
                                     )}
 
-                                    {/* セット追加ボタン（ストレッチの場合は「追加」ボタン） */}
-                                    {currentExercise.exerciseType === 'stretch' ? (
+                                    {/* セット追加ボタン（ストレッチ・有酸素運動の場合は「追加」ボタン） */}
+                                    {(currentExercise.exerciseType === 'stretch' || currentExercise.exerciseType === 'aerobic') ? (
                                         <div>
                                             <button
                                                 onClick={() => {
-                                                    // ストレッチは1回のみ記録（セットなし）
-                                                    const stretchRecord = {
+                                                    // ストレッチ・有酸素運動は1回のみ記録（セットなし）
+                                                    const cardioOrStretchRecord = {
                                                         ...currentExercise,
                                                         duration: currentSet.duration || 10,
                                                         totalDuration: currentSet.duration || 10
                                                     };
-                                                    console.log('[AddItem] ストレッチを追加:', stretchRecord);
-                                                    setExercises([...exercises, stretchRecord]);
+                                                    console.log(`[AddItem] ${currentExercise.exerciseType === 'stretch' ? 'ストレッチ' : '有酸素運動'}を追加:`, cardioOrStretchRecord);
+                                                    setExercises([...exercises, cardioOrStretchRecord]);
                                                     setCurrentExercise(null);
                                                     setCurrentSet({
                                                         weight: 50,
@@ -2151,7 +2196,7 @@
                                                 className="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2 font-bold"
                                             >
                                                 <Icon name="Check" size={20} />
-                                                <span>ストレッチを追加</span>
+                                                <span>{currentExercise.exerciseType === 'stretch' ? 'ストレッチを追加' : '有酸素運動を追加'}</span>
                                             </button>
                                         </div>
                                     ) : (
