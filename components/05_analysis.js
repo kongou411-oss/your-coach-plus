@@ -803,28 +803,48 @@ ${currentPurpose === '増量' ? `
         await markFeatureCompleted(userId, 'analysis');
 
         // 初回分析後：全機能を開放
+        // 注：isFirstAnalysisParamがfalseでも、未開放の機能は開放する
         console.log('[Analysis] isFirstAnalysisParam value:', isFirstAnalysisParam);
-        if (isFirstAnalysisParam) {
-            console.log('[Analysis] First analysis completed. Unlocking all features...');
+
+        // 各機能が未開放なら開放する（初回分析かどうかに関わらず）
+        const directiveCompleted = isFeatureCompleted(userId, 'directive');
+        const templateCompleted = isFeatureCompleted(userId, 'template');
+        const routineCompleted = isFeatureCompleted(userId, 'routine');
+        const shortcutCompleted = isFeatureCompleted(userId, 'shortcut');
+
+        console.log('[Analysis] Feature completion status:', {
+            directive: directiveCompleted,
+            template: templateCompleted,
+            routine: routineCompleted,
+            shortcut: shortcutCompleted
+        });
+
+        // 未開放の機能を開放
+        if (!directiveCompleted || !templateCompleted || !routineCompleted || !shortcutCompleted) {
+            console.log('[Analysis] Unlocking incomplete features...');
 
             // モーダル①: 指示書・履歴
-            await markFeatureCompleted(userId, 'directive');
-            await markFeatureCompleted(userId, 'idea'); // 閃きを開放
-            await markFeatureCompleted(userId, 'history');
+            if (!directiveCompleted) await markFeatureCompleted(userId, 'directive');
+            if (!isFeatureCompleted(userId, 'idea')) await markFeatureCompleted(userId, 'idea');
+            if (!isFeatureCompleted(userId, 'history')) await markFeatureCompleted(userId, 'history');
 
             // モーダル②: PG BASE・COMY
-            await markFeatureCompleted(userId, 'pg_base');
-            await markFeatureCompleted(userId, 'community');
+            if (!isFeatureCompleted(userId, 'pg_base')) await markFeatureCompleted(userId, 'pg_base');
+            if (!isFeatureCompleted(userId, 'community')) await markFeatureCompleted(userId, 'community');
 
             // モーダル③: テンプレート・ルーティン・ショートカット
-            await markFeatureCompleted(userId, 'template');
-            await markFeatureCompleted(userId, 'routine');
-            await markFeatureCompleted(userId, 'shortcut');
-            await markFeatureCompleted(userId, 'history_analysis');
+            if (!templateCompleted) await markFeatureCompleted(userId, 'template');
+            if (!routineCompleted) await markFeatureCompleted(userId, 'routine');
+            if (!shortcutCompleted) await markFeatureCompleted(userId, 'shortcut');
+            if (!isFeatureCompleted(userId, 'history_analysis')) await markFeatureCompleted(userId, 'history_analysis');
 
-            // ダッシュボードで3つのモーダル表示用のフラグを設定
-            localStorage.setItem('showFeatureUnlockModals', 'true');
-            console.log('[Analysis] Set showFeatureUnlockModals flag');
+            // 初回分析の場合のみ、ダッシュボードでモーダル表示
+            if (isFirstAnalysisParam) {
+                localStorage.setItem('showFeatureUnlockModals', 'true');
+                console.log('[Analysis] Set showFeatureUnlockModals flag');
+            }
+        } else {
+            console.log('[Analysis] All features already unlocked');
         }
 
         // Premium販促モーダル（初回分析後）
