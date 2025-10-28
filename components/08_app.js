@@ -1353,8 +1353,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 setEditingMeal(null);
                                 setShowAddView(false);
                             }}
-                            onUpdate={async (updatedMeal) => {
+                            onUpdate={async (updatedMeal, keepModalOpen = true) => {
                                 const userId = user?.uid || DEV_USER_ID;
+                                const today = getTodayDate(); // today変数を定義
                                 try {
                                     // 表示中の日付（currentDate）の記録を取得
                                     const currentRecord = await DataService.getDailyRecord(userId, currentDate);
@@ -1371,24 +1372,27 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     }
 
                                     // 新しい食事を追加（timestampは維持）
-                                    updatedRecord.meals.push({
+                                    const finalMeal = {
                                         ...updatedMeal,
                                         timestamp: editingMeal.timestamp // 元のタイムスタンプを維持
-                                    });
+                                    };
+                                    updatedRecord.meals.push(finalMeal);
 
                                     // 保存
                                     await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
 
-                                    // 状態を更新
-                                    if (currentDate === today) {
-                                        setDailyRecord(updatedRecord);
+                                    // 状態を更新（即座にダッシュボードに反映）
+                                    setDailyRecord(updatedRecord);
+
+                                    // モーダルを維持する場合、editingMealを更新
+                                    if (keepModalOpen) {
+                                        setEditingMeal(finalMeal);
+                                    } else {
+                                        // モーダルを閉じる
+                                        setEditingMeal(null);
+                                        setShowAddView(false);
+                                        alert('食事を更新しました！');
                                     }
-
-                                    // モーダルを閉じる
-                                    setEditingMeal(null);
-                                    setShowAddView(false);
-
-                                    alert('食事を更新しました！');
                                 } catch (error) {
                                     console.error('食事更新エラー:', error);
                                     alert('食事の更新に失敗しました。');

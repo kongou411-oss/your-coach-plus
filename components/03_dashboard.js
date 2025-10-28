@@ -74,9 +74,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     useEffect(() => {
         // ダッシュボードが表示されるたびにチェック
         const shouldShow = localStorage.getItem('showFeatureUnlockModals');
-        console.log('[Dashboard] Checking showFeatureUnlockModals flag:', shouldShow);
         if (shouldShow === 'true') {
-            console.log('[Dashboard] Flag found! Showing feature unlock modal...');
             setTimeout(() => {
                 setCurrentModalPage(1); // ページ1から開始
                 setShowFeatureUnlockModal(true);
@@ -143,15 +141,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         };
         // クレジット更新イベントをリッスン（写真解析などでクレジット消費時）
         const handleCreditUpdate = () => {
-            console.log('[Dashboard] creditUpdated event received, reloading experience data...');
             loadExperienceData();
         };
-        console.log('[Dashboard] Adding event listeners for levelUp and creditUpdated');
         window.addEventListener('levelUp', handleLevelUp);
         window.addEventListener('creditUpdated', handleCreditUpdate);
-        console.log('[Dashboard] Event listeners added successfully');
         return () => {
-            console.log('[Dashboard] Cleaning up event listeners');
             window.removeEventListener('levelUp', handleLevelUp);
             window.removeEventListener('creditUpdated', handleCreditUpdate);
         };
@@ -2111,15 +2105,12 @@ const LevelBanner = ({ user, setInfoModal }) => {
 
         // レベルアップイベントと経験値更新イベントをリッスン
         const handleLevelUp = (event) => {
-            console.log('[LevelBanner] levelUp event received');
             loadExperienceData();
         };
         const handleExperienceUpdate = (event) => {
-            console.log('[LevelBanner] experienceUpdated event received');
             loadExperienceData();
         };
         const handleCreditUpdate = () => {
-            console.log('[LevelBanner] creditUpdated event received');
             loadExperienceData();
         };
 
@@ -2137,14 +2128,7 @@ const LevelBanner = ({ user, setInfoModal }) => {
     const loadExperienceData = async () => {
         if (!user) return;
         try {
-            console.log('[LevelBanner] Loading experience data for user:', user.uid);
             const data = await ExperienceService.getUserExperience(user.uid);
-            console.log('[LevelBanner] Experience data loaded:', {
-                totalCredits: data.totalCredits,
-                freeCredits: data.freeCredits,
-                paidCredits: data.paidCredits,
-                level: data.level
-            });
             const expToNext = ExperienceService.getExpToNextLevel(data.level, data.experience);
             const progress = Math.round((expToNext.current / expToNext.required) * 100);
 
@@ -2158,7 +2142,6 @@ const LevelBanner = ({ user, setInfoModal }) => {
                 expCurrent: expToNext.current,
                 expRequired: expToNext.required
             });
-            console.log('[LevelBanner] Experience data updated in state, totalCredits:', data.totalCredits);
         } catch (error) {
             console.error('[LevelBanner] Failed to load experience data:', error);
         }

@@ -54,7 +54,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
         try {
             // ユーザーID取得（DEV_MODEの場合はDEV_USER_IDを使用）
             const effectiveUserId = userId || DEV_USER_ID;
-            console.log('[AIFoodRecognition] userId:', userId, 'effectiveUserId:', effectiveUserId, 'DEV_MODE:', DEV_MODE);
 
             if (!effectiveUserId) {
                 setError('ユーザー情報が取得できませんでした');
@@ -165,23 +164,71 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
             }
 
             // 認識された食品をfoodDatabaseと照合
+            console.log('[AI Recognition] Gemini API response:', result.foods);
             const matchedFoods = result.foods.map(food => {
-                // foodDatabaseから検索
+                // 1. まずfoodDatabaseから検索
                 let matchedItem = null;
                 Object.keys(foodDB).forEach(category => {
                     Object.keys(foodDB[category]).forEach(itemName => {
                         if (itemName.includes(food.name) || food.name.includes(itemName)) {
+                            const dbItem = foodDB[category][itemName];
                             matchedItem = {
-                                ...foodDB[category][itemName],
+                                ...dbItem,
                                 name: itemName,
                                 category: category,
                                 amount: food.amount || 100,
-                                confidence: food.confidence || 0.5
+                                confidence: food.confidence || 0.5,
+                                _base: {  // 基準値を保持（特殊単位対応）
+                                    calories: dbItem.calories,
+                                    protein: dbItem.protein,
+                                    fat: dbItem.fat,
+                                    carbs: dbItem.carbs,
+                                    servingSize: dbItem.servingSize || 100,
+                                    servingUnit: dbItem.servingUnit || 'g',
+                                    unit: dbItem.unit || '100g'
+                                }
                             };
                         }
                     });
                 });
 
+                // 2. 見つからない場合、localStorageのcustomFoodsから検索
+                if (!matchedItem) {
+                    try {
+                        const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
+                        const customItem = customFoods.find(item =>
+                            item.name.includes(food.name) || food.name.includes(item.name)
+                        );
+
+                        if (customItem) {
+                            console.log('✅ カスタムアイテムをAI認識で検出:', customItem);
+                            matchedItem = {
+                                name: customItem.name,
+                                category: customItem.category || 'カスタム',
+                                calories: customItem.calories || 0,
+                                protein: customItem.protein || 0,
+                                fat: customItem.fat || 0,
+                                carbs: customItem.carbs || 0,
+                                amount: food.amount || customItem.servingSize || 100,
+                                confidence: food.confidence || 0.5,
+                                isCustom: true,  // カスタムアイテムフラグ
+                                _base: {  // 基準値を保持（特殊単位対応）
+                                    calories: customItem.calories || 0,
+                                    protein: customItem.protein || 0,
+                                    fat: customItem.fat || 0,
+                                    carbs: customItem.carbs || 0,
+                                    servingSize: customItem.servingSize || 100,
+                                    servingUnit: customItem.servingUnit || 'g',
+                                    unit: customItem.unit || '100g'
+                                }
+                            };
+                        }
+                    } catch (error) {
+                        console.error('カスタムアイテム検索エラー:', error);
+                    }
+                }
+
+                // 3. どちらからも見つからない場合はisUnknown: true
                 return matchedItem || {
                     name: food.name,
                     amount: food.amount || 100,
@@ -190,17 +237,27 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                     protein: 0,
                     fat: 0,
                     carbs: 0,
-                    isUnknown: true
+                    isUnknown: true,
+                    _base: {
+                        calories: 0,
+                        protein: 0,
+                        fat: 0,
+                        carbs: 0,
+                        servingSize: 100,
+                        servingUnit: 'g',
+                        unit: '100g'
+                    }
                 };
             });
+            console.log('[AI Recognition] Matched foods:', matchedFoods);
+            console.log('[AI Recognition] Custom items found:',
+                matchedFoods.filter(f => f.isCustom).length);
 
             // 認識成功後、クレジット消費
             await ExperienceService.consumeCredits(effectiveUserId, 1);
-            console.log('[AI Food Recognition] 1 credit consumed');
 
             // クレジット消費直後にイベントを発火してダッシュボードを更新
             window.dispatchEvent(new CustomEvent('creditUpdated'));
-            console.log('[AI Food Recognition] creditUpdated event dispatched');
 
             setRecognizedFoods(matchedFoods);
 
@@ -214,9 +271,60 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
     // 食品の量を調整
     const adjustAmount = (index, newAmount) => {
-        setRecognizedFoods(prev => prev.map((food, i) =>
-            i === index ? { ...food, amount: newAmount } : food
-        ));
+        setRecognizedFoods(prev => prev.map((food, i) => {
+            if (i !== index) return food;
+
+            // _baseから基準値を取得
+            const base = food._base || {
+                calories: food.calories,
+                protein: food.protein,
+                fat: food.fat,
+                carbs: food.carbs,
+                servingSize: 100,
+                servingUnit: 'g',
+                unit: '100g'
+            };
+
+            // ratioの計算: 単位に応じて処理
+            let ratio;
+            let displayAmount = newAmount;
+
+            if (base.unit === '1個' || base.unit === '個') {
+                // 個単位の場合: 入力値 ÷ servingSize（1個あたりのg数）= 個数
+                // 例: 180g ÷ 12g = 15個
+                // ratio = 個数
+                const numServings = newAmount / (base.servingSize || 100);
+                ratio = numServings;
+                displayAmount = parseFloat(numServings.toFixed(1));
+                console.log(`[adjustAmount] ${food.name}: ${newAmount}g → ${displayAmount}個, ratio=${ratio}`);
+            } else if (base.unit === '本') {
+                // 本単位の場合: 入力値 = 本数
+                ratio = newAmount;
+                displayAmount = newAmount;
+                console.log(`[adjustAmount] ${food.name}: ${displayAmount}本, ratio=${ratio}`);
+            } else {
+                // 通常の100gあたり食材
+                ratio = newAmount / 100;
+                console.log(`[adjustAmount] ${food.name}: ${newAmount}g, ratio=${ratio}`);
+            }
+
+            console.log(`[adjustAmount] Nutrients recalculated:`, {
+                calories: Math.round(base.calories * ratio),
+                protein: (base.protein * ratio).toFixed(1),
+                fat: (base.fat * ratio).toFixed(1),
+                carbs: (base.carbs * ratio).toFixed(1)
+            });
+
+            return {
+                ...food,
+                amount: displayAmount,
+                calories: Math.round(base.calories * ratio),
+                protein: parseFloat((base.protein * ratio).toFixed(1)),
+                fat: parseFloat((base.fat * ratio).toFixed(1)),
+                carbs: parseFloat((base.carbs * ratio).toFixed(1)),
+                _base: base  // 基準値を保持
+            };
+        }));
     };
 
     // 食品を削除
@@ -224,13 +332,81 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
         setRecognizedFoods(prev => prev.filter((_, i) => i !== index));
     };
 
+    // 食品を候補で置き換え（「もしかして」機能）
+    const replaceFoodWithSuggestion = (index, suggestion) => {
+        if (!suggestion) return;
+
+        const dbItem = foodDatabase[suggestion.category][suggestion.name];
+        if (!dbItem) return;
+
+        const currentFood = recognizedFoods[index];
+        const currentAmount = currentFood.amount || 100;
+
+        // 新しい食材データを作成
+        const newFood = {
+            ...dbItem,
+            name: suggestion.name,
+            category: suggestion.category,
+            amount: currentAmount,
+            confidence: 1.0, // 候補から選択したので信頼度を高く設定
+            _base: {
+                calories: dbItem.calories,
+                protein: dbItem.protein,
+                fat: dbItem.fat,
+                carbs: dbItem.carbs,
+                servingSize: dbItem.servingSize || 100,
+                servingUnit: dbItem.servingUnit || 'g',
+                unit: dbItem.unit || '100g'
+            }
+        };
+
+        console.log(`[replaceFoodWithSuggestion] "${currentFood.name}" → "${suggestion.name}" に置き換え`);
+
+        setRecognizedFoods(prev => prev.map((food, i) => {
+            if (i === index) return newFood;
+            return food;
+        }));
+    };
+
     // 食品データを更新（カスタム登録完了時に使用）
     const updateRecognizedFood = (foodName, updatedData) => {
-        setRecognizedFoods(prev => prev.map(food =>
-            food.name === foodName
-                ? { ...food, ...updatedData, isUnknown: false }
-                : food
-        ));
+        console.log('[updateRecognizedFood] カスタム登録完了:', { foodName, updatedData });
+
+        setRecognizedFoods(prev => prev.map(food => {
+            if (food.name !== foodName) return food;
+
+            // updatedDataは100gあたりの栄養素なので、_baseとして保存
+            const newBase = {
+                calories: updatedData.calories || 0,
+                protein: updatedData.protein || 0,
+                fat: updatedData.fat || 0,
+                carbs: updatedData.carbs || 0
+            };
+
+            // 実量に換算（現在のfood.amountを使用）
+            const ratio = (food.amount || 100) / 100;
+            const actualNutrients = {
+                calories: Math.round(newBase.calories * ratio),
+                protein: parseFloat((newBase.protein * ratio).toFixed(1)),
+                fat: parseFloat((newBase.fat * ratio).toFixed(1)),
+                carbs: parseFloat((newBase.carbs * ratio).toFixed(1))
+            };
+
+            console.log('[updateRecognizedFood] 更新後:', {
+                name: food.name,
+                amount: food.amount,
+                base: newBase,
+                actual: actualNutrients
+            });
+
+            return {
+                ...food,
+                ...actualNutrients,
+                _base: newBase,
+                isUnknown: false,
+                isCustom: true
+            };
+        }));
     };
 
     // 確定して親コンポーネントに渡す
@@ -239,7 +415,19 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
         console.log('[confirmFoods] recognizedFoods:', recognizedFoods);
         console.log('[confirmFoods] onFoodsRecognizedを呼び出します');
 
-        onFoodsRecognized(recognizedFoods);
+        // 認識リストのamountは常にg単位なので、unitフィールドを削除してから渡す
+        // （handleFoodsRecognizedでの誤解釈を防ぐため）
+        const foodsForTransfer = recognizedFoods.map(food => {
+            const { unit, servingSize, servingUnit, ...rest } = food;
+            return {
+                ...rest,
+                // unitフィールドを削除（amountはg単位）
+                // _baseには特殊単位情報が保持されている
+            };
+        });
+
+        console.log('[confirmFoods] unitフィールド削除後:', foodsForTransfer);
+        onFoodsRecognized(foodsForTransfer);
 
         console.log('[confirmFoods] 完了');
         // Note: creditUpdatedイベントはクレジット消費直後(198行目)に既に発火済み
@@ -385,7 +573,9 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                                     <FoodItemTag
                                         key={index}
                                         food={food}
+                                        foodIndex={index}
                                         onAmountChange={(newAmount) => adjustAmount(index, newAmount)}
+                                        onReplace={(suggestion) => replaceFoodWithSuggestion(index, suggestion)}
                                         onRemove={() => removeFood(index)}
                                         onOpenCustomCreator={(foodData) => {
                                             if (onOpenCustomCreator) {
@@ -398,6 +588,86 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                                     />
                                 ))}
                             </div>
+
+                            {/* 認識された食材の合計 */}
+                            {recognizedFoods.length > 0 && (() => {
+                                // 実量ベースで計算（100gあたり → 実量）
+                                const totalStats = recognizedFoods.reduce((acc, food) => {
+                                    const base = food._base || {
+                                        calories: food.calories,
+                                        protein: food.protein,
+                                        fat: food.fat,
+                                        carbs: food.carbs,
+                                        servingSize: 100,
+                                        unit: '100g'
+                                    };
+
+                                    // ratioの計算: 特殊単位（1個、本）とそれ以外で分岐
+                                    let ratio;
+                                    if (base.unit === '1個' || base.unit === '本') {
+                                        ratio = (food.amount || 0) / (base.servingSize || 1);
+                                    } else {
+                                        ratio = (food.amount || 100) / 100;
+                                    }
+
+                                    return {
+                                        calories: acc.calories + Math.round(base.calories * ratio),
+                                        protein: acc.protein + (base.protein * ratio),
+                                        fat: acc.fat + (base.fat * ratio),
+                                        carbs: acc.carbs + (base.carbs * ratio)
+                                    };
+                                }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
+
+                                console.log('[AI Recognition] Total stats calculation:');
+                                recognizedFoods.forEach((food, i) => {
+                                    const base = food._base || {
+                                        calories: food.calories || 0,
+                                        protein: food.protein || 0,
+                                        fat: food.fat || 0,
+                                        carbs: food.carbs || 0,
+                                        servingSize: 100,
+                                        unit: '100g'
+                                    };
+
+                                    // ratioの計算
+                                    let ratio;
+                                    if (base.unit === '1個' || base.unit === '本') {
+                                        ratio = (food.amount || 0) / (base.servingSize || 1);
+                                    } else {
+                                        ratio = (food.amount || 100) / 100;
+                                    }
+
+                                    console.log(`  [${i}] ${food.name}: ${food.amount}g, ${Math.round(base.calories * ratio)}kcal`);
+                                });
+                                console.log('  Total:', totalStats);
+
+                                return (
+                                    <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                                        <h3 className="font-bold text-green-800 mb-2 flex items-center gap-2">
+                                            <Icon name="Check" size={20} />
+                                            認識された食材の合計（{recognizedFoods.length}アイテム）
+                                        </h3>
+                                        <div className="grid grid-cols-4 gap-3 text-center">
+                                            <div>
+                                                <div className="text-2xl font-bold text-green-700">{Math.round(totalStats.calories)}</div>
+                                                <div className="text-xs text-gray-600 mt-1">kcal</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-2xl font-bold text-green-700">{totalStats.protein.toFixed(1)}</div>
+                                                <div className="text-xs text-gray-600 mt-1">P (g)</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-2xl font-bold text-green-700">{totalStats.fat.toFixed(1)}</div>
+                                                <div className="text-xs text-gray-600 mt-1">F (g)</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-2xl font-bold text-green-700">{totalStats.carbs.toFixed(1)}</div>
+                                                <div className="text-xs text-gray-600 mt-1">C (g)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             {/* 手動で食材追加ボタン */}
                             <button
@@ -505,16 +775,116 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
     );
 };
 
+// 食材名を正規化する関数（カタカナ→ひらがな、括弧内を除外）
+const normalizeFoodName = (name) => {
+    if (!name) return '';
+
+    // カタカナをひらがなに変換
+    let normalized = name.replace(/[\u30a1-\u30f6]/g, (match) => {
+        return String.fromCharCode(match.charCodeAt(0) - 0x60);
+    });
+
+    // 括弧内を除外（「人参（生）」→「人参」）
+    normalized = normalized.replace(/[（(].*?[）)]/g, '');
+
+    // 空白を削除
+    normalized = normalized.replace(/\s+/g, '');
+
+    return normalized.toLowerCase();
+};
+
+// レーベンシュタイン距離を計算する関数（文字列の類似度測定）
+const levenshteinDistance = (str1, str2) => {
+    const len1 = str1.length;
+    const len2 = str2.length;
+    const matrix = [];
+
+    for (let i = 0; i <= len1; i++) {
+        matrix[i] = [i];
+    }
+    for (let j = 0; j <= len2; j++) {
+        matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= len1; i++) {
+        for (let j = 1; j <= len2; j++) {
+            const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j] + 1,
+                matrix[i][j - 1] + 1,
+                matrix[i - 1][j - 1] + cost
+            );
+        }
+    }
+
+    return matrix[len1][len2];
+};
+
+// 最も類似度の高い食材を見つける関数
+const findBestMatch = (inputName) => {
+    const normalizedInput = normalizeFoodName(inputName);
+    let bestMatch = null;
+    let bestDistance = Infinity;
+    let bestCategory = null;
+
+    Object.keys(foodDatabase).forEach(cat => {
+        Object.keys(foodDatabase[cat]).forEach(dbName => {
+            const normalizedDbName = normalizeFoodName(dbName);
+            const distance = levenshteinDistance(normalizedInput, normalizedDbName);
+
+            // 距離が短いほど類似度が高い
+            // ただし、長さの半分以下の距離でないと候補にしない（類似度50%以上）
+            const maxLength = Math.max(normalizedInput.length, normalizedDbName.length);
+            if (distance < bestDistance && distance <= maxLength / 2) {
+                bestDistance = distance;
+                bestMatch = dbName;
+                bestCategory = cat;
+            }
+        });
+    });
+
+    return bestMatch ? { name: bestMatch, category: bestCategory, distance: bestDistance } : null;
+};
+
 // 食品タグコンポーネント（通常の食事記録と同じ入力方式）
-const FoodItemTag = ({ food, onAmountChange, onRemove, onOpenCustomCreator }) => {
+const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onOpenCustomCreator }) => {
     const [amount, setAmount] = useState(food.amount);
 
-    // 栄養素を計算（100gあたりの値を基準）
+    // 未登録食品の場合、候補を検索
+    const [suggestion, setSuggestion] = useState(null);
+    useEffect(() => {
+        if (food.isUnknown) {
+            const match = findBestMatch(food.name);
+            setSuggestion(match);
+            console.log(`[FoodItemTag] 未登録アイテム "${food.name}" の候補:`, match);
+        }
+    }, [food.name, food.isUnknown]);
+
+    // 栄養素を計算（_baseから100gあたりの値を取得）
+    const base = food._base || {
+        calories: food.calories || 0,
+        protein: food.protein || 0,
+        fat: food.fat || 0,
+        carbs: food.carbs || 0,
+        servingSize: 100,
+        unit: '100g'
+    };
+
+    // ratioの計算: 特殊単位（1個、本）とそれ以外で分岐
+    let ratio;
+    if (base.unit === '1個' || base.unit === '本') {
+        // 特殊単位の場合: amount(g) ÷ servingSize(g/個) = 個数
+        ratio = amount / (base.servingSize || 1);
+    } else {
+        // 通常単位（100gあたり）の場合: amount(g) ÷ 100
+        ratio = amount / 100;
+    }
+
     const nutrients = {
-        calories: Math.round((food.calories || 0) * amount / 100),
-        protein: ((food.protein || 0) * amount / 100).toFixed(1),
-        fat: ((food.fat || 0) * amount / 100).toFixed(1),
-        carbs: ((food.carbs || 0) * amount / 100).toFixed(1)
+        calories: Math.round(base.calories * ratio),
+        protein: (base.protein * ratio).toFixed(1),
+        fat: (base.fat * ratio).toFixed(1),
+        carbs: (base.carbs * ratio).toFixed(1)
     };
 
     // 量を変更してリアルタイム反映
@@ -551,30 +921,65 @@ const FoodItemTag = ({ food, onAmountChange, onRemove, onOpenCustomCreator }) =>
                 </div>
             </div>
 
-            {/* 栄養素表示（100gあたり） */}
-            {!food.isUnknown && (
-                <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                    <div className="grid grid-cols-4 gap-3 text-center">
-                        <div>
-                            <p className="text-xs text-gray-600">カロリー</p>
-                            <p className="text-sm font-bold">{food.calories || 0}kcal</p>
+            {/* 栄養素表示（基準量あたり） */}
+            {!food.isUnknown && (() => {
+                // データベースから取得したservingSizeとunitを確認
+                let servingSize = 100;
+                let servingUnit = 'g';
+                let perServingLabel = '※100gあたり';
+
+                // _baseから取得（handleFoodsRecognizedで設定される）
+                if (food._base && food._base.servingSize) {
+                    servingSize = food._base.servingSize;
+                    servingUnit = food._base.servingUnit || 'g';
+
+                    // ラベルの生成
+                    if (food._base.unit === '1個' || food._base.unit === '個') {
+                        perServingLabel = `※1個（${servingSize}${servingUnit}）あたり`;
+                    } else if (food._base.unit === '本') {
+                        perServingLabel = `※1本（${servingSize}${servingUnit}）あたり`;
+                    } else {
+                        perServingLabel = `※${servingSize}${servingUnit}あたり`;
+                    }
+                }
+
+                // _baseがあればそれを使用、なければ現在の量から計算
+                const baseNutrients = food._base ? {
+                    calories: food._base.calories || 0,
+                    protein: food._base.protein || 0,
+                    fat: food._base.fat || 0,
+                    carbs: food._base.carbs || 0
+                } : {
+                    calories: Math.round((food.calories || 0) / (food.amount || 100) * 100),
+                    protein: parseFloat(((food.protein || 0) / (food.amount || 100) * 100).toFixed(1)),
+                    fat: parseFloat(((food.fat || 0) / (food.amount || 100) * 100).toFixed(1)),
+                    carbs: parseFloat(((food.carbs || 0) / (food.amount || 100) * 100).toFixed(1))
+                };
+
+                return (
+                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                        <div className="grid grid-cols-4 gap-3 text-center">
+                            <div>
+                                <p className="text-xs text-gray-600">カロリー</p>
+                                <p className="text-sm font-bold">{baseNutrients.calories}kcal</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-600">P</p>
+                                <p className="text-sm font-bold">{baseNutrients.protein.toFixed(1)}g</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-600">F</p>
+                                <p className="text-sm font-bold">{baseNutrients.fat.toFixed(1)}g</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-600">C</p>
+                                <p className="text-sm font-bold">{baseNutrients.carbs.toFixed(1)}g</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-xs text-gray-600">P</p>
-                            <p className="text-sm font-bold">{(food.protein || 0).toFixed(1)}g</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-gray-600">F</p>
-                            <p className="text-sm font-bold">{(food.fat || 0).toFixed(1)}g</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-gray-600">C</p>
-                            <p className="text-sm font-bold">{(food.carbs || 0).toFixed(1)}g</p>
-                        </div>
+                        <p className="text-xs text-gray-500 text-center mt-1">{perServingLabel}</p>
                     </div>
-                    <p className="text-xs text-gray-500 text-center mt-1">※100gあたり</p>
-                </div>
-            )}
+                );
+            })()}
 
             {/* 重量調整セクション */}
             <div className="space-y-3">
@@ -708,11 +1113,33 @@ const FoodItemTag = ({ food, onAmountChange, onRemove, onOpenCustomCreator }) =>
                             この食品をカスタム食材として登録すると、次回から簡単に使用できます。
                         </p>
                     </div>
+
+                    {/* もしかして候補 */}
+                    {suggestion && (
+                        <button
+                            onClick={() => {
+                                if (onReplace) {
+                                    onReplace(suggestion);
+                                }
+                            }}
+                            className="w-full px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg transition text-sm font-medium border border-amber-300"
+                        >
+                            もしかして: {suggestion.name}?
+                        </button>
+                    )}
+
                     <button
                         onClick={() => {
                             if (onOpenCustomCreator) {
+                                console.log('[FoodItemTag] カスタム作成ボタンクリック:', {
+                                    name: food.name,
+                                    amount: amount,
+                                    calories: food.calories
+                                });
                                 onOpenCustomCreator({
                                     name: food.name,
+                                    amount: amount,  // 現在の量を渡す
+                                    unit: 'g',
                                     calories: food.calories || 0,
                                     protein: food.protein || 0,
                                     fat: food.fat || 0,
