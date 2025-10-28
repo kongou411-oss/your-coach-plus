@@ -570,9 +570,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             console.log(`  - コンディション: enabled=${enabled} (before: ${shortcut.enabled})`);
                             return { ...shortcut, enabled };
                         }
-                        // 閃きは初回分析後
+                        // 閃きは初回分析完了後
                         if (shortcut.action === 'open_idea') {
-                            const enabled = unlockedFeatures.includes('analysis');
+                            const enabled = unlockedFeatures.includes('idea');
                             console.log(`  - 閃き: enabled=${enabled} (before: ${shortcut.enabled})`);
                             return { ...shortcut, enabled };
                         }
