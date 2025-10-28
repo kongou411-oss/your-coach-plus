@@ -238,16 +238,16 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
     }
 
     // 8日目以降：Premium機能制限
-    // トライアル期間（0-7日）は全機能利用可能
-    // 8日目以降は以下の機能をPremium会員限定に制限
+    // トライアル期間（0-6日 = 登録後7日間）は全機能利用可能
+    // 8日目以降（7日目から）は以下の機能をPremium会員限定に制限
     const isTrialActive = daysSinceReg < 7;
     if (daysSinceReg >= 7 && !isPremium && !DEV_PREMIUM_MODE) {
         // 8日目以降の無料ユーザーは以下の機能をロック
-        // directive, pg_base, template, routine, shortcut, history, history_analysis, community
+        // directive, pg_base, template, routine, shortcut, history, history_analysis, community, micronutrients
         // これらは既に配列に追加されているので、削除する
         const restrictedFeatures = [
             'directive', 'pg_base', 'template', 'routine', 'shortcut',
-            'history', 'history_analysis', 'community'
+            'history', 'history_analysis', 'community', 'micronutrients'
         ];
         restrictedFeatures.forEach(feature => {
             const index = unlocked.indexOf(feature);
@@ -257,11 +257,14 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
         });
     }
 
-    // Premium専用機能（トライアル期間中も利用不可）
-    if (isPremium || DEV_PREMIUM_MODE) {
+    // Premium専用機能（トライアル期間中（0-7日）も含む全期間で開放）
+    if (isTrialActive || isPremium || DEV_PREMIUM_MODE) {
         unlocked.push('micronutrients');
         unlocked.push('community_view');
         unlocked.push('community_post');
+        console.log('  ✅ Premium機能: 開放 (トライアル期間中 or Premium会員)');
+    } else {
+        console.log('  ❌ Premium機能: 未開放 (8日目以降の無料ユーザー)');
     }
 
     // 旧互換性: history_graph と training_template は初回分析後の history と template に統合

@@ -4,7 +4,8 @@
 // 開発モード設定
 const DEV_MODE = true;
 const DEV_USER_ID = 'dev-user-001';
-const DEV_PREMIUM_MODE = false; // デフォルトは無料会員（1〜7日目は全機能無料、8日目以降はPremium制限）
+// Premium会員モード（開発者設定から切替可能、localStorageから読み込み）
+const DEV_PREMIUM_MODE = localStorage.getItem('DEV_PREMIUM_MODE') === 'true'; // デフォルトは無料会員（1〜7日目は全機能無料、8日目以降はPremium制限）
 
 // Gemini API Key (本番環境では環境変数から読み込むこと)
 const GEMINI_API_KEY = 'AIzaSyAntR-6FU5HEB2aiUcjYHZczKIc4LUhqGI';

@@ -79,11 +79,15 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                 contents: [{
                     parts: [
                         {
-                            text: `この食事画像を分析して、含まれている【食材単品】を個別に検出し、推定量をJSON形式で出力してください。
+                            text: `【最優先命令】
+あなたはヘルスケアアプリ用の食材解析AIです。あなたの最優先タスクは、視覚的な特徴（色、形、光沢）だけに惑わされず、以下の【思考ステップと文脈判断】ルールを絶対に優先して適用することです。特に卵料理の誤認識（オムライスを「卵白」や「うずら」と判断すること）は重大なエラーです。
+
+【タスク】
+この食事画像を分析し、【食材単品】を個別に検出し、推定量をJSON形式で出力してください。
 
 【重要】料理名ではなく、食材単品で検出すること:
-- ❌ 悪い例: "親子丼", "カレーライス", "サラダ"
-- ✅ 良い例: "鶏むね肉", "白米", "卵", "玉ねぎ", "レタス"
+- ❌ 悪い例: "親子丼", "カレーライス"
+- ✅ 良い例: "鶏むね肉", "白米", "鶏卵（全卵）"
 
 出力形式:
 {
@@ -96,18 +100,50 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
   ]
 }
 
-検出ルール:
-1. 料理名ではなく、食材単品で検出（例: "鶏むね肉", "白米", "卵", "ブロッコリー"）
+【検出ルール】:
+1. 料理名ではなく、食材単品で検出（例: "鶏むね肉", "白米", "鶏卵（全卵）"）
 2. 複合的な料理は、構成食材に分解して個別に検出
-3. 調理済みの食材も生の食材名で記載（例: "焼き鮏" → "鮏"）
+3. 調理済みの食材も生の食材名で記載（例: "焼き鮭" → "鮭"）
 4. 推定量は実際に見える量から判断
 5. 信頼度は0.0から1.0の範囲で設定
 6. 認識できない場合は空の配列を返す
 7. JSON形式のみを出力し、他のテキストは含めない
 
+【思考ステップと文脈判断（最重要・厳格適用）】:
+検出ルールを適用する前に、以下の思考ステップに厳格に従ってください。
+
+ステップ1: 料理の特定（文脈の把握）
+まず、画像に写っている主要な料理が何かを心の中で特定してください。
+（例：「これはオムライスとハンバーグのプレートだ」「これは親子丼だ」）
+
+ステップ2: 文脈に基づいた食材の判断（視覚より優先）
+ステップ1で特定した料理の文脈に基づき、以下のルールを厳格に適用して食材を検出してください。
+
+卵の種類とサイズ（最重要ルール）:
+   - 文脈の絶対適用: 画像内に「オムライス」「オムレツ」「卵焼き」「目玉焼き」「親子丼」「スクランブルエッグ」など、通常全卵で作られる料理を認識した場合、その主材料は**必ず『鶏卵（全卵）』**としてください。
+   - 誤認識の厳禁 (1) - 卵白: オムライスの表面が滑らかであること、光が反射して白く見えること、またはスクランブルエッグの一部が白く見えることを理由に、これらを『卵白のみ』と絶対に誤認識しないでください。
+   - 誤認識の厳禁 (2) - うずら: 付け合わせのサラダ（ポテトサラダ等）や、料理の形状を理由に、『うずらの卵』と絶対に誤認識しないでください。
+   - 「卵白のみ」の定義（極めて特殊）: 『卵白のみ』は、「メレンゲ」「フィナンシェ」「ラング・ド・シャ」「卵白スープ」など、明らかに卵黄を含まないと断言できる特殊な料理・菓子でのみ使用してください。オムライスはこれに該当しません。
+   - 「鶏卵（全卵）」の定義: 上記（卵白のみ）以外のすべての卵料理は『鶏卵（全卵）』です。
+
+ソースと食材の区別:
+   - デミグラスソース、カレーソース → 「ソース」として検出、チョコレートではない
+   - 茶色い液体/ペースト状の調味料は、料理の文脈から判断（洋食ならデミグラス、カレーなど）
+   - チョコレート: デザートやスイーツの文脈でのみ検出
+
+調味料・ソース類の検出:
+   - ケチャップ、マヨネーズ、ソース類は調味料として検出
+   - 推定量は控えめに（10-30g程度）
+
+優先順位（量が多い順、カロリーが高い順に検出）:
+   - 主食（白米、パン、麺類）→ 主菜（肉、魚）→ 副菜（野菜）→ 調味料・ソース
+
 例:
-- 親子丼 → "鶏むね肉150g", "卵2個(100g)", "白米200g", "玉ねぎ50g"
-- サラダ → "レタス50g", "トマト30g", "きゅうり20g", "ドレッシング15g"`
+- 親子丼 → "鶏むね肉 150g", "鶏卵（全卵） 100g", "白米 200g", "玉ねぎ 50g"
+- オムライスプレート → "鶏卵（全卵） 100g", "白米 150g", "鶏ひき肉 50g", "ケチャップ 20g", "キャベツ 30g"
+- オムレツプレート → "鶏卵（全卵） 150g", "ハム 50g", "チーズ 30g"（※「卵白のみ」ではなく「鶏卵（全卵）」）
+- サラダ → "レタス 50g", "トマト 30g", "きゅうり 20g", "ドレッシング 15g"
+- ハンバーグプレート → "牛ひき肉 150g", "白米 200g", "キャベツ 30g", "デミグラスソース 30g"`
                         },
                         {
                             inline_data: {
@@ -820,12 +856,10 @@ const levenshteinDistance = (str1, str2) => {
     return matrix[len1][len2];
 };
 
-// 最も類似度の高い食材を見つける関数
-const findBestMatch = (inputName) => {
+// 上位3つの類似度の高い食材を見つける関数
+const findTopMatches = (inputName, topN = 3) => {
     const normalizedInput = normalizeFoodName(inputName);
-    let bestMatch = null;
-    let bestDistance = Infinity;
-    let bestCategory = null;
+    const candidates = [];
 
     Object.keys(foodDatabase).forEach(cat => {
         Object.keys(foodDatabase[cat]).forEach(dbName => {
@@ -835,28 +869,35 @@ const findBestMatch = (inputName) => {
             // 距離が短いほど類似度が高い
             // ただし、長さの半分以下の距離でないと候補にしない（類似度50%以上）
             const maxLength = Math.max(normalizedInput.length, normalizedDbName.length);
-            if (distance < bestDistance && distance <= maxLength / 2) {
-                bestDistance = distance;
-                bestMatch = dbName;
-                bestCategory = cat;
+            if (distance <= maxLength / 2) {
+                const similarity = Math.round((1 - distance / maxLength) * 100);
+                candidates.push({
+                    name: dbName,
+                    category: cat,
+                    distance: distance,
+                    similarity: similarity
+                });
             }
         });
     });
 
-    return bestMatch ? { name: bestMatch, category: bestCategory, distance: bestDistance } : null;
+    // 距離が短い順（類似度が高い順）にソートして上位N個を返す
+    return candidates
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, topN);
 };
 
 // 食品タグコンポーネント（通常の食事記録と同じ入力方式）
 const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onOpenCustomCreator }) => {
     const [amount, setAmount] = useState(food.amount);
 
-    // 未登録食品の場合、候補を検索
-    const [suggestion, setSuggestion] = useState(null);
+    // 未登録食品の場合、候補を検索（上位3つ）
+    const [suggestions, setSuggestions] = useState([]);
     useEffect(() => {
         if (food.isUnknown) {
-            const match = findBestMatch(food.name);
-            setSuggestion(match);
-            console.log(`[FoodItemTag] 未登録アイテム "${food.name}" の候補:`, match);
+            const matches = findTopMatches(food.name, 3);
+            setSuggestions(matches);
+            console.log(`[FoodItemTag] 未登録アイテム "${food.name}" の候補（上位3つ）:`, matches);
         }
     }, [food.name, food.isUnknown]);
 
@@ -983,77 +1024,162 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
 
             {/* 重量調整セクション */}
             <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                        重量 (g)
-                        <Icon name="HelpCircle" size={14} className="text-gray-400" />
+                <div>
+                    <label className="block text-sm font-medium mb-2">
+                        量 ({base.unit === '1個' ? '個' : base.unit === '本' ? '本' : 'g'})
                     </label>
-                    <span className="text-xs text-gray-500">
-                        0g - 100g - 200g - 300g - 400g - 500g
-                    </span>
-                </div>
 
-                {/* スライダー */}
-                <input
-                    type="range"
-                    min="0"
-                    max="500"
-                    step="5"
-                    value={amount}
-                    onChange={(e) => handleAmountChange(Number(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
+                    {/* スライダー */}
+                    <div className="mb-3">
+                        <input
+                            type="range"
+                            min="0"
+                            max={(base.unit === '本' || base.unit === '1個') ? 50 : 500}
+                            step={(base.unit === '本' || base.unit === '1個') ? 0.1 : 5}
+                            value={amount}
+                            onChange={(e) => handleAmountChange(Number(e.target.value))}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                            style={{
+                                background: `linear-gradient(to right, #4f46e5 0%, #4f46e5 ${(amount/((base.unit === '本' || base.unit === '1個') ? 50 : 500))*100}%, #e5e7eb ${(amount/((base.unit === '本' || base.unit === '1個') ? 50 : 500))*100}%, #e5e7eb 100%)`
+                            }}
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            {base.unit === '本' ? (
+                                <>
+                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0</span>
+                                    <span onClick={() => handleAmountChange(1)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">1</span>
+                                    <span onClick={() => handleAmountChange(2)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">2</span>
+                                    <span onClick={() => handleAmountChange(5)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">5</span>
+                                    <span onClick={() => handleAmountChange(10)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">10</span>
+                                    <span onClick={() => handleAmountChange(50)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">50</span>
+                                </>
+                            ) : base.unit === '1個' ? (
+                                <>
+                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0</span>
+                                    <span onClick={() => handleAmountChange(1)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">1</span>
+                                    <span onClick={() => handleAmountChange(10)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">10</span>
+                                    <span onClick={() => handleAmountChange(20)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">20</span>
+                                    <span onClick={() => handleAmountChange(30)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">30</span>
+                                    <span onClick={() => handleAmountChange(50)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">50</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0</span>
+                                    <span onClick={() => handleAmountChange(100)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">100</span>
+                                    <span onClick={() => handleAmountChange(200)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">200</span>
+                                    <span onClick={() => handleAmountChange(300)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">300</span>
+                                    <span onClick={() => handleAmountChange(400)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">400</span>
+                                    <span onClick={() => handleAmountChange(500)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">500</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
 
-                {/* 数値入力 */}
-                <div className="flex items-center justify-center">
+                    {/* 数値入力 */}
                     <input
                         type="number"
-                        min="0"
-                        max="9999"
                         value={amount}
                         onChange={(e) => handleAmountChange(Number(e.target.value))}
-                        className="w-full px-4 py-3 text-2xl font-bold text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                        step={(base.unit === '本' || base.unit === '1個') ? 0.1 : 1}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2"
                     />
-                </div>
 
-                {/* クイック調整ボタン */}
-                <div className="grid grid-cols-5 gap-2">
-                    <button
-                        onClick={() => adjustAmount(-100)}
-                        className="px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition"
-                    >
-                        -100
-                    </button>
-                    <button
-                        onClick={() => adjustAmount(-50)}
-                        className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition"
-                    >
-                        -50
-                    </button>
-                    <button
-                        onClick={() => adjustAmount(-10)}
-                        className="px-3 py-2 bg-orange-50 text-orange-600 rounded-lg text-sm font-medium hover:bg-orange-100 transition"
-                    >
-                        -10
-                    </button>
-                    <button
-                        onClick={() => adjustAmount(10)}
-                        className="px-3 py-2 bg-green-50 text-green-600 rounded-lg text-sm font-medium hover:bg-green-100 transition"
-                    >
-                        +10
-                    </button>
-                    <button
-                        onClick={() => adjustAmount(50)}
-                        className="px-3 py-2 bg-emerald-50 text-emerald-600 rounded-lg text-sm font-medium hover:bg-emerald-100 transition"
-                    >
-                        +50
-                    </button>
-                    <button
-                        onClick={() => adjustAmount(100)}
-                        className="px-3 py-2 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-200 transition col-span-5"
-                    >
-                        +100
-                    </button>
+                    {/* 増減ボタン */}
+                    {base.unit === '本' ? (
+                        <div className="grid grid-cols-6 gap-1">
+                            <button
+                                onClick={() => adjustAmount(-1)}
+                                className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                            >
+                                -1
+                            </button>
+                            <button
+                                onClick={() => adjustAmount(-0.5)}
+                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                            >
+                                -0.5
+                            </button>
+                            <button
+                                onClick={() => adjustAmount(-0.1)}
+                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                            >
+                                -0.1
+                            </button>
+                            <button
+                                onClick={() => adjustAmount(0.1)}
+                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                            >
+                                +0.1
+                            </button>
+                            <button
+                                onClick={() => adjustAmount(0.5)}
+                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                            >
+                                +0.5
+                            </button>
+                            <button
+                                onClick={() => adjustAmount(1)}
+                                className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                            >
+                                +1
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-6 gap-1">
+                            <button
+                                onClick={() => adjustAmount(-100)}
+                                className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                            >
+                                -100
+                            </button>
+                            <button
+                                onClick={() => adjustAmount(-50)}
+                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                            >
+                                -50
+                            </button>
+                            <button
+                                onClick={() => adjustAmount(-10)}
+                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                            >
+                                -10
+                            </button>
+                            <button
+                                onClick={() => adjustAmount(10)}
+                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                            >
+                                +10
+                            </button>
+                            <button
+                                onClick={() => adjustAmount(50)}
+                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                            >
+                                +50
+                            </button>
+                            <button
+                                onClick={() => adjustAmount(100)}
+                                className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                            >
+                                +100
+                            </button>
+                        </div>
+                    )}
+
+                    {/* 倍増減ボタン */}
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                        <button
+                            onClick={() => handleAmountChange(Math.max(0, Math.round(Number(amount) * 0.5 * 10) / 10))}
+                            className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                        >
+                            ×0.5
+                        </button>
+                        <button
+                            onClick={() => handleAmountChange(Math.round(Number(amount) * 2 * 10) / 10)}
+                            className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                        >
+                            ×2
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1114,18 +1240,27 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                         </p>
                     </div>
 
-                    {/* もしかして候補 */}
-                    {suggestion && (
-                        <button
-                            onClick={() => {
-                                if (onReplace) {
-                                    onReplace(suggestion);
-                                }
-                            }}
-                            className="w-full px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg transition text-sm font-medium border border-amber-300"
-                        >
-                            もしかして: {suggestion.name}?
-                        </button>
+                    {/* もしかして候補（3択） */}
+                    {suggestions.length > 0 && (
+                        <div className="space-y-2">
+                            <p className="text-xs text-amber-800 font-medium">もしかして:</p>
+                            <div className="space-y-1">
+                                {suggestions.map((suggestion, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => {
+                                            if (onReplace) {
+                                                onReplace(suggestion);
+                                            }
+                                        }}
+                                        className="w-full px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg transition text-sm font-medium border border-amber-300 flex items-center justify-between"
+                                    >
+                                        <span>{suggestion.name}</span>
+                                        <span className="text-xs text-amber-600">類似度 {suggestion.similarity}%</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     )}
 
                     <button
