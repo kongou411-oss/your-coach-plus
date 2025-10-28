@@ -123,7 +123,8 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         const totalDuration = workouts.reduce((sum, w) => {
             return sum + (w.sets || []).reduce((s, set) => s + (set.duration || 0), 0);
         }, 0);
-        const exerciseCount = workouts.length;
+        // 全ての運動記録の中の種目数を合計（2部練習などで分けた場合も正しく計算）
+        const exerciseCount = workouts.reduce((sum, w) => sum + (w.exercises?.length || 0), 0);
 
         // 休養日判定（ルーティンで明示的に設定されている場合）
         const isRestDay = record.routine?.is_rest_day === true;
