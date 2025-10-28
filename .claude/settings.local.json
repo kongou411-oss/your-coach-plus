@@ -31,7 +31,10 @@
       "Bash(powershell:*)",
       "Bash(node -c:*)",
       "Bash(start /B python:*)",
-      "Bash(timeout 2 python:*)"
+      "Bash(timeout 2 python:*)",
+      "Bash(cd:*)",
+      "Bash(del temp_categories.txt temp_categories_detail.txt temp_subcategories.txt)",
+      "Bash(timeout 3 python:*)"
     ],
     "deny": [],
     "ask": []

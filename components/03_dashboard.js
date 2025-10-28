@@ -14,6 +14,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     // 採点基準説明モーダル
     const [showScoringGuideModal, setShowScoringGuideModal] = useState(false);
 
+    // 体脂肪率推定モーダル
+    const [visualGuideModal, setVisualGuideModal] = useState({
+        show: false,
+        gender: profile?.gender || '男性',
+        selectedLevel: 5
+    });
+
     // 体組成の状態管理
     const [bodyComposition, setBodyComposition] = useState({
         weight: profile?.weight || 0,
@@ -800,6 +807,13 @@ ${Math.round(caloriesPercent)}%`
                         <div className="flex items-center gap-2 mb-2">
                             <Icon name="Percent" size={16} className="text-teal-600" />
                             <span className="text-sm font-bold text-gray-700">体脂肪率</span>
+                            <button
+                                onClick={() => setVisualGuideModal({ ...visualGuideModal, show: true })}
+                                className="text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-full p-0.5 transition"
+                                title="体脂肪率を推定"
+                            >
+                                <Icon name="Eye" size={14} />
+                            </button>
                         </div>
                         <div className="flex items-center justify-center gap-2">
                             <button
@@ -1970,6 +1984,116 @@ ${Math.round(caloriesPercent)}%`
                             >
                                 確認しました
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 体脂肪率推定モーダル */}
+            {visualGuideModal.show && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-pink-600 text-white p-4 flex justify-between items-center z-10">
+                            <h3 className="font-bold text-lg">外見から体脂肪率を推定</h3>
+                            <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <p className="text-sm text-yellow-800 font-medium">
+                                    ⚠️ この推定値は外見に基づく主観的評価であり、実際の体脂肪率と±3-5%の誤差があります。正確な測定には体組成計の使用を強く推奨します。
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2">性別を選択</label>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setVisualGuideModal({ ...visualGuideModal, gender: '男性' })}
+                                        className={`flex-1 px-4 py-2 rounded-lg border-2 ${visualGuideModal.gender === '男性' ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-300'}`}
+                                    >
+                                        男性
+                                    </button>
+                                    <button
+                                        onClick={() => setVisualGuideModal({ ...visualGuideModal, gender: '女性' })}
+                                        className={`flex-1 px-4 py-2 rounded-lg border-2 ${visualGuideModal.gender === '女性' ? 'border-pink-600 bg-pink-50 text-pink-700' : 'border-gray-300'}`}
+                                    >
+                                        女性
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-3">
+                                    あなたの体型に最も近いレベルを選択してください (1-10)
+                                </label>
+                                <div className="space-y-2">
+                                    {LBMUtils.getVisualGuideInfo(visualGuideModal.gender).map((guide) => {
+                                        const isSelected = visualGuideModal.selectedLevel === guide.level;
+                                        return (
+                                            <button
+                                                key={guide.level}
+                                                onClick={() => setVisualGuideModal({ ...visualGuideModal, selectedLevel: guide.level })}
+                                                className={`w-full text-left p-4 rounded-lg border-2 transition ${
+                                                    isSelected
+                                                        ? 'border-orange-600 bg-orange-50'
+                                                        : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                                                        isSelected ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-600'
+                                                    }`}>
+                                                        {guide.level}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="font-bold text-gray-900">{guide.title}</span>
+                                                            <span className="text-sm text-gray-600">({guide.range})</span>
+                                                        </div>
+                                                        <ul className="text-sm text-gray-700 space-y-1">
+                                                            {guide.features.map((feature, idx) => (
+                                                                <li key={idx}>• {feature}</li>
+                                                            ))}
+                                                        </ul>
+                                                        <p className="text-xs text-gray-500 mt-2">健康: {guide.health}</p>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="bg-gradient-to-r from-orange-50 to-pink-50 p-4 rounded-lg border border-orange-200">
+                                <p className="text-sm font-medium text-gray-700 mb-2">推定結果</p>
+                                <p className="text-3xl font-bold text-orange-600">
+                                    {LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel).bodyFatPercentage}%
+                                </p>
+                                <p className="text-sm text-gray-600 mt-2">
+                                    {LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel).description}
+                                </p>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })}
+                                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                >
+                                    キャンセル
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const estimate = LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel);
+                                        updateBodyComposition(bodyComposition.weight, estimate.bodyFatPercentage);
+                                        setVisualGuideModal({ ...visualGuideModal, show: false });
+                                    }}
+                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-600 to-pink-600 text-white rounded-lg hover:from-orange-700 hover:to-pink-700 font-medium"
+                                >
+                                    この値を使用
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

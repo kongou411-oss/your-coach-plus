@@ -872,6 +872,20 @@ const trainingDatabase = {
             movement: "有酸素",
             description: "基本的な有酸素運動。心肺機能と持久力を向上"
         },
+        "ウォーキング": {
+            category: "有酸素運動",
+            subcategory: "持久系",
+            exerciseType: "aerobic",
+            jointType: "aerobic",
+            defaultDistance: 3000,
+            defaultTutPerRep: 1800,
+            primaryMuscles: ["下半身全体", "心肺機能"],
+            secondaryMuscles: ["体幹"],
+            equipment: "なし",
+            difficulty: "初級",
+            movement: "有酸素",
+            description: "関節への負担が少ない基本的な有酸素運動。初心者や高齢者にも適している"
+        },
         "サイクリング": {
             category: "有酸素運動",
             subcategory: "持久系",

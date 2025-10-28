@@ -17,24 +17,11 @@ const getFoodDBFromExternal = () => {
     }
     const foodCategories = {};
     Object.keys(foodDatabase).forEach(category => {
-        if (category !== '調味料') {
-            foodCategories[category] = foodDatabase[category];
-        }
+        foodCategories[category] = foodDatabase[category];
     });
 
-    // LocalStorageからカスタム食材を読み込む
-    try {
-        const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
-        if (customFoods.length > 0) {
-            foodCategories['カスタム'] = {};
-            customFoods.forEach(food => {
-                foodCategories['カスタム'][food.name] = food;
-            });
-            console.log(`Loaded ${customFoods.length} custom foods from localStorage`);
-        }
-    } catch (err) {
-        console.error('Failed to load custom foods from localStorage:', err);
-    }
+    // 旧カスタムカテゴリロジックは削除（カスタム食材/料理/サプリに分割されたため）
+    // カスタムアイテムは検索モーダル内で直接表示されます
 
     return foodCategories;
 };

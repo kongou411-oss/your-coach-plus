@@ -349,6 +349,15 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
             // サプリメント用のstate
             const [showCustomSupplementForm, setShowCustomSupplementForm] = useState(false);
             const [showQuickCreate, setShowQuickCreate] = useState(false);
+            const [isAICreation, setIsAICreation] = useState(false); // AI解析からの作成かどうか
+            const [isFromAIRecognition, setIsFromAIRecognition] = useState(false); // AI写真解析経由かどうか
+            const [nutritionInputMethod, setNutritionInputMethod] = useState('manual'); // 'manual' or 'ai'
+            const [aiImage, setAiImage] = useState(null); // AI推定用の画像
+            const [aiImagePreview, setAiImagePreview] = useState(null); // AI推定用の画像プレビュー
+            const [aiRecognizing, setAiRecognizing] = useState(false); // AI認識中
+            const [saveMethod, setSaveMethod] = useState('database'); // 'database' or 'addToList'
+            const [showSaveMethodInfo, setShowSaveMethodInfo] = useState(false); // 保存方法説明モーダル
+            const [onCustomCompleteCallback, setOnCustomCompleteCallback] = useState(null); // カスタム登録完了時のコールバック
             const [customSupplementData, setCustomSupplementData] = useState({
                 itemType: 'food', // 'food', 'recipe', 'supplement'
                 name: '',
@@ -1007,25 +1016,6 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                             </div>
                         )}
 
-                        {/* ③追加済みアイテム一覧 */}
-                        {addedItems.length > 0 && (
-                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                <p className="text-sm font-medium text-blue-900 mb-3">追加済み ({addedItems.length}品目)</p>
-                                <div className="space-y-2">
-                                    {addedItems.map((item, index) => (
-                                        <div key={index} className="flex justify-between items-center bg-white p-2 rounded">
-                                            <span className="text-sm">{item.name} × {item.amount}</span>
-                                            <button
-                                                onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
-                                                className="text-red-500 hover:text-red-700"
-                                            >
-                                                <Icon name="X" size={16} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
 
                         {/* ④テンプレート（一覧+新規保存） - 12日以上で開放 */}
                         {unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id) && !selectedItem && (
@@ -2809,8 +2799,19 @@ RM回数と重量を別々に入力してください。`
 
                 // AI食事認識のコールバック
                 const handleFoodsRecognized = (recognizedFoods) => {
-                    // 認識された食材を直接addedItemsに追加
-                    const newItems = recognizedFoods.map(food => {
+                    console.log('[handleFoodsRecognized] 開始');
+                    console.log('[handleFoodsRecognized] recognizedFoods:', recognizedFoods);
+                    console.log('[handleFoodsRecognized] 現在のaddedItems:', addedItems);
+
+                    // 既にaddedItemsに追加済みの食材は除外（重複防止）
+                    const filteredFoods = recognizedFoods.filter(food => {
+                        return !addedItems.some(item => item.name === food.name);
+                    });
+
+                    console.log('[handleFoodsRecognized] フィルター後のfilteredFoods:', filteredFoods);
+
+                    // 認識された食材を直接addedItemsに追加（一時的な項目として）
+                    const newItems = filteredFoods.map(food => {
                         // データベースから該当食材を探す
                         let foundFood = null;
                         let foundCategory = null;
@@ -2831,23 +2832,268 @@ RM回数と重量を別々に入力してください。`
                                 ...nutrients
                             };
                         } else {
-                            // DBに見つからない場合はカスタム食材として扱う
+                            // DBに見つからない場合はカスタム食材として一時的に扱う
                             return {
                                 name: food.name,
                                 amount: food.amount,
-                                calories: food.estimatedCalories || 0,
-                                protein: food.estimatedProtein || 0,
-                                fat: food.estimatedFat || 0,
-                                carbs: food.estimatedCarbs || 0,
+                                calories: food.calories || 0,
+                                protein: food.protein || 0,
+                                fat: food.fat || 0,
+                                carbs: food.carbs || 0,
                                 category: 'カスタム',
+                                isUnknown: true, // 未登録フラグ
                                 vitamins: {},
                                 minerals: {}
                             };
                         }
                     });
 
+                    console.log('[handleFoodsRecognized] 生成されたnewItems:', newItems);
+                    console.log('[handleFoodsRecognized] 更新前のaddedItems:', addedItems);
+
                     setAddedItems([...addedItems, ...newItems]);
+
+                    console.log('[handleFoodsRecognized] 更新後のaddedItems:', [...addedItems, ...newItems]);
+                    console.log('[handleFoodsRecognized] 完了、検索モーダルに遷移します');
+
                     setShowAIFoodRecognition(false);
+                    setShowSearchModal(true); // 検索モーダルを開いてaddedItemsを表示
+                };
+
+                // AI写真解析から未登録食材のカスタム作成を開始
+                const handleOpenCustomFromAI = async (foodData, onCompleteCallback) => {
+                    setIsFromAIRecognition(true); // AI写真解析経由フラグ
+                    setSaveMethod('addToList'); // AI経由はデフォルトで「リストに追加」
+                    setOnCustomCompleteCallback(() => onCompleteCallback); // コールバックを保存
+                    setShowCustomSupplementForm(true);
+                    // setShowAIFoodRecognition(false); // コンポーネントをアンマウントしない（状態保持のため）
+                    setAiRecognizing(true);
+
+                    try {
+                        // Gemini APIで食材名から栄養素を推定
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+
+                        const requestBody = {
+                            contents: [{
+                                parts: [{
+                                    text: `「${foodData.name}」の栄養素を日本食品標準成分表2020年版（八訂）を基準に推定してJSON形式で出力してください。
+
+【出力形式】
+{
+  "calories": カロリー（kcal/100g、数値のみ）,
+  "protein": たんぱく質（g/100g、数値のみ）,
+  "fat": 脂質（g/100g、数値のみ）,
+  "carbs": 炭水化物（g/100g、数値のみ）
+}
+
+【推定ルール】
+1. 日本食品標準成分表2020年版（八訂）の値を基準に推定
+2. 100gあたりの栄養素で推定
+3. 最も一般的な調理法・状態の値を使用
+4. JSON形式のみを出力し、他のテキストは含めない`
+                                }]
+                            }],
+                            generationConfig: {
+                                temperature: 0.2,
+                                topK: 32,
+                                topP: 1,
+                                maxOutputTokens: 512,
+                            }
+                        };
+
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(requestBody)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('AI推定に失敗しました');
+                        }
+
+                        const data = await response.json();
+                        const textContent = data.candidates[0].content.parts[0].text;
+
+                        const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+                        if (!jsonMatch) {
+                            throw new Error('栄養素の解析に失敗しました');
+                        }
+
+                        const nutrition = JSON.parse(jsonMatch[0]);
+
+                        // AI推定値を設定
+                        setCustomSupplementData({
+                            itemType: 'food',
+                            name: foodData.name || '',
+                            category: 'ビタミン・ミネラル',
+                            servingSize: 100,
+                            servingUnit: 'g',
+                            calories: nutrition.calories || 0,
+                            protein: nutrition.protein || 0,
+                            fat: nutrition.fat || 0,
+                            carbs: nutrition.carbs || 0,
+                            vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
+                            vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
+                            niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0,
+                            sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0,
+                            iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0,
+                            otherNutrients: []
+                        });
+
+                    } catch (error) {
+                        console.error('AI nutrition estimation error:', error);
+                        // エラー時はfoodDataの値を使用
+                        setCustomSupplementData({
+                            itemType: 'food',
+                            name: foodData.name || '',
+                            category: 'ビタミン・ミネラル',
+                            servingSize: 100,
+                            servingUnit: 'g',
+                            calories: foodData.calories || 0,
+                            protein: foodData.protein || 0,
+                            fat: foodData.fat || 0,
+                            carbs: foodData.carbs || 0,
+                            vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
+                            vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
+                            niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0,
+                            sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0,
+                            iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0,
+                            otherNutrients: []
+                        });
+                    } finally {
+                        setAiRecognizing(false);
+                    }
+                };
+
+                // AI推定（カスタム作成用）
+                const recognizeNutrition = async () => {
+                    if (!aiImage) {
+                        alert('画像を選択してください');
+                        return;
+                    }
+
+                    setAiRecognizing(true);
+
+                    try {
+                        // 画像をBase64に変換
+                        const imageToBase64 = (file) => {
+                            return new Promise((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    const base64String = reader.result.split(',')[1];
+                                    resolve(base64String);
+                                };
+                                reader.onerror = reject;
+                                reader.readAsDataURL(file);
+                            });
+                        };
+
+                        const base64Image = await imageToBase64(aiImage);
+
+                        // Gemini Vision APIを呼び出し
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+
+                        const requestBody = {
+                            contents: [{
+                                parts: [
+                                    {
+                                        text: `この食品画像の栄養素を推定してJSON形式で出力してください。
+
+【出力形式】
+{
+  "name": "食品名（日本語）",
+  "servingSize": 1回分の量（数値のみ、通常100g）,
+  "servingUnit": "単位（g、ml、個など）",
+  "calories": カロリー（kcal、数値のみ）,
+  "protein": たんぱく質（g、数値のみ）,
+  "fat": 脂質（g、数値のみ）,
+  "carbs": 炭水化物（g、数値のみ）
+}
+
+【推定ルール】
+1. 100gあたりの栄養素で推定
+2. 複合的な料理の場合は、全体の栄養素を推定
+3. 信頼できる栄養成分表を参考に推定
+4. JSON形式のみを出力し、他のテキストは含めない
+
+例:
+- 鶏むね肉 → {"name":"鶏むね肉","servingSize":100,"servingUnit":"g","calories":108,"protein":22.3,"fat":1.5,"carbs":0}
+- プロテインバー → {"name":"プロテインバー","servingSize":1,"servingUnit":"本","calories":200,"protein":20,"fat":8,"carbs":15}`
+                                    },
+                                    {
+                                        inline_data: {
+                                            mime_type: aiImage.type || 'image/jpeg',
+                                            data: base64Image
+                                        }
+                                    }
+                                ]
+                            }],
+                            generationConfig: {
+                                temperature: 0.4,
+                                topK: 32,
+                                topP: 1,
+                                maxOutputTokens: 1024,
+                            }
+                        };
+
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(requestBody)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('AI認識に失敗しました');
+                        }
+
+                        const data = await response.json();
+                        const textContent = data.candidates[0].content.parts[0].text;
+
+                        // JSONを抽出
+                        const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+                        if (!jsonMatch) {
+                            throw new Error('栄養素の解析に失敗しました');
+                        }
+
+                        const nutrition = JSON.parse(jsonMatch[0]);
+
+                        // customSupplementDataに反映
+                        setCustomSupplementData(prev => ({
+                            ...prev,
+                            name: nutrition.name || prev.name,
+                            servingSize: nutrition.servingSize || 100,
+                            servingUnit: nutrition.servingUnit || 'g',
+                            calories: nutrition.calories || 0,
+                            protein: nutrition.protein || 0,
+                            fat: nutrition.fat || 0,
+                            carbs: nutrition.carbs || 0
+                        }));
+
+                        setIsAICreation(true);
+                        setNutritionInputMethod('manual'); // 自動的に手動入力タブに切り替え
+                        alert('AI推定が完了しました。値を確認・編集してから保存してください。');
+
+                    } catch (error) {
+                        console.error('AI recognition error:', error);
+                        alert('AI認識に失敗しました: ' + error.message);
+                    } finally {
+                        setAiRecognizing(false);
+                    }
+                };
+
+                // AI推定用の画像選択ハンドラー
+                const handleAiImageSelect = (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        setAiImage(file);
+
+                        // プレビュー表示
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            setAiImagePreview(reader.result);
+                        };
+                        reader.readAsDataURL(file);
+                    }
                 };
 
                 // 階層化されたカテゴリ構造を構築
@@ -2916,6 +3162,14 @@ RM回数と重量を別々に入力してください。`
                 );
                 if (filteredCustomRecipes.length > 0) {
                     hierarchicalCategories['カスタム料理'] = { 'カスタム料理': filteredCustomRecipes.map(f => f.name) };
+                }
+
+                // カスタムサプリをサプリメント配下に追加
+                const filteredCustomSupplements = customFoods.filter(food =>
+                    food.itemType === 'supplement' && fuzzyMatch(food.name, searchTerm)
+                );
+                if (filteredCustomSupplements.length > 0) {
+                    hierarchicalCategories['サプリメント']['カスタムサプリ'] = filteredCustomSupplements.map(f => f.name);
                 }
 
                 const filteredFoods = hierarchicalCategories;
@@ -3001,7 +3255,13 @@ RM回数と重量を別々に入力してください。`
                                 {/* 手動で作成（グレー背景、グレー枠） */}
                                 <button
                                     type="button"
-                                    onClick={() => setShowCustomSupplementForm(true)}
+                                    onClick={() => {
+                                        setIsAICreation(false);
+                                        setNutritionInputMethod('manual'); // 手動入力タブを初期選択
+                                        setAiImage(null);
+                                        setAiImagePreview(null);
+                                        setShowCustomSupplementForm(true);
+                                    }}
                                     className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
                                 >
                                     <Icon name="Plus" size={32} />
@@ -3173,27 +3433,154 @@ RM回数と重量を別々に入力してください。`
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                         />
 
-                                        {/* 追加済みアイテムリスト */}
+                                        {/* 追加済みアイテム一覧 */}
                                         {addedItems.length > 0 && (
-                                            <div className="mt-3 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                                                <p className="text-sm font-bold text-blue-700 mb-2">追加済み ({addedItems.length}品目)</p>
-                                                <div className="space-y-1 max-h-32 overflow-y-auto">
+                                            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mt-3">
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <p className="text-sm font-medium text-indigo-900">追加済み ({addedItems.length}品目)</p>
+                                                </div>
+                                                <div className="space-y-2 max-h-40 overflow-y-auto">
                                                     {addedItems.map((item, index) => (
-                                                        <div key={index} className="bg-white px-3 py-1.5 rounded flex justify-between items-center">
+                                                        <div key={index} className="bg-white p-2 rounded-lg flex justify-between items-center">
                                                             <div className="flex-1">
-                                                                <span className="text-xs font-medium">{item.name}</span>
-                                                                <span className="text-xs text-gray-600 ml-2">
-                                                                    {item.amount}{item.unit || 'g'}
-                                                                </span>
+                                                                <p className="text-sm font-medium">{item.name}</p>
+                                                                <p className="text-xs text-gray-600">{item.amount}g - {Math.round(item.calories)}kcal</p>
                                                             </div>
-                                                            <button
-                                                                onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
-                                                                className="text-red-500 hover:text-red-700 ml-2"
-                                                            >
-                                                                <Icon name="X" size={14} />
-                                                            </button>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        // 編集時は100gあたりの栄養価に戻す必要がある
+                                                                        const originalRatio = 100 / item.amount;
+                                                                        setSelectedItem({
+                                                                            name: item.name,
+                                                                            calories: item.calories * originalRatio,
+                                                                            protein: item.protein * originalRatio,
+                                                                            fat: item.fat * originalRatio,
+                                                                            carbs: item.carbs * originalRatio,
+                                                                            vitamins: item.vitamins,
+                                                                            minerals: item.minerals,
+                                                                            category: item.category || ''
+                                                                        });
+                                                                        setAmount(item.amount.toString());
+                                                                        setEditingItemIndex(index);
+                                                                        setShowSearchModal(false);
+                                                                    }}
+                                                                    className="text-blue-500 hover:text-blue-700"
+                                                                    title="編集"
+                                                                >
+                                                                    <Icon name="Edit" size={16} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
+                                                                    className="text-red-500 hover:text-red-700"
+                                                                >
+                                                                    <Icon name="Trash2" size={16} />
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     ))}
+                                                </div>
+                                                <div className="mt-3 pt-3 border-t border-indigo-200">
+                                                    <div className="grid grid-cols-4 gap-2 text-xs">
+                                                        <div>
+                                                            <p className="text-gray-600">カロリー</p>
+                                                            <p className="font-bold" style={{color: '#7686BA'}}>
+                                                                {Math.round(addedItems.reduce((sum, item) => sum + item.calories, 0))}kcal
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-gray-600">P</p>
+                                                            <p className="font-bold text-red-600">
+                                                                {addedItems.reduce((sum, item) => sum + item.protein, 0).toFixed(1)}g
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-gray-600">F</p>
+                                                            <p className="font-bold text-yellow-600">
+                                                                {addedItems.reduce((sum, item) => sum + item.fat, 0).toFixed(1)}g
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-gray-600">C</p>
+                                                            <p className="font-bold text-green-600">
+                                                                {addedItems.reduce((sum, item) => sum + item.carbs, 0).toFixed(1)}g
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* アイテムを追加ボタン */}
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedItem(null);
+                                                    }}
+                                                    className="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm mt-3"
+                                                >
+                                                    アイテムを追加
+                                                </button>
+
+                                                {/* 記録とキャンセルボタン */}
+                                                <div className="flex gap-2 mt-3">
+                                                    <button
+                                                        onClick={async () => {
+                                                            console.log('[記録ボタン] クリックされました');
+                                                            console.log('[記録ボタン] addedItems:', addedItems);
+
+                                                            // テンプレート編集モードの場合
+                                                            if (editingTemplate) {
+                                                                const updatedTemplate = {
+                                                                    ...editingTemplate,
+                                                                    items: addedItems,
+                                                                    name: mealName || editingTemplate.name
+                                                                };
+                                                                await DataService.saveMealTemplate(user.uid, updatedTemplate);
+                                                                alert('テンプレートを更新しました');
+                                                                setShowSearchModal(false);
+                                                                onClose();
+                                                                return;
+                                                            }
+
+                                                            // 通常の記録モード
+                                                            console.log('[記録ボタン] 通常の記録モードで処理します');
+                                                            const totalCalories = addedItems.reduce((sum, item) => sum + item.calories, 0);
+                                                            const newMeal = {
+                                                                id: Date.now(),
+                                                                time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                                                                name: mealName || '食事',
+                                                                calories: Math.round(totalCalories),
+                                                                items: addedItems.map(item => ({
+                                                                    name: item.name,
+                                                                    amount: `${item.amount}g`,
+                                                                    protein: item.protein,
+                                                                    fat: item.fat,
+                                                                    carbs: item.carbs,
+                                                                    vitamins: item.vitamins,
+                                                                    minerals: item.minerals
+                                                                }))
+                                                            };
+
+                                                            console.log('[記録ボタン] 生成されたnewMeal:', newMeal);
+                                                            console.log('[記録ボタン] onAdd関数を呼び出します');
+
+                                                            onAdd(newMeal);
+                                                            setShowSearchModal(false);
+
+                                                            console.log('[記録ボタン] 完了');
+                                                        }}
+                                                        className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                                    >
+                                                        {editingTemplate ? 'テンプレートを更新' : '記録'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setAddedItems([]);
+                                                            setShowSearchModal(false);
+                                                            onClose();
+                                                        }}
+                                                        className="px-4 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
+                                                    >
+                                                        キャンセル
+                                                    </button>
                                                 </div>
                                             </div>
                                         )}
@@ -3301,10 +3688,10 @@ RM回数と重量を別々に入力してください。`
                                                             {expandedCategories[subCategory] && (
                                                             <div className="p-2 space-y-1 bg-gray-50">
                                                                 {subcategories[subCategory].map(foodName => {
-                                                                    // カスタム食材・カスタム料理の場合はlocalStorageから取得
+                                                                    // カスタムアイテムの場合はlocalStorageから取得
                                                                     let food;
                                                                     let actualCategory;
-                                                                    const isCustom = subCategory === 'カスタム食材' || subCategory === 'カスタム料理';
+                                                                    const isCustom = subCategory === 'カスタム食材' || subCategory === 'カスタム料理' || subCategory === 'カスタムサプリ';
 
                                                                     if (isCustom) {
                                                                         const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
@@ -3348,7 +3735,7 @@ RM回数と重量を別々に入力してください。`
                                                                                 protein: parseFloat(food.protein),
                                                                                 fat: parseFloat(food.fat),
                                                                                 carbs: parseFloat(food.carbs),
-                                                                                category: subCategory === 'カスタム料理' ? '料理' : actualCategory,
+                                                                                category: actualCategory,
                                                                                 isCustom: isCustom,
                                                                                 unit: food.unit,
                                                                                 servingSize: food.servingSize,
@@ -3523,6 +3910,21 @@ RM回数と重量を別々に入力してください。`
                                                     +100
                                                 </button>
                                             </div>
+                                            {/* 倍増減ボタン */}
+                                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                                <button
+                                                    onClick={() => setAmount(Math.max(0, Math.round(Number(amount) * 0.5)))}
+                                                    className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                                                >
+                                                    ×0.5
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Math.round(Number(amount) * 2))}
+                                                    className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                                                >
+                                                    ×2
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {/* 摂取量プレビュー */}
@@ -3633,7 +4035,12 @@ RM回数と重量を別々に入力してください。`
                                         カスタムアイテムを作成
                                     </h3>
                                     <button
-                                        onClick={() => setShowCustomSupplementForm(false)}
+                                        onClick={() => {
+                                            setShowCustomSupplementForm(false);
+                                            setIsFromAIRecognition(false);
+                                            // AI写真解析モーダルはマウントされたままなので、
+                                            // カスタムモーダルを閉じるだけで自動的に認識リストが表示される
+                                        }}
                                         className="text-gray-500 hover:text-gray-700"
                                     >
                                         <Icon name="X" size={20} />
@@ -3702,47 +4109,84 @@ RM回数と重量を別々に入力してください。`
                                                             </div>
                                                         </div>
 
-                                                        {/* Row 3: カテゴリ */}
-                                                        <div>
-                                                            <label className="text-xs font-medium text-gray-700 mb-1 block">カテゴリ</label>
-                                                            {customSupplementData.itemType === 'recipe' ? (
-                                                                <input
-                                                                    type="text"
-                                                                    value="料理"
-                                                                    disabled
-                                                                    className="w-full px-3 py-2 text-sm border rounded-lg bg-gray-100"
-                                                                />
-                                                            ) : (
-                                                                <select
-                                                                    value={customSupplementData.category}
-                                                                    onChange={(e) => setCustomSupplementData({...customSupplementData, category: e.target.value})}
-                                                                    className="w-full px-3 py-2 text-sm border rounded-lg"
+                                                        {/* 栄養素の入力方法タブ */}
+                                                        <div className="border-t pt-3">
+                                                            <label className="text-xs font-medium text-gray-700 mb-2 block">栄養素の入力方法</label>
+                                                            <div className="flex gap-2 mb-3">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setNutritionInputMethod('manual')}
+                                                                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                                                                        nutritionInputMethod === 'manual'
+                                                                            ? 'bg-green-600 text-white'
+                                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                    }`}
                                                                 >
-                                                                    {customSupplementData.itemType === 'supplement' ? (
-                                                                        <>
-                                                                            <option value="ビタミン・ミネラル">ビタミン・ミネラル</option>
-                                                                            <option value="プロテイン">プロテイン</option>
-                                                                            <option value="アミノ酸">アミノ酸</option>
-                                                                            <option value="ドリンク">ドリンク</option>
-                                                                            <option value="その他">その他</option>
-                                                                        </>
+                                                                    手動入力
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setNutritionInputMethod('ai')}
+                                                                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1 ${
+                                                                        nutritionInputMethod === 'ai'
+                                                                            ? 'bg-purple-600 text-white'
+                                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                    }`}
+                                                                >
+                                                                    <Icon name="Sparkles" size={14} />
+                                                                    AI推定
+                                                                </button>
+                                                            </div>
+
+                                                            {/* AI推定タブの内容 */}
+                                                            {nutritionInputMethod === 'ai' && (
+                                                                <div className="bg-purple-50 p-3 rounded-lg mb-3">
+                                                                    <p className="text-xs text-gray-700 mb-2">写真から栄養素を推定します</p>
+
+                                                                    {!aiImagePreview ? (
+                                                                        <label className="block cursor-pointer">
+                                                                            <div className="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center hover:bg-purple-100 transition">
+                                                                                <Icon name="Camera" size={32} className="mx-auto text-purple-600 mb-2" />
+                                                                                <p className="text-sm font-medium text-purple-700">写真を選択</p>
+                                                                                <p className="text-xs text-gray-500 mt-1">タップして写真を選択</p>
+                                                                            </div>
+                                                                            <input
+                                                                                type="file"
+                                                                                accept="image/*"
+                                                                                onChange={handleAiImageSelect}
+                                                                                className="hidden"
+                                                                            />
+                                                                        </label>
                                                                     ) : (
-                                                                        <>
-                                                                            <option value="穀類">穀類</option>
-                                                                            <option value="肉類">肉類</option>
-                                                                            <option value="魚介類">魚介類</option>
-                                                                            <option value="野菜類">野菜類</option>
-                                                                            <option value="果物類">果物類</option>
-                                                                            <option value="乳製品">乳製品</option>
-                                                                            <option value="調味料">調味料</option>
-                                                                            <option value="その他">その他</option>
-                                                                        </>
+                                                                        <div>
+                                                                            <img src={aiImagePreview} alt="Preview" className="w-full rounded-lg mb-2" />
+                                                                            <div className="flex gap-2">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={recognizeNutrition}
+                                                                                    disabled={aiRecognizing}
+                                                                                    className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50 text-sm font-medium"
+                                                                                >
+                                                                                    {aiRecognizing ? 'AI解析中...' : 'AI解析を実行'}
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        setAiImage(null);
+                                                                                        setAiImagePreview(null);
+                                                                                    }}
+                                                                                    className="px-3 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
+                                                                                >
+                                                                                    削除
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
                                                                     )}
-                                                                </select>
+                                                                </div>
                                                             )}
                                                         </div>
 
-                                                        {/* Row 4: 1回分の量と単位 */}
+                                                        {/* Row 3: 1回分の量と単位 */}
                                                         <div>
                                                             <label className="text-xs font-medium text-gray-700 mb-1 block">1回分の量</label>
                                                             <div className="flex gap-2">
@@ -3845,6 +4289,50 @@ RM回数と重量を別々に入力してください。`
                                                             <button onClick={() => setCustomSupplementData({...customSupplementData, otherNutrients: [...customSupplementData.otherNutrients, {name: '', amount: '', unit: ''}]})} className="w-full px-2 py-1.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 text-xs">+ 追加</button>
                                                         </div>
 
+                                                        {/* 保存方法選択 */}
+                                                        <div className="border-t pt-4 mt-4">
+                                                            <div className="flex items-center gap-2 mb-3">
+                                                                <label className="text-sm font-medium text-gray-700">保存方法</label>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setShowSaveMethodInfo(true)}
+                                                                    className="text-blue-600 hover:text-blue-700"
+                                                                >
+                                                                    <Icon name="Info" size={16} />
+                                                                </button>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                                                    <input
+                                                                        type="radio"
+                                                                        name="saveMethod"
+                                                                        value="database"
+                                                                        checked={saveMethod === 'database'}
+                                                                        onChange={(e) => setSaveMethod(e.target.value)}
+                                                                        className="mt-0.5"
+                                                                    />
+                                                                    <div className="flex-1">
+                                                                        <div className="font-medium text-sm text-gray-900">データベースに保存</div>
+                                                                        <div className="text-xs text-gray-600 mt-0.5">後で検索して使用できます</div>
+                                                                    </div>
+                                                                </label>
+                                                                <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                                                    <input
+                                                                        type="radio"
+                                                                        name="saveMethod"
+                                                                        value="addToList"
+                                                                        checked={saveMethod === 'addToList'}
+                                                                        onChange={(e) => setSaveMethod(e.target.value)}
+                                                                        className="mt-0.5"
+                                                                    />
+                                                                    <div className="flex-1">
+                                                                        <div className="font-medium text-sm text-gray-900">リストに追加</div>
+                                                                        <div className="text-xs text-gray-600 mt-0.5">今すぐ記録に追加されます</div>
+                                                                    </div>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+
                                                         <button
                                                             onClick={() => {
                                                                 if (!customSupplementData.name.trim()) {
@@ -3852,8 +4340,10 @@ RM回数と重量を別々に入力してください。`
                                                                     return;
                                                                 }
 
-                                                                // カスタム料理の場合はカテゴリを「料理」に統一
-                                                                const finalCategory = customSupplementData.itemType === 'recipe' ? '料理' : customSupplementData.category;
+                                                                // itemTypeに応じてカテゴリを自動設定
+                                                                const finalCategory = customSupplementData.itemType === 'food' ? 'カスタム食材'
+                                                                    : customSupplementData.itemType === 'recipe' ? 'カスタム料理'
+                                                                    : 'カスタムサプリ';
 
                                                                 // localStorageに保存するデータ
                                                                 const customItem = {
@@ -3902,20 +4392,22 @@ RM回数と重量を別々に入力してください。`
                                                                 customFoods.push(customItem);
                                                                 localStorage.setItem('customFoods', JSON.stringify(customFoods));
 
-                                                                // addedItemsに追加（表示用）
-                                                                const newItem = {
-                                                                    name: customSupplementData.name,
-                                                                    amount: `${customSupplementData.servingSize}${customSupplementData.servingUnit}`,
-                                                                    calories: customSupplementData.calories,
-                                                                    protein: customSupplementData.protein,
-                                                                    fat: customSupplementData.fat,
-                                                                    carbs: customSupplementData.carbs,
-                                                                    category: finalCategory,
-                                                                    isCustom: true,
-                                                                    vitamins: customItem.vitamins,
-                                                                    minerals: customItem.minerals
-                                                                };
-                                                                setAddedItems([...addedItems, newItem]);
+                                                                // 保存方法に応じて処理を分岐
+                                                                if (saveMethod === 'addToList') {
+                                                                    const newItem = {
+                                                                        name: customSupplementData.name,
+                                                                        amount: `${customSupplementData.servingSize}${customSupplementData.servingUnit}`,
+                                                                        calories: customSupplementData.calories,
+                                                                        protein: customSupplementData.protein,
+                                                                        fat: customSupplementData.fat,
+                                                                        carbs: customSupplementData.carbs,
+                                                                        category: finalCategory,
+                                                                        isCustom: true,
+                                                                        vitamins: customItem.vitamins,
+                                                                        minerals: customItem.minerals
+                                                                    };
+                                                                    setAddedItems([...addedItems, newItem]);
+                                                                }
 
                                                                 // フォームをリセット
                                                                 setCustomSupplementData({
@@ -3930,13 +4422,80 @@ RM回数と重量を別々に入力してください。`
                                                                     otherNutrients: []
                                                                 });
                                                                 setShowCustomSupplementForm(false);
+                                                                setSaveMethod('database'); // デフォルトに戻す
 
-                                                                alert('カスタムアイテムを作成しました！');
+                                                                // AI写真解析経由の場合、コールバックを実行してrecognizedFoodsを更新
+                                                                if (isFromAIRecognition && onCustomCompleteCallback) {
+                                                                    onCustomCompleteCallback({
+                                                                        calories: customSupplementData.calories,
+                                                                        protein: customSupplementData.protein,
+                                                                        fat: customSupplementData.fat,
+                                                                        carbs: customSupplementData.carbs,
+                                                                        isUnknown: false
+                                                                    });
+                                                                    setOnCustomCompleteCallback(null); // コールバックをクリア
+                                                                }
+
+                                                                setIsFromAIRecognition(false);
+                                                                // AI写真解析モーダルはマウントされたままなので、
+                                                                // カスタムモーダルを閉じるだけで自動的に認識リストが表示される
+
+                                                                // 通知メッセージ
+                                                                if (saveMethod === 'database') {
+                                                                    alert('カスタムアイテムを保存しました！食材検索から追加できます。');
+                                                                } else {
+                                                                    alert('カスタムアイテムを作成し、追加しました！');
+                                                                }
+
+                                                                setIsAICreation(false);
                                                             }}
                                                             className="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium"
                                                         >
-                                                            追加
+                                                            {saveMethod === 'addToList' ? '保存して追加' : '保存'}
                                                         </button>
+
+                                                        {/* 保存方法説明モーダル */}
+                                                        {showSaveMethodInfo && (
+                                                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001]" onClick={() => setShowSaveMethodInfo(false)}>
+                                                                <div className="bg-white rounded-lg p-6 max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+                                                                    <div className="flex justify-between items-start mb-4">
+                                                                        <h3 className="text-lg font-bold text-gray-900">保存方法について</h3>
+                                                                        <button onClick={() => setShowSaveMethodInfo(false)} className="text-gray-500 hover:text-gray-700">
+                                                                            <Icon name="X" size={20} />
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <div className="space-y-4">
+                                                                        <div className="border-l-4 border-blue-500 pl-4 py-2">
+                                                                            <h4 className="font-semibold text-gray-900 mb-1">データベースに保存</h4>
+                                                                            <p className="text-sm text-gray-700">
+                                                                                カスタムアイテムをデータベースに保存します。今すぐ記録には追加されませんが、次回以降、食材検索から簡単に見つけて使用できます。
+                                                                            </p>
+                                                                            <p className="text-xs text-gray-600 mt-2">
+                                                                                <strong>使用例：</strong>よく使う自家製料理やサプリを登録しておきたい場合
+                                                                            </p>
+                                                                        </div>
+
+                                                                        <div className="border-l-4 border-green-500 pl-4 py-2">
+                                                                            <h4 className="font-semibold text-gray-900 mb-1">リストに追加</h4>
+                                                                            <p className="text-sm text-gray-700">
+                                                                                カスタムアイテムをデータベースに保存し、同時に現在の記録リストにも追加します。今すぐ記録したい場合に便利です。
+                                                                            </p>
+                                                                            <p className="text-xs text-gray-600 mt-2">
+                                                                                <strong>使用例：</strong>AI写真解析で検出された未登録の食品を編集して記録したい場合
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <button
+                                                                        onClick={() => setShowSaveMethodInfo(false)}
+                                                                        className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                                                    >
+                                                                        閉じる
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                 </div>
                             </div>
                         )}
@@ -3951,6 +4510,10 @@ RM回数と重量を別々に入力してください。`
                                         </div>
                                         <button
                                             onClick={() => {
+                                                // 追加済みアイテムから編集している場合は、検索モーダルに戻る
+                                                if (editingItemIndex !== null) {
+                                                    setShowSearchModal(true);
+                                                }
                                                 setSelectedItem(null);
                                                 setEditingItemIndex(null);
                                             }}
@@ -4082,6 +4645,21 @@ RM回数と重量を別々に入力してください。`
                                             +100
                                         </button>
                                     </div>
+                                    {/* 倍増減ボタン */}
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <button
+                                            onClick={() => setAmount(Math.max(0, Math.round(Number(amount) * 0.5)))}
+                                            className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                                        >
+                                            ×0.5
+                                        </button>
+                                        <button
+                                            onClick={() => setAmount(Math.round(Number(amount) * 2))}
+                                            className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                                        >
+                                            ×2
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="bg-gray-50 p-4 rounded-lg">
@@ -4173,151 +4751,16 @@ RM回数と重量を別々に入力してください。`
                             </div>
                         )}
 
-                        {/* ③追加済みアイテム一覧 */}
-                        {addedItems.length > 0 && (
-                            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
-                                <div className="flex justify-between items-center mb-3">
-                                    <p className="text-sm font-medium text-indigo-900">追加済み ({addedItems.length}品目)</p>
-                                </div>
-                                <div className="space-y-2 max-h-40 overflow-y-auto">
-                                    {addedItems.map((item, index) => (
-                                        <div key={index} className="bg-white p-2 rounded-lg flex justify-between items-center">
-                                            <div className="flex-1">
-                                                <p className="text-sm font-medium">{item.name}</p>
-                                                <p className="text-xs text-gray-600">{item.amount}g - {Math.round(item.calories)}kcal</p>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        // 編集時は100gあたりの栄養価に戻す必要がある
-                                                        const originalRatio = 100 / item.amount;
-                                                        setSelectedItem({
-                                                            name: item.name,
-                                                            calories: item.calories * originalRatio,
-                                                            protein: item.protein * originalRatio,
-                                                            fat: item.fat * originalRatio,
-                                                            carbs: item.carbs * originalRatio,
-                                                            vitamins: item.vitamins,
-                                                            minerals: item.minerals,
-                                                            category: item.category || ''
-                                                        });
-                                                        setAmount(item.amount.toString());
-                                                        setEditingItemIndex(index);
-                                                    }}
-                                                    className="text-blue-500 hover:text-blue-700"
-                                                >
-                                                    <Icon name="Pencil" size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
-                                                    className="text-red-500 hover:text-red-700"
-                                                >
-                                                    <Icon name="Trash2" size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="mt-3 pt-3 border-t border-indigo-200">
-                                    <div className="grid grid-cols-4 gap-2 text-xs">
-                                        <div>
-                                            <p className="text-gray-600">カロリー</p>
-                                            <p className="font-bold" style={{color: '#7686BA'}}>
-                                                {Math.round(addedItems.reduce((sum, item) => sum + item.calories, 0))}kcal
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-600">P</p>
-                                            <p className="font-bold text-red-600">
-                                                {addedItems.reduce((sum, item) => sum + item.protein, 0).toFixed(1)}g
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-600">F</p>
-                                            <p className="font-bold text-yellow-600">
-                                                {addedItems.reduce((sum, item) => sum + item.fat, 0).toFixed(1)}g
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-600">C</p>
-                                            <p className="font-bold text-green-600">
-                                                {addedItems.reduce((sum, item) => sum + item.carbs, 0).toFixed(1)}g
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* アイテムを追加ボタン */}
-                                <button
-                                    onClick={() => {
-                                        setSelectedItem(null);
-                                        setShowSearchModal(true);
-                                    }}
-                                    className="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm mt-3"
-                                >
-                                    アイテムを追加
-                                </button>
-
-                                {/* 記録とキャンセルボタン */}
-                                <div className="flex gap-2 mt-3">
-                                    <button
-                                        onClick={async () => {
-                                            // テンプレート編集モードの場合
-                                            if (editingTemplate) {
-                                                const updatedTemplate = {
-                                                    ...editingTemplate,
-                                                    items: addedItems,
-                                                    name: mealName || editingTemplate.name
-                                                };
-                                                await DataService.saveMealTemplate(user.uid, updatedTemplate);
-                                                alert('テンプレートを更新しました');
-                                                onClose();
-                                                return;
-                                            }
-
-                                            // 通常の記録モード
-                                            const totalCalories = addedItems.reduce((sum, item) => sum + item.calories, 0);
-                                            const newMeal = {
-                                                id: Date.now(),
-                                                time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-                                                name: mealName || '食事',
-                                                calories: Math.round(totalCalories),
-                                                items: addedItems.map(item => ({
-                                                    name: item.name,
-                                                    amount: `${item.amount}g`,
-                                                    protein: item.protein,
-                                                    fat: item.fat,
-                                                    carbs: item.carbs,
-                                                    vitamins: item.vitamins,
-                                                    minerals: item.minerals
-                                                }))
-                                            };
-
-                                            onAdd(newMeal);
-                                        }}
-                                        className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
-                                    >
-                                        {editingTemplate ? 'テンプレートを更新' : '記録'}
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setAddedItems([]);
-                                            onClose();
-                                        }}
-                                        className="px-4 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
-                                    >
-                                        キャンセル
-                                    </button>
-                                </div>
-                            </div>
-                        )}
 
                         {/* AI食事認識モーダル */}
                         {showAIFoodRecognition && (
-                            <AIFoodRecognition
-                                onFoodsRecognized={handleFoodsRecognized}
-                                onClose={() => setShowAIFoodRecognition(false)}
-                            />
+                            <div style={{ display: showCustomSupplementForm ? 'none' : 'block' }}>
+                                <AIFoodRecognition
+                                    onFoodsRecognized={handleFoodsRecognized}
+                                    onClose={() => setShowAIFoodRecognition(false)}
+                                    onOpenCustomCreator={handleOpenCustomFromAI}
+                                />
+                            </div>
                         )}
 
                         {/* カスタム作成モーダル（食材・料理・サプリ共通） */}

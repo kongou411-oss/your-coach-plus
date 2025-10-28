@@ -11,6 +11,7 @@
             const [addedItems, setAddedItems] = useState([]);
             const [selectedFoods, setSelectedFoods] = useState([]); // 選択中の食品リスト
             const [editingItemIndex, setEditingItemIndex] = useState(null); // 編集中のアイテムのインデックス
+            const [editAmount, setEditAmount] = useState(0); // 編集中のアイテムの数量
             const [mealTemplates, setMealTemplates] = useState([]);
             const [supplementTemplates, setSupplementTemplates] = useState([]);
             const [showTemplates, setShowTemplates] = useState(false);
@@ -691,12 +692,25 @@
                                     {addedItems.map((item, index) => (
                                         <div key={index} className="flex justify-between items-center bg-white p-2 rounded">
                                             <span className="text-sm">{item.name} × {item.amount}</span>
-                                            <button
-                                                onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
-                                                className="text-red-500 hover:text-red-700"
-                                            >
-                                                <Icon name="X" size={16} />
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingItemIndex(index);
+                                                        setEditAmount(item.amount);
+                                                    }}
+                                                    className="text-blue-500 hover:text-blue-700"
+                                                    title="編集"
+                                                >
+                                                    <Icon name="Edit" size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
+                                                    className="text-red-500 hover:text-red-700"
+                                                    title="削除"
+                                                >
+                                                    <Icon name="X" size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -2839,25 +2853,142 @@
 
                                         {/* 追加済みアイテムリスト */}
                                         {addedItems.length > 0 && (
-                                            <div className="mt-3 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                                                <p className="text-sm font-bold text-blue-700 mb-2">追加済み ({addedItems.length}品目)</p>
-                                                <div className="space-y-1 max-h-32 overflow-y-auto">
+                                            <div className="mt-3 bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <p className="text-sm font-medium text-indigo-900">追加済み ({addedItems.length}品目)</p>
+                                                </div>
+                                                <div className="space-y-2 max-h-40 overflow-y-auto">
                                                     {addedItems.map((item, index) => (
-                                                        <div key={index} className="bg-white px-3 py-1.5 rounded flex justify-between items-center">
+                                                        <div key={index} className="bg-white p-2 rounded-lg flex justify-between items-center">
                                                             <div className="flex-1">
-                                                                <span className="text-xs font-medium">{item.name}</span>
-                                                                <span className="text-xs text-gray-600 ml-2">
-                                                                    {item.amount}{item.unit || 'g'}
-                                                                </span>
+                                                                <p className="text-sm font-medium">{item.name}</p>
+                                                                <p className="text-xs text-gray-600">{item.amount}g - {Math.round(item.calories)}kcal</p>
                                                             </div>
-                                                            <button
-                                                                onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
-                                                                className="text-red-500 hover:text-red-700 ml-2"
-                                                            >
-                                                                <Icon name="X" size={14} />
-                                                            </button>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        // 編集時は100gあたりの栄養価に戻す必要がある
+                                                                        const originalRatio = 100 / item.amount;
+                                                                        setSelectedItem({
+                                                                            name: item.name,
+                                                                            calories: item.calories * originalRatio,
+                                                                            protein: item.protein * originalRatio,
+                                                                            fat: item.fat * originalRatio,
+                                                                            carbs: item.carbs * originalRatio,
+                                                                            vitamins: item.vitamins,
+                                                                            minerals: item.minerals,
+                                                                            category: item.category || ''
+                                                                        });
+                                                                        setAmount(item.amount.toString());
+                                                                        setEditingItemIndex(index);
+                                                                        setShowSearchModal(false);
+                                                                    }}
+                                                                    className="text-blue-500 hover:text-blue-700"
+                                                                >
+                                                                    <Icon name="Pencil" size={16} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
+                                                                    className="text-red-500 hover:text-red-700"
+                                                                >
+                                                                    <Icon name="Trash2" size={16} />
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     ))}
+                                                </div>
+                                                <div className="mt-3 pt-3 border-t border-indigo-200">
+                                                    <div className="grid grid-cols-4 gap-2 text-xs">
+                                                        <div>
+                                                            <p className="text-gray-600">カロリー</p>
+                                                            <p className="font-bold" style={{color: '#7686BA'}}>
+                                                                {Math.round(addedItems.reduce((sum, item) => sum + item.calories, 0))}kcal
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-gray-600">P</p>
+                                                            <p className="font-bold text-red-600">
+                                                                {addedItems.reduce((sum, item) => sum + item.protein, 0).toFixed(1)}g
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-gray-600">F</p>
+                                                            <p className="font-bold text-yellow-600">
+                                                                {addedItems.reduce((sum, item) => sum + item.fat, 0).toFixed(1)}g
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-gray-600">C</p>
+                                                            <p className="font-bold text-green-600">
+                                                                {addedItems.reduce((sum, item) => sum + item.carbs, 0).toFixed(1)}g
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* アイテムを追加ボタン */}
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedItem(null);
+                                                    }}
+                                                    className="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm mt-3"
+                                                >
+                                                    アイテムを追加
+                                                </button>
+
+                                                {/* 記録とキャンセルボタン */}
+                                                <div className="flex gap-2 mt-3">
+                                                    <button
+                                                        onClick={async () => {
+                                                            // テンプレート編集モードの場合
+                                                            if (editingTemplate) {
+                                                                const updatedTemplate = {
+                                                                    ...editingTemplate,
+                                                                    items: addedItems,
+                                                                    name: mealName || editingTemplate.name
+                                                                };
+                                                                await DataService.saveMealTemplate(user.uid, updatedTemplate);
+                                                                alert('テンプレートを更新しました');
+                                                                setShowSearchModal(false);
+                                                                onClose();
+                                                                return;
+                                                            }
+
+                                                            // 通常の記録モード
+                                                            const totalCalories = addedItems.reduce((sum, item) => sum + item.calories, 0);
+                                                            const newMeal = {
+                                                                id: Date.now(),
+                                                                time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                                                                name: mealName || '食事',
+                                                                calories: Math.round(totalCalories),
+                                                                items: addedItems.map(item => ({
+                                                                    name: item.name,
+                                                                    amount: `${item.amount}g`,
+                                                                    protein: item.protein,
+                                                                    fat: item.fat,
+                                                                    carbs: item.carbs,
+                                                                    vitamins: item.vitamins,
+                                                                    minerals: item.minerals
+                                                                }))
+                                                            };
+
+                                                            onAdd(newMeal);
+                                                            setShowSearchModal(false);
+                                                        }}
+                                                        className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                                    >
+                                                        {editingTemplate ? 'テンプレートを更新' : '記録'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setAddedItems([]);
+                                                            setShowSearchModal(false);
+                                                            onClose();
+                                                        }}
+                                                        className="px-4 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
+                                                    >
+                                                        キャンセル
+                                                    </button>
                                                 </div>
                                             </div>
                                         )}
@@ -2947,7 +3078,16 @@
                                             <div key={topCategory}>
                                                 {/* サブカテゴリ */}
                                                 <div className="bg-white">
-                                                    {Object.keys(subcategories).map(subCategory => (
+                                                    {Object.keys(subcategories).sort((a, b) => {
+                                                        // カテゴリの表示順序を定義
+                                                        const order = ['肉類', '魚介類', '卵類', '主食', '野菜類', '乳製品', '豆類・ナッツ', '果物類', '調味料', 'ドリンク', '和菓子', 'カスタム食材'];
+                                                        const indexA = order.indexOf(a);
+                                                        const indexB = order.indexOf(b);
+                                                        if (indexA === -1 && indexB === -1) return 0;
+                                                        if (indexA === -1) return 1;
+                                                        if (indexB === -1) return -1;
+                                                        return indexA - indexB;
+                                                    }).map(subCategory => (
                                                         <div key={subCategory} className="border-t border-gray-200">
                                                             {/* カテゴリ見出し */}
                                                             <button
@@ -3830,144 +3970,6 @@
                             </div>
                         )}
 
-                        {/* ③追加済みアイテム一覧 */}
-                        {addedItems.length > 0 && (
-                            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
-                                <div className="flex justify-between items-center mb-3">
-                                    <p className="text-sm font-medium text-indigo-900">追加済み ({addedItems.length}品目)</p>
-                                </div>
-                                <div className="space-y-2 max-h-40 overflow-y-auto">
-                                    {addedItems.map((item, index) => (
-                                        <div key={index} className="bg-white p-2 rounded-lg flex justify-between items-center">
-                                            <div className="flex-1">
-                                                <p className="text-sm font-medium">{item.name}</p>
-                                                <p className="text-xs text-gray-600">{item.amount}g - {Math.round(item.calories)}kcal</p>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        // 編集時は100gあたりの栄養価に戻す必要がある
-                                                        const originalRatio = 100 / item.amount;
-                                                        setSelectedItem({
-                                                            name: item.name,
-                                                            calories: item.calories * originalRatio,
-                                                            protein: item.protein * originalRatio,
-                                                            fat: item.fat * originalRatio,
-                                                            carbs: item.carbs * originalRatio,
-                                                            vitamins: item.vitamins,
-                                                            minerals: item.minerals,
-                                                            category: item.category || ''
-                                                        });
-                                                        setAmount(item.amount.toString());
-                                                        setEditingItemIndex(index);
-                                                    }}
-                                                    className="text-blue-500 hover:text-blue-700"
-                                                >
-                                                    <Icon name="Pencil" size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
-                                                    className="text-red-500 hover:text-red-700"
-                                                >
-                                                    <Icon name="Trash2" size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="mt-3 pt-3 border-t border-indigo-200">
-                                    <div className="grid grid-cols-4 gap-2 text-xs">
-                                        <div>
-                                            <p className="text-gray-600">カロリー</p>
-                                            <p className="font-bold" style={{color: '#7686BA'}}>
-                                                {Math.round(addedItems.reduce((sum, item) => sum + item.calories, 0))}kcal
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-600">P</p>
-                                            <p className="font-bold text-red-600">
-                                                {addedItems.reduce((sum, item) => sum + item.protein, 0).toFixed(1)}g
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-600">F</p>
-                                            <p className="font-bold text-yellow-600">
-                                                {addedItems.reduce((sum, item) => sum + item.fat, 0).toFixed(1)}g
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-600">C</p>
-                                            <p className="font-bold text-green-600">
-                                                {addedItems.reduce((sum, item) => sum + item.carbs, 0).toFixed(1)}g
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* アイテムを追加ボタン */}
-                                <button
-                                    onClick={() => {
-                                        setSelectedItem(null);
-                                        setShowSearchModal(true);
-                                    }}
-                                    className="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm mt-3"
-                                >
-                                    アイテムを追加
-                                </button>
-
-                                {/* 記録とキャンセルボタン */}
-                                <div className="flex gap-2 mt-3">
-                                    <button
-                                        onClick={async () => {
-                                            // テンプレート編集モードの場合
-                                            if (editingTemplate) {
-                                                const updatedTemplate = {
-                                                    ...editingTemplate,
-                                                    items: addedItems,
-                                                    name: mealName || editingTemplate.name
-                                                };
-                                                await DataService.saveMealTemplate(user.uid, updatedTemplate);
-                                                alert('テンプレートを更新しました');
-                                                onClose();
-                                                return;
-                                            }
-
-                                            // 通常の記録モード
-                                            const totalCalories = addedItems.reduce((sum, item) => sum + item.calories, 0);
-                                            const newMeal = {
-                                                id: Date.now(),
-                                                time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-                                                name: mealName || '食事',
-                                                calories: Math.round(totalCalories),
-                                                items: addedItems.map(item => ({
-                                                    name: item.name,
-                                                    amount: `${item.amount}g`,
-                                                    protein: item.protein,
-                                                    fat: item.fat,
-                                                    carbs: item.carbs,
-                                                    vitamins: item.vitamins,
-                                                    minerals: item.minerals
-                                                }))
-                                            };
-
-                                            onAdd(newMeal);
-                                        }}
-                                        className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
-                                    >
-                                        {editingTemplate ? 'テンプレートを更新' : '記録'}
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setAddedItems([]);
-                                            setShowModal(false);
-                                        }}
-                                        className="px-4 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
-                                    >
-                                        キャンセル
-                                    </button>
-                                </div>
-                            </div>
-                        )}
 
                         {/* AI食事認識モーダル */}
                         {showAIFoodRecognition && (
@@ -3996,6 +3998,76 @@
                                 }}
                             />
                         )}
+                    </div>
+                );
+            };
+
+            // アイテム編集モーダル
+            const renderEditItemModal = () => {
+                if (editingItemIndex === null) return null;
+
+                const item = addedItems[editingItemIndex];
+
+                const handleSave = () => {
+                    const updatedItems = [...addedItems];
+                    updatedItems[editingItemIndex] = {
+                        ...item,
+                        amount: editAmount
+                    };
+                    setAddedItems(updatedItems);
+                    setEditingItemIndex(null);
+                };
+
+                return (
+                    <div className="fixed inset-0 bg-black bg-opacity-70 z-[9999] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl slide-up">
+                            <div className="border-b p-4 flex justify-between items-center">
+                                <h3 className="text-lg font-bold text-gray-800">数量を編集</h3>
+                                <button
+                                    onClick={() => setEditingItemIndex(null)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition"
+                                >
+                                    <Icon name="X" size={20} />
+                                </button>
+                            </div>
+                            <div className="p-6">
+                                <div className="mb-4">
+                                    <p className="text-sm font-medium text-gray-700 mb-1">{item.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                        {item.unit ? `単位: ${item.unit}` : '単位: g'}
+                                    </p>
+                                </div>
+
+                                {/* 数量調整 */}
+                                <div className="flex items-center justify-center gap-3 mb-6">
+                                    <button
+                                        onClick={() => setEditAmount(Math.max(1, editAmount - 10))}
+                                        className="w-12 h-12 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-full text-xl font-bold transition"
+                                    >
+                                        −
+                                    </button>
+                                    <input
+                                        type="number"
+                                        value={editAmount}
+                                        onChange={(e) => setEditAmount(parseInt(e.target.value) || 0)}
+                                        className="w-24 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    />
+                                    <button
+                                        onClick={() => setEditAmount(editAmount + 10)}
+                                        className="w-12 h-12 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-full text-xl font-bold transition"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+
+                                <button
+                                    onClick={handleSave}
+                                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition"
+                                >
+                                    保存
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 );
             };
@@ -4032,6 +4104,7 @@
                             {type === 'condition' && renderConditionInput()}
                         </div>
                     </div>
+                    {renderEditItemModal()}
                 </div>
             );
         };

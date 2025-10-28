@@ -1775,6 +1775,235 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     )}
 
                     {/* ルーティン - 初回分析後に開放 */}
+                    {false && (
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="Package" size={18} className="text-blue-600" />
+                            旧カスタムアイテム管理（削除予定）
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t">
+                            <div className="space-y-4">
+                                <p className="text-sm text-gray-600">手動で作成した食材・料理・サプリを管理できます。</p>
+
+                                {(() => {
+                                    const [customItemTab, setCustomItemTab] = React.useState('food');
+                                    const [customFoods, setCustomFoods] = React.useState(() => {
+                                        const saved = localStorage.getItem('customFoods');
+                                        return saved ? JSON.parse(saved) : [];
+                                    });
+
+                                    const foodItems = customFoods.filter(item => item.itemType === 'food');
+                                    const recipeItems = customFoods.filter(item => item.itemType === 'recipe');
+                                    const supplementItems = customFoods.filter(item => item.itemType === 'supplement');
+
+                                    const deleteItem = (index) => {
+                                        if (confirm('このアイテムを削除しますか？')) {
+                                            const updated = customFoods.filter((_, i) => i !== index);
+                                            setCustomFoods(updated);
+                                            localStorage.setItem('customFoods', JSON.stringify(updated));
+                                        }
+                                    };
+
+                                    const deleteAllByType = (itemType) => {
+                                        const typeName = itemType === 'food' ? '食材' : itemType === 'recipe' ? '料理' : 'サプリ';
+                                        if (confirm(`すべての${typeName}を削除しますか？`)) {
+                                            const updated = customFoods.filter(item => item.itemType !== itemType);
+                                            setCustomFoods(updated);
+                                            localStorage.setItem('customFoods', JSON.stringify(updated));
+                                        }
+                                    };
+
+                                    const editItem = (item, index) => {
+                                        // TODO: Open edit modal with the same form as custom creation
+                                        alert('編集機能は次の更新で実装予定です');
+                                    };
+
+                                    return (
+                                        <>
+                                            {/* タブ切り替え */}
+                                            <div className="flex gap-2 border-b">
+                                                <button
+                                                    onClick={() => setCustomItemTab('food')}
+                                                    className={`px-4 py-2 font-medium transition ${
+                                                        customItemTab === 'food'
+                                                            ? 'border-b-2 border-green-600 text-green-600'
+                                                            : 'text-gray-500 hover:text-gray-700'
+                                                    }`}
+                                                >
+                                                    食材 ({foodItems.length})
+                                                </button>
+                                                <button
+                                                    onClick={() => setCustomItemTab('recipe')}
+                                                    className={`px-4 py-2 font-medium transition ${
+                                                        customItemTab === 'recipe'
+                                                            ? 'border-b-2 border-green-600 text-green-600'
+                                                            : 'text-gray-500 hover:text-gray-700'
+                                                    }`}
+                                                >
+                                                    料理 ({recipeItems.length})
+                                                </button>
+                                                <button
+                                                    onClick={() => setCustomItemTab('supplement')}
+                                                    className={`px-4 py-2 font-medium transition ${
+                                                        customItemTab === 'supplement'
+                                                            ? 'border-b-2 border-blue-600 text-blue-600'
+                                                            : 'text-gray-500 hover:text-gray-700'
+                                                    }`}
+                                                >
+                                                    サプリ ({supplementItems.length})
+                                                </button>
+                                            </div>
+
+                                            {/* アイテム一覧 */}
+                                            <div className="space-y-2">
+                                                {customItemTab === 'food' && (
+                                                    <>
+                                                        {foodItems.length === 0 ? (
+                                                            <p className="text-sm text-gray-500 py-4 text-center">カスタム食材はありません</p>
+                                                        ) : (
+                                                            <>
+                                                                <div className="flex justify-end mb-2">
+                                                                    <button
+                                                                        onClick={() => deleteAllByType('food')}
+                                                                        className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
+                                                                    >
+                                                                        すべて削除
+                                                                    </button>
+                                                                </div>
+                                                                {foodItems.map((item, idx) => {
+                                                                    const actualIndex = customFoods.findIndex(f => f === item);
+                                                                    return (
+                                                                        <div key={idx} className="bg-gray-50 p-3 rounded-lg border flex justify-between items-center">
+                                                                            <div className="flex-1">
+                                                                                <p className="font-medium text-sm">{item.name}</p>
+                                                                                <p className="text-xs text-gray-600">
+                                                                                    {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                                </p>
+                                                                            </div>
+                                                                            <div className="flex gap-1">
+                                                                                <button
+                                                                                    onClick={() => editItem(item, actualIndex)}
+                                                                                    className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                                                >
+                                                                                    <Icon name="Edit" size={16} />
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => deleteItem(actualIndex)}
+                                                                                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                                                >
+                                                                                    <Icon name="Trash2" size={16} />
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+
+                                                {customItemTab === 'recipe' && (
+                                                    <>
+                                                        {recipeItems.length === 0 ? (
+                                                            <p className="text-sm text-gray-500 py-4 text-center">カスタム料理はありません</p>
+                                                        ) : (
+                                                            <>
+                                                                <div className="flex justify-end mb-2">
+                                                                    <button
+                                                                        onClick={() => deleteAllByType('recipe')}
+                                                                        className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
+                                                                    >
+                                                                        すべて削除
+                                                                    </button>
+                                                                </div>
+                                                                {recipeItems.map((item, idx) => {
+                                                                    const actualIndex = customFoods.findIndex(f => f === item);
+                                                                    return (
+                                                                        <div key={idx} className="bg-gray-50 p-3 rounded-lg border flex justify-between items-center">
+                                                                            <div className="flex-1">
+                                                                                <p className="font-medium text-sm">{item.name}</p>
+                                                                                <p className="text-xs text-gray-600">
+                                                                                    {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                                </p>
+                                                                            </div>
+                                                                            <div className="flex gap-1">
+                                                                                <button
+                                                                                    onClick={() => editItem(item, actualIndex)}
+                                                                                    className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                                                >
+                                                                                    <Icon name="Edit" size={16} />
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => deleteItem(actualIndex)}
+                                                                                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                                                >
+                                                                                    <Icon name="Trash2" size={16} />
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+
+                                                {customItemTab === 'supplement' && (
+                                                    <>
+                                                        {supplementItems.length === 0 ? (
+                                                            <p className="text-sm text-gray-500 py-4 text-center">カスタムサプリはありません</p>
+                                                        ) : (
+                                                            <>
+                                                                <div className="flex justify-end mb-2">
+                                                                    <button
+                                                                        onClick={() => deleteAllByType('supplement')}
+                                                                        className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
+                                                                    >
+                                                                        すべて削除
+                                                                    </button>
+                                                                </div>
+                                                                {supplementItems.map((item, idx) => {
+                                                                    const actualIndex = customFoods.findIndex(f => f === item);
+                                                                    return (
+                                                                        <div key={idx} className="bg-gray-50 p-3 rounded-lg border flex justify-between items-center">
+                                                                            <div className="flex-1">
+                                                                                <p className="font-medium text-sm">{item.name}</p>
+                                                                                <p className="text-xs text-gray-600">
+                                                                                    {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                                </p>
+                                                                            </div>
+                                                                            <div className="flex gap-1">
+                                                                                <button
+                                                                                    onClick={() => editItem(item, actualIndex)}
+                                                                                    className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                                                >
+                                                                                    <Icon name="Edit" size={16} />
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => deleteItem(actualIndex)}
+                                                                                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                                                >
+                                                                                    <Icon name="Trash2" size={16} />
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+                    </details>
+                    )}
+
+                    {/* ルーティン - 初回分析後に開放 */}
                     {unlockedFeatures.includes('routine') && (
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
@@ -2278,6 +2507,223 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </summary>
                         <div className="p-4 pt-0 border-t">
                         <div className="space-y-4">
+                            {/* カスタムアイテム管理 */}
+                            {(() => {
+                                const [customItemTab, setCustomItemTab] = React.useState('food');
+                                const [customFoods, setCustomFoods] = React.useState(() => {
+                                    const saved = localStorage.getItem('customFoods');
+                                    return saved ? JSON.parse(saved) : [];
+                                });
+
+                                const foodItems = customFoods.filter(item => item.itemType === 'food');
+                                const recipeItems = customFoods.filter(item => item.itemType === 'recipe');
+                                const supplementItems = customFoods.filter(item => item.itemType === 'supplement');
+
+                                const deleteItem = (index) => {
+                                    if (confirm('このアイテムを削除しますか？')) {
+                                        const updated = customFoods.filter((_, i) => i !== index);
+                                        setCustomFoods(updated);
+                                        localStorage.setItem('customFoods', JSON.stringify(updated));
+                                    }
+                                };
+
+                                const deleteAllByType = (itemType) => {
+                                    const typeName = itemType === 'food' ? '食材' : itemType === 'recipe' ? '料理' : 'サプリ';
+                                    if (confirm(`すべての${typeName}を削除しますか？`)) {
+                                        const updated = customFoods.filter(item => item.itemType !== itemType);
+                                        setCustomFoods(updated);
+                                        localStorage.setItem('customFoods', JSON.stringify(updated));
+                                    }
+                                };
+
+                                const editItem = (item, index) => {
+                                    // TODO: Open edit modal with the same form as custom creation
+                                    alert('編集機能は実装予定です');
+                                };
+
+                                return (
+                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                        <h4 className="font-bold mb-2 text-blue-800">カスタムアイテム管理</h4>
+                                        <p className="text-sm text-gray-600 mb-3">手動で作成した食材・料理・サプリを管理できます。</p>
+
+                                        {/* タブ切り替え */}
+                                        <div className="flex gap-2 border-b mb-3">
+                                            <button
+                                                onClick={() => setCustomItemTab('food')}
+                                                className={`px-4 py-2 font-medium transition text-sm ${
+                                                    customItemTab === 'food'
+                                                        ? 'border-b-2 border-green-600 text-green-600'
+                                                        : 'text-gray-500 hover:text-gray-700'
+                                                }`}
+                                            >
+                                                食材 ({foodItems.length})
+                                            </button>
+                                            <button
+                                                onClick={() => setCustomItemTab('recipe')}
+                                                className={`px-4 py-2 font-medium transition text-sm ${
+                                                    customItemTab === 'recipe'
+                                                        ? 'border-b-2 border-green-600 text-green-600'
+                                                        : 'text-gray-500 hover:text-gray-700'
+                                                }`}
+                                            >
+                                                料理 ({recipeItems.length})
+                                            </button>
+                                            <button
+                                                onClick={() => setCustomItemTab('supplement')}
+                                                className={`px-4 py-2 font-medium transition text-sm ${
+                                                    customItemTab === 'supplement'
+                                                        ? 'border-b-2 border-blue-600 text-blue-600'
+                                                        : 'text-gray-500 hover:text-gray-700'
+                                                }`}
+                                            >
+                                                サプリ ({supplementItems.length})
+                                            </button>
+                                        </div>
+
+                                        {/* アイテム一覧 */}
+                                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                                            {customItemTab === 'food' && (
+                                                <>
+                                                    {foodItems.length === 0 ? (
+                                                        <p className="text-sm text-gray-500 py-4 text-center">カスタム食材はありません</p>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex justify-end mb-2">
+                                                                <button
+                                                                    onClick={() => deleteAllByType('food')}
+                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
+                                                                >
+                                                                    すべて削除
+                                                                </button>
+                                                            </div>
+                                                            {foodItems.map((item, idx) => {
+                                                                const actualIndex = customFoods.findIndex(f => f === item);
+                                                                return (
+                                                                    <div key={idx} className="bg-white p-3 rounded-lg border flex justify-between items-center">
+                                                                        <div className="flex-1">
+                                                                            <p className="font-medium text-sm">{item.name}</p>
+                                                                            <p className="text-xs text-gray-600">
+                                                                                {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="flex gap-1">
+                                                                            <button
+                                                                                onClick={() => editItem(item, actualIndex)}
+                                                                                className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                                            >
+                                                                                <Icon name="Edit" size={16} />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => deleteItem(actualIndex)}
+                                                                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                                            >
+                                                                                <Icon name="Trash2" size={16} />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            {customItemTab === 'recipe' && (
+                                                <>
+                                                    {recipeItems.length === 0 ? (
+                                                        <p className="text-sm text-gray-500 py-4 text-center">カスタム料理はありません</p>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex justify-end mb-2">
+                                                                <button
+                                                                    onClick={() => deleteAllByType('recipe')}
+                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
+                                                                >
+                                                                    すべて削除
+                                                                </button>
+                                                            </div>
+                                                            {recipeItems.map((item, idx) => {
+                                                                const actualIndex = customFoods.findIndex(f => f === item);
+                                                                return (
+                                                                    <div key={idx} className="bg-white p-3 rounded-lg border flex justify-between items-center">
+                                                                        <div className="flex-1">
+                                                                            <p className="font-medium text-sm">{item.name}</p>
+                                                                            <p className="text-xs text-gray-600">
+                                                                                {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="flex gap-1">
+                                                                            <button
+                                                                                onClick={() => editItem(item, actualIndex)}
+                                                                                className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                                            >
+                                                                                <Icon name="Edit" size={16} />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => deleteItem(actualIndex)}
+                                                                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                                            >
+                                                                                <Icon name="Trash2" size={16} />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            {customItemTab === 'supplement' && (
+                                                <>
+                                                    {supplementItems.length === 0 ? (
+                                                        <p className="text-sm text-gray-500 py-4 text-center">カスタムサプリはありません</p>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex justify-end mb-2">
+                                                                <button
+                                                                    onClick={() => deleteAllByType('supplement')}
+                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
+                                                                >
+                                                                    すべて削除
+                                                                </button>
+                                                            </div>
+                                                            {supplementItems.map((item, idx) => {
+                                                                const actualIndex = customFoods.findIndex(f => f === item);
+                                                                return (
+                                                                    <div key={idx} className="bg-white p-3 rounded-lg border flex justify-between items-center">
+                                                                        <div className="flex-1">
+                                                                            <p className="font-medium text-sm">{item.name}</p>
+                                                                            <p className="text-xs text-gray-600">
+                                                                                {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="flex gap-1">
+                                                                            <button
+                                                                                onClick={() => editItem(item, actualIndex)}
+                                                                                className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                                            >
+                                                                                <Icon name="Edit" size={16} />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => deleteItem(actualIndex)}
+                                                                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                                            >
+                                                                                <Icon name="Trash2" size={16} />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
                             <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                                 <div className="flex items-start gap-3">
                                     <Icon name="Trash2" size={20} className="text-red-600 mt-1" />

@@ -1,7 +1,7 @@
 // ===== AI Food Recognition Component =====
 // AI搭載の食事認識機能（写真から食品を自動認識）
 
-const AIFoodRecognition = ({ onFoodsRecognized, onClose, userId, userProfile }) => {
+const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, userId, userProfile }) => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [recognizing, setRecognizing] = useState(false);
@@ -224,9 +224,24 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, userId, userProfile }) 
         setRecognizedFoods(prev => prev.filter((_, i) => i !== index));
     };
 
+    // 食品データを更新（カスタム登録完了時に使用）
+    const updateRecognizedFood = (foodName, updatedData) => {
+        setRecognizedFoods(prev => prev.map(food =>
+            food.name === foodName
+                ? { ...food, ...updatedData, isUnknown: false }
+                : food
+        ));
+    };
+
     // 確定して親コンポーネントに渡す
     const confirmFoods = () => {
+        console.log('[confirmFoods] 確定して追加ボタンがクリックされました');
+        console.log('[confirmFoods] recognizedFoods:', recognizedFoods);
+        console.log('[confirmFoods] onFoodsRecognizedを呼び出します');
+
         onFoodsRecognized(recognizedFoods);
+
+        console.log('[confirmFoods] 完了');
         // Note: creditUpdatedイベントはクレジット消費直後(198行目)に既に発火済み
     };
 
@@ -372,6 +387,14 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, userId, userProfile }) 
                                         food={food}
                                         onAmountChange={(newAmount) => adjustAmount(index, newAmount)}
                                         onRemove={() => removeFood(index)}
+                                        onOpenCustomCreator={(foodData) => {
+                                            if (onOpenCustomCreator) {
+                                                onOpenCustomCreator(foodData, (updatedData) => {
+                                                    // カスタム登録完了時のコールバック
+                                                    updateRecognizedFood(food.name, updatedData);
+                                                });
+                                            }
+                                        }}
                                     />
                                 ))}
                             </div>
@@ -483,9 +506,8 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, userId, userProfile }) 
 };
 
 // 食品タグコンポーネント（通常の食事記録と同じ入力方式）
-const FoodItemTag = ({ food, onAmountChange, onRemove }) => {
+const FoodItemTag = ({ food, onAmountChange, onRemove, onOpenCustomCreator }) => {
     const [amount, setAmount] = useState(food.amount);
-    const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
 
     // 栄養素を計算（100gあたりの値を基準）
     const nutrients = {
@@ -687,7 +709,17 @@ const FoodItemTag = ({ food, onAmountChange, onRemove }) => {
                         </p>
                     </div>
                     <button
-                        onClick={() => setShowCustomFoodModal(true)}
+                        onClick={() => {
+                            if (onOpenCustomCreator) {
+                                onOpenCustomCreator({
+                                    name: food.name,
+                                    calories: food.calories || 0,
+                                    protein: food.protein || 0,
+                                    fat: food.fat || 0,
+                                    carbs: food.carbs || 0
+                                });
+                            }
+                        }}
                         className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-3 rounded-lg hover:from-amber-600 hover:to-orange-600 transition flex items-center justify-center gap-2"
                     >
                         <Icon name="Plus" size={18} />
@@ -695,719 +727,6 @@ const FoodItemTag = ({ food, onAmountChange, onRemove }) => {
                     </button>
                 </div>
             )}
-
-            {/* カスタム食材作成モーダル */}
-            {showCustomFoodModal && (
-                <CustomFoodCreator
-                    initialName={food.name}
-                    onClose={() => setShowCustomFoodModal(false)}
-                    onSave={(customFood) => {
-                        // カスタム食材を保存してfoodを更新
-                        onAmountChange(amount);
-                        setShowCustomFoodModal(false);
-                        alert(`「${customFood.name}」をカスタム食材として保存しました！`);
-                    }}
-                />
-            )}
-        </div>
-    );
-};
-
-// カスタム食材作成コンポーネント（ハイブリッド方式）
-const CustomFoodCreator = ({ initialName, itemType = 'food', onClose, onSave }) => {
-    const [foodName, setFoodName] = useState(initialName || '');
-    const [inputMethod, setInputMethod] = useState('composition'); // 'composition' | 'manual' | 'ai'
-
-    // itemTypeに応じたラベル
-    const labels = {
-        food: { title: 'カスタム食材を作成', name: '食材名', placeholder: '例: 自家製プロテインバー' },
-        recipe: { title: 'カスタム料理を作成', name: '料理名', placeholder: '例: 自家製カレー' },
-        supplement: { title: 'カスタムサプリを作成', name: 'サプリ名', placeholder: '例: マルチビタミン' }
-    };
-    const label = labels[itemType] || labels.food;
-
-    // 内訳入力方式のstate
-    const [ingredients, setIngredients] = useState([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-
-    // 手動入力方式のstate（詳細な栄養素を含む）
-    const [manualData, setManualData] = useState({
-        calories: 0,
-        protein: 0,
-        fat: 0,
-        carbs: 0,
-        // ビタミン
-        vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
-        vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
-        niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0,
-        // ミネラル
-        sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0,
-        iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0,
-        chromium: 0, molybdenum: 0,
-        // その他の栄養素
-        otherNutrients: []
-    });
-
-    // AI推定方式のstate
-    const [aiEstimating, setAiEstimating] = useState(false);
-    const [aiEstimate, setAiEstimate] = useState(null);
-
-    // 食材検索
-    const searchIngredients = (query) => {
-        setSearchQuery(query);
-        if (!query.trim()) {
-            setSearchResults([]);
-            return;
-        }
-
-        const results = [];
-        Object.keys(foodDB).forEach(category => {
-            Object.keys(foodDB[category]).forEach(itemName => {
-                if (itemName.includes(query)) {
-                    results.push({
-                        name: itemName,
-                        category: category,
-                        ...foodDB[category][itemName]
-                    });
-                }
-            });
-        });
-        setSearchResults(results.slice(0, 10));
-    };
-
-    // 食材を追加
-    const addIngredient = (food) => {
-        setIngredients([...ingredients, { ...food, amount: 100, id: Date.now() }]);
-        setSearchQuery('');
-        setSearchResults([]);
-    };
-
-    // 食材を削除
-    const removeIngredient = (id) => {
-        setIngredients(ingredients.filter(ing => ing.id !== id));
-    };
-
-    // 食材の量を変更
-    const updateIngredientAmount = (id, newAmount) => {
-        setIngredients(ingredients.map(ing =>
-            ing.id === id ? { ...ing, amount: newAmount } : ing
-        ));
-    };
-
-    // 合計栄養素を計算
-    const calculateTotalNutrients = () => {
-        return ingredients.reduce((total, ing) => {
-            const ratio = ing.amount / 100;
-            return {
-                calories: total.calories + (ing.calories || 0) * ratio,
-                protein: total.protein + (ing.protein || 0) * ratio,
-                fat: total.fat + (ing.fat || 0) * ratio,
-                carbs: total.carbs + (ing.carbs || 0) * ratio
-            };
-        }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
-    };
-
-    // AI推定を実行
-    const estimateWithAI = async () => {
-        setAiEstimating(true);
-        try {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
-            const requestBody = {
-                contents: [{
-                    parts: [{
-                        text: `「${foodName}」という食品の100gあたりの栄養成分を推定してJSON形式で出力してください。
-
-出力形式:
-{
-  "calories": カロリー(kcal),
-  "protein": タンパク質(g),
-  "fat": 脂質(g),
-  "carbs": 炭水化物(g)
-}
-
-JSON形式のみを出力し、他のテキストは含めないでください。`
-                    }]
-                }]
-            };
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            });
-
-            const data = await response.json();
-            const textResponse = data.candidates[0].content.parts[0].text;
-            let jsonText = textResponse.trim().replace(/```json\n?/g, '').replace(/```\n?/g, '');
-            const estimate = JSON.parse(jsonText);
-
-            setAiEstimate(estimate);
-        } catch (error) {
-            alert('AI推定中にエラーが発生しました: ' + error.message);
-        } finally {
-            setAiEstimating(false);
-        }
-    };
-
-    // 保存処理
-    const handleSave = () => {
-        if (!foodName.trim()) {
-            alert('食材名を入力してください');
-            return;
-        }
-
-        let customFood;
-
-        if (inputMethod === 'composition') {
-            if (ingredients.length === 0) {
-                alert('少なくとも1つの食材を追加してください');
-                return;
-            }
-
-            // 総重量を計算
-            const totalWeight = ingredients.reduce((sum, ing) => sum + ing.amount, 0);
-
-            // 栄養素の合計を計算（総重量あたり）
-            const totalNutrients = calculateTotalNutrients();
-
-            // カスタム料理として保存（総重量を記録）
-            customFood = {
-                name: foodName,
-                calories: totalNutrients.calories,
-                protein: totalNutrients.protein,
-                fat: totalNutrients.fat,
-                carbs: totalNutrients.carbs,
-                totalWeight: totalWeight,
-                ingredients: ingredients.map(ing => ({
-                    name: ing.name,
-                    amount: ing.amount,
-                    calories: ing.calories,
-                    protein: ing.protein,
-                    fat: ing.fat,
-                    carbs: ing.carbs
-                })),
-                isCustom: true,
-                isRecipe: true, // 料理フラグ
-                createdAt: new Date().toISOString()
-            };
-        } else if (inputMethod === 'manual') {
-            // 手動入力（100gあたりで保存）
-            customFood = {
-                name: foodName,
-                ...manualData,
-                isCustom: true,
-                createdAt: new Date().toISOString()
-            };
-        } else if (inputMethod === 'ai') {
-            if (!aiEstimate) {
-                alert('AI推定を実行してください');
-                return;
-            }
-            // AI推定（100gあたりで保存）
-            customFood = {
-                name: foodName,
-                ...aiEstimate,
-                isCustom: true,
-                createdAt: new Date().toISOString()
-            };
-        }
-
-        // LocalStorageに保存
-        const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
-        customFoods.push(customFood);
-        localStorage.setItem('customFoods', JSON.stringify(customFoods));
-
-        // foodDatabase.jsに追加（グローバルに利用可能にする）
-        if (!foodDB['カスタム']) {
-            foodDB['カスタム'] = {};
-        }
-        foodDB['カスタム'][foodName] = customFood;
-
-        onSave(customFood);
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                {/* ヘッダー */}
-                <div className="sticky top-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                        <Icon name="Plus" size={20} />
-                        {label.title}
-                    </h3>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
-                    >
-                        <Icon name="X" size={20} />
-                    </button>
-                </div>
-
-                <div className="p-6 space-y-6">
-                    {/* 食材名 */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">{label.name}</label>
-                        <input
-                            type="text"
-                            value={foodName}
-                            onChange={(e) => setFoodName(e.target.value)}
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
-                            placeholder={label.placeholder}
-                        />
-                    </div>
-
-                    {/* 入力方法選択 */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">栄養素の入力方法</label>
-                        <div className="grid grid-cols-3 gap-3">
-                            <button
-                                onClick={() => setInputMethod('composition')}
-                                className={`p-4 rounded-lg border-2 transition ${
-                                    inputMethod === 'composition'
-                                        ? 'border-amber-500 bg-amber-50'
-                                        : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                            >
-                                <Icon name="ListPlus" size={24} className="mx-auto mb-2 text-amber-600" />
-                                <p className="text-sm font-medium">内訳入力</p>
-                                <p className="text-xs text-gray-500 mt-1">食材を組み合わせ</p>
-                            </button>
-                            <button
-                                onClick={() => setInputMethod('manual')}
-                                className={`p-4 rounded-lg border-2 transition ${
-                                    inputMethod === 'manual'
-                                        ? 'border-amber-500 bg-amber-50'
-                                        : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                            >
-                                <Icon name="Edit" size={24} className="mx-auto mb-2 text-amber-600" />
-                                <p className="text-sm font-medium">手動入力</p>
-                                <p className="text-xs text-gray-500 mt-1">直接数値を入力</p>
-                            </button>
-                            <button
-                                onClick={() => setInputMethod('ai')}
-                                className={`p-4 rounded-lg border-2 transition ${
-                                    inputMethod === 'ai'
-                                        ? 'border-amber-500 bg-amber-50'
-                                        : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                            >
-                                <Icon name="Sparkles" size={24} className="mx-auto mb-2 text-amber-600" />
-                                <p className="text-sm font-medium">AI推定</p>
-                                <p className="text-xs text-gray-500 mt-1">AIで自動推定</p>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* 内訳入力方式 */}
-                    {inputMethod === 'composition' && (
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">食材を検索して追加</label>
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => searchIngredients(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
-                                    placeholder="食材名を入力..."
-                                />
-                                {searchResults.length > 0 && (
-                                    <div className="mt-2 border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
-                                        {searchResults.map((food, index) => (
-                                            <button
-                                                key={index}
-                                                onClick={() => addIngredient(food)}
-                                                className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                                            >
-                                                <p className="font-medium">{food.name}</p>
-                                                <p className="text-xs text-gray-500">{food.category}</p>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* 追加された食材リスト */}
-                            {ingredients.length > 0 && (
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700">追加された食材</label>
-                                    {ingredients.map((ing) => (
-                                        <div key={ing.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                            <div className="flex-1">
-                                                <p className="font-medium text-sm">{ing.name}</p>
-                                                <p className="text-xs text-gray-500">
-                                                    {ing.calories}kcal / P:{ing.protein}g / F:{ing.fat}g / C:{ing.carbs}g
-                                                </p>
-                                            </div>
-                                            <input
-                                                type="number"
-                                                value={ing.amount}
-                                                onChange={(e) => updateIngredientAmount(ing.id, Number(e.target.value))}
-                                                className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                                                min="0"
-                                            />
-                                            <span className="text-sm text-gray-600">g</span>
-                                            <button
-                                                onClick={() => removeIngredient(ing.id)}
-                                                className="text-red-500 hover:text-red-700"
-                                            >
-                                                <Icon name="X" size={18} />
-                                            </button>
-                                        </div>
-                                    ))}
-
-                                    {/* 合計表示 */}
-                                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                                        <p className="text-sm font-medium text-amber-900 mb-2">合計栄養素（100gあたり換算）</p>
-                                        <div className="grid grid-cols-4 gap-3 text-center">
-                                            {(() => {
-                                                const total = calculateTotalNutrients();
-                                                const totalWeight = ingredients.reduce((sum, ing) => sum + ing.amount, 0);
-                                                const per100g = {
-                                                    calories: Math.round(total.calories * 100 / totalWeight),
-                                                    protein: (total.protein * 100 / totalWeight).toFixed(1),
-                                                    fat: (total.fat * 100 / totalWeight).toFixed(1),
-                                                    carbs: (total.carbs * 100 / totalWeight).toFixed(1)
-                                                };
-                                                return (
-                                                    <>
-                                                        <div>
-                                                            <p className="text-xs text-gray-600">カロリー</p>
-                                                            <p className="text-lg font-bold text-amber-700">{per100g.calories}kcal</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs text-gray-600">P</p>
-                                                            <p className="text-lg font-bold text-amber-700">{per100g.protein}g</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs text-gray-600">F</p>
-                                                            <p className="text-lg font-bold text-amber-700">{per100g.fat}g</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs text-gray-600">C</p>
-                                                            <p className="text-lg font-bold text-amber-700">{per100g.carbs}g</p>
-                                                        </div>
-                                                    </>
-                                                );
-                                            })()}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* 手動入力方式 */}
-                    {inputMethod === 'manual' && (
-                        <div className="space-y-4">
-                            <p className="text-sm text-gray-600">100gあたりの栄養素を入力してください</p>
-
-                            {/* 基本栄養素 */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">カロリー (kcal)</label>
-                                    <input
-                                        type="number"
-                                        value={manualData.calories}
-                                        onChange={(e) => setManualData({...manualData, calories: Number(e.target.value)})}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">タンパク質 (g)</label>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        value={manualData.protein}
-                                        onChange={(e) => setManualData({...manualData, protein: Number(e.target.value)})}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">脂質 (g)</label>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        value={manualData.fat}
-                                        onChange={(e) => setManualData({...manualData, fat: Number(e.target.value)})}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">炭水化物 (g)</label>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        value={manualData.carbs}
-                                        onChange={(e) => setManualData({...manualData, carbs: Number(e.target.value)})}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* ビタミン */}
-                            <div className="p-4 bg-teal-50 rounded-lg border border-teal-200">
-                                <h4 className="font-semibold text-sm text-teal-800 mb-3 flex items-center gap-2">
-                                    <Icon name="Pill" size={16} />
-                                    ビタミン (100gあたり)
-                                </h4>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-xs text-gray-600">ビタミンA (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminA} onChange={(e) => setManualData({...manualData, vitaminA: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">ビタミンB1 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminB1} onChange={(e) => setManualData({...manualData, vitaminB1: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">ビタミンB2 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminB2} onChange={(e) => setManualData({...manualData, vitaminB2: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">ビタミンB6 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminB6} onChange={(e) => setManualData({...manualData, vitaminB6: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">ビタミンB12 (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminB12} onChange={(e) => setManualData({...manualData, vitaminB12: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">ビタミンC (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminC} onChange={(e) => setManualData({...manualData, vitaminC: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">ビタミンD (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminD} onChange={(e) => setManualData({...manualData, vitaminD: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">ビタミンE (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminE} onChange={(e) => setManualData({...manualData, vitaminE: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">ビタミンK (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.vitaminK} onChange={(e) => setManualData({...manualData, vitaminK: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">ナイアシン (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.niacin} onChange={(e) => setManualData({...manualData, niacin: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">パントテン酸 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.pantothenicAcid} onChange={(e) => setManualData({...manualData, pantothenicAcid: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">ビオチン (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.biotin} onChange={(e) => setManualData({...manualData, biotin: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">葉酸 (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.folicAcid} onChange={(e) => setManualData({...manualData, folicAcid: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* ミネラル */}
-                            <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-200">
-                                <h4 className="font-semibold text-sm text-cyan-800 mb-3 flex items-center gap-2">
-                                    <Icon name="Droplet" size={16} />
-                                    ミネラル (100gあたり)
-                                </h4>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-xs text-gray-600">ナトリウム (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.sodium} onChange={(e) => setManualData({...manualData, sodium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">カリウム (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.potassium} onChange={(e) => setManualData({...manualData, potassium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">カルシウム (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.calcium} onChange={(e) => setManualData({...manualData, calcium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">マグネシウム (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.magnesium} onChange={(e) => setManualData({...manualData, magnesium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">リン (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.phosphorus} onChange={(e) => setManualData({...manualData, phosphorus: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">鉄 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.iron} onChange={(e) => setManualData({...manualData, iron: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">亜鉛 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.zinc} onChange={(e) => setManualData({...manualData, zinc: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">銅 (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.copper} onChange={(e) => setManualData({...manualData, copper: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">マンガン (mg)</label>
-                                        <input type="number" step="0.01" value={manualData.manganese} onChange={(e) => setManualData({...manualData, manganese: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">ヨウ素 (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.iodine} onChange={(e) => setManualData({...manualData, iodine: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">セレン (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.selenium} onChange={(e) => setManualData({...manualData, selenium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">クロム (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.chromium} onChange={(e) => setManualData({...manualData, chromium: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">モリブデン (μg)</label>
-                                        <input type="number" step="0.01" value={manualData.molybdenum} onChange={(e) => setManualData({...manualData, molybdenum: Number(e.target.value)})} className="w-full px-2 py-1 border rounded text-sm mt-1" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* その他の栄養素 */}
-                            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                                <h4 className="font-semibold text-sm text-purple-800 mb-3 flex items-center gap-2">
-                                    <Icon name="FlaskConical" size={16} />
-                                    その他の栄養素 (100gあたり)
-                                </h4>
-                                {manualData.otherNutrients.map((nutrient, index) => (
-                                    <div key={index} className="flex gap-2 mb-2">
-                                        <input
-                                            type="text"
-                                            value={nutrient.name || ''}
-                                            onChange={(e) => {
-                                                const updated = [...manualData.otherNutrients];
-                                                updated[index] = {...updated[index], name: e.target.value};
-                                                setManualData({...manualData, otherNutrients: updated});
-                                            }}
-                                            className="flex-1 px-2 py-2 border rounded-lg text-sm"
-                                            placeholder="名称（例: クレアチン）"
-                                        />
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            value={nutrient.amount || ''}
-                                            onChange={(e) => {
-                                                const updated = [...manualData.otherNutrients];
-                                                updated[index] = {...updated[index], amount: e.target.value};
-                                                setManualData({...manualData, otherNutrients: updated});
-                                            }}
-                                            className="w-20 px-2 py-2 border rounded-lg text-sm"
-                                            placeholder="5"
-                                        />
-                                        <select
-                                            value={nutrient.unit || 'g'}
-                                            onChange={(e) => {
-                                                const updated = [...manualData.otherNutrients];
-                                                updated[index] = {...updated[index], unit: e.target.value};
-                                                setManualData({...manualData, otherNutrients: updated});
-                                            }}
-                                            className="w-20 px-2 py-2 border rounded-lg text-sm"
-                                        >
-                                            <option value="g">g</option>
-                                            <option value="mg">mg</option>
-                                            <option value="μg">μg</option>
-                                            <option value="IU">IU</option>
-                                        </select>
-                                        <button
-                                            onClick={() => {
-                                                const updated = manualData.otherNutrients.filter((_, i) => i !== index);
-                                                setManualData({...manualData, otherNutrients: updated});
-                                            }}
-                                            className="px-3 py-2 bg-red-500 text-white rounded-lg text-xs hover:bg-red-600 flex-shrink-0"
-                                        >
-                                            削除
-                                        </button>
-                                    </div>
-                                ))}
-                                <button
-                                    onClick={() => {
-                                        const updated = [...manualData.otherNutrients, {name: '', amount: '', unit: 'g'}];
-                                        setManualData({...manualData, otherNutrients: updated});
-                                    }}
-                                    className="w-full mt-2 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-semibold"
-                                >
-                                    + 栄養素を追加
-                                </button>
-                                <p className="text-xs text-gray-500 mt-2">クレアチン、BCAA、グルタミン、EPA、DHAなど</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* AI推定方式 */}
-                    {inputMethod === 'ai' && (
-                        <div className="space-y-4">
-                            <button
-                                onClick={estimateWithAI}
-                                disabled={!foodName || aiEstimating}
-                                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-4 rounded-lg hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                {aiEstimating ? (
-                                    <>
-                                        <Icon name="Loader" size={20} className="animate-spin" />
-                                        AI推定中...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Icon name="Sparkles" size={20} />
-                                        AIで栄養素を推定
-                                    </>
-                                )}
-                            </button>
-
-                            {aiEstimate && (
-                                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <p className="text-sm font-medium text-amber-900 mb-3">AI推定結果（100gあたり）</p>
-                                    <div className="grid grid-cols-4 gap-3 text-center">
-                                        <div>
-                                            <p className="text-xs text-gray-600">カロリー</p>
-                                            <p className="text-lg font-bold text-amber-700">{aiEstimate.calories}kcal</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-600">P</p>
-                                            <p className="text-lg font-bold text-amber-700">{aiEstimate.protein}g</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-600">F</p>
-                                            <p className="text-lg font-bold text-amber-700">{aiEstimate.fat}g</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-600">C</p>
-                                            <p className="text-lg font-bold text-amber-700">{aiEstimate.carbs}g</p>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        ※ AI推定値は参考値です。正確な値が必要な場合は手動入力をご利用ください。
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* 保存ボタン */}
-                    <div className="flex gap-3 pt-4 border-t">
-                        <button
-                            onClick={onClose}
-                            className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
-                        >
-                            キャンセル
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            disabled={!foodName}
-                            className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-3 rounded-lg hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-50"
-                        >
-                            保存
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 };

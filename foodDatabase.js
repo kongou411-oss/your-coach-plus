@@ -325,7 +325,12 @@ const foodDatabase = {
         "マヨネーズ": { "calories": 703, "protein": 1.4, "fat": 76.0, "carbs": 4.5, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "vitaminE": 14.7, "sodium": 630 },
         "ポン酢": { "calories": 53, "protein": 2.1, "fat": 0, "carbs": 10.2, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "sodium": 3500, "vitaminC": 4 },
         "オイスターソース": { "calories": 107, "protein": 6.9, "fat": 0.5, "carbs": 18.1, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "sodium": 3600 },
-        "豆板醤": { "calories": 60, "protein": 3.6, "fat": 2.6, "carbs": 5.6, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "sodium": 2800 }
+        "豆板醤": { "calories": 60, "protein": 3.6, "fat": 2.6, "carbs": 5.6, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "sodium": 2800 },
+        "いちごジャム": { "calories": 256, "protein": 0.4, "fat": 0.1, "carbs": 68.5, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "sodium": 2 },
+        "ブルーベリージャム": { "calories": 181, "protein": 0.5, "fat": 0.1, "carbs": 48.5, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "sodium": 3 },
+        "マーマレード": { "calories": 255, "protein": 0.3, "fat": 0.1, "carbs": 68.6, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "sodium": 2, "vitaminC": 9 },
+        "餡子（こしあん）": { "calories": 155, "protein": 5.4, "fat": 0.5, "carbs": 33.1, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "sodium": 1, "iron": 2.1, "calcium": 18 },
+        "餡子（つぶあん）": { "calories": 244, "protein": 5.7, "fat": 0.6, "carbs": 52.8, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "sodium": 2, "iron": 2.2, "calcium": 19 }
     },
 
     // 和菓子・あんこ類（100gあたり）
