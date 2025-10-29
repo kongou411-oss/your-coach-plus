@@ -5,6 +5,13 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
     const [foodData, setFoodData] = useState(null);
     const [bottleSize, setBottleSize] = useState(null); // 1本の容量（ml）
 
+    // 食材追加用のstate
+    const [showAddItemModal, setShowAddItemModal] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [selectedNewItem, setSelectedNewItem] = useState(null);
+    const [newItemAmount, setNewItemAmount] = useState(100);
+
     // アイテム削除ハンドラ
     const handleDeleteItem = (index) => {
         if (meal.items.length === 1) {
@@ -38,6 +45,77 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
 
         // onUpdateを呼び出し、モーダルは維持する
         onUpdate(updatedMeal, true); // 第2引数でモーダル維持を指示
+    };
+
+    // 食材検索ハンドラ
+    const handleSearchFood = (query) => {
+        setSearchTerm(query);
+        if (!query.trim()) {
+            setSearchResults([]);
+            return;
+        }
+
+        const results = [];
+        Object.keys(foodDatabase).forEach(category => {
+            Object.keys(foodDatabase[category]).forEach(itemName => {
+                if (itemName.includes(query)) {
+                    results.push({
+                        name: itemName,
+                        category: category,
+                        ...foodDatabase[category][itemName]
+                    });
+                }
+            });
+        });
+        setSearchResults(results.slice(0, 20));
+    };
+
+    // 食材追加ハンドラ
+    const handleAddItem = () => {
+        if (!selectedNewItem) {
+            alert('食材を選択してください');
+            return;
+        }
+
+        // 100gあたりから実量に換算
+        const ratio = newItemAmount / 100;
+        const newItem = {
+            name: selectedNewItem.name,
+            amount: newItemAmount,
+            unit: selectedNewItem.unit || 'g',
+            calories: Math.round(selectedNewItem.calories * ratio),
+            protein: parseFloat((selectedNewItem.protein * ratio).toFixed(1)),
+            fat: parseFloat((selectedNewItem.fat * ratio).toFixed(1)),
+            carbs: parseFloat((selectedNewItem.carbs * ratio).toFixed(1))
+        };
+
+        // 新しいアイテム配列を作成
+        const updatedItems = [...meal.items, newItem];
+
+        // 全アイテムのカロリー・PFCを再計算
+        const totalCalories = updatedItems.reduce((sum, item) => sum + (item.calories || 0), 0);
+        const totalProtein = parseFloat(updatedItems.reduce((sum, item) => sum + (item.protein || 0), 0).toFixed(1));
+        const totalFat = parseFloat(updatedItems.reduce((sum, item) => sum + (item.fat || 0), 0).toFixed(1));
+        const totalCarbs = parseFloat(updatedItems.reduce((sum, item) => sum + (item.carbs || 0), 0).toFixed(1));
+
+        const updatedMeal = {
+            ...meal,
+            items: updatedItems,
+            calories: totalCalories,
+            protein: totalProtein,
+            fat: totalFat,
+            carbs: totalCarbs
+        };
+
+        // onUpdateを呼び出し、モーダルは維持する
+        onUpdate(updatedMeal, true);
+
+        // 追加モーダルを閉じて、状態をリセット
+        setShowAddItemModal(false);
+        setSearchTerm('');
+        setSearchResults([]);
+        setSelectedNewItem(null);
+        setNewItemAmount(100);
     };
 
     // foodDatabaseから元の食品情報を取得
@@ -317,6 +395,13 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                     </div>
                                 ))}
                             </div>
+                            <button
+                                onClick={() => setShowAddItemModal(true)}
+                                className="w-full mt-3 bg-green-500 text-white font-bold py-2 rounded-lg hover:bg-green-600 transition text-sm flex items-center justify-center gap-2"
+                            >
+                                <Icon name="Plus" size={18} />
+                                食材を追加
+                            </button>
                         </div>
                     )}
 
@@ -547,6 +632,124 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                     </div>
                 </div>
             </div>
+
+            {/* 食材追加モーダル */}
+            {showAddItemModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+                            <h3 className="text-lg font-bold">食材を追加</h3>
+                            <button onClick={() => setShowAddItemModal(false)} className="text-gray-400 hover:text-gray-600">
+                                <Icon name="X" size={24} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            {/* 検索ボックス */}
+                            <div>
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={(e) => handleSearchFood(e.target.value)}
+                                    placeholder="食材を検索..."
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {/* 検索結果 */}
+                            {searchResults.length > 0 && !selectedNewItem && (
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {searchResults.map((food, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => {
+                                                setSelectedNewItem(food);
+                                                setSearchResults([]);
+                                            }}
+                                            className="w-full px-4 py-3 text-left hover:bg-gray-50 border border-gray-200 rounded-lg transition"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex-1">
+                                                    <p className="font-medium text-gray-800">{food.name}</p>
+                                                    <p className="text-xs text-gray-500">{food.category}</p>
+                                                </div>
+                                                <div className="text-xs text-gray-600 flex gap-2">
+                                                    <span>{food.calories}kcal</span>
+                                                    <span>P:{food.protein}g</span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* 選択した食材の量入力 */}
+                            {selectedNewItem && (
+                                <div className="space-y-4">
+                                    <div className="bg-indigo-50 p-4 rounded-lg">
+                                        <p className="text-sm font-medium text-indigo-900 mb-2">{selectedNewItem.name}</p>
+                                        <div className="text-xs text-gray-600 grid grid-cols-4 gap-2">
+                                            <div>
+                                                <p className="text-gray-600">カロリー</p>
+                                                <p className="font-bold">{selectedNewItem.calories}kcal</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-600">P</p>
+                                                <p className="font-bold">{selectedNewItem.protein}g</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-600">F</p>
+                                                <p className="font-bold">{selectedNewItem.fat}g</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-600">C</p>
+                                                <p className="font-bold">{selectedNewItem.carbs}g</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-2">※100gあたり</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">量 (g)</label>
+                                        <input
+                                            type="number"
+                                            value={newItemAmount}
+                                            onChange={(e) => setNewItemAmount(Number(e.target.value))}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        />
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setSelectedNewItem(null);
+                                                setSearchTerm('');
+                                                setNewItemAmount(100);
+                                            }}
+                                            className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
+                                        >
+                                            戻る
+                                        </button>
+                                        <button
+                                            onClick={handleAddItem}
+                                            className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                        >
+                                            追加
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {searchTerm && searchResults.length === 0 && !selectedNewItem && (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p>「{searchTerm}」に一致する食材が見つかりませんでした</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -562,6 +765,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
             const [expandedCategories, setExpandedCategories] = useState({});
             const [mealName, setMealName] = useState('');
             const [addedItems, setAddedItems] = useState([]);
+            const [addedItemsExpanded, setAddedItemsExpanded] = useState(true); // 追加済セクションの展開状態
             const [selectedFoods, setSelectedFoods] = useState([]); // 選択中の食品リスト
             const [editingItemIndex, setEditingItemIndex] = useState(null); // 編集中のアイテムのインデックス
             const [mealTemplates, setMealTemplates] = useState([]);
@@ -626,10 +830,12 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
             const [showCustomExerciseForm, setShowCustomExerciseForm] = useState(false);
             const [workoutInfoModal, setWorkoutInfoModal] = useState({ show: false, title: '', content: '' });
             const [showAdvancedTraining, setShowAdvancedTraining] = useState(false);
+            const [exerciseSaveMethod, setExerciseSaveMethod] = useState('database'); // 'database' or 'addToList'
+            const [showExerciseSaveMethodInfo, setShowExerciseSaveMethodInfo] = useState(false); // 保存方法説明モーダル
             const [customExerciseData, setCustomExerciseData] = useState({
                 name: '',
-                category: 'その他',
-                subcategory: '',
+                category: '胸',
+                subcategory: 'コンパウンド',
                 exerciseType: 'anaerobic',
                 jointType: 'single',
                 defaultDistance: 0.5,
@@ -828,27 +1034,8 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                             </h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-medium mb-1 flex items-center gap-1">
+                                    <label className="block text-xs font-medium mb-1">
                                         体重 (kg)
-                                        <button
-                                            type="button"
-                                            onClick={() => setWorkoutInfoModal({
-                                                show: true,
-                                                title: '体重記録について',
-                                                content: `毎日の体重を記録して変化を追跡します。
-
-【記録のタイミング】
-• 起床後、トイレを済ませた後
-• 朝食前の空腹時
-• 毎日同じ時間帯に測定
-
-【活用方法】
-体重の変化を履歴グラフで確認でき、ダイエットやバルクアップの進捗を可視化できます。目標に応じた体重管理に役立ちます。`
-                                            })}
-                                            className="text-indigo-600 hover:text-indigo-800"
-                                        >
-                                            <Icon name="Info" size={12} />
-                                        </button>
                                     </label>
                                     <input
                                         type="number"
@@ -860,27 +1047,8 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium mb-1 flex items-center gap-1">
+                                    <label className="block text-xs font-medium mb-1">
                                         体脂肪率 (%)
-                                        <button
-                                            type="button"
-                                            onClick={() => setWorkoutInfoModal({
-                                                show: true,
-                                                title: '体脂肪率記録について',
-                                                content: `体脂肪率を記録して体組成の変化を追跡します。
-
-【測定方法】
-• 体組成計で測定
-• 起床後、空腹時に測定
-• 毎日同じ時間帯・条件で測定
-
-【活用方法】
-体重と体脂肪率から除脂肪体重（LBM）を計算し、筋肉量の増減を把握できます。ボディメイクの質を評価する重要な指標です。`
-                                            })}
-                                            className="text-indigo-600 hover:text-indigo-800"
-                                        >
-                                            <Icon name="Info" size={12} />
-                                        </button>
                                     </label>
                                     <input
                                         type="number"
@@ -1090,38 +1258,8 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                    <label className="block text-sm font-medium mb-2">
                                         回数（1回分 = {selectedItem.unit || `${selectedItem.servingSize || 1}${selectedItem.servingUnit || 'g'}`}）
-                                        <button
-                                            type="button"
-                                            onClick={() => setWorkoutInfoModal({
-                                                show: true,
-                                                title: 'サプリメント入力の使い方',
-                                                content: `サプリメントの摂取回数を入力します。
-
-【入力方法】
-1. スライダーをドラッグして回数を設定（1～20回）
-2. 目盛り数値（1、5、10など）をタップで即座に設定
-3. 入力欄に直接数値を入力
-
-【1回分とは？】
-• プロテイン: 付属スプーン1杯（約25g）
-• クレアチン: 付属スプーン1杯（約5g）
-• マルチビタミン: 1粒・1錠
-• BCAA: 付属スプーン1杯（約5g）
-
-【入力例】
-• プロテインを朝晩2回飲む → 「2」と入力
-• マルチビタミンを1日1粒 → 「1」と入力
-• クレアチンを1日4回 → 「4」と入力
-
-【PFC自動計算】
-入力した回数に応じて、たんぱく質（P）・脂質（F）・炭水化物（C）が自動計算され、1日の目標に反映されます。`
-                                            })}
-                                            className="text-blue-600 hover:text-blue-800"
-                                        >
-                                            <Icon name="Info" size={14} />
-                                        </button>
                                     </label>
                                     <div className="mb-3">
                                         <input
@@ -1381,43 +1519,6 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                     >
                                         <Icon name="Plus" size={16} />
                                         カスタムアイテムを作成
-                                    </button>
-                                    <button type="button" onClick={() => {
-                                        setWorkoutInfoModal({
-                                            show: true,
-                                            title: 'カスタムアイテム作成について',
-                                            content: `データベースにない食材・料理・サプリメントを独自に登録できます。
-
-【アイテムタイプの選択】
-• 食材: 単品の食品（例: 自家製プロテインバー）
-• 料理: 複数の食材を組み合わせた料理（例: 自家製カレー）
-• サプリ: プロテイン、ビタミン・ミネラル、アミノ酸など
-
-【基本情報の入力】
-• 名前: アイテムの名称
-• カテゴリ: 種類を選択
-• 1回分の量: 1回あたりの摂取量と単位（例: 100g、30g、500ml）
-
-【栄養素の入力】
-• 基本栄養素: カロリー、タンパク質、脂質、炭水化物
-• ビタミン・ミネラル: 詳細な微量栄養素（任意）
-• すべて「1回分あたり」の含有量を入力してください
-
-【データの参照方法】
-1. 商品パッケージの栄養成分表示を確認
-2. メーカー公式サイトの製品情報ページ
-3. 栄養データベース（文部科学省の食品成分データベースなど）
-
-【作成後の使い方】
-保存すると、食事記録画面に追加され、通常のアイテムと同様に記録できるようになります。
-
-【注意点】
-• 正確な栄養情報の入力が重要です
-• ビタミン・ミネラルは任意項目です（わかる範囲で入力）
-• 作成後も編集・削除が可能です`
-                                        });
-                                    }} className="text-green-700 hover:text-green-900 p-1">
-                                        <Icon name="Info" size={14} />
                                     </button>
                                     <button
                                         onClick={() => setShowCustomSupplementForm(!showCustomSupplementForm)}
@@ -1848,7 +1949,13 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                     onClose();
                 };
 
-                const filteredExercises = exerciseDB.filter(ex =>
+                // LocalStorageからカスタム種目を読み込み
+                const customExercises = JSON.parse(localStorage.getItem('customExercises') || '[]');
+
+                // exerciseDBとカスタム種目をマージ
+                const allExercises = [...exerciseDB, ...customExercises];
+
+                const filteredExercises = allExercises.filter(ex =>
                     fuzzyMatch(ex.name, searchTerm) ||
                     fuzzyMatch(ex.category, searchTerm)
                 );
@@ -2098,9 +2205,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                 const categorizedExercises = {};
 
                                                 // タブに応じてフィルタリング
-                                                const strengthCategories = ['胸', '背中', '脚', '肩', '腕', '腹筋・体幹', '尻', 'ウエイトリフティング'];
-                                                const cardioCategories = ['有酸素運動'];
-                                                const stretchCategories = ['ストレッチ'];
+                                                const strengthCategories = ['胸', '背中', '脚', '肩', '腕', '腹筋・体幹', '尻', 'ウエイトリフティング', 'カスタム'];
+                                                const cardioCategories = ['有酸素運動', 'カスタム'];
+                                                const stretchCategories = ['ストレッチ', 'カスタム'];
 
                                                 filteredExercises.forEach(ex => {
                                                     let shouldInclude = false;
@@ -2222,6 +2329,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             <option value="尻">尻</option>
                                             <option value="有酸素運動">有酸素運動</option>
                                             <option value="ストレッチ">ストレッチ</option>
+                                            <option value="カスタム">カスタム</option>
                                         </select>
                                     </div>
                                     <div>
@@ -2239,13 +2347,59 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             <option value="スタティックストレッチ">スタティックストレッチ</option>
                                         </select>
                                     </div>
+
+                                    {/* 保存方法選択 */}
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <label className="text-sm font-medium text-gray-700">保存方法</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowExerciseSaveMethodInfo(true)}
+                                                className="text-blue-600 hover:text-blue-700"
+                                            >
+                                                <Icon name="Info" size={16} />
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                                <input
+                                                    type="radio"
+                                                    name="exerciseSaveMethod"
+                                                    value="database"
+                                                    checked={exerciseSaveMethod === 'database'}
+                                                    onChange={(e) => setExerciseSaveMethod(e.target.value)}
+                                                    className="mt-0.5"
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-sm text-gray-900">データベースに保存</div>
+                                                    <div className="text-xs text-gray-600 mt-0.5">後で検索して使用できます</div>
+                                                </div>
+                                            </label>
+                                            <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                                <input
+                                                    type="radio"
+                                                    name="exerciseSaveMethod"
+                                                    value="addToList"
+                                                    checked={exerciseSaveMethod === 'addToList'}
+                                                    onChange={(e) => setExerciseSaveMethod(e.target.value)}
+                                                    className="mt-0.5"
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-sm text-gray-900">リストに追加</div>
+                                                    <div className="text-xs text-gray-600 mt-0.5">今すぐ種目選択されます</div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
                                     <div className="flex gap-2">
                                         <button
-                                            onClick={() => {
+                                            onClick={async () => {
                                                 if (!customExerciseData.name.trim()) {
                                                     alert('種目名を入力してください');
                                                     return;
                                                 }
+
                                                 const customExercise = {
                                                     id: Date.now(),
                                                     name: customExerciseData.name,
@@ -2254,22 +2408,89 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                     exerciseType: 'anaerobic',
                                                     isCustom: true
                                                 };
-                                                setCurrentExercise(customExercise);
+
+                                                // LocalStorageにカスタム種目を保存
+                                                try {
+                                                    const savedExercises = JSON.parse(localStorage.getItem('customExercises') || '[]');
+                                                    savedExercises.push(customExercise);
+                                                    localStorage.setItem('customExercises', JSON.stringify(savedExercises));
+                                                    console.log('カスタム種目を保存:', customExercise);
+                                                } catch (error) {
+                                                    console.error('カスタム種目の保存に失敗:', error);
+                                                }
+
+                                                // 保存方法に応じて処理を分岐
+                                                if (exerciseSaveMethod === 'addToList') {
+                                                    // リストに追加: 種目を選択状態にする
+                                                    setCurrentExercise(customExercise);
+                                                    alert('カスタム種目を作成し、選択しました！');
+                                                } else {
+                                                    // データベースに保存のみ
+                                                    alert('カスタム種目を保存しました！種目検索から追加できます。');
+                                                }
+
                                                 setShowCustomExerciseForm(false);
                                                 setCustomExerciseData({ name: '', category: '胸', subcategory: 'コンパウンド' });
+                                                setExerciseSaveMethod('database'); // デフォルトに戻す
                                             }}
                                             className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
                                         >
-                                            作成して選択
+                                            {exerciseSaveMethod === 'addToList' ? '保存して選択' : '保存'}
                                         </button>
                                         <button
                                             onClick={() => {
                                                 setShowCustomExerciseForm(false);
                                                 setCustomExerciseData({ name: '', category: '胸', subcategory: 'コンパウンド' });
+                                                setExerciseSaveMethod('database'); // デフォルトに戻す
                                             }}
                                             className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition"
                                         >
                                             キャンセル
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 保存方法説明モーダル */}
+                        {showExerciseSaveMethodInfo && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10003] flex items-center justify-center p-4">
+                                <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-y-auto">
+                                    <div className="sticky top-0 bg-blue-600 text-white p-4 rounded-t-lg flex justify-between items-center z-10">
+                                        <h3 className="font-bold">保存方法について</h3>
+                                        <button
+                                            onClick={() => setShowExerciseSaveMethodInfo(false)}
+                                            className="p-1 hover:bg-white hover:bg-opacity-20 rounded"
+                                        >
+                                            <Icon name="X" size={20} />
+                                        </button>
+                                    </div>
+                                    <div className="p-4 space-y-4">
+                                        <div className="border-l-4 border-blue-500 pl-4 py-2">
+                                            <h4 className="font-semibold text-gray-900 mb-1">データベースに保存</h4>
+                                            <p className="text-sm text-gray-700">
+                                                カスタム種目をデータベースに保存します。今すぐ記録には追加されませんが、次回以降、種目検索から簡単に見つけて使用できます。
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-2">
+                                                <strong>使用例：</strong>よく行う自己流トレーニングを登録しておきたい場合
+                                            </p>
+                                        </div>
+
+                                        <div className="border-l-4 border-green-500 pl-4 py-2">
+                                            <h4 className="font-semibold text-gray-900 mb-1">リストに追加</h4>
+                                            <p className="text-sm text-gray-700">
+                                                カスタム種目をデータベースに保存し、同時に種目選択状態にします。今すぐ記録したい場合に便利です。
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-2">
+                                                <strong>使用例：</strong>新しい種目を作成してすぐに記録したい場合
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setShowExerciseSaveMethodInfo(false)}
+                                            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+                                        >
+                                            閉じる
                                         </button>
                                     </div>
                                 </div>
@@ -2379,32 +2600,6 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                         <div>
                                         <label className="block text-sm font-medium mb-1 flex items-center gap-2">
                                             重量 (kg)
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setWorkoutInfoModal({
-                                                        show: true,
-                                                        title: 'トレーニング重量入力の使い方',
-                                                        content: `使用した重量をキログラム単位で入力します。
-
-【入力方法】
-1. スライダーをドラッグして大まかな重量を設定（0～500kg）
-2. 目盛り数値（100kg、200kgなど）をタップで即座に設定
-3. 入力欄に直接数値を入力
-4. 増減ボタン（-10～+10）で微調整
-
-【入力の目安】
-• ダンベル: 片手の重量（例: 10kg）
-• バーベル: プレート込みの総重量（例: 60kg）
-• マシン: 選択したウェイトの重量
-• 自重トレーニング: 体重を入力
-
-【PG式での活用】
-重量は運動強度の重要な指標です。PG式では、重量と回数、可動距離を組み合わせて物理的仕事量を算出し、正確な消費カロリーを計算します。`
-                                                    })}
-                                                    className="text-indigo-600 hover:text-indigo-800"
-                                                >
-                                                    <Icon name="Info" size={14} />
-                                                </button>
                                             </label>
                                             {/* スライダー - 重量 */}
                                             <div className="mb-3">
@@ -2484,35 +2679,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
 
                                     {/* 回数入力 */}
                                     <div>
-                                        <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                                        <label className="block text-sm font-medium mb-1">
                                             回数
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setWorkoutInfoModal({
-                                                        show: true,
-                                                        title: 'トレーニング回数入力の使い方',
-                                                        content: `1セットで実施した回数（レップ数）を入力します。
-
-【入力方法】
-1. スライダーをドラッグして回数を設定（1～50回）
-2. 目盛り数値（10回、20回など）をタップで即座に設定
-3. 入力欄に直接数値を入力
-4. 増減ボタン（-5/-3/-1/+1/+3/+5）で微調整
-
-【トレーニング目的別の目安】
-• 筋力向上: 1～5回（高重量）
-• 筋肥大: 6～12回（中重量）
-• 筋持久力: 13回以上（低～中重量）
-• 有酸素運動: 継続時間を総時間に入力
-
-【PG式での活用】
-回数は運動の質を示す指標です。重量×回数×可動距離で物理的仕事量が決まり、それがPG式による精密な消費カロリー計算の基礎となります。`
-                                                    })}
-                                                    className="text-indigo-600 hover:text-indigo-800"
-                                                >
-                                                    <Icon name="Info" size={14} />
-                                                </button>
-                                            </label>
+                                        </label>
                                             {/* スライダー - 回数 */}
                                             <div className="mb-2">
                                                 <input
@@ -3901,9 +4070,15 @@ RM回数と重量を別々に入力してください。`
                                         {/* 追加済みアイテム一覧 */}
                                         {addedItems.length > 0 && (
                                             <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mt-3">
-                                                <div className="flex justify-between items-center mb-3">
+                                                <div
+                                                    className="flex justify-between items-center mb-3 cursor-pointer"
+                                                    onClick={() => setAddedItemsExpanded(!addedItemsExpanded)}
+                                                >
                                                     <p className="text-sm font-medium text-indigo-900">追加済み ({addedItems.length}品目)</p>
+                                                    <Icon name={addedItemsExpanded ? "ChevronUp" : "ChevronDown"} size={20} className="text-indigo-600" />
                                                 </div>
+                                                {addedItemsExpanded && (
+                                                <>
                                                 <div className="space-y-2 max-h-40 overflow-y-auto">
                                                     {addedItems.map((item, index) => (
                                                         <div key={index} className="bg-white p-2 rounded-lg flex justify-between items-center">
@@ -3983,6 +4158,8 @@ RM回数と重量を別々に入力してください。`
                                                 >
                                                     アイテムを追加
                                                 </button>
+                                                </>
+                                                )}
 
                                                 {/* 記録とキャンセルボタン */}
                                                 <div className="flex gap-2 mt-3">
@@ -5065,34 +5242,8 @@ RM回数と重量を別々に入力してください。`
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                    <label className="block text-sm font-medium mb-2">
                                         量 (g)
-                                        <button
-                                            type="button"
-                                            onClick={() => setWorkoutInfoModal({
-                                                show: true,
-                                                title: '食事入力の使い方',
-                                                content: `食材の量をグラム単位で入力します。
-
-【入力方法】
-1. スライダーをドラッグして大まかな量を設定
-2. 目盛り数値（100g、200gなど）をタップで即座に設定
-3. 入力欄に直接数値を入力
-4. 増減ボタン（-100～+100）で微調整
-
-【入力のコツ】
-• よく食べる量を覚えておくと便利です
-• 例: ご飯茶碗1杯 ≒ 150g
-• 例: 鶏むね肉（手のひら大）≒ 100g
-• 例: 卵1個 ≒ 50g
-
-【PFC自動計算】
-入力した量に応じて、たんぱく質（P）・脂質（F）・炭水化物（C）が自動計算され、1日の目標に反映されます。`
-                                            })}
-                                            className="text-indigo-600 hover:text-indigo-800"
-                                        >
-                                            <Icon name="Info" size={14} />
-                                        </button>
                                     </label>
 
                                     {/* スライダー */}
@@ -5309,7 +5460,7 @@ RM回数と重量を別々に入力してください。`
                         <div className="bg-white border-b p-4 flex justify-between items-center flex-shrink-0">
                             <h3 className="text-lg font-bold">
                                 {type === 'meal' && '食事を記録'}
-                                {type === 'workout' && 'トレーニングを記録'}
+                                {type === 'workout' && '運動を記録'}
                                 {type === 'condition' && 'コンディションを記録'}
                             </h3>
                             <button onClick={() => {
@@ -5335,6 +5486,31 @@ RM回数と重量を別々に入力してください。`
                             {type === 'condition' && renderConditionInput()}
                         </div>
                     </div>
+
+                    {/* WorkoutInfoModal */}
+                    {workoutInfoModal.show && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                                <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+                                    <h3 className="text-lg font-bold">{workoutInfoModal.title}</h3>
+                                    <button onClick={() => setWorkoutInfoModal({ show: false, title: '', content: '' })} className="text-gray-400 hover:text-gray-600">
+                                        <Icon name="X" size={24} />
+                                    </button>
+                                </div>
+                                <div className="p-6">
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{workoutInfoModal.content}</p>
+                                </div>
+                                <div className="p-6 border-t">
+                                    <button
+                                        onClick={() => setWorkoutInfoModal({ show: false, title: '', content: '' })}
+                                        className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                    >
+                                        閉じる
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };

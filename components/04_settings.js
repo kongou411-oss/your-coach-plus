@@ -2724,6 +2724,365 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 );
                             })()}
 
+                            {/* 全データベースアイテム一覧 */}
+                            {(() => {
+                                const [dbTab, setDbTab] = React.useState('food');
+                                const [dbSearchTerm, setDbSearchTerm] = React.useState('');
+                                const [expandedCategories, setExpandedCategories] = React.useState({});
+                                const [selectedItemDetail, setSelectedItemDetail] = React.useState(null);
+                                const [showDetailModal, setShowDetailModal] = React.useState(false);
+
+                                const toggleCategory = (category) => {
+                                    setExpandedCategories(prev => ({
+                                        ...prev,
+                                        [category]: !prev[category]
+                                    }));
+                                };
+
+                                // 食品データベースのアイテムをカテゴリごとに整理
+                                const organizedFoodDB = React.useMemo(() => {
+                                    const organized = {};
+                                    Object.keys(foodDatabase).forEach(category => {
+                                        const items = [];
+                                        Object.keys(foodDatabase[category]).forEach(itemName => {
+                                            if (itemName.includes(dbSearchTerm)) {
+                                                items.push({
+                                                    name: itemName,
+                                                    ...foodDatabase[category][itemName]
+                                                });
+                                            }
+                                        });
+                                        if (items.length > 0) {
+                                            organized[category] = items;
+                                        }
+                                    });
+                                    return organized;
+                                }, [dbSearchTerm]);
+
+                                // トレーニングデータベースのアイテムをカテゴリごとに整理
+                                const organizedTrainingDB = React.useMemo(() => {
+                                    const organized = {};
+                                    Object.keys(trainingDatabase).forEach(category => {
+                                        const items = [];
+                                        Object.keys(trainingDatabase[category]).forEach(itemName => {
+                                            if (itemName.includes(dbSearchTerm)) {
+                                                items.push({
+                                                    name: itemName,
+                                                    ...trainingDatabase[category][itemName]
+                                                });
+                                            }
+                                        });
+                                        if (items.length > 0) {
+                                            organized[category] = items;
+                                        }
+                                    });
+                                    return organized;
+                                }, [dbSearchTerm]);
+
+                                const totalFoodItems = Object.values(organizedFoodDB).reduce((sum, items) => sum + items.length, 0);
+                                const totalTrainingItems = Object.values(organizedTrainingDB).reduce((sum, items) => sum + items.length, 0);
+
+                                return (
+                                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                                        <h4 className="font-bold mb-2 text-green-800 flex items-center gap-2">
+                                            <Icon name="Database" size={18} />
+                                            全データベースアイテム一覧
+                                        </h4>
+                                        <p className="text-sm text-gray-600 mb-3">アプリに登録されているすべてのアイテムを確認できます。</p>
+
+                                        {/* タブ切り替え */}
+                                        <div className="flex gap-2 mb-3">
+                                            <button
+                                                onClick={() => setDbTab('food')}
+                                                className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
+                                                    dbTab === 'food'
+                                                        ? 'bg-green-600 text-white'
+                                                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                食品 ({totalFoodItems})
+                                            </button>
+                                            <button
+                                                onClick={() => setDbTab('training')}
+                                                className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
+                                                    dbTab === 'training'
+                                                        ? 'bg-green-600 text-white'
+                                                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                運動 ({totalTrainingItems})
+                                            </button>
+                                        </div>
+
+                                        {/* 検索ボックス */}
+                                        <input
+                                            type="text"
+                                            placeholder="アイテムを検索..."
+                                            value={dbSearchTerm}
+                                            onChange={(e) => setDbSearchTerm(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 text-sm"
+                                        />
+
+                                        {/* 食品データベース */}
+                                        {dbTab === 'food' && (
+                                            <div className="space-y-2 max-h-96 overflow-y-auto">
+                                                {Object.keys(organizedFoodDB).length === 0 ? (
+                                                    <p className="text-sm text-gray-500 text-center py-4">該当するアイテムがありません</p>
+                                                ) : (
+                                                    Object.keys(organizedFoodDB).map(category => (
+                                                        <div key={category} className="bg-white rounded-lg border border-gray-200">
+                                                            <button
+                                                                onClick={() => toggleCategory(category)}
+                                                                className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition"
+                                                            >
+                                                                <span className="font-medium text-sm">{category} ({organizedFoodDB[category].length})</span>
+                                                                <Icon name={expandedCategories[category] ? "ChevronUp" : "ChevronDown"} size={16} />
+                                                            </button>
+                                                            {expandedCategories[category] && (
+                                                                <div className="p-3 pt-0 space-y-1 max-h-60 overflow-y-auto">
+                                                                    {organizedFoodDB[category].map((item, idx) => (
+                                                                        <button
+                                                                            key={idx}
+                                                                            onClick={() => {
+                                                                                setSelectedItemDetail(item);
+                                                                                setShowDetailModal(true);
+                                                                            }}
+                                                                            className="w-full text-sm py-1.5 px-2 bg-gray-50 rounded flex justify-between items-center hover:bg-gray-100 transition cursor-pointer"
+                                                                        >
+                                                                            <span className="text-left">{item.name}</span>
+                                                                            <span className="text-xs text-gray-500">
+                                                                                {item.calories}kcal • P:{item.protein}g • F:{item.fat}g • C:{item.carbs}g
+                                                                            </span>
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* トレーニングデータベース */}
+                                        {dbTab === 'training' && (
+                                            <div className="space-y-2 max-h-96 overflow-y-auto">
+                                                {Object.keys(organizedTrainingDB).length === 0 ? (
+                                                    <p className="text-sm text-gray-500 text-center py-4">該当するアイテムがありません</p>
+                                                ) : (
+                                                    Object.keys(organizedTrainingDB).map(category => (
+                                                        <div key={category} className="bg-white rounded-lg border border-gray-200">
+                                                            <button
+                                                                onClick={() => toggleCategory(category)}
+                                                                className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition"
+                                                            >
+                                                                <span className="font-medium text-sm">{category} ({organizedTrainingDB[category].length})</span>
+                                                                <Icon name={expandedCategories[category] ? "ChevronUp" : "ChevronDown"} size={16} />
+                                                            </button>
+                                                            {expandedCategories[category] && (
+                                                                <div className="p-3 pt-0 space-y-1 max-h-60 overflow-y-auto">
+                                                                    {organizedTrainingDB[category].map((item, idx) => (
+                                                                        <div
+                                                                            key={idx}
+                                                                            className="w-full text-sm py-1.5 px-2 bg-gray-50 rounded flex justify-between items-center"
+                                                                        >
+                                                                            <span className="text-left">{item.name}</span>
+                                                                            <span className="text-xs text-gray-500">
+                                                                                {item.met && `MET: ${item.met}`}
+                                                                                {item.category && ` • ${item.category}`}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* アイテム詳細モーダル */}
+                                        {showDetailModal && selectedItemDetail && (
+                                            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
+                                                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                                                    <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+                                                        <h3 className="text-lg font-bold">{selectedItemDetail.name}</h3>
+                                                        <button onClick={() => setShowDetailModal(false)} className="text-gray-400 hover:text-gray-600">
+                                                            <Icon name="X" size={24} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="p-6 space-y-4">
+                                                        {/* 基本栄養素 */}
+                                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                                            <h4 className="font-bold mb-3 text-gray-800">基本栄養素（{selectedItemDetail.servingSize || 100}{selectedItemDetail.servingUnit || 'g'}あたり）</h4>
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                <div>
+                                                                    <p className="text-xs text-gray-600">カロリー</p>
+                                                                    <p className="font-bold text-lg" style={{color: '#7686BA'}}>{selectedItemDetail.calories || 0}kcal</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs text-gray-600">たんぱく質</p>
+                                                                    <p className="font-bold text-lg text-red-600">{selectedItemDetail.protein || 0}g</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs text-gray-600">脂質</p>
+                                                                    <p className="font-bold text-lg text-yellow-600">{selectedItemDetail.fat || 0}g</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs text-gray-600">炭水化物</p>
+                                                                    <p className="font-bold text-lg text-green-600">{selectedItemDetail.carbs || 0}g</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 食物繊維・糖質 */}
+                                                        {(selectedItemDetail.fiber || selectedItemDetail.sugar) && (
+                                                            <div className="bg-blue-50 p-4 rounded-lg">
+                                                                <h4 className="font-bold mb-3 text-blue-800">食物繊維・糖質</h4>
+                                                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                                                    {selectedItemDetail.sugar !== undefined && (
+                                                                        <div>
+                                                                            <p className="text-xs text-gray-600">糖質</p>
+                                                                            <p className="font-bold">{selectedItemDetail.sugar}g</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {selectedItemDetail.fiber !== undefined && (
+                                                                        <div>
+                                                                            <p className="text-xs text-gray-600">食物繊維</p>
+                                                                            <p className="font-bold">{selectedItemDetail.fiber}g</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {selectedItemDetail.solubleFiber !== undefined && (
+                                                                        <div>
+                                                                            <p className="text-xs text-gray-600">水溶性食物繊維</p>
+                                                                            <p className="font-bold">{selectedItemDetail.solubleFiber}g</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {selectedItemDetail.insolubleFiber !== undefined && (
+                                                                        <div>
+                                                                            <p className="text-xs text-gray-600">不溶性食物繊維</p>
+                                                                            <p className="font-bold">{selectedItemDetail.insolubleFiber}g</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* GI値・DIAAS */}
+                                                        {(selectedItemDetail.gi || selectedItemDetail.diaas) && (
+                                                            <div className="bg-purple-50 p-4 rounded-lg">
+                                                                <h4 className="font-bold mb-3 text-purple-800">栄養指標</h4>
+                                                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                                                    {selectedItemDetail.gi && (
+                                                                        <div>
+                                                                            <p className="text-xs text-gray-600">GI値</p>
+                                                                            <p className="font-bold">{selectedItemDetail.gi}</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {selectedItemDetail.diaas && (
+                                                                        <div>
+                                                                            <p className="text-xs text-gray-600">DIAAS</p>
+                                                                            <p className="font-bold">{selectedItemDetail.diaas}</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* ビタミン */}
+                                                        {(() => {
+                                                            const vitaminMap = {
+                                                                'vitaminA': { label: 'ビタミンA', unit: 'μg' },
+                                                                'vitaminB1': { label: 'ビタミンB1', unit: 'mg' },
+                                                                'vitaminB2': { label: 'ビタミンB2', unit: 'mg' },
+                                                                'vitaminB6': { label: 'ビタミンB6', unit: 'mg' },
+                                                                'vitaminB12': { label: 'ビタミンB12', unit: 'μg' },
+                                                                'vitaminC': { label: 'ビタミンC', unit: 'mg' },
+                                                                'vitaminD': { label: 'ビタミンD', unit: 'μg' },
+                                                                'vitaminE': { label: 'ビタミンE', unit: 'mg' },
+                                                                'vitaminK': { label: 'ビタミンK', unit: 'μg' },
+                                                                'niacin': { label: 'ナイアシン', unit: 'mg' },
+                                                                'pantothenicAcid': { label: 'パントテン酸', unit: 'mg' },
+                                                                'biotin': { label: 'ビオチン', unit: 'μg' },
+                                                                'folicAcid': { label: '葉酸', unit: 'μg' }
+                                                            };
+                                                            const vitamins = Object.keys(vitaminMap).filter(key => selectedItemDetail[key] !== undefined && selectedItemDetail[key] !== 0);
+
+                                                            return vitamins.length > 0 && (
+                                                                <div className="bg-yellow-50 p-4 rounded-lg">
+                                                                    <h4 className="font-bold mb-3 text-yellow-800">ビタミン</h4>
+                                                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                                                        {vitamins.map(key => (
+                                                                            <div key={key}>
+                                                                                <p className="text-xs text-gray-600">{vitaminMap[key].label}</p>
+                                                                                <p className="font-bold">{selectedItemDetail[key]}{vitaminMap[key].unit}</p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
+
+                                                        {/* ミネラル */}
+                                                        {(() => {
+                                                            const mineralMap = {
+                                                                'sodium': { label: 'ナトリウム', unit: 'mg' },
+                                                                'potassium': { label: 'カリウム', unit: 'mg' },
+                                                                'calcium': { label: 'カルシウム', unit: 'mg' },
+                                                                'magnesium': { label: 'マグネシウム', unit: 'mg' },
+                                                                'phosphorus': { label: 'リン', unit: 'mg' },
+                                                                'iron': { label: '鉄', unit: 'mg' },
+                                                                'zinc': { label: '亜鉛', unit: 'mg' },
+                                                                'copper': { label: '銅', unit: 'mg' },
+                                                                'manganese': { label: 'マンガン', unit: 'mg' },
+                                                                'iodine': { label: 'ヨウ素', unit: 'μg' },
+                                                                'selenium': { label: 'セレン', unit: 'μg' },
+                                                                'chromium': { label: 'クロム', unit: 'μg' },
+                                                                'molybdenum': { label: 'モリブデン', unit: 'μg' }
+                                                            };
+                                                            const minerals = Object.keys(mineralMap).filter(key => selectedItemDetail[key] !== undefined && selectedItemDetail[key] !== 0);
+
+                                                            return minerals.length > 0 && (
+                                                                <div className="bg-orange-50 p-4 rounded-lg">
+                                                                    <h4 className="font-bold mb-3 text-orange-800">ミネラル</h4>
+                                                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                                                        {minerals.map(key => (
+                                                                            <div key={key}>
+                                                                                <p className="text-xs text-gray-600">{mineralMap[key].label}</p>
+                                                                                <p className="font-bold">{selectedItemDetail[key]}{mineralMap[key].unit}</p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
+
+                                                        {/* MET値（トレーニング用） */}
+                                                        {selectedItemDetail.met && (
+                                                            <div className="bg-green-50 p-4 rounded-lg">
+                                                                <h4 className="font-bold mb-3 text-green-800">運動強度</h4>
+                                                                <div className="text-sm">
+                                                                    <p className="text-xs text-gray-600">MET値</p>
+                                                                    <p className="font-bold text-lg">{selectedItemDetail.met}</p>
+                                                                    <p className="text-xs text-gray-500 mt-2">※運動強度の指標。安静時を1としたエネルギー消費量の比率</p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="p-6 border-t">
+                                                        <button
+                                                            onClick={() => setShowDetailModal(false)}
+                                                            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                                        >
+                                                            閉じる
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
                             <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                                 <div className="flex items-start gap-3">
                                     <Icon name="Trash2" size={20} className="text-red-600 mt-1" />

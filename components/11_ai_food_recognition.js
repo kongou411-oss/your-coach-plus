@@ -10,6 +10,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
     const [showManualAdd, setShowManualAdd] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
+    const [showInfoModal, setShowInfoModal] = useState(false);
 
     // 画像選択ハンドラー
     const handleImageSelect = (event) => {
@@ -522,12 +523,21 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                         <Icon name="Camera" size={20} />
                         AI食事認識
                     </h3>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
-                    >
-                        <Icon name="X" size={20} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowInfoModal(true)}
+                            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                            title="使い方"
+                        >
+                            <Icon name="Info" size={20} />
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                        >
+                            <Icon name="X" size={20} />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -813,6 +823,209 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                     </div>
                 </div>
             </div>
+
+            {/* 使い方説明モーダル */}
+            {showInfoModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                        {/* ヘッダー */}
+                        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <Icon name="Info" size={20} />
+                                AI食事認識の使い方
+                            </h3>
+                            <button
+                                onClick={() => setShowInfoModal(false)}
+                                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                            >
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* 全フローの説明 */}
+                            <div className="space-y-4">
+                                <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                    <Icon name="Zap" size={20} className="text-purple-600" />
+                                    解析から記録までの流れ
+                                </h4>
+                                <div className="space-y-3">
+                                    <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800">写真を撮影または選択</p>
+                                            <p className="text-sm text-gray-600 mt-1">食事の写真をカメラで撮影、またはギャラリーから選択します。</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800">AIが自動で食材を認識・解析</p>
+                                            <p className="text-sm text-gray-600 mt-1">「AIで食品を認識」ボタンを押すと、AIが写真から食材を自動で検出し、量とカロリー・PFCを推定します。</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800">認識結果を確認・調整</p>
+                                            <p className="text-sm text-gray-600 mt-1">認識された食材の名前、量、栄養素を確認します。数量を調整したり、不要な食材を削除できます。</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">4</div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800">必要に応じて食材を追加</p>
+                                            <p className="text-sm text-gray-600 mt-1">AIが見逃した食材は「食材を手動で追加」ボタンから追加できます。</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">5</div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800">「確定して追加」で記録完了</p>
+                                            <p className="text-sm text-gray-600 mt-1">内容を確認したら「確定して追加」ボタンを押して、食事に追加します。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 未登録食材の見分け方 */}
+                            <div className="space-y-3">
+                                <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                    <Icon name="AlertTriangle" size={20} className="text-yellow-600" />
+                                    未登録食材の見分け方
+                                </h4>
+                                <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                                    <p className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
+                                        <Icon name="AlertCircle" size={18} />
+                                        黄色背景 + ⚠️警告表示 = データベース未登録
+                                    </p>
+                                    <p className="text-sm text-yellow-800">
+                                        AIが認識した食材がデータベースに登録されていない場合、黄色い背景で表示され、「⚠️ データベースに未登録の食品です」という警告が表示されます。この場合、栄養素情報がないため、カロリーやPFCが0と表示されます。
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 未登録食材の対処法 */}
+                            <div className="space-y-3">
+                                <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                    <Icon name="Tool" size={20} className="text-orange-600" />
+                                    未登録食材の対処法
+                                </h4>
+                                <div className="space-y-2">
+                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                        <p className="font-semibold text-orange-900 mb-1 flex items-center gap-2">
+                                            <Icon name="Search" size={16} />
+                                            方法1: 「もしかして」候補から選択
+                                        </p>
+                                        <p className="text-sm text-orange-800">
+                                            AIが認識した名前に似た食材を最大3つ提案します。類似度が表示されるので、正しい食材をタップして置き換えできます。
+                                        </p>
+                                    </div>
+                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                        <p className="font-semibold text-orange-900 mb-1 flex items-center gap-2">
+                                            <Icon name="Plus" size={16} />
+                                            方法2: カスタム食材として登録
+                                        </p>
+                                        <p className="text-sm text-orange-800">
+                                            「カスタム食材として登録」ボタンを押して、栄養素を手動で入力します。一度登録すると、次回から簡単に使用できます。
+                                        </p>
+                                    </div>
+                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                        <p className="font-semibold text-orange-900 mb-1 flex items-center gap-2">
+                                            <Icon name="Trash2" size={16} />
+                                            方法3: 削除する
+                                        </p>
+                                        <p className="text-sm text-orange-800">
+                                            不要な食材や誤認識の場合は、×ボタンで削除できます。
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* カスタム登録の方法 */}
+                            <div className="space-y-3">
+                                <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                    <Icon name="Edit" size={20} className="text-green-600" />
+                                    カスタム食材の登録方法
+                                </h4>
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+                                    <ol className="text-sm text-green-800 space-y-2 list-decimal list-inside">
+                                        <li><strong>「カスタム食材として登録」ボタンをタップ</strong></li>
+                                        <li><strong>食材名を確認・編集</strong>（必要に応じて修正）</li>
+                                        <li><strong>栄養素を入力</strong>:
+                                            <ul className="ml-6 mt-1 space-y-1 list-disc list-inside">
+                                                <li>カロリー（kcal）</li>
+                                                <li>たんぱく質（g）</li>
+                                                <li>脂質（g）</li>
+                                                <li>炭水化物（g）</li>
+                                            </ul>
+                                        </li>
+                                        <li><strong>数量を設定</strong>（グラム数や個数）</li>
+                                        <li><strong>「登録」ボタンで完了</strong></li>
+                                    </ol>
+                                </div>
+                            </div>
+
+                            {/* 栄養素の入力方法 */}
+                            <div className="space-y-3">
+                                <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                    <Icon name="BookOpen" size={20} className="text-blue-600" />
+                                    栄養素の入力方法
+                                </h4>
+                                <div className="space-y-3">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                            <Icon name="Package" size={16} />
+                                            方法1: 食品パッケージの栄養成分表示を確認
+                                        </p>
+                                        <p className="text-sm text-blue-800 mb-2">
+                                            加工食品の場合、パッケージに記載されている「栄養成分表示」から、カロリーとPFC（たんぱく質・脂質・炭水化物）の値をそのまま入力します。
+                                        </p>
+                                        <div className="bg-white rounded p-2 text-xs text-gray-700 border border-blue-300">
+                                            <p className="font-semibold mb-1">例: 栄養成分表示（100gあたり）</p>
+                                            <p>エネルギー: 250kcal</p>
+                                            <p>たんぱく質: 10.5g</p>
+                                            <p>脂質: 15.2g</p>
+                                            <p>炭水化物: 20.3g</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                            <Icon name="Database" size={16} />
+                                            方法2: 日本食品標準成分表（八訂）で検索
+                                        </p>
+                                        <p className="text-sm text-blue-800 mb-3">
+                                            生鮮食品や自炊の料理の場合、文部科学省が公開している「日本食品標準成分表（八訂）」で食材を検索して、栄養素の値を取得します。
+                                        </p>
+                                        <a
+                                            href="https://fooddb.mext.go.jp/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+                                        >
+                                            <Icon name="ExternalLink" size={16} />
+                                            日本食品標準成分表（八訂）を開く
+                                        </a>
+                                        <p className="text-xs text-blue-700 mt-2">
+                                            ※ 新しいタブで開きます
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 閉じるボタン */}
+                            <div className="pt-4 border-t">
+                                <button
+                                    onClick={() => setShowInfoModal(false)}
+                                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold py-3 rounded-lg hover:from-blue-700 hover:to-cyan-700 transition"
+                                >
+                                    閉じる
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
