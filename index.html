@@ -8,6 +8,18 @@
     <meta http-equiv="Expires" content="0">
     <title>Your Coach+ v1.0.13</title>
 
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Apple PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Coach+">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#4F46E5">
+
     <!-- React & Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -23,7 +35,7 @@
 
     <!-- Configuration & Utils -->
     <script src="config.js?v=20251029v1"></script>
-    <script src="utils.js?v=20251024v5"></script>
+    <script src="utils.js?v=20251029v6"></script>
 
     <!-- Database Files -->
     <script src="foodDatabase_v2.js"></script>
@@ -50,15 +62,15 @@
     <link rel="stylesheet" href="styles_dark.css?v=20251022v6">
 
     <!-- Services Layer -->
-    <script src="services.js?v=20251028v1"></script>
+    <script src="services.js?v=20251029v5"></script>
 
     <!-- Application Components (Modularized) -->
     <script type="text/babel" src="components/00_init.js?v=20251020v7"></script>
     <script type="text/babel" src="components/00_feature_unlock.js?v=20251024v9"></script>
     <script type="text/babel" src="components/01_common.js?v=20251020v7"></script>
-    <script type="text/babel" src="components/02_auth.js?v=20251024v9"></script>
+    <script type="text/babel" src="components/02_auth.js?v=20251029v8"></script>
     <script type="text/babel" src="components/03_dashboard.js?v=20251029v6"></script>
-    <script type="text/babel" src="components/04_settings.js?v=20251029v3"></script>
+    <script type="text/babel" src="components/04_settings.js?v=20251029v12"></script>
     <script type="text/babel" src="components/05_analysis.js?v=20251029v2"></script>
     <script type="text/babel" src="components/06_community.js?v=20251022v2"></script>
     <script type="text/babel" src="components/07_add_item_v2.js?v=20251029v14"></script>
@@ -76,5 +88,30 @@
 
     <script type="text/babel" src="components/08_app.js?v=20251029v1"></script>
     <script type="text/babel" src="components/09_render.js?v=20251020v7"></script>
+
+    <!-- PWA & Service Worker Registration -->
+    <script>
+        // Service Worker登録
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                    .then((registration) => {
+                        console.log('[PWA] Service Worker registered:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.error('[PWA] Service Worker registration failed:', error);
+                    });
+            });
+        }
+
+        // NotificationServiceの初期化（アプリ起動時）
+        window.addEventListener('load', () => {
+            // フォアグラウンド通知リスナーをセットアップ
+            if (typeof NotificationService !== 'undefined') {
+                NotificationService.setupForegroundListener();
+                console.log('[PWA] NotificationService initialized');
+            }
+        });
+    </script>
 </body>
 </html>

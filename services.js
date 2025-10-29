@@ -237,17 +237,33 @@ const DataService = {
 
     // ユーザープロファイル取得
     getUserProfile: async (userId) => {
+        let profile = null;
+
         if (DEV_MODE) {
             const saved = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
-            return saved ? JSON.parse(saved) : null;
+            profile = saved ? JSON.parse(saved) : null;
+        } else {
+            try {
+                const doc = await db.collection('users').doc(userId).get();
+                profile = doc.exists ? doc.data() : null;
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+                return null;
+            }
         }
-        try {
-            const doc = await db.collection('users').doc(userId).get();
-            return doc.exists ? doc.data() : null;
-        } catch (error) {
-            console.error('Error fetching user profile:', error);
-            return null;
+
+        // 既存データの互換性処理: 旧スタイル名を「ボディメイカー」に変換
+        if (profile && profile.style) {
+            const oldStyles = ['筋肥大', '筋力', '持久力', 'バランス'];
+            if (oldStyles.includes(profile.style)) {
+                console.log(`スタイル変換: ${profile.style} → ボディメイカー`);
+                profile.style = 'ボディメイカー';
+                // 変換後のプロフィールを保存
+                await DataService.saveUserProfile(userId, profile);
+            }
         }
+
+        return profile;
     },
 
     // ユーザープロファイル保存
@@ -1786,5 +1802,169 @@ const ExperienceService = {
             console.error('[Experience] Failed to add free credits:', error);
             return { success: false, error: error.message };
         }
+    }
+};
+
+// ========================================
+// 通知サービス（Push Notification）
+// ========================================
+const NotificationService = {
+    // 通知権限をリクエスト
+    requestPermission: async () => {
+        try {
+            if (!('Notification' in window)) {
+                console.error('[Notification] このブラウザは通知をサポートしていません');
+                return { success: false, error: 'Notification not supported' };
+            }
+
+            // DEV_MODEでもブラウザの通知権限は取得可能
+            const permission = await Notification.requestPermission();
+            console.log('[Notification] Permission:', permission);
+
+            return {
+                success: permission === 'granted',
+                permission
+            };
+        } catch (error) {
+            console.error('[Notification] Permission request failed:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // FCMトークンを取得
+    getFCMToken: async (userId) => {
+        try {
+            // DEV_MODEの場合はダミートークンを返す
+            if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
+                console.log('[Notification] DEV_MODE enabled, using dummy FCM token');
+                const dummyToken = 'dev_fcm_token_' + userId;
+                await NotificationService.saveToken(userId, dummyToken);
+                return { success: true, token: dummyToken, devMode: true };
+            }
+
+            // Firebaseアプリが初期化されているか確認
+            if (!firebase.apps || firebase.apps.length === 0) {
+                console.error('[Notification] Firebase not initialized');
+                return { success: false, error: 'Firebase not initialized' };
+            }
+
+            if (!firebase.messaging.isSupported()) {
+                console.error('[Notification] FCM not supported');
+                return { success: false, error: 'FCM not supported' };
+            }
+
+            const messaging = firebase.messaging();
+
+            // Service Workerの登録を確認
+            const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+            if (!registration) {
+                console.error('[Notification] Service Worker not registered');
+                return { success: false, error: 'Service Worker not registered' };
+            }
+
+            const token = await messaging.getToken({
+                vapidKey: 'BIifQg3P5w9Eb4JU4EDqx7bbNeAhveYPK2GCeEyi28A6-y04sm11TASGWBoI0Enewki1f7PFvQ6KjsQb5J5EMXU',
+                serviceWorkerRegistration: registration
+            });
+
+            if (token) {
+                console.log('[Notification] FCM Token:', token);
+                // トークンをFirestoreに保存
+                await NotificationService.saveToken(userId, token);
+                return { success: true, token };
+            } else {
+                console.error('[Notification] No FCM token available');
+                return { success: false, error: 'No token available' };
+            }
+        } catch (error) {
+            console.error('[Notification] Failed to get FCM token:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // FCMトークンをFirestoreに保存
+    saveToken: async (userId, token) => {
+        try {
+            if (DEV_MODE) {
+                // DEV_MODEではLocalStorageに保存
+                localStorage.setItem(`fcmToken_${userId}`, token);
+                console.log('[Notification] Token saved to LocalStorage');
+                return { success: true };
+            } else {
+                // Firestoreのユーザードキュメントのtokensサブコレクションに保存
+                await db.collection('users').doc(userId).collection('tokens').doc(token).set({
+                    token,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                console.log('[Notification] Token saved to Firestore');
+                return { success: true };
+            }
+        } catch (error) {
+            console.error('[Notification] Failed to save token:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // フォアグラウンド通知リスナーをセットアップ
+    setupForegroundListener: () => {
+        try {
+            // DEV_MODEの場合はスキップ
+            if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
+                console.log('[Notification] DEV_MODE enabled, skipping foreground listener');
+                return;
+            }
+
+            // Firebaseアプリが初期化されているか確認
+            if (!firebase.apps || firebase.apps.length === 0) {
+                console.log('[Notification] Firebase not initialized, skipping foreground listener');
+                return;
+            }
+
+            if (!firebase.messaging.isSupported()) {
+                console.log('[Notification] FCM not supported, skipping foreground listener');
+                return;
+            }
+
+            const messaging = firebase.messaging();
+
+            messaging.onMessage((payload) => {
+                console.log('[Notification] Foreground message received:', payload);
+
+                // 通知を表示
+                const notificationTitle = payload.notification?.title || 'Your Coach+';
+                const notificationOptions = {
+                    body: payload.notification?.body || '新しい通知があります',
+                    icon: '/icons/icon-192.png',
+                    badge: '/icons/icon-72.png',
+                    tag: payload.data?.tag || 'default',
+                    data: payload.data
+                };
+
+                if (Notification.permission === 'granted') {
+                    new Notification(notificationTitle, notificationOptions);
+                }
+            });
+
+            console.log('[Notification] Foreground listener set up');
+        } catch (error) {
+            console.error('[Notification] Failed to setup foreground listener:', error);
+        }
+    },
+
+    // 通知権限の状態を確認
+    checkPermission: () => {
+        if (!('Notification' in window)) {
+            return 'unsupported';
+        }
+        return Notification.permission; // 'default', 'granted', 'denied'
+    },
+
+    // スケジュール通知を登録（将来の拡張用）
+    scheduleNotification: async (userId, notificationType, time) => {
+        // TODO: Cloud Functions for Firebase で実装
+        // ユーザーの通知設定を読み取り、指定時刻に通知を送信
+        console.log('[Notification] Schedule notification:', { userId, notificationType, time });
+        return { success: true, message: 'Scheduled notification (not implemented yet)' };
     }
 };

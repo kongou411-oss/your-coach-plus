@@ -118,14 +118,16 @@ const LBMUtils = {
         return weight - lbm;
     },
 
-    // LBMベースのBMR計算 (Katch-McArdle式)
-    calculateBMR: (lbm) => {
-        return 370 + (21.6 * lbm);
+    // LBMベースのBMR計算 (Katch-McArdle式 + 脂肪組織代謝)
+    calculateBMR: (lbm, fatMass = 0) => {
+        const lbmMetabolism = 370 + (21.6 * lbm);
+        const fatMetabolism = fatMass * 4.5; // 脂肪組織の代謝: 4.5 kcal/kg/日
+        return lbmMetabolism + fatMetabolism;
     },
 
     // LBMベースのTDEE計算
-    calculateTDEE: (lbm, activityLevel, customMultiplier = null) => {
-        const bmr = LBMUtils.calculateBMR(lbm);
+    calculateTDEE: (lbm, activityLevel, customMultiplier = null, fatMass = 0) => {
+        const bmr = LBMUtils.calculateBMR(lbm, fatMass);
         // カスタム係数が設定されていればそれを優先
         if (customMultiplier !== null && customMultiplier !== undefined) {
             return bmr * customMultiplier;
@@ -343,7 +345,8 @@ const LBMUtils = {
         const gFactor = goalFactors[goal] || goalFactors['メンテナンス'];
 
         // ライフスタイル係数: ボディメイカーは2倍
-        const lifestyleBase = lifestyle === 'ボディメイカー' ? 2.0 : 1.0;
+        const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス', 'ボディメイカー'];
+        const lifestyleBase = bodymakerStyles.includes(lifestyle) ? 2.0 : 1.0;
 
         // 耐容上限値（成人）
         const tolerableUpperLimits = {
@@ -692,8 +695,9 @@ const CalcUtils = {
         }
 
         // c. ライフスタイルによる調整
-        const lifestyle = profile.lifestyle || '一般';
-        if (lifestyle === 'ボディメイカー') {
+        const lifestyle = profile.style || '一般';
+        const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス', 'ボディメイカー'];
+        if (bodymakerStyles.includes(lifestyle)) {
             adjustments.proteinBoost += 0.5; // +0.5g/kg LBM
             adjustments.reason.push('ボディメイカー: タンパク質係数+0.5');
         }

@@ -125,11 +125,24 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         setSupplementTemplates(supplements);
     };
 
+    // 通知設定を更新して自動保存
+    const handleNotificationSettingChange = (newSettings) => {
+        const updatedProfile = {
+            ...profile,
+            notificationSettings: newSettings
+        };
+        setProfile(updatedProfile);
+        // 即座に保存
+        onUpdateProfile(updatedProfile);
+        console.log('[Settings] Notification settings saved:', newSettings);
+    };
+
     const handleSave = () => {
         // LBM再計算
         const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
-        const bmr = LBMUtils.calculateBMR(lbm);
-        const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier);
+        const fatMass = profile.weight - lbm;
+        const bmr = LBMUtils.calculateBMR(lbm, fatMass);
+        const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass);
 
         // 目的別モードの場合はカスタムPFC比率をクリア、カスタムモードの場合は保持
         const pfcSettings = advancedSettings.usePurposeBased !== false
@@ -563,9 +576,106 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             プロフィール
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
-                        <div className="p-4 pt-0 border-t">
+                        <div className="p-4 border-t">
                             {/* プロフィール入力 */}
-                            <div className="space-y-3">
+                            <div className="space-y-3 max-h-[70vh] overflow-y-auto pb-12">
+
+                                    {/* 計算ロジック解説 */}
+                                    <details className="bg-blue-50 border-2 border-blue-200 rounded-lg mb-4">
+                                        <summary className="cursor-pointer p-3 hover:bg-blue-100 font-medium flex items-center gap-2 text-blue-800">
+                                            <Icon name="Info" size={18} className="text-blue-600" />
+                                            <span className="text-sm">計算ロジック解説（全フロー）</span>
+                                            <Icon name="ChevronDown" size={16} className="ml-auto text-blue-400" />
+                                        </summary>
+                                        <div className="p-4 pt-2 border-t border-blue-200 text-sm text-gray-700 space-y-4">
+                                            {/* BMR計算 */}
+                                            <div>
+                                                <h5 className="font-bold text-blue-700 mb-2 flex items-center gap-1">
+                                                    <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">1</span>
+                                                    基礎代謝量（BMR）
+                                                </h5>
+                                                <div className="pl-6 space-y-1 text-xs">
+                                                    <p className="font-medium text-gray-800">【計算式】Katch-McArdle式 + 脂肪組織代謝</p>
+                                                    <p className="text-gray-600">BMR = (370 + 21.6 × 除脂肪体重) + (脂肪量 × 4.5)</p>
+                                                    <p className="text-gray-500 mt-1">
+                                                        • 除脂肪体重（LBM）= 体重 × (1 - 体脂肪率 ÷ 100)<br/>
+                                                        • 脂肪量 = 体重 - 除脂肪体重<br/>
+                                                        • 脂肪組織も1日4.5kcal/kgのエネルギーを消費します
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* TDEE計算 */}
+                                            <div>
+                                                <h5 className="font-bold text-green-700 mb-2 flex items-center gap-1">
+                                                    <span className="bg-green-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">2</span>
+                                                    1日の総消費カロリー（TDEE）
+                                                </h5>
+                                                <div className="pl-6 space-y-1 text-xs">
+                                                    <p className="font-medium text-gray-800">【計算式】TDEE = BMR × 活動レベル係数</p>
+                                                    <p className="text-gray-500 mt-1">
+                                                        • レベル1（1.05）: ほぼ運動なし<br/>
+                                                        • レベル2（1.225）: 週1-2回の軽い運動<br/>
+                                                        • レベル3（1.4）: 週3-4回の運動<br/>
+                                                        • レベル4（1.575）: 週5-6回の運動<br/>
+                                                        • レベル5（1.75）: 毎日の激しい運動<br/>
+                                                        • カスタム: 独自の係数を直接入力可能
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* 目標摂取カロリー */}
+                                            <div>
+                                                <h5 className="font-bold text-orange-700 mb-2 flex items-center gap-1">
+                                                    <span className="bg-orange-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">3</span>
+                                                    目標摂取カロリー
+                                                </h5>
+                                                <div className="pl-6 space-y-1 text-xs">
+                                                    <p className="font-medium text-gray-800">【計算式】目標摂取カロリー = TDEE + カロリー調整値</p>
+                                                    <p className="text-gray-500 mt-1">
+                                                        • メンテナンス: +0kcal（現状維持）<br/>
+                                                        • ダイエット: -300kcal（減量）<br/>
+                                                        • バルクアップ: +300kcal（増量）<br/>
+                                                        • リコンプ: +0kcal（体組成改善、トレーニングが重要）<br/>
+                                                        • カスタム: 独自の調整値を入力可能（推奨範囲：±300kcal）
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* PFCバランス */}
+                                            <div>
+                                                <h5 className="font-bold text-purple-700 mb-2 flex items-center gap-1">
+                                                    <span className="bg-purple-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">4</span>
+                                                    PFCバランス（タンパク質・脂質・炭水化物）
+                                                </h5>
+                                                <div className="pl-6 space-y-2 text-xs">
+                                                    <div>
+                                                        <p className="font-medium text-gray-800">【目的別モード】</p>
+                                                        <p className="text-gray-600">スタイル・目的・食事スタイルに応じて自動計算</p>
+                                                        <p className="text-gray-500 mt-1">
+                                                            • タンパク質 = 除脂肪体重 × 係数（一般:1.0, アスリート:2.0-2.8）<br/>
+                                                            • 脂質 = 除脂肪体重 × 係数 × 0.25（バランス）or × 0.35（低糖質）<br/>
+                                                            • 炭水化物 = 残りのカロリーを炭水化物で充当
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-gray-800">【カスタムモード】</p>
+                                                        <p className="text-gray-600">カロリー比率を直接指定（例: P30% F25% C45%）</p>
+                                                        <p className="text-gray-500 mt-1">
+                                                            • タンパク質 = 目標カロリー × P% ÷ 4kcal/g<br/>
+                                                            • 脂質 = 目標カロリー × F% ÷ 9kcal/g<br/>
+                                                            • 炭水化物 = 目標カロリー × C% ÷ 4kcal/g
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-blue-100 p-3 rounded border border-blue-300 text-xs text-blue-800">
+                                                <p className="font-bold mb-1">💡 ポイント</p>
+                                                <p>各STEPで設定を変更すると、リアルタイムで目標値が再計算されます。設定完了後、必ず「保存」ボタンをクリックしてください。</p>
+                                            </div>
+                                        </div>
+                                    </details>
 
                                     {/* STEP 1: 個人情報 */}
                                     <div className="border-l-4 border-blue-500 pl-4">
@@ -687,36 +797,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     {/* STEP 2: 活動量 */}
                                     <div className="border-l-4 border-green-500 pl-4">
                                         <h4 className="text-xs font-bold text-green-700 mb-2">STEP 2: 活動量</h4>
-                                        <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
+                                        <label className="block text-sm font-medium mb-1.5">
                                             活動レベル
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const lbm = LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
-                                                    const bmr = LBMUtils.calculateBMR(lbm);
-                                                    const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier);
-                                                    const multipliers = {1: 1.05, 2: 1.225, 3: 1.4, 4: 1.575, 5: 1.75};
-                                                    const multiplier = profile.customActivityMultiplier || multipliers[profile.activityLevel] || 1.4;
-
-                                                    setInfoModal({
-                                                        show: true,
-                                                        title: '活動レベルとTDEE計算',
-                                                        content: `あなたの日常生活がどれだけ活動的かを数値化したものです。この係数を基礎代謝量に掛けることで、1日の大まかな消費カロリー（TDEE）を算出します。
-【TDEE計算式】TDEE = 基礎代謝（BMR) × 活動レベル係数
-
-【現在の計算結果】• 基礎代謝（BMR): ${Math.round(bmr)}kcal
-• 活動レベル係数: ${multiplier.toFixed(2)}x
-• TDEE: ${Math.round(tdee)}kcal
-
-【計算の詳細】${Math.round(bmr)}kcal × ${multiplier.toFixed(2)} = ${Math.round(tdee)}kcal
-
-【重要】これはあくまで日常生活の活動量であり、トレーニングによる消費カロリーは、より精密な『PG式』で別途計算されます。より正確な設定をしたい場合は、係数を直接入力することも可能です。`
-                                                    });
-                                                }}
-                                                className="text-indigo-600 hover:text-indigo-800"
-                                            >
-                                                <Icon name="Info" size={16} />
-                                            </button>
                                         </label>
                                         {!profile.customActivityMultiplier && (
                                             <select
@@ -876,39 +958,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <span>カロリー調整値kcal/日</span>
                                                     <span className="text-xs text-gray-500 font-normal mt-0.5">メンテナンスから±調整</span>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const lbm = LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
-                                                        const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier);
-                                                        const targetCalories = tdee + (profile.calorieAdjustment || 0);
-
-                                                        setInfoModal({
-                                                            show: true,
-                                                            title: 'カロリー調整値と目標摂取カロリー',
-                                                            content: `メンテナンスカロリーをDEE）からの調整値を設定します。
-【目標摂取カロリー計算式。目標摂取カロリー = TDEE + カロリー調整値
-
-【現在の計算結果。• TDEE: ${Math.round(tdee)}kcal
-• カロリー調整値: ${profile.calorieAdjustment >= 0 ? '+' : ''}${profile.calorieAdjustment || 0}kcal
-• 目標摂取カロリー: ${Math.round(targetCalories)}kcal/日
-
-【計算の詳細】${Math.round(tdee)}kcal ${profile.calorieAdjustment >= 0 ? '+' : ''} ${profile.calorieAdjustment || 0}kcal = ${Math.round(targetCalories)}kcal
-
-【推奨範囲: ±300kcal。安全で持続可能なペースで体重を変化させるための推奨範囲です。
-【ダイエット時（マイナス値）】• -200kcal: 穏やか（週0.5kg減）• -300kcal: 標準的（週0.7kg減）を推奨
-• -400kcal以上： 急激（リバウンドリスク高）
-【バルクアップ時（プラス値）】• +200kcal: 控えめ（週0.25kg増）• +300kcal: 標準的（週0.5kg増）を推奨
-• +400kcal以上： 積極的（脂肪増加リスク高）
-【メンテナンス時】• 0kcal: 現状維持
-【リコンプ時】• 0kcal: 体組成改善はトレーニングが重要
-【注意】極端なカロリー調整は、代謝の低下、筋肉の減少、リバウンドのリスクを高めます。±200〜300kcalの範囲で調整することを強く推奨します。`
-                                                        });
-                                                    }}
-                                                    className="text-indigo-600 hover:text-indigo-800"
-                                                >
-                                                    <Icon name="Info" size={14} />
-                                                </button>
                                             </label>
                                             <input
                                                 type="number"
@@ -930,104 +979,40 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                         {/* スタイル選択*/}
                                         <div className="mb-3">
-                                            <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
+                                            <label className="block text-sm font-medium mb-1.5">
                                                 トレーニングスタイル
+                                            </label>
+                                            <div className="grid grid-cols-2 gap-3">
                                                 <button
                                                     type="button"
-                                                    onClick={() => setInfoModal({
-                                                        show: true,
-                                                        title: 'トレーニングスタイル',
-                                                        content: `スタイルによってタンパク質の推奨係数とAI分析の評価基準が変わります。
-【一般。・LBM ×1.0倍のタンパク質係数
-・健康維持や日常的トレーニング向け
-・運動基準 15分以上の時間
-
-【ボディメイカー系。・LBM ×2.0倍のタンパク質係数
-・高強度のトレーニング向け
-・運動基準 30分以上の時間
-  筋肥大: 高重量のボリューム重視  筋力: 最大筋力・パワー向上  持久力: 有酸素・スタミナ重視  バランス: 総合的身体向き`
-                                                    })}
-                                                    className="text-indigo-600 hover:text-indigo-800"
+                                                    onClick={() => setProfile({...profile, style: '一般'})}
+                                                    className={`p-4 rounded-lg border-2 transition ${
+                                                        profile.style === '一般'
+                                                            ? 'border-blue-500 bg-blue-50 shadow-md'
+                                                            : 'border-gray-200 bg-white hover:border-blue-300'
+                                                    }`}
                                                 >
-                                                    <Icon name="Info" size={14} />
+                                                    <div className="font-bold text-base mb-1">一般</div>
+                                                    <div className="text-xs text-gray-600">健康維持・日常フィットネス</div>
                                                 </button>
-                                            </label>
-                                            <select
-                                                value={profile.style || '一般'}
-                                                onChange={(e) => setProfile({...profile, style: e.target.value})}
-                                                className="w-full px-3 py-2 border rounded-lg"
-                                            >
-                                                <option value="一般">一般（健康維持）</option>
-                                                <optgroup label="ボディメイカー">
-                                                    <option value="筋肥大">筋肥大（高重量のボリューム）</option>
-                                                    <option value="筋力">筋力（最大筋力）</option>
-                                                    <option value="持久力">持久力（有酸素）</option>
-                                                    <option value="バランス">バランス（総合）</option>
-                                                </optgroup>
-                                            </select>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setProfile({...profile, style: 'ボディメイカー'})}
+                                                    className={`p-4 rounded-lg border-2 transition ${
+                                                        profile.style === 'ボディメイカー'
+                                                            ? 'border-purple-500 bg-purple-50 shadow-md'
+                                                            : 'border-gray-200 bg-white hover:border-purple-300'
+                                                    }`}
+                                                >
+                                                    <div className="font-bold text-base mb-1">ボディメイカー</div>
+                                                    <div className="text-xs text-gray-600">本格的な筋トレ・競技力向上</div>
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-2">※ボディメイカーはタンパク質・ビタミン・ミネラルの推奨量が2倍になります</p>
                                         </div>
 
-                                        <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
-                                            PFCバランス）目標比率を                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const lbm = profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
-                                                    const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier);
-                                                    const targetCalories = tdeeBase + (profile.calorieAdjustment || 0);
-                                                    const lifestyle = profile.style || '一般';
-                                                    const purpose = profile.purpose || 'メンテナンス';
-                                                    const dietStyle = profile.dietStyle || 'バランス';
-
-                                                    let coefficient = 1.0;
-                                                    if (lifestyle === 'ボディメイカー') {
-                                                        if (purpose === 'バルクアップ') coefficient = 2.8;
-                                                        else if (purpose === 'ダイエット') coefficient = 2.4;
-                                                        else coefficient = 2.0;
-                                                    } else {
-                                                        if (purpose === 'バルクアップ') coefficient = 1.4;
-                                                        else if (purpose === 'ダイエット') coefficient = 1.2;
-                                                        else coefficient = 1.0;
-                                                    }
-
-                                                    const proteinG = Math.round(lbm * coefficient);
-                                                    const proteinCal = proteinG * 4;
-
-                                                    let fatRatio = 0.25;
-                                                    if (dietStyle === '低脂質') fatRatio = 0.15;
-                                                    else if (dietStyle === '低炭水化物') fatRatio = 0.35;
-                                                    else if (dietStyle === 'ケトジェニック') fatRatio = 0.60;
-
-                                                    const fatCal = targetCalories * fatRatio;
-                                                    const fatG = Math.round(fatCal / 9);
-                                                    const carbCal = targetCalories - proteinCal - fatCal;
-                                                    const carbG = Math.round(carbCal / 4);
-                                                    const proteinPercent = Math.round((proteinCal / targetCalories) * 100);
-                                                    const fatPercent = Math.round((fatCal / targetCalories) * 100);
-                                                    const carbPercent = Math.round((carbCal / targetCalories) * 100);
-
-                                                    setInfoModal({
-                                                        show: true,
-                                                        title: 'PFCバランスと目的推奨値',
-                                                        content: `タンパク質(P)、脂質(F)、炭水化物(C)の目標比率を設定します。
-【📌 目的別推奨値】${lifestyle} ×${purpose} (LBM ${lbm.toFixed(1)}kg ×${coefficient}倍
-
-🔴 タンパク質: ${proteinG}g (${proteinCal}kcal, ${proteinPercent}%)
-🟡 脂質: ${fatG}g (${Math.round(fatCal)}kcal, ${fatPercent}%)
-🟢 炭水化物: ${carbG}g (${Math.round(carbCal)}kcal, ${carbPercent}%)
-━━━━━━━━━━━━━━━━━━━━━
-合計: ${Math.round(targetCalories)}kcal
-
-【カスタム比率のデフォルト値。🔴 タンパク質: 30%
-🟡 脂質: 25%
-🟢 炭水化物: 45%
-
-合計は必須100%になるように自動調整されます。`
-                                                    });
-                                                }}
-                                                className="text-indigo-600 hover:text-indigo-800"
-                                            >
-                                                <Icon name="Info" size={14} />
-                                            </button>
+                                        <label className="block text-sm font-medium mb-1.5">
+                                            PFCバランス（目標比率）
                                         </label>
 
                                         {/* モード選択*/}
@@ -2376,6 +2361,78 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             通知設定                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t space-y-4">
+                            {/* 通知権限設定 */}
+                            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Bell" size={18} className="text-blue-600" />
+                                    <h4 className="font-bold text-sm text-blue-900">Push通知設定</h4>
+                                </div>
+
+                                {/* 権限ステータス */}
+                                <div className="bg-white rounded-lg p-3 border border-blue-200">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="text-xs font-medium text-gray-700 mb-1">通知権限</div>
+                                            <div className="text-sm font-bold">
+                                                {NotificationService.checkPermission() === 'granted' && (
+                                                    <span className="text-green-600 flex items-center gap-1">
+                                                        <Icon name="CheckCircle" size={16} />
+                                                        許可済み
+                                                    </span>
+                                                )}
+                                                {NotificationService.checkPermission() === 'denied' && (
+                                                    <span className="text-red-600 flex items-center gap-1">
+                                                        <Icon name="XCircle" size={16} />
+                                                        拒否
+                                                    </span>
+                                                )}
+                                                {NotificationService.checkPermission() === 'default' && (
+                                                    <span className="text-gray-600 flex items-center gap-1">
+                                                        <Icon name="AlertCircle" size={16} />
+                                                        未設定
+                                                    </span>
+                                                )}
+                                                {NotificationService.checkPermission() === 'unsupported' && (
+                                                    <span className="text-gray-600 flex items-center gap-1">
+                                                        <Icon name="AlertCircle" size={16} />
+                                                        非対応
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                const result = await NotificationService.requestPermission();
+                                                if (result.success) {
+                                                    alert('通知権限が許可されました！');
+                                                    // FCMトークンも取得
+                                                    const tokenResult = await NotificationService.getFCMToken(userId);
+                                                    if (tokenResult.success) {
+                                                        console.log('FCM Token obtained:', tokenResult.token);
+                                                    }
+                                                } else {
+                                                    alert('通知権限が拒否されました。ブラウザの設定から許可してください。');
+                                                }
+                                                // 再レンダリングのため状態を更新
+                                                setProfile({...profile});
+                                            }}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                                            disabled={NotificationService.checkPermission() === 'granted'}
+                                        >
+                                            {NotificationService.checkPermission() === 'granted' ? '設定済み' : '権限を許可'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 説明 */}
+                                <div className="text-xs text-gray-700 bg-white rounded p-2 border border-blue-100">
+                                    <p className="mb-1">📱 <strong>Push通知を有効にする</strong></p>
+                                    <p>食事時間、運動時間、記録リマインダーなどを通知で受け取れます。</p>
+                                    <p className="mt-1 text-gray-600">※ 通知を受け取るには、まず「権限を許可」ボタンをクリックしてください。</p>
+                                </div>
+                            </div>
+
                             {/* ルーティン通知 */}
                             <div className="border rounded-lg p-3">
                                 <div className="flex items-center justify-between mb-2">
@@ -2403,12 +2460,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     <input
                                         type="time"
                                         value={profile.notificationSettings?.routineTime || '08:00'}
-                                        onChange={(e) => setProfile({
-                                            ...profile,
-                                            notificationSettings: {
-                                                ...(profile.notificationSettings || {}),
-                                                routineTime: e.target.value
-                                            }
+                                        onChange={(e) => handleNotificationSettingChange({
+                                            ...(profile.notificationSettings || {}),
+                                            routineTime: e.target.value
                                         })}
                                         className="px-3 py-2 border rounded-lg text-sm"
                                         disabled={profile.notificationSettings?.routine === false}
@@ -2443,12 +2497,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     <input
                                         type="time"
                                         value={profile.notificationSettings?.recordReminderTime || '19:30'}
-                                        onChange={(e) => setProfile({
-                                            ...profile,
-                                            notificationSettings: {
-                                                ...(profile.notificationSettings || {}),
-                                                recordReminderTime: e.target.value
-                                            }
+                                        onChange={(e) => handleNotificationSettingChange({
+                                            ...(profile.notificationSettings || {}),
+                                            recordReminderTime: e.target.value
                                         })}
                                         className="px-3 py-2 border rounded-lg text-sm"
                                         disabled={profile.notificationSettings?.recordReminder === false}
@@ -2483,15 +2534,127 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     <input
                                         type="time"
                                         value={profile.notificationSettings?.summaryTime || '23:00'}
-                                        onChange={(e) => setProfile({
-                                            ...profile,
-                                            notificationSettings: {
-                                                ...(profile.notificationSettings || {}),
-                                                summaryTime: e.target.value
-                                            }
+                                        onChange={(e) => handleNotificationSettingChange({
+                                            ...(profile.notificationSettings || {}),
+                                            summaryTime: e.target.value
                                         })}
                                         className="px-3 py-2 border rounded-lg text-sm"
                                         disabled={profile.notificationSettings?.summary === false}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 食事通知（複数時間枠） */}
+                            <div className="border rounded-lg p-3 bg-green-50 border-green-200">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={profile.notificationSettings?.meal !== false}
+                                            onChange={(e) => setProfile({
+                                                ...profile,
+                                                notificationSettings: {
+                                                    ...(profile.notificationSettings || {}),
+                                                    meal: e.target.checked
+                                                }
+                                            })}
+                                            className="rounded"
+                                        />
+                                        <div>
+                                            <div className="font-medium text-sm">食事通知</div>
+                                            <div className="text-xs text-gray-600">食事時間をリマインド（複数設定可能）</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="ml-6 space-y-2">
+                                    <label className="block text-xs font-medium mb-1">通知時刻（複数設定可）</label>
+                                    {(profile.notificationSettings?.mealTimes || ['07:00', '12:00', '19:00']).map((time, index) => (
+                                        <div key={index} className="flex items-center gap-2">
+                                            <input
+                                                type="time"
+                                                value={time}
+                                                onChange={(e) => {
+                                                    const newTimes = [...(profile.notificationSettings?.mealTimes || ['07:00', '12:00', '19:00'])];
+                                                    newTimes[index] = e.target.value;
+                                                    handleNotificationSettingChange({
+                                                        ...(profile.notificationSettings || {}),
+                                                        mealTimes: newTimes
+                                                    });
+                                                }}
+                                                className="px-3 py-2 border rounded-lg text-sm flex-1"
+                                                disabled={profile.notificationSettings?.meal === false}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const currentTimes = profile.notificationSettings?.mealTimes || ['07:00', '12:00', '19:00'];
+                                                    if (currentTimes.length > 1) {
+                                                        const newTimes = currentTimes.filter((_, i) => i !== index);
+                                                        handleNotificationSettingChange({
+                                                            ...(profile.notificationSettings || {}),
+                                                            mealTimes: newTimes
+                                                        });
+                                                    }
+                                                }}
+                                                className="px-2 py-1 text-red-600 hover:bg-red-50 rounded text-sm"
+                                                disabled={profile.notificationSettings?.meal === false || (profile.notificationSettings?.mealTimes || ['07:00', '12:00', '19:00']).length <= 1}
+                                            >
+                                                <Icon name="X" size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const currentTimes = profile.notificationSettings?.mealTimes || ['07:00', '12:00', '19:00'];
+                                            const newTimes = [...currentTimes, '15:00'];
+                                            handleNotificationSettingChange({
+                                                ...(profile.notificationSettings || {}),
+                                                mealTimes: newTimes
+                                            });
+                                        }}
+                                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-green-700 hover:bg-green-100 rounded border border-green-300"
+                                        disabled={profile.notificationSettings?.meal === false}
+                                    >
+                                        <Icon name="Plus" size={14} />
+                                        時間枠を追加
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 運動通知 */}
+                            <div className="border rounded-lg p-3 bg-orange-50 border-orange-200">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={profile.notificationSettings?.workout !== false}
+                                            onChange={(e) => setProfile({
+                                                ...profile,
+                                                notificationSettings: {
+                                                    ...(profile.notificationSettings || {}),
+                                                    workout: e.target.checked
+                                                }
+                                            })}
+                                            className="rounded"
+                                        />
+                                        <div>
+                                            <div className="font-medium text-sm">運動通知</div>
+                                            <div className="text-xs text-gray-600">トレーニング時間をリマインド</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="ml-6">
+                                    <label className="block text-xs font-medium mb-1">通知時刻</label>
+                                    <input
+                                        type="time"
+                                        value={profile.notificationSettings?.workoutTime || '18:00'}
+                                        onChange={(e) => handleNotificationSettingChange({
+                                            ...(profile.notificationSettings || {}),
+                                            workoutTime: e.target.value
+                                        })}
+                                        className="px-3 py-2 border rounded-lg text-sm"
+                                        disabled={profile.notificationSettings?.workout === false}
                                     />
                                 </div>
                             </div>

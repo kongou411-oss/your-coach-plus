@@ -114,8 +114,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
 
     const handleComplete = async () => {
         const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
-        const bmr = LBMUtils.calculateBMR(lbm);
-        const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier);
+        const fatMass = profile.weight - lbm;
+        const bmr = LBMUtils.calculateBMR(lbm, fatMass);
+        const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass);
 
         // 無料トライアル終了日（7日後）
         const now = new Date();
@@ -267,46 +268,33 @@ const OnboardingScreen = ({ user, onComplete }) => {
 
                         <div className="border-l-4 border-blue-500 pl-4">
                             <label className="block text-sm font-medium mb-2">トレーニングスタイル</label>
-                            <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-3">
                                 <button
                                     type="button"
                                     onClick={() => setProfile({...profile, style: '一般'})}
-                                    className={`w-full p-3 rounded-lg border-2 transition ${
+                                    className={`p-4 rounded-lg border-2 transition ${
                                         profile.style === '一般'
                                             ? 'border-blue-500 bg-blue-50 shadow-md'
                                             : 'border-gray-200 bg-white hover:border-blue-300'
                                     }`}
                                 >
-                                    <div className="font-bold text-sm">一般</div>
+                                    <div className="font-bold text-base mb-1">一般</div>
                                     <div className="text-xs text-gray-600">健康維持・日常フィットネス</div>
                                 </button>
-                                {['筋肥大', '筋力', '持久力', 'バランス'].map(styleOption => (
-                                    <button
-                                        key={styleOption}
-                                        type="button"
-                                        onClick={() => setProfile({...profile, style: styleOption})}
-                                        className={`w-full p-3 rounded-lg border-2 transition ${
-                                            profile.style === styleOption
-                                                ? 'border-purple-500 bg-purple-50 shadow-md'
-                                                : 'border-gray-200 bg-white hover:border-purple-300'
-                                        }`}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="text-left">
-                                                <div className="font-bold text-sm">{styleOption}</div>
-                                                <div className="text-xs text-gray-600">
-                                                    {styleOption === '筋肥大' && 'ボディメイク・筋肉増強'}
-                                                    {styleOption === '筋力' && '最大筋力・パワー向上'}
-                                                    {styleOption === '持久力' && '有酸素・スタミナ重視'}
-                                                    {styleOption === 'バランス' && '総合的な身体能力'}
-                                                </div>
-                                            </div>
-                                            <span className="text-xs text-purple-600 font-medium">ボディメイカー</span>
-                                        </div>
-                                    </button>
-                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => setProfile({...profile, style: 'ボディメイカー'})}
+                                    className={`p-4 rounded-lg border-2 transition ${
+                                        profile.style === 'ボディメイカー'
+                                            ? 'border-purple-500 bg-purple-50 shadow-md'
+                                            : 'border-gray-200 bg-white hover:border-purple-300'
+                                    }`}
+                                >
+                                    <div className="font-bold text-base mb-1">ボディメイカー</div>
+                                    <div className="text-xs text-gray-600">本格的な筋トレ・競技力向上</div>
+                                </button>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">※ボディメイカーは高度なトレーニング向け</p>
+                            <p className="text-xs text-gray-500 mt-2">※ボディメイカーはタンパク質・ビタミン・ミネラルの推奨量が2倍になります</p>
                         </div>
                     </div>
                 )}
@@ -568,20 +556,19 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border-2 border-indigo-200">
                             <p className="text-sm font-medium text-indigo-800 mb-2">あなたの目標摂取カロリー</p>
                             <p className="text-3xl font-bold text-indigo-900">
-                                {Math.round(
-                                    LBMUtils.calculateTDEE(
-                                        LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage),
-                                        profile.activityLevel,
-                                        profile.customActivityMultiplier
-                                    ) + (profile.calorieAdjustment || 0)
-                                )} kcal/日
+                                {(() => {
+                                    const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
+                                    const fatMass = profile.weight - lbm;
+                                    const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass);
+                                    return Math.round(tdee + (profile.calorieAdjustment || 0));
+                                })()} kcal/日
                             </p>
                             <div className="mt-3 text-xs text-gray-700 space-y-1">
-                                <p>• 基準カロリー（TDEE）: {Math.round(LBMUtils.calculateTDEE(
-                                    LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage),
-                                    profile.activityLevel,
-                                    profile.customActivityMultiplier
-                                ))} kcal</p>
+                                <p>• 基準カロリー（TDEE）: {(() => {
+                                    const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
+                                    const fatMass = profile.weight - lbm;
+                                    return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass));
+                                })()} kcal</p>
                                 <p>• 調整値: {profile.calorieAdjustment >= 0 ? '+' : ''}{profile.calorieAdjustment || 0} kcal</p>
                                 <p>• 目的: {profile.purpose}</p>
                             </div>
