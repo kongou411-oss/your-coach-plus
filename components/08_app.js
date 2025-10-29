@@ -541,12 +541,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
             // ショートカットの enabled を機能開放状態に連動
             useEffect(() => {
-                console.log('🔄 [Shortcut Update] useEffect実行');
-                console.log('  現在のunlockedFeatures:', unlockedFeatures);
-
                 setShortcuts(prevShortcuts => {
-                    console.log('  更新前のショートカット数:', prevShortcuts.length);
-
                     const updatedShortcuts = prevShortcuts.map(shortcut => {
                         // 体組成は常に有効
                         if (shortcut.action === 'open_body_composition') {
@@ -555,59 +550,45 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         // 食事のショートカット
                         if (shortcut.action === 'open_meal') {
                             const enabled = unlockedFeatures.includes('food');
-                            console.log(`  - 食事: enabled=${enabled} (before: ${shortcut.enabled})`);
                             return { ...shortcut, enabled };
                         }
                         // 運動のショートカット
                         if (shortcut.action === 'open_workout') {
                             const enabled = unlockedFeatures.includes('training');
-                            console.log(`  - 運動: enabled=${enabled} (before: ${shortcut.enabled})`);
                             return { ...shortcut, enabled };
                         }
                         // コンディションのショートカット
                         if (shortcut.action === 'open_condition') {
                             const enabled = unlockedFeatures.includes('condition');
-                            console.log(`  - コンディション: enabled=${enabled} (before: ${shortcut.enabled})`);
                             return { ...shortcut, enabled };
                         }
                         // 閃きは初回分析完了後
                         if (shortcut.action === 'open_idea') {
                             const enabled = unlockedFeatures.includes('idea');
-                            console.log(`  - 閃き: enabled=${enabled} (before: ${shortcut.enabled})`);
                             return { ...shortcut, enabled };
                         }
                         // 分析のショートカット
                         if (shortcut.action === 'open_analysis') {
                             const enabled = unlockedFeatures.includes('analysis');
-                            console.log(`  - 分析: enabled=${enabled} (before: ${shortcut.enabled})`);
                             return { ...shortcut, enabled };
                         }
                         // 履歴のショートカット
                         if (shortcut.action === 'open_history') {
                             const enabled = unlockedFeatures.includes('history');
-                            console.log(`  - 履歴: enabled=${enabled} (before: ${shortcut.enabled})`);
                             return { ...shortcut, enabled };
                         }
                         // PGBASEのショートカット
                         if (shortcut.action === 'open_pgbase') {
                             const enabled = unlockedFeatures.includes('pg_base');
-                            console.log(`  - PGBASE: enabled=${enabled} (before: ${shortcut.enabled})`);
                             return { ...shortcut, enabled };
                         }
                         // COMYのショートカット
                         if (shortcut.action === 'open_community') {
                             const enabled = unlockedFeatures.includes('community');
-                            console.log(`  - COMY: enabled=${enabled} (before: ${shortcut.enabled})`);
                             return { ...shortcut, enabled };
                         }
                         return shortcut;
                     });
-
-                    console.log('  更新後のショートカット:', updatedShortcuts.map(s => ({
-                        action: s.action,
-                        label: s.label,
-                        enabled: s.enabled
-                    })));
 
                     return updatedShortcuts;
                 });

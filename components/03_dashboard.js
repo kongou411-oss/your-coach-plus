@@ -94,7 +94,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             const upgradeModalPending = localStorage.getItem('showUpgradeModalPending');
 
             if (featureUnlockCompleted === 'true' && upgradeModalPending === 'true') {
-                console.log('[Dashboard] Feature unlock completed. Showing upgrade modal...');
                 setShowUpgradeModal(true);
                 localStorage.removeItem('featureUnlockModalsCompleted');
                 localStorage.removeItem('showUpgradeModalPending');
@@ -134,11 +133,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // 経験値・レベル情報を読み込む
     useEffect(() => {
-        console.log('[Dashboard] useEffect: Setting up event listeners, user:', user?.uid);
         loadExperienceData();
         // レベルアップイベントをリッスン
         const handleLevelUp = (event) => {
-            console.log('[Dashboard] levelUp event received');
             setLevelUpData(event.detail);
             setShowLevelUpModal(true);
             loadExperienceData();
@@ -157,18 +154,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     const loadExperienceData = async () => {
         if (!user) {
-            console.log('[Dashboard] loadExperienceData skipped - no user');
             return;
         }
         try {
-            console.log('[Dashboard] Loading experience data for user:', user.uid);
             const data = await ExperienceService.getUserExperience(user.uid);
-            console.log('[Dashboard] Experience data loaded:', {
-                totalCredits: data.totalCredits,
-                freeCredits: data.freeCredits,
-                paidCredits: data.paidCredits,
-                level: data.level
-            });
             const expToNext = ExperienceService.getExpToNextLevel(data.level, data.experience);
             const progress = Math.round((expToNext.current / expToNext.required) * 100);
 
@@ -182,7 +171,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 expCurrent: expToNext.current,
                 expRequired: expToNext.required
             });
-            console.log('[Dashboard] Experience data updated in state');
         } catch (error) {
             console.error('[Dashboard] Failed to load experience data:', error);
         }
@@ -214,7 +202,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             try {
                 const expResult = await ExperienceService.processDirectiveCompletion(user.uid, currentDate);
                 if (expResult.success) {
-                    console.log('[Dashboard] Directive completion: +10 XP');
 
                     // 経験値更新イベントを発火（レベルバナーをリアルタイム更新）
                     window.dispatchEvent(new CustomEvent('experienceUpdated', {
@@ -235,7 +222,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         }));
                     }
                 } else if (expResult.alreadyProcessed) {
-                    console.log('[Dashboard] Directive already completed today');
                 }
             } catch (error) {
                 console.error('[Dashboard] Failed to process directive completion:', error);
@@ -1855,14 +1841,12 @@ ${Math.round(caloriesPercent)}%`
                                             setShowFeatureUnlockModal(false);
                                             // 新機能開放モーダル完了フラグを設定（初回分析完了モーダル表示トリガー）
                                             localStorage.setItem('featureUnlockModalsCompleted', 'true');
-                                            console.log('[Dashboard] Feature unlock modals completed. Set flag for upgrade modal.');
 
                                             // 分析セクションまで自動スクロール
                                             setTimeout(() => {
                                                 const analysisSection = document.getElementById('analysis-section');
                                                 if (analysisSection) {
                                                     analysisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                                    console.log('[Dashboard] Scrolled to analysis section');
                                                 }
                                             }, 300);
                                         }}

@@ -142,99 +142,55 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
     const daysSinceReg = calculateDaysSinceRegistration(userId);
     const unlocked = [];
 
-    console.log('[機能開放] calculateUnlockedFeatures 開始');
-    console.log('  - userId:', userId);
-    console.log('  - completionStatus:', completionStatus);
-    console.log('  - daysSinceReg:', daysSinceReg);
-    console.log('  - isPremium:', isPremium);
-
     // 0日目（初日）：段階的開放
     // 1. 食事記録は常に開放
     unlocked.push('food');
-    console.log('  ✅ food: 常に開放');
 
     // 2. 食事記録を1回完了したら運動記録を開放
     if (completionStatus.food || checkMealComplete(todayRecord)) {
         unlocked.push('training');
-        console.log('  ✅ training: 開放 (food完了 or 食事記録あり)');
-    } else {
-        console.log('  ❌ training: 未開放 (食事記録待ち)');
     }
 
     // 3. 運動記録を1回完了したらコンディション記録を開放
     if (completionStatus.training || checkTrainingComplete(todayRecord)) {
         unlocked.push('condition');
-        console.log('  ✅ condition: 開放 (training完了 or 運動記録あり)');
-    } else {
-        console.log('  ❌ condition: 未開放 (運動記録待ち)');
     }
 
     // 4. コンディション記録を6項目全て入力したら分析を開放
     if (completionStatus.condition || checkConditionComplete(todayRecord)) {
         unlocked.push('analysis');
-        console.log('  ✅ analysis: 開放 (condition完了 or コンディション6項目入力済み)');
-    } else {
-        console.log('  ❌ analysis: 未開放 (コンディション記録待ち)');
     }
 
     // 5. 初回分析後：すべての機能を開放（05_analysis.jsで実行）
     // - 指示書、履歴（モーダル①）
     // - PG BASE、COMY（モーダル②）
     // - テンプレート、ルーティン、ショートカット、履歴分析（モーダル③）
-    console.log('  --- 初回分析後の機能チェック ---');
     if (completionStatus.directive) {
         unlocked.push('directive');
-        console.log('  ✅ directive: 開放済み');
-    } else {
-        console.log('  ❌ directive: 未開放 (初回分析待ち)');
     }
     if (completionStatus.idea) {
         unlocked.push('idea');
-        console.log('  ✅ idea: 開放済み');
-    } else {
-        console.log('  ❌ idea: 未開放 (初回分析待ち)');
     }
     if (completionStatus.history) {
         unlocked.push('history');
-        console.log('  ✅ history: 開放済み');
-    } else {
-        console.log('  ❌ history: 未開放 (初回分析待ち)');
     }
     if (completionStatus.pg_base) {
         unlocked.push('pg_base');
-        console.log('  ✅ pg_base: 開放済み');
-    } else {
-        console.log('  ❌ pg_base: 未開放 (初回分析待ち)');
     }
     if (completionStatus.community) {
         unlocked.push('community');
-        console.log('  ✅ community: 開放済み');
-    } else {
-        console.log('  ❌ community: 未開放 (初回分析待ち)');
     }
     if (completionStatus.template) {
         unlocked.push('template');
-        console.log('  ✅ template: 開放済み');
-    } else {
-        console.log('  ❌ template: 未開放 (初回分析待ち)');
     }
     if (completionStatus.routine) {
         unlocked.push('routine');
-        console.log('  ✅ routine: 開放済み');
-    } else {
-        console.log('  ❌ routine: 未開放 (初回分析待ち)');
     }
     if (completionStatus.shortcut) {
         unlocked.push('shortcut');
-        console.log('  ✅ shortcut: 開放済み');
-    } else {
-        console.log('  ❌ shortcut: 未開放 (初回分析待ち)');
     }
     if (completionStatus.history_analysis) {
         unlocked.push('history_analysis');
-        console.log('  ✅ history_analysis: 開放済み');
-    } else {
-        console.log('  ❌ history_analysis: 未開放 (初回分析待ち)');
     }
 
     // 8日目以降：Premium機能制限
@@ -262,24 +218,16 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
         unlocked.push('micronutrients');
         unlocked.push('community_view');
         unlocked.push('community_post');
-        console.log('  ✅ Premium機能: 開放 (トライアル期間中 or Premium会員)');
-    } else {
-        console.log('  ❌ Premium機能: 未開放 (8日目以降の無料ユーザー)');
     }
 
     // 旧互換性: history_graph と training_template は初回分析後の history と template に統合
     // 日数ベースの自動開放は削除し、初回分析後のモーダル経由でのみ開放
     if (completionStatus.history) {
         unlocked.push('history_graph');
-        console.log('  ✅ history_graph: 開放済み (history連動)');
     }
     if (completionStatus.template) {
         unlocked.push('training_template');
-        console.log('  ✅ training_template: 開放済み (template連動)');
     }
-
-    console.log('[機能開放] 最終結果:', unlocked);
-    console.log('[機能開放] calculateUnlockedFeatures 終了\n');
 
     return unlocked;
 };

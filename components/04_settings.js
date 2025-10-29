@@ -134,7 +134,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         setProfile(updatedProfile);
         // 即座に保存
         onUpdateProfile(updatedProfile);
-        console.log('[Settings] Notification settings saved:', newSettings);
     };
 
     const handleSave = () => {
@@ -167,13 +166,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             bmr: bmr,
             tdeeBase: tdeeBase
         };
-
-        console.log('=== Profile Save Debug ===');
-        console.log('profile.style:', profile.style);
-        console.log('advancedSettings.usePurposeBased:', advancedSettings.usePurposeBased);
-        console.log('pfcSettings:', pfcSettings);
-        console.log('updatedProfile.style:', updatedProfile.style);
-        console.log('updatedProfile:', updatedProfile);
 
         onUpdateProfile(updatedProfile);
         onClose();

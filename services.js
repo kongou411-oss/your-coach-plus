@@ -1911,18 +1911,15 @@ const NotificationService = {
         try {
             // DEV_MODEの場合はスキップ
             if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
-                console.log('[Notification] DEV_MODE enabled, skipping foreground listener');
                 return;
             }
 
             // Firebaseアプリが初期化されているか確認
             if (!firebase.apps || firebase.apps.length === 0) {
-                console.log('[Notification] Firebase not initialized, skipping foreground listener');
                 return;
             }
 
             if (!firebase.messaging.isSupported()) {
-                console.log('[Notification] FCM not supported, skipping foreground listener');
                 return;
             }
 
