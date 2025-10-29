@@ -3356,7 +3356,7 @@ RM回数と重量を別々に入力してください。`
                                 temperature: 0.2,
                                 topK: 32,
                                 topP: 1,
-                                maxOutputTokens: 512,
+                                maxOutputTokens: 2048,
                             }
                         };
 
@@ -3497,7 +3497,7 @@ RM回数と重量を別々に入力してください。`
                                 temperature: 0.4,
                                 topK: 32,
                                 topP: 1,
-                                maxOutputTokens: 1024,
+                                maxOutputTokens: 2048,
                             }
                         };
 
