@@ -2310,8 +2310,16 @@ const MFAService = {
 
     // 2FA登録状況を確認
     isMFAEnrolled: () => {
-        const user = firebase.auth().currentUser;
-        if (!user) return false;
-        return user.multiFactor.enrolledFactors.length > 0;
+        try {
+            if (typeof firebase === 'undefined' || !firebase.auth) {
+                return false;
+            }
+            const user = firebase.auth().currentUser;
+            if (!user) return false;
+            return user.multiFactor.enrolledFactors.length > 0;
+        } catch (error) {
+            console.error('[MFA] Failed to check enrollment status:', error);
+            return false;
+        }
     }
 };

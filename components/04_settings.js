@@ -69,10 +69,15 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
     // MFA登録状況を確認
     useEffect(() => {
-        if (typeof MFAService !== 'undefined') {
-            setMfaEnrolled(MFAService.isMFAEnrolled());
+        if (userId && typeof MFAService !== 'undefined' && typeof firebase !== 'undefined') {
+            try {
+                setMfaEnrolled(MFAService.isMFAEnrolled());
+            } catch (error) {
+                console.error('[Settings] Failed to check MFA enrollment:', error);
+                setMfaEnrolled(false);
+            }
         }
-    }, []);
+    }, [userId]);
 
     // 詳細設定用のstate（デフォルト値をプロフィールから取得）
     const [advancedSettings, setAdvancedSettings] = useState({
