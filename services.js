@@ -1958,10 +1958,204 @@ const NotificationService = {
     },
 
     // スケジュール通知を登録（将来の拡張用）
-    scheduleNotification: async (userId, notificationType, time) => {
-        // TODO: Cloud Functions for Firebase で実装
-        // ユーザーの通知設定を読み取り、指定時刻に通知を送信
-        console.log('[Notification] Schedule notification:', { userId, notificationType, time });
-        return { success: true, message: 'Scheduled notification (not implemented yet)' };
+    // スケジュール通知を登録
+    scheduleNotification: async (userId, notificationSettings) => {
+        try {
+            const schedules = [];
+
+            // 各通知タイプの設定を保存
+            if (notificationSettings.routine && notificationSettings.routineTime) {
+                schedules.push({
+                    type: 'routine',
+                    time: notificationSettings.routineTime,
+                    enabled: true,
+                    title: 'ルーティン開始',
+                    body: '今日のトレーニングを確認しましょう！'
+                });
+            }
+
+            if (notificationSettings.meal && notificationSettings.mealTimes) {
+                notificationSettings.mealTimes.forEach((mealTime, index) => {
+                    schedules.push({
+                        type: 'meal',
+                        time: mealTime,
+                        enabled: true,
+                        title: '食事の時間',
+                        body: '食事を記録しましょう（' + (index + 1) + '回目）'
+                    });
+                });
+            }
+
+            if (notificationSettings.workout && notificationSettings.workoutTime) {
+                schedules.push({
+                    type: 'workout',
+                    time: notificationSettings.workoutTime,
+                    enabled: true,
+                    title: 'トレーニングの時間',
+                    body: '今日のトレーニングを始めましょう！'
+                });
+            }
+
+            if (notificationSettings.recordReminder && notificationSettings.recordReminderTime) {
+                schedules.push({
+                    type: 'recordReminder',
+                    time: notificationSettings.recordReminderTime,
+                    enabled: true,
+                    title: '記録リマインダー',
+                    body: '今日の記録を忘れずに！'
+                });
+            }
+
+            if (notificationSettings.summary && notificationSettings.summaryTime) {
+                schedules.push({
+                    type: 'summary',
+                    time: notificationSettings.summaryTime,
+                    enabled: true,
+                    title: '今日のまとめ',
+                    body: '今日の記録をチェックしましょう'
+                });
+            }
+
+            // 通知スケジュールを保存
+            if (DEV_MODE) {
+                localStorage.setItem('notificationSchedules_' + userId, JSON.stringify(schedules));
+                console.log('[Notification] Schedules saved to LocalStorage:', schedules);
+            } else {
+                await db.collection('users').doc(userId).update({
+                    notificationSchedules: schedules,
+                    notificationSettings: notificationSettings,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                console.log('[Notification] Schedules saved to Firestore:', schedules);
+            }
+
+            return { success: true, schedules };
+        } catch (error) {
+            console.error('[Notification] Failed to schedule notifications:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // 通知時刻をチェックして表示
+    checkAndShowScheduledNotifications: async (userId) => {
+        try {
+            // 通知権限がない場合はスキップ
+            if (Notification.permission !== 'granted') {
+                return { success: false, error: 'Permission not granted' };
+            }
+
+            // 通知スケジュールを取得
+            let schedules;
+            if (DEV_MODE) {
+                const stored = localStorage.getItem('notificationSchedules_' + userId);
+                schedules = stored ? JSON.parse(stored) : [];
+            } else {
+                const userDoc = await db.collection('users').doc(userId).get();
+                schedules = userDoc.data()?.notificationSchedules || [];
+            }
+
+            if (schedules.length === 0) {
+                return { success: true, message: 'No schedules' };
+            }
+
+            // 現在時刻
+            const now = new Date();
+            const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+
+            // 今日既に表示した通知を取得
+            const shownKey = 'notificationsShown_' + userId + '_' + today;
+            let shownNotifications = [];
+            if (DEV_MODE) {
+                const stored = localStorage.getItem(shownKey);
+                shownNotifications = stored ? JSON.parse(stored) : [];
+            }
+
+            // 通知時刻をチェック
+            const notificationsToShow = [];
+            for (const schedule of schedules) {
+                if (!schedule.enabled) continue;
+
+                // 既に表示済みかチェック
+                const notificationId = schedule.type + '_' + schedule.time;
+                if (shownNotifications.includes(notificationId)) {
+                    continue;
+                }
+
+                // 時刻が一致するかチェック（±1分の余裕を持たせる）
+                const [scheduleHours, scheduleMinutes] = schedule.time.split(':').map(Number);
+                const scheduledTime = scheduleHours * 60 + scheduleMinutes;
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+                if (Math.abs(scheduledTime - currentMinutes) <= 1) {
+                    notificationsToShow.push(schedule);
+                    shownNotifications.push(notificationId);
+                }
+            }
+
+            // 通知を表示
+            for (const notification of notificationsToShow) {
+                new Notification(notification.title, {
+                    body: notification.body,
+                    icon: '/icons/icon-192.png',
+                    badge: '/icons/icon-72.png',
+                    tag: notification.type
+                });
+                console.log('[Notification] Shown:', notification);
+            }
+
+            // 通知音を再生
+            if (notificationsToShow.length > 0 && typeof NotificationSoundService !== 'undefined') {
+                NotificationSoundService.playNotificationSound();
+            }
+
+            // 表示済み通知を保存
+            if (notificationsToShow.length > 0) {
+                if (DEV_MODE) {
+                    localStorage.setItem(shownKey, JSON.stringify(shownNotifications));
+                }
+            }
+
+            return {
+                success: true,
+                shown: notificationsToShow.length,
+                notifications: notificationsToShow
+            };
+        } catch (error) {
+            console.error('[Notification] Failed to check notifications:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // 通知チェックを開始（1分ごと）
+    startNotificationChecker: (userId) => {
+        // 既存のチェッカーがあればクリア
+        if (window.notificationCheckInterval) {
+            clearInterval(window.notificationCheckInterval);
+        }
+
+        // 通知音設定を読み込み
+        if (typeof NotificationSoundService !== 'undefined') {
+            NotificationSoundService.loadSettings(userId);
+        }
+
+        // 初回実行
+        NotificationService.checkAndShowScheduledNotifications(userId);
+
+        // 1分ごとにチェック
+        window.notificationCheckInterval = setInterval(() => {
+            NotificationService.checkAndShowScheduledNotifications(userId);
+        }, 60000); // 60秒 = 1分
+
+        console.log('[Notification] Notification checker started');
+    },
+
+    // 通知チェックを停止
+    stopNotificationChecker: () => {
+        if (window.notificationCheckInterval) {
+            clearInterval(window.notificationCheckInterval);
+            window.notificationCheckInterval = null;
+            console.log('[Notification] Notification checker stopped');
+        }
     }
 };

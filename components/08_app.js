@@ -430,6 +430,11 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             generatePredictions(prevDayRecord);
                         }
 
+                        // 通知チェッカーを開始
+                        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                            NotificationService.startNotificationChecker(DEV_USER_ID);
+                        }
+
                         setLoading(false);
                     };
                     loadDevData();
@@ -470,6 +475,11 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             if (prevDayRecord) {
                                 setYesterdayRecord(prevDayRecord); // 完全な記録を保存
                                 generatePredictions(prevDayRecord);
+                            }
+
+                            // 通知チェッカーを開始
+                            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                                NotificationService.startNotificationChecker(firebaseUser.uid);
                             }
                         } else {
                             setUser(null);

@@ -1,11 +1,60 @@
 // ===== Authentication Components =====
+// ===== Authentication Components =====
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [isSignUp, setIsSignUp] = useState(false);
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [resetEmail, setResetEmail] = useState('');
+    const [passwordStrength, setPasswordStrength] = useState({ score: 0, message: '' });
+    const [showPassword, setShowPassword] = useState(false);
+
+    // パスワード強度チェック
+    const checkPasswordStrength = (pwd) => {
+        let score = 0;
+        let message = '';
+
+        if (pwd.length >= 8) score++;
+        if (pwd.length >= 12) score++;
+        if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
+        if (/\d/.test(pwd)) score++;
+        if (/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) score++;
+
+        if (score <= 1) {
+            message = '弱い';
+        } else if (score <= 3) {
+            message = '普通';
+        } else {
+            message = '強い';
+        }
+
+        setPasswordStrength({ score, message });
+    };
+
+    const handlePasswordChange = (e) => {
+        const pwd = e.target.value;
+        setPassword(pwd);
+        if (isSignUp) {
+            checkPasswordStrength(pwd);
+        }
+    };
 
     const handleAuth = async (e) => {
         e.preventDefault();
+
+        // サインアップ時のバリデーション
+        if (isSignUp) {
+            if (password.length < 8) {
+                alert('パスワードは8文字以上にしてください');
+                return;
+            }
+            if (password !== confirmPassword) {
+                alert('パスワードが一致しません');
+                return;
+            }
+        }
+
         try {
             if (isSignUp) {
                 await auth.createUserWithEmailAndPassword(email, password);
@@ -13,7 +62,22 @@ const LoginScreen = () => {
                 await auth.signInWithEmailAndPassword(email, password);
             }
         } catch (error) {
-            alert(error.message);
+            let errorMessage = error.message;
+
+            // エラーメッセージを日本語化
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'このメールアドレスは既に使用されています';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = '無効なメールアドレスです';
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = 'パスワードが弱すぎます（6文字以上必要）';
+            } else if (error.code === 'auth/user-not-found') {
+                errorMessage = 'ユーザーが見つかりません';
+            } else if (error.code === 'auth/wrong-password') {
+                errorMessage = 'パスワードが間違っています';
+            }
+
+            alert(errorMessage);
         }
     };
 
@@ -26,6 +90,67 @@ const LoginScreen = () => {
         }
     };
 
+    const handlePasswordReset = async (e) => {
+        e.preventDefault();
+        try {
+            await auth.sendPasswordResetEmail(resetEmail);
+            alert('パスワードリセットメールを送信しました。メールをご確認ください。');
+            setShowForgotPassword(false);
+            setResetEmail('');
+        } catch (error) {
+            let errorMessage = error.message;
+            if (error.code === 'auth/user-not-found') {
+                errorMessage = 'このメールアドレスは登録されていません';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = '無効なメールアドレスです';
+            }
+            alert(errorMessage);
+        }
+    };
+
+    // パスワードリセット画面
+    if (showForgotPassword) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
+                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl font-bold text-gray-800 mb-2">パスワードリセット</h1>
+                        <p className="text-gray-600">登録したメールアドレスを入力してください</p>
+                    </div>
+
+                    <form onSubmit={handlePasswordReset} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+                            <input
+                                type="email"
+                                value={resetEmail}
+                                onChange={(e) => setResetEmail(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                        >
+                            リセットメールを送信
+                        </button>
+                    </form>
+
+                    <div className="mt-6 text-center">
+                        <button
+                            onClick={() => setShowForgotPassword(false)}
+                            className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                        >
+                            ログイン画面に戻る
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ログイン/サインアップ画面
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
@@ -47,14 +172,63 @@ const LoginScreen = () => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                            required
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                value={password}
+                                onChange={handlePasswordChange}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                                required
+                                minLength={isSignUp ? 8 : 6}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            >
+                                <Icon name={showPassword ? 'EyeOff' : 'Eye'} size={20} />
+                            </button>
+                        </div>
+                        {isSignUp && password && (
+                            <div className="mt-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                        <div
+                                            className={'h-full transition-all ' +
+                                                (passwordStrength.score <= 1 ? 'bg-red-500 w-1/3' :
+                                                 passwordStrength.score <= 3 ? 'bg-yellow-500 w-2/3' :
+                                                 'bg-green-500 w-full')}
+                                        ></div>
+                                    </div>
+                                    <span className={'text-xs font-medium ' +
+                                        (passwordStrength.score <= 1 ? 'text-red-600' :
+                                         passwordStrength.score <= 3 ? 'text-yellow-600' :
+                                         'text-green-600')}>
+                                        {passwordStrength.message}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    8文字以上、大小英字・数字・記号を含めると強固になります
+                                </p>
+                            </div>
+                        )}
                     </div>
+                    {isSignUp && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">パスワード（確認）</label>
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                required
+                                minLength={8}
+                            />
+                            {confirmPassword && password !== confirmPassword && (
+                                <p className="text-xs text-red-600 mt-1">パスワードが一致しません</p>
+                            )}
+                        </div>
+                    )}
                     <button
                         type="submit"
                         className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
@@ -62,6 +236,17 @@ const LoginScreen = () => {
                         {isSignUp ? 'アカウント作成' : 'ログイン'}
                     </button>
                 </form>
+
+                {!isSignUp && (
+                    <div className="mt-3 text-center">
+                        <button
+                            onClick={() => setShowForgotPassword(true)}
+                            className="text-sm text-gray-600 hover:text-gray-800"
+                        >
+                            パスワードを忘れた方
+                        </button>
+                    </div>
+                )}
 
                 <div className="mt-4">
                     <button

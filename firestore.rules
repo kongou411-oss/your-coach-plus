@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ユーザープロファイル
+    match /users/{userId} {
+      // 自分のデータのみ読み書き可能
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // FCMトークンのサブコレクション
+      match /tokens/{tokenId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // 日次記録
+    match /dailyRecords/{recordId} {
+      // recordIdの形式: userId_YYYY-MM-DD
+      // 自分のレコードのみアクセス可能
+      allow read, write: if request.auth != null &&
+                           recordId.matches('^' + request.auth.uid + '_.*');
+    }
+
+    // 日次分析
+    match /dailyAnalyses/{analysisId} {
+      // analysisIdの形式: userId_YYYY-MM-DD
+      // 自分の分析のみアクセス可能
+      allow read, write: if request.auth != null &&
+                           analysisId.matches('^' + request.auth.uid + '_.*');
+    }
+
+    // テンプレート（食事・トレーニング・サプリメント）
+    match /{templateType}/{templateId} {
+      // templateType: mealTemplates, workoutTemplates, supplementTemplates
+      // templateIdの形式: userId_templateName または自動ID
+      allow read, write: if request.auth != null &&
+                           (templateType == 'mealTemplates' ||
+                            templateType == 'workoutTemplates' ||
+                            templateType == 'supplementTemplates') &&
+                           (templateId.matches('^' + request.auth.uid + '_.*') ||
+                            resource.data.userId == request.auth.uid);
+    }
+
+    // ルーティン
+    match /routines/{routineId} {
+      // routineIdの形式: userId_routineName
+      allow read, write: if request.auth != null &&
+                           routineId.matches('^' + request.auth.uid + '_.*');
+    }
+
+    // コミュニティ投稿（Premium機能）
+    match /communityPosts/{postId} {
+      // 全ユーザーが読み取り可能（Premium会員のみ）
+      // 投稿者のみ書き込み・削除可能
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+                      request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null &&
+                              resource.data.userId == request.auth.uid;
+    }
+
+    // コミュニティ投稿のいいね
+    match /communityPosts/{postId}/likes/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && userId == request.auth.uid;
+    }
+
+    // コミュニティ投稿のコメント
+    match /communityPosts/{postId}/comments/{commentId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+                      request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null &&
+                              resource.data.userId == request.auth.uid;
+    }
+
+    // デフォルト: すべてのアクセスを拒否
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

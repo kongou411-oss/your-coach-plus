@@ -1,0 +1,50 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ユーザーのプロファイル画像
+    match /users/{userId}/profile/{fileName} {
+      // 自分のプロファイル画像のみアップロード・削除可能
+      // 誰でも読み取り可能（コミュニティ機能用）
+      allow read: if request.auth != null;
+      allow write, delete: if request.auth != null && request.auth.uid == userId;
+
+      // ファイルサイズ制限: 5MB以下
+      allow create: if request.resource.size < 5 * 1024 * 1024;
+
+      // 許可される画像形式: JPEG, PNG, WebP
+      allow create: if request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    // コミュニティ投稿の画像
+    match /community/{userId}/{postId}/{fileName} {
+      // 投稿者のみアップロード・削除可能
+      // 全ユーザーが読み取り可能
+      allow read: if request.auth != null;
+      allow write, delete: if request.auth != null && request.auth.uid == userId;
+
+      // ファイルサイズ制限: 10MB以下
+      allow create: if request.resource.size < 10 * 1024 * 1024;
+
+      // 許可される画像形式: JPEG, PNG, WebP
+      allow create: if request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    // 食事画像（将来の拡張用）
+    match /meals/{userId}/{date}/{fileName} {
+      // 自分の食事画像のみアップロード・削除可能
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+
+      // ファイルサイズ制限: 10MB以下
+      allow create: if request.resource.size < 10 * 1024 * 1024;
+
+      // 許可される画像形式: JPEG, PNG, WebP
+      allow create: if request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    // デフォルト: すべてのアクセスを拒否
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

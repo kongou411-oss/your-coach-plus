@@ -21,6 +21,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const [infoModal, setInfoModal] = useState({ show: false, title: '', content: '' });
     const [visualGuideModal, setVisualGuideModal] = useState({ show: false, gender: '男性', selectedLevel: 5 });
 
+    // 通知音設定state
+    const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
+    const [notificationSoundVolume, setNotificationSoundVolume] = useState(0.5);
+    const [notificationSoundCustomUrl, setNotificationSoundCustomUrl] = useState(null);
+
     // userProfileが変更されたときにprofile stateを更新
     useEffect(() => {
         setProfile({...userProfile});
@@ -53,6 +58,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         }
     };
 
+// 通知音設定を読み込み    useEffect(() => {        if (userId && typeof NotificationSoundService !== 'undefined') {            NotificationSoundService.loadSettings(userId);            setNotificationSoundEnabled(NotificationSoundService.soundEnabled);            setNotificationSoundVolume(NotificationSoundService.volume);            setNotificationSoundCustomUrl(NotificationSoundService.customSoundUrl);        }    }, [userId]);
     // 詳細設定用のstate（デフォルト値をプロフィールから取得）
     const [advancedSettings, setAdvancedSettings] = useState({
         proteinCoefficient: userProfile.proteinCoefficient || 2.5,
@@ -126,7 +132,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     };
 
     // 通知設定を更新して自動保存
-    const handleNotificationSettingChange = (newSettings) => {
+    const handleNotificationSettingChange = async (newSettings) => {
         const updatedProfile = {
             ...profile,
             notificationSettings: newSettings
@@ -134,6 +140,18 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         setProfile(updatedProfile);
         // 即座に保存
         onUpdateProfile(updatedProfile);
+
+        // 通知をスケジュール
+        try {
+            const result = await NotificationService.scheduleNotification(userId, newSettings);
+            if (result.success) {
+                console.log('[Settings] Notifications scheduled:', result.schedules);
+            } else {
+                console.error('[Settings] Failed to schedule notifications:', result.error);
+            }
+        } catch (error) {
+            console.error('[Settings] Error scheduling notifications:', error);
+        }
     };
 
     const handleSave = () => {
@@ -2649,6 +2667,150 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         disabled={profile.notificationSettings?.workout === false}
                                     />
                                 </div>
+                            </div>
+
+                            {/* 通知音設定 */}
+                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                <h4 className="font-bold text-sm text-blue-900 mb-4 flex items-center gap-2">
+                                    <Icon name="Volume2" size={16} />
+                                    通知音設定
+                                </h4>
+
+                                {/* 通知音ON/OFF */}
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="text-sm text-gray-700">通知音を鳴らす</span>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={notificationSoundEnabled}
+                                            onChange={(e) => {
+                                                setNotificationSoundEnabled(e.target.checked);
+                                                NotificationSoundService.saveSettings(userId, {
+                                                    enabled: e.target.checked,
+                                                    volume: notificationSoundVolume,
+                                                    customSoundUrl: notificationSoundCustomUrl
+                                                });
+                                            }}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+
+                                {/* 音量調整 */}
+                                {notificationSoundEnabled && (
+                                    <div className="mb-4">
+                                        <label className="block text-sm text-gray-700 mb-2 flex items-center justify-between">
+                                            <span>音量</span>
+                                            <span className="text-xs text-gray-500">{Math.round(notificationSoundVolume * 100)}%</span>
+                                        </label>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="1"
+                                            step="0.1"
+                                            value={notificationSoundVolume}
+                                            onChange={(e) => {
+                                                const vol = parseFloat(e.target.value);
+                                                setNotificationSoundVolume(vol);
+                                                NotificationSoundService.saveSettings(userId, {
+                                                    enabled: notificationSoundEnabled,
+                                                    volume: vol,
+                                                    customSoundUrl: notificationSoundCustomUrl
+                                                });
+                                            }}
+                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* テスト再生ボタン */}
+                                {notificationSoundEnabled && (
+                                    <button
+                                        onClick={() => {
+                                            if (notificationSoundCustomUrl) {
+                                                NotificationSoundService.playCustomSound();
+                                            } else {
+                                                NotificationSoundService.playDefaultSound();
+                                            }
+                                        }}
+                                        className="w-full mb-4 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="Play" size={16} />
+                                        通知音をテスト再生
+                                    </button>
+                                )}
+
+                                {/* カスタム音アップロード */}
+                                {notificationSoundEnabled && (
+                                    <div className="space-y-3">
+                                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                            <p className="text-xs text-gray-600 mb-3">
+                                                {notificationSoundCustomUrl ? (
+                                                    <span className="flex items-center gap-2 text-green-600">
+                                                        <Icon name="CheckCircle" size={14} />
+                                                        カスタム音が設定されています
+                                                    </span>
+                                                ) : (
+                                                    <span className="flex items-center gap-2">
+                                                        <Icon name="Info" size={14} />
+                                                        デフォルト音を使用中
+                                                    </span>
+                                                )}
+                                            </p>
+
+                                            <label className="block cursor-pointer">
+                                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition text-center">
+                                                    <Icon name="Upload" size={24} className="mx-auto mb-2 text-gray-400" />
+                                                    <p className="text-sm text-gray-600 mb-1">カスタム音をアップロード</p>
+                                                    <p className="text-xs text-gray-500">MP3, WAV, OGG（5MB以下）</p>
+                                                </div>
+                                                <input
+                                                    type="file"
+                                                    accept="audio/*"
+                                                    className="hidden"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            const result = await NotificationSoundService.uploadCustomSound(file);
+                                                            if (result.success) {
+                                                                setNotificationSoundCustomUrl(result.url);
+                                                                await NotificationSoundService.saveSettings(userId, {
+                                                                    enabled: notificationSoundEnabled,
+                                                                    volume: notificationSoundVolume,
+                                                                    customSoundUrl: result.url
+                                                                });
+                                                                alert('カスタム音をアップロードしました');
+                                                            } else {
+                                                                alert('エラー: ' + result.error);
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+
+                                            {notificationSoundCustomUrl && (
+                                                <button
+                                                    onClick={async () => {
+                                                        if (confirm('カスタム音を削除してデフォルト音に戻しますか？')) {
+                                                            NotificationSoundService.removeCustomSound();
+                                                            setNotificationSoundCustomUrl(null);
+                                                            await NotificationSoundService.saveSettings(userId, {
+                                                                enabled: notificationSoundEnabled,
+                                                                volume: notificationSoundVolume,
+                                                                customSoundUrl: null
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="w-full mt-3 bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition text-sm flex items-center justify-center gap-2"
+                                                >
+                                                    <Icon name="Trash2" size={14} />
+                                                    カスタム音を削除
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                         </div>

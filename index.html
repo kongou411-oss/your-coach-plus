@@ -65,6 +65,7 @@
     <link rel="stylesheet" href="styles_dark.css?v=20251022v6">
 
     <!-- Services Layer -->
+    <script src="notification_sound.js"></script>
     <script src="services.js?v=20251029v6"></script>
 
     <!-- Application Components (Modularized) -->
@@ -109,6 +110,14 @@
             // フォアグラウンド通知リスナーをセットアップ
             if (typeof NotificationService !== 'undefined') {
                 NotificationService.setupForegroundListener();
+            }
+        });
+
+        // アプリ終了時のクリーンアップ
+        window.addEventListener('beforeunload', () => {
+            // 通知チェッカーを停止
+            if (typeof NotificationService !== 'undefined') {
+                NotificationService.stopNotificationChecker();
             }
         });
     </script>

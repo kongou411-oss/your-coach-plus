@@ -32,3 +32,6 @@ components_backup_*
 # Temporary files
 temp/
 tmp/
+
+# Config with sensitive data
+config.js
