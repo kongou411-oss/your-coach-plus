@@ -2311,11 +2311,24 @@ const MFAService = {
     // 2FA登録状況を確認
     isMFAEnrolled: () => {
         try {
-            if (typeof firebase === 'undefined' || !firebase.auth) {
+            // Firebase初期化チェック
+            if (typeof firebase === 'undefined') {
                 return false;
             }
+
+            // Firebaseアプリが初期化されているかチェック
+            if (!firebase.apps || firebase.apps.length === 0) {
+                return false;
+            }
+
+            // authが存在するかチェック
+            if (!firebase.auth) {
+                return false;
+            }
+
             const user = firebase.auth().currentUser;
             if (!user) return false;
+
             return user.multiFactor.enrolledFactors.length > 0;
         } catch (error) {
             console.error('[MFA] Failed to check enrollment status:', error);
