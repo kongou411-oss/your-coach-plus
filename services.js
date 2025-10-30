@@ -2159,3 +2159,159 @@ const NotificationService = {
         }
     }
 };
+
+// ===== MFA/2FA Service =====
+const MFAService = {
+    // SMS認証を登録（ステップ1: 電話番号入力）
+    enrollSMS2FA: async (phoneNumber) => {
+        try {
+            const user = firebase.auth().currentUser;
+
+            if (!user) {
+                throw new Error('ユーザーがログインしていません');
+            }
+
+            // 電話番号を確認
+            if (!phoneNumber.startsWith('+')) {
+                throw new Error('電話番号は国際形式（+81...）で入力してください');
+            }
+
+            // MFAセッションを開始
+            const session = await user.multiFactor.getSession();
+
+            // 電話番号認証プロバイダーを設定
+            const phoneInfoOptions = {
+                phoneNumber: phoneNumber,
+                session: session
+            };
+
+            const phoneAuthProvider = new firebase.auth.PhoneAuthProvider();
+            const verificationId = await phoneAuthProvider.verifyPhoneNumber(
+                phoneInfoOptions,
+                window.recaptchaVerifier
+            );
+
+            console.log('[MFA] Verification code sent to:', phoneNumber);
+            return { success: true, verificationId };
+        } catch (error) {
+            console.error('[MFA] SMS enrollment failed:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // SMS認証コードを確認して登録完了（ステップ2: コード入力）
+    confirmSMS2FA: async (verificationId, verificationCode) => {
+        try {
+            const user = firebase.auth().currentUser;
+
+            if (!user) {
+                throw new Error('ユーザーがログインしていません');
+            }
+
+            // 認証情報を作成
+            const cred = firebase.auth.PhoneAuthProvider.credential(
+                verificationId,
+                verificationCode
+            );
+            const multiFactorAssertion = firebase.auth.PhoneMultiFactorGenerator.assertion(cred);
+
+            // MFAに登録
+            await user.multiFactor.enroll(multiFactorAssertion, 'SMS認証');
+
+            console.log('[MFA] SMS 2FA enrolled successfully');
+            return { success: true };
+        } catch (error) {
+            console.error('[MFA] SMS confirmation failed:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // ログイン時のMFA処理（ステップ1: SMS送信）
+    handleMFALogin: async (resolver) => {
+        try {
+            // reCAPTCHAを初期化（まだの場合）
+            if (!window.recaptchaVerifier) {
+                window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+                    'recaptcha-container',
+                    {
+                        size: 'invisible',
+                        callback: () => {
+                            console.log('[MFA] reCAPTCHA verified');
+                        }
+                    }
+                );
+            }
+
+            // SMS認証を開始
+            const phoneInfoOptions = {
+                multiFactorHint: resolver.hints[0],
+                session: resolver.session
+            };
+
+            const phoneAuthProvider = new firebase.auth.PhoneAuthProvider();
+            const verificationId = await phoneAuthProvider.verifyPhoneNumber(
+                phoneInfoOptions,
+                window.recaptchaVerifier
+            );
+
+            console.log('[MFA] Login verification code sent');
+            return { success: true, verificationId };
+        } catch (error) {
+            console.error('[MFA] Login MFA failed:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // SMS認証コードを確認してログイン完了（ステップ2: コード入力）
+    confirmMFALogin: async (resolver, verificationId, verificationCode) => {
+        try {
+            const cred = firebase.auth.PhoneAuthProvider.credential(
+                verificationId,
+                verificationCode
+            );
+            const multiFactorAssertion = firebase.auth.PhoneMultiFactorGenerator.assertion(cred);
+
+            // MFA認証を完了
+            const userCredential = await resolver.resolveSignIn(multiFactorAssertion);
+
+            console.log('[MFA] Login completed successfully');
+            return { success: true, user: userCredential.user };
+        } catch (error) {
+            console.error('[MFA] Login confirmation failed:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // 2FAを解除
+    unenrollMFA: async () => {
+        try {
+            const user = firebase.auth().currentUser;
+
+            if (!user) {
+                throw new Error('ユーザーがログインしていません');
+            }
+
+            const enrolledFactors = user.multiFactor.enrolledFactors;
+
+            if (enrolledFactors.length === 0) {
+                return { success: false, error: '2FAが設定されていません' };
+            }
+
+            // 最初の登録済み2FAを解除
+            await user.multiFactor.unenroll(enrolledFactors[0]);
+
+            console.log('[MFA] 2FA unenrolled successfully');
+            return { success: true };
+        } catch (error) {
+            console.error('[MFA] Unenroll failed:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // 2FA登録状況を確認
+    isMFAEnrolled: () => {
+        const user = firebase.auth().currentUser;
+        if (!user) return false;
+        return user.multiFactor.enrolledFactors.length > 0;
+    }
+};

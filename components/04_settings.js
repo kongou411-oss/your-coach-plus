@@ -26,6 +26,13 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const [notificationSoundVolume, setNotificationSoundVolume] = useState(0.5);
     const [notificationSoundCustomUrl, setNotificationSoundCustomUrl] = useState(null);
 
+    // MFA設定state
+    const [mfaEnrolled, setMfaEnrolled] = useState(false);
+    const [show2FASetup, setShow2FASetup] = useState(false);
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [verificationId, setVerificationId] = useState(null);
+    const [verificationCode, setVerificationCode] = useState('');
+
     // userProfileが変更されたときにprofile stateを更新
     useEffect(() => {
         setProfile({...userProfile});
@@ -59,6 +66,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     };
 
 // 通知音設定を読み込み    useEffect(() => {        if (userId && typeof NotificationSoundService !== 'undefined') {            NotificationSoundService.loadSettings(userId);            setNotificationSoundEnabled(NotificationSoundService.soundEnabled);            setNotificationSoundVolume(NotificationSoundService.volume);            setNotificationSoundCustomUrl(NotificationSoundService.customSoundUrl);        }    }, [userId]);
+
+    // MFA登録状況を確認
+    useEffect(() => {
+        if (typeof MFAService !== 'undefined') {
+            setMfaEnrolled(MFAService.isMFAEnrolled());
+        }
+    }, []);
+
     // 詳細設定用のstate（デフォルト値をプロフィールから取得）
     const [advancedSettings, setAdvancedSettings] = useState({
         proteinCoefficient: userProfile.proteinCoefficient || 2.5,
@@ -2816,6 +2831,73 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                     </details>
 
+                    {/* 2段階認証（2FA）*/}
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="Shield" size={18} className="text-green-600" />
+                            2段階認証（2FA）
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t">
+                            <div className="space-y-4">
+                                <h4 className="font-bold text-sm text-blue-900">セキュリティ強化</h4>
+                                <p className="text-sm text-gray-600">
+                                    2段階認証を有効にすると、ログイン時にSMSで認証コードが送信され、アカウントのセキュリティが強化されます。
+                                </p>
+
+                                {mfaEnrolled ? (
+                                    <div className="space-y-3">
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                            <div className="flex items-center gap-2 text-green-700 mb-2">
+                                                <Icon name="CheckCircle" size={18} />
+                                                <span className="font-medium">2FA有効</span>
+                                            </div>
+                                            <p className="text-sm text-green-600">
+                                                SMS認証が設定されています
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={async () => {
+                                                if (confirm('2FAを解除しますか？セキュリティが低下します。')) {
+                                                    const result = await MFAService.unenrollMFA();
+                                                    if (result.success) {
+                                                        setMfaEnrolled(false);
+                                                        alert('2FAを解除しました');
+                                                    } else {
+                                                        alert('エラー: ' + result.error);
+                                                    }
+                                                }
+                                            }}
+                                            className="w-full bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition"
+                                        >
+                                            2FAを解除
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                            <p className="text-sm text-blue-700 mb-2">
+                                                2段階認証を有効にすると、ログイン時にSMSで認証コードが送信されます。
+                                            </p>
+                                            <p className="text-xs text-blue-600">
+                                                ※ SMS送信料金が発生する場合があります（月50通まで無料）
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setShow2FASetup(true)}
+                                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                                        >
+                                            <Icon name="Shield" size={16} />
+                                            2FAを設定する
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </details>
+
                     {/* データ管理*/}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
@@ -4040,6 +4122,112 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+        )}
+
+        {/* 2FA設定モーダル */}
+        {show2FASetup && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+                    <h3 className="text-xl font-bold mb-4">2段階認証の設定</h3>
+
+                    {!verificationId ? (
+                        // ステップ1: 電話番号入力
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    電話番号（国際形式）
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={phoneNumber}
+                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                    placeholder="+8190XXXXXXXX"
+                                    className="w-full px-4 py-2 border rounded-lg"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    例: +819012345678
+                                </p>
+                            </div>
+
+                            <div id="recaptcha-container"></div>
+
+                            <button
+                                onClick={async () => {
+                                    // reCAPTCHAを初期化
+                                    if (!window.recaptchaVerifier) {
+                                        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+                                            'recaptcha-container',
+                                            { size: 'normal' }
+                                        );
+                                    }
+
+                                    const result = await MFAService.enrollSMS2FA(phoneNumber);
+                                    if (result.success) {
+                                        setVerificationId(result.verificationId);
+                                    } else {
+                                        alert('エラー: ' + result.error);
+                                    }
+                                }}
+                                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                            >
+                                認証コードを送信
+                            </button>
+                        </div>
+                    ) : (
+                        // ステップ2: 認証コード入力
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-600">
+                                {phoneNumber} に認証コードを送信しました
+                            </p>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    認証コード（6桁）
+                                </label>
+                                <input
+                                    type="text"
+                                    value={verificationCode}
+                                    onChange={(e) => setVerificationCode(e.target.value)}
+                                    placeholder="123456"
+                                    maxLength={6}
+                                    className="w-full px-4 py-2 border rounded-lg text-center text-2xl tracking-widest"
+                                />
+                            </div>
+
+                            <button
+                                onClick={async () => {
+                                    const result = await MFAService.confirmSMS2FA(verificationId, verificationCode);
+                                    if (result.success) {
+                                        setMfaEnrolled(true);
+                                        setShow2FASetup(false);
+                                        setVerificationId(null);
+                                        setVerificationCode('');
+                                        setPhoneNumber('');
+                                        alert('2FAを設定しました');
+                                    } else {
+                                        alert('エラー: ' + result.error);
+                                    }
+                                }}
+                                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                            >
+                                確認
+                            </button>
+                        </div>
+                    )}
+
+                    <button
+                        onClick={() => {
+                            setShow2FASetup(false);
+                            setVerificationId(null);
+                            setVerificationCode('');
+                            setPhoneNumber('');
+                        }}
+                        className="w-full mt-3 text-gray-600 hover:text-gray-800"
+                    >
+                        キャンセル
+                    </button>
                 </div>
             </div>
         )}

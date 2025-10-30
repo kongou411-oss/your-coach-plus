@@ -10,6 +10,12 @@ const LoginScreen = () => {
     const [passwordStrength, setPasswordStrength] = useState({ score: 0, message: '' });
     const [showPassword, setShowPassword] = useState(false);
 
+    // MFA関連のstate
+    const [mfaResolver, setMfaResolver] = useState(null);
+    const [showMfaInput, setShowMfaInput] = useState(false);
+    const [mfaVerificationId, setMfaVerificationId] = useState(null);
+    const [mfaVerificationCode, setMfaVerificationCode] = useState('');
+
     // パスワード強度チェック
     const checkPasswordStrength = (pwd) => {
         let score = 0;
@@ -62,6 +68,24 @@ const LoginScreen = () => {
                 await auth.signInWithEmailAndPassword(email, password);
             }
         } catch (error) {
+            // MFAが要求された場合
+            if (error.code === 'auth/multi-factor-auth-required') {
+                const resolver = error.resolver;
+
+                // MFA入力モーダルを表示
+                setMfaResolver(resolver);
+                setShowMfaInput(true);
+
+                // SMS送信
+                const result = await MFAService.handleMFALogin(resolver);
+                if (result.success) {
+                    setMfaVerificationId(result.verificationId);
+                } else {
+                    alert('2FA認証コードの送信に失敗しました: ' + result.error);
+                }
+                return;
+            }
+
             let errorMessage = error.message;
 
             // エラーメッセージを日本語化
@@ -78,6 +102,30 @@ const LoginScreen = () => {
             }
 
             alert(errorMessage);
+        }
+    };
+
+    // MFA認証コードを確認してログイン
+    const handleMfaConfirm = async () => {
+        if (!mfaVerificationCode || mfaVerificationCode.length !== 6) {
+            alert('6桁の認証コードを入力してください');
+            return;
+        }
+
+        const result = await MFAService.confirmMFALogin(
+            mfaResolver,
+            mfaVerificationId,
+            mfaVerificationCode
+        );
+
+        if (result.success) {
+            // ログイン成功
+            setShowMfaInput(false);
+            setMfaResolver(null);
+            setMfaVerificationId(null);
+            setMfaVerificationCode('');
+        } else {
+            alert('認証に失敗しました: ' + result.error);
         }
     };
 
@@ -143,6 +191,58 @@ const LoginScreen = () => {
                             className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
                         >
                             ログイン画面に戻る
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // MFA認証画面
+    if (showMfaInput) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
+                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Icon name="Shield" size={32} className="text-blue-600" />
+                        </div>
+                        <h1 className="text-3xl font-bold text-gray-800 mb-2">2段階認証</h1>
+                        <p className="text-gray-600">SMSで送信された認証コードを入力してください</p>
+                    </div>
+
+                    <div id="recaptcha-container"></div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">認証コード（6桁）</label>
+                            <input
+                                type="text"
+                                value={mfaVerificationCode}
+                                onChange={(e) => setMfaVerificationCode(e.target.value)}
+                                placeholder="123456"
+                                maxLength={6}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            />
+                        </div>
+
+                        <button
+                            onClick={handleMfaConfirm}
+                            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                        >
+                            認証
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setShowMfaInput(false);
+                                setMfaResolver(null);
+                                setMfaVerificationId(null);
+                                setMfaVerificationCode('');
+                            }}
+                            className="w-full text-gray-600 hover:text-gray-800 text-sm"
+                        >
+                            キャンセル
                         </button>
                     </div>
                 </div>
