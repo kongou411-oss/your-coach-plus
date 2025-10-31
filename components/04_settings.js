@@ -1444,9 +1444,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <input
                                                 type="number"
                                                 step="50"
-                                                value={profile.calorieAdjustment !== undefined ? profile.calorieAdjustment : 0}
+                                                value={profile.calorieAdjustment !== undefined && profile.calorieAdjustment !== null ? profile.calorieAdjustment : ''}
                                                 onChange={(e) => {
-                                                    const value = e.target.value === '' ? 0 : Number(e.target.value);
+                                                    const value = e.target.value === '' ? null : Number(e.target.value);
                                                     setProfile({...profile, calorieAdjustment: value});
                                                 }}
                                                 className="w-full px-3 py-2 border rounded-lg"

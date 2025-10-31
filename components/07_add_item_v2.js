@@ -4663,6 +4663,7 @@ RM回数と重量を別々に入力してください。`
                                                 }
 
                                                 setSelectedItem(null);
+                                                setSearchTerm(''); // 検索ワードをクリア
                                                 // デフォルト量にリセット（selectedItemがnullになるとuseEffectは発火しないので手動で設定）
                                                 setAmount(type === 'supplement' ? '1' : '100');
                                             }}

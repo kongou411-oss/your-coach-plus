@@ -781,9 +781,18 @@ ${Math.round(caloriesPercent)}%`
                             >
                                 -0.1
                             </button>
-                            <div className="px-4 py-1.5 bg-white border-2 border-gray-300 rounded-lg min-w-[90px] text-center">
-                                <span className="text-lg font-bold text-gray-900">{bodyComposition.weight.toFixed(1)}</span>
-                                <span className="text-xs text-gray-600 ml-1">kg</span>
+                            <div className="relative min-w-[90px]">
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={bodyComposition.weight.toFixed(1)}
+                                    onChange={(e) => {
+                                        const newWeight = parseFloat(e.target.value) || 0;
+                                        updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
+                                    }}
+                                    className="w-full px-4 py-1.5 text-lg font-bold text-gray-900 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:outline-none"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600 pointer-events-none">kg</span>
                             </div>
                             <button
                                 onClick={() => {
@@ -838,9 +847,18 @@ ${Math.round(caloriesPercent)}%`
                             >
                                 -0.1
                             </button>
-                            <div className="px-4 py-1.5 bg-white border-2 border-gray-300 rounded-lg min-w-[90px] text-center">
-                                <span className="text-lg font-bold text-gray-900">{bodyComposition.bodyFatPercentage.toFixed(1)}</span>
-                                <span className="text-xs text-gray-600 ml-1">%</span>
+                            <div className="relative min-w-[90px]">
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={bodyComposition.bodyFatPercentage.toFixed(1)}
+                                    onChange={(e) => {
+                                        const newBodyFat = parseFloat(e.target.value) || 0;
+                                        updateBodyComposition(bodyComposition.weight, newBodyFat);
+                                    }}
+                                    className="w-full px-4 py-1.5 text-lg font-bold text-gray-900 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:outline-none"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600 pointer-events-none">%</span>
                             </div>
                             <button
                                 onClick={() => {
