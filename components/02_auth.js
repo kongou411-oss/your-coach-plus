@@ -16,6 +16,12 @@ const LoginScreen = () => {
     const [mfaVerificationId, setMfaVerificationId] = useState(null);
     const [mfaVerificationCode, setMfaVerificationCode] = useState('');
 
+    // サインアップ後の2FA設定用state
+    const [showSignupMfaSetup, setShowSignupMfaSetup] = useState(false);
+    const [signupPhoneNumber, setSignupPhoneNumber] = useState('');
+    const [signupVerificationId, setSignupVerificationId] = useState(null);
+    const [signupVerificationCode, setSignupVerificationCode] = useState('');
+
     // パスワード強度チェック
     const checkPasswordStrength = (pwd) => {
         let score = 0;
@@ -64,6 +70,8 @@ const LoginScreen = () => {
         try {
             if (isSignUp) {
                 await auth.createUserWithEmailAndPassword(email, password);
+                // サインアップ成功後、2FA設定画面を表示
+                setShowSignupMfaSetup(true);
             } else {
                 await auth.signInWithEmailAndPassword(email, password);
             }
@@ -153,6 +161,46 @@ const LoginScreen = () => {
                 errorMessage = '無効なメールアドレスです';
             }
             alert(errorMessage);
+        }
+    };
+
+    // サインアップ後の2FA設定をスキップ
+    const handleSkipSignupMfa = () => {
+        setShowSignupMfaSetup(false);
+        setSignupPhoneNumber('');
+        setSignupVerificationId(null);
+        setSignupVerificationCode('');
+    };
+
+    // サインアップ後の2FA設定: SMS送信
+    const handleSignupMfaSendSms = async () => {
+        // reCAPTCHAを初期化
+        if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+                'signup-recaptcha-container',
+                { size: 'normal' }
+            );
+        }
+
+        const result = await MFAService.enrollSMS2FA(signupPhoneNumber);
+        if (result.success) {
+            setSignupVerificationId(result.verificationId);
+        } else {
+            alert('エラー: ' + result.error);
+        }
+    };
+
+    // サインアップ後の2FA設定: コード確認
+    const handleSignupMfaConfirm = async () => {
+        const result = await MFAService.confirmSMS2FA(signupVerificationId, signupVerificationCode);
+        if (result.success) {
+            alert('2段階認証を設定しました');
+            setShowSignupMfaSetup(false);
+            setSignupPhoneNumber('');
+            setSignupVerificationId(null);
+            setSignupVerificationCode('');
+        } else {
+            alert('エラー: ' + result.error);
         }
     };
 
@@ -268,6 +316,7 @@ const LoginScreen = () => {
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                             required
+                            autocomplete="email"
                         />
                     </div>
                     <div>
@@ -280,6 +329,7 @@ const LoginScreen = () => {
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
                                 required
                                 minLength={isSignUp ? 8 : 6}
+                                autocomplete={isSignUp ? 'new-password' : 'current-password'}
                             />
                             <button
                                 type="button"
@@ -323,6 +373,7 @@ const LoginScreen = () => {
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                 required
                                 minLength={8}
+                                autocomplete="new-password"
                             />
                             {confirmPassword && password !== confirmPassword && (
                                 <p className="text-xs text-red-600 mt-1">パスワードが一致しません</p>
@@ -367,6 +418,95 @@ const LoginScreen = () => {
                     </button>
                 </div>
             </div>
+
+            {/* サインアップ後の2FA設定モーダル */}
+            {showSignupMfaSetup && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+                        <div className="text-center mb-4">
+                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Icon name="Shield" size={32} className="text-blue-600" />
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">2段階認証を設定しますか？</h3>
+                            <p className="text-sm text-gray-600">
+                                アカウントのセキュリティを強化するため、2段階認証の設定をおすすめします。
+                            </p>
+                        </div>
+
+                        {!signupVerificationId ? (
+                            // ステップ1: 電話番号入力
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        電話番号（国際形式）
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        value={signupPhoneNumber}
+                                        onChange={(e) => setSignupPhoneNumber(e.target.value)}
+                                        placeholder="+8190XXXXXXXX"
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        例: +819012345678
+                                    </p>
+                                </div>
+
+                                <div id="signup-recaptcha-container"></div>
+
+                                <button
+                                    onClick={handleSignupMfaSendSms}
+                                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                                >
+                                    認証コードを送信
+                                </button>
+
+                                <button
+                                    onClick={handleSkipSignupMfa}
+                                    className="w-full text-gray-600 hover:text-gray-800 text-sm"
+                                >
+                                    後で設定
+                                </button>
+                            </div>
+                        ) : (
+                            // ステップ2: 認証コード入力
+                            <div className="space-y-4">
+                                <p className="text-sm text-gray-600">
+                                    {signupPhoneNumber} に認証コードを送信しました
+                                </p>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        認証コード（6桁）
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={signupVerificationCode}
+                                        onChange={(e) => setSignupVerificationCode(e.target.value)}
+                                        placeholder="123456"
+                                        maxLength={6}
+                                        className="w-full px-4 py-2 border rounded-lg text-center text-2xl tracking-widest"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={handleSignupMfaConfirm}
+                                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                                >
+                                    確認
+                                </button>
+
+                                <button
+                                    onClick={handleSkipSignupMfa}
+                                    className="w-full text-gray-600 hover:text-gray-800 text-sm"
+                                >
+                                    後で設定
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -398,11 +538,6 @@ const OnboardingScreen = ({ user, onComplete }) => {
     const [customMultiplierInputValue, setCustomMultiplierInputValue] = useState('');
 
     const handleComplete = async () => {
-        const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
-        const fatMass = profile.weight - lbm;
-        const bmr = LBMUtils.calculateBMR(lbm, fatMass);
-        const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass);
-
         // 無料トライアル終了日（7日後）
         const now = new Date();
         const trialEndDate = new Date();
@@ -415,11 +550,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
             displayName: profile.displayName || profile.nickname || '',
             age: profile.age || 25,
             gender: profile.gender || '男性',
+            height: profile.height || 170,
 
-            // 体組成・活動レベル
-            leanBodyMass: lbm,
-            bmr: bmr,
-            tdeeBase: tdeeBase,
+            // 活動レベル
             activityLevel: profile.activityLevel || 3,
             customActivityMultiplier: profile.customActivityMultiplier || null,
 
@@ -453,21 +586,35 @@ const OnboardingScreen = ({ user, onComplete }) => {
             isFreeTrialExpired: false,
 
             // 登録日
-            joinDate: new Date().toISOString(),
-            registrationDate: new Date().toISOString(),
-            createdAt: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now)
+            joinDate: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now),
+            registrationDate: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now),
         };
 
         console.log('[Auth] Creating new user profile:', {
-            lbm,
-            bmr,
-            tdeeBase,
             activityLevel: profile.activityLevel,
             customActivityMultiplier: profile.customActivityMultiplier,
             calorieAdjustment: profile.calorieAdjustment,
             purpose: profile.purpose
         });
+
+        // プロフィールを保存
         await DataService.saveUserProfile(user.uid, completeProfile);
+
+        // 初回dailyRecordを作成（体組成データを保存）
+        const todayDate = new Date().toISOString().split('T')[0];
+        const initialDailyRecord = {
+            date: todayDate,
+            bodyComposition: {
+                weight: profile.weight,
+                bodyFatPercentage: profile.bodyFatPercentage
+            },
+            meals: [],
+            exercises: [],
+            supplements: [],
+            conditions: {}
+        };
+        await DataService.saveDailyRecord(user.uid, todayDate, initialDailyRecord);
+
         if (onComplete) onComplete(completeProfile);
     };
 

@@ -1,3 +1,319 @@
+// ===== Welcome Guide Modal Component (Multi-Page) =====
+const WelcomeGuideModal = ({ show, onClose }) => {
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const totalPages = 4;
+
+    if (!show) return null;
+
+    const handleNext = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handleBack = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handleFinish = () => {
+        onClose();
+        // 食事記録セクションへスクロール
+        setTimeout(() => {
+            const element = document.getElementById('meal-section');
+            if (element) {
+                element.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+        }, 300);
+    };
+
+    // ページコンテンツ
+    const pages = [
+        {
+            icon: 'Gift',
+            iconColor: 'bg-blue-100',
+            iconTextColor: 'text-blue-600',
+            title: 'Your Coach+へようこそ！',
+            content: (
+                <div className="space-y-4">
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
+                        <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                            <Icon name="Sparkles" size={18} />
+                            LBMベースの科学的アプローチ
+                        </h4>
+                        <p className="text-sm text-gray-700">
+                            除脂肪体重（LBM）を中心に、科学的根拠に基づいた体づくりをサポートします。
+                        </p>
+                    </div>
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+                        <h4 className="font-bold text-green-900 mb-2 flex items-center gap-2">
+                            <Icon name="Gift" size={18} />
+                            7日間すべての機能が無料
+                        </h4>
+                        <p className="text-sm text-gray-700">
+                            最初の7日間は、プレミアム機能を含むすべての機能を無料でお試しいただけます。
+                        </p>
+                    </div>
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
+                        <h4 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                            <Icon name="Zap" size={18} />
+                            AIがあなたをパーソナライズ
+                        </h4>
+                        <p className="text-sm text-gray-700">
+                            記録を続けることで、AIがあなたの体質や習慣を学習し、最適なアドバイスを提供します。
+                        </p>
+                    </div>
+                </div>
+            )
+        },
+        {
+            icon: 'Calendar',
+            iconColor: 'bg-green-100',
+            iconTextColor: 'text-green-600',
+            title: '毎日の記録で体を知る',
+            content: (
+                <div className="space-y-3">
+                    <p className="text-sm text-gray-600 mb-4">
+                        以下の順番で記録を進めていきましょう：
+                    </p>
+                    <div className="space-y-3">
+                        <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                            <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                                1
+                            </div>
+                            <div>
+                                <h5 className="font-bold text-green-900 flex items-center gap-2">
+                                    <Icon name="Utensils" size={16} />
+                                    食事記録
+                                </h5>
+                                <p className="text-xs text-gray-700 mt-1">
+                                    食材・料理・サプリを記録してPFCバランスを管理
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                            <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                                2
+                            </div>
+                            <div>
+                                <h5 className="font-bold text-orange-900 flex items-center gap-2">
+                                    <Icon name="Dumbbell" size={16} />
+                                    運動記録
+                                </h5>
+                                <p className="text-xs text-gray-700 mt-1">
+                                    トレーニングを記録して進捗を可視化
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                            <div className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                                3
+                            </div>
+                            <div>
+                                <h5 className="font-bold text-red-900 flex items-center gap-2">
+                                    <Icon name="Activity" size={16} />
+                                    コンディション記録
+                                </h5>
+                                <p className="text-xs text-gray-700 mt-1">
+                                    睡眠・体調を記録して体の声を聞く
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                            <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                                4
+                            </div>
+                            <div>
+                                <h5 className="font-bold text-purple-900 flex items-center gap-2">
+                                    <Icon name="BarChart3" size={16} />
+                                    分析
+                                </h5>
+                                <p className="text-xs text-gray-700 mt-1">
+                                    AIがフィードバック → <span className="font-bold text-purple-700">完了すると全機能が開放！</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )
+        },
+        {
+            icon: 'Smartphone',
+            iconColor: 'bg-indigo-100',
+            iconTextColor: 'text-indigo-600',
+            title: '画面の使い方',
+            content: (
+                <div className="space-y-4">
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h5 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                            <Icon name="Layout" size={16} />
+                            画面下部のタブバー
+                        </h5>
+                        <div className="flex justify-around items-center bg-white p-3 rounded-lg border">
+                            <div className="flex flex-col items-center gap-1">
+                                <Icon name="Home" size={20} className="text-gray-600" />
+                                <span className="text-xs text-gray-600">ホーム</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-1">
+                                <Icon name="TrendingUp" size={20} className="text-purple-600" />
+                                <span className="text-xs text-gray-600">履歴</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-1">
+                                <Icon name="BookOpen" size={20} className="text-cyan-600" />
+                                <span className="text-xs text-gray-600">PGBASE</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-1">
+                                <Icon name="Users" size={20} className="text-pink-600" />
+                                <span className="text-xs text-gray-600">COMY</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-1">
+                                <Icon name="Settings" size={20} className="text-gray-600" />
+                                <span className="text-xs text-gray-600">設定</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <h5 className="font-bold text-green-900 mb-2 flex items-center gap-2">
+                            <Icon name="Plus" size={16} />
+                            追加ボタン
+                        </h5>
+                        <p className="text-sm text-gray-700">
+                            各セクション右上の「追加」ボタンから、食事・運動・コンディションを記録できます。
+                        </p>
+                    </div>
+                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <h5 className="font-bold text-yellow-900 mb-2 flex items-center gap-2">
+                            <Icon name="Zap" size={16} />
+                            左右のショートカット
+                        </h5>
+                        <p className="text-sm text-gray-700">
+                            画面の左右端にあるショートカットから、よく使う機能に素早くアクセスできます。
+                        </p>
+                    </div>
+                </div>
+            )
+        },
+        {
+            icon: 'TrendingUp',
+            iconColor: 'bg-purple-100',
+            iconTextColor: 'text-purple-600',
+            title: 'データが蓄積されると...',
+            content: (
+                <div className="space-y-4">
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <h5 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                            <Icon name="LineChart" size={16} />
+                            履歴画面で長期トレンドを確認
+                        </h5>
+                        <p className="text-sm text-gray-700 mb-2">
+                            食事、運動、コンディション、パフォーマンスをグラフで可視化。長期的な変化が一目でわかります。
+                        </p>
+                        <div className="flex flex-wrap gap-1 text-xs">
+                            <span className="px-2 py-1 bg-white rounded border border-purple-200 text-purple-700">カロリー</span>
+                            <span className="px-2 py-1 bg-white rounded border border-purple-200 text-purple-700">PFC</span>
+                            <span className="px-2 py-1 bg-white rounded border border-purple-200 text-purple-700">LBM</span>
+                            <span className="px-2 py-1 bg-white rounded border border-purple-200 text-purple-700">睡眠</span>
+                            <span className="px-2 py-1 bg-white rounded border border-purple-200 text-purple-700">RM</span>
+                        </div>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h5 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                            <Icon name="Brain" size={16} />
+                            AI分析で改善提案
+                        </h5>
+                        <p className="text-sm text-gray-700">
+                            あなたの記録からAIが最適なアドバイスを生成。指示書として毎日の行動改善をサポートします。
+                        </p>
+                    </div>
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+                        <h5 className="font-bold text-green-900 mb-2 flex items-center gap-2">
+                            <Icon name="Sparkles" size={16} />
+                            繰り返すことでパーソナライズ
+                        </h5>
+                        <p className="text-sm text-gray-700">
+                            記録を続けることで、AIがあなたを学習。より精度の高い提案を受け取れます。
+                        </p>
+                    </div>
+                    <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg border-2 border-orange-300">
+                        <h5 className="font-bold text-orange-900 mb-2 flex items-center gap-2">
+                            <Icon name="Rocket" size={16} />
+                            初日に分析まで完了すれば、すべての機能がすぐに使える！
+                        </h5>
+                        <p className="text-xs text-gray-700">
+                            7日間無料トライアル中は、すべての機能を制限なくお試しいただけます。
+                        </p>
+                    </div>
+                </div>
+            )
+        }
+    ];
+
+    const currentPageData = pages[currentPage - 1];
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 slide-up">
+                {/* ヘッダー */}
+                <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-12 h-12 ${currentPageData.iconColor} rounded-full flex items-center justify-center flex-shrink-0`}>
+                        <Icon name={currentPageData.icon} size={24} className={currentPageData.iconTextColor} />
+                    </div>
+                    <h3 className="text-xl font-bold flex-1">{currentPageData.title}</h3>
+                </div>
+
+                {/* コンテンツ */}
+                <div className="mb-6 max-h-[60vh] overflow-y-auto">
+                    {currentPageData.content}
+                </div>
+
+                {/* ページインジケーター */}
+                <div className="flex justify-center gap-2 mb-4">
+                    {[...Array(totalPages)].map((_, index) => (
+                        <div
+                            key={index}
+                            className={`w-2 h-2 rounded-full transition ${
+                                index + 1 === currentPage ? 'bg-indigo-600 w-6' : 'bg-gray-300'
+                            }`}
+                        />
+                    ))}
+                </div>
+
+                {/* ナビゲーションボタン */}
+                <div className="flex gap-3">
+                    {currentPage > 1 && (
+                        <button
+                            onClick={handleBack}
+                            className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-200 transition"
+                        >
+                            戻る
+                        </button>
+                    )}
+                    {currentPage < totalPages ? (
+                        <button
+                            onClick={handleNext}
+                            className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition"
+                        >
+                            次へ
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleFinish}
+                            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg font-bold hover:from-green-700 hover:to-emerald-700 transition flex items-center justify-center gap-2"
+                        >
+                            <Icon name="Check" size={20} />
+                            はじめる
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ===== Guide Modal Component =====
 const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId, onClose }) => {
     if (!show) return null;
@@ -220,7 +536,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             });
 
             // 誘導モーダルの状態管理
-            const [showMealGuide, setShowMealGuide] = useState(false);       // オンボーディング後
+            const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);     // オンボーディング後（新）
+            const [showMealGuide, setShowMealGuide] = useState(false);           // オンボーディング後（旧：互換性のため残す）
             const [showTrainingGuide, setShowTrainingGuide] = useState(false); // 食事記録後
             const [showConditionGuide, setShowConditionGuide] = useState(false); // 運動記録後
             const [showAnalysisGuide, setShowAnalysisGuide] = useState(false);   // コンディション完了後
@@ -994,9 +1311,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     setUserProfile(profile);
                     // オンボーディング完了フラグを設定（クレジット不足モーダルを表示しない）
                     sessionStorage.setItem('onboardingJustCompleted', 'true');
-                    // オンボーディング完了後、食事記録誘導モーダルを表示
+                    // オンボーディング完了後、ウェルカムガイドモーダルを表示
                     setTimeout(() => {
-                        setShowMealGuide(true);
+                        setShowWelcomeGuide(true);
                     }, 500);
                 }} />;
             }
@@ -2532,6 +2849,12 @@ AIコーチなどの高度な機能が解放されます。
                     </div>
 
                     {/* 誘導モーダル群 */}
+                    {/* ウェルカムガイド（4ページ） */}
+                    <WelcomeGuideModal
+                        show={showWelcomeGuide}
+                        onClose={() => setShowWelcomeGuide(false)}
+                    />
+                    {/* 旧ガイドモーダル（互換性のため残す） */}
                     <GuideModal
                         show={showMealGuide}
                         title="まずは食事を記録しましょう！"

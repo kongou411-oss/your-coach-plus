@@ -27,8 +27,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // 体組成の状態管理
     const [bodyComposition, setBodyComposition] = useState({
-        weight: profile?.weight || 0,
-        bodyFatPercentage: profile?.bodyFatPercentage || 0
+        weight: 0,
+        bodyFatPercentage: 0
     });
 
     // 今日の日付を取得
@@ -37,13 +37,23 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     };
 
-    // profileが更新されたらbodyCompositionを同期
+    // 今日のdailyRecordから体組成を読み込む
     useEffect(() => {
-        setBodyComposition({
-            weight: profile?.weight || 0,
-            bodyFatPercentage: profile?.bodyFatPercentage || 0
-        });
-    }, [profile]);
+        const loadTodayBodyComposition = async () => {
+            try {
+                const todayDate = getTodayDate();
+                const record = await DataService.getDailyRecord(user.uid, todayDate);
+                if (record?.bodyComposition) {
+                    setBodyComposition(record.bodyComposition);
+                }
+            } catch (error) {
+                console.error('[Dashboard] Failed to load body composition:', error);
+            }
+        };
+        if (user?.uid) {
+            loadTodayBodyComposition();
+        }
+    }, [user?.uid]);
 
     // 体組成を更新する共通ハンドラー
     const updateBodyComposition = async (newWeight, newBodyFat) => {
@@ -53,13 +63,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         };
         setBodyComposition(updated);
 
-        // userProfileを更新
-        const savedProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-        const updatedProfile = { ...savedProfile, weight: newWeight, bodyFatPercentage: newBodyFat };
-        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedProfile));
-        window.dispatchEvent(new Event('profileUpdated'));
-
-        // dailyRecordにも保存（履歴ページでLBM表示用）
+        // dailyRecordに保存
         try {
             const todayDate = getTodayDate();
             const currentRecord = await DataService.getDailyRecord(user.uid, todayDate) || {};
