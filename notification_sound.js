@@ -135,7 +135,7 @@ const NotificationSoundService = {
     },
 
     // カスタム音ファイルをアップロード
-    uploadCustomSound: async (file) => {
+    uploadCustomSound: async (file, userId) => {
         try {
             // ファイル形式チェック
             if (!file.type.startsWith('audio/')) {
@@ -150,10 +150,22 @@ const NotificationSoundService = {
             // FileReaderでData URLに変換
             return new Promise((resolve) => {
                 const reader = new FileReader();
-                reader.onload = (e) => {
+                reader.onload = async (e) => {
                     const dataUrl = e.target.result;
                     NotificationSoundService.customSoundUrl = dataUrl;
-                    console.log('[NotificationSound] Custom sound uploaded');
+
+                    // 自動的に保存
+                    if (userId) {
+                        await NotificationSoundService.saveSettings(userId, {
+                            enabled: NotificationSoundService.soundEnabled,
+                            volume: NotificationSoundService.volume,
+                            customSoundUrl: dataUrl
+                        });
+                        console.log('[NotificationSound] Custom sound uploaded and saved');
+                    } else {
+                        console.log('[NotificationSound] Custom sound uploaded (not saved - no userId)');
+                    }
+
                     resolve({ success: true, url: dataUrl });
                 };
                 reader.onerror = () => {

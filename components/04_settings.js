@@ -2906,19 +2906,16 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     onChange={async (e) => {
                                                         const file = e.target.files[0];
                                                         if (file) {
-                                                            const result = await NotificationSoundService.uploadCustomSound(file);
+                                                            const result = await NotificationSoundService.uploadCustomSound(file, userId);
                                                             if (result.success) {
                                                                 setNotificationSoundCustomUrl(result.url);
-                                                                await NotificationSoundService.saveSettings(userId, {
-                                                                    enabled: notificationSoundEnabled,
-                                                                    volume: notificationSoundVolume,
-                                                                    customSoundUrl: result.url
-                                                                });
-                                                                alert('カスタム音をアップロードしました');
+                                                                alert('カスタム音をアップロードして保存しました');
                                                             } else {
                                                                 alert('エラー: ' + result.error);
                                                             }
                                                         }
+                                                        // ファイル選択をリセット
+                                                        e.target.value = '';
                                                     }}
                                                 />
                                             </label>
@@ -3174,6 +3171,61 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     </div>
                                 );
                             })()}
+
+                            {/* PWAキャッシュクリア */}
+                            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                                <h4 className="font-bold mb-2 text-orange-800 flex items-center gap-2">
+                                    <Icon name="RefreshCw" size={16} />
+                                    PWAキャッシュクリア
+                                </h4>
+                                <p className="text-sm text-gray-600 mb-3">
+                                    アプリの動作がおかしい場合、キャッシュをクリアすると改善することがあります。
+                                </p>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={async () => {
+                                            if (confirm('すべてのキャッシュをクリアしますか？\n（データは保持されます）')) {
+                                                try {
+                                                    // Service Workerのキャッシュをクリア
+                                                    if ('caches' in window) {
+                                                        const cacheNames = await caches.keys();
+                                                        await Promise.all(
+                                                            cacheNames.map(cacheName => caches.delete(cacheName))
+                                                        );
+                                                        console.log('[Cache] Service Worker caches cleared');
+                                                    }
+
+                                                    // Service Workerを再登録
+                                                    if ('serviceWorker' in navigator) {
+                                                        const registrations = await navigator.serviceWorker.getRegistrations();
+                                                        await Promise.all(
+                                                            registrations.map(registration => registration.unregister())
+                                                        );
+                                                        console.log('[Cache] Service Workers unregistered');
+
+                                                        // 再登録
+                                                        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                                                        console.log('[Cache] Service Worker re-registered');
+                                                    }
+
+                                                    alert('キャッシュをクリアしました。\nページをリロードします。');
+                                                    window.location.reload(true);
+                                                } catch (error) {
+                                                    console.error('[Cache] Failed to clear cache:', error);
+                                                    alert('キャッシュクリアに失敗しました: ' + error.message);
+                                                }
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="RefreshCw" size={16} />
+                                        キャッシュをクリア
+                                    </button>
+                                    <p className="text-xs text-gray-500">
+                                        ※ ユーザーデータ（記録、設定など）は削除されません
+                                    </p>
+                                </div>
+                            </div>
 
                             {/* 全データベースアイテム一覧 */}
                             {(() => {
