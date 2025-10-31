@@ -7,12 +7,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 // Firebase設定（config.jsと同じ設定を使用）
 // 注意: 本番環境ではFirebase Consoleの設定を使用してください
 firebase.initializeApp({
-  apiKey: "AIzaSyDtdRgSvHeFgWQczUH9o_8MRnZqNGn9eBw",
-  authDomain: "yourcoach-c1f28.firebaseapp.com",
-  projectId: "yourcoach-c1f28",
-  storageBucket: "yourcoach-c1f28.firebasestorage.app",
-  messagingSenderId: "366193088662",
-  appId: "1:366193088662:web:4eb24b2cc84dbdd39e6bb2"
+  apiKey: "AIzaSyADHPx0AkWNeXTsgg8rrfsPMHIUsX2g8zM",
+  authDomain: "your-coach-plus.firebaseapp.com",
+  projectId: "your-coach-plus",
+  storageBucket: "your-coach-plus.firebasestorage.app",
+  messagingSenderId: "654534642431",
+  appId: "1:654534642431:web:4eb24b2cc84dbdd39e6bb2"
 });
 
 const messaging = firebase.messaging();
@@ -60,21 +60,29 @@ self.addEventListener('notificationclick', (event) => {
   }
 
   // 通知をクリックしたらアプリを開く
-  const urlToOpen = event.notification.data?.url || '/';
-
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // 既に開いているウィンドウがあればフォーカス
+        console.log('[firebase-messaging-sw.js] 既存クライアント数:', clientList.length);
+
+        // 既に開いているウィンドウがあればフォーカス（URLが完全一致でなくてもOK）
         for (let client of clientList) {
-          if (client.url === urlToOpen && 'focus' in client) {
+          // same originであればフォーカス
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            console.log('[firebase-messaging-sw.js] 既存ウィンドウにフォーカス:', client.url);
             return client.focus();
           }
         }
+
         // なければ新しいウィンドウを開く
+        const urlToOpen = self.location.origin + '/';
+        console.log('[firebase-messaging-sw.js] 新しいウィンドウを開く:', urlToOpen);
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen);
         }
+      })
+      .catch(err => {
+        console.error('[firebase-messaging-sw.js] 通知クリックエラー:', err);
       })
   );
 });
@@ -161,13 +169,20 @@ async function checkNotificationsFromStorage() {
       const [scheduleHours, scheduleMinutes] = schedule.time.split(':').map(Number);
       const scheduledTime = scheduleHours * 60 + scheduleMinutes;
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const timeDiff = currentMinutes - scheduledTime;
 
-      if (Math.abs(scheduledTime - currentMinutes) <= 1) {
+      console.log('[SW] ' + schedule.type + ' ' + schedule.time + ': diff=' + timeDiff);
+
+      // 指定時刻になったら、または1分以内の遅れなら表示
+      if (timeDiff >= 0 && timeDiff <= 1) {
+        // tagに時刻を含めて、同じタイプの通知が上書きされないようにする
+        const uniqueTag = schedule.type + '_' + schedule.time;
+
         // 通知を表示
         await self.registration.showNotification(schedule.title, {
           body: schedule.body,
           icon: '/icons/icon-192.png',
-          tag: schedule.type,
+          tag: uniqueTag,
           requireInteraction: false
         });
 
@@ -235,5 +250,5 @@ function saveShownNotifications(db, date, shown) {
   });
 }
 
-// Service Worker起動時にチェッカー開始
-startBackgroundNotificationChecker();
+// Service Worker起動時にチェッカー開始（Cloud Functionsで自動送信するため停止）
+// startBackgroundNotificationChecker();

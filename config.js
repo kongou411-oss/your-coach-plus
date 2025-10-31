@@ -2,13 +2,13 @@
 // アプリケーション全体の定数と設定
 
 // 開発モード設定
-const DEV_MODE = true;
+const DEV_MODE = false; // 本番モード（Cloud Functions通知テスト用）
 const DEV_USER_ID = 'dev-user-001';
 // Premium会員モード（開発者設定から切替可能、localStorageから読み込み）
 const DEV_PREMIUM_MODE = localStorage.getItem('DEV_PREMIUM_MODE') === 'true'; // デフォルトは無料会員（1〜7日目は全機能無料、8日目以降はPremium制限）
 
 // Gemini API Key (本番環境では環境変数から読み込むこと)
-const GEMINI_API_KEY = 'AIzaSyAntR-6FU5HEB2aiUcjYHZczKIc4LUhqGI';
+const GEMINI_API_KEY = 'AIzaSyB0e7Z2ayR0bzWHB0KWDLIgKFaVgtJ7Rc';
 
 // Admin Password (本番環境では環境変数またはFirebase Custom Claimsを使用)
 const ADMIN_PASSWORD = 'admin2024';
@@ -336,10 +336,10 @@ const FEATURES = {
 // Firebase Configuration
 const FIREBASE_CONFIG = {
     apiKey: "AIzaSyADHPx0AkWNeXTsgg8rrfsPMHIUsX2g8zM",
-    authDomain: "yourcoach-c1f28.firebaseapp.com",
-    projectId: "yourcoach-c1f28",
-    storageBucket: "yourcoach-c1f28.firebasestorage.app",
-    messagingSenderId: "366193088662",
-    appId: "1:366193088662:web:4eb24b2cc84dbdd39e6bb2",
+    authDomain: "your-coach-plus.firebaseapp.com",
+    projectId: "your-coach-plus",
+    storageBucket: "your-coach-plus.firebasestorage.app",
+    messagingSenderId: "654534642431",
+    appId: "1:654534642431:web:4eb24b2cc84dbdd39e6bb2",
     measurementId: "G-1NLXFYDCJF"
 };

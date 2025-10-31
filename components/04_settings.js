@@ -4,6 +4,350 @@ const TutorialView = ({ onClose, onComplete }) => {
     return null;
 };
 
+// ===== 通知診断コンポーネント =====
+const NotificationDiagnostics = ({ userId }) => {
+    const [diagData, setDiagData] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    const runDiagnostics = async () => {
+        setLoading(true);
+        try {
+            const data = {
+                timestamp: new Date().toLocaleString('ja-JP'),
+                permission: 'unsupported',
+                fcmSupported: false,
+                fcmToken: null,
+                fcmTokenShort: null,
+                firestoreCheck: null,
+                scheduleCheck: null,
+                scheduleCount: 0,
+                error: null
+            };
+
+            // 通知権限チェック
+            if ('Notification' in window) {
+                data.permission = Notification.permission;
+            }
+
+            // 通知スケジュールチェック
+            try {
+                console.log('[Diagnostics] Checking schedules for userId:', userId);
+                console.log('[Diagnostics] DEV_MODE:', DEV_MODE);
+
+                if (!DEV_MODE) {
+                    const userDoc = await db.collection('users').doc(userId).get();
+                    console.log('[Diagnostics] User doc exists:', userDoc.exists);
+
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        console.log('[Diagnostics] User data:', userData);
+                        const schedules = userData?.notificationSchedules || [];
+                        console.log('[Diagnostics] Schedules:', schedules);
+
+                        data.scheduleCount = schedules.length;
+                        data.scheduleCheck = schedules.length > 0 ? 'found' : 'empty';
+                        data.scheduleDebug = `Doc exists, ${schedules.length} schedules`;
+                    } else {
+                        data.scheduleCheck = 'no_user_doc';
+                        data.scheduleDebug = 'User document does not exist';
+                    }
+                } else {
+                    const stored = localStorage.getItem('notificationSchedules_' + userId);
+                    const schedules = stored ? JSON.parse(stored) : [];
+                    data.scheduleCount = schedules.length;
+                    data.scheduleCheck = schedules.length > 0 ? 'found' : 'empty';
+                    data.scheduleDebug = 'LocalStorage mode';
+                }
+            } catch (err) {
+                console.error('[Diagnostics] Schedule check error:', err);
+                data.scheduleCheck = 'error';
+                data.scheduleError = err.message;
+                data.scheduleDebug = `Error: ${err.message}`;
+            }
+
+            // FCMサポートチェック
+            if (typeof firebase !== 'undefined' && firebase.messaging && firebase.messaging.isSupported()) {
+                data.fcmSupported = true;
+
+                // FCMトークン取得を試行
+                try {
+                    const result = await NotificationService.getFCMToken(userId);
+                    if (result.success) {
+                        data.fcmToken = result.token;
+                        // トークンの先頭20文字と末尾10文字のみ表示
+                        const token = result.token;
+                        data.fcmTokenShort = token.length > 30
+                            ? `${token.substring(0, 20)}...${token.substring(token.length - 10)}`
+                            : token;
+
+                        // Firestoreに保存されているか確認
+                        if (!DEV_MODE) {
+                            try {
+                                const tokenDoc = await db.collection('users')
+                                    .doc(userId)
+                                    .collection('tokens')
+                                    .doc(result.token)
+                                    .get();
+                                data.firestoreCheck = tokenDoc.exists ? 'saved' : 'not_saved';
+                            } catch (err) {
+                                data.firestoreCheck = 'error';
+                                data.firestoreError = err.message;
+                            }
+                        } else {
+                            data.firestoreCheck = 'dev_mode';
+                        }
+                    } else {
+                        data.error = result.error;
+                    }
+                } catch (err) {
+                    data.error = err.message;
+                }
+            }
+
+            setDiagData(data);
+        } catch (err) {
+            setDiagData({
+                timestamp: new Date().toLocaleString('ja-JP'),
+                error: err.message
+            });
+        }
+        setLoading(false);
+    };
+
+    return (
+        <div className="space-y-3">
+            <div className="bg-purple-100 rounded-lg p-3 border border-purple-200">
+                <p className="text-sm text-purple-900 mb-2">
+                    <strong>📱 通知が届かない場合の診断ツール</strong>
+                </p>
+                <p className="text-xs text-purple-800">
+                    このボタンをクリックすると、通知機能の状態を詳しく確認できます。
+                </p>
+            </div>
+
+            <button
+                onClick={runDiagnostics}
+                disabled={loading}
+                className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition disabled:bg-gray-400 flex items-center justify-center gap-2"
+            >
+                {loading ? (
+                    <>
+                        <Icon name="Loader" size={16} className="animate-spin" />
+                        診断中...
+                    </>
+                ) : (
+                    <>
+                        <Icon name="Activity" size={16} />
+                        診断を実行
+                    </>
+                )}
+            </button>
+
+            {diagData && (
+                <div className="bg-white rounded-lg p-4 border border-purple-200 space-y-3 text-sm">
+                    <div className="flex items-center gap-2 pb-2 border-b border-purple-100">
+                        <Icon name="Clock" size={14} className="text-purple-600" />
+                        <span className="text-xs text-gray-600">{diagData.timestamp}</span>
+                    </div>
+
+                    {/* 通知権限 */}
+                    <div className="flex items-start gap-2">
+                        <div className="w-32 font-medium text-gray-700">通知権限</div>
+                        <div className="flex-1">
+                            {diagData.permission === 'granted' && (
+                                <span className="text-green-600 flex items-center gap-1">
+                                    <Icon name="CheckCircle" size={16} />
+                                    許可済み
+                                </span>
+                            )}
+                            {diagData.permission === 'denied' && (
+                                <span className="text-red-600 flex items-center gap-1">
+                                    <Icon name="XCircle" size={16} />
+                                    拒否されています
+                                </span>
+                            )}
+                            {diagData.permission === 'default' && (
+                                <span className="text-orange-600 flex items-center gap-1">
+                                    <Icon name="AlertCircle" size={16} />
+                                    未設定（上の「権限を許可」ボタンを押してください）
+                                </span>
+                            )}
+                            {diagData.permission === 'unsupported' && (
+                                <span className="text-gray-600 flex items-center gap-1">
+                                    <Icon name="XCircle" size={16} />
+                                    このブラウザは非対応
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* FCMサポート */}
+                    <div className="flex items-start gap-2">
+                        <div className="w-32 font-medium text-gray-700">FCM対応</div>
+                        <div className="flex-1">
+                            {diagData.fcmSupported ? (
+                                <span className="text-green-600 flex items-center gap-1">
+                                    <Icon name="CheckCircle" size={16} />
+                                    対応しています
+                                </span>
+                            ) : (
+                                <span className="text-red-600 flex items-center gap-1">
+                                    <Icon name="XCircle" size={16} />
+                                    非対応
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* FCMトークン */}
+                    <div className="flex items-start gap-2">
+                        <div className="w-32 font-medium text-gray-700">FCMトークン</div>
+                        <div className="flex-1">
+                            {diagData.fcmToken ? (
+                                <div>
+                                    <span className="text-green-600 flex items-center gap-1 mb-1">
+                                        <Icon name="CheckCircle" size={16} />
+                                        取得成功
+                                    </span>
+                                    <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded font-mono break-all">
+                                        {diagData.fcmTokenShort}
+                                    </div>
+                                </div>
+                            ) : (
+                                <span className="text-red-600 flex items-center gap-1">
+                                    <Icon name="XCircle" size={16} />
+                                    取得できませんでした
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Firestore保存状態 */}
+                    {diagData.firestoreCheck && (
+                        <div className="flex items-start gap-2">
+                            <div className="w-32 font-medium text-gray-700">Firestore保存</div>
+                            <div className="flex-1">
+                                {diagData.firestoreCheck === 'saved' && (
+                                    <span className="text-green-600 flex items-center gap-1">
+                                        <Icon name="CheckCircle" size={16} />
+                                        保存されています
+                                    </span>
+                                )}
+                                {diagData.firestoreCheck === 'not_saved' && (
+                                    <span className="text-red-600 flex items-center gap-1">
+                                        <Icon name="XCircle" size={16} />
+                                        保存されていません（再ログインしてください）
+                                    </span>
+                                )}
+                                {diagData.firestoreCheck === 'error' && (
+                                    <span className="text-red-600 flex items-center gap-1">
+                                        <Icon name="XCircle" size={16} />
+                                        確認エラー: {diagData.firestoreError}
+                                    </span>
+                                )}
+                                {diagData.firestoreCheck === 'dev_mode' && (
+                                    <span className="text-blue-600 flex items-center gap-1">
+                                        <Icon name="Info" size={16} />
+                                        開発モード（LocalStorage使用）
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 通知スケジュール */}
+                    {diagData.scheduleCheck && (
+                        <div className="flex items-start gap-2">
+                            <div className="w-32 font-medium text-gray-700">通知スケジュール</div>
+                            <div className="flex-1">
+                                {diagData.scheduleCheck === 'found' && (
+                                    <span className="text-green-600 flex items-center gap-1">
+                                        <Icon name="CheckCircle" size={16} />
+                                        {diagData.scheduleCount}件設定済み
+                                    </span>
+                                )}
+                                {diagData.scheduleCheck === 'empty' && (
+                                    <div>
+                                        <span className="text-orange-600 flex items-center gap-1">
+                                            <Icon name="AlertCircle" size={16} />
+                                            未設定（上の「通知設定を保存」ボタンを押してください）
+                                        </span>
+                                        {diagData.scheduleDebug && (
+                                            <div className="text-xs text-gray-600 mt-1 bg-gray-50 p-2 rounded">
+                                                Debug: {diagData.scheduleDebug}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {diagData.scheduleCheck === 'no_user_doc' && (
+                                    <div>
+                                        <span className="text-red-600 flex items-center gap-1">
+                                            <Icon name="XCircle" size={16} />
+                                            ユーザードキュメントが見つかりません
+                                        </span>
+                                        {diagData.scheduleDebug && (
+                                            <div className="text-xs text-gray-600 mt-1 bg-gray-50 p-2 rounded">
+                                                Debug: {diagData.scheduleDebug}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {diagData.scheduleCheck === 'error' && (
+                                    <div>
+                                        <span className="text-red-600 flex items-center gap-1">
+                                            <Icon name="XCircle" size={16} />
+                                            エラー: {diagData.scheduleError}
+                                        </span>
+                                        {diagData.scheduleDebug && (
+                                            <div className="text-xs text-gray-600 mt-1 bg-gray-50 p-2 rounded">
+                                                Debug: {diagData.scheduleDebug}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* エラー */}
+                    {diagData.error && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <div className="flex items-start gap-2">
+                                <Icon name="AlertCircle" size={16} className="text-red-600 mt-0.5" />
+                                <div>
+                                    <div className="font-medium text-red-800 mb-1">エラー</div>
+                                    <div className="text-xs text-red-700">{diagData.error}</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 推奨アクション */}
+                    {diagData.permission !== 'granted' && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div className="flex items-start gap-2">
+                                <Icon name="AlertTriangle" size={16} className="text-yellow-600 mt-0.5" />
+                                <div className="text-xs text-yellow-800">
+                                    <strong>推奨アクション:</strong> 上の「Push通知設定」で「権限を許可」ボタンをクリックしてください。
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {diagData.fcmToken && diagData.firestoreCheck === 'not_saved' && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div className="flex items-start gap-2">
+                                <Icon name="AlertTriangle" size={16} className="text-yellow-600 mt-0.5" />
+                                <div className="text-xs text-yellow-800">
+                                    <strong>推奨アクション:</strong> ログアウトして再度ログインしてください。
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 // ===== 設定画面 =====
 const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays, unlockedFeatures, onOpenAddView, darkMode, onToggleDarkMode, shortcuts = [], onUpdateShortcuts, reopenTemplateEditModal = false, reopenTemplateEditType = null, onTemplateEditModalOpened }) => {
@@ -21,10 +365,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const [infoModal, setInfoModal] = useState({ show: false, title: '', content: '' });
     const [visualGuideModal, setVisualGuideModal] = useState({ show: false, gender: '男性', selectedLevel: 5 });
 
-    // 通知音設定state
-    const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
-    const [notificationSoundVolume, setNotificationSoundVolume] = useState(0.5);
-    const [notificationSoundCustomUrl, setNotificationSoundCustomUrl] = useState(null);
 
     // MFA設定state
     const [mfaEnrolled, setMfaEnrolled] = useState(false);
@@ -64,8 +404,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             console.error('[Settings] Failed to load experience data:', error);
         }
     };
-
-// 通知音設定を読み込み    useEffect(() => {        if (userId && typeof NotificationSoundService !== 'undefined') {            NotificationSoundService.loadSettings(userId);            setNotificationSoundEnabled(NotificationSoundService.soundEnabled);            setNotificationSoundVolume(NotificationSoundService.volume);            setNotificationSoundCustomUrl(NotificationSoundService.customSoundUrl);        }    }, [userId]);
 
     // MFA登録状況を確認
     useEffect(() => {
@@ -2803,147 +3141,47 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 </div>
                             </div>
 
-                            {/* 通知音設定 */}
-                            <div className="mt-6 pt-6 border-t border-gray-200">
-                                <h4 className="font-bold text-sm text-blue-900 mb-4 flex items-center gap-2">
-                                    <Icon name="Volume2" size={16} />
-                                    通知音設定
-                                </h4>
-
-                                {/* 通知音ON/OFF */}
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="text-sm text-gray-700">通知音を鳴らす</span>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={notificationSoundEnabled}
-                                            onChange={(e) => {
-                                                setNotificationSoundEnabled(e.target.checked);
-                                                NotificationSoundService.saveSettings(userId, {
-                                                    enabled: e.target.checked,
-                                                    volume: notificationSoundVolume,
-                                                    customSoundUrl: notificationSoundCustomUrl
-                                                });
-                                            }}
-                                            className="sr-only peer"
-                                        />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                    </label>
-                                </div>
-
-                                {/* 音量調整 */}
-                                {notificationSoundEnabled && (
-                                    <div className="mb-4">
-                                        <label className="block text-sm text-gray-700 mb-2 flex items-center justify-between">
-                                            <span>音量</span>
-                                            <span className="text-xs text-gray-500">{Math.round(notificationSoundVolume * 100)}%</span>
-                                        </label>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="1"
-                                            step="0.1"
-                                            value={notificationSoundVolume}
-                                            onChange={(e) => {
-                                                const vol = parseFloat(e.target.value);
-                                                setNotificationSoundVolume(vol);
-                                                NotificationSoundService.saveSettings(userId, {
-                                                    enabled: notificationSoundEnabled,
-                                                    volume: vol,
-                                                    customSoundUrl: notificationSoundCustomUrl
-                                                });
-                                            }}
-                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-                                )}
-
-                                {/* テスト再生ボタン */}
-                                {notificationSoundEnabled && (
-                                    <button
-                                        onClick={() => {
-                                            if (notificationSoundCustomUrl) {
-                                                NotificationSoundService.playCustomSound();
+                            {/* 手動保存ボタン */}
+                            <div className="mt-4 pt-4 border-t">
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        try {
+                                            const result = await NotificationService.scheduleNotification(userId, profile.notificationSettings);
+                                            if (result.success) {
+                                                alert(`✓ 通知設定を保存しました\n\n${result.schedules.length}件のスケジュールを登録`);
+                                                console.log('[Settings] Manual save successful:', result);
                                             } else {
-                                                NotificationSoundService.playDefaultSound();
+                                                alert(`✗ 保存に失敗しました\n\nエラー: ${result.error}`);
+                                                console.error('[Settings] Manual save failed:', result);
                                             }
-                                        }}
-                                        className="w-full mb-4 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="Play" size={16} />
-                                        通知音をテスト再生
-                                    </button>
-                                )}
-
-                                {/* カスタム音アップロード */}
-                                {notificationSoundEnabled && (
-                                    <div className="space-y-3">
-                                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                            <p className="text-xs text-gray-600 mb-3">
-                                                {notificationSoundCustomUrl ? (
-                                                    <span className="flex items-center gap-2 text-green-600">
-                                                        <Icon name="CheckCircle" size={14} />
-                                                        カスタム音が設定されています
-                                                    </span>
-                                                ) : (
-                                                    <span className="flex items-center gap-2">
-                                                        <Icon name="Info" size={14} />
-                                                        デフォルト音を使用中
-                                                    </span>
-                                                )}
-                                            </p>
-
-                                            <label className="block cursor-pointer">
-                                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition text-center">
-                                                    <Icon name="Upload" size={24} className="mx-auto mb-2 text-gray-400" />
-                                                    <p className="text-sm text-gray-600 mb-1">カスタム音をアップロード</p>
-                                                    <p className="text-xs text-gray-500">MP3, WAV, OGG（5MB以下）</p>
-                                                </div>
-                                                <input
-                                                    type="file"
-                                                    accept="audio/*"
-                                                    className="hidden"
-                                                    onChange={async (e) => {
-                                                        const file = e.target.files[0];
-                                                        if (file) {
-                                                            const result = await NotificationSoundService.uploadCustomSound(file, userId);
-                                                            if (result.success) {
-                                                                setNotificationSoundCustomUrl(result.url);
-                                                                alert('カスタム音をアップロードして保存しました');
-                                                            } else {
-                                                                alert('エラー: ' + result.error);
-                                                            }
-                                                        }
-                                                        // ファイル選択をリセット
-                                                        e.target.value = '';
-                                                    }}
-                                                />
-                                            </label>
-
-                                            {notificationSoundCustomUrl && (
-                                                <button
-                                                    onClick={async () => {
-                                                        if (confirm('カスタム音を削除してデフォルト音に戻しますか？')) {
-                                                            NotificationSoundService.removeCustomSound();
-                                                            setNotificationSoundCustomUrl(null);
-                                                            await NotificationSoundService.saveSettings(userId, {
-                                                                enabled: notificationSoundEnabled,
-                                                                volume: notificationSoundVolume,
-                                                                customSoundUrl: null
-                                                            });
-                                                        }
-                                                    }}
-                                                    className="w-full mt-3 bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition text-sm flex items-center justify-center gap-2"
-                                                >
-                                                    <Icon name="Trash2" size={14} />
-                                                    カスタム音を削除
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
+                                        } catch (error) {
+                                            alert(`✗ 保存エラー\n\n${error.message}`);
+                                            console.error('[Settings] Manual save error:', error);
+                                        }
+                                    }}
+                                    className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                                >
+                                    <Icon name="Save" size={18} />
+                                    通知設定を保存
+                                </button>
+                                <p className="text-xs text-gray-600 mt-2 text-center">
+                                    ※ 時刻を変更したら必ずこのボタンを押してください
+                                </p>
                             </div>
 
+                        </div>
+                    </details>
+
+                    {/* 通知診断 */}
+                    <details className="border rounded-lg border-purple-300 bg-purple-50">
+                        <summary className="cursor-pointer p-4 hover:bg-purple-100 font-medium flex items-center gap-2">
+                            <Icon name="Activity" size={18} className="text-purple-600" />
+                            通知診断（トラブルシューティング）
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-purple-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t space-y-3">
+                            <NotificationDiagnostics userId={userId} />
                         </div>
                     </details>
 
@@ -2955,6 +3193,134 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </summary>
                         <div className="p-4 pt-0 border-t">
                         <div className="space-y-4">
+                            {/* PWAキャッシュクリア */}
+                            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                                <h4 className="font-bold mb-2 text-orange-800 flex items-center gap-2">
+                                    <Icon name="RefreshCw" size={16} />
+                                    PWAキャッシュクリア
+                                </h4>
+                                <p className="text-sm text-gray-600 mb-3">
+                                    アプリの動作がおかしい場合、キャッシュをクリアすると改善することがあります。
+                                </p>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={async () => {
+                                            if (confirm('すべてのキャッシュをクリアしますか？\n（通知設定やユーザーデータは保持されます）')) {
+                                                try {
+                                                    // Service Workerのキャッシュをクリア
+                                                    if ('caches' in window) {
+                                                        const cacheNames = await caches.keys();
+                                                        await Promise.all(
+                                                            cacheNames.map(cacheName => caches.delete(cacheName))
+                                                        );
+                                                        console.log('[Cache] Service Worker caches cleared');
+                                                    }
+
+                                                    // Service Workerを再登録
+                                                    if ('serviceWorker' in navigator) {
+                                                        const registrations = await navigator.serviceWorker.getRegistrations();
+                                                        await Promise.all(
+                                                            registrations.map(registration => registration.unregister())
+                                                        );
+                                                        console.log('[Cache] Service Workers unregistered');
+
+                                                        // 再登録
+                                                        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                                                        console.log('[Cache] Service Worker re-registered');
+                                                    }
+
+                                                    alert('キャッシュをクリアしました。\nページをリロードします。');
+                                                    window.location.reload(true);
+                                                } catch (error) {
+                                                    console.error('[Cache] Failed to clear cache:', error);
+                                                    alert('キャッシュクリアに失敗しました: ' + error.message);
+                                                }
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="RefreshCw" size={16} />
+                                        キャッシュをクリア
+                                    </button>
+                                    <p className="text-xs text-gray-500">
+                                        ※ 通知設定、記録、プロフィールなどのユーザーデータは削除されません
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 通知診断ツール */}
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <h4 className="font-bold mb-2 text-blue-800 flex items-center gap-2">
+                                    <Icon name="Bell" size={16} />
+                                    通知診断ツール
+                                </h4>
+                                <p className="text-sm text-gray-600 mb-3">
+                                    通知が来ない場合、この診断ツールで問題を特定できます。
+                                </p>
+                                <button
+                                    onClick={async () => {
+                                        let report = '=== 通知診断レポート ===\n\n';
+
+                                        // 通知権限をチェック
+                                        if ('Notification' in window) {
+                                            report += `✓ 通知API: サポート済み\n`;
+                                            report += `通知権限: ${Notification.permission}\n`;
+                                            if (Notification.permission !== 'granted') {
+                                                report += `⚠️ 通知権限が許可されていません\n`;
+                                            }
+                                        } else {
+                                            report += `✗ 通知API: サポートされていません\n`;
+                                        }
+
+                                        // Service Workerをチェック
+                                        if ('serviceWorker' in navigator) {
+                                            report += `\n✓ Service Worker: サポート済み\n`;
+                                            const registrations = await navigator.serviceWorker.getRegistrations();
+                                            report += `登録数: ${registrations.length}\n`;
+                                            registrations.forEach((reg, i) => {
+                                                report += `  [${i+1}] ${reg.active ? '✓ アクティブ' : '✗ 非アクティブ'}\n`;
+                                            });
+                                        } else {
+                                            report += `\n✗ Service Worker: サポートされていません\n`;
+                                        }
+
+                                        // 通知スケジュールをチェック
+                                        const schedules = localStorage.getItem('notificationSchedules_' + userId);
+                                        if (schedules) {
+                                            const parsed = JSON.parse(schedules);
+                                            report += `\n✓ 通知スケジュール: ${parsed.length}件\n`;
+                                            parsed.forEach((s, i) => {
+                                                report += `  [${i+1}] ${s.type} - ${s.time}\n`;
+                                            });
+                                        } else {
+                                            report += `\n⚠️ 通知スケジュール: 未設定\n`;
+                                        }
+
+                                        // 通知チェッカーの状態
+                                        report += `\n通知チェッカー: ${window.notificationCheckInterval ? '✓ 動作中' : '✗ 停止中'}\n`;
+
+                                        // IndexedDBをチェック
+                                        try {
+                                            const db = await new Promise((resolve, reject) => {
+                                                const request = indexedDB.open('YourCoachNotifications', 1);
+                                                request.onsuccess = () => resolve(request.result);
+                                                request.onerror = () => reject(request.error);
+                                            });
+                                            report += `\n✓ IndexedDB: 利用可能\n`;
+                                        } catch (error) {
+                                            report += `\n✗ IndexedDB: エラー - ${error.message}\n`;
+                                        }
+
+                                        alert(report);
+                                        console.log(report);
+                                    }}
+                                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                                >
+                                    <Icon name="Search" size={16} />
+                                    診断を実行
+                                </button>
+                            </div>
+
                             {/* カスタムアイテム管理 */}
                             {(() => {
                                 const [customItemTab, setCustomItemTab] = React.useState('food');
@@ -3171,61 +3537,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     </div>
                                 );
                             })()}
-
-                            {/* PWAキャッシュクリア */}
-                            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                                <h4 className="font-bold mb-2 text-orange-800 flex items-center gap-2">
-                                    <Icon name="RefreshCw" size={16} />
-                                    PWAキャッシュクリア
-                                </h4>
-                                <p className="text-sm text-gray-600 mb-3">
-                                    アプリの動作がおかしい場合、キャッシュをクリアすると改善することがあります。
-                                </p>
-                                <div className="space-y-2">
-                                    <button
-                                        onClick={async () => {
-                                            if (confirm('すべてのキャッシュをクリアしますか？\n（データは保持されます）')) {
-                                                try {
-                                                    // Service Workerのキャッシュをクリア
-                                                    if ('caches' in window) {
-                                                        const cacheNames = await caches.keys();
-                                                        await Promise.all(
-                                                            cacheNames.map(cacheName => caches.delete(cacheName))
-                                                        );
-                                                        console.log('[Cache] Service Worker caches cleared');
-                                                    }
-
-                                                    // Service Workerを再登録
-                                                    if ('serviceWorker' in navigator) {
-                                                        const registrations = await navigator.serviceWorker.getRegistrations();
-                                                        await Promise.all(
-                                                            registrations.map(registration => registration.unregister())
-                                                        );
-                                                        console.log('[Cache] Service Workers unregistered');
-
-                                                        // 再登録
-                                                        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                                                        console.log('[Cache] Service Worker re-registered');
-                                                    }
-
-                                                    alert('キャッシュをクリアしました。\nページをリロードします。');
-                                                    window.location.reload(true);
-                                                } catch (error) {
-                                                    console.error('[Cache] Failed to clear cache:', error);
-                                                    alert('キャッシュクリアに失敗しました: ' + error.message);
-                                                }
-                                            }
-                                        }}
-                                        className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="RefreshCw" size={16} />
-                                        キャッシュをクリア
-                                    </button>
-                                    <p className="text-xs text-gray-500">
-                                        ※ ユーザーデータ（記録、設定など）は削除されません
-                                    </p>
-                                </div>
-                            </div>
 
                             {/* 全データベースアイテム一覧 */}
                             {(() => {

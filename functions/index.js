@@ -98,13 +98,18 @@ exports.callGemini = onCall({
 exports.sendScheduledNotifications = onSchedule({
   schedule: "every 1 minutes",
   region: "asia-northeast1",
+  timeZone: "Asia/Tokyo", // 日本時間で実行
 }, async (event) => {
   console.log("Checking scheduled notifications...");
 
   try {
+    // 日本時間(JST)で取得
     const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const jstNow = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
+    const currentTime = `${String(jstNow.getHours()).padStart(2, "0")}:${String(jstNow.getMinutes()).padStart(2, "0")}`;
+    const today = `${jstNow.getFullYear()}-${String(jstNow.getMonth() + 1).padStart(2, "0")}-${String(jstNow.getDate()).padStart(2, "0")}`;
+
+    console.log(`[Scheduler] Current JST time: ${currentTime}`);
 
     // 全ユーザーの通知スケジュールをチェック
     const usersSnapshot = await admin.firestore()
@@ -136,12 +141,15 @@ exports.sendScheduledNotifications = onSchedule({
           continue; // 既に送信済み
         }
 
-        // 時刻チェック（±1分）
+        // 時刻チェック（指定時刻〜1分後まで）
         const [scheduleHours, scheduleMinutes] = schedule.time.split(":").map(Number);
         const scheduledMinutes = scheduleHours * 60 + scheduleMinutes;
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const currentMinutes = jstNow.getHours() * 60 + jstNow.getMinutes();
+        const timeDiff = currentMinutes - scheduledMinutes;
 
-        if (Math.abs(scheduledMinutes - currentMinutes) <= 1) {
+        console.log(`[Scheduler] ${userId} - ${schedule.type} ${schedule.time}: diff=${timeDiff}`);
+
+        if (timeDiff >= 0 && timeDiff <= 1) {
           // FCMトークンを取得
           const tokensSnapshot = await admin.firestore()
               .collection("users")
@@ -158,9 +166,31 @@ exports.sendScheduledNotifications = onSchedule({
                 title: schedule.title,
                 body: schedule.body,
               },
+              webpush: {
+                notification: {
+                  tag: `${schedule.type}_${schedule.time}`, // Web用tag
+                  icon: "/icons/icon-192.png",
+                  vibrate: [200, 100, 200],
+                  requireInteraction: false,
+                },
+              },
               data: {
                 type: schedule.type,
+                time: schedule.time,
+                tag: `${schedule.type}_${schedule.time}`,
                 userId: userId,
+              },
+              android: {
+                notification: {
+                  tag: `${schedule.type}_${schedule.time}`, // Android用tag
+                },
+              },
+              apns: {
+                payload: {
+                  aps: {
+                    threadId: `${schedule.type}_${schedule.time}`, // iOS用
+                  },
+                },
               },
             });
           }

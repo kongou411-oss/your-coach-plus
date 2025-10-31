@@ -790,10 +790,32 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 generatePredictions(prevDayRecord);
                             }
 
-                            // 通知チェッカーを開始
-                            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                                NotificationService.startNotificationChecker(firebaseUser.uid);
+                            // FCMトークンを取得してFirestoreに保存（スマホPWA通知用）
+                            // エラーが発生してもログイン処理は続行
+                            if (typeof NotificationService !== 'undefined' && typeof Notification !== 'undefined') {
+                                try {
+                                    if (Notification.permission === 'granted') {
+                                        // 既に権限がある場合はトークンを取得（バックグラウンドで実行）
+                                        NotificationService.requestNotificationPermission(firebaseUser.uid)
+                                            .then(result => {
+                                                if (result.success) {
+                                                    console.log('[App] FCM token registered:', result.token);
+                                                } else {
+                                                    console.warn('[App] FCM token registration failed:', result.error);
+                                                }
+                                            })
+                                            .catch(err => console.warn('[App] FCM token error:', err));
+                                    }
+                                    // 権限がない場合は通知設定画面で手動リクエスト
+                                } catch (error) {
+                                    console.warn('[App] FCM initialization skipped:', error);
+                                }
                             }
+
+                            // 通知チェッカーは停止（Cloud Functionsで自動送信するため不要）
+                            // if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                            //     NotificationService.startNotificationChecker(firebaseUser.uid);
+                            // }
                         } else {
                             setUser(null);
                             setUserProfile(null);

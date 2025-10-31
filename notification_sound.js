@@ -49,8 +49,6 @@ const NotificationSoundService = {
             // 再生
             oscillator.start(context.currentTime);
             oscillator.stop(context.currentTime + 0.35);
-
-            console.log('[NotificationSound] Played default sound');
         } catch (error) {
             console.error('[NotificationSound] Failed to play default sound:', error);
         }
@@ -60,7 +58,6 @@ const NotificationSoundService = {
     playCustomSound: async () => {
         if (!NotificationSoundService.soundEnabled) return;
         if (!NotificationSoundService.customSoundUrl) {
-            console.warn('[NotificationSound] No custom sound set, playing default');
             NotificationSoundService.playDefaultSound();
             return;
         }
@@ -69,10 +66,8 @@ const NotificationSoundService = {
             const audio = new Audio(NotificationSoundService.customSoundUrl);
             audio.volume = NotificationSoundService.volume;
             await audio.play();
-            console.log('[NotificationSound] Played custom sound');
         } catch (error) {
             console.error('[NotificationSound] Failed to play custom sound:', error);
-            // フォールバック: デフォルト音を再生
             NotificationSoundService.playDefaultSound();
         }
     },
@@ -96,10 +91,7 @@ const NotificationSoundService = {
                     NotificationSoundService.soundEnabled = parsed.enabled !== false;
                     NotificationSoundService.volume = parsed.volume || 0.5;
                     NotificationSoundService.customSoundUrl = parsed.customSoundUrl || null;
-                    console.log('[NotificationSound] Settings loaded:', parsed);
                 }
-            } else {
-                // TODO: Firestoreから読み込み
             }
         } catch (error) {
             console.error('[NotificationSound] Failed to load settings:', error);
@@ -117,9 +109,6 @@ const NotificationSoundService = {
 
             if (DEV_MODE) {
                 localStorage.setItem('notificationSoundSettings_' + userId, JSON.stringify(settingsToSave));
-                console.log('[NotificationSound] Settings saved:', settingsToSave);
-            } else {
-                // TODO: Firestoreに保存
             }
 
             // 現在の設定に反映
@@ -161,9 +150,6 @@ const NotificationSoundService = {
                             volume: NotificationSoundService.volume,
                             customSoundUrl: dataUrl
                         });
-                        console.log('[NotificationSound] Custom sound uploaded and saved');
-                    } else {
-                        console.log('[NotificationSound] Custom sound uploaded (not saved - no userId)');
                     }
 
                     resolve({ success: true, url: dataUrl });
@@ -182,6 +168,5 @@ const NotificationSoundService = {
     // カスタム音を削除
     removeCustomSound: () => {
         NotificationSoundService.customSoundUrl = null;
-        console.log('[NotificationSound] Custom sound removed');
     }
 };

@@ -43,7 +43,10 @@
       "WebFetch(domain:claude.com)",
       "WebSearch",
       "WebFetch(domain:support.claude.com)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(npm install)",
+      "Bash(firebase functions:log:*)",
+      "Bash(if exist nul del nul)"
     ],
     "deny": [],
     "ask": []

@@ -42,6 +42,12 @@ service firebase.storage {
       allow create: if request.resource.contentType.matches('image/(jpeg|png|webp)');
     }
 
+    // 写真（食事写真など）
+    match /photos/{userId}/{allPaths=**} {
+      // 認証済みユーザーが自分のファイルのみアクセス可能
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // デフォルト: すべてのアクセスを拒否
     match /{allPaths=**} {
       allow read, write: if false;
