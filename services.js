@@ -2041,6 +2041,7 @@ const NotificationService = {
         try {
             // 通知権限がない場合はスキップ
             if (Notification.permission !== 'granted') {
+                console.log('[Notification] Permission not granted:', Notification.permission);
                 return { success: false, error: 'Permission not granted' };
             }
 
@@ -2049,12 +2050,15 @@ const NotificationService = {
             if (DEV_MODE) {
                 const stored = localStorage.getItem('notificationSchedules_' + userId);
                 schedules = stored ? JSON.parse(stored) : [];
+                console.log('[Notification] Schedules from LocalStorage:', schedules);
             } else {
                 const userDoc = await db.collection('users').doc(userId).get();
                 schedules = userDoc.data()?.notificationSchedules || [];
+                console.log('[Notification] Schedules from Firestore:', schedules);
             }
 
             if (schedules.length === 0) {
+                console.log('[Notification] No schedules found');
                 return { success: true, message: 'No schedules' };
             }
 
@@ -2062,6 +2066,7 @@ const NotificationService = {
             const now = new Date();
             const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
             const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            console.log('[Notification] Current time:', currentTime, '| Date:', today);
 
             // 今日既に表示した通知を取得
             const shownKey = 'notificationsShown_' + userId + '_' + today;
@@ -2069,16 +2074,21 @@ const NotificationService = {
             if (DEV_MODE) {
                 const stored = localStorage.getItem(shownKey);
                 shownNotifications = stored ? JSON.parse(stored) : [];
+                console.log('[Notification] Already shown today:', shownNotifications);
             }
 
             // 通知時刻をチェック
             const notificationsToShow = [];
             for (const schedule of schedules) {
-                if (!schedule.enabled) continue;
+                if (!schedule.enabled) {
+                    console.log('[Notification] Skipping disabled schedule:', schedule);
+                    continue;
+                }
 
                 // 既に表示済みかチェック
                 const notificationId = schedule.type + '_' + schedule.time;
                 if (shownNotifications.includes(notificationId)) {
+                    console.log('[Notification] Already shown:', notificationId);
                     continue;
                 }
 
@@ -2086,10 +2096,22 @@ const NotificationService = {
                 const [scheduleHours, scheduleMinutes] = schedule.time.split(':').map(Number);
                 const scheduledTime = scheduleHours * 60 + scheduleMinutes;
                 const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                const timeDiff = Math.abs(scheduledTime - currentMinutes);
 
-                if (Math.abs(scheduledTime - currentMinutes) <= 1) {
+                console.log('[Notification] Checking:', {
+                    type: schedule.type,
+                    scheduledTime: schedule.time,
+                    currentTime: currentTime,
+                    scheduledMinutes: scheduledTime,
+                    currentMinutes: currentMinutes,
+                    difference: timeDiff,
+                    willShow: timeDiff <= 1
+                });
+
+                if (timeDiff <= 1) {
                     notificationsToShow.push(schedule);
                     shownNotifications.push(notificationId);
+                    console.log('[Notification] Will show:', schedule);
                 }
             }
 

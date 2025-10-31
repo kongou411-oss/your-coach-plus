@@ -42,7 +42,8 @@
       "WebFetch(domain:www.anthropic.com)",
       "WebFetch(domain:claude.com)",
       "WebSearch",
-      "WebFetch(domain:support.claude.com)"
+      "WebFetch(domain:support.claude.com)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
