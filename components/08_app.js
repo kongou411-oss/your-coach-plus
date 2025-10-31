@@ -1,5 +1,5 @@
 // ===== Welcome Guide Modal Component (Multi-Page) =====
-const WelcomeGuideModal = ({ show, onClose }) => {
+const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
     const [currentPage, setCurrentPage] = React.useState(1);
     const totalPages = 4;
 
@@ -19,16 +19,12 @@ const WelcomeGuideModal = ({ show, onClose }) => {
 
     const handleFinish = () => {
         onClose();
-        // 食事記録セクションへスクロール
-        setTimeout(() => {
-            const element = document.getElementById('meal-section');
-            if (element) {
-                element.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
-                });
-            }
-        }, 300);
+        // 親コンポーネントのonFinishハンドラを呼び出す（食事誘導モーダルを表示）
+        if (onFinish) {
+            setTimeout(() => {
+                onFinish();
+            }, 300);
+        }
     };
 
     // ページコンテンツ
@@ -115,7 +111,7 @@ const WelcomeGuideModal = ({ show, onClose }) => {
                             </div>
                             <div>
                                 <h5 className="font-bold text-red-900 flex items-center gap-2">
-                                    <Icon name="Activity" size={16} />
+                                    <Icon name="HeartPulse" size={16} />
                                     コンディション記録
                                 </h5>
                                 <p className="text-xs text-gray-700 mt-1">
@@ -123,17 +119,17 @@ const WelcomeGuideModal = ({ show, onClose }) => {
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
-                            <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                        <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
+                            <div className="w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
                                 4
                             </div>
                             <div>
-                                <h5 className="font-bold text-purple-900 flex items-center gap-2">
-                                    <Icon name="BarChart3" size={16} />
+                                <h5 className="font-bold text-indigo-900 flex items-center gap-2">
+                                    <Icon name="PieChart" size={16} />
                                     分析
                                 </h5>
                                 <p className="text-xs text-gray-700 mt-1">
-                                    AIがフィードバック → <span className="font-bold text-purple-700">完了すると全機能が開放！</span>
+                                    AIがフィードバック → <span className="font-bold text-indigo-700">完了すると全機能が開放！</span>
                                 </p>
                             </div>
                         </div>
@@ -182,7 +178,7 @@ const WelcomeGuideModal = ({ show, onClose }) => {
                             追加ボタン
                         </h5>
                         <p className="text-sm text-gray-700">
-                            各セクション右上の「追加」ボタンから、食事・運動・コンディションを記録できます。
+                            各セクション右上の「追加」ボタンから、食事・運動を記録できます。
                         </p>
                     </div>
                     <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
@@ -2853,6 +2849,7 @@ AIコーチなどの高度な機能が解放されます。
                     <WelcomeGuideModal
                         show={showWelcomeGuide}
                         onClose={() => setShowWelcomeGuide(false)}
+                        onFinish={() => setShowMealGuide(true)}
                     />
                     {/* 旧ガイドモーダル（互換性のため残す） */}
                     <GuideModal
