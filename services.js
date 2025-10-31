@@ -1965,7 +1965,8 @@ const NotificationService = {
             const schedules = [];
 
             // 各通知タイプの設定を保存
-            if (notificationSettings.routine && notificationSettings.routineTime) {
+            // 時刻が設定されていて、明示的にfalseでなければ有効とみなす
+            if (notificationSettings.routineTime && notificationSettings.routine !== false) {
                 console.log('[Notification] Adding routine schedule:', notificationSettings.routineTime);
                 schedules.push({
                     type: 'routine',
@@ -1976,7 +1977,7 @@ const NotificationService = {
                 });
             }
 
-            if (notificationSettings.meal && notificationSettings.mealTimes) {
+            if (notificationSettings.mealTimes && notificationSettings.meal !== false) {
                 console.log('[Notification] Adding meal schedules:', notificationSettings.mealTimes);
                 notificationSettings.mealTimes.forEach((mealTime, index) => {
                     schedules.push({
@@ -1989,7 +1990,7 @@ const NotificationService = {
                 });
             }
 
-            if (notificationSettings.workout && notificationSettings.workoutTime) {
+            if (notificationSettings.workoutTime && notificationSettings.workout !== false) {
                 console.log('[Notification] Adding workout schedule:', notificationSettings.workoutTime);
                 schedules.push({
                     type: 'workout',
@@ -2000,7 +2001,7 @@ const NotificationService = {
                 });
             }
 
-            if (notificationSettings.recordReminder && notificationSettings.recordReminderTime) {
+            if (notificationSettings.recordReminderTime && notificationSettings.recordReminder !== false) {
                 console.log('[Notification] Adding recordReminder schedule:', notificationSettings.recordReminderTime);
                 schedules.push({
                     type: 'recordReminder',
@@ -2011,7 +2012,7 @@ const NotificationService = {
                 });
             }
 
-            if (notificationSettings.summary && notificationSettings.summaryTime) {
+            if (notificationSettings.summaryTime && notificationSettings.summary !== false) {
                 console.log('[Notification] Adding summary schedule:', notificationSettings.summaryTime);
                 schedules.push({
                     type: 'summary',
