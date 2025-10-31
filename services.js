@@ -1933,7 +1933,6 @@ const NotificationService = {
                 const notificationOptions = {
                     body: payload.notification?.body || '新しい通知があります',
                     icon: '/icons/icon-192.png',
-                    badge: '/icons/icon-72.png',
                     tag: payload.data?.tag || 'default',
                     data: payload.data
                 };
@@ -2129,7 +2128,6 @@ const NotificationService = {
                 new Notification(notification.title, {
                     body: notification.body,
                     icon: '/icons/icon-192.png',
-                    badge: '/icons/icon-72.png',
                     tag: notification.type
                 });
                 console.log('[Notification] Shown:', notification);
