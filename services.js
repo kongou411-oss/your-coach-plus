@@ -2028,6 +2028,14 @@ const NotificationService = {
             if (DEV_MODE) {
                 localStorage.setItem('notificationSchedules_' + userId, JSON.stringify(schedules));
                 console.log('[Notification] Schedules saved to LocalStorage:', schedules);
+
+                // IndexedDBにも保存（Service Workerで使用）
+                try {
+                    await NotificationService.saveSchedulesToIndexedDB(userId, schedules);
+                    console.log('[Notification] Schedules saved to IndexedDB for Service Worker');
+                } catch (error) {
+                    console.error('[Notification] Failed to save to IndexedDB:', error);
+                }
             } else {
                 await db.collection('users').doc(userId).update({
                     notificationSchedules: schedules,
@@ -2186,6 +2194,35 @@ const NotificationService = {
             window.notificationCheckInterval = null;
             console.log('[Notification] Notification checker stopped');
         }
+    },
+
+    // IndexedDBにスケジュールを保存（Service Worker用）
+    saveSchedulesToIndexedDB: async (userId, schedules) => {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('YourCoachNotifications', 1);
+
+            request.onerror = () => reject(request.error);
+
+            request.onsuccess = () => {
+                const db = request.result;
+                const transaction = db.transaction(['schedules'], 'readwrite');
+                const store = transaction.objectStore('schedules');
+                const saveRequest = store.put(schedules, userId);
+
+                saveRequest.onsuccess = () => resolve();
+                saveRequest.onerror = () => reject(saveRequest.error);
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('schedules')) {
+                    db.createObjectStore('schedules');
+                }
+                if (!db.objectStoreNames.contains('shown')) {
+                    db.createObjectStore('shown');
+                }
+            };
+        });
     }
 };
 
