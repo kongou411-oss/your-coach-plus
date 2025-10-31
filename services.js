@@ -2127,7 +2127,7 @@ const NotificationService = {
         }
     },
 
-    // 通知チェックを開始（1分ごと）
+    // 通知チェックを開始（30秒ごと）
     startNotificationChecker: (userId) => {
         // 既存のチェッカーがあればクリア
         if (window.notificationCheckInterval) {
@@ -2142,12 +2142,12 @@ const NotificationService = {
         // 初回実行
         NotificationService.checkAndShowScheduledNotifications(userId);
 
-        // 1分ごとにチェック
+        // 30秒ごとにチェック（より正確なタイミングで通知表示）
         window.notificationCheckInterval = setInterval(() => {
             NotificationService.checkAndShowScheduledNotifications(userId);
-        }, 60000); // 60秒 = 1分
+        }, 30000); // 30秒
 
-        console.log('[Notification] Notification checker started');
+        console.log('[Notification] Notification checker started (30s interval)');
     },
 
     // 通知チェックを停止
