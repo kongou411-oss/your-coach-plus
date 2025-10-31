@@ -1961,10 +1961,12 @@ const NotificationService = {
     // スケジュール通知を登録
     scheduleNotification: async (userId, notificationSettings) => {
         try {
+            console.log('[Notification] scheduleNotification called with:', notificationSettings);
             const schedules = [];
 
             // 各通知タイプの設定を保存
             if (notificationSettings.routine && notificationSettings.routineTime) {
+                console.log('[Notification] Adding routine schedule:', notificationSettings.routineTime);
                 schedules.push({
                     type: 'routine',
                     time: notificationSettings.routineTime,
@@ -1975,6 +1977,7 @@ const NotificationService = {
             }
 
             if (notificationSettings.meal && notificationSettings.mealTimes) {
+                console.log('[Notification] Adding meal schedules:', notificationSettings.mealTimes);
                 notificationSettings.mealTimes.forEach((mealTime, index) => {
                     schedules.push({
                         type: 'meal',
@@ -1987,6 +1990,7 @@ const NotificationService = {
             }
 
             if (notificationSettings.workout && notificationSettings.workoutTime) {
+                console.log('[Notification] Adding workout schedule:', notificationSettings.workoutTime);
                 schedules.push({
                     type: 'workout',
                     time: notificationSettings.workoutTime,
@@ -1997,6 +2001,7 @@ const NotificationService = {
             }
 
             if (notificationSettings.recordReminder && notificationSettings.recordReminderTime) {
+                console.log('[Notification] Adding recordReminder schedule:', notificationSettings.recordReminderTime);
                 schedules.push({
                     type: 'recordReminder',
                     time: notificationSettings.recordReminderTime,
@@ -2007,6 +2012,7 @@ const NotificationService = {
             }
 
             if (notificationSettings.summary && notificationSettings.summaryTime) {
+                console.log('[Notification] Adding summary schedule:', notificationSettings.summaryTime);
                 schedules.push({
                     type: 'summary',
                     time: notificationSettings.summaryTime,
@@ -2015,6 +2021,8 @@ const NotificationService = {
                     body: '今日の記録をチェックしましょう'
                 });
             }
+
+            console.log('[Notification] Final schedules array:', schedules);
 
             // 通知スケジュールを保存
             if (DEV_MODE) {
