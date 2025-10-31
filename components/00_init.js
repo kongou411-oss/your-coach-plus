@@ -5,7 +5,7 @@ const { useState, useEffect, useRef, useCallback } = React;
 
 // ===== Firebase初期化 =====
 const firebaseConfig = {
-    apiKey: "AIzaSyDtdRgSvHeFgWQczUH9o_8MRnZqNGn9eBw",
+    apiKey: "AIzaSyADHPx0AkWNeXTsgg8rrfsPMHIUsX2g8zM",
     authDomain: "yourcoach-c1f28.firebaseapp.com",
     projectId: "yourcoach-c1f28",
     storageBucket: "yourcoach-c1f28.firebasestorage.app",

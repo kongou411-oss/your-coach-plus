@@ -21,18 +21,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const [infoModal, setInfoModal] = useState({ show: false, title: '', content: '' });
     const [visualGuideModal, setVisualGuideModal] = useState({ show: false, gender: '男性', selectedLevel: 5 });
 
-    // 通知音設定state
-    const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
-    const [notificationSoundVolume, setNotificationSoundVolume] = useState(0.5);
-    const [notificationSoundCustomUrl, setNotificationSoundCustomUrl] = useState(null);
-
-    // MFA設定state
-    const [mfaEnrolled, setMfaEnrolled] = useState(false);
-    const [show2FASetup, setShow2FASetup] = useState(false);
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [verificationId, setVerificationId] = useState(null);
-    const [verificationCode, setVerificationCode] = useState('');
-
     // userProfileが変更されたときにprofile stateを更新
     useEffect(() => {
         setProfile({...userProfile});
@@ -64,20 +52,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             console.error('[Settings] Failed to load experience data:', error);
         }
     };
-
-// 通知音設定を読み込み    useEffect(() => {        if (userId && typeof NotificationSoundService !== 'undefined') {            NotificationSoundService.loadSettings(userId);            setNotificationSoundEnabled(NotificationSoundService.soundEnabled);            setNotificationSoundVolume(NotificationSoundService.volume);            setNotificationSoundCustomUrl(NotificationSoundService.customSoundUrl);        }    }, [userId]);
-
-    // MFA登録状況を確認
-    useEffect(() => {
-        if (userId && typeof MFAService !== 'undefined' && typeof firebase !== 'undefined') {
-            try {
-                setMfaEnrolled(MFAService.isMFAEnrolled());
-            } catch (error) {
-                console.error('[Settings] Failed to check MFA enrollment:', error);
-                setMfaEnrolled(false);
-            }
-        }
-    }, [userId]);
 
     // 詳細設定用のstate（デフォルト値をプロフィールから取得）
     const [advancedSettings, setAdvancedSettings] = useState({
@@ -152,7 +126,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     };
 
     // 通知設定を更新して自動保存
-    const handleNotificationSettingChange = async (newSettings) => {
+    const handleNotificationSettingChange = (newSettings) => {
         const updatedProfile = {
             ...profile,
             notificationSettings: newSettings
@@ -160,18 +134,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         setProfile(updatedProfile);
         // 即座に保存
         onUpdateProfile(updatedProfile);
-
-        // 通知をスケジュール
-        try {
-            const result = await NotificationService.scheduleNotification(userId, newSettings);
-            if (result.success) {
-                console.log('[Settings] Notifications scheduled:', result.schedules);
-            } else {
-                console.error('[Settings] Failed to schedule notifications:', result.error);
-            }
-        } catch (error) {
-            console.error('[Settings] Error scheduling notifications:', error);
-        }
     };
 
     const handleSave = () => {
@@ -263,11 +225,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                 {/* 設定メニュー）折りたたみ式一覧を*/}
                 <div className="p-6 space-y-3">
-                    {/* 使い方 */}
+                    {/* 使用 */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="BookOpen" size={18} className="text-purple-600" />
-                            使い方
+                            使用
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
@@ -585,120 +547,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         </div>
                                     </div>
                                 )}
-
-                                {/* パスワードリセット */}
-                                <div className="border-l-4 border-purple-500 pl-4">
-                                    <h4 className="font-bold text-sm text-purple-900 mb-2">パスワード</h4>
-                                    <button
-                                        onClick={async () => {
-                                            const email = userProfile.email;
-                                            if (email) {
-                                                try {
-                                                    await firebase.auth().sendPasswordResetEmail(email);
-                                                    alert('パスワードリセットメールを送信しました。メールをご確認ください。');
-                                                } catch (error) {
-                                                    alert('エラー: ' + error.message);
-                                                }
-                                            } else {
-                                                alert('メールアドレスが設定されていません');
-                                            }
-                                        }}
-                                        className="text-sm text-blue-600 hover:text-blue-700 underline"
-                                    >
-                                        パスワードをリセット
-                                    </button>
-                                </div>
-
-                                {/* 2段階認証 */}
-                                <div className="border-l-4 border-purple-500 pl-4">
-                                    <h4 className="font-bold text-sm text-purple-900 mb-2 flex items-center gap-2">
-                                        <Icon name="Shield" size={16} />
-                                        2段階認証（2FA）
-                                    </h4>
-                                    <p className="text-sm text-gray-600 mb-3">
-                                        2段階認証を有効にすると、ログイン時にSMSで認証コードが送信され、アカウントのセキュリティが強化されます。
-                                    </p>
-
-                                    {mfaEnrolled ? (
-                                        <div className="space-y-3">
-                                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                                <div className="flex items-center gap-2 text-green-700">
-                                                    <Icon name="CheckCircle" size={16} />
-                                                    <span className="text-sm font-medium">SMS認証が設定されています</span>
-                                                </div>
-                                            </div>
-
-                                            <button
-                                                onClick={async () => {
-                                                    if (confirm('2FAを解除しますか？セキュリティが低下します。')) {
-                                                        const result = await MFAService.unenrollMFA();
-                                                        if (result.success) {
-                                                            setMfaEnrolled(false);
-                                                            alert('2FAを解除しました');
-                                                        } else {
-                                                            alert('エラー: ' + result.error);
-                                                        }
-                                                    }
-                                                }}
-                                                className="text-sm text-red-600 hover:text-red-700 underline"
-                                            >
-                                                2FAを解除
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                                <p className="text-xs text-blue-700">
-                                                    ※ SMS送信料金が発生する場合があります（月50通まで無料）
-                                                </p>
-                                            </div>
-
-                                            <button
-                                                onClick={() => setShow2FASetup(true)}
-                                                className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-                                            >
-                                                <Icon name="Shield" size={14} />
-                                                2FAを設定する
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* アカウント削除 */}
-                                <div className="border-l-4 border-red-500 pl-4">
-                                    <h4 className="font-bold text-sm text-red-900 mb-2">アカウント削除</h4>
-                                    <p className="text-xs text-gray-600 mb-3">
-                                        アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。
-                                    </p>
-                                    <button
-                                        onClick={async () => {
-                                            if (confirm('本当にアカウントを削除しますか？この操作は取り消せません。')) {
-                                                if (confirm('すべてのデータが完全に削除されます。本当によろしいですか？')) {
-                                                    try {
-                                                        const user = firebase.auth().currentUser;
-                                                        if (user) {
-                                                            // ユーザーデータを削除
-                                                            await firebase.firestore().collection('users').doc(user.uid).delete();
-                                                            // アカウントを削除
-                                                            await user.delete();
-                                                            alert('アカウントを削除しました');
-                                                        }
-                                                    } catch (error) {
-                                                        if (error.code === 'auth/requires-recent-login') {
-                                                            alert('セキュリティのため、再ログインしてからアカウント削除を実行してください。');
-                                                        } else {
-                                                            alert('エラー: ' + error.message);
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }}
-                                        className="text-sm text-red-600 hover:text-red-700 underline"
-                                    >
-                                        アカウントを削除
-                                    </button>
-                                </div>
-
                                 <button
                                     className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700"
                                     onClick={() => {
@@ -2803,150 +2651,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 </div>
                             </div>
 
-                            {/* 通知音設定 */}
-                            <div className="mt-6 pt-6 border-t border-gray-200">
-                                <h4 className="font-bold text-sm text-blue-900 mb-4 flex items-center gap-2">
-                                    <Icon name="Volume2" size={16} />
-                                    通知音設定
-                                </h4>
-
-                                {/* 通知音ON/OFF */}
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="text-sm text-gray-700">通知音を鳴らす</span>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={notificationSoundEnabled}
-                                            onChange={(e) => {
-                                                setNotificationSoundEnabled(e.target.checked);
-                                                NotificationSoundService.saveSettings(userId, {
-                                                    enabled: e.target.checked,
-                                                    volume: notificationSoundVolume,
-                                                    customSoundUrl: notificationSoundCustomUrl
-                                                });
-                                            }}
-                                            className="sr-only peer"
-                                        />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                    </label>
-                                </div>
-
-                                {/* 音量調整 */}
-                                {notificationSoundEnabled && (
-                                    <div className="mb-4">
-                                        <label className="block text-sm text-gray-700 mb-2 flex items-center justify-between">
-                                            <span>音量</span>
-                                            <span className="text-xs text-gray-500">{Math.round(notificationSoundVolume * 100)}%</span>
-                                        </label>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="1"
-                                            step="0.1"
-                                            value={notificationSoundVolume}
-                                            onChange={(e) => {
-                                                const vol = parseFloat(e.target.value);
-                                                setNotificationSoundVolume(vol);
-                                                NotificationSoundService.saveSettings(userId, {
-                                                    enabled: notificationSoundEnabled,
-                                                    volume: vol,
-                                                    customSoundUrl: notificationSoundCustomUrl
-                                                });
-                                            }}
-                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-                                )}
-
-                                {/* テスト再生ボタン */}
-                                {notificationSoundEnabled && (
-                                    <button
-                                        onClick={() => {
-                                            if (notificationSoundCustomUrl) {
-                                                NotificationSoundService.playCustomSound();
-                                            } else {
-                                                NotificationSoundService.playDefaultSound();
-                                            }
-                                        }}
-                                        className="w-full mb-4 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="Play" size={16} />
-                                        通知音をテスト再生
-                                    </button>
-                                )}
-
-                                {/* カスタム音アップロード */}
-                                {notificationSoundEnabled && (
-                                    <div className="space-y-3">
-                                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                            <p className="text-xs text-gray-600 mb-3">
-                                                {notificationSoundCustomUrl ? (
-                                                    <span className="flex items-center gap-2 text-green-600">
-                                                        <Icon name="CheckCircle" size={14} />
-                                                        カスタム音が設定されています
-                                                    </span>
-                                                ) : (
-                                                    <span className="flex items-center gap-2">
-                                                        <Icon name="Info" size={14} />
-                                                        デフォルト音を使用中
-                                                    </span>
-                                                )}
-                                            </p>
-
-                                            <label className="block cursor-pointer">
-                                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition text-center">
-                                                    <Icon name="Upload" size={24} className="mx-auto mb-2 text-gray-400" />
-                                                    <p className="text-sm text-gray-600 mb-1">カスタム音をアップロード</p>
-                                                    <p className="text-xs text-gray-500">MP3, WAV, OGG（5MB以下）</p>
-                                                </div>
-                                                <input
-                                                    type="file"
-                                                    accept="audio/*"
-                                                    className="hidden"
-                                                    onChange={async (e) => {
-                                                        const file = e.target.files[0];
-                                                        if (file) {
-                                                            const result = await NotificationSoundService.uploadCustomSound(file);
-                                                            if (result.success) {
-                                                                setNotificationSoundCustomUrl(result.url);
-                                                                await NotificationSoundService.saveSettings(userId, {
-                                                                    enabled: notificationSoundEnabled,
-                                                                    volume: notificationSoundVolume,
-                                                                    customSoundUrl: result.url
-                                                                });
-                                                                alert('カスタム音をアップロードしました');
-                                                            } else {
-                                                                alert('エラー: ' + result.error);
-                                                            }
-                                                        }
-                                                    }}
-                                                />
-                                            </label>
-
-                                            {notificationSoundCustomUrl && (
-                                                <button
-                                                    onClick={async () => {
-                                                        if (confirm('カスタム音を削除してデフォルト音に戻しますか？')) {
-                                                            NotificationSoundService.removeCustomSound();
-                                                            setNotificationSoundCustomUrl(null);
-                                                            await NotificationSoundService.saveSettings(userId, {
-                                                                enabled: notificationSoundEnabled,
-                                                                volume: notificationSoundVolume,
-                                                                customSoundUrl: null
-                                                            });
-                                                        }
-                                                    }}
-                                                    className="w-full mt-3 bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition text-sm flex items-center justify-center gap-2"
-                                                >
-                                                    <Icon name="Trash2" size={14} />
-                                                    カスタム音を削除
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
                         </div>
                     </details>
 
@@ -4174,112 +3878,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             </button>
                         </div>
                     </div>
-                </div>
-            </div>
-        )}
-
-        {/* 2FA設定モーダル */}
-        {show2FASetup && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-                    <h3 className="text-xl font-bold mb-4">2段階認証の設定</h3>
-
-                    {!verificationId ? (
-                        // ステップ1: 電話番号入力
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    電話番号（国際形式）
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
-                                    placeholder="+8190XXXXXXXX"
-                                    className="w-full px-4 py-2 border rounded-lg"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    例: +819012345678
-                                </p>
-                            </div>
-
-                            <div id="recaptcha-container"></div>
-
-                            <button
-                                onClick={async () => {
-                                    // reCAPTCHAを初期化
-                                    if (!window.recaptchaVerifier) {
-                                        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
-                                            'recaptcha-container',
-                                            { size: 'normal' }
-                                        );
-                                    }
-
-                                    const result = await MFAService.enrollSMS2FA(phoneNumber);
-                                    if (result.success) {
-                                        setVerificationId(result.verificationId);
-                                    } else {
-                                        alert('エラー: ' + result.error);
-                                    }
-                                }}
-                                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-                            >
-                                認証コードを送信
-                            </button>
-                        </div>
-                    ) : (
-                        // ステップ2: 認証コード入力
-                        <div className="space-y-4">
-                            <p className="text-sm text-gray-600">
-                                {phoneNumber} に認証コードを送信しました
-                            </p>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    認証コード（6桁）
-                                </label>
-                                <input
-                                    type="text"
-                                    value={verificationCode}
-                                    onChange={(e) => setVerificationCode(e.target.value)}
-                                    placeholder="123456"
-                                    maxLength={6}
-                                    className="w-full px-4 py-2 border rounded-lg text-center text-2xl tracking-widest"
-                                />
-                            </div>
-
-                            <button
-                                onClick={async () => {
-                                    const result = await MFAService.confirmSMS2FA(verificationId, verificationCode);
-                                    if (result.success) {
-                                        setMfaEnrolled(true);
-                                        setShow2FASetup(false);
-                                        setVerificationId(null);
-                                        setVerificationCode('');
-                                        setPhoneNumber('');
-                                        alert('2FAを設定しました');
-                                    } else {
-                                        alert('エラー: ' + result.error);
-                                    }
-                                }}
-                                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-                            >
-                                確認
-                            </button>
-                        </div>
-                    )}
-
-                    <button
-                        onClick={() => {
-                            setShow2FASetup(false);
-                            setVerificationId(null);
-                            setVerificationCode('');
-                            setPhoneNumber('');
-                        }}
-                        className="w-full mt-3 text-gray-600 hover:text-gray-800"
-                    >
-                        キャンセル
-                    </button>
                 </div>
             </div>
         )}

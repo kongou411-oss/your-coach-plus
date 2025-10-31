@@ -36,7 +36,13 @@
       "Bash(del temp_categories.txt temp_categories_detail.txt temp_subcategories.txt)",
       "Bash(timeout 3 python:*)",
       "Bash(timeout 2 powershell:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(ren icon-192.png.jpg icon-192.png)",
+      "Bash(ren:*)",
+      "WebFetch(domain:www.anthropic.com)",
+      "WebFetch(domain:claude.com)",
+      "WebSearch",
+      "WebFetch(domain:support.claude.com)"
     ],
     "deny": [],
     "ask": []

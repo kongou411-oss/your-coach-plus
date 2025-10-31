@@ -1,139 +1,19 @@
 // ===== Authentication Components =====
-// ===== Authentication Components =====
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const [isSignUp, setIsSignUp] = useState(false);
-    const [showForgotPassword, setShowForgotPassword] = useState(false);
-    const [resetEmail, setResetEmail] = useState('');
-    const [passwordStrength, setPasswordStrength] = useState({ score: 0, message: '' });
-    const [showPassword, setShowPassword] = useState(false);
-
-    // MFA関連のstate
-    const [mfaResolver, setMfaResolver] = useState(null);
-    const [showMfaInput, setShowMfaInput] = useState(false);
-    const [mfaVerificationId, setMfaVerificationId] = useState(null);
-    const [mfaVerificationCode, setMfaVerificationCode] = useState('');
-
-    // サインアップ後の2FA設定用state
-    const [showSignupMfaSetup, setShowSignupMfaSetup] = useState(false);
-    const [signupPhoneNumber, setSignupPhoneNumber] = useState('');
-    const [signupVerificationId, setSignupVerificationId] = useState(null);
-    const [signupVerificationCode, setSignupVerificationCode] = useState('');
-
-    // パスワード強度チェック
-    const checkPasswordStrength = (pwd) => {
-        let score = 0;
-        let message = '';
-
-        if (pwd.length >= 8) score++;
-        if (pwd.length >= 12) score++;
-        if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
-        if (/\d/.test(pwd)) score++;
-        if (/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) score++;
-
-        if (score <= 1) {
-            message = '弱い';
-        } else if (score <= 3) {
-            message = '普通';
-        } else {
-            message = '強い';
-        }
-
-        setPasswordStrength({ score, message });
-    };
-
-    const handlePasswordChange = (e) => {
-        const pwd = e.target.value;
-        setPassword(pwd);
-        if (isSignUp) {
-            checkPasswordStrength(pwd);
-        }
-    };
 
     const handleAuth = async (e) => {
         e.preventDefault();
-
-        // サインアップ時のバリデーション
-        if (isSignUp) {
-            if (password.length < 8) {
-                alert('パスワードは8文字以上にしてください');
-                return;
-            }
-            if (password !== confirmPassword) {
-                alert('パスワードが一致しません');
-                return;
-            }
-        }
-
         try {
             if (isSignUp) {
                 await auth.createUserWithEmailAndPassword(email, password);
-                // サインアップ成功後、2FA設定画面を表示
-                setShowSignupMfaSetup(true);
             } else {
                 await auth.signInWithEmailAndPassword(email, password);
             }
         } catch (error) {
-            // MFAが要求された場合
-            if (error.code === 'auth/multi-factor-auth-required') {
-                const resolver = error.resolver;
-
-                // MFA入力モーダルを表示
-                setMfaResolver(resolver);
-                setShowMfaInput(true);
-
-                // SMS送信
-                const result = await MFAService.handleMFALogin(resolver);
-                if (result.success) {
-                    setMfaVerificationId(result.verificationId);
-                } else {
-                    alert('2FA認証コードの送信に失敗しました: ' + result.error);
-                }
-                return;
-            }
-
-            let errorMessage = error.message;
-
-            // エラーメッセージを日本語化
-            if (error.code === 'auth/email-already-in-use') {
-                errorMessage = 'このメールアドレスは既に使用されています';
-            } else if (error.code === 'auth/invalid-email') {
-                errorMessage = '無効なメールアドレスです';
-            } else if (error.code === 'auth/weak-password') {
-                errorMessage = 'パスワードが弱すぎます（6文字以上必要）';
-            } else if (error.code === 'auth/user-not-found') {
-                errorMessage = 'ユーザーが見つかりません';
-            } else if (error.code === 'auth/wrong-password') {
-                errorMessage = 'パスワードが間違っています';
-            }
-
-            alert(errorMessage);
-        }
-    };
-
-    // MFA認証コードを確認してログイン
-    const handleMfaConfirm = async () => {
-        if (!mfaVerificationCode || mfaVerificationCode.length !== 6) {
-            alert('6桁の認証コードを入力してください');
-            return;
-        }
-
-        const result = await MFAService.confirmMFALogin(
-            mfaResolver,
-            mfaVerificationId,
-            mfaVerificationCode
-        );
-
-        if (result.success) {
-            // ログイン成功
-            setShowMfaInput(false);
-            setMfaResolver(null);
-            setMfaVerificationId(null);
-            setMfaVerificationCode('');
-        } else {
-            alert('認証に失敗しました: ' + result.error);
+            alert(error.message);
         }
     };
 
@@ -146,159 +26,6 @@ const LoginScreen = () => {
         }
     };
 
-    const handlePasswordReset = async (e) => {
-        e.preventDefault();
-        try {
-            await auth.sendPasswordResetEmail(resetEmail);
-            alert('パスワードリセットメールを送信しました。メールをご確認ください。');
-            setShowForgotPassword(false);
-            setResetEmail('');
-        } catch (error) {
-            let errorMessage = error.message;
-            if (error.code === 'auth/user-not-found') {
-                errorMessage = 'このメールアドレスは登録されていません';
-            } else if (error.code === 'auth/invalid-email') {
-                errorMessage = '無効なメールアドレスです';
-            }
-            alert(errorMessage);
-        }
-    };
-
-    // サインアップ後の2FA設定をスキップ
-    const handleSkipSignupMfa = () => {
-        setShowSignupMfaSetup(false);
-        setSignupPhoneNumber('');
-        setSignupVerificationId(null);
-        setSignupVerificationCode('');
-    };
-
-    // サインアップ後の2FA設定: SMS送信
-    const handleSignupMfaSendSms = async () => {
-        // reCAPTCHAを初期化
-        if (!window.recaptchaVerifier) {
-            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
-                'signup-recaptcha-container',
-                { size: 'normal' }
-            );
-        }
-
-        const result = await MFAService.enrollSMS2FA(signupPhoneNumber);
-        if (result.success) {
-            setSignupVerificationId(result.verificationId);
-        } else {
-            alert('エラー: ' + result.error);
-        }
-    };
-
-    // サインアップ後の2FA設定: コード確認
-    const handleSignupMfaConfirm = async () => {
-        const result = await MFAService.confirmSMS2FA(signupVerificationId, signupVerificationCode);
-        if (result.success) {
-            alert('2段階認証を設定しました');
-            setShowSignupMfaSetup(false);
-            setSignupPhoneNumber('');
-            setSignupVerificationId(null);
-            setSignupVerificationCode('');
-        } else {
-            alert('エラー: ' + result.error);
-        }
-    };
-
-    // パスワードリセット画面
-    if (showForgotPassword) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
-                    <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-gray-800 mb-2">パスワードリセット</h1>
-                        <p className="text-gray-600">登録したメールアドレスを入力してください</p>
-                    </div>
-
-                    <form onSubmit={handlePasswordReset} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
-                            <input
-                                type="email"
-                                value={resetEmail}
-                                onChange={(e) => setResetEmail(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                required
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
-                        >
-                            リセットメールを送信
-                        </button>
-                    </form>
-
-                    <div className="mt-6 text-center">
-                        <button
-                            onClick={() => setShowForgotPassword(false)}
-                            className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-                        >
-                            ログイン画面に戻る
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // MFA認証画面
-    if (showMfaInput) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
-                    <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Icon name="Shield" size={32} className="text-blue-600" />
-                        </div>
-                        <h1 className="text-3xl font-bold text-gray-800 mb-2">2段階認証</h1>
-                        <p className="text-gray-600">SMSで送信された認証コードを入力してください</p>
-                    </div>
-
-                    <div id="recaptcha-container"></div>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">認証コード（6桁）</label>
-                            <input
-                                type="text"
-                                value={mfaVerificationCode}
-                                onChange={(e) => setMfaVerificationCode(e.target.value)}
-                                placeholder="123456"
-                                maxLength={6}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                            />
-                        </div>
-
-                        <button
-                            onClick={handleMfaConfirm}
-                            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
-                        >
-                            認証
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                setShowMfaInput(false);
-                                setMfaResolver(null);
-                                setMfaVerificationId(null);
-                                setMfaVerificationCode('');
-                            }}
-                            className="w-full text-gray-600 hover:text-gray-800 text-sm"
-                        >
-                            キャンセル
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // ログイン/サインアップ画面
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
@@ -316,70 +43,18 @@ const LoginScreen = () => {
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                             required
-                            autocomplete="email"
                         />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-                        <div className="relative">
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                value={password}
-                                onChange={handlePasswordChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
-                                required
-                                minLength={isSignUp ? 8 : 6}
-                                autocomplete={isSignUp ? 'new-password' : 'current-password'}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                            >
-                                <Icon name={showPassword ? 'EyeOff' : 'Eye'} size={20} />
-                            </button>
-                        </div>
-                        {isSignUp && password && (
-                            <div className="mt-2">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                        <div
-                                            className={'h-full transition-all ' +
-                                                (passwordStrength.score <= 1 ? 'bg-red-500 w-1/3' :
-                                                 passwordStrength.score <= 3 ? 'bg-yellow-500 w-2/3' :
-                                                 'bg-green-500 w-full')}
-                                        ></div>
-                                    </div>
-                                    <span className={'text-xs font-medium ' +
-                                        (passwordStrength.score <= 1 ? 'text-red-600' :
-                                         passwordStrength.score <= 3 ? 'text-yellow-600' :
-                                         'text-green-600')}>
-                                        {passwordStrength.message}
-                                    </span>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    8文字以上、大小英字・数字・記号を含めると強固になります
-                                </p>
-                            </div>
-                        )}
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            required
+                        />
                     </div>
-                    {isSignUp && (
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">パスワード（確認）</label>
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                required
-                                minLength={8}
-                                autocomplete="new-password"
-                            />
-                            {confirmPassword && password !== confirmPassword && (
-                                <p className="text-xs text-red-600 mt-1">パスワードが一致しません</p>
-                            )}
-                        </div>
-                    )}
                     <button
                         type="submit"
                         className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
@@ -387,17 +62,6 @@ const LoginScreen = () => {
                         {isSignUp ? 'アカウント作成' : 'ログイン'}
                     </button>
                 </form>
-
-                {!isSignUp && (
-                    <div className="mt-3 text-center">
-                        <button
-                            onClick={() => setShowForgotPassword(true)}
-                            className="text-sm text-gray-600 hover:text-gray-800"
-                        >
-                            パスワードを忘れた方
-                        </button>
-                    </div>
-                )}
 
                 <div className="mt-4">
                     <button
@@ -418,95 +82,6 @@ const LoginScreen = () => {
                     </button>
                 </div>
             </div>
-
-            {/* サインアップ後の2FA設定モーダル */}
-            {showSignupMfaSetup && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-                        <div className="text-center mb-4">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Icon name="Shield" size={32} className="text-blue-600" />
-                            </div>
-                            <h3 className="text-xl font-bold mb-2">2段階認証を設定しますか？</h3>
-                            <p className="text-sm text-gray-600">
-                                アカウントのセキュリティを強化するため、2段階認証の設定をおすすめします。
-                            </p>
-                        </div>
-
-                        {!signupVerificationId ? (
-                            // ステップ1: 電話番号入力
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        電話番号（国際形式）
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        value={signupPhoneNumber}
-                                        onChange={(e) => setSignupPhoneNumber(e.target.value)}
-                                        placeholder="+8190XXXXXXXX"
-                                        className="w-full px-4 py-2 border rounded-lg"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        例: +819012345678
-                                    </p>
-                                </div>
-
-                                <div id="signup-recaptcha-container"></div>
-
-                                <button
-                                    onClick={handleSignupMfaSendSms}
-                                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-                                >
-                                    認証コードを送信
-                                </button>
-
-                                <button
-                                    onClick={handleSkipSignupMfa}
-                                    className="w-full text-gray-600 hover:text-gray-800 text-sm"
-                                >
-                                    後で設定
-                                </button>
-                            </div>
-                        ) : (
-                            // ステップ2: 認証コード入力
-                            <div className="space-y-4">
-                                <p className="text-sm text-gray-600">
-                                    {signupPhoneNumber} に認証コードを送信しました
-                                </p>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        認証コード（6桁）
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={signupVerificationCode}
-                                        onChange={(e) => setSignupVerificationCode(e.target.value)}
-                                        placeholder="123456"
-                                        maxLength={6}
-                                        className="w-full px-4 py-2 border rounded-lg text-center text-2xl tracking-widest"
-                                    />
-                                </div>
-
-                                <button
-                                    onClick={handleSignupMfaConfirm}
-                                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-                                >
-                                    確認
-                                </button>
-
-                                <button
-                                    onClick={handleSkipSignupMfa}
-                                    className="w-full text-gray-600 hover:text-gray-800 text-sm"
-                                >
-                                    後で設定
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
@@ -538,6 +113,11 @@ const OnboardingScreen = ({ user, onComplete }) => {
     const [customMultiplierInputValue, setCustomMultiplierInputValue] = useState('');
 
     const handleComplete = async () => {
+        const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
+        const fatMass = profile.weight - lbm;
+        const bmr = LBMUtils.calculateBMR(lbm, fatMass);
+        const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass);
+
         // 無料トライアル終了日（7日後）
         const now = new Date();
         const trialEndDate = new Date();
@@ -550,27 +130,18 @@ const OnboardingScreen = ({ user, onComplete }) => {
             displayName: profile.displayName || profile.nickname || '',
             age: profile.age || 25,
             gender: profile.gender || '男性',
-            height: profile.height || 170,
 
-            // 活動レベル
+            // 体組成・活動レベル
+            leanBodyMass: lbm,
+            bmr: bmr,
+            tdeeBase: tdeeBase,
             activityLevel: profile.activityLevel || 3,
             customActivityMultiplier: profile.customActivityMultiplier || null,
 
             // 目的・カロリー設定
             purpose: profile.purpose || 'メンテナンス',
             weightChangePace: profile.weightChangePace || 0,
-            calorieAdjustment: profile.calorieAdjustment !== null && profile.calorieAdjustment !== undefined
-                ? profile.calorieAdjustment
-                : (() => {
-                    // 目的別デフォルト値を適用
-                    const defaults = {
-                        '減量': -300,
-                        '増量': +300,
-                        'メンテナンス': 0,
-                        'リコンプ': 0
-                    };
-                    return defaults[profile.purpose] || 0;
-                })(),
+            calorieAdjustment: profile.calorieAdjustment || 0,
 
             // サブスクリプション情報
             subscriptionTier: 'free',
@@ -597,35 +168,21 @@ const OnboardingScreen = ({ user, onComplete }) => {
             isFreeTrialExpired: false,
 
             // 登録日
-            joinDate: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now),
-            registrationDate: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now),
+            joinDate: new Date().toISOString(),
+            registrationDate: new Date().toISOString(),
+            createdAt: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now)
         };
 
         console.log('[Auth] Creating new user profile:', {
+            lbm,
+            bmr,
+            tdeeBase,
             activityLevel: profile.activityLevel,
             customActivityMultiplier: profile.customActivityMultiplier,
             calorieAdjustment: profile.calorieAdjustment,
             purpose: profile.purpose
         });
-
-        // プロフィールを保存
         await DataService.saveUserProfile(user.uid, completeProfile);
-
-        // 初回dailyRecordを作成（体組成データを保存）
-        const todayDate = new Date().toISOString().split('T')[0];
-        const initialDailyRecord = {
-            date: todayDate,
-            bodyComposition: {
-                weight: profile.weight,
-                bodyFatPercentage: profile.bodyFatPercentage
-            },
-            meals: [],
-            exercises: [],
-            supplements: [],
-            conditions: {}
-        };
-        await DataService.saveDailyRecord(user.uid, todayDate, initialDailyRecord);
-
         if (onComplete) onComplete(completeProfile);
     };
 
@@ -973,42 +530,25 @@ const OnboardingScreen = ({ user, onComplete }) => {
 
                         {/* カロリー調整値 */}
                         <div className="border-l-4 border-orange-500 pl-4">
-                            <label className="block text-sm font-medium mb-2 flex items-center justify-between">
+                            <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                                 <div className="flex flex-col">
                                     <span>カロリー調整値（kcal/日）</span>
                                     <span className="text-xs text-gray-500 font-normal mt-0.5">メンテナンスから±調整</span>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        alert(`カロリー調整値について\n\n目的に応じたデフォルト値が自動的に設定されます：\n• 減量: -300kcal\n• 増量: +300kcal\n• メンテナンス: 0kcal\n• リコンプ: 0kcal\n\n微調整したい場合のみ、この欄に数値を入力してください。\nわからない場合は空欄のままでOKです。`);
-                                    }}
-                                    className="text-indigo-600 hover:text-indigo-800"
-                                >
-                                    <Icon name="Info" size={18} />
-                                </button>
                             </label>
                             <input
                                 type="number"
                                 step="50"
-                                value={profile.calorieAdjustment !== undefined && profile.calorieAdjustment !== null ? profile.calorieAdjustment : ''}
+                                value={profile.calorieAdjustment !== undefined ? profile.calorieAdjustment : 0}
                                 onChange={(e) => {
-                                    const value = e.target.value === '' ? null : Number(e.target.value);
+                                    const value = e.target.value === '' ? 0 : Number(e.target.value);
                                     setProfile({...profile, calorieAdjustment: value});
                                 }}
                                 className="w-full px-3 py-2 border rounded-lg"
-                                placeholder={(() => {
-                                    const defaults = {
-                                        '減量': '-300 (減量のデフォルト)',
-                                        '増量': '+300 (増量のデフォルト)',
-                                        'メンテナンス': '0 (メンテナンスのデフォルト)',
-                                        'リコンプ': '0 (リコンプのデフォルト)'
-                                    };
-                                    return defaults[profile.purpose] || '0';
-                                })()}
+                                placeholder="0"
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                                空欄のまま進むと、目的に応じたデフォルト値が適用されます
+                                推奨範囲: ±300kcal（安全で持続可能なペース）
                             </p>
                         </div>
 
@@ -1020,14 +560,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                     const fatMass = profile.weight - lbm;
                                     const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass);
-                                    // 目的別デフォルト値を計算
-                                    const effectiveAdjustment = profile.calorieAdjustment !== null && profile.calorieAdjustment !== undefined
-                                        ? profile.calorieAdjustment
-                                        : (() => {
-                                            const defaults = { '減量': -300, '増量': +300, 'メンテナンス': 0, 'リコンプ': 0 };
-                                            return defaults[profile.purpose] || 0;
-                                        })();
-                                    return Math.round(tdee + effectiveAdjustment);
+                                    return Math.round(tdee + (profile.calorieAdjustment || 0));
                                 })()} kcal/日
                             </p>
                             <div className="mt-3 text-xs text-gray-700 space-y-1">
@@ -1036,15 +569,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     const fatMass = profile.weight - lbm;
                                     return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass));
                                 })()} kcal</p>
-                                <p>• 調整値: {(() => {
-                                    const effectiveAdjustment = profile.calorieAdjustment !== null && profile.calorieAdjustment !== undefined
-                                        ? profile.calorieAdjustment
-                                        : (() => {
-                                            const defaults = { '減量': -300, '増量': +300, 'メンテナンス': 0, 'リコンプ': 0 };
-                                            return defaults[profile.purpose] || 0;
-                                        })();
-                                    return (effectiveAdjustment >= 0 ? '+' : '') + effectiveAdjustment;
-                                })()} kcal{profile.calorieAdjustment === null || profile.calorieAdjustment === undefined ? ' (デフォルト)' : ''}</p>
+                                <p>• 調整値: {profile.calorieAdjustment >= 0 ? '+' : ''}{profile.calorieAdjustment || 0} kcal</p>
                                 <p>• 目的: {profile.purpose}</p>
                             </div>
                         </div>
