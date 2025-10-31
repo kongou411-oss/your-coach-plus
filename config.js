@@ -8,7 +8,7 @@ const DEV_USER_ID = 'dev-user-001';
 const DEV_PREMIUM_MODE = localStorage.getItem('DEV_PREMIUM_MODE') === 'true'; // デフォルトは無料会員（1〜7日目は全機能無料、8日目以降はPremium制限）
 
 // Gemini API Key (本番環境では環境変数から読み込むこと)
-const GEMINI_API_KEY = 'AIzaSyDVbz_-swKKqekil-M_4PeDOZTFpQ7xd_A';
+const GEMINI_API_KEY = 'AIzaSyDWwxNDXqQ6NG6pAoAKWNu3sRHH16ehKgQ';
 
 // Admin Password (本番環境では環境変数またはFirebase Custom Claimsを使用)
 const ADMIN_PASSWORD = 'admin2024';
