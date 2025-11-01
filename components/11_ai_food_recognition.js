@@ -146,6 +146,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
             const result = await callGemini({
                 model: 'gemini-2.5-pro',
                 contents: [{
+                    role: 'user',
                     parts: [
                         { text: promptText },
                         {

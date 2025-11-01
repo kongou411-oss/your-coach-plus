@@ -216,7 +216,7 @@ ${context}
 
             if (response.success) {
                 const updatedHistory = [...newHistory, {
-                    role: 'assistant',
+                    role: 'model',
                     content: response.text,
                     timestamp: new Date().toISOString()
                 }];
@@ -224,7 +224,7 @@ ${context}
                 await DataService.savePGBaseChatHistory(updatedHistory);
             } else {
                 const errorHistory = [...newHistory, {
-                    role: 'assistant',
+                    role: 'model',
                     content: 'エラーが発生しました: ' + response.error,
                     timestamp: new Date().toISOString()
                 }];
@@ -233,7 +233,7 @@ ${context}
         } catch (error) {
             console.error('AI送信エラー:', error);
             const errorHistory = [...newHistory, {
-                role: 'assistant',
+                role: 'model',
                 content: 'メッセージの送信中にエラーが発生しました。',
                 timestamp: new Date().toISOString()
             }];
