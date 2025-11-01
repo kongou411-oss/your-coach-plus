@@ -3498,13 +3498,11 @@ RM回数と重量を別々に入力してください。`
                     setAiRecognizing(true);
 
                     try {
-                        // Gemini APIで食材名から栄養素を推定
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+                        // Cloud Function経由でGemini APIを呼び出し（食材名から栄養素を推定）
+                        const functions = firebase.app().functions('asia-northeast2');
+                        const callGemini = functions.httpsCallable('callGemini');
 
-                        const requestBody = {
-                            contents: [{
-                                parts: [{
-                                    text: `「${foodData.name}」の栄養素を日本食品標準成分表2020年版（八訂）を基準に推定してJSON形式で出力してください。
+                        const promptText = `「${foodData.name}」の栄養素を日本食品標準成分表2020年版（八訂）を基準に推定してJSON形式で出力してください。
 
 【出力形式】
 {
@@ -3518,8 +3516,13 @@ RM回数と重量を別々に入力してください。`
 1. 日本食品標準成分表2020年版（八訂）の値を基準に推定
 2. 100gあたりの栄養素で推定
 3. 最も一般的な調理法・状態の値を使用
-4. JSON形式のみを出力し、他のテキストは含めない`
-                                }]
+4. JSON形式のみを出力し、他のテキストは含めない`;
+
+                        const result = await callGemini({
+                            model: 'gemini-2.5-pro',
+                            contents: [{
+                                role: 'user',
+                                parts: [{ text: promptText }]
                             }],
                             generationConfig: {
                                 temperature: 0.2,
@@ -3527,20 +3530,13 @@ RM回数と重量を別々に入力してください。`
                                 topP: 1,
                                 maxOutputTokens: 2048,
                             }
-                        };
-
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(requestBody)
                         });
 
-                        if (!response.ok) {
+                        if (!result.data || !result.data.success) {
                             throw new Error('AI推定に失敗しました');
                         }
 
-                        const data = await response.json();
-                        const textContent = data.candidates[0].content.parts[0].text;
+                        const textContent = result.data.response.candidates[0].content.parts[0].text;
 
                         const jsonMatch = textContent.match(/\{[\s\S]*\}/);
                         if (!jsonMatch) {
@@ -3624,14 +3620,11 @@ RM回数と重量を別々に入力してください。`
 
                         const base64Image = await imageToBase64(aiImage);
 
-                        // Gemini Vision APIを呼び出し
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+                        // Cloud Function経由でGemini Vision APIを呼び出し
+                        const functions = firebase.app().functions('asia-northeast2');
+                        const callGemini = functions.httpsCallable('callGemini');
 
-                        const requestBody = {
-                            contents: [{
-                                parts: [
-                                    {
-                                        text: `この食品画像の栄養素を推定してJSON形式で出力してください。
+                        const promptText = `この食品画像の栄養素を推定してJSON形式で出力してください。
 
 【出力形式】
 {
@@ -3652,8 +3645,14 @@ RM回数と重量を別々に入力してください。`
 
 例:
 - 鶏むね肉 → {"name":"鶏むね肉","servingSize":100,"servingUnit":"g","calories":108,"protein":22.3,"fat":1.5,"carbs":0}
-- プロテインバー → {"name":"プロテインバー","servingSize":1,"servingUnit":"本","calories":200,"protein":20,"fat":8,"carbs":15}`
-                                    },
+- プロテインバー → {"name":"プロテインバー","servingSize":1,"servingUnit":"本","calories":200,"protein":20,"fat":8,"carbs":15}`;
+
+                        const result = await callGemini({
+                            model: 'gemini-2.5-pro',
+                            contents: [{
+                                role: 'user',
+                                parts: [
+                                    { text: promptText },
                                     {
                                         inline_data: {
                                             mime_type: aiImage.type || 'image/jpeg',
@@ -3666,22 +3665,15 @@ RM回数と重量を別々に入力してください。`
                                 temperature: 0.4,
                                 topK: 32,
                                 topP: 1,
-                                maxOutputTokens: 2048,
+                                maxOutputTokens: 8192,
                             }
-                        };
-
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(requestBody)
                         });
 
-                        if (!response.ok) {
+                        if (!result.data || !result.data.success) {
                             throw new Error('AI認識に失敗しました');
                         }
 
-                        const data = await response.json();
-                        const textContent = data.candidates[0].content.parts[0].text;
+                        const textContent = result.data.response.candidates[0].content.parts[0].text;
 
                         // JSONを抽出
                         const jsonMatch = textContent.match(/\{[\s\S]*\}/);
