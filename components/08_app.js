@@ -1918,6 +1918,14 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     }
                                 }
                             }}
+                            onFeatureUnlocked={() => {
+                                // 分析実行後すぐにunlockedFeaturesを再計算
+                                const userId = user?.uid || DEV_USER_ID;
+                                const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                const unlocked = calculateUnlockedFeatures(userId, dailyRecord, isPremium);
+                                setUnlockedFeatures(unlocked);
+                                console.log('[App] Features unlocked, updated unlocked features:', unlocked);
+                            }}
                             userId={user.uid}
                             userProfile={userProfile}
                             dailyRecord={dailyRecord}

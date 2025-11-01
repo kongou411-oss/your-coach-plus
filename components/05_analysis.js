@@ -1,5 +1,5 @@
 // ===== Analysis Components =====
-const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, setLastUpdate, onUpgradeClick }) => {
+const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, setLastUpdate, onUpgradeClick, onFeatureUnlocked }) => {
     const [loading, setLoading] = useState(true);
     const [analysis, setAnalysis] = useState(null);
     const [historicalInsights, setHistoricalInsights] = useState(null);
@@ -838,6 +838,11 @@ ${currentPurpose === '増量' ? `
             if (!routineCompleted) await markFeatureCompleted(userId, 'routine');
             if (!shortcutCompleted) await markFeatureCompleted(userId, 'shortcut');
             if (!isFeatureCompleted(userId, 'history_analysis')) await markFeatureCompleted(userId, 'history_analysis');
+
+            // 機能開放後、App.jsのunlockedFeaturesを即座に更新
+            if (onFeatureUnlocked) {
+                onFeatureUnlocked();
+            }
 
             // 初回分析の場合のみ、ダッシュボードでモーダル表示
             if (isFirstAnalysisParam) {
