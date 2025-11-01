@@ -161,7 +161,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                     temperature: 0.4,
                     topK: 32,
                     topP: 1,
-                    maxOutputTokens: 2048,
+                    maxOutputTokens: 8192,
                 },
                 safetySettings: [
                     { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
@@ -187,11 +187,13 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
             const textResponse = geminiResponse.candidates[0].content.parts[0].text;
             console.log('[AI Recognition] Raw text response:', textResponse);
+            console.log('[AI Recognition] Text length:', textResponse.length);
 
             // JSONを抽出（マークダウンのコードブロックを除去）
             let jsonText = textResponse.trim();
             jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
             console.log('[AI Recognition] Cleaned JSON text:', jsonText);
+            console.log('[AI Recognition] Cleaned text length:', jsonText.length);
 
             let parsedResult;
             try {
