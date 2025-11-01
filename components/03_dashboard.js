@@ -82,17 +82,12 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     useEffect(() => {
         const checkAndShowModal = () => {
             const shouldShow = localStorage.getItem('showFeatureUnlockModals');
-            console.log('[Dashboard] Checking showFeatureUnlockModals flag:', shouldShow);
             if (shouldShow === 'true') {
-                console.log('[Dashboard] ✅ Flag found, showing modal in 300ms');
                 setTimeout(() => {
                     setCurrentModalPage(1); // ページ1から開始
                     setShowFeatureUnlockModal(true);
                     localStorage.removeItem('showFeatureUnlockModals');
-                    console.log('[Dashboard] Modal opened, flag removed');
                 }, 300); // 少し遅延させてスムーズに表示
-            } else {
-                console.log('[Dashboard] ⚠️ Flag not found, modal not shown');
             }
         };
 
@@ -101,7 +96,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
         // カスタムイベントをリッスン（分析完了時に発火）
         const handleFeatureUnlock = () => {
-            console.log('[Dashboard] Received featureUnlockCompleted event');
             checkAndShowModal();
         };
         window.addEventListener('featureUnlockCompleted', handleFeatureUnlock);

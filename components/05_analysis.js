@@ -424,10 +424,8 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         // 文字数制限チェック（6,000文字以内）
         const promptDataStr = JSON.stringify(promptData, null, 2);
         const charCount = promptDataStr.length;
-        console.log(`[Analysis] Prompt data character count: ${charCount}`);
 
         if (charCount > 6000) {
-            console.warn('[Analysis] Prompt data exceeds 6000 characters, truncating...');
             // 運動名を省略
             todayData.workout.exercises = (todayRecord.workouts || []).map(w => w.name).slice(0, 3).join(', ');
             // メモを省略
@@ -840,12 +838,8 @@ ${currentPurpose === '増量' ? `
             // 初回分析の場合のみ、ダッシュボードでモーダル表示
             if (isFirstAnalysisParam) {
                 localStorage.setItem('showFeatureUnlockModals', 'true');
-                console.log('[Analysis] ✅ Set showFeatureUnlockModals flag for modal display');
                 // ダッシュボードにイベントを通知
                 window.dispatchEvent(new CustomEvent('featureUnlockCompleted'));
-                console.log('[Analysis] Dispatched featureUnlockCompleted event');
-            } else {
-                console.log('[Analysis] ⚠️ NOT first analysis, modal flag not set');
             }
         }
 
@@ -853,7 +847,6 @@ ${currentPurpose === '増量' ? `
         // 新機能開放モーダルが完了した後に表示するためのフラグを設定
         if (isFirstAnalysisParam && !DEV_PREMIUM_MODE) {
             localStorage.setItem('showUpgradeModalPending', 'true');
-            console.log('[Analysis] Set showUpgradeModalPending flag');
         }
     };
 
