@@ -1792,7 +1792,6 @@ const NotificationService = {
 
             // DEV_MODEでもブラウザの通知権限は取得可能
             const permission = await Notification.requestPermission();
-            console.log('[Notification] Permission:', permission);
 
             return {
                 success: permission === 'granted',
@@ -1859,7 +1858,6 @@ const NotificationService = {
             });
 
             if (token) {
-                console.log('[Notification] FCM Token:', token);
                 // トークンをFirestoreに保存
                 await NotificationService.saveToken(userId, token);
                 return { success: true, token };
@@ -1879,7 +1877,6 @@ const NotificationService = {
             if (DEV_MODE) {
                 // DEV_MODEではLocalStorageに保存
                 localStorage.setItem(`fcmToken_${userId}`, token);
-                console.log('[Notification] Token saved to LocalStorage');
                 return { success: true };
             } else {
                 // Firestoreのユーザードキュメントのtokensサブコレクションに保存
@@ -1888,7 +1885,6 @@ const NotificationService = {
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                console.log('[Notification] Token saved to Firestore');
                 return { success: true };
             }
         } catch (error) {
@@ -1917,8 +1913,6 @@ const NotificationService = {
             const messaging = firebase.messaging();
 
             messaging.onMessage((payload) => {
-                console.log('[Notification] Foreground message received:', payload);
-
                 // 通知を表示
                 const notificationTitle = payload.notification?.title || 'Your Coach+';
                 const notificationOptions = {
@@ -1932,8 +1926,6 @@ const NotificationService = {
                     new Notification(notificationTitle, notificationOptions);
                 }
             });
-
-            console.log('[Notification] Foreground listener set up');
         } catch (error) {
             console.error('[Notification] Failed to setup foreground listener:', error);
         }
@@ -2033,7 +2025,6 @@ const NotificationService = {
                 }, { merge: true });
             }
 
-            console.log('[Notification] Saved', schedules.length, 'schedules');
             return { success: true, schedules };
         } catch (error) {
             console.error('[Notification] Failed to schedule notifications:', error);

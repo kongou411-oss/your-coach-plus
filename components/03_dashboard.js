@@ -982,30 +982,18 @@ ${Math.round(caloriesPercent)}%`
                                     let totalWeight = 0;
                                     let totalDuration = 0;
 
-                                    console.log('[ダッシュボード集計] workouts:', dailyRecord.workouts);
-
                                     dailyRecord.workouts.forEach((workout, workoutIdx) => {
-                                        console.log(`[ダッシュボード集計] workout[${workoutIdx}]:`, workout);
-                                        console.log(`  - exercises:`, workout.exercises);
-
                                         workout.exercises?.forEach((exercise, exIdx) => {
-                                            console.log(`  - exercise[${exIdx}]:`, exercise);
-                                            console.log(`    - exerciseType: ${exercise.exerciseType}`);
-                                            console.log(`    - duration: ${exercise.duration}`);
-                                            console.log(`    - totalDuration: ${exercise.totalDuration}`);
-
                                             const isCardioOrStretch = exercise.exerciseType === 'aerobic' || exercise.exerciseType === 'stretch';
 
                                             if (isCardioOrStretch) {
                                                 // 有酸素・ストレッチ: 新旧両方のデータ構造に対応
                                                 if (exercise.duration) {
                                                     // 新形式: exercise.duration を直接加算
-                                                    console.log(`    ✅ 有酸素・ストレッチ duration加算: ${exercise.duration}分`);
                                                     totalDuration += exercise.duration;
                                                 } else if (exercise.sets) {
                                                     // 旧形式: sets の中の duration を加算
                                                     exercise.sets.forEach(set => {
-                                                        console.log(`    ✅ 旧形式 set duration加算: ${set.duration}分`);
                                                         totalDuration += (set.duration || 0);
                                                     });
                                                 } else {
@@ -1020,8 +1008,6 @@ ${Math.round(caloriesPercent)}%`
                                             }
                                         });
                                     });
-
-                                    console.log(`[ダッシュボード集計] 最終結果: totalWeight=${totalWeight}kg, totalDuration=${totalDuration}分`);
 
                                     return (
                                         <div className="flex items-center gap-3 text-sm">

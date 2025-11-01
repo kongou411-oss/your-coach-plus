@@ -55,7 +55,8 @@
       "Bash(gcloud functions deploy:*)",
       "Bash(firebase functions:secrets:set:*)",
       "Bash(timeout 5 firebase functions:log:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []

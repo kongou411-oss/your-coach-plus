@@ -798,9 +798,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                         // 既に権限がある場合はトークンを取得（バックグラウンドで実行）
                                         NotificationService.requestNotificationPermission(firebaseUser.uid)
                                             .then(result => {
-                                                if (result.success) {
-                                                    console.log('[App] FCM token registered:', result.token);
-                                                } else {
+                                                if (!result.success) {
                                                     console.warn('[App] FCM token registration failed:', result.error);
                                                 }
                                             })
