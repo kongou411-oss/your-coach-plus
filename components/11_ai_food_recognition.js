@@ -194,17 +194,17 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
             let jsonText = textResponse.trim();
             jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
 
-            const result = JSON.parse(jsonText);
+            const parsedResult = JSON.parse(jsonText);
 
-            if (!result.foods || result.foods.length === 0) {
+            if (!parsedResult.foods || parsedResult.foods.length === 0) {
                 setError('食品を認識できませんでした。別の画像をお試しください。');
                 setRecognizing(false);
                 return;
             }
 
             // 認識された食品をfoodDatabaseと照合
-            console.log('[AI Recognition] Gemini API response:', result.foods);
-            const matchedFoods = result.foods.map(food => {
+            console.log('[AI Recognition] Gemini API response:', parsedResult.foods);
+            const matchedFoods = parsedResult.foods.map(food => {
                 // 1. まずfoodDatabaseから検索
                 let matchedItem = null;
                 Object.keys(foodDB).forEach(category => {
