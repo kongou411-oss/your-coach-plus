@@ -1002,8 +1002,8 @@ ${userProfile ? `
     },
 
     // Cloud Function (callGemini) 経由でVertex AIにメッセージを送信
-    // model: 使用するモデル名（デフォルト: gemini-2.0-flash-exp）
-    sendMessage: async (message, conversationHistory = [], userProfile = null, model = 'gemini-2.0-flash-exp') => {
+    // model: 使用するモデル名（デフォルト: gemini-2.5-pro）
+    sendMessage: async (message, conversationHistory = [], userProfile = null, model = 'gemini-2.5-pro') => {
         try {
             // 1. Cloud Function への参照を取得（asia-northeast2リージョンを明示的に指定）
             const functions = firebase.app().functions('asia-northeast2');
@@ -1649,7 +1649,7 @@ const ExperienceService = {
     },
 
     // Gemini API呼び出しラッパー（クレジット消費を自動実行）
-    callGeminiWithCredit: async (userId, message, conversationHistory = [], userProfile = null, model = 'gemini-2.5-flash') => {
+    callGeminiWithCredit: async (userId, message, conversationHistory = [], userProfile = null, model = 'gemini-2.5-pro') => {
         // クレジットチェック
         const { totalCredits } = await ExperienceService.getUserExperience(userId);
 
