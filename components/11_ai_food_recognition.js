@@ -62,14 +62,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                 return;
             }
 
-            // クレジットチェック
-            const expInfo = await ExperienceService.getUserExperience(effectiveUserId);
-            if (expInfo.totalCredits <= 0) {
-                setError('クレジットが不足しています。レベルアップでクレジットを獲得してください。');
-                setRecognizing(false);
-                return;
-            }
-
+            // クレジットチェックはCloud Function側で実施
             // 画像をBase64に変換
             const base64Image = await imageToBase64(selectedImage);
 
