@@ -178,22 +178,16 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
             const geminiResponse = result.data.response;
 
-            console.log('[AI Recognition] Full Gemini Response:', geminiResponse);
-
             if (!geminiResponse.candidates || geminiResponse.candidates.length === 0) {
                 console.error('[AI Recognition] No candidates in response:', geminiResponse);
                 throw new Error('AIからの応答がありませんでした');
             }
 
             const textResponse = geminiResponse.candidates[0].content.parts[0].text;
-            console.log('[AI Recognition] Raw text response:', textResponse);
-            console.log('[AI Recognition] Text length:', textResponse.length);
 
             // JSONを抽出（マークダウンのコードブロックを除去）
             let jsonText = textResponse.trim();
             jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-            console.log('[AI Recognition] Cleaned JSON text:', jsonText);
-            console.log('[AI Recognition] Cleaned text length:', jsonText.length);
 
             let parsedResult;
             try {
@@ -211,7 +205,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
             }
 
             // 認識された食品をfoodDatabaseと照合
-            console.log('[AI Recognition] Gemini API response:', parsedResult.foods);
             const matchedFoods = parsedResult.foods.map(food => {
                 // 1. まずfoodDatabaseから検索
                 let matchedItem = null;
@@ -248,7 +241,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                         );
 
                         if (customItem) {
-                            console.log('✅ カスタムアイテムをAI認識で検出:', customItem);
                             matchedItem = {
                                 name: customItem.name,
                                 category: customItem.category || 'カスタム',
@@ -296,14 +288,10 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                     }
                 };
             });
-            console.log('[AI Recognition] Matched foods:', matchedFoods);
-            console.log('[AI Recognition] Custom items found:',
-                matchedFoods.filter(f => f.isCustom).length);
 
             // クレジット消費はCloud Function側で実施済み
             // remainingCreditsを取得してイベントを発火
             const remainingCredits = result.data.remainingCredits;
-            console.log('[AI Recognition] Remaining credits:', remainingCredits);
 
             // クレジット消費後にイベントを発火してダッシュボードを更新
             window.dispatchEvent(new CustomEvent('creditUpdated'));
@@ -345,24 +333,14 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                 const numServings = newAmount / (base.servingSize || 100);
                 ratio = numServings;
                 displayAmount = parseFloat(numServings.toFixed(1));
-                console.log(`[adjustAmount] ${food.name}: ${newAmount}g → ${displayAmount}個, ratio=${ratio}`);
             } else if (base.unit === '本') {
                 // 本単位の場合: 入力値 = 本数
                 ratio = newAmount;
                 displayAmount = newAmount;
-                console.log(`[adjustAmount] ${food.name}: ${displayAmount}本, ratio=${ratio}`);
             } else {
                 // 通常の100gあたり食材
                 ratio = newAmount / 100;
-                console.log(`[adjustAmount] ${food.name}: ${newAmount}g, ratio=${ratio}`);
             }
-
-            console.log(`[adjustAmount] Nutrients recalculated:`, {
-                calories: Math.round(base.calories * ratio),
-                protein: (base.protein * ratio).toFixed(1),
-                fat: (base.fat * ratio).toFixed(1),
-                carbs: (base.carbs * ratio).toFixed(1)
-            });
 
             return {
                 ...food,
@@ -409,8 +387,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
             }
         };
 
-        console.log(`[replaceFoodWithSuggestion] "${currentFood.name}" → "${suggestion.name}" に置き換え`);
-
         setRecognizedFoods(prev => prev.map((food, i) => {
             if (i === index) return newFood;
             return food;
@@ -419,8 +395,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
     // 食品データを更新（カスタム登録完了時に使用）
     const updateRecognizedFood = (foodName, updatedData) => {
-        console.log('[updateRecognizedFood] カスタム登録完了:', { foodName, updatedData });
-
         setRecognizedFoods(prev => prev.map(food => {
             if (food.name !== foodName) return food;
 
@@ -441,13 +415,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                 carbs: parseFloat((newBase.carbs * ratio).toFixed(1))
             };
 
-            console.log('[updateRecognizedFood] 更新後:', {
-                name: food.name,
-                amount: food.amount,
-                base: newBase,
-                actual: actualNutrients
-            });
-
             return {
                 ...food,
                 ...actualNutrients,
@@ -460,10 +427,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
     // 確定して親コンポーネントに渡す
     const confirmFoods = () => {
-        console.log('[confirmFoods] 確定して追加ボタンがクリックされました');
-        console.log('[confirmFoods] recognizedFoods:', recognizedFoods);
-        console.log('[confirmFoods] onFoodsRecognizedを呼び出します');
-
         // 認識リストのamountは常にg単位なので、unitフィールドを削除してから渡す
         // （handleFoodsRecognizedでの誤解釈を防ぐため）
         const foodsForTransfer = recognizedFoods.map(food => {
@@ -475,10 +438,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
             };
         });
 
-        console.log('[confirmFoods] unitフィールド削除後:', foodsForTransfer);
         onFoodsRecognized(foodsForTransfer);
-
-        console.log('[confirmFoods] 完了');
         // Note: creditUpdatedイベントはクレジット消費直後(198行目)に既に発火済み
     };
 
@@ -675,7 +635,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                                     };
                                 }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
 
-                                console.log('[AI Recognition] Total stats calculation:');
                                 recognizedFoods.forEach((food, i) => {
                                     const base = food._base || {
                                         calories: food.calories || 0,
@@ -693,10 +652,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                                     } else {
                                         ratio = (food.amount || 100) / 100;
                                     }
-
-                                    console.log(`  [${i}] ${food.name}: ${food.amount}g, ${Math.round(base.calories * ratio)}kcal`);
                                 });
-                                console.log('  Total:', totalStats);
 
                                 return (
                                     <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
@@ -1121,7 +1077,6 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
         if (food.isUnknown) {
             const matches = findTopMatches(food.name, 3);
             setSuggestions(matches);
-            console.log(`[FoodItemTag] 未登録アイテム "${food.name}" の候補（上位3つ）:`, matches);
         }
     }, [food.name, food.isUnknown]);
 
@@ -1490,11 +1445,6 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                     <button
                         onClick={() => {
                             if (onOpenCustomCreator) {
-                                console.log('[FoodItemTag] カスタム作成ボタンクリック:', {
-                                    name: food.name,
-                                    amount: amount,
-                                    calories: food.calories
-                                });
                                 onOpenCustomCreator({
                                     name: food.name,
                                     amount: amount,  // 現在の量を渡す

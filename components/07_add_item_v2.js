@@ -4157,9 +4157,6 @@ RM回数と重量を別々に入力してください。`
                                                 <div className="flex gap-2 mt-3">
                                                     <button
                                                         onClick={async () => {
-                                                            console.log('[記録ボタン] クリックされました');
-                                                            console.log('[記録ボタン] addedItems:', addedItems);
-
                                                             // テンプレート編集モードの場合
                                                             if (editingTemplate) {
                                                                 const updatedTemplate = {
@@ -4175,7 +4172,6 @@ RM回数と重量を別々に入力してください。`
                                                             }
 
                                                             // 通常の記録モード
-                                                            console.log('[記録ボタン] 通常の記録モードで処理します');
                                                             const totalCalories = addedItems.reduce((sum, item) => sum + item.calories, 0);
                                                             const totalProtein = parseFloat(addedItems.reduce((sum, item) => sum + (item.protein || 0), 0).toFixed(1));
                                                             const totalFat = parseFloat(addedItems.reduce((sum, item) => sum + (item.fat || 0), 0).toFixed(1));
@@ -4201,13 +4197,8 @@ RM回数と重量を別々に入力してください。`
                                                                 }))
                                                             };
 
-                                                            console.log('[記録ボタン] 生成されたnewMeal:', newMeal);
-                                                            console.log('[記録ボタン] onAdd関数を呼び出します');
-
                                                             onAdd(newMeal);
                                                             setShowSearchModal(false);
-
-                                                            console.log('[記録ボタン] 完了');
                                                         }}
                                                         className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
                                                     >
