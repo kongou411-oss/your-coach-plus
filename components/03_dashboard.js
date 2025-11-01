@@ -1,5 +1,5 @@
 // ===== Dashboard Component =====
-const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers = {}, shortcuts = [], onShortcutClick, onFeatureUnlocked }) => {
+const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers = {}, shortcuts = [], onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData }) => {
     // 指示書管理
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
@@ -707,39 +707,99 @@ ${Math.round(caloriesPercent)}%`
                         onClick={() => setInfoModal({
                             show: true,
                             title: '📝 記録について',
-                            content: `【通常の記録】\nFABメニューの＋ボタンから、食事・運動・サプリメントを記録できます。記録した内容は即座にダッシュボードに反映されます。\n\n【予測入力機能】\n前日の記録を自動的に複製する機能です。「予測入力」ボタンを押すと、前日の記録が展開されます。毎日同じような記録をする場合に便利です。\n\n青いバッジ「昨日から」が表示されている項目が予測入力された記録です。\n\n【クリアボタン】\n「予測入力をクリア」ボタンを押すと、予測入力で展開された記録のみが削除されます。手動で追加した記録はそのまま残ります。`
+                            content: `【通常の記録】\n＋ボタンから、食事・運動・サプリメントを記録できます。記録した内容は即座にダッシュボードに反映されます。`
                         })}
                         className="text-indigo-600 hover:text-indigo-800"
                     >
                         <Icon name="Info" size={18} />
                     </button>
                     <div className="ml-auto flex gap-2">
+                        {/* 予測入力ボタン（トグル） */}
                         {yesterdayRecord && (
-                            <button
-                                onClick={loadPredictedData}
-                                className="text-xs px-3 py-1 bg-purple-50 border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-100 transition flex items-center gap-1"
-                            >
-                                <Icon name="Sparkles" size={14} />
-                                予測入力
-                            </button>
+                            <>
+                                <button
+                                    onClick={async () => {
+                                        const hasPredicted = dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted);
+                                        if (hasPredicted) {
+                                            // クリア
+                                            const clearedRecord = {
+                                                ...dailyRecord,
+                                                meals: dailyRecord.meals?.filter(m => !m.isPredicted) || [],
+                                                workouts: dailyRecord.workouts?.filter(w => !w.isPredicted) || []
+                                            };
+                                            setDailyRecord(clearedRecord);
+                                            const userId = user?.uid || DEV_USER_ID;
+                                            await DataService.saveDailyRecord(userId, currentDate, clearedRecord);
+                                        } else {
+                                            // 入力
+                                            loadPredictedData();
+                                        }
+                                    }}
+                                    className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                                        dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)
+                                            ? 'bg-gray-400 text-white hover:bg-gray-500'
+                                            : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                    }`}
+                                >
+                                    <Icon name={(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) ? "Trash2" : "Sparkles"} size={14} />
+                                    {(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) ? 'クリア' : '予測'}
+                                </button>
+                                <button
+                                    onClick={() => setInfoModal({
+                                        show: true,
+                                        title: '📊 予測入力とは？',
+                                        content: `前日のデータから今日の食事・運動を自動的に予測して入力します。\n\n・青背景で表示されます\n・予測データは編集可能です\n・そのまま分析に使用できます`
+                                    })}
+                                    className="text-indigo-600 hover:text-indigo-800"
+                                >
+                                    <Icon name="Info" size={16} />
+                                </button>
+                            </>
                         )}
-                        {yesterdayRecord && (dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) && (
-                            <button
-                                onClick={async () => {
-                                    // 予測入力された記録のみを削除
-                                    const clearedRecord = {
-                                        ...dailyRecord,
-                                        meals: dailyRecord.meals?.filter(m => !m.isPredicted) || [],
-                                        workouts: dailyRecord.workouts?.filter(w => !w.isPredicted) || []
-                                    };
-                                    setDailyRecord(clearedRecord);
-                                    const userId = user?.uid || DEV_USER_ID;
-                                    await DataService.saveDailyRecord(userId, currentDate, clearedRecord);
-                                }}
-                                className="text-xs px-3 py-1 bg-blue-50 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-100 transition"
-                            >
-                                予測入力をクリア
-                            </button>
+
+                        {/* ルーティン入力ボタン（トグル） */}
+                        {currentRoutine && !currentRoutine.isRestDay && (
+                            <>
+                                <button
+                                    onClick={async () => {
+                                        const hasRoutine = dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine);
+                                        if (hasRoutine) {
+                                            // クリア
+                                            const clearedRecord = {
+                                                ...dailyRecord,
+                                                meals: dailyRecord.meals?.filter(m => !m.isRoutine) || [],
+                                                workouts: dailyRecord.workouts?.filter(w => !w.isRoutine) || []
+                                            };
+                                            setDailyRecord(clearedRecord);
+                                            const userId = user?.uid || DEV_USER_ID;
+                                            await DataService.saveDailyRecord(userId, currentDate, clearedRecord);
+                                        } else {
+                                            // 入力
+                                            if (onLoadRoutineData) {
+                                                onLoadRoutineData();
+                                            }
+                                        }
+                                    }}
+                                    className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                                        dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)
+                                            ? 'bg-gray-400 text-white hover:bg-gray-500'
+                                            : 'bg-purple-600 text-white hover:bg-purple-700'
+                                    }`}
+                                >
+                                    <Icon name={(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? "Trash2" : "Repeat"} size={14} />
+                                    {(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? 'クリア' : 'ルーティン'}
+                                </button>
+                                <button
+                                    onClick={() => setInfoModal({
+                                        show: true,
+                                        title: '📅 ルーティン入力とは？',
+                                        content: `設定したルーティンに紐づけたテンプレートを自動入力します。\n\n・紫背景で表示されます\n・ルーティンデータは編集可能です\n・そのまま分析に使用できます\n\n設定方法:\n設定 → ルーティン → 各日に\n食事・運動テンプレートを紐づけ`
+                                    })}
+                                    className="text-purple-600 hover:text-purple-800"
+                                >
+                                    <Icon name="Info" size={16} />
+                                </button>
+                            </>
                         )}
                     </div>
                 </div>
@@ -908,15 +968,25 @@ ${Math.round(caloriesPercent)}%`
                     {dailyRecord.meals?.length > 0 ? (
                         <div className="space-y-3">
                             {dailyRecord.meals.map((meal, index) => (
-                                <div key={meal.id || index} className={`border rounded-lg p-4 hover:border-emerald-300 transition ${meal.isPredicted ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}`}>
+                                <div key={meal.id || index} className={`border rounded-lg p-4 hover:border-emerald-300 transition ${
+                                    meal.isPredicted ? 'border-indigo-300 bg-indigo-50' :
+                                    meal.isRoutine ? 'border-purple-300 bg-purple-50' :
+                                    'border-gray-200'
+                                }`}>
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <p className="font-medium">{meal.name}</p>
                                                 {meal.isPredicted && (
-                                                    <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                    <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                         <Icon name="Sparkles" size={10} />
-                                                        昨日から
+                                                        予測
+                                                    </span>
+                                                )}
+                                                {meal.isRoutine && (
+                                                    <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        <Icon name="Repeat" size={10} />
+                                                        ルーティン
                                                     </span>
                                                 )}
                                             </div>
@@ -1033,15 +1103,25 @@ ${Math.round(caloriesPercent)}%`
                         {dailyRecord.workouts?.length > 0 ? (
                             <div className="space-y-3">
                                 {dailyRecord.workouts.map((workout, index) => (
-                                    <div key={workout.id || index} className={`border rounded-lg p-4 hover:border-orange-300 transition ${workout.isPredicted ? 'border-blue-300 bg-white' : 'border-gray-200 bg-white'}`}>
+                                    <div key={workout.id || index} className={`border rounded-lg p-4 hover:border-orange-300 transition ${
+                                        workout.isPredicted ? 'border-indigo-300 bg-indigo-50' :
+                                        workout.isRoutine ? 'border-purple-300 bg-purple-50' :
+                                        'border-gray-200 bg-white'
+                                    }`}>
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <p className="font-medium">{workout.name}</p>
                                                     {workout.isPredicted && (
-                                                        <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                             <Icon name="Sparkles" size={10} />
-                                                            昨日から
+                                                            予測
+                                                        </span>
+                                                    )}
+                                                    {workout.isRoutine && (
+                                                        <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            <Icon name="Repeat" size={10} />
+                                                            ルーティン
                                                         </span>
                                                     )}
                                                 </div>

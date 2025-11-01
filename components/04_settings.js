@@ -97,6 +97,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const [showTemplateEditModal, setShowTemplateEditModal] = useState(false); // テンプレート編集モーダル表示
     const [templateEditType, setTemplateEditType] = useState(null); // 'meal' or 'workout'
     const [selectedTemplateForEdit, setSelectedTemplateForEdit] = useState(null); // 編集対象のテンプレート
+
+    // フィードバック用state
+    const [feedbackText, setFeedbackText] = useState('');
+    const [feedbackSending, setFeedbackSending] = useState(false);
+    const [feedbackSent, setFeedbackSent] = useState(false);
+
     // テンプレート読み込み
     useEffect(() => {
         loadTemplates();
@@ -241,6 +247,34 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         if (confirm('本当に全データを削除しますか？この操作は取り消せません。')) {
             localStorage.clear();
             alert('データを削除しました。ページをリロードしてください。');
+        }
+    };
+
+    // フィードバック送信
+    const handleSendFeedback = async () => {
+        if (!feedbackText.trim()) {
+            alert('フィードバック内容を入力してください');
+            return;
+        }
+
+        setFeedbackSending(true);
+        try {
+            const sendFeedback = firebase.functions().httpsCallable('sendFeedback');
+            await sendFeedback({
+                feedback: feedbackText,
+                userId: userId,
+                userEmail: firebase.auth().currentUser?.email || '未登録',
+                timestamp: new Date().toISOString()
+            });
+
+            setFeedbackSent(true);
+            setFeedbackText('');
+            setTimeout(() => setFeedbackSent(false), 3000);
+        } catch (error) {
+            console.error('[Feedback] Failed to send:', error);
+            alert('フィードバックの送信に失敗しました: ' + error.message);
+        } finally {
+            setFeedbackSending(false);
         }
     };
 
@@ -2252,42 +2286,66 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                                                     <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
                                                                         <Icon name="BookTemplate" size={14} />
-                                                                        テンプレート紐づけ                                                                        <Icon name="ChevronDown" size={14} className="ml-auto" />
+                                                                        テンプレート紐づけ（複数選択可）
+                                                                        <Icon name="ChevronDown" size={14} className="ml-auto" />
                                                                     </summary>
-                                                                    <div className="space-y-2 mt-3">
-                                                                        {/* 食事テンプレート*/}
+                                                                    <div className="space-y-3 mt-3">
+                                                                        {/* 食事テンプレート（複数選択）*/}
                                                                         <div>
-                                                                            <label className="text-xs text-gray-600">食事</label>
-                                                                            <select
-                                                                                value={routine.mealTemplateId || ''}
-                                                                                onChange={(e) => updateRoutine(routine.id, { mealTemplateId: e.target.value || null })}
-                                                                                className="w-full mt-1 p-2 border rounded text-sm"
-                                                                            >
-                                                                                <option value="">テンプレートなし</option>
-                                                                                {mealTemplates.map(t => (
-                                                                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                                                                ))}
-                                                                            </select>
+                                                                            <label className="text-xs font-medium text-gray-700">食事テンプレート</label>
+                                                                            <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                                                                                {mealTemplates.length > 0 ? mealTemplates.map(t => (
+                                                                                    <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
+                                                                                        <input
+                                                                                            type="checkbox"
+                                                                                            checked={(routine.mealTemplates || []).includes(t.id)}
+                                                                                            onChange={(e) => {
+                                                                                                const current = routine.mealTemplates || [];
+                                                                                                const updated = e.target.checked
+                                                                                                    ? [...current, t.id]
+                                                                                                    : current.filter(id => id !== t.id);
+                                                                                                updateRoutine(routine.id, { mealTemplates: updated });
+                                                                                            }}
+                                                                                            className="rounded"
+                                                                                        />
+                                                                                        <span className="text-sm">{t.name}</span>
+                                                                                    </label>
+                                                                                )) : (
+                                                                                    <p className="text-xs text-gray-500">食事テンプレートがありません</p>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
 
-                                                                        {/* トレーニングテンプレート*/}
+                                                                        {/* トレーニングテンプレート（複数選択）*/}
                                                                         <div>
-                                                                            <label className="text-xs text-gray-600">トレーニング</label>
-                                                                            <select
-                                                                                value={routine.workoutTemplateId || ''}
-                                                                                onChange={(e) => updateRoutine(routine.id, { workoutTemplateId: e.target.value || null })}
-                                                                                className="w-full mt-1 p-2 border rounded text-sm"
-                                                                            >
-                                                                                <option value="">テンプレートなし</option>
-                                                                                {workoutTemplates.map(t => (
-                                                                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                                                                ))}
-                                                                            </select>
+                                                                            <label className="text-xs font-medium text-gray-700">トレーニングテンプレート</label>
+                                                                            <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                                                                                {workoutTemplates.length > 0 ? workoutTemplates.map(t => (
+                                                                                    <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
+                                                                                        <input
+                                                                                            type="checkbox"
+                                                                                            checked={(routine.workoutTemplates || []).includes(t.id)}
+                                                                                            onChange={(e) => {
+                                                                                                const current = routine.workoutTemplates || [];
+                                                                                                const updated = e.target.checked
+                                                                                                    ? [...current, t.id]
+                                                                                                    : current.filter(id => id !== t.id);
+                                                                                                updateRoutine(routine.id, { workoutTemplates: updated });
+                                                                                            }}
+                                                                                            className="rounded"
+                                                                                        />
+                                                                                        <span className="text-sm">{t.name}</span>
+                                                                                    </label>
+                                                                                )) : (
+                                                                                    <p className="text-xs text-gray-500">トレーニングテンプレートがありません</p>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
 
                                                                     </div>
                                                                     <p className="text-xs text-yellow-700 mt-2">
-                                                                        紐づけたテンプレートは、記録画面で自動的に読み込まれます                                                                    </p>
+                                                                        ✨ 選択した複数のテンプレートが「ルーティン入力」ボタンで一括追加されます
+                                                                    </p>
                                                                 </details>
                                                             </div>
                                                         )}
@@ -2370,46 +2428,70 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                         </select>
                                                                     </div>
 
-                                                                    {/* テンプレート紐づけ*/}
+                                                                    {/* テンプレート紐づけ（複数選択）*/}
                                                                     <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                                                         <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
                                                                             <Icon name="BookTemplate" size={14} />
-                                                                            テンプレート紐づけ                                                                            <Icon name="ChevronDown" size={14} className="ml-auto" />
+                                                                            テンプレート紐づけ（複数選択可）
+                                                                            <Icon name="ChevronDown" size={14} className="ml-auto" />
                                                                         </summary>
-                                                                        <div className="space-y-2 mt-3">
-                                                                            {/* 食事テンプレート*/}
+                                                                        <div className="space-y-3 mt-3">
+                                                                            {/* 食事テンプレート（複数選択）*/}
                                                                             <div>
-                                                                                <label className="text-xs text-gray-600">食事</label>
-                                                                                <select
-                                                                                    value={routine.mealTemplateId || ''}
-                                                                                    onChange={(e) => updateRoutine(routine.id, { mealTemplateId: e.target.value || null })}
-                                                                                    className="w-full mt-1 p-2 border rounded text-sm"
-                                                                                >
-                                                                                    <option value="">テンプレートなし</option>
-                                                                                    {mealTemplates.map(t => (
-                                                                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                                                                    ))}
-                                                                                </select>
+                                                                                <label className="text-xs font-medium text-gray-700">食事テンプレート</label>
+                                                                                <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                                                                                    {mealTemplates.length > 0 ? mealTemplates.map(t => (
+                                                                                        <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                checked={(routine.mealTemplates || []).includes(t.id)}
+                                                                                                onChange={(e) => {
+                                                                                                    const current = routine.mealTemplates || [];
+                                                                                                    const updated = e.target.checked
+                                                                                                        ? [...current, t.id]
+                                                                                                        : current.filter(id => id !== t.id);
+                                                                                                    updateRoutine(routine.id, { mealTemplates: updated });
+                                                                                                }}
+                                                                                                className="rounded"
+                                                                                            />
+                                                                                            <span className="text-sm">{t.name}</span>
+                                                                                        </label>
+                                                                                    )) : (
+                                                                                        <p className="text-xs text-gray-500">食事テンプレートがありません</p>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
 
-                                                                            {/* トレーニングテンプレート*/}
+                                                                            {/* トレーニングテンプレート（複数選択）*/}
                                                                             <div>
-                                                                                <label className="text-xs text-gray-600">トレーニング</label>
-                                                                                <select
-                                                                                    value={routine.workoutTemplateId || ''}
-                                                                                    onChange={(e) => updateRoutine(routine.id, { workoutTemplateId: e.target.value || null })}
-                                                                                    className="w-full mt-1 p-2 border rounded text-sm"
-                                                                                >
-                                                                                    <option value="">テンプレートなし</option>
-                                                                                    {workoutTemplates.map(t => (
-                                                                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                                                                    ))}
-                                                                                </select>
+                                                                                <label className="text-xs font-medium text-gray-700">トレーニングテンプレート</label>
+                                                                                <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                                                                                    {workoutTemplates.length > 0 ? workoutTemplates.map(t => (
+                                                                                        <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                checked={(routine.workoutTemplates || []).includes(t.id)}
+                                                                                                onChange={(e) => {
+                                                                                                    const current = routine.workoutTemplates || [];
+                                                                                                    const updated = e.target.checked
+                                                                                                        ? [...current, t.id]
+                                                                                                        : current.filter(id => id !== t.id);
+                                                                                                    updateRoutine(routine.id, { workoutTemplates: updated });
+                                                                                                }}
+                                                                                                className="rounded"
+                                                                                            />
+                                                                                            <span className="text-sm">{t.name}</span>
+                                                                                        </label>
+                                                                                    )) : (
+                                                                                        <p className="text-xs text-gray-500">トレーニングテンプレートがありません</p>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
 
                                                                         </div>
                                                                         <p className="text-xs text-yellow-700 mt-2">
-                                                                            紐づけたテンプレートは、記録画面で自動的に読み込まれます                                                                        </p>
+                                                                            ✨ 選択した複数のテンプレートが「ルーティン入力」ボタンで一括追加されます
+                                                                        </p>
                                                                     </details>
                                                                 </div>
                                                             )}
@@ -3499,6 +3581,71 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 </div>
                             </div>
                         </div>
+                        </div>
+                    </details>
+
+                    {/* フィードバック */}
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="MessageSquare" size={18} className="text-green-600" />
+                            フィードバック
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t">
+                            <div className="space-y-4">
+                                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                                    <h4 className="font-bold mb-2 text-green-800 flex items-center gap-2">
+                                        <Icon name="Heart" size={16} />
+                                        アプリの感想を教えてください
+                                    </h4>
+                                    <p className="text-sm text-gray-600 mb-3">
+                                        あなたの声がアプリをより良くします。使い心地、改善点、要望など、どんなことでもお聞かせください。
+                                    </p>
+
+                                    {feedbackSent ? (
+                                        <div className="bg-white p-4 rounded-lg border border-green-300 text-center">
+                                            <Icon name="CheckCircle" size={32} className="text-green-600 mx-auto mb-2" />
+                                            <p className="font-bold text-green-800">送信完了！</p>
+                                            <p className="text-sm text-gray-600">貴重なご意見ありがとうございました</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <textarea
+                                                value={feedbackText}
+                                                onChange={(e) => setFeedbackText(e.target.value)}
+                                                placeholder="アプリの感想、改善点、要望などをご自由にお書きください...&#10;&#10;例：&#10;・〇〇機能が便利です&#10;・〇〇の使い方がわかりにくい&#10;・〇〇機能がほしいです"
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none resize-none"
+                                                rows="6"
+                                                disabled={feedbackSending}
+                                            />
+                                            <button
+                                                onClick={handleSendFeedback}
+                                                disabled={feedbackSending || !feedbackText.trim()}
+                                                className={`w-full mt-3 px-4 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+                                                    feedbackSending || !feedbackText.trim()
+                                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                        : 'bg-green-600 text-white hover:bg-green-700'
+                                                }`}
+                                            >
+                                                {feedbackSending ? (
+                                                    <>
+                                                        <Icon name="Loader" size={18} className="animate-spin" />
+                                                        送信中...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Icon name="Send" size={18} />
+                                                        フィードバックを送信
+                                                    </>
+                                                )}
+                                            </button>
+                                            <p className="text-xs text-gray-500 mt-2 text-center">
+                                                送信先: kongou411@gmail.com
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </details>
 

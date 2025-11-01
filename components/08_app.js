@@ -1033,6 +1033,87 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
             // This useEffect was moved to DashboardView to follow the moved function.
 
+            // 現在のルーティンを計算
+            useEffect(() => {
+                if (!unlockedFeatures.includes(FEATURES.ROUTINE.id)) {
+                    setCurrentRoutine(null);
+                    return;
+                }
+
+                const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+                const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
+                const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
+                const routineActive = localStorage.getItem(STORAGE_KEYS.ROUTINE_ACTIVE) === 'true';
+
+                if (routineActive && routineStartDate && routines.length > 0) {
+                    const startDate = new Date(routineStartDate);
+                    const today = new Date();
+                    const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+                    const currentIndex = daysDiff % routines.length;
+                    setCurrentRoutine(routines[currentIndex]);
+                } else {
+                    setCurrentRoutine(null);
+                }
+            }, [unlockedFeatures, currentDate]);
+
+            // ルーティンデータ読み込み関数
+            const loadRoutineData = async () => {
+                if (!currentRoutine || currentRoutine.isRestDay) {
+                    alert('休息日にはルーティン入力は使用できません');
+                    return;
+                }
+
+                const mealTemplates = currentRoutine.mealTemplates || [];
+                const workoutTemplates = currentRoutine.workoutTemplates || [];
+
+                if (mealTemplates.length === 0 && workoutTemplates.length === 0) {
+                    alert('このルーティンにはテンプレートが紐づけられていません。\n\n設定 → ルーティン から設定してください。');
+                    return;
+                }
+
+                // テンプレートを読み込み
+                const userId = user?.uid || DEV_USER_ID;
+                const userMealTemplates = await DataService.getTemplates(userId, 'meal');
+                const userWorkoutTemplates = await DataService.getTemplates(userId, 'workout');
+
+                const newMeals = [];
+                const newWorkouts = [];
+
+                // 食事テンプレートを展開
+                mealTemplates.forEach(templateId => {
+                    const template = userMealTemplates.find(t => t.id === templateId);
+                    if (template) {
+                        newMeals.push({
+                            ...template,
+                            id: Date.now() + Math.random(),
+                            isRoutine: true
+                        });
+                    }
+                });
+
+                // 運動テンプレートを展開
+                workoutTemplates.forEach(templateId => {
+                    const template = userWorkoutTemplates.find(t => t.id === templateId);
+                    if (template) {
+                        newWorkouts.push({
+                            ...template,
+                            id: Date.now() + Math.random(),
+                            isRoutine: true
+                        });
+                    }
+                });
+
+                // dailyRecordに追加
+                const updatedRecord = {
+                    ...dailyRecord,
+                    meals: [...(dailyRecord.meals || []), ...newMeals],
+                    workouts: [...(dailyRecord.workouts || []), ...newWorkouts]
+                };
+
+                setDailyRecord(updatedRecord);
+                await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
+            };
+
             // クイックアクションハンドラをグローバルに設定
             useEffect(() => {
                 window.handleQuickAction = (action) => {
@@ -1647,6 +1728,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             triggers={triggers}
                             shortcuts={shortcuts}
                             onShortcutClick={handleShortcutClick}
+                            currentRoutine={currentRoutine}
+                            onLoadRoutineData={loadRoutineData}
                             onFeatureUnlocked={(featureId) => {
                                 if (featureId === 'analysis') {
                                     setShowAnalysisGuide(true);

@@ -2,6 +2,7 @@ const {onRequest, onCall, HttpsError} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
 const { VertexAI } = require("@google-cloud/vertexai");
+const nodemailer = require("nodemailer");
 
 admin.initializeApp();
 
@@ -298,5 +299,61 @@ exports.adminAddCredits = onCall({
   } catch (error) {
     console.error("Admin Add Credits Error:", error);
     throw new Error("クレジットの追加に失敗しました");
+  }
+});
+
+// ===== フィードバック送信 =====
+exports.sendFeedback = onCall({
+  region: "asia-northeast1",
+  cors: true,
+}, async (request) => {
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const {feedback, userId, userEmail, timestamp} = request.data;
+
+  if (!feedback || !feedback.trim()) {
+    throw new HttpsError("invalid-argument", "フィードバック内容が空です");
+  }
+
+  try {
+    // Gmail設定（環境変数から取得）
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER, // Gmail アドレス
+        pass: process.env.GMAIL_APP_PASSWORD, // Gmail アプリパスワード
+      },
+    });
+
+    // メール送信
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: "kongou411@gmail.com",
+      subject: `[Your Coach+] ユーザーフィードバック from ${userEmail}`,
+      html: `
+        <h2>Your Coach+ フィードバック</h2>
+        <p><strong>ユーザーID:</strong> ${userId}</p>
+        <p><strong>メールアドレス:</strong> ${userEmail}</p>
+        <p><strong>送信日時:</strong> ${new Date(timestamp).toLocaleString("ja-JP", {timeZone: "Asia/Tokyo"})}</p>
+        <hr>
+        <h3>フィードバック内容:</h3>
+        <p style="white-space: pre-wrap;">${feedback}</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    console.log(`[Feedback] Sent from ${userId} (${userEmail})`);
+
+    return {
+      success: true,
+      message: "フィードバックを送信しました",
+    };
+  } catch (error) {
+    console.error("[Feedback] Error:", error);
+    throw new HttpsError("internal", "フィードバックの送信に失敗しました", error.message);
   }
 });
