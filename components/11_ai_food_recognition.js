@@ -73,14 +73,11 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
             // 画像をBase64に変換
             const base64Image = await imageToBase64(selectedImage);
 
-            // Gemini Vision APIを呼び出し
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+            // Cloud Function経由でVertex AI Vision APIを呼び出し
+            const functions = firebase.app().functions('asia-northeast2');
+            const callGemini = functions.httpsCallable('callGemini');
 
-            const requestBody = {
-                contents: [{
-                    parts: [
-                        {
-                            text: `【最優先命令】
+            const promptText = `【最優先命令】
 あなたはヘルスケアアプリ用の食材解析AIです。あなたの最優先タスクは、視覚的な特徴（色、形、光沢）だけに惑わされず、以下の【思考ステップと文脈判断】ルールを絶対に優先して適用することです。特に卵料理の誤認識（オムライスを「卵白」や「うずら」と判断すること）は重大なエラーです。
 
 【タスク】
@@ -151,8 +148,13 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 - カレーライス → "豚もも肉 120g", "白米（炊飯後） 200g", "じゃがいも 80g", "玉ねぎ 60g", "人参 40g", "カレーソース 80g"
 - オムレツプレート → "鶏卵（全卵） 150g", "ハム 50g", "チーズ 30g"（※「卵白のみ」ではなく「鶏卵（全卵）」）
 - サラダ → "レタス 50g", "トマト 30g", "きゅうり 20g", "ドレッシング 15g"
-- ハンバーグプレート → "牛ひき肉 150g", "白米（炊飯後） 200g", "キャベツ 30g", "デミグラスソース 30g"`
-                        },
+- ハンバーグプレート → "牛ひき肉 150g", "白米（炊飯後） 200g", "キャベツ 30g", "デミグラスソース 30g"`;
+
+            const result = await callGemini({
+                model: 'gemini-2.0-flash-exp',
+                contents: [{
+                    parts: [
+                        { text: promptText },
                         {
                             inline_data: {
                                 mime_type: selectedImage.type || 'image/jpeg',
@@ -173,27 +175,20 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                     { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
                     { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
                 ]
-            };
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody)
             });
 
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status}`);
+            // Cloud Functionのレスポンスを処理
+            if (!result.data || !result.data.success) {
+                throw new Error(result.data?.error || 'AIの呼び出しに失敗しました');
             }
 
-            const data = await response.json();
+            const geminiResponse = result.data.response;
 
-            if (!data.candidates || data.candidates.length === 0) {
+            if (!geminiResponse.candidates || geminiResponse.candidates.length === 0) {
                 throw new Error('AIからの応答がありませんでした');
             }
 
-            const textResponse = data.candidates[0].content.parts[0].text;
+            const textResponse = geminiResponse.candidates[0].content.parts[0].text;
 
             // JSONを抽出（マークダウンのコードブロックを除去）
             let jsonText = textResponse.trim();
@@ -297,10 +292,12 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
             console.log('[AI Recognition] Custom items found:',
                 matchedFoods.filter(f => f.isCustom).length);
 
-            // 認識成功後、クレジット消費
-            await ExperienceService.consumeCredits(effectiveUserId, 1);
+            // クレジット消費はCloud Function側で実施済み
+            // remainingCreditsを取得してイベントを発火
+            const remainingCredits = result.data.remainingCredits;
+            console.log('[AI Recognition] Remaining credits:', remainingCredits);
 
-            // クレジット消費直後にイベントを発火してダッシュボードを更新
+            // クレジット消費後にイベントを発火してダッシュボードを更新
             window.dispatchEvent(new CustomEvent('creditUpdated'));
 
             setRecognizedFoods(matchedFoods);
