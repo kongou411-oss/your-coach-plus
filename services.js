@@ -1005,9 +1005,9 @@ ${userProfile ? `
     // model: 使用するモデル名（デフォルト: gemini-2.0-flash-exp）
     sendMessage: async (message, conversationHistory = [], userProfile = null, model = 'gemini-2.0-flash-exp') => {
         try {
-            // 1. Cloud Function への参照を取得
-            const functions = firebase.functions();
-            const callGemini = firebase.functions().httpsCallable('callGemini');
+            // 1. Cloud Function への参照を取得（asia-northeast2リージョンを明示的に指定）
+            const functions = firebase.app().functions('asia-northeast2');
+            const callGemini = functions.httpsCallable('callGemini');
 
             // 2. contents を構築
             const contents = [];
@@ -1055,7 +1055,7 @@ ${userProfile ? `
                 safetySettings: safetySettings
             };
 
-            console.log("Calling Cloud Function 'callGemini'...");
+            console.log("Calling Cloud Function 'callGemini' in asia-northeast2...");
 
             // 5. Cloud Function を呼び出す
             const result = await callGemini(dataToSend);

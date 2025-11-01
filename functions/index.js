@@ -1,25 +1,16 @@
-require("dotenv").config();
-
 const {onRequest, onCall, HttpsError} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
-const {GoogleGenerativeAI} = require("@google/generative-ai");
+const { VertexAI } = require("@google-cloud/vertexai");
 
 admin.initializeApp();
 
-// 環境変数からAPIキーを読み込む
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-if (!GEMINI_API_KEY) {
-  console.error("GEMINI_API_KEY is not set in environment variables");
-}
-
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-
-// ===== Gemini API経由でAIを呼び出し（クライアントから呼び出し可能） =====
+// ===== Vertex AI経由でAIを呼び出し（クライアントから呼び出し可能） =====
 exports.callGemini = onCall({
-  region: "asia-northeast2", // 大阪リージョン
+  region: "asia-northeast2", // 大阪リージョン（Cloud Functionのデプロイ先）
   cors: true,
+  memory: "512MiB", // Vertex AI SDKは大きいためメモリを増やす
+  // APIキー不要（サービスアカウント権限で動作）
 }, async (request) => {
   // 1. 認証チェック
   if (!request.auth) {
@@ -52,26 +43,23 @@ exports.callGemini = onCall({
       throw new HttpsError("permission-denied", "AI分析クレジットが不足しています");
     }
 
-    // 4. Generative AI APIを呼び出す
-    const generativeModel = genAI.getGenerativeModel({
+    // 4. Vertex AI を呼び出す（APIキー不要）
+    const projectId = process.env.GCLOUD_PROJECT; // 自動設定される
+    const location = "asia-northeast1"; // 東京リージョン（Vertex AI推奨）
+
+    const vertexAI = new VertexAI({project: projectId, location: location});
+
+    // モデルを取得
+    const generativeModel = vertexAI.preview.getGenerativeModel({
       model: model,
       ...(safetySettings && {safetySettings: safetySettings}),
       ...(generationConfig && {generationConfig: generationConfig}),
     });
 
-    // contentsが複数ある場合（会話履歴がある場合）はchatを使用
-    let result;
-    if (contents.length > 1) {
-      const chat = generativeModel.startChat({
-        history: contents.slice(0, -1), // 最後のメッセージを除く
-      });
-      const lastMessage = contents[contents.length - 1].parts[0].text;
-      result = await chat.sendMessage(lastMessage);
-    } else {
-      // 単一メッセージの場合
-      const prompt = contents[0].parts[0].text;
-      result = await generativeModel.generateContent(prompt);
-    }
+    // Vertex AI の generateContent を呼び出す
+    const result = await generativeModel.generateContent({
+      contents: contents,
+    });
 
     const response = result.response;
 
@@ -100,7 +88,7 @@ exports.callGemini = onCall({
       remainingCredits: freeCredits + paidCredits,
     };
   } catch (error) {
-    console.error("Generative AI call failed:", error);
+    console.error("Vertex AI call failed:", error);
     throw new HttpsError("internal", "AIの呼び出し中にサーバーエラーが発生しました。", error.message);
   }
 });
@@ -110,6 +98,7 @@ exports.sendScheduledNotifications = onSchedule({
   schedule: "every 1 minutes",
   region: "asia-northeast1",
   timeZone: "Asia/Tokyo", // 日本時間で実行
+  memory: "512MiB", // Vertex AI SDKが読み込まれるためメモリを増やす
 }, async (event) => {
   console.log("Checking scheduled notifications...");
 
@@ -242,6 +231,7 @@ exports.sendScheduledNotifications = onSchedule({
 // ===== 管理者機能: ユーザー情報取得 =====
 exports.adminGetUser = onCall({
   region: "asia-northeast1",
+  memory: "512MiB", // Vertex AI SDKが読み込まれるためメモリを増やす
 }, async (request) => {
   const {targetUserId, adminPassword} = request.data;
 
@@ -273,6 +263,7 @@ exports.adminGetUser = onCall({
 // ===== 管理者機能: クレジット追加 =====
 exports.adminAddCredits = onCall({
   region: "asia-northeast1",
+  memory: "512MiB", // Vertex AI SDKが読み込まれるためメモリを増やす
 }, async (request) => {
   const {targetUserId, amount, type, adminPassword} = request.data;
 
