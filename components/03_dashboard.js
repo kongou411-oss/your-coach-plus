@@ -78,18 +78,38 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         }
     };
 
-    // 機能開放モーダルのフラグをチェック（分析ページから戻った時に表示）
+    // 機能開放モーダルのフラグをチェック（初回分析完了後に一度だけ表示）
     useEffect(() => {
-        // ダッシュボードが表示されるたびにチェック
-        const shouldShow = localStorage.getItem('showFeatureUnlockModals');
-        if (shouldShow === 'true') {
-            setTimeout(() => {
-                setCurrentModalPage(1); // ページ1から開始
-                setShowFeatureUnlockModal(true);
-                localStorage.removeItem('showFeatureUnlockModals');
-            }, 300); // 少し遅延させてスムーズに表示
-        }
-    }); // 依存配列を空にせず、毎回実行
+        const checkAndShowModal = () => {
+            const shouldShow = localStorage.getItem('showFeatureUnlockModals');
+            console.log('[Dashboard] Checking showFeatureUnlockModals flag:', shouldShow);
+            if (shouldShow === 'true') {
+                console.log('[Dashboard] ✅ Flag found, showing modal in 300ms');
+                setTimeout(() => {
+                    setCurrentModalPage(1); // ページ1から開始
+                    setShowFeatureUnlockModal(true);
+                    localStorage.removeItem('showFeatureUnlockModals');
+                    console.log('[Dashboard] Modal opened, flag removed');
+                }, 300); // 少し遅延させてスムーズに表示
+            } else {
+                console.log('[Dashboard] ⚠️ Flag not found, modal not shown');
+            }
+        };
+
+        // 初回マウント時にチェック
+        checkAndShowModal();
+
+        // カスタムイベントをリッスン（分析完了時に発火）
+        const handleFeatureUnlock = () => {
+            console.log('[Dashboard] Received featureUnlockCompleted event');
+            checkAndShowModal();
+        };
+        window.addEventListener('featureUnlockCompleted', handleFeatureUnlock);
+
+        return () => {
+            window.removeEventListener('featureUnlockCompleted', handleFeatureUnlock);
+        };
+    }, []); // 空の依存配列：コンポーネントマウント時に一度だけ実行
 
     // 新機能開放モーダル完了後、Premium誘導モーダルを表示
     useEffect(() => {

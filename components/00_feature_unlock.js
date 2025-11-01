@@ -3,40 +3,53 @@
 
 // 機能完了状態を取得（旧ONBOARDING_TRIGGERSとの互換性あり）
 const getFeatureCompletionStatus = (userId) => {
-    if (DEV_MODE) {
-        // 新しい形式を優先
-        let stored = localStorage.getItem(STORAGE_KEYS.FEATURES_COMPLETED);
-        if (stored) {
-            return JSON.parse(stored);
-        }
+    // LocalStorage優先（DEV_MODEに関わらず）
+    const key = STORAGE_KEYS.FEATURES_COMPLETED;
 
-        // 旧形式（ONBOARDING_TRIGGERS）からの移行
-        const oldTriggers = localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS);
-        if (oldTriggers) {
-            const triggers = JSON.parse(oldTriggers);
-            const completion = {};
-            if (triggers.after_meal) completion.food = true;
-            if (triggers.after_training) completion.training = true;
-            if (triggers.after_condition) completion.condition = true;
-            if (triggers.after_analysis) completion.analysis = true;
-            // 新形式で保存
-            localStorage.setItem(STORAGE_KEYS.FEATURES_COMPLETED, JSON.stringify(completion));
-            return completion;
-        }
+    // 新しい形式を優先
+    let stored = localStorage.getItem(key);
 
-        return {};
+    if (stored) {
+        return JSON.parse(stored);
     }
-    // TODO: Firestore実装
+
+    // 旧形式（ONBOARDING_TRIGGERS）からの移行
+    const oldTriggers = localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS);
+    if (oldTriggers) {
+        const triggers = JSON.parse(oldTriggers);
+        const completion = {};
+        if (triggers.after_meal) completion.food = true;
+        if (triggers.after_training) completion.training = true;
+        if (triggers.after_condition) completion.condition = true;
+        if (triggers.after_analysis) completion.analysis = true;
+        // 新形式で保存
+        localStorage.setItem(key, JSON.stringify(completion));
+        console.log('[FeatureUnlock] Migrated from old format:', completion);
+        return completion;
+    }
+
     return {};
 };
 
 // 機能完了状態を保存
 const saveFeatureCompletionStatus = async (userId, completionStatus) => {
-    if (DEV_MODE) {
-        localStorage.setItem(STORAGE_KEYS.FEATURES_COMPLETED, JSON.stringify(completionStatus));
-        return;
+    // LocalStorage優先（DEV_MODEに関わらず）
+    const key = STORAGE_KEYS.FEATURES_COMPLETED;
+    const value = JSON.stringify(completionStatus);
+    localStorage.setItem(key, value);
+    // ログを削減（必要に応じてコメントアウト解除）
+    // console.log('[FeatureUnlock] Saved features:', Object.keys(completionStatus).filter(k => completionStatus[k]).join(', '));
+
+    // Firestoreにも保存（非同期、エラーは無視）
+    if (!DEV_MODE && typeof db !== 'undefined') {
+        try {
+            await db.collection('users').doc(userId).set({
+                featuresCompleted: completionStatus
+            }, { merge: true });
+        } catch (error) {
+            console.warn('[FeatureUnlock] Failed to save to Firestore:', error);
+        }
     }
-    // TODO: Firestore実装
 };
 
 // 特定の機能が完了しているかチェック

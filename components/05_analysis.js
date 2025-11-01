@@ -245,15 +245,10 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         // 初回分析判定: analysisが完了済みかチェック
         const isAnalysisCompleted = isFeatureCompleted(userId, 'analysis');
         const firstAnalysisFlag = !isAnalysisCompleted; // analysis未完了なら初回
-        console.log('[Analysis] First analysis check:', {
-            analysisCompleted: isAnalysisCompleted,
-            isFirstAnalysis: firstAnalysisFlag
-        });
         setIsFirstAnalysis(firstAnalysisFlag);
 
         // スコア計算（AI呼び出し前に実行）
         const scores = calculateScores(userProfile, dailyRecord, targetPFC);
-        console.log('[Analysis] Calculated scores:', scores);
 
         const totalCalories = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
         const totalProtein = (dailyRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
@@ -370,8 +365,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
         // 既存のAI分析をクリア
         setAiAnalysis(null);
-
-        console.log('[Analysis] generateAIAnalysis called with isFirstAnalysisParam:', isFirstAnalysisParam);
 
         // 当日のデータのみを準備（デイリー分析用）
         const today = getTodayDate();
@@ -575,8 +568,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 - **太字**: **太字**は継続使用可能（見出しや強調のため）
 `;
 
-        console.log('[Analysis] Section1 prompt length:', section1Prompt.length, 'characters');
-
         // セクション2: 指示書プラン生成
         const section2Prompt = `## タスク
 
@@ -667,18 +658,14 @@ ${currentPurpose === '増量' ? `
 - **レポートの最後**: 指示書の後に区切り線「---」を入れ、最後の1行に「ナイストライ！」と表示する（応援メッセージはこの1行のみ）
 `;
 
-        console.log('[Analysis] Section2 prompt length:', section2Prompt.length, 'characters');
-
         try {
             // AI分析開始前にクレジット消費（1回のみ）
-            console.log('[Analysis] Consuming 1 credit for daily analysis');
             const creditResult = await ExperienceService.consumeCredits(userId, 1);
             if (!creditResult.success) {
                 setAiLoading(false);
                 alert('クレジットが不足しています。レベルアップまたは追加購入でクレジットを獲得してください。');
                 return;
             }
-            console.log('[Analysis] Credit consumed successfully. Remaining:', creditResult.remaining);
 
             // クレジット消費後、更新された情報を取得して表示
             const updatedExpInfo = await ExperienceService.getUserExperience(userId);
@@ -692,7 +679,6 @@ ${currentPurpose === '増量' ? `
                 devMode: DEV_MODE,
                 allowed: updatedExpInfo.totalCredits > 0
             });
-            console.log('[Analysis] Updated credit info displayed:', updatedExpInfo.totalCredits);
 
             let fullAnalysis = '';
 
@@ -805,39 +791,46 @@ ${currentPurpose === '増量' ? `
 
         // 初回分析後：全機能を開放
         // 注：isFirstAnalysisParamがfalseでも、未開放の機能は開放する
-        console.log('[Analysis] isFirstAnalysisParam value:', isFirstAnalysisParam);
-
         // 各機能が未開放なら開放する（初回分析かどうかに関わらず）
         const directiveCompleted = isFeatureCompleted(userId, 'directive');
         const templateCompleted = isFeatureCompleted(userId, 'template');
         const routineCompleted = isFeatureCompleted(userId, 'routine');
         const shortcutCompleted = isFeatureCompleted(userId, 'shortcut');
 
-        console.log('[Analysis] Feature completion status:', {
-            directive: directiveCompleted,
-            template: templateCompleted,
-            routine: routineCompleted,
-            shortcut: shortcutCompleted
-        });
-
         // 未開放の機能を開放
         if (!directiveCompleted || !templateCompleted || !routineCompleted || !shortcutCompleted) {
-            console.log('[Analysis] Unlocking incomplete features...');
-
             // モーダル①: 指示書・履歴
-            if (!directiveCompleted) await markFeatureCompleted(userId, 'directive');
-            if (!isFeatureCompleted(userId, 'idea')) await markFeatureCompleted(userId, 'idea');
-            if (!isFeatureCompleted(userId, 'history')) await markFeatureCompleted(userId, 'history');
+            if (!directiveCompleted) {
+                await markFeatureCompleted(userId, 'directive');
+            }
+            if (!isFeatureCompleted(userId, 'idea')) {
+                await markFeatureCompleted(userId, 'idea');
+            }
+            if (!isFeatureCompleted(userId, 'history')) {
+                await markFeatureCompleted(userId, 'history');
+            }
 
             // モーダル②: PG BASE・COMY
-            if (!isFeatureCompleted(userId, 'pg_base')) await markFeatureCompleted(userId, 'pg_base');
-            if (!isFeatureCompleted(userId, 'community')) await markFeatureCompleted(userId, 'community');
+            if (!isFeatureCompleted(userId, 'pg_base')) {
+                await markFeatureCompleted(userId, 'pg_base');
+            }
+            if (!isFeatureCompleted(userId, 'community')) {
+                await markFeatureCompleted(userId, 'community');
+            }
 
             // モーダル③: テンプレート・ルーティン・ショートカット
-            if (!templateCompleted) await markFeatureCompleted(userId, 'template');
-            if (!routineCompleted) await markFeatureCompleted(userId, 'routine');
-            if (!shortcutCompleted) await markFeatureCompleted(userId, 'shortcut');
-            if (!isFeatureCompleted(userId, 'history_analysis')) await markFeatureCompleted(userId, 'history_analysis');
+            if (!templateCompleted) {
+                await markFeatureCompleted(userId, 'template');
+            }
+            if (!routineCompleted) {
+                await markFeatureCompleted(userId, 'routine');
+            }
+            if (!shortcutCompleted) {
+                await markFeatureCompleted(userId, 'shortcut');
+            }
+            if (!isFeatureCompleted(userId, 'history_analysis')) {
+                await markFeatureCompleted(userId, 'history_analysis');
+            }
 
             // 機能開放後、App.jsのunlockedFeaturesを即座に更新
             if (onFeatureUnlocked) {
@@ -847,17 +840,20 @@ ${currentPurpose === '増量' ? `
             // 初回分析の場合のみ、ダッシュボードでモーダル表示
             if (isFirstAnalysisParam) {
                 localStorage.setItem('showFeatureUnlockModals', 'true');
-                console.log('[Analysis] Set showFeatureUnlockModals flag');
+                console.log('[Analysis] ✅ Set showFeatureUnlockModals flag for modal display');
+                // ダッシュボードにイベントを通知
+                window.dispatchEvent(new CustomEvent('featureUnlockCompleted'));
+                console.log('[Analysis] Dispatched featureUnlockCompleted event');
+            } else {
+                console.log('[Analysis] ⚠️ NOT first analysis, modal flag not set');
             }
-        } else {
-            console.log('[Analysis] All features already unlocked');
         }
 
         // Premium販促モーダル（初回分析後）
         // 新機能開放モーダルが完了した後に表示するためのフラグを設定
         if (isFirstAnalysisParam && !DEV_PREMIUM_MODE) {
             localStorage.setItem('showUpgradeModalPending', 'true');
-            console.log('[Analysis] Set showUpgradeModalPending flag for later display');
+            console.log('[Analysis] Set showUpgradeModalPending flag');
         }
     };
 

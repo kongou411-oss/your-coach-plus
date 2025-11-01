@@ -537,7 +537,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [showTrainingGuide, setShowTrainingGuide] = useState(false); // 食事記録後
             const [showConditionGuide, setShowConditionGuide] = useState(false); // 運動記録後
             const [showAnalysisGuide, setShowAnalysisGuide] = useState(false);   // コンディション完了後
-            const [showDirectiveGuide, setShowDirectiveGuide] = useState(false); // 分析閲覧後
 
             // トリガー状態管理
             const [triggers, setTriggers] = useState(() => {
@@ -743,10 +742,10 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             generatePredictions(prevDayRecord);
                         }
 
-                        // 通知チェッカーを開始
-                        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                            NotificationService.startNotificationChecker(DEV_USER_ID);
-                        }
+                        // 通知チェッカーは停止（Cloud Functionsで自動送信するため不要）
+                        // if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                        //     NotificationService.startNotificationChecker(DEV_USER_ID);
+                        // }
 
                         setLoading(false);
                     };
@@ -1403,9 +1402,19 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 return <LoginScreen />;
             }
 
-            if (!userProfile) {
-                return <OnboardingScreen user={user} onComplete={(profile) => {
-                    setUserProfile(profile);
+            // オンボーディングチェック：userProfileがnullまたはonboardingCompletedがfalseの場合のみ表示
+            if (!userProfile || !userProfile.onboardingCompleted) {
+                return <OnboardingScreen user={user} onComplete={async (profile) => {
+                    // オンボーディング完了フラグを追加
+                    const completedProfile = {
+                        ...profile,
+                        onboardingCompleted: true
+                    };
+
+                    // Firestoreに保存
+                    await DataService.saveUserProfile(user.uid, completedProfile);
+
+                    setUserProfile(completedProfile);
                     // オンボーディング完了フラグを設定（クレジット不足モーダルを表示しない）
                     sessionStorage.setItem('onboardingJustCompleted', 'true');
                     // オンボーディング完了後、ウェルカムガイドモーダルを表示
@@ -1909,13 +1918,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 // 初回分析の場合のみ、追加の処理
                                 if (!isFeatureCompleted(userId, 'analysis')) {
                                     await markFeatureCompleted(userId, 'analysis');
-
-                                    // 分析完了後、指示書が既に開放されていない場合のみモーダルを表示
-                                    if (!isFeatureCompleted(userId, 'directive')) {
-                                        setTimeout(() => {
-                                            setShowDirectiveGuide(true);
-                                        }, 500);
-                                    }
                                 }
                             }}
                             onFeatureUnlocked={() => {
@@ -2998,15 +3000,6 @@ AIコーチなどの高度な機能が解放されます。
                         iconColor="bg-indigo-100"
                         targetSectionId="analysis-section"
                         onClose={() => setShowAnalysisGuide(false)}
-                    />
-                    <GuideModal
-                        show={showDirectiveGuide}
-                        title="🎉 新機能が開放されました！"
-                        message="【指示書】&#10;AIがあなたの分析結果に基づいて、最適な次のアクションを提案します。&#10;ダッシュボードの「指示書」セクションから確認してください。&#10;&#10;【閃き】&#10;思いついたアイデアや気づきを自由に記録できます。&#10;ダッシュボードの「閃き」セクションから記録してください。"
-                        iconName="FileText"
-                        iconColor="bg-blue-100"
-                        targetSectionId="directive-section"
-                        onClose={() => setShowDirectiveGuide(false)}
                     />
 
                     {/* Premium制限モーダル */}

@@ -705,18 +705,57 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     try {
                                                         const user = firebase.auth().currentUser;
                                                         if (user) {
-                                                            // ユーザーデータを削除
-                                                            await firebase.firestore().collection('users').doc(user.uid).delete();
-                                                            // アカウントを削除
-                                                            await user.delete();
+                                                            // 先に再認証を実行（Google認証の場合）
+                                                            try {
+                                                                console.log('[Account Delete] Re-authenticating user...');
+                                                                const provider = new firebase.auth.GoogleAuthProvider();
+                                                                await user.reauthenticateWithPopup(provider);
+                                                                console.log('[Account Delete] Re-authentication successful');
+                                                            } catch (reauthError) {
+                                                                console.error('[Account Delete] Re-authentication failed:', reauthError);
+                                                                if (reauthError.code === 'auth/popup-closed-by-user') {
+                                                                    alert('再認証がキャンセルされました。アカウント削除を中止します。');
+                                                                    return;
+                                                                }
+                                                                // 再認証エラーでも続行を試みる
+                                                            }
+
+                                                            // Firestoreユーザーデータを削除
+                                                            try {
+                                                                await firebase.firestore().collection('users').doc(user.uid).delete();
+                                                                console.log('[Account Delete] Firestore user data deleted');
+                                                            } catch (firestoreError) {
+                                                                console.warn('[Account Delete] Firestore deletion failed:', firestoreError);
+                                                                // Firestoreエラーは無視して続行
+                                                            }
+
+                                                            // Firebase認証アカウントを削除
+                                                            try {
+                                                                await user.delete();
+                                                                console.log('[Account Delete] Firebase auth account deleted');
+                                                            } catch (authError) {
+                                                                if (authError.code === 'auth/requires-recent-login') {
+                                                                    // それでも再認証が必要な場合
+                                                                    console.log('[Account Delete] Still requires re-authentication');
+                                                                    localStorage.clear();
+                                                                    await firebase.auth().signOut();
+                                                                    alert('再認証に失敗しました。ログアウトして再度ログイン後、アカウント削除を実行してください。');
+                                                                    window.location.reload();
+                                                                    return;
+                                                                }
+                                                                throw authError;
+                                                            }
+
+                                                            // すべて成功したら、LocalStorageをクリア
+                                                            console.log('[Account Delete] Clearing all localStorage data');
+                                                            localStorage.clear();
                                                             alert('アカウントを削除しました');
+                                                            // ページをリロードして状態をリセット
+                                                            window.location.reload();
                                                         }
                                                     } catch (error) {
-                                                        if (error.code === 'auth/requires-recent-login') {
-                                                            alert('セキュリティのため、再ログインしてからアカウント削除を実行してください。');
-                                                        } else {
-                                                            alert('エラー: ' + error.message);
-                                                        }
+                                                        console.error('[Account Delete] Error:', error);
+                                                        alert('アカウント削除中にエラーが発生しました: ' + error.message);
                                                     }
                                                 }
                                             }
@@ -731,6 +770,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700"
                                     onClick={() => {
                                         if (confirm('本当にログアウトしますか？')) {
+                                            // LocalStorageをクリア（オンボーディング状態や機能開放状態をリセット）
+                                            console.log('[Logout] Clearing all localStorage data');
+                                            localStorage.clear();
+                                            // ログアウト実行
                                             auth.signOut();
                                         }
                                     }}
@@ -3649,8 +3692,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                     </details>
 
-                    {/* 開発者*/}
-                    {DEV_MODE && (
+                    {/* 開発者セクション（常時表示・後日非表示か削除予定） */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="Settings" size={18} className="text-orange-600" />
@@ -3891,23 +3933,88 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        </div>
-                    </details>
-                    )}
 
-                    {/* 管理者パネル (開発モードのみ表示) */}
-                    {DEV_MODE && (
-                        <details className="border rounded-lg border-red-300 bg-red-50">
-                            <summary className="cursor-pointer p-4 hover:bg-red-100 font-medium flex items-center gap-2">
-                                <Icon name="Shield" size={18} className="text-red-600" />
-                                管理者パネル
-                                <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
-                            </summary>
-                            <div className="p-4 pt-0 border-t border-red-200">
+                            {/* LocalStorage管理 */}
+                            <div className="border rounded-lg p-6 bg-purple-50">
+                                <h4 className="font-bold mb-4 flex items-center gap-2">
+                                    <Icon name="Database" size={18} className="text-purple-600" />
+                                    ストレージ管理（LocalStorage）
+                                </h4>
+                                <div className="space-y-3">
+                                    <div className="bg-white p-4 rounded-lg border border-purple-200 max-h-96 overflow-y-auto">
+                                        <div className="space-y-2">
+                                            {(() => {
+                                                const keys = Object.keys(localStorage);
+                                                if (keys.length === 0) {
+                                                    return (
+                                                        <p className="text-sm text-gray-500 text-center py-4">
+                                                            LocalStorageは空です
+                                                        </p>
+                                                    );
+                                                }
+                                                return keys.sort().map((key) => {
+                                                    const value = localStorage.getItem(key);
+                                                    let displayValue;
+                                                    try {
+                                                        const parsed = JSON.parse(value);
+                                                        displayValue = JSON.stringify(parsed, null, 2);
+                                                    } catch {
+                                                        displayValue = value;
+                                                    }
+                                                    return (
+                                                        <details key={key} className="border rounded p-2 bg-gray-50">
+                                                            <summary className="cursor-pointer font-mono text-xs font-semibold text-purple-700 hover:text-purple-900 flex items-center justify-between">
+                                                                <span className="truncate">{key}</span>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (confirm(`"${key}" を削除しますか？`)) {
+                                                                            localStorage.removeItem(key);
+                                                                            window.location.reload();
+                                                                        }
+                                                                    }}
+                                                                    className="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs"
+                                                                >
+                                                                    削除
+                                                                </button>
+                                                            </summary>
+                                                            <div className="mt-2 p-2 bg-white rounded border">
+                                                                <pre className="text-xs text-gray-700 whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
+                                                                    {displayValue}
+                                                                </pre>
+                                                            </div>
+                                                        </details>
+                                                    );
+                                                });
+                                            })()}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            if (confirm('すべてのLocalStorageデータを削除しますか？\nこの操作は取り消せません。')) {
+                                                localStorage.clear();
+                                                alert('LocalStorageをクリアしました');
+                                                window.location.reload();
+                                            }
+                                        }}
+                                        className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="Trash2" size={18} />
+                                        すべてのストレージをクリア
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 管理者ツール */}
+                            <div className="border rounded-lg p-6 bg-red-50 border-red-300">
+                                <h4 className="font-bold mb-4 flex items-center gap-2">
+                                    <Icon name="Shield" size={18} className="text-red-600" />
+                                    管理者ツール
+                                </h4>
                                 <div className="space-y-3">
                                     <p className="text-sm text-red-700 mb-3">
-                                        🔒 管理者パネルへのアクセスには認証が必須です                                    </p>
+                                        🔒 管理者パネルへのアクセスには認証が必須です
+                                    </p>
                                     <button
                                         onClick={() => {
                                             const password = prompt('管理者パスワードを入力してください:');
@@ -3923,14 +4030,17 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         className="w-full py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold flex items-center justify-center gap-2"
                                     >
                                         <Icon name="Shield" size={18} />
-                                        COMY投稿承認パネルを開く                                    </button>
+                                        COMY投稿承認パネルを開く
+                                    </button>
                                     <p className="text-xs text-gray-600 mt-2">
                                         ※ 本番環境では、Firebase Authenticationのカスタムクレームでadminロールを付与してください
                                     </p>
                                 </div>
                             </div>
-                        </details>
-                    )}
+                        </div>
+                        </div>
+                    </details>
+
             </div>
             </div>
         </div>

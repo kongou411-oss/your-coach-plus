@@ -2,7 +2,7 @@
 // アプリケーション全体の定数と設定
 
 // 開発モード設定
-const DEV_MODE = false; // 本番モード（Cloud Functions通知テスト用）
+const DEV_MODE = false; // 本番モード（Firebase使用、機能開放はLocalStorageとFirestore両方）
 const DEV_USER_ID = 'dev-user-001';
 // Premium会員モード（開発者設定から切替可能、localStorageから読み込み）
 const DEV_PREMIUM_MODE = localStorage.getItem('DEV_PREMIUM_MODE') === 'true'; // デフォルトは無料会員（1〜7日目は全機能無料、8日目以降はPremium制限）

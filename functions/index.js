@@ -305,7 +305,11 @@ exports.adminAddCredits = onCall({
 // ===== フィードバック送信 =====
 exports.sendFeedback = onCall({
   region: "asia-northeast1",
-  cors: true,
+  cors: [
+    "http://localhost:8000",
+    "https://your-coach-plus.web.app",
+    "https://your-coach-plus.firebaseapp.com",
+  ],
 }, async (request) => {
   // 認証チェック
   if (!request.auth) {

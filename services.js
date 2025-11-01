@@ -172,6 +172,16 @@ const DataService = {
             const existingProfile = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
 
             if (!existingProfile) {
+                // 新規ユーザーの場合、機能開放関連のLocalStorageをクリア
+                console.log('[DEV] New user detected, clearing feature unlock data');
+                localStorage.removeItem(STORAGE_KEYS.FEATURES_COMPLETED);
+                localStorage.removeItem(STORAGE_KEYS.REGISTRATION_DATE);
+                localStorage.removeItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN);
+                localStorage.removeItem(STORAGE_KEYS.ONBOARDING_TRIGGERS);
+                localStorage.removeItem('showFeatureUnlockModals');
+                localStorage.removeItem('featureUnlockModalsCompleted');
+                localStorage.removeItem('showUpgradeModalPending');
+
                 // 新規ユーザーの場合、初期クレジットを追加
                 authData.createdAt = new Date().toISOString();
                 authData.joinDate = new Date().toISOString();
@@ -206,6 +216,16 @@ const DataService = {
             const doc = await userRef.get();
 
             if (!doc.exists) {
+                // 新規ユーザーの場合、機能開放関連のLocalStorageをクリア
+                console.log('New user detected, clearing feature unlock data');
+                localStorage.removeItem(STORAGE_KEYS.FEATURES_COMPLETED);
+                localStorage.removeItem(STORAGE_KEYS.REGISTRATION_DATE);
+                localStorage.removeItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN);
+                localStorage.removeItem(STORAGE_KEYS.ONBOARDING_TRIGGERS);
+                localStorage.removeItem('showFeatureUnlockModals');
+                localStorage.removeItem('featureUnlockModalsCompleted');
+                localStorage.removeItem('showUpgradeModalPending');
+
                 // 新規ユーザー: 作成日時と初期クレジットを追加
                 authData.createdAt = new Date().toISOString();
                 authData.joinDate = new Date().toISOString();
@@ -263,7 +283,18 @@ const DataService = {
             }
         }
 
-        return profile;
+        // profileが存在する場合、デフォルト値とフラグを設定
+        if (profile) {
+            return {
+                ...profile,
+                freeCredits: profile.freeCredits ?? 14,
+                paidCredits: profile.paidCredits ?? 0,
+                // 既存ユーザーのために：onboardingCompletedがundefinedの場合はtrueとみなす
+                onboardingCompleted: profile.onboardingCompleted !== undefined ? profile.onboardingCompleted : true
+            };
+        }
+
+        return null;
     },
 
     // ユーザープロファイル保存
