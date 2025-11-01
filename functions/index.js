@@ -1,39 +1,47 @@
-const {onRequest, onCall} = require("firebase-functions/v2/https");
+require("dotenv").config();
+
+const {onRequest, onCall, HttpsError} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
 const {GoogleGenerativeAI} = require("@google/generative-ai");
 
 admin.initializeApp();
 
-// Gemini API初期化（環境変数から読み込み）
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// 環境変数からAPIキーを読み込む
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// ===== Gemini API呼び出し（クライアントから呼び出し可能） =====
+if (!GEMINI_API_KEY) {
+  console.error("GEMINI_API_KEY is not set in environment variables");
+}
+
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+// ===== Gemini API経由でAIを呼び出し（クライアントから呼び出し可能） =====
 exports.callGemini = onCall({
-  region: "asia-northeast1",
+  region: "asia-northeast2", // 大阪リージョン
   cors: true,
 }, async (request) => {
-  const {userId, message, conversationHistory = [], model = "gemini-2.0-flash-exp"} = request.data;
-
-  // 認証チェック
+  // 1. 認証チェック
   if (!request.auth) {
-    throw new Error("認証が必要です");
+    throw new HttpsError("unauthenticated", "この機能を利用するにはログインが必要です。");
   }
+  const userId = request.auth.uid;
 
-  // ユーザーIDチェック
-  if (request.auth.uid !== userId) {
-    throw new Error("権限がありません");
+  // 2. クライアントからのデータを取得
+  const {model, contents, generationConfig, safetySettings} = request.data;
+  if (!model || !contents) {
+    throw new HttpsError("invalid-argument", "モデル名とコンテンツは必須です。");
   }
 
   try {
-    // Firestoreからユーザー情報を取得
+    // 3. Firestoreからユーザー情報を取得（クレジットチェック）
     const userDoc = await admin.firestore()
         .collection("users")
         .doc(userId)
         .get();
 
     if (!userDoc.exists) {
-      throw new Error("ユーザーが見つかりません");
+      throw new HttpsError("not-found", "ユーザーが見つかりません");
     }
 
     const userData = userDoc.data();
@@ -41,31 +49,33 @@ exports.callGemini = onCall({
     // クレジットチェック
     const totalCredits = (userData.freeCredits || 0) + (userData.paidCredits || 0);
     if (totalCredits < 1) {
-      throw new Error("クレジットが不足しています");
+      throw new HttpsError("permission-denied", "AI分析クレジットが不足しています");
     }
 
-    // Gemini APIを呼び出し
-    const geminiModel = genAI.getGenerativeModel({model: model});
-
-    // 会話履歴を構築
-    const history = conversationHistory.map((msg) => ({
-      role: msg.role,
-      parts: [{text: msg.content}],
-    }));
-
-    const chat = geminiModel.startChat({
-      history: history,
-      generationConfig: {
-        maxOutputTokens: 2000,
-        temperature: 0.7,
-      },
+    // 4. Generative AI APIを呼び出す
+    const generativeModel = genAI.getGenerativeModel({
+      model: model,
+      ...(safetySettings && {safetySettings: safetySettings}),
+      ...(generationConfig && {generationConfig: generationConfig}),
     });
 
-    const result = await chat.sendMessage(message);
-    const response = result.response;
-    const responseText = response.text();
+    // contentsが複数ある場合（会話履歴がある場合）はchatを使用
+    let result;
+    if (contents.length > 1) {
+      const chat = generativeModel.startChat({
+        history: contents.slice(0, -1), // 最後のメッセージを除く
+      });
+      const lastMessage = contents[contents.length - 1].parts[0].text;
+      result = await chat.sendMessage(lastMessage);
+    } else {
+      // 単一メッセージの場合
+      const prompt = contents[0].parts[0].text;
+      result = await generativeModel.generateContent(prompt);
+    }
 
-    // クレジット消費
+    const response = result.response;
+
+    // 5. クレジット消費（呼び出し成功時のみ）
     let freeCredits = userData.freeCredits || 0;
     let paidCredits = userData.paidCredits || 0;
 
@@ -83,14 +93,15 @@ exports.callGemini = onCall({
           paidCredits: paidCredits,
         });
 
+    // 6. 成功した結果をクライアントに返す
     return {
       success: true,
-      response: responseText,
+      response: response,
       remainingCredits: freeCredits + paidCredits,
     };
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw new Error("AI分析に失敗しました: " + error.message);
+    console.error("Generative AI call failed:", error);
+    throw new HttpsError("internal", "AIの呼び出し中にサーバーエラーが発生しました。", error.message);
   }
 });
 

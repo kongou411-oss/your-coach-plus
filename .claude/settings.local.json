@@ -46,7 +46,10 @@
       "Bash(git rm:*)",
       "Bash(npm install)",
       "Bash(firebase functions:log:*)",
-      "Bash(if exist nul del nul)"
+      "Bash(if exist nul del nul)",
+      "Bash(npm install:*)",
+      "Bash(firebase functions:config:set:*)",
+      "Bash(firebase functions:delete:*)"
     ],
     "deny": [],
     "ask": []

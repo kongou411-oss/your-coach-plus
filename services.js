@@ -1001,151 +1001,119 @@ ${userProfile ? `
 簡潔で実用的な回答を心がけてください。`;
     },
 
-    // Gemini APIを呼び出し（マルチモデル対応、リトライ機能付き）
-    // model: 使用するモデル名（デフォルト: gemini-2.5-flash）
-    sendMessage: async (message, conversationHistory = [], userProfile = null, model = 'gemini-2.5-flash') => {
-        const maxRetries = 3;
-        const retryDelay = 2000; // 2秒
+    // Cloud Function (callGemini) 経由でVertex AIにメッセージを送信
+    // model: 使用するモデル名（デフォルト: gemini-2.0-flash-exp）
+    sendMessage: async (message, conversationHistory = [], userProfile = null, model = 'gemini-2.0-flash-exp') => {
+        try {
+            // 1. Cloud Function への参照を取得
+            const functions = firebase.functions();
+            const callGemini = firebase.functions().httpsCallable('callGemini');
 
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
-                    return {
-                        success: false,
-                        error: 'Gemini APIキーが設定されていません。'
-                    };
-                }
-
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-
-                const contents = [];
-                if (conversationHistory.length === 0) {
-                    contents.push({
-                        role: 'user',
-                        parts: [{ text: GeminiAPI.getSystemPrompt(userProfile) + '\n\n' + message }]
-                    });
-                } else {
-                    conversationHistory.forEach(msg => {
-                        contents.push({
-                            role: msg.role === 'user' ? 'user' : 'model',
-                            parts: [{ text: msg.content }]
-                        });
-                    });
-                    contents.push({
-                        role: 'user',
-                        parts: [{ text: message }]
-                    });
-                }
-
-                const safetySettings = [
-                    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
-                ];
-
-                const response = await fetch(`${apiUrl}?key=${GEMINI_API_KEY}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        contents: contents,
-                        generationConfig: {
-                            temperature: 0.7,
-                            topK: 40,
-                            topP: 0.95,
-                            maxOutputTokens: 8192  // 出力トークン上限を拡大
-                        },
-                        safetySettings: safetySettings
-                    })
+            // 2. contents を構築
+            const contents = [];
+            if (conversationHistory.length === 0) {
+                // 初回メッセージ: システムプロンプト + ユーザーメッセージ
+                contents.push({
+                    role: 'user',
+                    parts: [{ text: GeminiAPI.getSystemPrompt(userProfile) + '\n\n' + message }]
                 });
-
-                if (!response.ok) {
-                    let errorData;
-                    try {
-                        errorData = await response.json();
-                    } catch (e) {
-                        errorData = { error: { message: response.statusText } };
-                    }
-
-                    // 503エラー（過負荷）の場合はリトライ
-                    if (response.status === 503 && attempt < maxRetries) {
-                        console.warn(`Gemini API 503エラー (試行 ${attempt}/${maxRetries}). ${retryDelay/1000}秒後にリトライします...`);
-                        await new Promise(resolve => setTimeout(resolve, retryDelay * attempt)); // 指数バックオフ
-                        continue;
-                    }
-
-                    console.error('Gemini API Error:', errorData);
-                    const errorMessage = `Status ${response.status}: ${errorData?.error?.message || 'Unknown error'}`;
-                    return {
-                        success: false,
-                        error: `API通信エラーが発生しました。(${errorMessage})`
-                    };
-                }
-
-                const data = await response.json();
-
-                // トークン使用量をログ出力
-                if (data.usageMetadata) {
-                    console.log('[Gemini API] Token usage:', {
-                        promptTokens: data.usageMetadata.promptTokenCount,
-                        candidatesTokens: data.usageMetadata.candidatesTokenCount,
-                        totalTokens: data.usageMetadata.totalTokenCount
+            } else {
+                // 会話履歴を追加
+                conversationHistory.forEach(msg => {
+                    contents.push({
+                        role: msg.role === 'user' ? 'user' : 'model',
+                        parts: [{ text: msg.content }]
                     });
-                }
+                });
+                // 新しいメッセージを追加
+                contents.push({
+                    role: 'user',
+                    parts: [{ text: message }]
+                });
+            }
 
-                if (!data || !data.candidates || data.candidates.length === 0) {
-                    if (data.promptFeedback && data.promptFeedback.blockReason) {
-                        return {
-                            success: false,
-                            error: `リクエストがブロックされました。理由: ${data.promptFeedback.blockReason}`
-                        };
-                    }
-                    return {
-                        success: false,
-                        error: 'AIからの応答が空でした。'
-                    };
-                }
+            // 3. generationConfig と safetySettings
+            const generationConfig = {
+                temperature: 0.7,
+                topK: 40,
+                topP: 0.95,
+                maxOutputTokens: 8192
+            };
 
-                const candidate = data.candidates[0];
+            const safetySettings = [
+                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+            ];
+
+            // 4. Cloud Function に送信するデータ
+            const dataToSend = {
+                model: model,
+                contents: contents,
+                generationConfig: generationConfig,
+                safetySettings: safetySettings
+            };
+
+            console.log("Calling Cloud Function 'callGemini'...");
+
+            // 5. Cloud Function を呼び出す
+            const result = await callGemini(dataToSend);
+
+            console.log("Cloud Function response:", result.data);
+
+            // 6. レスポンスを解析
+            const responseData = result.data;
+
+            if (!responseData.success) {
+                return {
+                    success: false,
+                    error: responseData.error || 'AIの呼び出しに失敗しました。'
+                };
+            }
+
+            // @google/generative-aiのレスポンス形式を解析
+            const geminiResponse = responseData.response;
+
+            if (geminiResponse && geminiResponse.candidates) {
+                const candidate = geminiResponse.candidates[0];
 
                 if (candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
                     const responseText = candidate.content.parts[0].text;
-                    console.log('[Gemini API] Response length:', responseText.length, 'characters');
+                    console.log('[Cloud Function] Response length:', responseText.length, 'characters');
+                    console.log('[Cloud Function] Remaining credits:', responseData.remainingCredits);
+
                     return {
                         success: true,
-                        text: responseText
-                    };
-                } else {
-                    const reason = candidate.finishReason || '不明';
-                    const safetyInfo = (candidate.safetyRatings || []).map(r => `${r.category}: ${r.probability}`).join(', ');
-                    return {
-                        success: false,
-                        error: `AIが応答を生成できませんでした。理由: ${reason}。${safetyInfo ? `詳細: ${safetyInfo}` : '不適切なコンテンツと判断された可能性があります。'}`
+                        text: responseText,
+                        remainingCredits: responseData.remainingCredits
                     };
                 }
-            } catch (error) {
-                // リトライ可能なエラーの場合
-                if (attempt < maxRetries) {
-                    console.warn(`Gemini APIエラー (試行 ${attempt}/${maxRetries}). ${retryDelay/1000}秒後にリトライします...`, error.message);
-                    await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
-                    continue;
-                }
-
-                console.error('Gemini API Error:', error);
-                return {
-                    success: false,
-                    error: 'AIとの通信中にネットワークエラーが発生しました。接続を確認してください。'
-                };
             }
-        }
 
-        // 全リトライ失敗
-        return {
-            success: false,
-            error: 'AIとの通信に失敗しました。しばらく時間をおいてから再度お試しください。'
-        };
+            // レスポンスの形式が想定外の場合
+            return {
+                success: false,
+                error: 'AIからの応答形式が不正です。'
+            };
+
+        } catch (error) {
+            console.error('Cloud Function call failed:', error);
+
+            // エラーメッセージを解析
+            let errorMessage = error.message || 'サーバーエラーが発生しました。';
+
+            if (error.code === 'unauthenticated') {
+                errorMessage = 'ログインが必要です。';
+            } else if (error.code === 'permission-denied') {
+                errorMessage = 'AI分析クレジットが不足しています。';
+            }
+
+            return {
+                success: false,
+                error: `API通信エラーが発生しました。(${errorMessage})`
+            };
+        }
     },
 
     // AIクレジット管理
