@@ -178,17 +178,29 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
             const geminiResponse = result.data.response;
 
+            console.log('[AI Recognition] Full Gemini Response:', geminiResponse);
+
             if (!geminiResponse.candidates || geminiResponse.candidates.length === 0) {
+                console.error('[AI Recognition] No candidates in response:', geminiResponse);
                 throw new Error('AIからの応答がありませんでした');
             }
 
             const textResponse = geminiResponse.candidates[0].content.parts[0].text;
+            console.log('[AI Recognition] Raw text response:', textResponse);
 
             // JSONを抽出（マークダウンのコードブロックを除去）
             let jsonText = textResponse.trim();
             jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+            console.log('[AI Recognition] Cleaned JSON text:', jsonText);
 
-            const parsedResult = JSON.parse(jsonText);
+            let parsedResult;
+            try {
+                parsedResult = JSON.parse(jsonText);
+            } catch (parseError) {
+                console.error('[AI Recognition] JSON parse failed:', parseError);
+                console.error('[AI Recognition] Failed JSON text:', jsonText);
+                throw new Error('AI応答の解析に失敗しました。応答形式が不正です。');
+            }
 
             if (!parsedResult.foods || parsedResult.foods.length === 0) {
                 setError('食品を認識できませんでした。別の画像をお試しください。');
