@@ -697,7 +697,7 @@ ${currentPurpose === '増量' ? `
             let fullAnalysis = '';
 
             // セクション1: パフォーマンスレポートを生成
-            const response1 = await GeminiAPI.sendMessage(section1Prompt, [], userProfile, 'gemini-2.5-flash');
+            const response1 = await GeminiAPI.sendMessage(section1Prompt, [], userProfile, 'gemini-2.5-pro');
             if (response1.success) {
                 fullAnalysis += response1.text + '\n\n';
                 setAiAnalysis(fullAnalysis);
@@ -706,7 +706,7 @@ ${currentPurpose === '増量' ? `
             }
 
             // セクション2: 指示書プランを生成
-            const response2 = await GeminiAPI.sendMessage(section2Prompt, [], userProfile, 'gemini-2.5-flash');
+            const response2 = await GeminiAPI.sendMessage(section2Prompt, [], userProfile, 'gemini-2.5-pro');
             if (response2.success) {
                 fullAnalysis += response2.text;
                 setAiAnalysis(fullAnalysis);

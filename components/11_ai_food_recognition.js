@@ -144,7 +144,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 - ハンバーグプレート → "牛ひき肉 150g", "白米（炊飯後） 200g", "キャベツ 30g", "デミグラスソース 30g"`;
 
             const result = await callGemini({
-                model: 'gemini-1.5-pro',
+                model: 'gemini-2.5-pro',
                 contents: [{
                     parts: [
                         { text: promptText },
