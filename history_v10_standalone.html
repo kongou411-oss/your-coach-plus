@@ -1,4 +1,13 @@
 <!DOCTYPE html>
+<!--
+  履歴グラフ v2.2.0
+  更新日: 2025-10-22
+  変更内容:
+  - 運動カテゴリの「1RM」「5RM」「10RM」を「RM」1つに統合
+  - RM選択時に専用調整パネルを表示（回数選択・種目選択の2段階）
+  - ユーザーが実際に記録したRM回数と種目のみを動的に表示
+  - 種目別・回数別のRM推移をグラフで確認可能に
+-->
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -8,10 +17,13 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>履歴グラフ v1.5.0</title>
+    <title>履歴グラフ v2.0.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- App Services -->
+    <script src="config.js"></script>
+    <script src="services.js"></script>
     <!-- 目標ライン・メモ機能 -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1"></script>
     <!-- カスタム期間選択 -->
@@ -19,6 +31,15 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
     <style>
+        /* スクロールバーを完全非表示 */
+        * {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        *::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Opera */
+        }
+
         .tab-button {
             transition: all 0.3s ease;
             position: relative;
@@ -76,11 +97,29 @@
         }
         .period-button {
             transition: all 0.2s ease;
+            position: relative;
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            color: #6b7280;
+            font-weight: 500;
         }
         .period-button.active {
-            background: #3b82f6;
-            color: white;
+            color: #7c3aed;
             font-weight: 600;
+        }
+        .period-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #7c3aed;
+        }
+        .period-button:hover {
+            color: #7c3aed;
+            background: rgba(124, 58, 237, 0.05);
         }
         .comparison-enabled .chart-section {
             border: 2px solid #3b82f6;
@@ -280,130 +319,147 @@
             <!-- 大カテゴリタブ -->
             <div class="flex border-b bg-gray-50">
                 <button type="button"
-                    class="tab-button flex-1 py-3 px-2 text-center transition text-gray-600"
+                    class="tab-button flex-1 py-3 px-2 text-center transition text-green-600 relative"
+                    data-category="nutrition"
                     onclick="selectMainCategory('nutrition', event)">
                     <div class="flex flex-col items-center justify-center gap-1">
                         <i data-lucide="utensils" class="w-5 h-5"></i>
-                        <div class="text-xs font-semibold whitespace-nowrap">食事</div>
+                        <div class="text-xs font-semibold whitespace-nowrap">
+                            食事
+                        </div>
                     </div>
                 </button>
                 <button type="button"
-                    class="tab-button flex-1 py-3 px-2 text-center transition text-gray-600"
+                    class="tab-button flex-1 py-3 px-2 text-center transition text-orange-600 relative"
+                    data-category="training"
                     onclick="selectMainCategory('training', event)">
                     <div class="flex flex-col items-center justify-center gap-1">
                         <i data-lucide="dumbbell" class="w-5 h-5"></i>
-                        <div class="text-xs font-semibold whitespace-nowrap">運動</div>
+                        <div class="text-xs font-semibold whitespace-nowrap">
+                            運動
+                        </div>
                     </div>
                 </button>
                 <button type="button"
-                    class="tab-button flex-1 py-3 px-2 text-center transition text-gray-600"
+                    class="tab-button flex-1 py-3 px-2 text-center transition text-red-600 relative"
+                    data-category="condition"
                     onclick="selectMainCategory('condition', event)">
                     <div class="flex flex-col items-center justify-center gap-1">
                         <i data-lucide="heart-pulse" class="w-5 h-5"></i>
-                        <div class="text-xs font-semibold whitespace-nowrap">コンディション</div>
+                        <div class="text-xs font-semibold whitespace-nowrap">
+                            コンディション
+                        </div>
                     </div>
                 </button>
                 <button type="button"
-                    class="tab-button flex-1 py-3 px-2 text-center transition active text-purple-600 bg-white border-b-0"
+                    class="tab-button flex-1 py-3 px-2 text-center transition active text-purple-600 bg-white border-b-0 relative"
+                    data-category="performance"
                     onclick="selectMainCategory('performance', event)">
                     <div class="flex flex-col items-center justify-center gap-1">
                         <i data-lucide="trending-up" class="w-5 h-5"></i>
-                        <div class="text-xs font-semibold whitespace-nowrap">パフォーマンス</div>
+                        <div class="text-xs font-semibold whitespace-nowrap">
+                            パフォーマンス
+                        </div>
                     </div>
                 </button>
                 <button type="button"
-                    class="tab-button flex-1 py-3 px-2 text-center transition text-gray-600"
+                    class="tab-button flex-1 py-3 px-2 text-center transition text-yellow-600 relative"
+                    data-category="insights"
                     onclick="selectMainCategory('insights', event)">
                     <div class="flex flex-col items-center justify-center gap-1">
                         <i data-lucide="lightbulb" class="w-5 h-5"></i>
-                        <div class="text-xs font-semibold whitespace-nowrap">閃き</div>
+                        <div class="text-xs font-semibold whitespace-nowrap">
+                            閃き
+                        </div>
                     </div>
                 </button>
             </div>
 
             <!-- 小カテゴリタブ（食事） -->
-            <div id="nutrition-subtabs" class="sub-tabs flex flex-wrap gap-2 p-4 bg-green-50 border-b hidden">
-                <button type="button" class="sub-tab-button active px-4 py-2 bg-white text-green-700 rounded-lg text-sm font-semibold border-2 border-green-500" onclick="selectSubCategory('nutrition', 'calories')">
+            <div id="nutrition-subtabs" class="sub-tabs border-b bg-green-50 hidden">
+                <div class="flex overflow-x-auto px-2 py-1 gap-1">
+                <button type="button" class="sub-tab-button active px-2 py-1 bg-white text-green-700 rounded text-xs font-semibold border border-green-500" onclick="selectSubCategory('nutrition', 'calories')">
                     摂取カロリー
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'protein')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'protein')">
                     タンパク質
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'fat')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'fat')">
                     脂質
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'carbs')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'carbs')">
                     炭水化物
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'sugar')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'sugar')">
                     糖質
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'fiber')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'fiber')">
                     食物繊維
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'vitamin_score')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'vitamin_score')">
                     ビタミン
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'mineral_score')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'mineral_score')">
                     ミネラル
                 </button>
+                </div>
             </div>
 
             <!-- 小カテゴリタブ（運動） -->
-            <div id="training-subtabs" class="sub-tabs flex flex-wrap gap-2 p-4 bg-orange-50 border-b hidden">
-                <button type="button" class="sub-tab-button active px-4 py-2 bg-white text-orange-700 rounded-lg text-sm font-semibold border-2 border-orange-500" onclick="selectSubCategory('training', 'total_time')">
+            <div id="training-subtabs" class="sub-tabs border-b bg-orange-50 hidden">
+                <div class="flex overflow-x-auto px-2 py-1 gap-1">
+                <button type="button" class="sub-tab-button active px-2 py-1 bg-white text-orange-700 rounded text-xs font-semibold border border-orange-500" onclick="selectSubCategory('training', 'total_time')">
                     総時間
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'total_exercises')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'total_exercises')">
                     総種目数
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'total_weight')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'total_weight')">
                     総重量
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'rm_1')">
-                    1RM
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'rm')">
+                    RM
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'rm_5')">
-                    5RM
-                </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'rm_10')">
-                    10RM
-                </button>
+                </div>
             </div>
 
             <!-- 小カテゴリタブ（コンディション） -->
-            <div id="condition-subtabs" class="sub-tabs flex flex-wrap gap-2 p-4 bg-red-50 border-b hidden">
-                <button type="button" class="sub-tab-button active px-4 py-2 bg-white text-red-700 rounded-lg text-sm font-semibold border-2 border-red-500" onclick="selectSubCategory('condition', 'sleep_duration')">
+            <div id="condition-subtabs" class="sub-tabs border-b bg-red-50 hidden">
+                <div class="flex overflow-x-auto px-2 py-1 gap-1">
+                <button type="button" class="sub-tab-button active px-2 py-1 bg-white text-red-700 rounded text-xs font-semibold border border-red-500" onclick="selectSubCategory('condition', 'sleep_duration')">
                     睡眠時間
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'sleep_quality')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'sleep_quality')">
                     睡眠の質
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'appetite')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'appetite')">
                     食欲
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'gut_health')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'gut_health')">
                     腸内環境
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'focus')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'focus')">
                     集中力
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'stress')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'stress')">
                     ストレス
                 </button>
+                </div>
             </div>
 
             <!-- 小カテゴリタブ（パフォーマンス） -->
-            <div id="performance-subtabs" class="sub-tabs flex flex-wrap gap-2 p-4 bg-purple-50 border-b">
-                <button type="button" class="sub-tab-button active px-4 py-2 bg-white text-purple-700 rounded-lg text-sm font-semibold border-2 border-purple-500" onclick="selectSubCategory('performance', 'lbm')">
+            <div id="performance-subtabs" class="sub-tabs border-b bg-purple-50">
+                <div class="flex overflow-x-auto px-2 py-1 gap-1">
+                <button type="button" class="sub-tab-button active px-2 py-1 bg-white text-purple-700 rounded text-xs font-semibold border border-purple-500" onclick="selectSubCategory('performance', 'lbm')">
                     LBM
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('performance', 'directive')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('performance', 'directive')">
                     指示書達成率
                 </button>
-                <button type="button" class="sub-tab-button px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold border-2 border-transparent hover:border-gray-300" onclick="selectSubCategory('performance', 'overall')">
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('performance', 'overall')">
                     総合分析
                 </button>
+                </div>
             </div>
 
             <!-- 閃きコンテンツ -->
@@ -425,46 +481,58 @@
                 <!-- グラフ1（メイン） -->
                 <div id="chart-1" class="chart-section mb-6">
                     <!-- コンパクトヘッダー -->
-                    <div class="compact-header">
+                    <div class="mb-3">
                         <div>
                             <h3 id="chart-title-1" class="text-2xl font-bold text-gray-800">💪 LBM - 除脂肪体重</h3>
                             <p id="chart-period-1" class="text-sm text-gray-500 mt-1">過去7日間の推移</p>
                         </div>
-                        <div class="compact-buttons">
-                            <button type="button" onclick="analyzeWithGemini()" class="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white flex items-center gap-1">
+                        <div class="flex gap-2 mt-2">
+                            <button type="button" onclick="performHistoryAnalysis()" class="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg flex items-center gap-2 text-sm font-semibold shadow-sm transition">
                                 <i data-lucide="sparkles" class="w-4 h-4"></i>
-                                <span class="hidden sm:inline">AI分析</span>
+                                <span>AI分析</span>
                             </button>
-                            <button type="button" onclick="toggleSettingsPanel(1)" class="bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-1">
+                            <button type="button" onclick="toggleSettingsPanel(1)" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center gap-2 text-sm font-semibold transition">
                                 <i data-lucide="settings" class="w-4 h-4"></i>
-                                <span class="hidden sm:inline">設定</span>
+                                <span>設定</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- 期間選択（モバイル対応・画面幅に収まる） -->
-                    <div class="mb-4">
-                        <div class="grid grid-cols-4 gap-1.5">
-                            <button type="button" class="period-button active px-2 py-1.5 rounded text-xs font-semibold bg-purple-600 text-white shadow-sm transition" onclick="selectPeriod(1, 7, event)">7日</button>
-                            <button type="button" class="period-button px-2 py-1.5 rounded text-xs font-semibold bg-white text-gray-700 border border-gray-300 transition" onclick="selectPeriod(1, 14, event)">14日</button>
-                            <button type="button" class="period-button px-2 py-1.5 rounded text-xs font-semibold bg-white text-gray-700 border border-gray-300 transition" onclick="selectPeriod(1, 30, event)">30日</button>
-                            <button type="button" class="period-button px-2 py-1.5 rounded text-xs font-semibold bg-white text-gray-700 border border-gray-300 transition" onclick="selectPeriod(1, 60, event)">60日</button>
-                            <button type="button" class="period-button px-2 py-1.5 rounded text-xs font-semibold bg-white text-gray-700 border border-gray-300 transition" onclick="selectPeriod(1, 90, event)">90日</button>
-                            <button type="button" class="period-button px-2 py-1.5 rounded text-xs font-semibold bg-white text-gray-700 border border-gray-300 transition" onclick="selectPeriod(1, 180, event)">180日</button>
-                            <button type="button" class="period-button px-2 py-1.5 rounded text-xs font-semibold bg-white text-gray-700 border border-gray-300 transition" onclick="selectPeriod(1, 365, event)">1年</button>
+                    <!-- RM専用調整パネル -->
+                    <div id="rm-control-panel" class="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200 hidden">
+                        <div class="mb-2">
+                            <div class="text-xs font-semibold text-orange-900 mb-1">回数を選択</div>
+                            <div id="rm-reps-buttons" class="flex flex-wrap gap-1">
+                                <!-- 動的に生成 -->
+                            </div>
+                        </div>
+                        <div>
+                            <button
+                                type="button"
+                                onclick="document.getElementById('rm-exercise-list').classList.toggle('hidden'); lucide.createIcons();"
+                                class="w-full flex items-center justify-between text-xs font-semibold text-orange-900 mb-1 px-2 py-1 hover:bg-orange-100 rounded transition"
+                            >
+                                <span>種目を選択</span>
+                                <i data-lucide="chevron-down" class="w-3 h-3"></i>
+                            </button>
+                            <div id="rm-exercise-list" class="hidden">
+                                <div id="rm-exercise-buttons" class="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                                    <!-- 動的に生成 -->
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- カテゴリ別範囲表示 -->
-                    <div class="mb-3 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="text-gray-600">全期間（50年）の範囲:</span>
-                            <span class="font-semibold text-gray-800">
-                                <span class="text-orange-600" id="category-min-1">60.0</span>
-                                <span class="text-gray-400 mx-1">～</span>
-                                <span class="text-green-600" id="category-max-1">63.0</span>
-                                <span id="category-unit-1" class="text-gray-500 ml-1">kg</span>
-                            </span>
+                    <!-- 期間選択（タブ式UI） -->
+                    <div class="mb-4 border-b border-gray-200">
+                        <div class="flex overflow-x-auto">
+                            <button type="button" class="period-button active text-sm" onclick="selectPeriod(1, 7, event)">7日</button>
+                            <button type="button" class="period-button text-sm" onclick="selectPeriod(1, 14, event)">14日</button>
+                            <button type="button" class="period-button text-sm" onclick="selectPeriod(1, 30, event)">30日</button>
+                            <button type="button" class="period-button text-sm" onclick="selectPeriod(1, 60, event)">60日</button>
+                            <button type="button" class="period-button text-sm" onclick="selectPeriod(1, 90, event)">90日</button>
+                            <button type="button" class="period-button text-sm" onclick="selectPeriod(1, 180, event)">180日</button>
+                            <button type="button" class="period-button text-sm" onclick="selectPeriod(1, 365, event)">1年</button>
                         </div>
                     </div>
 
@@ -512,6 +580,37 @@
                         <div class="stat-item">
                             <div class="stat-value text-purple-600" id="chart-value-1">62.5kg</div>
                             <div class="stat-label">現在<span id="chart-unit-1" class="hidden"></span></div>
+                        </div>
+                    </div>
+
+                    <!-- 詳細統計情報（標準偏差・トレンド） -->
+                    <div class="mt-3 grid grid-cols-2 gap-2">
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <div class="text-xs text-gray-600 mb-1">標準偏差</div>
+                            <div class="text-lg font-bold text-gray-800" id="stat-stddev-1">0.5kg</div>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                            <div class="text-xs text-gray-600 mb-1">トレンド</div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl" id="stat-trend-icon-1">→</span>
+                                <div>
+                                    <div class="text-sm font-bold" id="stat-trend-label-1">横ばい</div>
+                                    <div class="text-xs text-gray-600" id="stat-trend-value-1">+0.0kg (0.0%)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- カテゴリ別範囲表示 -->
+                    <div class="mt-3 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-600">全期間（50年）の範囲:</span>
+                            <span class="font-semibold text-gray-800">
+                                <span class="text-orange-600" id="category-min-1">60.0</span>
+                                <span class="text-gray-400 mx-1">～</span>
+                                <span class="text-green-600" id="category-max-1">63.0</span>
+                                <span id="category-unit-1" class="text-gray-500 ml-1">kg</span>
+                            </span>
                         </div>
                     </div>
 
@@ -603,28 +702,6 @@
             </div>
         </div>
 
-        <!-- AI分析結果モーダル -->
-        <div id="ai-analysis-modal" class="modal">
-            <div class="modal-content">
-                <div class="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 rounded-t-lg">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="sparkles" class="w-5 h-5"></i>
-                            <h3 class="text-lg font-bold">AI グラフ分析</h3>
-                        </div>
-                        <button type="button" onclick="closeAnalysisModal()" class="p-1 hover:bg-white/20 rounded">
-                            <i data-lucide="x" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                </div>
-                <div id="analysis-content" class="p-6">
-                    <div class="ai-analyzing">
-                        <div class="spinner"></div>
-                        <span class="text-gray-600">分析中...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- ヘルプモーダル -->
         <div id="help-modal" class="help-modal">
@@ -1199,6 +1276,65 @@
         </div>
     </div>
 
+    <!-- 履歴分析ローディングモーダル -->
+    <div id="history-analysis-loading-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 text-center max-w-sm mx-4">
+            <div class="mb-4">
+                <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-purple-200 border-t-purple-600"></div>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">分析中...</h3>
+            <p class="text-sm text-gray-600">期間データを分析しています</p>
+        </div>
+    </div>
+
+    <!-- 履歴分析レポートモーダル -->
+    <div id="history-analysis-report-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            <!-- ヘッダー -->
+            <div class="p-6 border-b bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                <div class="flex justify-between items-start mb-2">
+                    <h2 class="text-2xl font-bold">📊 期間分析レポート</h2>
+                    <button onclick="closeHistoryAnalysisModal()" class="p-2 hover:bg-white/20 rounded-full transition">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <p class="text-sm opacity-90" id="history-analysis-period"></p>
+            </div>
+
+            <!-- レポート内容 -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div id="history-analysis-report-content" class="prose max-w-none">
+                    <!-- AIレポートがここに表示される -->
+                </div>
+            </div>
+
+            <!-- 質問入力エリア -->
+            <div class="border-t bg-gray-50 p-4">
+                <div class="flex items-center gap-2">
+                    <input
+                        type="text"
+                        id="history-analysis-question-input"
+                        placeholder="このデータについて質問する..."
+                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        onkeypress="if(event.key==='Enter') askHistoryAnalysisQuestion()"
+                    />
+                    <button
+                        onclick="askHistoryAnalysisQuestion()"
+                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                    >
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div id="history-analysis-answer" class="mt-3 hidden">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p class="text-sm font-semibold text-blue-900 mb-1">💬 回答</p>
+                        <p id="history-analysis-answer-text" class="text-sm text-gray-700"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Lucideアイコン初期化
         lucide.createIcons();
@@ -1237,42 +1373,83 @@
         // 閃きメモデータを保存する変数（日付 -> メモのマップ）
         let dailyNotes = {};
 
-        // Gemini API設定（デモ用 - 実際はconfig.jsから取得）
-        const GEMINI_API_KEY = 'YOUR_API_KEY_HERE';
-        const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
-
         // 指標の日本語名とメタ情報
         const metricInfo = {
             // パフォーマンス
-            lbm: { name: 'LBM - 除脂肪体重', unit: 'kg', target: 65, category: 'performance' },
-            directive: { name: '指示書達成状況', unit: '', target: 1, isBinary: true, category: 'performance' },
-            overall: { name: '総合分析スコア', unit: '点', target: 100, category: 'performance' },
+            lbm: { name: 'LBM - 除脂肪体重', unit: 'kg', category: 'performance' },
+            directive: { name: '指示書達成状況', unit: '', isBinary: true, category: 'performance' },
+            overall: { name: '総合分析スコア', unit: '点', category: 'performance' },
 
             // 食事
-            calories: { name: '摂取カロリー', unit: 'kcal', target: 2200, category: 'nutrition' },
-            protein: { name: 'タンパク質', unit: 'g', target: 150, category: 'nutrition' },
-            fat: { name: '脂質', unit: 'g', target: 60, category: 'nutrition' },
-            carbs: { name: '炭水化物', unit: 'g', target: 250, category: 'nutrition' },
-            sugar: { name: '糖質', unit: 'g', target: 200, category: 'nutrition' },
-            fiber: { name: '食物繊維', unit: 'g', target: 20, category: 'nutrition' },
-            vitamin_score: { name: 'ビタミン達成率', unit: '%', target: 100, category: 'nutrition' },
-            mineral_score: { name: 'ミネラル達成率', unit: '%', target: 100, category: 'nutrition' },
+            calories: { name: '摂取カロリー', unit: 'kcal', category: 'nutrition' },
+            protein: { name: 'タンパク質', unit: 'g', category: 'nutrition' },
+            fat: { name: '脂質', unit: 'g', category: 'nutrition' },
+            carbs: { name: '炭水化物', unit: 'g', category: 'nutrition' },
+            sugar: { name: '糖質', unit: 'g', category: 'nutrition' },
+            fiber: { name: '食物繊維', unit: 'g', category: 'nutrition' },
+            vitamin_score: { name: 'ビタミン達成率', unit: '%', category: 'nutrition' },
+            mineral_score: { name: 'ミネラル達成率', unit: '%', category: 'nutrition' },
 
             // 運動
-            total_time: { name: '総時間', unit: '分', target: 60, category: 'training' },
-            total_exercises: { name: '総種目数', unit: '種目', target: 5, category: 'training' },
-            total_weight: { name: '総重量', unit: 'kg', target: 5000, category: 'training' },
-            rm_1: { name: '1RM', unit: 'kg', target: 100, category: 'training' },
-            rm_5: { name: '5RM', unit: 'kg', target: 80, category: 'training' },
-            rm_10: { name: '10RM', unit: 'kg', target: 60, category: 'training' },
+            total_time: { name: '総時間', unit: '分', category: 'training', icon: '⏱️' },
+            total_exercises: { name: '総種目数', unit: '種目', category: 'training', icon: '🏋️' },
+            total_weight: { name: '総重量', unit: 'kg', category: 'training', icon: '💪' },
 
             // コンディション
-            sleep_duration: { name: '睡眠時間', unit: '時間', target: 7.5, category: 'condition' },
-            sleep_quality: { name: '睡眠の質', unit: '点', target: 8, category: 'condition' },
-            appetite: { name: '食欲', unit: '点', target: 8, category: 'condition' },
-            gut_health: { name: '腸内環境', unit: '点', target: 8, category: 'condition' },
-            focus: { name: '集中力', unit: '点', target: 8, category: 'condition' },
-            stress: { name: 'ストレス', unit: '点', target: 3, category: 'condition' }
+            sleep_duration: {
+                name: '睡眠時間',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', '5h以下', '6h', '7h', '8h', '9h以上'];
+                    return labels[value] || `${value}点`;
+                }
+            },
+            sleep_quality: {
+                name: '睡眠の質',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', '最悪', '悪', '普通', '良', '最高'];
+                    return labels[value] || `${value}点`;
+                }
+            },
+            appetite: {
+                name: '食欲',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', 'なし', '少', '普通', '良好', '最高'];
+                    return labels[value] || `${value}点`;
+                }
+            },
+            gut_health: {
+                name: '腸内環境',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', '不調', 'やや悪', '普通', '良好', '最高'];
+                    return labels[value] || `${value}点`;
+                }
+            },
+            focus: {
+                name: '集中力',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', '最低', '低', '普通', '高', '最高'];
+                    return labels[value] || `${value}点`;
+                }
+            },
+            stress: {
+                name: 'ストレス',
+                unit: '',
+                category: 'condition',
+                getLabel: (value) => {
+                    const labels = ['未記録', '極大', '高', '普通', '低', 'なし'];
+                    return labels[value] || `${value}点`;
+                }
+            }
         };
 
         // 実際のデータを読み込む関数
@@ -1296,9 +1473,7 @@
                 total_time: [],
                 total_exercises: [],
                 total_weight: [],
-                rm_1: [],
-                rm_5: [],
-                rm_10: [],
+                rm: {}, // 回数×種目別のRM記録
                 // コンディション
                 sleep_duration: [],
                 sleep_quality: [],
@@ -1308,15 +1483,46 @@
                 stress: []
             };
 
-            // 全期間のデータを取得（過去50年分 = 約18,250日）
-            for (let i = 18249; i >= 0; i--) {
+            // ローカルタイムゾーンで日付を取得する関数
+            const getLocalDateString = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            // 全期間のデータを取得（過去90日分）
+            const today = getLocalDateString(new Date());
+            console.log('[履歴データ取得] 開始 - userId:', userId, 'today:', today);
+
+            // LocalStorageの内容を確認（DEV_MODE用）
+            if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
+                const storageKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.DAILY_RECORDS : 'yourCoachBeta_dailyRecords';
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    const records = JSON.parse(saved);
+                    console.log('[履歴データ取得] LocalStorage内の日付一覧:', Object.keys(records));
+                    console.log('[履歴データ取得] 今日のデータ:', records[today]);
+                } else {
+                    console.log('[履歴データ取得] LocalStorageにデータなし');
+                }
+            }
+
+            for (let i = 89; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(date.getDate() - i);
-                const dateStr = date.toISOString().split('T')[0];
+                const dateStr = getLocalDateString(date);
 
                 let record = null;
                 if (typeof DataService !== 'undefined') {
                     record = await DataService.getDailyRecord(userId, dateStr);
+                }
+
+                if (record) {
+                    console.log(`[履歴データ取得] ${dateStr} (${i}日前): meals=${record.meals?.length || 0}, workouts=${record.workouts?.length || 0}, conditions=${record.conditions ? 'あり' : 'なし'}`);
+                } else if (i <= 7) {
+                    // 過去7日分はログ出力（デバッグ用）
+                    console.log(`[履歴データ取得] ${dateStr} (${i}日前): データなし`);
                 }
 
                 if (record) {
@@ -1348,27 +1554,74 @@
                     // 運動データ - workoutsから集計
                     const workouts = record.workouts || [];
                     let totalTime = 0, totalExercises = workouts.length, totalWeight = 0;
-                    let max1RM = 0, max5RM = 0, max10RM = 0;
+                    const rmData = {}; // 回数×種目別のRMデータ
 
                     workouts.forEach(workout => {
                         totalTime += workout.duration || 0;
-                        (workout.sets || []).forEach(set => {
-                            const weight = set.weight || 0;
-                            const reps = set.reps || 0;
-                            totalWeight += weight * reps;
 
-                            // RM計算（簡易版）
-                            if (reps === 1) max1RM = Math.max(max1RM, weight);
-                            if (reps === 5) max5RM = Math.max(max5RM, weight);
-                            if (reps === 10) max10RM = Math.max(max10RM, weight);
-                        });
+                        // exercisesプロパティがある場合（新形式）
+                        if (workout.exercises) {
+                            workout.exercises.forEach(exercise => {
+                                const exerciseName = exercise.exercise?.name || exercise.name || 'unknown';
+
+                                (exercise.sets || []).forEach(set => {
+                                    const weight = set.weight || 0;
+                                    const reps = set.reps || 0;
+                                    totalWeight += weight * reps;
+
+                                    // RM記録があればそちらを使用（優先）
+                                    if (set.rm && set.rmWeight) {
+                                        const key = `${set.rm}_${exerciseName}`;
+                                        rmData[key] = Math.max(rmData[key] || 0, set.rmWeight);
+                                    }
+                                    // RM記録がない場合は通常のセットデータから推定
+                                    else if (reps > 0 && weight > 0) {
+                                        const key = `${reps}_${exerciseName}`;
+                                        rmData[key] = Math.max(rmData[key] || 0, weight);
+                                    }
+                                });
+                            });
+                        }
+                        // 旧形式（setsが直接workoutの下にある）
+                        else {
+                            const exerciseName = workout.name || 'unknown';
+
+                            (workout.sets || []).forEach(set => {
+                                const weight = set.weight || 0;
+                                const reps = set.reps || 0;
+                                totalWeight += weight * reps;
+
+                                // RM記録があればそちらを使用（優先）
+                                if (set.rm && set.rmWeight) {
+                                    const key = `${set.rm}_${exerciseName}`;
+                                    rmData[key] = Math.max(rmData[key] || 0, set.rmWeight);
+                                }
+                                // RM記録がない場合は通常のセットデータから推定
+                                else if (reps > 0 && weight > 0) {
+                                    const key = `${reps}_${exerciseName}`;
+                                    rmData[key] = Math.max(rmData[key] || 0, weight);
+                                }
+                            });
+                        }
                     });
                     allData.total_time.push(totalTime);
                     allData.total_exercises.push(totalExercises);
                     allData.total_weight.push(totalWeight);
-                    allData.rm_1.push(max1RM);
-                    allData.rm_5.push(max5RM);
-                    allData.rm_10.push(max10RM);
+
+                    // RM記録を保存（すべての回数×種目の組み合わせ）
+                    for (const key in rmData) {
+                        if (!allData.rm) allData.rm = {};
+                        if (!allData.rm[key]) allData.rm[key] = [];
+                        allData.rm[key].push(rmData[key]);
+                    }
+                    // この日に記録がないRM種目には0を追加
+                    if (allData.rm) {
+                        for (const key in allData.rm) {
+                            if (!rmData[key]) {
+                                allData.rm[key].push(0);
+                            }
+                        }
+                    }
 
                     // コンディションデータ - conditionsから取得
                     const conditions = record.conditions || {};
@@ -1379,9 +1632,19 @@
                     allData.focus.push(conditions.focus || 0);
                     allData.stress.push(conditions.stress || 0);
 
-                    // パフォーマンスデータ
-                    const weight = conditions.weight || 0;
-                    const bodyFat = conditions.bodyFatPercentage || 0;
+                    // パフォーマンスデータ - 体組成から取得
+                    // まずrecord.bodyCompositionを確認、なければuserProfileから取得
+                    let weight = 0, bodyFat = 0;
+                    if (record.bodyComposition) {
+                        weight = record.bodyComposition.weight || 0;
+                        bodyFat = record.bodyComposition.bodyFatPercentage || 0;
+                    } else if (window.currentUser) {
+                        // userProfileから取得（フォールバック）
+                        const userProfileKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.USER_PROFILE : 'yourCoachBeta_userProfile';
+                        const userProfile = JSON.parse(localStorage.getItem(userProfileKey) || '{}');
+                        weight = userProfile.weight || 0;
+                        bodyFat = userProfile.bodyFatPercentage || 0;
+                    }
                     const lbm = weight > 0 && bodyFat > 0 ? weight * (1 - bodyFat / 100) : 0;
                     allData.lbm.push(lbm);
 
@@ -1395,10 +1658,22 @@
                 } else {
                     // データがない場合は0を追加
                     Object.keys(allData).forEach(key => {
-                        allData[key].push(0);
+                        if (key === 'rm') {
+                            // rmは特殊処理（オブジェクト型）
+                            for (const rmKey in allData.rm) {
+                                allData.rm[rmKey].push(0);
+                            }
+                        } else if (Array.isArray(allData[key])) {
+                            allData[key].push(0);
+                        }
                     });
                 }
             }
+
+            // データ取得完了のログ
+            console.log('[履歴データ取得] 完了 - カロリーデータ数:', allData.calories.length);
+            console.log('[履歴データ取得] 最後の7日分のカロリー:', allData.calories.slice(-7));
+            console.log('[履歴データ取得] 最後の7日分の運動時間:', allData.total_time.slice(-7));
 
             return allData;
         }
@@ -1422,9 +1697,7 @@
             total_time: [],
             total_exercises: [],
             total_weight: [],
-            rm_1: [],
-            rm_5: [],
-            rm_10: [],
+            rm: {}, // 回数×種目別のRM記録（動的に追加）
             // コンディション
             sleep_duration: [],
             sleep_quality: [],
@@ -1440,8 +1713,18 @@
             const info = metricInfo[metric];
 
             // データまたはメトリック情報がない場合はデフォルト値を返す
-            if (!data || data.length === 0 || !info) {
+            if (!data || !info) {
                 console.warn(`No data or metric info for: ${metric}`);
+                return { min: 0, max: 10 };
+            }
+
+            // 配列チェック
+            if (!Array.isArray(data)) {
+                console.warn(`Data for ${metric} is not an array`);
+                return { min: 0, max: 10 };
+            }
+
+            if (data.length === 0) {
                 return { min: 0, max: 10 };
             }
 
@@ -1475,24 +1758,37 @@
             const result = {};
             // すべての指標のデータを返す
             for (const key in allData) {
-                result[key] = allData[key].slice(-days);
+                if (key === 'rm') {
+                    // rmは特殊処理（オブジェクト型）
+                    result[key] = allData[key];
+                } else if (Array.isArray(allData[key])) {
+                    result[key] = allData[key].slice(-days);
+                }
             }
             return result;
+        }
+
+        // 指定期間のデータを取得
+        function getDataForPeriod(category, period) {
+            if (!allData[category]) {
+                return null;
+            }
+            return allData[category].slice(-period);
         }
 
         // ラベル生成
         function generateLabels(days) {
             if (days <= 7) {
-                // 7日以内: 数字のみ（単位は表示時に追加）
-                const labels = Array.from({ length: days }, (_, i) => `${days - i}`);
+                // 7日以内: 数字のみ（単位は表示時に追加）0=今日
+                const labels = Array.from({ length: days }, (_, i) => `${days - 1 - i}`);
                 return labels;
             } else if (days <= 30) {
-                // 30日以内: 数字のみ（単位は表示時に追加）
-                const labels = Array.from({ length: days }, (_, i) => `${days - i}`);
+                // 30日以内: 数字のみ（単位は表示時に追加）0=今日
+                const labels = Array.from({ length: days }, (_, i) => `${days - 1 - i}`);
                 return labels;
             } else {
-                // 30日以上: 数字のみ（単位は表示時に追加）
-                const labels = Array.from({ length: days }, (_, i) => `${days - i}`);
+                // 30日以上: 数字のみ（単位は表示時に追加）0=今日
+                const labels = Array.from({ length: days }, (_, i) => `${days - 1 - i}`);
                 return labels;
             }
         }
@@ -1605,119 +1901,155 @@
             lucide.createIcons();
         }
 
-        // Gemini分析
-        async function analyzeWithGemini() {
-            const modal = document.getElementById('ai-analysis-modal');
-            const content = document.getElementById('analysis-content');
+        // Gemini分析（親ウィンドウへメッセージ送信）
+        // ローカル傾向調査（現在表示中の期間を使用）
+        function showLocalTrendAnalysis() {
+            const metric = metricInfo[currentSubCategory];
+            const period = currentPeriods[1]; // 現在表示中の期間
+            const data = currentData[1]; // 現在表示中のデータ
 
-            modal.classList.add('show');
-            content.innerHTML = `
-                <div class="ai-analyzing">
-                    <div class="spinner"></div>
-                    <span class="text-gray-600">AIがグラフを分析中...</span>
+            if (!data || data.length === 0) {
+                alert(`データがありません`);
+                return;
+            }
+
+            // データの統計情報を計算
+            const avg = (data.reduce((a, b) => a + b, 0) / data.length).toFixed(1);
+            const max = Math.max(...data).toFixed(1);
+            const min = Math.min(...data).toFixed(1);
+            const trend = (data[data.length - 1] - data[0]).toFixed(1);
+            const trendPercent = ((trend / data[0]) * 100).toFixed(1);
+            const stdDev = calculateStdDev(data).toFixed(1);
+
+            // トレンド判定
+            let trendLabel = '横ばい';
+            let trendIcon = '→';
+            let trendColor = 'text-gray-600';
+            if (Math.abs(parseFloat(trendPercent)) < 5) {
+                trendLabel = '横ばい';
+                trendIcon = '→';
+                trendColor = 'text-gray-600';
+            } else if (parseFloat(trend) > 0) {
+                trendLabel = '増加傾向';
+                trendIcon = '↑';
+                trendColor = 'text-green-600';
+            } else {
+                trendLabel = '減少傾向';
+                trendIcon = '↓';
+                trendColor = 'text-red-600';
+            }
+
+            // モーダル表示
+            const periodLabel = period === 365 ? '1年間' : `${period}日間`;
+            const modalHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onclick="this.remove()">
+                    <div class="bg-white rounded-2xl w-full max-w-md p-6" onclick="event.stopPropagation()">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold flex items-center gap-2">
+                                <i data-lucide="bar-chart-2" class="w-5 h-5 text-blue-600"></i>
+                                傾向調査：${metric.name}
+                            </h3>
+                            <button onclick="this.closest('.fixed').remove()" class="p-2 hover:bg-gray-100 rounded-full">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                <div class="text-sm font-semibold text-blue-900 mb-1">期間</div>
+                                <div class="text-lg font-bold text-blue-700">過去${periodLabel}</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="p-3 bg-gray-50 rounded-lg">
+                                    <div class="text-xs text-gray-600 mb-1">平均値</div>
+                                    <div class="text-lg font-bold">${avg}${metric.unit}</div>
+                                </div>
+                                <div class="p-3 bg-gray-50 rounded-lg">
+                                    <div class="text-xs text-gray-600 mb-1">標準偏差</div>
+                                    <div class="text-lg font-bold">${stdDev}${metric.unit}</div>
+                                </div>
+                                <div class="p-3 bg-green-50 rounded-lg border border-green-200">
+                                    <div class="text-xs text-green-700 mb-1">最高値</div>
+                                    <div class="text-lg font-bold text-green-800">${max}${metric.unit}</div>
+                                </div>
+                                <div class="p-3 bg-red-50 rounded-lg border border-red-200">
+                                    <div class="text-xs text-red-700 mb-1">最低値</div>
+                                    <div class="text-lg font-bold text-red-800">${min}${metric.unit}</div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                                <div class="text-sm font-semibold text-purple-900 mb-2">トレンド</div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-3xl ${trendColor}">${trendIcon}</span>
+                                    <div>
+                                        <div class="text-lg font-bold ${trendColor}">${trendLabel}</div>
+                                        <div class="text-sm text-gray-600">
+                                            ${trend > 0 ? '+' : ''}${trend}${metric.unit} (${trendPercent}%)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            lucide.createIcons();
+        }
 
+        // 標準偏差計算
+        function calculateStdDev(values) {
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            const squareDiffs = values.map(value => Math.pow(value - avg, 2));
+            const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
+            return Math.sqrt(avgSquareDiff);
+        }
+
+        async function analyzeWithGemini() {
+            console.log('[AI分析] ボタンクリック');
+            console.log('currentSubCategory:', currentSubCategory);
+            console.log('currentMainCategory:', currentMainCategory);
+
+            // 現在のカテゴリとデータを取得
             const metric = metricInfo[currentSubCategory];
             const data1 = currentData[1];
             const period1 = currentPeriods[1];
+
+            console.log('data1:', data1);
+            console.log('data1 length:', data1 ? data1.length : 'undefined');
+
+            // データの存在確認
+            if (!data1 || data1.length === 0) {
+                console.error('[AI分析] データが空です');
+                alert('分析するデータがありません。記録を追加してから再度お試しください。');
+                return;
+            }
 
             // データの統計情報を計算
             const avg = (data1.reduce((a, b) => a + b, 0) / data1.length).toFixed(1);
             const max = Math.max(...data1).toFixed(1);
             const min = Math.min(...data1).toFixed(1);
             const trend = (data1[data1.length - 1] - data1[0]).toFixed(1);
-            const trendPercent = ((trend / data1[0]) * 100).toFixed(1);
+            const trendPercent = data1[0] !== 0 ? ((trend / data1[0]) * 100).toFixed(1) : '0.0';
 
-            // Geminiへのプロンプト作成
-            const prompt = `
-あなたはプロフェッショナルなフィットネスコーチです。以下のデータを分析してください。
+            console.log('[AI分析] 統計情報:', { avg, max, min, trend, trendPercent });
 
-【指標】${metric.name}
-【期間】過去${period1}日間
-【データ】${data1.map(v => v.toFixed(1)).join(', ')}
-【統計】
-- 平均: ${avg}${metric.unit}
-- 最高: ${max}${metric.unit}
-- 最低: ${min}${metric.unit}
-- 変化量: ${trend > 0 ? '+' : ''}${trend}${metric.unit} (${trendPercent}%)
-【目標】${metric.target}${metric.unit}
-
-以下の形式で簡潔に回答してください（各セクション200文字以内）：
-
-## トレンド分析
-[増加/減少/横ばいを判定し、その理由を1-2文で]
-
-## 目標達成予測
-[現在のペースで目標達成までの予測日数と根拠を1-2文で]
-
-## 改善提案
-1. [具体的なアクション1]
-2. [具体的なアクション2]
-3. [具体的なアクション3]
-
-## 注意点
-[気をつけるべきポイントを1-2文で]
-`;
-
-            try {
-                // デモ用のシミュレーション（実際はGemini APIを呼び出し）
-                await new Promise(resolve => setTimeout(resolve, 2000));
-
-                // デモ用のレスポンス
-                const demoResponse = `## トレンド分析
-過去${period1}日間で${trend > 0 ? '増加' : '減少'}傾向にあります（${trend > 0 ? '+' : ''}${trend}${metric.unit}、${trendPercent}%の変化）。${trend > 0 ? '順調なペースで目標に向かっています。' : '改善の余地があります。'}
-
-## 目標達成予測
-現在のペース（1日あたり${(trend / period1).toFixed(2)}${metric.unit}）を維持すれば、約${Math.ceil((metric.target - data1[data1.length - 1]) / (trend / period1))}日後に目標達成が可能です。ただし、体調や環境により変動する可能性があります。
-
-## 改善提案
-1. **タンパク質摂取を増やす**: 体重1kgあたり2.0g以上を目指し、鶏むね肉や魚を毎食に取り入れましょう
-2. **筋トレ頻度を週4-5回に**: BIG3（ベンチプレス、スクワット、デッドリフト）を中心に高強度トレーニングを実施
-3. **睡眠時間を確保**: 筋肉の回復と成長には7-8時間の質の高い睡眠が必須です
-
-## 注意点
-データの変動が${Math.max(...data1) - Math.min(...data1) > 1 ? '大きい' : '小さい'}ため、${Math.max(...data1) - Math.min(...data1) > 1 ? '測定環境や時間を統一することで精度が向上します。' : '安定したペースを維持できています。'}短期的な変動に一喜一憂せず、長期的なトレンドに注目しましょう。`;
-
-                content.innerHTML = `
-                    <div class="prose prose-sm max-w-none">
-                        <div class="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                            <div class="flex items-center gap-2 text-purple-700 font-semibold mb-2">
-                                ${metric.name} の分析結果
-                            </div>
-                            <div class="text-xs text-purple-600">
-                                期間: 過去${period1}日間 | 変化: ${trend > 0 ? '+' : ''}${trend}${metric.unit} (${trendPercent}%)
-                            </div>
-                        </div>
-                        <div class="whitespace-pre-line text-sm text-gray-700 leading-relaxed">
-${demoResponse}
-                        </div>
-                        <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <div class="text-xs text-blue-700">
-                                💡 この分析は過去${period1}日間のデータに基づいています。より正確な予測には、30日間以上のデータ蓄積をおすすめします。
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                // アイコンを再初期化
-                lucide.createIcons();
-
-            } catch (error) {
-                content.innerHTML = `
-                    <div class="text-center py-8">
-                        <div class="text-red-600 mb-2">⚠️ 分析に失敗しました</div>
-                        <div class="text-sm text-gray-600">${error.message}</div>
-                        <button type="button" onclick="closeAnalysisModal()" class="mt-4 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
-                            閉じる
-                        </button>
-                    </div>
-                `;
-            }
-        }
-
-        function closeAnalysisModal() {
-            document.getElementById('ai-analysis-modal').classList.remove('show');
+            // 親ウィンドウ（React）にメッセージを送信
+            console.log('[AI分析] postMessage送信');
+            window.parent.postMessage({
+                type: 'REQUEST_AI_ANALYSIS',
+                category: currentMainCategory,
+                subCategory: currentSubCategory,
+                metricInfo: metric,
+                data: data1,
+                period: period1,
+                stats: {
+                    avg: avg,
+                    max: max,
+                    min: min,
+                    trend: trend,
+                    trendPercent: trendPercent
+                }
+            }, '*');
         }
 
         // ヘルプモーダル
@@ -1833,18 +2165,23 @@ ${demoResponse}
                 insights: 'text-yellow-600'       // 閃き: 黄色
             };
 
-            // タブのアクティブ状態を更新
+            // タブのアクティブ状態を更新（色は維持）
             document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active', 'text-green-600', 'text-orange-600', 'text-red-600', 'text-purple-600', 'text-yellow-600', 'bg-white', 'border-b-0');
-                btn.classList.add('text-gray-600');
+                // 背景とボーダーのみを削除、色は維持
+                btn.classList.remove('active', 'bg-white', 'border-b-0');
+                // 各ボタンのカテゴリに応じた色を再設定
+                const btnCategory = btn.getAttribute('data-category');
+                if (btnCategory && categoryColors[btnCategory]) {
+                    btn.classList.remove('text-green-600', 'text-orange-600', 'text-red-600', 'text-purple-600', 'text-yellow-600');
+                    btn.classList.add(categoryColors[btnCategory]);
+                }
             });
 
             const colorClass = categoryColors[category] || 'text-purple-600';
             // イベントが渡されている場合はevent.currentTargetを使用、それ以外は該当するボタンを検索
-            const targetButton = event ? event.currentTarget : document.querySelector(`.tab-button[onclick*="${category}"]`);
+            const targetButton = event ? event.currentTarget : document.querySelector(`.tab-button[data-category="${category}"]`);
             if (targetButton) {
                 targetButton.classList.add('active', colorClass, 'bg-white', 'border-b-0');
-                targetButton.classList.remove('text-gray-600');
             }
 
             // すべてのサブタブを非表示
@@ -1875,8 +2212,8 @@ ${demoResponse}
                 // 各カテゴリの最初の指標を選択
                 const firstMetrics = {
                     nutrition: 'calories',
-                    training: 'workout_duration',
-                    condition: 'weight',
+                    training: 'total_time',
+                    condition: 'sleep_duration',
                     performance: 'lbm'
                 };
 
@@ -1939,17 +2276,26 @@ ${demoResponse}
         function selectPeriod(chartNum, days) {
             currentPeriods[chartNum] = days;
 
-            // タブのアクティブ状態を更新（モバイル対応スタイル）
             const container = chartNum === 1 ? document.getElementById('chart-1') : document.getElementById('chart-2');
-            const bgColor = chartNum === 1 ? 'bg-purple-600' : 'bg-blue-600';
 
-            container.querySelectorAll('.period-button').forEach(btn => {
-                btn.classList.remove('active', 'bg-purple-600', 'bg-blue-600', 'text-white', 'shadow-sm');
-                btn.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300');
-            });
-            if (event && event.currentTarget) {
-                event.currentTarget.classList.add('active', bgColor, 'text-white', 'shadow-sm');
-                event.currentTarget.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+            if (chartNum === 1) {
+                // グラフ1: タブ式スタイル（透明背景＋アンダーライン）
+                container.querySelectorAll('.period-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                if (event && event.currentTarget) {
+                    event.currentTarget.classList.add('active');
+                }
+            } else {
+                // グラフ2: ボタン式スタイル（背景色付き）
+                container.querySelectorAll('.period-button').forEach(btn => {
+                    btn.classList.remove('active', 'bg-purple-600', 'bg-blue-600', 'text-white', 'shadow-sm');
+                    btn.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+                });
+                if (event && event.currentTarget) {
+                    event.currentTarget.classList.add('active', 'bg-blue-600', 'text-white', 'shadow-sm');
+                    event.currentTarget.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+                }
             }
 
             updateChart(chartNum);
@@ -2166,6 +2512,11 @@ ${demoResponse}
                 const valueText = (typeof currentValue === 'number' && currentValue === 1) ? '✓ 完了' : '✗ 未完了';
                 document.getElementById(`chart-value-${chartNum}`).textContent = valueText;
                 document.getElementById(`chart-unit-${chartNum}`).textContent = '';
+            } else if (metric.getLabel && typeof currentValue === 'number') {
+                // 段階説明がある場合
+                const valueText = metric.getLabel(currentValue);
+                document.getElementById(`chart-value-${chartNum}`).textContent = valueText;
+                document.getElementById(`chart-unit-${chartNum}`).textContent = '';
             } else {
                 const valueText = (typeof currentValue === 'number' && !isNaN(currentValue))
                     ? `${currentValue.toFixed(1)}${metric.unit}`
@@ -2201,6 +2552,50 @@ ${demoResponse}
                 document.getElementById(`stat-avg-unit-${chartNum}`).textContent = '';
                 document.getElementById(`stat-max-unit-${chartNum}`).textContent = '';
                 document.getElementById(`stat-min-unit-${chartNum}`).textContent = '';
+
+                // 標準偏差を計算
+                const stdDev = calculateStdDev(data).toFixed(1);
+                const stddevElement = document.getElementById(`stat-stddev-${chartNum}`);
+                if (stddevElement) {
+                    stddevElement.textContent = `${stdDev}${metric.unit}`;
+                }
+
+                // トレンドを計算
+                const trend = (data[data.length - 1] - data[0]).toFixed(1);
+                const trendPercent = ((trend / data[0]) * 100).toFixed(1);
+
+                let trendLabel = '横ばい';
+                let trendIcon = '→';
+                let trendColor = 'text-gray-600';
+                if (Math.abs(parseFloat(trendPercent)) < 5) {
+                    trendLabel = '横ばい';
+                    trendIcon = '→';
+                    trendColor = 'text-gray-600';
+                } else if (parseFloat(trend) > 0) {
+                    trendLabel = '増加傾向';
+                    trendIcon = '↑';
+                    trendColor = 'text-green-600';
+                } else {
+                    trendLabel = '減少傾向';
+                    trendIcon = '↓';
+                    trendColor = 'text-red-600';
+                }
+
+                const trendIconElement = document.getElementById(`stat-trend-icon-${chartNum}`);
+                const trendLabelElement = document.getElementById(`stat-trend-label-${chartNum}`);
+                const trendValueElement = document.getElementById(`stat-trend-value-${chartNum}`);
+
+                if (trendIconElement) {
+                    trendIconElement.textContent = trendIcon;
+                    trendIconElement.className = `text-2xl ${trendColor}`;
+                }
+                if (trendLabelElement) {
+                    trendLabelElement.textContent = trendLabel;
+                    trendLabelElement.className = `text-sm font-bold ${trendColor}`;
+                }
+                if (trendValueElement) {
+                    trendValueElement.textContent = `${trend > 0 ? '+' : ''}${trend}${metric.unit} (${trendPercent}%)`;
+                }
             }
 
             // Y軸レンジ設定（データに基づいて自動調整）
@@ -2446,7 +2841,7 @@ ${demoResponse}
                         // 日付情報
                         const today = new Date();
                         const totalDays = chart.data.labels.length;
-                        const daysAgo = totalDays - lastClickedIndex[chartNum];
+                        const daysAgo = totalDays - 1 - lastClickedIndex[chartNum];
                         const targetDate = new Date(today);
                         targetDate.setDate(today.getDate() - daysAgo);
                         const dateStr = `${targetDate.getMonth() + 1}/${targetDate.getDate()}`;
@@ -2457,7 +2852,10 @@ ${demoResponse}
 
                         // 値のフォーマット
                         let displayValue;
-                        if (typeof value === 'number') {
+                        if (metric.getLabel && typeof value === 'number') {
+                            // 段階説明がある場合
+                            displayValue = metric.getLabel(value);
+                        } else if (typeof value === 'number') {
                             displayValue = value % 1 === 0 ? value.toString() : value.toFixed(1);
                         } else {
                             displayValue = value || '-';
@@ -2630,9 +3028,9 @@ ${demoResponse}
                                             return '';
                                         }
 
-                                        // 最後のラベル（右端）にのみ「日前」を追加
+                                        // 最後のラベル（右端）にのみ単位を追加
                                         if (index === totalDays - 1) {
-                                            return label + '日前';
+                                            return label === '0' ? '今日' : label + '日前';
                                         }
 
                                         return label;
@@ -2652,9 +3050,27 @@ ${demoResponse}
             charts[chartNum] = new Chart(document.getElementById(`main-chart-${chartNum}`), chartConfig);
         }
 
+        // RM用の変数
+        let currentRMReps = null;
+        let currentRMExercise = null;
+
         // 小カテゴリ選択
         function selectSubCategory(category, subCategory) {
             currentSubCategory = subCategory;
+
+            // RM選択時は調整パネルを表示
+            const rmPanel = document.getElementById('rm-control-panel');
+            if (subCategory === 'rm') {
+                if (rmPanel) {
+                    rmPanel.classList.remove('hidden');
+                    initializeRMPanel();
+                }
+                return; // パネル表示のみで、グラフは表示しない
+            } else {
+                if (rmPanel) rmPanel.classList.add('hidden');
+                currentRMReps = null;
+                currentRMExercise = null;
+            }
 
             // 全期間の最低値・最大値を再計算
             globalMinMax = calculateGlobalMinMax(subCategory);
@@ -2685,6 +3101,120 @@ ${demoResponse}
                     event.currentTarget.classList.remove('border-transparent', 'text-gray-700');
                 }
             }
+
+            updateChart(1);
+            if (comparisonMode) {
+                updateChart(2);
+            }
+        }
+
+        // RMパネルの初期化
+        function initializeRMPanel() {
+            if (!allData.rm || Object.keys(allData.rm).length === 0) {
+                document.getElementById('rm-reps-buttons').innerHTML = '<span class="text-xs text-gray-500">RM記録がありません</span>';
+                document.getElementById('rm-exercise-buttons').innerHTML = '';
+                return;
+            }
+
+            // 利用可能な回数を抽出
+            const repsSet = new Set();
+            Object.keys(allData.rm).forEach(key => {
+                const [reps, exercise] = key.split('_');
+                repsSet.add(parseInt(reps));
+            });
+            const repsList = Array.from(repsSet).sort((a, b) => a - b);
+
+            // 回数ボタンを生成
+            const repsContainer = document.getElementById('rm-reps-buttons');
+            repsContainer.innerHTML = repsList.map((reps, index) =>
+                `<button type="button"
+                    class="px-2 py-1 text-xs font-semibold rounded border ${index === 0 ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-400'}"
+                    onclick="selectRMReps(${reps})">
+                    ${reps}RM
+                </button>`
+            ).join('');
+
+            // 最初の回数を自動選択
+            if (repsList.length > 0) {
+                selectRMReps(repsList[0]);
+            }
+        }
+
+        // RM回数を選択
+        function selectRMReps(reps) {
+            currentRMReps = reps;
+
+            // ボタンのアクティブ状態を更新
+            document.querySelectorAll('#rm-reps-buttons button').forEach(btn => {
+                btn.classList.remove('bg-orange-600', 'text-white', 'border-orange-600');
+                btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+            });
+            event.currentTarget.classList.add('bg-orange-600', 'text-white', 'border-orange-600');
+            event.currentTarget.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+
+            // この回数で利用可能な種目を抽出
+            const exercises = [];
+            Object.keys(allData.rm).forEach(key => {
+                const [keyReps, exercise] = key.split('_');
+                if (parseInt(keyReps) === reps) {
+                    exercises.push(exercise);
+                }
+            });
+
+            // 種目ボタンを生成
+            const exerciseContainer = document.getElementById('rm-exercise-buttons');
+            exerciseContainer.innerHTML = exercises.map((exercise, index) =>
+                `<button type="button"
+                    class="px-2 py-1 text-xs font-semibold rounded border ${index === 0 ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-400'}"
+                    onclick="selectRMExercise('${exercise}')">
+                    ${exercise}
+                </button>`
+            ).join('');
+
+            // 最初の種目を自動選択
+            if (exercises.length > 0) {
+                currentRMExercise = exercises[0];
+                updateRMChart();
+            }
+        }
+
+        // RM種目を選択
+        function selectRMExercise(exercise) {
+            currentRMExercise = exercise;
+
+            // ボタンのアクティブ状態を更新
+            document.querySelectorAll('#rm-exercise-buttons button').forEach(btn => {
+                btn.classList.remove('bg-orange-600', 'text-white', 'border-orange-600');
+                btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+            });
+            event.currentTarget.classList.add('bg-orange-600', 'text-white', 'border-orange-600');
+            event.currentTarget.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+
+            updateRMChart();
+        }
+
+        // RMグラフを更新
+        function updateRMChart() {
+            const key = `${currentRMReps}_${currentRMExercise}`;
+            currentSubCategory = `rm_${key}`;
+
+            // metricInfoに動的に追加
+            if (!metricInfo[currentSubCategory]) {
+                metricInfo[currentSubCategory] = {
+                    name: `${currentRMExercise} ${currentRMReps}RM`,
+                    unit: 'kg',
+                    icon: '💪',
+                    isBinary: false
+                };
+            }
+
+            // allDataにマッピング
+            if (!allData[currentSubCategory]) {
+                allData[currentSubCategory] = allData.rm[key] || [];
+            }
+
+            globalMinMax = calculateGlobalMinMax(currentSubCategory);
+            currentAxisRanges = { 1: { min: null, max: null }, 2: { min: null, max: null } };
 
             updateChart(1);
             if (comparisonMode) {
@@ -3250,7 +3780,11 @@ ${demoResponse}
             // 日付をフォーマット (10/15形式 と YYYY-MM-DD形式)
             const dateString = `${targetDate.getMonth() + 1}/${targetDate.getDate()}`;
             const daysAgoString = daysAgo === 0 ? '今日' : `${daysAgo}日前`;
-            const dateKey = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD形式
+            // ローカルタイムゾーンで日付を取得
+            const year = targetDate.getFullYear();
+            const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const day = String(targetDate.getDate()).padStart(2, '0');
+            const dateKey = `${year}-${month}-${day}`; // YYYY-MM-DD形式
 
             // モーダルの内容を更新
             document.getElementById('drilldown-title').textContent = `${dateString} (${daysAgoString})`;
@@ -3260,6 +3794,9 @@ ${demoResponse}
             // 値の表示（バイナリデータの場合は完了/未完了に変換）
             if (metric.isBinary) {
                 document.getElementById('drilldown-value').textContent = value === 1 ? '✅ 完了' : '❌ 未完了';
+            } else if (metric.getLabel && typeof value === 'number') {
+                // 段階説明がある場合
+                document.getElementById('drilldown-value').textContent = metric.getLabel(value);
             } else {
                 document.getElementById('drilldown-value').textContent = `${value.toFixed(1)} ${metric.unit}`;
             }
@@ -3361,6 +3898,21 @@ ${demoResponse}
 
         // 初期表示
         async function init() {
+            // DEV_MODEの確認
+            const isDevMode = typeof DEV_MODE !== 'undefined' && DEV_MODE;
+
+            // 現在のユーザー情報を取得
+            if (isDevMode) {
+                // DEV_MODE: LocalStorageを使用
+                window.currentUser = { uid: DEV_USER_ID || 'demo_user' };
+            } else if (typeof firebase !== 'undefined' && firebase.auth) {
+                // 本番モード: Firebaseを使用
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    window.currentUser = { uid: user.uid };
+                }
+            }
+
             loadGoals(); // 目標データを読み込み
             loadAnnotations(); // メモデータを読み込み
 
@@ -3402,7 +3954,7 @@ ${demoResponse}
             // 日付情報を取得
             const today = new Date();
             const totalDays = chart.data.labels.length;
-            const daysAgo = totalDays - index;
+            const daysAgo = totalDays - 1 - index;
             const targetDate = new Date(today);
             targetDate.setDate(today.getDate() - daysAgo);
             const dateStr = `${targetDate.getMonth() + 1}/${targetDate.getDate()}`;
@@ -3418,7 +3970,11 @@ ${demoResponse}
 
             // 値のフォーマット
             let displayValue;
-            if (typeof value === 'number') {
+            const metric = metricInfo[categoryToUse];
+            if (metric && metric.getLabel && typeof value === 'number') {
+                // 段階説明がある場合
+                displayValue = metric.getLabel(value);
+            } else if (typeof value === 'number') {
                 displayValue = value % 1 === 0 ? value.toString() : value.toFixed(1);
             } else {
                 displayValue = value || '-';
@@ -3513,6 +4069,272 @@ ${demoResponse}
 
             // アイコンを再描画
             lucide.createIcons();
+        }
+
+        // ========== 履歴分析機能 ==========
+
+        // 履歴分析の実行
+        async function performHistoryAnalysis() {
+            // ローディングモーダルを表示
+            document.getElementById('history-analysis-loading-modal').classList.remove('hidden');
+
+            try {
+                // 現在表示中の期間データを取得
+                const days = currentPeriods[1];
+                const report = await generateHistoryAnalysisReport(days);
+
+                // ローディングモーダルを非表示
+                document.getElementById('history-analysis-loading-modal').classList.add('hidden');
+
+                // レポートモーダルを表示
+                document.getElementById('history-analysis-period').textContent = `過去${days}日間の分析`;
+                document.getElementById('history-analysis-report-content').innerHTML = report;
+                document.getElementById('history-analysis-report-modal').classList.remove('hidden');
+
+                // アイコンを再描画
+                lucide.createIcons();
+            } catch (error) {
+                console.error('[履歴分析] エラー:', error);
+                document.getElementById('history-analysis-loading-modal').classList.add('hidden');
+                alert('分析中にエラーが発生しました。もう一度お試しください。');
+            }
+        }
+
+        // 履歴分析レポートの生成
+        async function generateHistoryAnalysisReport(days) {
+            // 期間データの集計
+            const periodData = generateData(days);
+
+            // 各項目の統計計算
+            const stats = {};
+            const conditionLabels = {
+                sleep_duration: ['', '5h以下', '6h', '7h', '8h', '9h以上'],
+                sleep_quality: ['', '最悪', '悪', '普通', '良', '最高'],
+                appetite: ['', 'なし', '少', '普通', '良好', '最高'],
+                gut_health: ['', '不調', 'やや悪', '普通', '良好', '最高'],
+                focus: ['', '最低', '低', '普通', '高', '最高'],
+                stress: ['', '極大', '高', '普通', '低', 'なし']
+            };
+
+            for (const key in periodData) {
+                if (Array.isArray(periodData[key]) && periodData[key].length > 0) {
+                    const validData = periodData[key].filter(v => typeof v === 'number' && !isNaN(v) && v > 0);
+                    if (validData.length > 0) {
+                        const sum = validData.reduce((a, b) => a + b, 0);
+                        const avg = sum / validData.length;
+                        const max = Math.max(...validData);
+                        const min = Math.min(...validData);
+
+                        stats[key] = {
+                            avg: avg.toFixed(1),
+                            max: max.toFixed(1),
+                            min: min.toFixed(1),
+                            count: validData.length,
+                            avgLabel: conditionLabels[key] ? conditionLabels[key][Math.round(avg)] : null
+                        };
+                    }
+                }
+            }
+
+            // ユーザー情報の取得（localStorage経由）
+            const userProfileKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.USER_PROFILE : 'yourCoachBeta_userProfile';
+            const userProfile = JSON.parse(localStorage.getItem(userProfileKey) || '{}');
+            const currentPurpose = userProfile.purpose || 'メンテナンス';
+            const userStyle = userProfile.style || '一般';
+
+            // プロンプト生成
+            const prompt = `## 役割
+
+トップアスリート指導のエリートパーソナルコーチとして、ユーザーの過去${days}日間のデータから傾向・相関・特徴を分析し、新たな気づきを提供します。
+
+## 分析の基本原則
+
+- **目的**: ${currentPurpose}
+- **スタイル**: ${userStyle}
+- **期間**: 過去${days}日間
+- **重点**: 各項目の相関関係、ユーザー固有の傾向、特徴的なパターンを発見
+
+## 期間データ（過去${days}日間）
+
+### 栄養の推移
+${stats.calories ? `- カロリー平均: ${stats.calories.avg}kcal（最低${stats.calories.min}～最高${stats.calories.max}kcal）` : ''}
+${stats.protein ? `- タンパク質平均: ${stats.protein.avg}g（最低${stats.protein.min}～最高${stats.protein.max}g）` : ''}
+${stats.fat ? `- 脂質平均: ${stats.fat.avg}g（最低${stats.fat.min}～最高${stats.fat.max}g）` : ''}
+${stats.carbs ? `- 炭水化物平均: ${stats.carbs.avg}g（最低${stats.carbs.min}～最高${stats.carbs.max}g）` : ''}
+
+### 運動の推移
+${stats.total_time ? `- 総時間平均: ${stats.total_time.avg}分（最低${stats.total_time.min}～最高${stats.total_time.max}分）` : ''}
+${stats.total_exercises ? `- 実施種目数平均: ${stats.total_exercises.avg}種目` : ''}
+${stats.total_weight ? `- 総重量平均: ${stats.total_weight.avg}kg` : ''}
+
+### コンディションの推移
+${stats.sleep_duration ? `- 睡眠時間平均: ${stats.sleep_duration.avgLabel || stats.sleep_duration.avg}` : ''}
+${stats.sleep_quality ? `- 睡眠の質平均: ${stats.sleep_quality.avgLabel || stats.sleep_quality.avg}` : ''}
+${stats.appetite ? `- 食欲平均: ${stats.appetite.avgLabel || stats.appetite.avg}` : ''}
+${stats.gut_health ? `- 腸内環境平均: ${stats.gut_health.avgLabel || stats.gut_health.avg}` : ''}
+${stats.focus ? `- 集中力平均: ${stats.focus.avgLabel || stats.focus.avg}` : ''}
+${stats.stress ? `- ストレス平均: ${stats.stress.avgLabel || stats.stress.avg}` : ''}
+
+## 出力形式（厳守）
+
+過去${days}日間の分析レポートをお届けします。
+
+---
+
+① 相関関係の発見
+
+**栄養 × 運動**
+[データから見つかった相関を1-2文で具体的な数値を示して説明]
+
+**栄養 × コンディション**
+[データから見つかった相関を1-2文で具体的な数値を示して説明]
+
+**運動 × コンディション**
+[データから見つかった相関を1-2文で具体的な数値を示して説明]
+
+---
+
+② あなたの傾向
+
+**栄養の傾向**
+[期間全体での栄養摂取の特徴を1-2文で具体的な数値を示して説明]
+
+**運動の傾向**
+[期間全体での運動実施の特徴を1-2文で具体的な数値を示して説明]
+
+**コンディションの傾向**
+[期間全体でのコンディションの特徴を1-2文で具体的な数値を示して説明]
+
+---
+
+③ 特徴的なパターン
+
+[ユーザー固有の特徴を箇条書きで2-3個]
+- [パターン1：データに基づいた発見]
+- [パターン2：データに基づいた発見]
+
+---
+
+④ 新たな気づき
+
+[上記の分析から、ユーザーが気づいていなかった可能性のある発見を2-3文で提示]
+
+---
+
+ルール:
+- 数値は必ず具体的に示す
+- 「良い」「悪い」等の抽象表現禁止
+- データに基づいた事実のみ記載
+- 改善指示は不要（気づきの提供のみ）
+- リスト表記は「-」を使用
+- 参考文献・注釈禁止
+- **太字**は見出しや強調で使用可能`;
+
+            // Gemini APIにリクエスト
+            const apiKey = typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '';
+            const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+
+            const response = await fetch(`${apiUrl}?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: prompt }]
+                    }]
+                })
+            });
+
+            const data = await response.json();
+            const reportText = data.candidates[0].content.parts[0].text;
+
+            // Markdownを簡易HTML変換
+            let html = reportText
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/^---$/gm, '<hr class="my-4">')
+                .replace(/^① (.+)$/gm, '<h3 class="text-xl font-bold text-purple-700 mt-6 mb-3">① $1</h3>')
+                .replace(/^② (.+)$/gm, '<h3 class="text-xl font-bold text-purple-700 mt-6 mb-3">② $1</h3>')
+                .replace(/^③ (.+)$/gm, '<h3 class="text-xl font-bold text-purple-700 mt-6 mb-3">③ $1</h3>')
+                .replace(/^④ (.+)$/gm, '<h3 class="text-xl font-bold text-purple-700 mt-6 mb-3">④ $1</h3>')
+                .replace(/^- (.+)$/gm, '<li class="ml-4">$1</li>')
+                .replace(/\n\n/g, '</p><p class="mb-3">')
+                .replace(/^(.+)$/gm, '<p class="mb-3">$1</p>');
+
+            return html;
+        }
+
+        // 履歴分析モーダルを閉じる
+        function closeHistoryAnalysisModal() {
+            document.getElementById('history-analysis-report-modal').classList.add('hidden');
+            document.getElementById('history-analysis-answer').classList.add('hidden');
+            document.getElementById('history-analysis-question-input').value = '';
+        }
+
+        // 履歴分析への質問
+        async function askHistoryAnalysisQuestion() {
+            const questionInput = document.getElementById('history-analysis-question-input');
+            const question = questionInput.value.trim();
+
+            if (!question) {
+                alert('質問を入力してください');
+                return;
+            }
+
+            // ローディング表示
+            const answerDiv = document.getElementById('history-analysis-answer');
+            const answerText = document.getElementById('history-analysis-answer-text');
+            answerDiv.classList.remove('hidden');
+            answerText.textContent = '回答を生成中...';
+
+            try {
+                const days = currentPeriods[1];
+                const periodData = generateData(days);
+
+                // 統計データを簡潔にまとめる
+                const summaryStats = {};
+                for (const key in periodData) {
+                    if (Array.isArray(periodData[key]) && periodData[key].length > 0) {
+                        const validData = periodData[key].filter(v => typeof v === 'number' && !isNaN(v) && v > 0);
+                        if (validData.length > 0) {
+                            const sum = validData.reduce((a, b) => a + b, 0);
+                            const avg = sum / validData.length;
+                            summaryStats[key] = avg.toFixed(1);
+                        }
+                    }
+                }
+
+                const prompt = `あなたは過去${days}日間のデータを分析したコーチです。
+
+ユーザーの質問: ${question}
+
+以下のデータを参考に、具体的な数値を示して回答してください。
+
+期間データ（平均値）:
+${JSON.stringify(summaryStats, null, 2)}
+
+回答は簡潔に1-2文で。データに基づいた事実のみ記載してください。`;
+
+                const apiKey = typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '';
+                const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+
+                const response = await fetch(`${apiUrl}?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                const answer = data.candidates[0].content.parts[0].text;
+
+                answerText.textContent = answer;
+                questionInput.value = '';
+            } catch (error) {
+                console.error('[履歴分析質問] エラー:', error);
+                answerText.textContent = 'エラーが発生しました。もう一度お試しください。';
+            }
         }
 
         init();
