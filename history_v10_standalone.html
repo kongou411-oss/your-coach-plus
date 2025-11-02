@@ -1343,6 +1343,18 @@
     </div>
 
     <script>
+        // ===== Firebase初期化 =====
+        let auth, db, storage, functions;
+        if (!DEV_MODE) {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+            }
+            auth = firebase.auth();
+            db = firebase.firestore();
+            storage = firebase.storage();
+            functions = firebase.functions();
+        }
+
         // Lucideアイコン初期化
         lucide.createIcons();
 
