@@ -788,6 +788,8 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
             const [showQuickCreate, setShowQuickCreate] = useState(false);
             const [isAICreation, setIsAICreation] = useState(false); // AI解析からの作成かどうか
             const [isFromAIRecognition, setIsFromAIRecognition] = useState(false); // AI写真解析経由かどうか
+            const [showMealInfoModal, setShowMealInfoModal] = useState(false); // 食事記録の使い方モーダル
+            const [showWorkoutInfoModal, setShowWorkoutInfoModal] = useState(false); // 運動記録の使い方モーダル
             const [nutritionInputMethod, setNutritionInputMethod] = useState('manual'); // 'manual' or 'ai'
             const [aiImage, setAiImage] = useState(null); // AI推定用の画像
             const [aiImagePreview, setAiImagePreview] = useState(null); // AI推定用の画像プレビュー
@@ -5418,11 +5420,31 @@ RM回数と重量を別々に入力してください。`
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden slide-up flex flex-col">
                         <div className="bg-white border-b p-4 flex justify-between items-center flex-shrink-0">
-                            <h3 className="text-lg font-bold">
-                                {type === 'meal' && '食事を記録'}
-                                {type === 'workout' && '運動を記録'}
-                                {type === 'condition' && 'コンディションを記録'}
-                            </h3>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-bold">
+                                    {type === 'meal' && '食事を記録'}
+                                    {type === 'workout' && '運動を記録'}
+                                    {type === 'condition' && 'コンディションを記録'}
+                                </h3>
+                                {type === 'meal' && (
+                                    <button
+                                        onClick={() => setShowMealInfoModal(true)}
+                                        className="p-1.5 hover:bg-gray-100 rounded-full transition"
+                                        title="使い方"
+                                    >
+                                        <Icon name="HelpCircle" size={20} className="text-green-600" />
+                                    </button>
+                                )}
+                                {type === 'workout' && (
+                                    <button
+                                        onClick={() => setShowWorkoutInfoModal(true)}
+                                        className="p-1.5 hover:bg-gray-100 rounded-full transition"
+                                        title="使い方"
+                                    >
+                                        <Icon name="HelpCircle" size={20} className="text-orange-600" />
+                                    </button>
+                                )}
+                            </div>
                             <button onClick={() => {
                                 // 食事記録中に食材を選択している場合は、まず検索リストに戻る
                                 if (type === 'meal' && selectedItem) {
@@ -5446,6 +5468,272 @@ RM回数と重量を別々に入力してください。`
                             {type === 'condition' && renderConditionInput()}
                         </div>
                     </div>
+
+                    {/* 食事記録の使い方モーダル */}
+                    {showMealInfoModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                                {/* ヘッダー */}
+                                <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                                    <h3 className="text-lg font-bold flex items-center gap-2">
+                                        <Icon name="Utensils" size={20} />
+                                        食事記録の使い方
+                                    </h3>
+                                    <button
+                                        onClick={() => setShowMealInfoModal(false)}
+                                        className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                                    >
+                                        <Icon name="X" size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 space-y-6">
+                                    {/* 記録方法 */}
+                                    <div className="space-y-4">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="Plus" size={20} className="text-green-600" />
+                                            食事の記録方法
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                                <p className="font-semibold text-purple-900 mb-2 flex items-center gap-2">
+                                                    <Icon name="Camera" size={18} />
+                                                    方法1: 写真から記録（AI解析）
+                                                </p>
+                                                <p className="text-sm text-purple-800 mb-2">
+                                                    食事の写真を撮影すると、AIが自動で食材を認識して栄養素を計算します。最も簡単な方法です。精肉のパックを解析すると、g数がそのまま一覧に登録されます。
+                                                </p>
+                                                <p className="text-xs text-purple-700">
+                                                    💡 クレジット1個消費 | 複数の食材を一度に認識可能
+                                                </p>
+                                            </div>
+                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                                    <Icon name="Search" size={18} />
+                                                    方法2: 検索して記録
+                                                </p>
+                                                <p className="text-sm text-blue-800 mb-2">
+                                                    食材名で検索してデータベースから選択します。正確な栄養素データで記録できます。
+                                                </p>
+                                                <p className="text-xs text-blue-700">
+                                                    💡 クレジット不要 | 1,000種類以上の食材データベース
+                                                </p>
+                                            </div>
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                                <p className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                                                    <Icon name="Edit" size={18} />
+                                                    方法3: 手動で作成
+                                                </p>
+                                                <p className="text-sm text-amber-800 mb-2">
+                                                    カスタム食材を自分で作成します。栄養成分表示や八訂データを参照して入力します。
+                                                </p>
+                                                <p className="text-xs text-amber-700">
+                                                    💡 クレジット不要 | 一度作成すると保存され、次回から簡単に使用可能
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                                            <p className="text-sm text-green-800">
+                                                <strong>💡 推奨:</strong> Your Coach+は自炊での食事管理を前提として設計されています。食材単位で記録することで、より正確な栄養管理が可能になります。
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* テンプレート機能 */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="Clock" size={20} className="text-indigo-600" />
+                                            テンプレート機能
+                                        </h4>
+                                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                                            <p className="font-semibold text-indigo-900 mb-2">
+                                                よく食べる食事を保存して簡単に記録
+                                            </p>
+                                            <p className="text-sm text-indigo-800 mb-3">
+                                                12日以上利用すると開放される機能です。頻繁に食べる食事の組み合わせをテンプレートとして保存できます。
+                                            </p>
+                                            <div className="bg-white rounded p-3 text-sm text-gray-700 border border-indigo-300">
+                                                <p className="font-semibold mb-1">使い方:</p>
+                                                <ol className="list-decimal list-inside space-y-1 text-xs">
+                                                    <li>食事を記録した後、「テンプレートとして保存」をタップ</li>
+                                                    <li>次回から記録画面の下部にテンプレートが表示される</li>
+                                                    <li>テンプレートをタップすると、保存した食事がすぐに追加される</li>
+                                                </ol>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 編集・削除 */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="Settings" size={20} className="text-gray-600" />
+                                            編集・削除
+                                        </h4>
+                                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                            <p className="font-semibold text-gray-900 mb-2">食事を編集・削除する</p>
+                                            <p className="text-sm text-gray-700 mb-2">
+                                                食事カードの右上にある「ペン」アイコンで食事全体を編集、「ゴミ箱」アイコンで削除できます。
+                                            </p>
+                                            <p className="text-xs text-gray-600">
+                                                💡 各食材の個別編集・削除は、編集画面で行えます。
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* 閉じるボタン */}
+                                    <div className="pt-4 border-t">
+                                        <button
+                                            onClick={() => setShowMealInfoModal(false)}
+                                            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition"
+                                        >
+                                            閉じる
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 運動記録の使い方モーダル */}
+                    {showWorkoutInfoModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                                {/* ヘッダー */}
+                                <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-red-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                                    <h3 className="text-lg font-bold flex items-center gap-2">
+                                        <Icon name="Dumbbell" size={20} />
+                                        運動記録の使い方
+                                    </h3>
+                                    <button
+                                        onClick={() => setShowWorkoutInfoModal(false)}
+                                        className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                                    >
+                                        <Icon name="X" size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 space-y-6">
+                                    {/* 記録方法 */}
+                                    <div className="space-y-4">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="Plus" size={20} className="text-orange-600" />
+                                            運動の記録方法
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                                    <Icon name="Search" size={18} />
+                                                    方法1: 検索して記録
+                                                </p>
+                                                <p className="text-sm text-blue-800 mb-2">
+                                                    種目名で検索してデータベースから選択します。
+                                                </p>
+                                                <p className="text-xs text-blue-700">
+                                                    💡 100種類以上の運動種目データベース
+                                                </p>
+                                            </div>
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                                <p className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                                                    <Icon name="Edit" size={18} />
+                                                    方法2: 手動で作成
+                                                </p>
+                                                <p className="text-sm text-amber-800 mb-2">
+                                                    カスタム種目を自分で作成します。オリジナルの運動を記録できます。
+                                                </p>
+                                                <p className="text-xs text-amber-700">
+                                                    💡 一度作成すると保存され、次回から簡単に使用可能
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 入力項目 */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="Edit3" size={20} className="text-purple-600" />
+                                            入力項目
+                                        </h4>
+                                        <div className="space-y-2">
+                                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                                <p className="font-semibold text-purple-900 mb-1">種目・セット</p>
+                                                <p className="text-sm text-purple-800">
+                                                    運動の種目名と実施したセット数を入力します。
+                                                </p>
+                                            </div>
+                                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                                <p className="font-semibold text-purple-900 mb-1">重量・回数</p>
+                                                <p className="text-sm text-purple-800 mb-2">
+                                                    筋トレの場合は、使用重量（kg）と回数を入力します。自重トレーニングの場合は、自分の体重（kg）を記入します。
+                                                </p>
+                                                <p className="text-xs text-purple-700">
+                                                    💡 総重量 = 重量 × 回数 × セット数
+                                                </p>
+                                            </div>
+                                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                                <p className="font-semibold text-purple-900 mb-1">時間</p>
+                                                <p className="text-sm text-purple-800">
+                                                    運動の実施時間（分）を入力します。筋トレ、有酸素運動、ストレッチなど、すべての運動で記録できます。
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* RM値について */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="TrendingUp" size={20} className="text-green-600" />
+                                            RM値とは
+                                        </h4>
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                            <p className="font-semibold text-green-900 mb-2">
+                                                Repetition Maximum（最大挙上重量）
+                                            </p>
+                                            <p className="text-sm text-green-800 mb-3">
+                                                RM値は、その重量で何回できるかを示す指標です。例えば、100kgで10回できる場合、「10RM = 100kg」となります。
+                                            </p>
+                                            <div className="bg-white rounded p-3 text-sm text-gray-700 border border-green-300">
+                                                <p className="font-semibold mb-2">RM値の計算式:</p>
+                                                <p className="text-xs mb-2">1RM（最大挙上重量） = 使用重量 × (1 + 回数 ÷ 40)</p>
+                                                <p className="text-xs text-green-700">
+                                                    例: 80kg × 10回 → 1RM = 100kg
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 総重量と総時間 */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="BarChart3" size={20} className="text-indigo-600" />
+                                            総重量と総時間の表示
+                                        </h4>
+                                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                                            <p className="font-semibold text-indigo-900 mb-2">
+                                                運動セクションの見出し横に表示
+                                            </p>
+                                            <p className="text-sm text-indigo-800 mb-3">
+                                                その日の筋トレ総重量（kg）と全運動の総時間（分）が自動で集計されて表示されます。
+                                            </p>
+                                            <div className="bg-white rounded p-3 text-sm text-gray-700 border border-indigo-300 space-y-1">
+                                                <p className="text-xs"><strong>総重量:</strong> すべての筋トレ種目の「重量×回数×セット数」の合計</p>
+                                                <p className="text-xs"><strong>総時間:</strong> すべての運動の時間の合計</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 閉じるボタン */}
+                                    <div className="pt-4 border-t">
+                                        <button
+                                            onClick={() => setShowWorkoutInfoModal(false)}
+                                            className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold py-3 rounded-lg hover:from-orange-700 hover:to-red-700 transition"
+                                        >
+                                            閉じる
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* WorkoutInfoModal */}
                     {workoutInfoModal.show && (
