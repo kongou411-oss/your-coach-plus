@@ -268,6 +268,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [showPremiumRestriction, setShowPremiumRestriction] = useState(false);
             const [restrictedFeatureName, setRestrictedFeatureName] = useState('');
 
+            // サマリータブ管理
+            const [activeTab, setActiveTab] = useState('nutrition'); // 'nutrition', 'directive'
+
             // ショートカット設定
             const [shortcuts, setShortcuts] = useState(() => {
                 const saved = localStorage.getItem('chevronShortcuts');
@@ -1212,7 +1215,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     <LevelBanner user={user} setInfoModal={setInfoModal} />
 
                     {/* 日付ナビゲーション＋ルーティン統合ヘッダー */}
-                    <div className="bg-white shadow-md sticky top-0 z-30">
+                    <div className="bg-white shadow-md">
                         {/* 日付ナビゲーション */}
                         <div className="flex items-center justify-between px-4 py-3 border-b">
                             <button
@@ -1242,7 +1245,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition flex items-center gap-2"
                                 >
                                     <Icon name="Calendar" size={20} className="text-indigo-600" />
-                                    <span className="font-bold text-gray-800">
+                                    <span className="text-xl font-bold text-gray-900">
                                         {(() => {
                                             const [year, month, day] = currentDate.split('-').map(Number);
                                             const date = new Date(year, month - 1, day);
@@ -1288,7 +1291,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             </button>
                         </div>
 
-                        {/* ルーティン情報（固定表示） - 12日で開放 */}
+                        {/* ルーティン情報（固定表示） */}
                         {unlockedFeatures.includes(FEATURES.ROUTINE.id) && (() => {
                             const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
                             const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
@@ -1304,20 +1307,43 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                                 if (currentRoutine) {
                                     return (
-                                        <div className="w-full px-4 py-2 flex items-center gap-3 border-t">
-                                            <Icon name="Repeat" size={20} className="text-purple-600" />
-                                            <span className="text-xs text-gray-500">Day {currentIndex + 1}/{routines.length}</span>
-                                            <div className="flex-1 text-left">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-bold text-gray-900">{currentRoutine.name}</span>
-                                                </div>
+                                        <div className="px-4 py-3 bg-white border-b">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <Icon name="Repeat" size={20} className="text-purple-600" />
+                                                <span className="text-xs text-gray-500">Day {currentIndex + 1}/{routines.length}</span>
                                             </div>
-                                            {!currentRoutine.isRestDay && currentRoutine.splitType && (
-                                                <span className="text-sm font-bold px-3 py-1 bg-purple-100 text-purple-700 rounded-lg">{currentRoutine.splitType}</span>
-                                            )}
-                                            {currentRoutine.isRestDay && (
-                                                <span className="text-sm font-bold px-3 py-1 bg-gray-100 text-gray-600 rounded-lg">休息日</span>
-                                            )}
+                                            <div className="text-2xl font-bold mb-3">
+                                                {!currentRoutine.isRestDay && currentRoutine.splitType && (
+                                                    <span className="text-purple-700">{currentRoutine.splitType}</span>
+                                                )}
+                                                {currentRoutine.isRestDay && (
+                                                    <span className="text-gray-600">休息日</span>
+                                                )}
+                                            </div>
+
+                                            {/* 紐づけテンプレート */}
+                                            {currentRoutine.linkedTemplateId && (() => {
+                                                const savedTemplates = localStorage.getItem('trainingTemplates');
+                                                const templates = savedTemplates ? JSON.parse(savedTemplates) : [];
+                                                const linkedTemplate = templates.find(t => t.id === currentRoutine.linkedTemplateId);
+
+                                                if (linkedTemplate) {
+                                                    return (
+                                                        <div className="bg-white rounded-lg border-2 border-purple-200 p-4">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <Icon name="Bookmark" size={16} className="text-purple-600" />
+                                                                <span className="text-xs text-gray-600">紐づけテンプレート</span>
+                                                            </div>
+                                                            <div className="text-lg font-bold text-gray-900 mb-2">{linkedTemplate.name}</div>
+                                                            <div className="text-xs text-gray-600 space-y-1">
+                                                                {linkedTemplate.exercises.map((ex, idx) => (
+                                                                    <p key={idx}>• {ex.name} {ex.sets}セット</p>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+                                            })()}
                                         </div>
                                     );
                                 }
@@ -1325,6 +1351,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                             return null;
                         })()}
+
                     </div>
 
                     {/* 日付ピッカーモーダル */}

@@ -27,6 +27,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         bodyFatPercentage: 0
     });
 
+    // タブ管理
+    const [activeTab, setActiveTab] = useState('nutrition'); // 'nutrition', 'directive'
+
     // 今日の日付を取得
     const getTodayDate = () => {
         const today = new Date();
@@ -406,55 +409,49 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     return (
         <div className="space-y-4">
 
-            {/* 今日の指示書 */}
-            {todayDirective && (
-                <div id="directive-section" className="bg-green-50 rounded-xl border-2 border-green-200 p-4 slide-up mt-4">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <Icon name="Target" size={18} className="text-green-600" />
-                            <h3 className="font-bold text-gray-800">今日の指示書</h3>
+            {/* タブ式サマリー */}
+            <div className="bg-white rounded-xl shadow-sm p-6 slide-up border-2 border-gray-200">
+                {/* タブナビゲーション */}
+                <div className="flex border-b mb-4">
+                    <button
+                        onClick={() => setActiveTab('nutrition')}
+                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'nutrition' ? 'text-indigo-700 border-b-2 border-indigo-700 bg-indigo-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <div className="flex items-center justify-center gap-1">
+                            <Icon name="PieChart" size={16} />
+                            <span>今日の摂取状況</span>
                         </div>
-                        <button
-                            onClick={() => setShowDirectiveEdit(true)}
-                            className="text-gray-400 hover:text-gray-600"
-                        >
-                            <Icon name="Edit3" size={14} />
-                        </button>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4 border-l-4 border-green-500">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Icon name={getCategoryIcon(todayDirective.type)} size={16} className="text-green-600" />
-                            <span className="text-xs font-bold text-green-700">
-                                【{getCategoryLabel(todayDirective.type)}】
-                            </span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('directive')}
+                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'directive' ? 'text-indigo-700 border-b-2 border-indigo-700 bg-indigo-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <div className="flex items-center justify-center gap-1">
+                            <Icon name="ClipboardList" size={16} />
+                            <span>指示書</span>
                         </div>
-                        <p className={`text-sm font-medium text-gray-800 leading-relaxed ${todayDirective.completed ? 'line-through opacity-60' : ''}`}>
-                            {todayDirective.message}
-                        </p>
-                        {!todayDirective.completed && (
-                            <button
-                                onClick={handleCompleteDirective}
-                                className="mt-3 w-full bg-purple-600 text-white py-2.5 rounded-lg hover:bg-purple-700 transition font-semibold flex items-center justify-center gap-2 text-sm"
-                            >
-                                <Icon name="Check" size={16} />
-                                完了
-                            </button>
-                        )}
-                        {todayDirective.completed && (
-                            <div className="mt-3 flex items-center justify-center gap-2 text-green-600 font-medium text-sm">
-                                <Icon name="CheckCircle" size={16} />
-                                完了済み
-                            </div>
-                        )}
-                    </div>
+                    </button>
                 </div>
-            )}
 
-            {/* PFCサマリー */}
-            <div className="bg-white rounded-xl shadow-sm p-6 slide-up">
-                <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-lg font-bold">{isToday() ? '今日' : ''}の摂取状況</h3>
+                {/* タブコンテンツ（栄養） */}
+                {activeTab === 'nutrition' && (
+                    <div>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-gray-900">
+                        {(() => {
+                            if (isToday()) return '今日の摂取状況';
+                            const [year, month, day] = currentDate.split('-').map(Number);
+                            const date = new Date(year, month - 1, day);
+                            return date.toLocaleDateString('ja-JP', {
+                                month: 'long',
+                                day: 'numeric'
+                            }) + 'の摂取状況';
+                        })()}
+                    </h3>
+                    <span className="text-sm text-gray-500">目標まで {targetPFC.calories - Math.round(currentIntake.calories)} kcal</span>
+                </div>
+                <div className="flex items-center gap-2 mb-6">
+                    <h4 className="text-sm font-medium text-gray-600"></h4>
                     <button
                         onClick={() => setInfoModal({
                             show: true,
@@ -485,85 +482,55 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     </button>
                 </div>
                 <div className="space-y-4">
-                    <div>
-                        <div className="flex justify-between items-center mb-2">
-                            <div className="flex items-center gap-2">
-                                <span className="font-medium">摂取カロリー</span>
-                                <button
-                                    onClick={() => setInfoModal({
-                                        show: true,
-                                        title: '💡 摂取カロリーの詳細',
-                                        content: `【摂取カロリー】
-食事とサプリメントから摂取したカロリーの合計
-${currentIntake.calories} kcal
-
-【目標カロリー】
-${targetPFC.calories} kcal
-
-【達成率】
-${Math.round(caloriesPercent)}%`
-                                    })}
-                                    className="text-indigo-600 hover:text-indigo-800"
-                                >
-                                    <Icon name="Info" size={16} />
-                                </button>
-                            </div>
-                            <div className="text-sm text-right">
-                                <div className="font-bold text-cyan-600">
-                                    {Math.round(currentIntake.calories)} / {targetPFC.calories} kcal
-                                </div>
-                            </div>
+                    {/* カロリー */}
+                    <div className="mb-6">
+                        <div className="flex items-end gap-2 mb-2">
+                            <span className="text-3xl font-bold text-gray-900">{Math.round(currentIntake.calories)}</span>
+                            <span className="text-lg text-gray-500">/</span>
+                            <span className="text-lg text-gray-500">{targetPFC.calories} kcal</span>
                         </div>
-                        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-cyan-600 transition-all duration-500"
+                                className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-500"
                                 style={{ width: `${Math.min(caloriesPercent, 100)}%` }}
                             ></div>
                         </div>
                     </div>
-                    <div>
-                        <div className="flex justify-between mb-2">
-                            <span className="font-medium">タンパク質 (P)</span>
-                            <span className="text-sm">
-                                <span className="font-bold text-red-600">{currentIntake.protein.toFixed(1)}</span>
-                                <span className="text-gray-600"> / {targetPFC.protein} g</span>
-                            </span>
+
+                    {/* PFC */}
+                    <div className="grid grid-cols-3 gap-3">
+                        <div>
+                            <div className="text-sm text-gray-500 mb-2">タンパク質</div>
+                            <div className="flex items-end gap-1 mb-2">
+                                <span className="text-3xl font-bold text-purple-600">{Math.round(currentIntake.protein)}</span>
+                                <span className="text-lg text-gray-500">/</span>
+                                <span className="text-lg text-gray-500">{targetPFC.protein}g</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-purple-500" style={{ width: `${Math.min(proteinPercent, 100)}%` }}></div>
+                            </div>
                         </div>
-                        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-red-500 transition-all duration-500"
-                                style={{ width: `${Math.min(proteinPercent, 100)}%` }}
-                            ></div>
+                        <div>
+                            <div className="text-sm text-gray-500 mb-2">脂質</div>
+                            <div className="flex items-end gap-1 mb-2">
+                                <span className="text-3xl font-bold text-orange-600">{Math.round(currentIntake.fat)}</span>
+                                <span className="text-lg text-gray-500">/</span>
+                                <span className="text-lg text-gray-500">{targetPFC.fat}g</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-orange-500" style={{ width: `${Math.min((currentIntake.fat / targetPFC.fat) * 100, 100)}%` }}></div>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-2">
-                            <span className="font-medium">脂質 (F)</span>
-                            <span className="text-sm">
-                                <span className="font-bold text-yellow-600">{currentIntake.fat.toFixed(1)}</span>
-                                <span className="text-gray-600"> / {targetPFC.fat} g</span>
-                            </span>
-                        </div>
-                        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-yellow-500 transition-all duration-500"
-                                style={{ width: `${Math.min((currentIntake.fat / targetPFC.fat) * 100, 100)}%` }}
-                            ></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-2">
-                            <span className="font-medium">炭水化物 (C)</span>
-                            <span className="text-sm">
-                                <span className="font-bold text-green-600">{currentIntake.carbs.toFixed(1)}</span>
-                                <span className="text-gray-600"> / {targetPFC.carbs} g</span>
-                            </span>
-                        </div>
-                        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-green-500 transition-all duration-500"
-                                style={{ width: `${Math.min((currentIntake.carbs / targetPFC.carbs) * 100, 100)}%` }}
-                            ></div>
+                        <div>
+                            <div className="text-sm text-gray-500 mb-2">炭水化物</div>
+                            <div className="flex items-end gap-1 mb-2">
+                                <span className="text-3xl font-bold text-cyan-600">{Math.round(currentIntake.carbs)}</span>
+                                <span className="text-lg text-gray-500">/</span>
+                                <span className="text-lg text-gray-500">{targetPFC.carbs}g</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-cyan-500" style={{ width: `${Math.min((currentIntake.carbs / targetPFC.carbs) * 100, 100)}%` }}></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -707,17 +674,63 @@ ${Math.round(caloriesPercent)}%`
                     </div>
                 </details>
                 )}
+                    </div>
+                )}
+
+                {/* タブコンテンツ（指示書） */}
+                {activeTab === 'directive' && (
+                    <div>
+                        {todayDirective ? (
+                            <>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <Icon name="Target" size={20} className="text-green-600" />
+                                    <span className="text-xs text-gray-500">今日の目標</span>
+                                </div>
+                                <div className="bg-white rounded-lg border-2 border-green-200 p-4 mb-3">
+                                    <div className="text-base font-bold text-gray-900 mb-2">
+                                        {todayDirective.message}
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-center gap-2">
+                                    {!todayDirective.completed ? (
+                                        <button
+                                            onClick={handleCompleteDirective}
+                                            className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition text-sm"
+                                        >
+                                            ✓ 完了
+                                        </button>
+                                    ) : (
+                                        <div className="flex items-center gap-2 text-green-600 font-medium text-sm">
+                                            <Icon name="CheckCircle" size={16} />
+                                            完了済み
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => setShowDirectiveEdit(true)}
+                                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
+                                    >
+                                        編集
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-center text-gray-400 py-4">
+                                <p className="text-sm">今日の指示書がありません</p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* 記録一覧 */}
-            <div id="record-section" className="bg-white rounded-xl shadow-sm p-6 slide-up">
+            <div id="record-section" className="bg-white rounded-xl shadow-sm p-6 slide-up -mx-4 px-10">
                 <div className="flex items-center gap-2 mb-4">
                     <h3 className="text-lg font-bold">記録</h3>
                     <button
                         onClick={() => setInfoModal({
                             show: true,
                             title: '📝 記録について',
-                            content: `【通常の記録】\n＋ボタンから、食事・運動・サプリメントを記録できます。記録した内容は即座にダッシュボードに反映されます。`
+                            content: `【通常の記録】\n＋ボタンから、食事・運動・サプリメントを記録できます。記録した内容は即座にダッシュボードに反映されます。\n\n【予測入力】\n前日のデータから今日の食事・運動を自動的に予測して入力します。\n・青背景で表示されます\n・予測データは編集可能です\n・そのまま分析に使用できます\n\n【ルーティン入力】\n設定したルーティンに紐づけたテンプレートを自動入力します。\n・紫背景で表示されます\n・ルーティンデータは編集可能です\n・そのまま分析に使用できます\n\n設定方法：設定 → ルーティン → 各日に食事・運動テンプレートを紐づけ`
                         })}
                         className="text-indigo-600 hover:text-indigo-800"
                     >
@@ -726,105 +739,82 @@ ${Math.round(caloriesPercent)}%`
                     <div className="ml-auto flex gap-2">
                         {/* 予測入力ボタン（トグル） */}
                         {yesterdayRecord && (
-                            <>
-                                <button
-                                    onClick={async () => {
-                                        const hasPredicted = dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted);
-                                        if (hasPredicted) {
-                                            // クリア
-                                            const clearedRecord = {
-                                                ...dailyRecord,
-                                                meals: dailyRecord.meals?.filter(m => !m.isPredicted) || [],
-                                                workouts: dailyRecord.workouts?.filter(w => !w.isPredicted) || []
-                                            };
-                                            setDailyRecord(clearedRecord);
-                                            const userId = user?.uid || DEV_USER_ID;
-                                            await DataService.saveDailyRecord(userId, currentDate, clearedRecord);
-                                        } else {
-                                            // 入力
-                                            loadPredictedData();
-                                        }
-                                    }}
-                                    className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${
-                                        dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)
-                                            ? 'bg-gray-400 text-white hover:bg-gray-500'
-                                            : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                    }`}
-                                >
-                                    <Icon name={(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) ? "Trash2" : "Sparkles"} size={14} />
-                                    {(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) ? 'クリア' : '予測'}
-                                </button>
-                                <button
-                                    onClick={() => setInfoModal({
-                                        show: true,
-                                        title: '📊 予測入力とは？',
-                                        content: `前日のデータから今日の食事・運動を自動的に予測して入力します。\n\n・青背景で表示されます\n・予測データは編集可能です\n・そのまま分析に使用できます`
-                                    })}
-                                    className="text-indigo-600 hover:text-indigo-800"
-                                >
-                                    <Icon name="Info" size={16} />
-                                </button>
-                            </>
+                            <button
+                                onClick={async () => {
+                                    const hasPredicted = dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted);
+                                    if (hasPredicted) {
+                                        // クリア
+                                        const clearedRecord = {
+                                            ...dailyRecord,
+                                            meals: dailyRecord.meals?.filter(m => !m.isPredicted) || [],
+                                            workouts: dailyRecord.workouts?.filter(w => !w.isPredicted) || []
+                                        };
+                                        setDailyRecord(clearedRecord);
+                                        const userId = user?.uid || DEV_USER_ID;
+                                        await DataService.saveDailyRecord(userId, currentDate, clearedRecord);
+                                    } else {
+                                        // 入力
+                                        loadPredictedData();
+                                    }
+                                }}
+                                className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                                    dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)
+                                        ? 'bg-gray-400 text-white hover:bg-gray-500'
+                                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                }`}
+                            >
+                                <Icon name={(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) ? "Trash2" : "Sparkles"} size={14} />
+                                {(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) ? 'クリア' : '予測'}
+                            </button>
                         )}
 
                         {/* ルーティン入力ボタン（トグル） */}
                         {currentRoutine && !currentRoutine.isRestDay && (
-                            <>
-                                <button
-                                    onClick={async () => {
-                                        const hasRoutine = dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine);
-                                        if (hasRoutine) {
-                                            // クリア
-                                            const clearedRecord = {
-                                                ...dailyRecord,
-                                                meals: dailyRecord.meals?.filter(m => !m.isRoutine) || [],
-                                                workouts: dailyRecord.workouts?.filter(w => !w.isRoutine) || []
-                                            };
-                                            setDailyRecord(clearedRecord);
-                                            const userId = user?.uid || DEV_USER_ID;
-                                            await DataService.saveDailyRecord(userId, currentDate, clearedRecord);
-                                        } else {
-                                            // 入力
-                                            if (onLoadRoutineData) {
-                                                onLoadRoutineData();
-                                            }
+                            <button
+                                onClick={async () => {
+                                    const hasRoutine = dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine);
+                                    if (hasRoutine) {
+                                        // クリア
+                                        const clearedRecord = {
+                                            ...dailyRecord,
+                                            meals: dailyRecord.meals?.filter(m => !m.isRoutine) || [],
+                                            workouts: dailyRecord.workouts?.filter(w => !w.isRoutine) || []
+                                        };
+                                        setDailyRecord(clearedRecord);
+                                        const userId = user?.uid || DEV_USER_ID;
+                                        await DataService.saveDailyRecord(userId, currentDate, clearedRecord);
+                                    } else {
+                                        // 入力
+                                        if (onLoadRoutineData) {
+                                            onLoadRoutineData();
                                         }
-                                    }}
-                                    className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${
-                                        dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)
-                                            ? 'bg-gray-400 text-white hover:bg-gray-500'
-                                            : 'bg-purple-600 text-white hover:bg-purple-700'
-                                    }`}
-                                >
-                                    <Icon name={(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? "Trash2" : "Repeat"} size={14} />
-                                    {(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? 'クリア' : 'ルーティン'}
-                                </button>
-                                <button
-                                    onClick={() => setInfoModal({
-                                        show: true,
-                                        title: '📅 ルーティン入力とは？',
-                                        content: `設定したルーティンに紐づけたテンプレートを自動入力します。\n\n・紫背景で表示されます\n・ルーティンデータは編集可能です\n・そのまま分析に使用できます\n\n設定方法:\n設定 → ルーティン → 各日に\n食事・運動テンプレートを紐づけ`
-                                    })}
-                                    className="text-purple-600 hover:text-purple-800"
-                                >
-                                    <Icon name="Info" size={16} />
-                                </button>
-                            </>
+                                    }
+                                }}
+                                className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                                    dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)
+                                        ? 'bg-gray-400 text-white hover:bg-gray-500'
+                                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                                }`}
+                            >
+                                <Icon name={(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? "Trash2" : "Repeat"} size={14} />
+                                {(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? 'クリア' : 'ルーティン'}
+                            </button>
                         )}
                     </div>
                 </div>
 
                 {/* 体組成セクション */}
-                <div id="body-composition-section" className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                            <Icon name="Activity" size={18} className="text-teal-600" />
-                            体組成
-                        </h4>
-                        <span className="text-sm font-bold text-teal-600">
-                            LBM: {(bodyComposition.weight * (1 - bodyComposition.bodyFatPercentage / 100)).toFixed(1)}kg
-                        </span>
+                <div id="body-composition-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                    <div className="px-6 py-4 bg-gradient-to-r from-teal-50 to-cyan-50 flex items-center justify-between border-b-2 border-gray-200">
+                        <div className="flex items-center gap-3">
+                            <Icon name="Activity" size={32} className="text-teal-600" />
+                            <h4 className="font-bold text-gray-900">体組成</h4>
+                            <span className="text-sm font-bold text-teal-600">
+                                LBM: {(bodyComposition.weight * (1 - bodyComposition.bodyFatPercentage / 100)).toFixed(1)}kg
+                            </span>
+                        </div>
                     </div>
+                    <div className="p-6">
 
                     {/* 体重 */}
                     <div className="mb-4">
@@ -950,34 +940,39 @@ ${Math.round(caloriesPercent)}%`
                             </button>
                         </div>
                     </div>
+                    </div>
                 </div>
 
                 {/* 食事セクション */}
-                <div id="meal-section" className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                            <Icon name="Utensils" size={18} className="text-green-600" />
-                            食事
-                        </h4>
+                <div id="meal-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                    <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 flex items-center justify-between border-b-2 border-gray-200">
+                        <div className="flex items-center gap-3">
+                            <Icon name="Utensils" size={32} className="text-green-600" />
+                            <h4 className="font-bold text-gray-900">食事</h4>
+                            <span className="px-2 py-0.5 bg-green-500 text-white rounded-full text-xs font-bold">
+                                {dailyRecord.meals?.length || 0}
+                            </span>
+                        </div>
                         <button
                             onClick={() => window.handleQuickAction && window.handleQuickAction('meal')}
-                            className="text-sm px-4 py-2 bg-green-100 border border-green-400 text-green-800 rounded-lg hover:bg-green-200 transition font-medium"
+                            className="text-sm px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition"
                         >
                             + 追加
                         </button>
                     </div>
+                    <div className="p-4">
                     {dailyRecord.meals?.length > 0 ? (
                         <div className="space-y-3">
                             {dailyRecord.meals.map((meal, index) => (
-                                <div key={meal.id || index} className={`border rounded-lg p-4 hover:border-emerald-300 transition ${
-                                    meal.isPredicted ? 'border-indigo-300 bg-indigo-50' :
-                                    meal.isRoutine ? 'border-purple-300 bg-purple-50' :
-                                    'border-gray-200'
+                                <div key={meal.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 hover:shadow-md transition-shadow ${
+                                    meal.isPredicted ? 'border-2 border-indigo-300 bg-indigo-50' :
+                                    meal.isRoutine ? 'border-2 border-purple-300 bg-purple-50' :
+                                    ''
                                 }`}>
-                                    <div className="flex justify-between items-start">
+                                    <div className="flex items-start justify-between mb-3">
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <p className="font-medium">{meal.name}</p>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-xs text-gray-500">{meal.time}</span>
                                                 {meal.isPredicted && (
                                                     <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                         <Icon name="Sparkles" size={10} />
@@ -991,119 +986,92 @@ ${Math.round(caloriesPercent)}%`
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-gray-500 mb-2">{meal.time}</p>
+                                            <div className="text-base font-bold text-gray-900 mb-1">
+                                                {meal.name}
+                                            </div>
                                             {meal.items?.map((item, i) => (
-                                                <p key={i} className="text-sm text-gray-600">
+                                                <div key={i} className="text-xs text-gray-500">
                                                     {item.name} {item.amount}
-                                                </p>
+                                                </div>
                                             ))}
                                         </div>
-                                        <div className="text-right">
-                                            <p className="font-bold mb-2 text-cyan-600">{meal.calories} kcal</p>
-                                            <div className="flex gap-2 justify-end">
-                                                <button
-                                                    onClick={() => {
-                                                        // 食事編集機能を呼び出す
-                                                        if (window.handleEditMeal) {
-                                                            window.handleEditMeal(meal);
-                                                        }
-                                                    }}
-                                                    className="text-blue-500 hover:text-blue-700 text-sm"
-                                                >
-                                                    <Icon name="Pencil" size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => onDeleteItem('meal', meal.id)}
-                                                    className="text-red-500 hover:text-red-700 text-sm"
-                                                >
-                                                    <Icon name="Trash2" size={16} />
-                                                </button>
-                                            </div>
+
+                                        <div className="text-right ml-4">
+                                            <div className="text-xl font-bold text-gray-900">{meal.calories}</div>
+                                            <div className="text-xs text-gray-500">kcal</div>
                                         </div>
+                                    </div>
+
+                                    <div className="flex justify-end gap-2">
+                                        <button
+                                            onClick={() => {
+                                                // 食事編集機能を呼び出す
+                                                if (window.handleEditMeal) {
+                                                    window.handleEditMeal(meal);
+                                                }
+                                            }}
+                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-indigo-600 hover:bg-indigo-50 transition border-2 border-indigo-200"
+                                        >
+                                            <Icon name="Edit" size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => onDeleteItem('meal', meal.id)}
+                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-200"
+                                        >
+                                            <Icon name="Trash2" size={18} />
+                                        </button>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-gray-400 text-center py-4">食事の記録がありません</p>
+                        <div className="py-8 text-center">
+                            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                                <Icon name="Utensils" size={28} className="text-green-400" />
+                            </div>
+                            <p className="text-sm text-gray-600 font-medium mb-1">
+                                まだ食事の記録がありません
+                            </p>
+                            <p className="text-xs text-gray-400">
+                                追加ボタンから記録を始めましょう
+                            </p>
+                        </div>
                     )}
+                    </div>
                 </div>
 
                 {/* 運動セクション */}
                 {/* 運動セクション - 食事記録完了後に開放 */}
                 {unlockedFeatures.includes('training') && (
-                    <div id="workout-section" className="mb-6">
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                                <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                                    <Icon name="Dumbbell" size={18} className="text-orange-600" />
-                                    運動
-                                </h4>
-                                {dailyRecord.workouts?.length > 0 && (() => {
-                                    // 総重量と総時間を計算
-                                    let totalWeight = 0;
-                                    let totalDuration = 0;
-
-                                    dailyRecord.workouts.forEach((workout, workoutIdx) => {
-                                        workout.exercises?.forEach((exercise, exIdx) => {
-                                            const isCardioOrStretch = exercise.exerciseType === 'aerobic' || exercise.exerciseType === 'stretch';
-
-                                            if (isCardioOrStretch) {
-                                                // 有酸素・ストレッチ: 新旧両方のデータ構造に対応
-                                                if (exercise.duration) {
-                                                    // 新形式: exercise.duration を直接加算
-                                                    totalDuration += exercise.duration;
-                                                } else if (exercise.sets) {
-                                                    // 旧形式: sets の中の duration を加算
-                                                    exercise.sets.forEach(set => {
-                                                        totalDuration += (set.duration || 0);
-                                                    });
-                                                } else {
-                                                    console.warn(`    ⚠️ duration も sets も存在しません`);
-                                                }
-                                            } else {
-                                                // 筋トレ: sets の中の duration と weight を加算
-                                                exercise.sets?.forEach(set => {
-                                                    totalWeight += (set.weight || 0) * (set.reps || 0);
-                                                    totalDuration += (set.duration || 0);
-                                                });
-                                            }
-                                        });
-                                    });
-
-                                    return (
-                                        <div className="flex items-center gap-3 text-sm">
-                                            <span className="flex items-center gap-1 text-orange-600 font-medium">
-                                                <Icon name="Weight" size={14} />
-                                                {totalWeight}kg
-                                            </span>
-                                            <span className="flex items-center gap-1 text-orange-600 font-medium">
-                                                <Icon name="Clock" size={14} />
-                                                {totalDuration}分
-                                            </span>
-                                        </div>
-                                    );
-                                })()}
+                    <div id="workout-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                        <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-red-50 flex items-center justify-between border-b-2 border-gray-200">
+                            <div className="flex items-center gap-3">
+                                <Icon name="Dumbbell" size={32} className="text-orange-600" />
+                                <h4 className="font-bold text-gray-900">運動</h4>
+                                <span className="px-2 py-0.5 bg-orange-500 text-white rounded-full text-xs font-bold">
+                                    {dailyRecord.workouts?.length || 0}
+                                </span>
                             </div>
                             <button
                                 onClick={() => window.handleQuickAction && window.handleQuickAction('workout')}
-                                className="text-sm px-4 py-2 bg-orange-100 border border-orange-400 text-orange-800 rounded-lg hover:bg-orange-200 transition font-medium"
+                                className="text-sm px-4 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition"
                             >
                                 + 追加
                             </button>
                         </div>
+                        <div className="p-4">
                         {dailyRecord.workouts?.length > 0 ? (
                             <div className="space-y-3">
                                 {dailyRecord.workouts.map((workout, index) => (
-                                    <div key={workout.id || index} className={`border rounded-lg p-4 hover:border-orange-300 transition ${
-                                        workout.isPredicted ? 'border-indigo-300 bg-indigo-50' :
-                                        workout.isRoutine ? 'border-purple-300 bg-purple-50' :
-                                        'border-gray-200 bg-white'
+                                    <div key={workout.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 hover:shadow-md transition-shadow ${
+                                        workout.isPredicted ? 'border-2 border-indigo-300 bg-indigo-50' :
+                                        workout.isRoutine ? 'border-2 border-purple-300 bg-purple-50' :
+                                        ''
                                     }`}>
-                                        <div className="flex justify-between items-start">
+                                        <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <p className="font-medium">{workout.name}</p>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="text-xs text-gray-500">{workout.time}</span>
                                                     {workout.isPredicted && (
                                                         <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                             <Icon name="Sparkles" size={10} />
@@ -1117,7 +1085,9 @@ ${Math.round(caloriesPercent)}%`
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-sm text-gray-500 mb-2">{workout.time}</p>
+                                                <div className="text-base font-bold text-gray-900 mb-2">
+                                                    {workout.name}
+                                                </div>
                                                 {workout.exercises?.map((exercise, i) => {
                                                     const isCardioOrStretch = exercise.exerciseType === 'aerobic' || exercise.exerciseType === 'stretch';
 
@@ -1167,34 +1137,46 @@ ${Math.round(caloriesPercent)}%`
                                                     );
                                                 })}
                                             </div>
-                                            <div className="text-right">
-                                                <button
-                                                    onClick={() => onDeleteItem('workout', workout.id)}
-                                                    className="text-red-500 hover:text-red-700 text-sm"
-                                                >
-                                                    <Icon name="Trash2" size={16} />
-                                                </button>
-                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={() => onDeleteItem('workout', workout.id)}
+                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-200"
+                                            >
+                                                <Icon name="Trash2" size={18} />
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-sm text-gray-400 text-center py-4">運動の記録がありません</p>
+                            <div className="py-8 text-center">
+                                <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
+                                    <Icon name="Activity" size={28} className="text-orange-400" />
+                                </div>
+                                <p className="text-sm text-gray-600 font-medium mb-1">
+                                    まだ運動の記録がありません
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                    追加ボタンから記録を始めましょう
+                                </p>
+                            </div>
                         )}
+                        </div>
                     </div>
                 )}
 
                 {/* 体調セクション - 運動記録完了後に開放 */}
                 {unlockedFeatures.includes('condition') && (
-                    <div id="condition-section" className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                            <Icon name="HeartPulse" size={18} className="text-red-600" />
-                            コンディション
-                        </h4>
+                    <div id="condition-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                    <div className="px-6 py-4 bg-gradient-to-r from-red-50 to-pink-50 flex items-center justify-between border-b-2 border-gray-200">
+                        <div className="flex items-center gap-3">
+                            <Icon name="HeartPulse" size={32} className="text-red-600" />
+                            <h4 className="font-bold text-gray-900">コンディション</h4>
+                        </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="p-6 space-y-2">
                         {/* 睡眠時間 */}
                         <div className="py-2 px-3 bg-gray-50 rounded-lg">
                             <div className="mb-2">
@@ -1204,7 +1186,7 @@ ${Math.round(caloriesPercent)}%`
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.sleepHours && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.sleepHours - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
@@ -1265,7 +1247,7 @@ ${Math.round(caloriesPercent)}%`
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.sleepQuality && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.sleepQuality - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
@@ -1326,7 +1308,7 @@ ${Math.round(caloriesPercent)}%`
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.appetite && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.appetite - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
@@ -1387,7 +1369,7 @@ ${Math.round(caloriesPercent)}%`
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.digestion && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.digestion - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
@@ -1448,7 +1430,7 @@ ${Math.round(caloriesPercent)}%`
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.focus && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.focus - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
@@ -1509,7 +1491,7 @@ ${Math.round(caloriesPercent)}%`
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.stress && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-blue-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.stress - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
@@ -1561,45 +1543,45 @@ ${Math.round(caloriesPercent)}%`
                             </div>
                         </div>
                         </div>
+                    </div>
+                )}
 
-                        {/* 閃きセクション - 初回分析完了後に開放 */}
-                        {unlockedFeatures.includes('idea') && (
-                            <div className="space-y-2 mt-4">
-                                <div className="py-2 px-3 bg-gray-50 rounded-lg">
-                                    <div className="mb-2">
-                                        <span className="text-sm text-gray-700 font-bold flex items-center gap-2">
-                                            <Icon name="Lightbulb" size={16} className="text-yellow-500" />
-                                            閃き
-                                        </span>
-                                    </div>
-                                    <textarea
-                                        value={dailyRecord.notes || ''}
-                                        onChange={async (e) => {
-                                            const updated = {
-                                                ...dailyRecord,
-                                                notes: e.target.value
-                                            };
-                                            setDailyRecord(updated);
-                                            const userId = user?.uid || DEV_USER_ID;
-                                            await DataService.saveDailyRecord(userId, currentDate, updated);
-                                        }}
-                                        placeholder="今日の気づき、メモなど..."
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none text-sm"
-                                        rows="3"
-                                    />
-                                </div>
+                {/* 閃きセクション - 初回分析完了後に開放 */}
+                {unlockedFeatures.includes('idea') && (
+                    <div id="idea-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                        <div className="px-6 py-4 bg-gradient-to-r from-yellow-50 to-amber-50 flex items-center justify-between border-b-2 border-gray-200">
+                            <div className="flex items-center gap-3">
+                                <Icon name="Lightbulb" size={32} className="text-yellow-500" />
+                                <h4 className="font-bold text-gray-900">閃き</h4>
                             </div>
-                        )}
+                        </div>
+                        <div className="p-6">
+                            <textarea
+                                value={dailyRecord.notes || ''}
+                                onChange={async (e) => {
+                                    const updated = {
+                                        ...dailyRecord,
+                                        notes: e.target.value
+                                    };
+                                    setDailyRecord(updated);
+                                    const userId = user?.uid || DEV_USER_ID;
+                                    await DataService.saveDailyRecord(userId, currentDate, updated);
+                                }}
+                                placeholder="今日の気づき、メモなど..."
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none text-sm"
+                                rows="3"
+                            />
+                        </div>
                     </div>
                 )}
 
                 {/* 分析ボタン - コンディション完了後に開放 */}
                 {unlockedFeatures.includes('analysis') && (
-                    <div id="analysis-section">
-                        <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="PieChart" size={18} className="text-indigo-600" />
-                                分析
+                    <div id="analysis-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                        <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between border-b-2 border-gray-200">
+                            <div className="flex items-center gap-3">
+                                <Icon name="PieChart" size={32} className="text-indigo-600" />
+                                <h4 className="font-bold text-gray-900">分析</h4>
                                 <button
                                     onClick={() => setShowScoringGuideModal(true)}
                                     className="p-1 hover:bg-gray-100 rounded-full transition"
@@ -1607,40 +1589,92 @@ ${Math.round(caloriesPercent)}%`
                                 >
                                     <Icon name="Info" size={16} className="text-gray-500" />
                                 </button>
-                            </h4>
+                            </div>
                             <button
                                 onClick={() => window.handleQuickAction && window.handleQuickAction('analysis')}
-                                className="text-sm px-4 py-2 bg-indigo-100 border border-indigo-400 text-indigo-800 rounded-lg hover:bg-indigo-200 transition font-medium"
+                                className="text-sm px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition"
                             >
                                 + 分析
                             </button>
                         </div>
+                        <div className="p-6">
+                            {/* 当日のスコア表示（ドーナツグラフ） */}
+                            {(() => {
+                                const scores = DataService.calculateScores(profile, dailyRecord, targetPFC);
+                                const canvasId = `score-doughnut-${Date.now()}`;
 
-                        {/* 当日のスコア表示 */}
-                        {(() => {
-                            const scores = DataService.calculateScores(profile, dailyRecord, targetPFC);
-                            return (
-                                <div className="grid grid-cols-3 gap-2 mb-3">
-                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                                        <div className="text-xs text-green-700 mb-1">食事</div>
-                                        <div className="text-2xl font-bold text-green-600">{scores.food.score}</div>
-                                        <div className="text-xs text-gray-500">/100</div>
-                                    </div>
-                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-                                        <div className="text-xs text-orange-700 mb-1">運動</div>
-                                        <div className="text-2xl font-bold text-orange-600">{scores.exercise.score}</div>
-                                        <div className="text-xs text-gray-500">/100</div>
-                                    </div>
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                                        <div className="text-xs text-blue-700 mb-1">コンディション</div>
-                                        <div className="text-2xl font-bold text-blue-600">{scores.condition.score}</div>
-                                        <div className="text-xs text-gray-500">/100</div>
-                                    </div>
-                                </div>
-                            );
-                        })()}
+                                // グラフをレンダリング
+                                React.useEffect(() => {
+                                    const canvas = document.getElementById(canvasId);
+                                    if (!canvas) return;
 
-                        <p className="text-sm text-gray-500">AIによる詳細な栄養分析を確認できます</p>
+                                    const ctx = canvas.getContext('2d');
+                                    if (window.analysisChart) {
+                                        window.analysisChart.destroy();
+                                    }
+
+                                    window.analysisChart = new Chart(ctx, {
+                                        type: 'doughnut',
+                                        data: {
+                                            labels: ['食事', '運動', 'コンディション'],
+                                            datasets: [{
+                                                data: [scores.food.score, scores.exercise.score, scores.condition.score],
+                                                backgroundColor: ['#10b981', '#f97316', '#ef4444'],
+                                                borderWidth: 0
+                                            }]
+                                        },
+                                        options: {
+                                            responsive: true,
+                                            maintainAspectRatio: true,
+                                            cutout: '70%',
+                                            plugins: {
+                                                legend: {
+                                                    display: false
+                                                },
+                                                tooltip: {
+                                                    callbacks: {
+                                                        label: (context) => {
+                                                            return `${context.label}: ${context.parsed}/100`;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    });
+                                }, [scores.food.score, scores.exercise.score, scores.condition.score]);
+
+                                const averageScore = Math.round((scores.food.score + scores.exercise.score + scores.condition.score) / 3);
+
+                                return (
+                                    <div>
+                                        <div className="relative max-w-[200px] mx-auto mb-4">
+                                            <canvas id={canvasId}></canvas>
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <div className="text-3xl font-bold text-gray-900">{averageScore}</div>
+                                                    <div className="text-xs text-gray-500">平均</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-3 text-center">
+                                            <div>
+                                                <div className="text-xs text-gray-600 mb-1">食事</div>
+                                                <div className="text-2xl font-bold text-green-600">{scores.food.score}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-gray-600 mb-1">運動</div>
+                                                <div className="text-2xl font-bold text-orange-600">{scores.exercise.score}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-gray-600 mb-1">コンディション</div>
+                                                <div className="text-2xl font-bold text-red-600">{scores.condition.score}</div>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-500 mt-4 text-center">AIによる詳細な栄養分析を確認できます</p>
+                                    </div>
+                                );
+                            })()}
+                        </div>
                     </div>
                 )}
 
@@ -2254,34 +2288,22 @@ const LevelBanner = ({ user, setInfoModal }) => {
     }
 
     return (
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-md">
-            <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-2">
-                    <div className="bg-white text-purple-600 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm">
-                        {expData.level}
+        <div className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-sm">
+            <div className="flex items-center justify-between px-4 py-2">
+                <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-white">Lv{expData.level}</span>
+                    <div className="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                        <div
+                            className="absolute top-0 left-0 h-full bg-white rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(expData.expProgress || 0, 100)}%` }}
+                        />
                     </div>
-                    <div>
-                        <div className="flex items-center gap-1.5">
-                            <h3 className="font-bold text-white text-sm">Level {expData.level}</h3>
-                            <span className="text-xs text-purple-200">{expData.expCurrent || 0} / {expData.expRequired || 100} XP</span>
-                        </div>
-                        <div className="relative w-32 bg-white/20 rounded-full h-1.5 overflow-hidden mt-1">
-                            <div
-                                className="absolute top-0 left-0 h-full bg-white rounded-full transition-all duration-500"
-                                style={{ width: `${Math.min(expData.expProgress || 0, 100)}%` }}
-                            />
-                        </div>
-                    </div>
+                    <span className="text-xs text-white font-medium">{expData.expProgress}%</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="text-right">
-                        <div className="flex items-center gap-1 justify-end">
-                            <Icon name="Award" size={12} className="text-white" />
-                            <span className="text-xs text-white">クレジット</span>
-                        </div>
-                        <div className="text-lg font-bold text-white">
-                            {expData.totalCredits}
-                        </div>
+                    <div className="flex items-center gap-1">
+                        <Icon name="Award" size={14} className="text-white" />
+                        <span className="text-sm font-bold text-white">{expData.totalCredits}</span>
                     </div>
                     <button
                         onClick={() => setInfoModal({
@@ -2311,9 +2333,9 @@ const LevelBanner = ({ user, setInfoModal }) => {
 【実質無料期間】
 毎日分析1回+写真解析1回の場合、約28日間完全無料で利用可能です。`
                         })}
-                        className="text-white hover:text-purple-100 transition-colors"
+                        className="text-white/80 hover:text-white transition p-1"
                     >
-                        <Icon name="Info" size={14} />
+                        <Icon name="Info" size={12} />
                     </button>
                 </div>
             </div>
