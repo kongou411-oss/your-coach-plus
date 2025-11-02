@@ -418,7 +418,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'nutrition' ? 'text-indigo-700 border-b-2 border-indigo-700 bg-indigo-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                     >
                         <div className="flex items-center justify-center gap-1">
-                            <Icon name="PieChart" size={16} />
+                            <Icon name="BarChart3" size={16} />
                             <span>今日の摂取状況</span>
                         </div>
                     </button>
@@ -436,62 +436,18 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 {/* タブコンテンツ（栄養） */}
                 {activeTab === 'nutrition' && (
                     <div>
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-900">
-                        {(() => {
-                            if (isToday()) return '今日の摂取状況';
-                            const [year, month, day] = currentDate.split('-').map(Number);
-                            const date = new Date(year, month - 1, day);
-                            return date.toLocaleDateString('ja-JP', {
-                                month: 'long',
-                                day: 'numeric'
-                            }) + 'の摂取状況';
-                        })()}
-                    </h3>
-                    <span className="text-sm text-gray-500">目標まで {targetPFC.calories - Math.round(currentIntake.calories)} kcal</span>
-                </div>
-                <div className="flex items-center gap-2 mb-6">
-                    <h4 className="text-sm font-medium text-gray-600"></h4>
-                    <button
-                        onClick={() => setInfoModal({
-                            show: true,
-                            title: '📊 栄養の基本原則',
-                            content: `筋肉を作るのも身体を変えるのもすべて三大栄養素を基にした食事。
-
-タンパク質は筋肉・髪・皮膚の素材(4kcal/g)
-脂質は関節保護・ホルモン分泌(9kcal/g)
-炭水化物は筋肉や脳のガソリン(4kcal/g)
-
-【重要原則】
-増量 = オーバーカロリー
-減量 = アンダーカロリー
-
-365日継続して良い身体をキープする。
-
-【食事調整の基本】
-• タンパク質を増やす
-• 脂質を必要最小限に抑える
-• 炭水化物の質と量を探る
-
-設定期間: 1-12週間
-筋肉の新陳代謝周期: 50日`
-                        })}
-                        className="text-indigo-600 hover:text-indigo-800"
-                    >
-                        <Icon name="Info" size={18} />
-                    </button>
-                </div>
                 <div className="space-y-4">
                     {/* カロリー */}
                     <div className="mb-6">
-                        <div className="flex items-end gap-2 mb-2">
-                            <span className="text-3xl font-bold text-gray-900">{Math.round(currentIntake.calories)}</span>
+                        <div className="text-sm text-gray-500 mb-2">カロリー</div>
+                        <div className="flex items-end gap-2 mb-2 justify-end">
+                            <span className="text-3xl font-bold text-blue-600">{Math.round(currentIntake.calories)}</span>
                             <span className="text-lg text-gray-500">/</span>
                             <span className="text-lg text-gray-500">{targetPFC.calories} kcal</span>
                         </div>
                         <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-500"
+                                className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full transition-all duration-500"
                                 style={{ width: `${Math.min(caloriesPercent, 100)}%` }}
                             ></div>
                         </div>
@@ -501,35 +457,35 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     <div className="grid grid-cols-3 gap-3">
                         <div>
                             <div className="text-sm text-gray-500 mb-2">タンパク質</div>
-                            <div className="flex items-end gap-1 mb-2">
-                                <span className="text-3xl font-bold text-purple-600">{Math.round(currentIntake.protein)}</span>
+                            <div className="flex items-end gap-1 mb-2 justify-end">
+                                <span className="text-3xl font-bold text-red-600">{Math.round(currentIntake.protein)}</span>
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.protein}g</span>
                             </div>
                             <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-purple-500" style={{ width: `${Math.min(proteinPercent, 100)}%` }}></div>
+                                <div className="h-full bg-red-500" style={{ width: `${Math.min(proteinPercent, 100)}%` }}></div>
                             </div>
                         </div>
                         <div>
                             <div className="text-sm text-gray-500 mb-2">脂質</div>
-                            <div className="flex items-end gap-1 mb-2">
-                                <span className="text-3xl font-bold text-orange-600">{Math.round(currentIntake.fat)}</span>
+                            <div className="flex items-end gap-1 mb-2 justify-end">
+                                <span className="text-3xl font-bold text-yellow-600">{Math.round(currentIntake.fat)}</span>
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.fat}g</span>
                             </div>
                             <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-orange-500" style={{ width: `${Math.min((currentIntake.fat / targetPFC.fat) * 100, 100)}%` }}></div>
+                                <div className="h-full bg-yellow-500" style={{ width: `${Math.min((currentIntake.fat / targetPFC.fat) * 100, 100)}%` }}></div>
                             </div>
                         </div>
                         <div>
                             <div className="text-sm text-gray-500 mb-2">炭水化物</div>
-                            <div className="flex items-end gap-1 mb-2">
-                                <span className="text-3xl font-bold text-cyan-600">{Math.round(currentIntake.carbs)}</span>
+                            <div className="flex items-end gap-1 mb-2 justify-end">
+                                <span className="text-3xl font-bold text-green-600">{Math.round(currentIntake.carbs)}</span>
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.carbs}g</span>
                             </div>
                             <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-cyan-500" style={{ width: `${Math.min((currentIntake.carbs / targetPFC.carbs) * 100, 100)}%` }}></div>
+                                <div className="h-full bg-green-500" style={{ width: `${Math.min((currentIntake.carbs / targetPFC.carbs) * 100, 100)}%` }}></div>
                             </div>
                         </div>
                     </div>
@@ -809,10 +765,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div className="flex items-center gap-3">
                             <Icon name="Activity" size={32} className="text-teal-600" />
                             <h4 className="font-bold text-gray-900">体組成</h4>
-                            <span className="text-sm font-bold text-teal-600">
-                                LBM: {(bodyComposition.weight * (1 - bodyComposition.bodyFatPercentage / 100)).toFixed(1)}kg
-                            </span>
                         </div>
+                        <span className="text-lg font-bold text-teal-600">
+                            LBM: {(bodyComposition.weight * (1 - bodyComposition.bodyFatPercentage / 100)).toFixed(1)}kg
+                        </span>
                     </div>
                     <div className="p-6">
 
@@ -1004,6 +960,24 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                                     <div className="flex justify-end gap-2">
                                         <button
+                                            onClick={async () => {
+                                                // テンプレート登録機能
+                                                const templateName = prompt('テンプレート名を入力してください', meal.name);
+                                                if (templateName && templateName.trim()) {
+                                                    const template = {
+                                                        id: Date.now(),
+                                                        name: templateName,
+                                                        items: meal.items
+                                                    };
+                                                    await DataService.saveMealTemplate(user.uid, template);
+                                                    alert('テンプレートを保存しました');
+                                                }
+                                            }}
+                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-200"
+                                        >
+                                            <Icon name="BookTemplate" size={18} />
+                                        </button>
+                                        <button
                                             onClick={() => {
                                                 // 食事編集機能を呼び出す
                                                 if (window.handleEditMeal) {
@@ -1140,6 +1114,35 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         </div>
 
                                         <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={async () => {
+                                                    // テンプレート登録機能
+                                                    const templateName = prompt('テンプレート名を入力してください', workout.name);
+                                                    if (templateName && templateName.trim()) {
+                                                        const template = {
+                                                            id: Date.now(),
+                                                            name: templateName,
+                                                            exercises: workout.exercises
+                                                        };
+                                                        await DataService.saveWorkoutTemplate(user.uid, template);
+                                                        alert('テンプレートを保存しました');
+                                                    }
+                                                }}
+                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-200"
+                                            >
+                                                <Icon name="BookTemplate" size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    // 運動編集機能を呼び出す
+                                                    if (window.handleEditWorkout) {
+                                                        window.handleEditWorkout(workout);
+                                                    }
+                                                }}
+                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-orange-600 hover:bg-orange-50 transition border-2 border-orange-200"
+                                            >
+                                                <Icon name="Edit" size={18} />
+                                            </button>
                                             <button
                                                 onClick={() => onDeleteItem('workout', workout.id)}
                                                 className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-200"

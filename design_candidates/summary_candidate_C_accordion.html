@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>候補C：アコーディオン型サマリー</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-md mx-auto bg-white min-h-screen">
+        <!-- レベルバナー -->
+        <div class="bg-gradient-to-r from-purple-600 to-pink-600 shadow-sm">
+            <div class="flex items-center justify-between px-4 py-2">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-bold text-white">Lv12</span>
+                    <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                        <div class="absolute top-0 left-0 h-full bg-white rounded-full transition-all duration-500" style="width: 70%"></div>
+                    </div>
+                    <span class="text-xs text-white font-medium">70%</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1">
+                        <i data-lucide="award" class="text-white" style="width: 14px; height: 14px;"></i>
+                        <span class="text-sm font-bold text-white">45</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日付ナビゲーション -->
+        <div class="bg-white shadow-md sticky top-0 z-30">
+            <div class="flex items-center justify-between px-4 py-3 border-b">
+                <button class="p-2 hover:bg-gray-100 rounded-full transition">
+                    <i data-lucide="chevron-left" class="text-gray-600" style="width: 20px; height: 20px;"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <div class="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition flex items-center gap-2">
+                        <i data-lucide="calendar" class="text-indigo-600" style="width: 20px; height: 20px;"></i>
+                        <span class="text-xl font-bold text-gray-900">11月2日(土)</span>
+                    </div>
+                    <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">今日</span>
+                </div>
+                <button class="p-2 hover:bg-gray-100 rounded-full transition">
+                    <i data-lucide="chevron-right" class="text-gray-600" style="width: 20px; height: 20px;"></i>
+                </button>
+            </div>
+
+            <!-- アコーディオンサマリー -->
+            <div class="divide-y">
+                <!-- ルーティン -->
+                <div class="bg-white">
+                    <button class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="dumbbell" class="text-purple-600" style="width: 18px; height: 18px;"></i>
+                            <span class="text-sm font-medium text-gray-700">ルーティン</span>
+                            <span class="text-xl font-bold text-purple-700">胸・肩・三頭</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="text-gray-400" style="width: 18px; height: 18px;"></i>
+                    </button>
+                    <!-- 展開時のコンテンツ -->
+                    <div class="px-4 pb-3 bg-purple-50">
+                        <div class="text-xs text-gray-500 mb-2">Day 1/7 - プッシュデイ</div>
+                        <div class="text-sm text-gray-700 space-y-1">
+                            <p>• ベンチプレス 3セット</p>
+                            <p>• ショルダープレス 3セット</p>
+                            <p>• トライセップスエクステンション 3セット</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 指示書 -->
+                <div class="bg-white">
+                    <button class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="clipboard-list" class="text-green-600" style="width: 18px; height: 18px;"></i>
+                            <span class="text-sm font-medium text-gray-700">指示書</span>
+                            <span class="text-sm text-gray-600">高タンパク質を意識</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="text-gray-400" style="width: 18px; height: 18px;"></i>
+                    </button>
+                </div>
+
+                <!-- 栄養摂取状況 -->
+                <div class="bg-white">
+                    <button class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                        <div class="flex items-center gap-3 flex-1">
+                            <i data-lucide="pie-chart" class="text-indigo-600" style="width: 18px; height: 18px;"></i>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-sm font-medium text-gray-700">栄養摂取</span>
+                                    <span class="text-lg font-bold text-gray-900">500</span>
+                                    <span class="text-xs text-gray-500">/</span>
+                                    <span class="text-xs text-gray-600">2000 kcal</span>
+                                </div>
+                                <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-green-400 to-green-500" style="width: 25%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-down" class="text-gray-400" style="width: 18px; height: 18px;"></i>
+                    </button>
+                    <!-- 展開時のPFC詳細 -->
+                    <div class="px-4 pb-4 bg-gradient-to-br from-gray-50 to-white">
+                        <div class="space-y-3">
+                            <!-- タンパク質 -->
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs text-gray-600">タンパク質</span>
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-sm font-bold text-purple-600">50</span>
+                                        <span class="text-xs text-gray-500">/</span>
+                                        <span class="text-xs text-gray-600">150g</span>
+                                        <span class="text-xs text-purple-600 font-medium">33%</span>
+                                    </div>
+                                </div>
+                                <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-purple-500" style="width: 33%"></div>
+                                </div>
+                            </div>
+
+                            <!-- 脂質 -->
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs text-gray-600">脂質</span>
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-sm font-bold text-orange-600">20</span>
+                                        <span class="text-xs text-gray-500">/</span>
+                                        <span class="text-xs text-gray-600">50g</span>
+                                        <span class="text-xs text-orange-600 font-medium">40%</span>
+                                    </div>
+                                </div>
+                                <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-orange-500" style="width: 40%"></div>
+                                </div>
+                            </div>
+
+                            <!-- 炭水化物 -->
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs text-gray-600">炭水化物</span>
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-sm font-bold text-cyan-600">60</span>
+                                        <span class="text-xs text-gray-500">/</span>
+                                        <span class="text-xs text-gray-600">250g</span>
+                                        <span class="text-xs text-cyan-600 font-medium">24%</span>
+                                    </div>
+                                </div>
+                                <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-cyan-500" style="width: 24%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- コンテンツエリア -->
+        <div class="p-4">
+            <div class="text-center text-gray-400 py-8">
+                <p class="text-sm">以下に食事・運動の詳細リストが表示されます</p>
+            </div>
+        </div>
+
+        <!-- 説明 -->
+        <div class="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 shadow-lg">
+            <div class="max-w-md mx-auto">
+                <h2 class="text-sm font-bold mb-2">候補C：アコーディオン型サマリー</h2>
+                <ul class="text-xs space-y-1 opacity-90">
+                    <li>✓ 各情報を展開/格納可能</li>
+                    <li>✓ 概要と詳細を両立</li>
+                    <li>✓ 必要な情報だけ表示</li>
+                    <li>✓ 柔軟性が高い</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

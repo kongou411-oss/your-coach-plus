@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>候補B：タブ切り替え型サマリー</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-md mx-auto bg-white min-h-screen">
+        <!-- レベルバナー -->
+        <div class="bg-gradient-to-r from-purple-600 to-pink-600 shadow-sm">
+            <div class="flex items-center justify-between px-4 py-2">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-bold text-white">Lv12</span>
+                    <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                        <div class="absolute top-0 left-0 h-full bg-white rounded-full transition-all duration-500" style="width: 70%"></div>
+                    </div>
+                    <span class="text-xs text-white font-medium">70%</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1">
+                        <i data-lucide="award" class="text-white" style="width: 14px; height: 14px;"></i>
+                        <span class="text-sm font-bold text-white">45</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日付ナビゲーション -->
+        <div class="bg-white shadow-md sticky top-0 z-30">
+            <div class="flex items-center justify-between px-4 py-3 border-b">
+                <button class="p-2 hover:bg-gray-100 rounded-full transition">
+                    <i data-lucide="chevron-left" class="text-gray-600" style="width: 20px; height: 20px;"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <div class="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition flex items-center gap-2">
+                        <i data-lucide="calendar" class="text-indigo-600" style="width: 20px; height: 20px;"></i>
+                        <span class="text-xl font-bold text-gray-900">11月2日(土)</span>
+                    </div>
+                    <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">今日</span>
+                </div>
+                <button class="p-2 hover:bg-gray-100 rounded-full transition">
+                    <i data-lucide="chevron-right" class="text-gray-600" style="width: 20px; height: 20px;"></i>
+                </button>
+            </div>
+
+            <!-- タブナビゲーション -->
+            <div class="flex border-b">
+                <button class="flex-1 py-3 px-2 text-sm font-bold text-indigo-700 border-b-2 border-indigo-700 bg-indigo-50">
+                    <div class="flex items-center justify-center gap-1">
+                        <i data-lucide="pie-chart" style="width: 16px; height: 16px;"></i>
+                        <span>栄養</span>
+                    </div>
+                </button>
+                <button class="flex-1 py-3 px-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50">
+                    <div class="flex items-center justify-center gap-1">
+                        <i data-lucide="dumbbell" style="width: 16px; height: 16px;"></i>
+                        <span>ルーティン</span>
+                    </div>
+                </button>
+                <button class="flex-1 py-3 px-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50">
+                    <div class="flex items-center justify-center gap-1">
+                        <i data-lucide="clipboard-list" style="width: 16px; height: 16px;"></i>
+                        <span>指示書</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- タブコンテンツ（栄養） -->
+            <div class="px-4 py-4 bg-white border-b">
+                <!-- ヘッダー -->
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-gray-900">11月3日の摂取状況</h3>
+                    <span class="text-xs text-gray-500">目標まで 2200 kcal</span>
+                </div>
+
+                <button class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center mb-4">
+                    <i data-lucide="info" class="text-gray-600" style="width: 16px; height: 16px;"></i>
+                </button>
+
+                <!-- カロリー -->
+                <div class="mb-4">
+                    <div class="flex items-baseline gap-2 mb-2">
+                        <span class="text-4xl font-bold text-gray-900">0</span>
+                        <span class="text-base text-gray-500">/</span>
+                        <span class="text-base text-gray-600">2200 kcal</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-green-400 to-green-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- PFC横並び -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <!-- タンパク質 -->
+                    <div>
+                        <div class="text-xs text-gray-600 mb-2">タンパク質</div>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-2xl font-bold text-purple-600">0</span>
+                            <span class="text-xs text-gray-500">/</span>
+                            <span class="text-xs text-gray-600">71g</span>
+                        </div>
+                    </div>
+
+                    <!-- 脂質 -->
+                    <div>
+                        <div class="text-xs text-gray-600 mb-2">脂質</div>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-2xl font-bold text-orange-600">0</span>
+                            <span class="text-xs text-gray-500">/</span>
+                            <span class="text-xs text-gray-600">61g</span>
+                        </div>
+                    </div>
+
+                    <!-- 炭水化物 -->
+                    <div>
+                        <div class="text-xs text-gray-600 mb-2">炭水化物</div>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-2xl font-bold text-cyan-600">0</span>
+                            <span class="text-xs text-gray-500">/</span>
+                            <span class="text-xs text-gray-600">341g</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ビタミン・ミネラル展開ボタン -->
+                <button class="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700">
+                    <i data-lucide="chevron-down" style="width: 16px; height: 16px;"></i>
+                    <span>ビタミン・ミネラル+</span>
+                </button>
+            </div>
+
+            <!-- タブコンテンツ（ルーティン） - 非表示 -->
+            <div class="px-4 py-4 bg-white border-b hidden">
+                <div class="flex items-center gap-3 mb-3">
+                    <i data-lucide="repeat" class="text-purple-600" style="width: 20px; height: 20px;"></i>
+                    <span class="text-xs text-gray-500">Day 1/7</span>
+                </div>
+                <div class="text-2xl font-bold text-purple-700 mb-3">胸・肩・三頭</div>
+
+                <!-- 紐づけテンプレート -->
+                <div class="bg-white rounded-lg border-2 border-purple-200 p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="bookmark" class="text-purple-600" style="width: 16px; height: 16px;"></i>
+                        <span class="text-xs text-gray-600">紐づけテンプレート</span>
+                    </div>
+                    <div class="text-lg font-bold text-gray-900 mb-2">プッシュデイ（高重量）</div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <p>• ベンチプレス 5セット</p>
+                        <p>• インクラインダンベルプレス 4セット</p>
+                        <p>• ショルダープレス 4セット</p>
+                        <p>• トライセップスエクステンション 3セット</p>
+                    </div>
+                </div>
+
+                <button class="w-full mt-3 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition text-sm">
+                    このテンプレートから入力
+                </button>
+            </div>
+
+            <!-- タブコンテンツ（指示書） - 非表示 -->
+            <div class="px-4 py-4 bg-white border-b hidden">
+                <div class="flex items-center gap-3 mb-3">
+                    <i data-lucide="target" class="text-green-600" style="width: 20px; height: 20px;"></i>
+                    <span class="text-xs text-gray-500">今日の目標</span>
+                </div>
+                <div class="bg-white rounded-lg border-2 border-green-200 p-4 mb-3">
+                    <div class="text-base font-bold text-gray-900 mb-2">
+                        高タンパク質を意識する
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        各食事でタンパク質30g以上を摂取し、1日の総タンパク質量を150g以上にする。
+                    </div>
+                </div>
+                <div class="flex items-center justify-center gap-2">
+                    <button class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition text-sm">
+                        ✓ 完了
+                    </button>
+                    <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm">
+                        編集
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- コンテンツエリア -->
+        <div class="p-4">
+            <div class="text-center text-gray-400 py-8">
+                <p class="text-sm">タブを切り替えるとルーティンや指示書が表示されます</p>
+                <p class="text-xs mt-2">（デモでは栄養タブが選択されています）</p>
+            </div>
+        </div>
+
+        <!-- 説明 -->
+        <div class="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 shadow-lg">
+            <div class="max-w-md mx-auto">
+                <h2 class="text-sm font-bold mb-2">候補B：タブ切り替え型サマリー</h2>
+                <ul class="text-xs space-y-1 opacity-90">
+                    <li>✓ 栄養タブが先頭（デフォルト表示）</li>
+                    <li>✓ ルーティンタブでテンプレート名を表示</li>
+                    <li>✓ 各情報の詳細を広く表示可能</li>
+                    <li>✓ モダンなタブUI</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>候補B：グループ化案 - ダッシュボード</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .accordion-content.active {
+            max-height: 1000px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-md mx-auto bg-white min-h-screen">
+        <!-- ヘッダー -->
+        <div class="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-lg font-bold text-gray-900">ダッシュボード</h1>
+                    <p class="text-xs text-gray-500">2025年11月2日（土）</p>
+                </div>
+                <div class="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-xs font-medium">
+                    候補B
+                </div>
+            </div>
+        </div>
+
+        <!-- コンテンツ -->
+        <div class="p-3 space-y-3 pb-32">
+            <!-- 体組成セクション -->
+            <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <!-- アコーディオンヘッダー -->
+                <button
+                    onclick="toggleAccordion('bodyComp')"
+                    class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+                >
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                            <i data-lucide="user" class="text-indigo-600" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="text-sm font-bold text-gray-900">体組成</h3>
+                            <p class="text-xs text-gray-500">70.0kg / 15.0% / LBM 59.5kg</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-down" id="bodyComp-icon" class="text-gray-400 transition-transform" style="width: 20px; height: 20px;"></i>
+                </button>
+
+                <!-- アコーディオンコンテンツ -->
+                <div id="bodyComp-content" class="accordion-content active">
+                    <div class="px-6 pb-6 space-y-3 border-t border-gray-100 pt-4">
+                        <!-- 体重入力 -->
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <label class="text-xs font-medium text-gray-600 mb-2 block">体重</label>
+                            <div class="flex items-center gap-2">
+                                <button class="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition">
+                                    <i data-lucide="minus" style="width: 16px; height: 16px;"></i>
+                                </button>
+                                <input
+                                    type="number"
+                                    value="70.0"
+                                    class="flex-1 h-10 px-4 bg-white border border-gray-200 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <span class="text-sm text-gray-500 w-8">kg</span>
+                                <button class="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition">
+                                    <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 体脂肪率入力 -->
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <label class="text-xs font-medium text-gray-600 mb-2 block">体脂肪率</label>
+                            <div class="flex items-center gap-2">
+                                <button class="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition">
+                                    <i data-lucide="minus" style="width: 16px; height: 16px;"></i>
+                                </button>
+                                <input
+                                    type="number"
+                                    value="15.0"
+                                    step="0.1"
+                                    class="flex-1 h-10 px-4 bg-white border border-gray-200 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <span class="text-sm text-gray-500 w-8">%</span>
+                                <button class="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition">
+                                    <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 記録セクション -->
+            <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <!-- アコーディオンヘッダー -->
+                <button
+                    onclick="toggleAccordion('records')"
+                    class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+                >
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+                            <i data-lucide="clipboard-list" class="text-green-600" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="text-sm font-bold text-gray-900">今日の記録</h3>
+                            <p class="text-xs text-gray-500">食事 1件 / 運動 0件</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-down" id="records-icon" class="text-gray-400 transition-transform" style="width: 20px; height: 20px;"></i>
+                </button>
+
+                <!-- アコーディオンコンテンツ -->
+                <div id="records-content" class="accordion-content active">
+                    <div class="border-t border-gray-100">
+                        <!-- 食事タブ -->
+                        <div class="px-6 py-3 bg-gray-50 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="utensils-crossed" class="text-green-600" style="width: 16px; height: 16px;"></i>
+                                <span class="text-xs font-medium text-gray-700">食事</span>
+                                <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">1</span>
+                            </div>
+                            <button
+                                onclick="alert('食事追加モーダルが開きます')"
+                                class="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition"
+                            >
+                                + 追加
+                            </button>
+                        </div>
+
+                        <!-- 食事アイテム -->
+                        <div class="divide-y divide-gray-100">
+                            <div class="px-6 py-4 flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-xs text-gray-500">10:42</span>
+                                    </div>
+                                    <div class="text-sm font-medium text-gray-900 mb-1">
+                                        鶏もも肉（皮なし生）
+                                    </div>
+                                    <div class="text-xs text-gray-500">100g</div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="text-right">
+                                        <div class="text-base font-bold text-gray-900">105</div>
+                                        <div class="text-xs text-gray-500">kcal</div>
+                                    </div>
+                                    <div class="flex gap-1">
+                                        <button
+                                            onclick="alert('編集モーダルが開きます')"
+                                            class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition"
+                                            title="編集"
+                                        >
+                                            <i data-lucide="edit" style="width: 14px; height: 14px;"></i>
+                                        </button>
+                                        <button
+                                            onclick="alert('削除しますか？')"
+                                            class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-red-50 hover:text-red-600 transition"
+                                            title="削除"
+                                        >
+                                            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 運動タブ -->
+                        <div class="px-6 py-3 bg-gray-50 flex items-center justify-between border-t border-gray-100">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="activity" class="text-orange-600" style="width: 16px; height: 16px;"></i>
+                                <span class="text-xs font-medium text-gray-700">運動</span>
+                                <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">0</span>
+                            </div>
+                            <button
+                                onclick="alert('運動追加モーダルが開きます')"
+                                class="px-3 py-1 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700 transition"
+                            >
+                                + 追加
+                            </button>
+                        </div>
+
+                        <div class="px-6 py-6 text-center bg-white">
+                            <i data-lucide="activity" class="text-gray-300 mx-auto mb-2" style="width: 24px; height: 24px;"></i>
+                            <p class="text-xs text-gray-400">運動の記録がありません</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 特徴説明 -->
+        <div class="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-green-600 to-green-500 text-white p-6 shadow-lg">
+            <div class="max-w-md mx-auto">
+                <h2 class="text-sm font-bold mb-2">候補B：グループ化案</h2>
+                <ul class="text-xs space-y-1 opacity-90">
+                    <li>✓ アコーディオンで折りたたみ可能</li>
+                    <li>✓ サマリー表示で概要把握</li>
+                    <li>✓ ±ボタン維持（既存ユーザーに優しい）</li>
+                    <li>✓ 実装工数が最小（1-2日）</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function toggleAccordion(id) {
+            const content = document.getElementById(id + '-content');
+            const icon = document.getElementById(id + '-icon');
+
+            content.classList.toggle('active');
+
+            if (content.classList.contains('active')) {
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                icon.style.transform = 'rotate(-90deg)';
+            }
+
+            // アイコンを再レンダリング
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

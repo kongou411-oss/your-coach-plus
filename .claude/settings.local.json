@@ -62,7 +62,10 @@
       "Bash(temp_dashboard_backup.js)",
       "Bash(xargs:*)",
       "Bash(sort:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(start http://localhost:8000/design_candidates/index.html)",
+      "Bash(start http://localhost:8000/design_candidates/summary_candidate_B_tabs.html)",
+      "Bash(timeout 5 powershell:*)"
     ],
     "deny": [],
     "ask": []

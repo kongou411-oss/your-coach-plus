@@ -833,8 +833,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                 // テンプレートを読み込み
                 const userId = user?.uid || DEV_USER_ID;
-                const userMealTemplates = await DataService.getTemplates(userId, 'meal');
-                const userWorkoutTemplates = await DataService.getTemplates(userId, 'workout');
+                const userMealTemplates = await DataService.getMealTemplates(userId);
+                const userWorkoutTemplates = await DataService.getWorkoutTemplates(userId);
 
                 const newMeals = [];
                 const newWorkouts = [];
@@ -1291,66 +1291,32 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             </button>
                         </div>
 
-                        {/* ルーティン情報（固定表示） */}
-                        {unlockedFeatures.includes(FEATURES.ROUTINE.id) && (() => {
-                            const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
-                            const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
-                            const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
-                            const routineActive = localStorage.getItem(STORAGE_KEYS.ROUTINE_ACTIVE) === 'true';
-
-                            if (routineActive && routineStartDate && routines.length > 0) {
-                                const startDate = new Date(routineStartDate);
-                                const today = new Date();
-                                const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                                const currentIndex = daysDiff % routines.length;
-                                const currentRoutine = routines[currentIndex];
-
-                                if (currentRoutine) {
-                                    return (
-                                        <div className="px-4 py-3 bg-white border-b">
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <Icon name="Repeat" size={20} className="text-purple-600" />
-                                                <span className="text-xs text-gray-500">Day {currentIndex + 1}/{routines.length}</span>
-                                            </div>
-                                            <div className="text-2xl font-bold mb-3">
-                                                {!currentRoutine.isRestDay && currentRoutine.splitType && (
-                                                    <span className="text-purple-700">{currentRoutine.splitType}</span>
-                                                )}
-                                                {currentRoutine.isRestDay && (
-                                                    <span className="text-gray-600">休息日</span>
-                                                )}
-                                            </div>
-
-                                            {/* 紐づけテンプレート */}
-                                            {currentRoutine.linkedTemplateId && (() => {
-                                                const savedTemplates = localStorage.getItem('trainingTemplates');
-                                                const templates = savedTemplates ? JSON.parse(savedTemplates) : [];
-                                                const linkedTemplate = templates.find(t => t.id === currentRoutine.linkedTemplateId);
-
-                                                if (linkedTemplate) {
-                                                    return (
-                                                        <div className="bg-white rounded-lg border-2 border-purple-200 p-4">
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <Icon name="Bookmark" size={16} className="text-purple-600" />
-                                                                <span className="text-xs text-gray-600">紐づけテンプレート</span>
-                                                            </div>
-                                                            <div className="text-lg font-bold text-gray-900 mb-2">{linkedTemplate.name}</div>
-                                                            <div className="text-xs text-gray-600 space-y-1">
-                                                                {linkedTemplate.exercises.map((ex, idx) => (
-                                                                    <p key={idx}>• {ex.name} {ex.sets}セット</p>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    );
+                        {/* ルーティンバナー */}
+                        {unlockedFeatures.includes(FEATURES.ROUTINE.id) && currentRoutine && !currentRoutine.isRestDay && (
+                            <div className="px-4 py-3 bg-white border-b">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <Icon name="Repeat" size={20} className="text-purple-600" />
+                                        <span className="text-xs text-gray-500">
+                                            Day {(() => {
+                                                const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+                                                const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
+                                                const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
+                                                if (routineStartDate && routines.length > 0) {
+                                                    const startDate = new Date(routineStartDate);
+                                                    const today = new Date();
+                                                    const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+                                                    const currentIndex = daysDiff % routines.length;
+                                                    return `${currentIndex + 1}/${routines.length}`;
                                                 }
+                                                return '1/7';
                                             })()}
-                                        </div>
-                                    );
-                                }
-                            }
-
-                            return null;
-                        })()}
+                                        </span>
+                                    </div>
+                                    <span className="text-xl font-bold text-purple-700">{currentRoutine.splitType}</span>
+                                </div>
+                            </div>
+                        )}
 
                     </div>
 
@@ -1608,6 +1574,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             type={addViewType}
                             editingTemplate={editingTemplate}
                             editingMeal={editingMeal}
+                            isTemplateMode={openedFromTemplateEditModal}
                             onClose={() => {
                                 setShowAddView(false);
                                 setEditingTemplate(null); // 編集テンプレートをクリア

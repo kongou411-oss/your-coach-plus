@@ -11,6 +11,8 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
     const [searchResults, setSearchResults] = useState([]);
     const [selectedNewItem, setSelectedNewItem] = useState(null);
     const [newItemAmount, setNewItemAmount] = useState(100);
+    const [foodOrSupplementTab, setFoodOrSupplementTab] = useState('food'); // 'food' or 'supplement'
+    const [expandedCategories, setExpandedCategories] = useState({}); // カテゴリの展開状態
 
     // アイテム削除ハンドラ
     const handleDeleteItem = (index) => {
@@ -636,7 +638,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
             {/* 食材追加モーダル */}
             {showAddItemModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] flex flex-col">
                         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
                             <h3 className="text-lg font-bold">食材を追加</h3>
                             <button onClick={() => setShowAddItemModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -651,102 +653,411 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => handleSearchFood(e.target.value)}
-                                    placeholder="食材を検索..."
+                                    placeholder="食材・サプリメントを検索..."
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                     autoFocus
                                 />
                             </div>
 
-                            {/* 検索結果 */}
-                            {searchResults.length > 0 && !selectedNewItem && (
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {searchResults.map((food, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => {
-                                                setSelectedNewItem(food);
-                                                setSearchResults([]);
-                                            }}
-                                            className="w-full px-4 py-3 text-left hover:bg-gray-50 border border-gray-200 rounded-lg transition"
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-gray-800">{food.name}</p>
-                                                    <p className="text-xs text-gray-500">{food.category}</p>
-                                                </div>
-                                                <div className="text-xs text-gray-600 flex gap-2">
-                                                    <span>{food.calories}kcal</span>
-                                                    <span>P:{food.protein}g</span>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            {/* 食材/サプリメント タブ */}
+                            <div className="grid grid-cols-2 border-b border-gray-200">
+                                <button
+                                    onClick={() => setFoodOrSupplementTab('food')}
+                                    className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                        foodOrSupplementTab === 'food'
+                                            ? 'border-green-600 text-green-600'
+                                            : 'border-transparent text-gray-600 hover:text-green-600'
+                                    }`}
+                                >
+                                    <Icon name="Apple" size={20} />
+                                    <span className="text-sm">食材</span>
+                                </button>
+                                <button
+                                    onClick={() => setFoodOrSupplementTab('supplement')}
+                                    className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                        foodOrSupplementTab === 'supplement'
+                                            ? 'border-blue-600 text-blue-600'
+                                            : 'border-transparent text-gray-600 hover:text-blue-600'
+                                    }`}
+                                >
+                                    <Icon name="Pill" size={20} />
+                                    <span className="text-sm">サプリメント</span>
+                                </button>
+                            </div>
+                        </div>
 
-                            {/* 選択した食材の量入力 */}
-                            {selectedNewItem && (
-                                <div className="space-y-4">
-                                    <div className="bg-indigo-50 p-4 rounded-lg">
-                                        <p className="text-sm font-medium text-indigo-900 mb-2">{selectedNewItem.name}</p>
-                                        <div className="text-xs text-gray-600 grid grid-cols-4 gap-2">
-                                            <div>
-                                                <p className="text-gray-600">カロリー</p>
-                                                <p className="font-bold">{selectedNewItem.calories}kcal</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-gray-600">P</p>
-                                                <p className="font-bold">{selectedNewItem.protein}g</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-gray-600">F</p>
-                                                <p className="font-bold">{selectedNewItem.fat}g</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-gray-600">C</p>
-                                                <p className="font-bold">{selectedNewItem.carbs}g</p>
-                                            </div>
+                        {/* 選択した食材の量入力 */}
+                        {selectedNewItem ? (
+                            <div className="p-6 space-y-4">
+                                {/* アイテム情報 */}
+                                <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h4 className="font-bold text-lg">{selectedNewItem.name}</h4>
+                                            <p className="text-sm text-gray-600">{selectedNewItem.category}</p>
                                         </div>
-                                        <p className="text-xs text-gray-500 mt-2">※100gあたり</p>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">量 (g)</label>
-                                        <input
-                                            type="number"
-                                            value={newItemAmount}
-                                            onChange={(e) => setNewItemAmount(Number(e.target.value))}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                        />
-                                    </div>
-
-                                    <div className="flex gap-2">
                                         <button
                                             onClick={() => {
                                                 setSelectedNewItem(null);
                                                 setSearchTerm('');
                                                 setNewItemAmount(100);
                                             }}
-                                            className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
+                                            className="text-gray-500 hover:text-gray-700"
                                         >
-                                            戻る
+                                            <Icon name="X" size={20} />
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
+                                        <div>
+                                            <p className="text-gray-600">カロリー</p>
+                                            <p className="font-bold" style={{color: '#7686BA'}}>{selectedNewItem.calories}kcal</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">P</p>
+                                            <p className="font-bold text-red-600">{selectedNewItem.protein}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">F</p>
+                                            <p className="font-bold text-yellow-600">{selectedNewItem.fat}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">C</p>
+                                            <p className="font-bold text-green-600">{selectedNewItem.carbs}g</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">※100gあたり</p>
+                                </div>
+
+                                {/* 量調整 */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">量 (g)</label>
+
+                                    {/* スライダー */}
+                                    <div className="mb-3">
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="500"
+                                            step="5"
+                                            value={newItemAmount}
+                                            onChange={(e) => setNewItemAmount(Number(e.target.value))}
+                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                            style={{
+                                                background: `linear-gradient(to right, #4f46e5 0%, #4f46e5 ${(newItemAmount/500)*100}%, #e5e7eb ${(newItemAmount/500)*100}%, #e5e7eb 100%)`
+                                            }}
+                                        />
+                                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                            <span onClick={() => setNewItemAmount(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0g</span>
+                                            <span onClick={() => setNewItemAmount(100)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">100g</span>
+                                            <span onClick={() => setNewItemAmount(200)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">200g</span>
+                                            <span onClick={() => setNewItemAmount(300)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">300g</span>
+                                            <span onClick={() => setNewItemAmount(400)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">400g</span>
+                                            <span onClick={() => setNewItemAmount(500)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">500g</span>
+                                        </div>
+                                    </div>
+
+                                    <input
+                                        type="number"
+                                        value={newItemAmount}
+                                        onChange={(e) => setNewItemAmount(Number(e.target.value))}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2"
+                                    />
+
+                                    {/* 増減ボタン */}
+                                    <div className="grid grid-cols-6 gap-1">
+                                        <button
+                                            onClick={() => setNewItemAmount(Math.max(0, newItemAmount - 100))}
+                                            className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                                        >
+                                            -100
                                         </button>
                                         <button
-                                            onClick={handleAddItem}
-                                            className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                            onClick={() => setNewItemAmount(Math.max(0, newItemAmount - 50))}
+                                            className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
                                         >
-                                            追加
+                                            -50
+                                        </button>
+                                        <button
+                                            onClick={() => setNewItemAmount(Math.max(0, newItemAmount - 10))}
+                                            className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                        >
+                                            -10
+                                        </button>
+                                        <button
+                                            onClick={() => setNewItemAmount(newItemAmount + 10)}
+                                            className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                        >
+                                            +10
+                                        </button>
+                                        <button
+                                            onClick={() => setNewItemAmount(newItemAmount + 50)}
+                                            className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                        >
+                                            +50
+                                        </button>
+                                        <button
+                                            onClick={() => setNewItemAmount(newItemAmount + 100)}
+                                            className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                                        >
+                                            +100
+                                        </button>
+                                    </div>
+
+                                    {/* 倍増減ボタン */}
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <button
+                                            onClick={() => setNewItemAmount(Math.max(0, Math.round(newItemAmount * 0.5)))}
+                                            className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                                        >
+                                            ×0.5
+                                        </button>
+                                        <button
+                                            onClick={() => setNewItemAmount(Math.round(newItemAmount * 2))}
+                                            className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                                        >
+                                            ×2
                                         </button>
                                     </div>
                                 </div>
-                            )}
 
-                            {searchTerm && searchResults.length === 0 && !selectedNewItem && (
-                                <div className="text-center py-8 text-gray-500">
-                                    <p>「{searchTerm}」に一致する食材が見つかりませんでした</p>
+                                {/* 摂取量プレビュー */}
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <p className="text-sm font-medium mb-2">摂取量</p>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        <div>
+                                            <p className="text-xs text-gray-600">カロリー</p>
+                                            <p className="font-bold text-cyan-600">{Math.round(selectedNewItem.calories * newItemAmount / 100)}kcal</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-600">P</p>
+                                            <p className="font-bold text-red-600">{((selectedNewItem.protein * newItemAmount / 100).toFixed(1))}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-600">F</p>
+                                            <p className="font-bold text-yellow-600">{((selectedNewItem.fat * newItemAmount / 100).toFixed(1))}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-600">C</p>
+                                            <p className="font-bold text-green-600">{((selectedNewItem.carbs * newItemAmount / 100).toFixed(1))}g</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
+
+                                {/* ボタン */}
+                                <button
+                                    onClick={handleAddItem}
+                                    className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                >
+                                    アイテムを追加
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                {/* カテゴリ一覧（検索結果がある場合は検索結果、ない場合は全カテゴリ） */}
+                                <div className="flex-1 overflow-y-auto px-6 pb-6">
+                                    {searchResults.length > 0 ? (
+                                        // 検索結果表示
+                                        <div className="space-y-2">
+                                            {searchResults.map((food, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => {
+                                                        setSelectedNewItem(food);
+                                                        setSearchResults([]);
+                                                    }}
+                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border border-gray-200 rounded-lg transition"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex-1">
+                                                            <p className="font-medium text-gray-800">{food.name}</p>
+                                                            <p className="text-xs text-gray-500">{food.category}</p>
+                                                        </div>
+                                                        <div className="text-xs text-gray-600 flex gap-2">
+                                                            <span>{food.calories}kcal</span>
+                                                            <span>P:{food.protein}g</span>
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : searchTerm ? (
+                                        // 検索結果なし
+                                        <div className="text-center py-8 text-gray-500">
+                                            <p>「{searchTerm}」に一致する{foodOrSupplementTab === 'food' ? '食材' : 'サプリメント'}が見つかりませんでした</p>
+                                        </div>
+                                    ) : (
+                                        // カテゴリ一覧表示
+                                        <div className="bg-white">
+                                            {foodOrSupplementTab === 'food' ? (
+                                                // 食材カテゴリ
+                                                Object.keys(foodDatabase).map(category => (
+                                                    <div key={category} className="border-t border-gray-200">
+                                                        <button
+                                                            onClick={() => setExpandedCategories(prev => ({...prev, [category]: !prev[category]}))}
+                                                            className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
+                                                        >
+                                                            <span className="font-medium text-sm">{category}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs text-gray-500">{Object.keys(foodDatabase[category]).length}品目</span>
+                                                                <Icon name={expandedCategories[category] ? 'ChevronDown' : 'ChevronRight'} size={18} />
+                                                            </div>
+                                                        </button>
+                                                        {expandedCategories[category] && (
+                                                            <div className="p-2 space-y-1 bg-gray-50">
+                                                                {Object.keys(foodDatabase[category]).map(foodName => {
+                                                                    const food = foodDatabase[category][foodName];
+
+                                                                    // 栄養素データの取得
+                                                                    const calories = food.calories || 0;
+                                                                    const protein = food.protein || 0;
+                                                                    const fat = food.fat || 0;
+                                                                    const carbs = food.carbs || 0;
+
+                                                                    // PFCのカロリー計算
+                                                                    const pCal = parseFloat(protein) * 4;
+                                                                    const fCal = parseFloat(fat) * 9;
+                                                                    const cCal = parseFloat(carbs) * 4;
+
+                                                                    // 最も高い割合の栄養素を判定
+                                                                    const maxCal = Math.max(pCal, fCal, cCal);
+                                                                    let borderColor = 'border-gray-300';
+                                                                    if (maxCal === pCal) borderColor = 'border-red-500';
+                                                                    else if (maxCal === fCal) borderColor = 'border-yellow-500';
+                                                                    else if (maxCal === cCal) borderColor = 'border-green-500';
+
+                                                                    return (
+                                                                        <button
+                                                                            key={foodName}
+                                                                            onClick={() => {
+                                                                                const nutrients = {
+                                                                                    calories: calories,
+                                                                                    protein: protein,
+                                                                                    fat: fat,
+                                                                                    carbs: carbs,
+                                                                                    vitamins: {
+                                                                                        A: food.vitaminA || 0,
+                                                                                        B1: food.vitaminB1 || 0,
+                                                                                        B2: food.vitaminB2 || 0,
+                                                                                        B6: food.vitaminB6 || 0,
+                                                                                        B12: food.vitaminB12 || 0,
+                                                                                        C: food.vitaminC || 0,
+                                                                                        D: food.vitaminD || 0,
+                                                                                        E: food.vitaminE || 0,
+                                                                                        K: food.vitaminK || 0,
+                                                                                        B3: food.niacin || 0,
+                                                                                        B5: food.pantothenicAcid || 0,
+                                                                                        B7: food.biotin || 0,
+                                                                                        B9: food.folicAcid || 0
+                                                                                    },
+                                                                                    minerals: {
+                                                                                        sodium: food.sodium || 0,
+                                                                                        potassium: food.potassium || 0,
+                                                                                        calcium: food.calcium || 0,
+                                                                                        magnesium: food.magnesium || 0,
+                                                                                        phosphorus: food.phosphorus || 0,
+                                                                                        iron: food.iron || 0,
+                                                                                        zinc: food.zinc || 0,
+                                                                                        copper: food.copper || 0,
+                                                                                        manganese: food.manganese || 0,
+                                                                                        iodine: food.iodine || 0,
+                                                                                        selenium: food.selenium || 0,
+                                                                                        chromium: food.chromium || 0,
+                                                                                        molybdenum: food.molybdenum || 0
+                                                                                    }
+                                                                                };
+                                                                                setSelectedNewItem({
+                                                                                    name: foodName,
+                                                                                    category: category,
+                                                                                    ...nutrients
+                                                                                });
+                                                                            }}
+                                                                            className={`w-full text-left rounded-lg transition hover:bg-gray-50 border-l-4 ${borderColor} bg-white`}
+                                                                        >
+                                                                            <div className="px-3 py-2">
+                                                                                <div className="flex-1">
+                                                                                    <div className="flex justify-between items-start mb-1">
+                                                                                        <span className="text-sm font-medium">{foodName}</span>
+                                                                                        <span className="text-xs font-bold text-cyan-600">
+                                                                                            {calories}kcal
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className="flex justify-between items-center">
+                                                                                        <div className="flex gap-2 text-xs">
+                                                                                            <span className="text-red-600">P:{protein}g</span>
+                                                                                            <span className="text-yellow-600">F:{fat}g</span>
+                                                                                            <span className="text-green-600">C:{carbs}g</span>
+                                                                                        </div>
+                                                                                        <span className="text-xs text-gray-400">※100gあたり</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                // サプリメントカテゴリ
+                                                (() => {
+                                                    const categories = {};
+                                                    supplementDB.forEach(supp => {
+                                                        if (!categories[supp.category]) {
+                                                            categories[supp.category] = [];
+                                                        }
+                                                        categories[supp.category].push(supp);
+                                                    });
+
+                                                    return Object.keys(categories).map(category => (
+                                                        <div key={category} className="border-t border-gray-200">
+                                                            <button
+                                                                onClick={() => setExpandedCategories(prev => ({...prev, [category]: !prev[category]}))}
+                                                                className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
+                                                            >
+                                                                <span className="font-medium text-sm">{category}</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs text-gray-500">{categories[category].length}品目</span>
+                                                                    <Icon name={expandedCategories[category] ? 'ChevronDown' : 'ChevronRight'} size={18} />
+                                                                </div>
+                                                            </button>
+                                                            {expandedCategories[category] && (
+                                                                <div className="p-2 space-y-1 bg-gray-50">
+                                                                    {categories[category].map(supp => (
+                                                                        <button
+                                                                            key={supp.name}
+                                                                            onClick={() => {
+                                                                                setSelectedNewItem({
+                                                                                    name: supp.name,
+                                                                                    category: supp.category,
+                                                                                    calories: 0,
+                                                                                    protein: 0,
+                                                                                    fat: 0,
+                                                                                    carbs: 0,
+                                                                                    vitamins: supp.vitamins || {},
+                                                                                    minerals: supp.minerals || {}
+                                                                                });
+                                                                            }}
+                                                                            className="w-full text-left rounded-lg transition hover:bg-gray-50 border-l-4 border-blue-500 bg-white"
+                                                                        >
+                                                                            <div className="px-3 py-2">
+                                                                                <div className="flex-1">
+                                                                                    <span className="text-sm font-medium">{supp.name}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ));
+                                                })()
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
@@ -755,7 +1066,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
 };
 
 // ===== Add Item Component =====
-const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate, editingMeal }) => {
+const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate, editingMeal, isTemplateMode = false }) => {
             // 食事とサプリを統合する場合、itemTypeで管理
             const isMealOrSupplement = type === 'meal' || type === 'supplement';
 
@@ -1894,6 +2205,24 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                         return;
                     }
 
+                    // テンプレート作成モードの場合（新規）
+                    if (isTemplateMode) {
+                        if (!templateName.trim()) {
+                            alert('テンプレート名を入力してください');
+                            return;
+                        }
+                        const template = {
+                            id: Date.now(),
+                            name: templateName,
+                            exercises: exercises,
+                            createdAt: new Date().toISOString()
+                        };
+                        await DataService.saveWorkoutTemplate(user.uid, template);
+                        alert('テンプレートを保存しました');
+                        onClose();
+                        return;
+                    }
+
                     // 通常の記録モード
                     // 全ての種目を1つのworkoutオブジェクトにまとめる
                     const workoutData = {
@@ -2032,8 +2361,8 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
 
                                                     return (
                                                         <details key={template.id} className="bg-gray-50 rounded-lg border border-gray-200">
-                                                            <summary className="p-3 cursor-pointer hover:bg-gray-100 rounded-lg">
-                                                                <div className="flex items-center justify-between">
+                                                            <summary className="p-3 cursor-pointer hover:bg-gray-100 rounded-lg list-none">
+                                                                <div className="flex items-center justify-between mb-2">
                                                                     <div className="flex-1">
                                                                         <p className="font-medium">{template.name}</p>
                                                                         <p className="text-xs text-gray-600 mt-1">
@@ -2050,6 +2379,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                                                 setShowTemplates(false);
                                                                             }}
                                                                             className="p-2 text-blue-500 hover:text-blue-700"
+                                                                            title="編集"
                                                                         >
                                                                             <Icon name="Pencil" size={16} />
                                                                         </button>
@@ -2060,15 +2390,32 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                                                 deleteTemplate(template.id);
                                                                             }}
                                                                             className="p-2 text-red-500 hover:text-red-700"
-                                                                        >
+                                                                            title="削除"
+                                                                            >
                                                                             <Icon name="Trash2" size={16} />
                                                                         </button>
                                                                     </div>
                                                                 </div>
+
+                                                                {/* 追加ボタン */}
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        // テンプレートのすべての運動を追加
+                                                                        setExercises([...exercises, ...template.exercises]);
+                                                                        setShowTemplates(false);
+                                                                    }}
+                                                                    className="w-full py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium"
+                                                                >
+                                                                    このテンプレートを追加
+                                                                </button>
                                                             </summary>
-                                                            <div className="px-3 pb-3 space-y-2">
+
+                                                            {/* 運動一覧（折りたたみ） */}
+                                                            <div className="px-3 pb-3 pt-2 space-y-2 border-t border-gray-200">
                                                                 {template.exercises?.map((exercise, exIdx) => (
-                                                                    <div key={exIdx} className="text-sm border-t border-gray-200 pt-2">
+                                                                    <div key={exIdx} className="text-sm pt-2">
                                                                         <p className="font-medium text-gray-800">{exercise.name}</p>
                                                                         <div className="ml-2 mt-1 space-y-1">
                                                                             {exercise.sets?.map((set, setIdx) => (
@@ -3088,13 +3435,27 @@ RM回数と重量を別々に入力してください。`
                                     種目を追加
                                 </button>
 
+                                {/* テンプレート名入力（テンプレートモード時） */}
+                                {(isTemplateMode || editingTemplate) && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">テンプレート名</label>
+                                        <input
+                                            type="text"
+                                            value={templateName}
+                                            onChange={(e) => setTemplateName(e.target.value)}
+                                            placeholder="例: 胸トレ1"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                        />
+                                    </div>
+                                )}
+
                                 {/* 記録ボタン */}
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={handleWorkoutSave}
                                         className="bg-orange-600 text-white font-bold py-3 rounded-lg hover:bg-orange-700 transition"
                                     >
-                                        記録
+                                        {(isTemplateMode || editingTemplate) ? 'テンプレートを保存' : '記録'}
                                     </button>
                                     <button
                                         onClick={onClose}
@@ -3924,58 +4285,77 @@ RM回数と重量を別々に入力してください。`
                                                     });
 
                                                     return (
-                                                        <details key={template.id} className="bg-gray-50 rounded-lg border border-gray-200">
-                                                            <summary className="p-3 cursor-pointer hover:bg-gray-100 rounded-lg">
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex-1">
-                                                                        <p className="font-medium">{template.name}</p>
-                                                                        <p className="text-xs text-gray-600 mt-1">
-                                                                            {Math.round(totalCalories)}kcal
-                                                                            <span className="text-red-600 ml-2">P:{Math.round(totalProtein)}g</span>
-                                                                            <span className="text-yellow-600 ml-1">F:{Math.round(totalFat)}g</span>
-                                                                            <span className="text-green-600 ml-1">C:{Math.round(totalCarbs)}g</span>
-                                                                        </p>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2 ml-2">
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.preventDefault();
-                                                                                e.stopPropagation();
-                                                                                loadTemplate(template);
-                                                                                setShowTemplates(false);
-                                                                            }}
-                                                                            className="p-2 text-blue-500 hover:text-blue-700"
-                                                                        >
-                                                                            <Icon name="Pencil" size={16} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.preventDefault();
-                                                                                e.stopPropagation();
-                                                                                deleteTemplate(template.id);
-                                                                            }}
-                                                                            className="p-2 text-red-500 hover:text-red-700"
-                                                                        >
-                                                                            <Icon name="Trash2" size={16} />
-                                                                        </button>
-                                                                    </div>
+                                                        <div key={template.id} className="bg-gray-50 rounded-lg border border-gray-200 p-3">
+                                                            <div className="flex items-center justify-between mb-3">
+                                                                <div className="flex-1">
+                                                                    <p className="font-medium">{template.name}</p>
+                                                                    <p className="text-xs text-gray-600 mt-1">
+                                                                        {Math.round(totalCalories)}kcal
+                                                                        <span className="text-red-600 ml-2">P:{Math.round(totalProtein)}g</span>
+                                                                        <span className="text-yellow-600 ml-1">F:{Math.round(totalFat)}g</span>
+                                                                        <span className="text-green-600 ml-1">C:{Math.round(totalCarbs)}g</span>
+                                                                    </p>
                                                                 </div>
-                                                            </summary>
-                                                            <div className="px-3 pb-3 space-y-1">
-                                                                {template.items.map((item, idx) => (
-                                                                    <div key={idx} className="text-sm text-gray-700 py-1 border-t border-gray-200">
-                                                                        <span className="font-medium">{item.name}</span>
-                                                                        <span className="text-gray-500 ml-2">{item.amount}</span>
-                                                                        <span className="text-xs text-gray-500 ml-2">
-                                                                            ({Math.round(item.calories)}kcal
-                                                                            <span className="text-red-600 ml-1">P:{Math.round(item.protein)}g</span>
-                                                                            <span className="text-yellow-600 ml-1">F:{Math.round(item.fat)}g</span>
-                                                                            <span className="text-green-600 ml-1">C:{Math.round(item.carbs)}g</span>)
-                                                                        </span>
-                                                                    </div>
-                                                                ))}
+                                                                <div className="flex items-center gap-2 ml-2">
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            loadTemplate(template);
+                                                                            setShowTemplates(false);
+                                                                        }}
+                                                                        className="p-2 text-blue-500 hover:text-blue-700"
+                                                                        title="編集"
+                                                                    >
+                                                                        <Icon name="Pencil" size={16} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            deleteTemplate(template.id);
+                                                                        }}
+                                                                        className="p-2 text-red-500 hover:text-red-700"
+                                                                        title="削除"
+                                                                    >
+                                                                        <Icon name="Trash2" size={16} />
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                        </details>
+
+                                                            {/* 追加ボタン */}
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    // テンプレートのすべてのアイテムを追加
+                                                                    setAddedItems([...addedItems, ...template.items]);
+                                                                    setShowTemplates(false);
+                                                                }}
+                                                                className="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium mb-3"
+                                                            >
+                                                                このテンプレートを追加
+                                                            </button>
+
+                                                            {/* アイテム一覧（折りたたみ） */}
+                                                            <details className="border-t border-gray-200 pt-2">
+                                                                <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700 list-none flex items-center gap-1">
+                                                                    <Icon name="ChevronDown" size={14} />
+                                                                    内訳を表示
+                                                                </summary>
+                                                                <div className="mt-2 space-y-1">
+                                                                    {template.items.map((item, idx) => (
+                                                                        <div key={idx} className="text-sm text-gray-700 py-1">
+                                                                            <span className="font-medium">{item.name}</span>
+                                                                            <span className="text-gray-500 ml-2">{item.amount}g</span>
+                                                                            <span className="text-xs text-gray-500 ml-2">
+                                                                                ({Math.round(item.calories)}kcal
+                                                                                <span className="text-red-600 ml-1">P:{Math.round(item.protein)}g</span>
+                                                                                <span className="text-yellow-600 ml-1">F:{Math.round(item.fat)}g</span>
+                                                                                <span className="text-green-600 ml-1">C:{Math.round(item.carbs)}g</span>)
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </details>
+                                                        </div>
                                                     );
                                                 })}
                                             </div>
@@ -4149,6 +4529,28 @@ RM回数と重量を別々に入力してください。`
                                                                 return;
                                                             }
 
+                                                            // テンプレート作成モードの場合（新規）
+                                                            if (isTemplateMode) {
+                                                                if (!mealName.trim()) {
+                                                                    alert('テンプレート名を入力してください');
+                                                                    return;
+                                                                }
+                                                                if (addedItems.length === 0) {
+                                                                    alert('食材を追加してください');
+                                                                    return;
+                                                                }
+                                                                const template = {
+                                                                    id: Date.now(),
+                                                                    name: mealName,
+                                                                    items: addedItems
+                                                                };
+                                                                await DataService.saveMealTemplate(user.uid, template);
+                                                                alert('テンプレートを保存しました');
+                                                                setShowSearchModal(false);
+                                                                onClose();
+                                                                return;
+                                                            }
+
                                                             // 通常の記録モード
                                                             const totalCalories = addedItems.reduce((sum, item) => sum + item.calories, 0);
                                                             const totalProtein = parseFloat(addedItems.reduce((sum, item) => sum + (item.protein || 0), 0).toFixed(1));
@@ -4180,7 +4582,7 @@ RM回数と重量を別々に入力してください。`
                                                         }}
                                                         className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
                                                     >
-                                                        {editingTemplate ? 'テンプレートを更新' : '記録'}
+                                                        {(editingTemplate || isTemplateMode) ? 'テンプレートを保存' : '記録'}
                                                     </button>
                                                     <button
                                                         onClick={() => {
