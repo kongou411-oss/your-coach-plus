@@ -793,7 +793,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </summary>
                         <div className="p-4 border-t">
                             {/* プロフィール入力 */}
-                            <div className="space-y-3 max-h-[70vh] overflow-y-auto pb-12">
+                            <div className="space-y-3 max-h-[70vh] overflow-y-auto pb-4">
 
                                     {/* 計算ロジック解説 */}
                                     <details className="bg-blue-50 border-2 border-blue-200 rounded-lg mb-4">
@@ -868,8 +868,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         <p className="font-medium text-gray-800">【目的別モード】</p>
                                                         <p className="text-gray-600">スタイル・目的・食事スタイルに応じて自動計算</p>
                                                         <p className="text-gray-500 mt-1">
-                                                            • タンパク質 = 除脂肪体重 × 係数（一般:1.0, アスリート:2.0-2.8）<br/>
-                                                            • 脂質 = 除脂肪体重 × 係数 × 0.25（バランス）or × 0.35（低糖質）<br/>
+                                                            • タンパク質 = 除脂肪体重 × 係数（一般:1.2、ボディメイカー:2.2 ※目的に関わらず固定）<br/>
+                                                            • 脂質 = 目標カロリー × 0.25（バランス）or × 0.35（低糖質）<br/>
                                                             • 炭水化物 = 残りのカロリーを炭水化物で充当
                                                         </p>
                                                     </div>
@@ -1105,21 +1105,54 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 onClick={() => setInfoModal({
                                                     show: true,
                                                     title: '目的別設定',
-                                                    content: `あなたのボディメイクの目的を選択してください。目的に応じて推奨カロリーとPFCバランスが自動調整されます。
-【ダイエット（脂肪を落とす）】• 目標： 体脂肪を減らし、引き締まった体を作る
-• カロリー: メンテナンスカロリー -300kcal
-• タンパク質: 高め（筋肉維持のため）• 推奨ペース: 週0.5〜0.7kg減
-【メンテナンス（現状維持）】• 目標： 現在の体重・体組成を維持
-• カロリー: メンテナンスカロリー ±0kcal
-• バランス型の栄養配分• 健康的生活習慣の維持
-【バルクアップ（筋肉をつける）】• 目標： 筋肉量を増やし、体を大きくする
-• カロリー: メンテナンスカロリー +300kcal
-• タンパク質: 非常に高め
-• 炭水化物: 多め（筋肉合成のエネルギー）• 推奨ペース: 週0.5kg増
-【リコンプ（体組成改善）】• 目標： 脂肪を落としながら筋肉をつける
-• カロリー: メンテナンスカロリー ±0kcal
-• タンパク質: 非常に高め
+                                                    content: `あなたのボディメイクの目的を選択してください。
+目的に応じて推奨カロリーとPFCバランスが自動調整されます。
+
+※ 表示されるカロリーとタンパク質係数は、
+あなたのスタイル（一般/ボディメイカー）と
+体組成データに基づいて自動計算されます。
+
+【ダイエット（脂肪を落とす）】
+• 目標：体脂肪を減らし、引き締まった体を作る
+• メンテナンスカロリー：${(() => {
+    const lbm = profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage || 15);
+    const fatMass = profile.weight - lbm;
+    return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass) - 300);
+})()}kcal
+• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.2' : '1.2'}
+• 推奨ペース：週0.5〜0.7kg減
+
+【メンテナンス（現状維持）】
+• 目標：現在の体重・体組成を維持
+• メンテナンスカロリー：${(() => {
+    const lbm = profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage || 15);
+    const fatMass = profile.weight - lbm;
+    return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass));
+})()}kcal
+• バランス型の栄養配分
+• 健康的生活習慣の維持
+
+【バルクアップ（筋肉をつける）】
+• 目標：筋肉量を増やし、体を大きくする
+• メンテナンスカロリー：${(() => {
+    const lbm = profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage || 15);
+    const fatMass = profile.weight - lbm;
+    return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass) + 300);
+})()}kcal
+• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.2' : '1.2'}
+• 炭水化物：多め（筋肉合成のエネルギー）
+• 推奨ペース：週0.5kg増
+
+【リコンプ（体組成改善）】
+• 目標：脂肪を落としながら筋肉をつける
+• メンテナンスカロリー：${(() => {
+    const lbm = profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage || 15);
+    const fatMass = profile.weight - lbm;
+    return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass));
+})()}kcal
+• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.2' : '1.2'}
 • トレーニング強度が最重要
+
 目的はいつでも変更できます。`
                                                 })}
                                                 className="text-indigo-600 hover:text-indigo-800"
@@ -1223,7 +1256,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <div className="text-xs text-gray-600">本格的な筋トレ・競技力向上</div>
                                                 </button>
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-2">※ボディメイカーはタンパク質・ビタミン・ミネラルの推奨量が2倍になります</p>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                ※ボディメイカーはタンパク質の推奨量が一般の約1.8倍<br/>
+                                                （一般 LBM×1.2、ボディメイカー LBM×2.2）、<br/>
+                                                ビタミン・ミネラルの推奨量が2倍になります
+                                            </p>
                                         </div>
 
                                         <label className="block text-sm font-medium mb-1.5">
@@ -1275,7 +1312,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <div>
                                                 <div className="flex justify-between items-center mb-1">
                                                     <span className="text-sm font-medium text-green-700">タンパク質 (P)</span>
-                                                    <span className="text-sm font-bold">{advancedSettings.proteinRatio || 30}%</span>
+                                                    <span className="text-sm font-bold">
+                                                        {advancedSettings.proteinRatio || 30}%
+                                                        {(() => {
+                                                            const targetCalories = (profile.tdeeBase || 2200) + (profile.calorieAdjustment || 0);
+                                                            const proteinG = Math.round((targetCalories * (advancedSettings.proteinRatio || 30) / 100) / 4);
+                                                            return ` (${proteinG}g)`;
+                                                        })()}
+                                                    </span>
                                                 </div>
                                                 <input
                                                     type="range"
@@ -1302,7 +1346,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <div>
                                                 <div className="flex justify-between items-center mb-1">
                                                     <span className="text-sm font-medium text-yellow-700">脂質 (F)</span>
-                                                    <span className="text-sm font-bold">{advancedSettings.fatRatioPercent || 25}%</span>
+                                                    <span className="text-sm font-bold">
+                                                        {advancedSettings.fatRatioPercent || 25}%
+                                                        {(() => {
+                                                            const targetCalories = (profile.tdeeBase || 2200) + (profile.calorieAdjustment || 0);
+                                                            const fatG = Math.round((targetCalories * (advancedSettings.fatRatioPercent || 25) / 100) / 9);
+                                                            return ` (${fatG}g)`;
+                                                        })()}
+                                                    </span>
                                                 </div>
                                                 <input
                                                     type="range"
@@ -1329,7 +1380,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <div>
                                                 <div className="flex justify-between items-center mb-1">
                                                     <span className="text-sm font-medium text-orange-700">炭水化物 (C)</span>
-                                                    <span className="text-sm font-bold">{advancedSettings.carbRatio || 45}%</span>
+                                                    <span className="text-sm font-bold">
+                                                        {advancedSettings.carbRatio || 45}%
+                                                        {(() => {
+                                                            const targetCalories = (profile.tdeeBase || 2200) + (profile.calorieAdjustment || 0);
+                                                            const carbG = Math.round((targetCalories * (advancedSettings.carbRatio || 45) / 100) / 4);
+                                                            return ` (${carbG}g)`;
+                                                        })()}
+                                                    </span>
                                                 </div>
                                                 <input
                                                     type="range"
@@ -1354,24 +1412,19 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             </div>
                                             <div className="text-xs text-gray-600 pt-2 border-t">
                                                 合計 {(advancedSettings.proteinRatio || 30) + (advancedSettings.fatRatioPercent || 25) + (advancedSettings.carbRatio || 45)}%
-                                                {((advancedSettings.proteinRatio || 30) + (advancedSettings.fatRatioPercent || 25) + (advancedSettings.carbRatio || 45)) === 100 &&
-                                                    <span className="text-green-600 ml-2">✓バランス良好</span>
-                                                }
                                             </div>
                                         </div>
                                         )}
                                     </div>
-
-
                             <button
                                 onClick={handleSave}
                                 className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition"
                             >
-                                保存                            </button>
-                            </div>
+                                保存
+                            </button>
                         </div>
-                    </details>
-
+                    </div>
+                </details>
                     {/* ショートカット - 初回分析後に開放 */}
                     {unlockedFeatures.includes('shortcut') && (
                     <details className="border rounded-lg">

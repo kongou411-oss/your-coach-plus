@@ -248,7 +248,7 @@ const MicroLearningLibrary = {
                 type: 'text',
                 title: 'なぜタンパク質が重要なのか？',
                 content: 'タンパク質は筋肉を作る材料です。\n\nトレーニングで筋繊維を破壊し、タンパク質で修復することで筋肉が成長します。\n\n不足すると筋肉が分解されてしまいます。',
-                note: 'LBM（除脂肪体重）1kgあたり2g以上が理想です'
+                note: 'LBM（除脂肪体重）1kgあたりの推奨量\n• 一般：1.2g\n• ボディメイカー：2.2g'
             },
             {
                 type: 'video',
@@ -272,15 +272,15 @@ const MicroLearningLibrary = {
                 type: 'quiz',
                 title: '理解度チェック',
                 quiz: {
-                    question: 'LBM 60kgの人が筋肉を増やすには、1日に何gのタンパク質が必要でしょうか？',
+                    question: 'LBM 60kgのボディメイカーは、1日に何gのタンパク質が必要でしょうか？',
                     options: [
-                        '60g',
-                        '90g',
-                        '120g',
-                        '180g'
+                        '72g（60kg × 1.2）',
+                        '120g（60kg × 2.0）',
+                        '132g（60kg × 2.2）',
+                        '168g（60kg × 2.8）'
                     ],
                     correctAnswer: 2,
-                    explanation: '正解は120gです。LBM 1kgあたり2gが目安なので、60kg × 2 = 120gとなります。'
+                    explanation: '正解は132gです。\nボディメイカーのタンパク質係数は目的に関わらず2.2なので、\n60kg × 2.2 = 132gとなります。'
                 }
             }
         ]

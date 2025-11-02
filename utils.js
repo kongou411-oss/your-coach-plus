@@ -256,22 +256,18 @@ const LBMUtils = {
             };
         }
 
-        // タンパク質係数（LBMあたり）- 一般: 1.0/1.2/1.4、ボディメイカー: 2倍
+        // タンパク質係数（LBMあたり）- 一般: 1.2（固定）、ボディメイカー: 2.2（固定）
         let proteinCoefficient = 1.2; // デフォルト
 
         // スタイル判定（一般 or ボディメイカー系）
         const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス', 'ボディメイカー'];
         const isBodymaker = bodymakerStyles.includes(lifestyle);
 
+        // 目的に関わらず、スタイルのみで係数を決定
         if (isBodymaker) {
-            if (purpose === 'バルクアップ') proteinCoefficient = 1.4 * 2;  // 2.8
-            else if (purpose === 'ダイエット') proteinCoefficient = 1.2 * 2;  // 2.4
-            else proteinCoefficient = 1.0 * 2;  // 2.0
+            proteinCoefficient = 2.2; // 固定
         } else {
-            // 一般
-            if (purpose === 'バルクアップ') proteinCoefficient = 1.4;
-            else if (purpose === 'ダイエット') proteinCoefficient = 1.2;
-            else proteinCoefficient = 1.0;
+            proteinCoefficient = 1.2; // 固定
         }
 
         // タンパク質 (P): LBM × 係数
