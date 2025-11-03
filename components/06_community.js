@@ -7,6 +7,8 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
     const [aiInputMessage, setAiInputMessage] = useState('');
     const [aiLoading, setAiLoading] = useState(false);
     const aiChatContainerRef = useRef(null);
+    const [babHeight, setBabHeight] = useState(60); // BAB高さ（デフォルト: 格納時）
+    const aiInputContainerRef = useRef(null);
 
     // Textbookモジュール一覧
     const textbookModules = [
@@ -17,14 +19,6 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             path: './module/mental_textbook_new.html',
             description: 'モチベーション、習慣形成、ストレス管理などメンタル面の科学的アプローチ',
             icon: 'Brain'
-        },
-        {
-            id: 'pg_formula_textbook',
-            title: 'PG式の教科書',
-            category: '運動科学',
-            path: './module/pg_formula_textbook_new.html',
-            description: 'METsを超えた革新的カロリー計算アルゴリズムの科学的根拠と実践',
-            icon: 'Zap'
         },
         {
             id: 'protein_textbook',
@@ -84,6 +78,61 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             aiChatContainerRef.current.scrollTop = aiChatContainerRef.current.scrollHeight;
         }
     }, [aiChatHistory]);
+
+    // BAB高さ監視（AIモード時のみ）
+    useEffect(() => {
+        if (viewMode !== 'ai') return;
+
+        let isMounted = true;
+
+        const updateBabHeight = () => {
+            if (!isMounted) return;
+
+            // BABを取得（z-indexが9999の固定要素）
+            const babs = document.querySelectorAll('.fixed.bottom-0.z-\\[9999\\]');
+            let babElement = null;
+
+            // BABを特定（border-tとbg-whiteを持つ要素）
+            for (let el of babs) {
+                if (el.classList.contains('border-t') && el.classList.contains('bg-white')) {
+                    babElement = el;
+                    break;
+                }
+            }
+
+            if (babElement && isMounted) {
+                const height = babElement.offsetHeight;
+                setBabHeight(height + 8); // 余白8px追加
+            }
+        };
+
+        // 初回計測
+        updateBabHeight();
+
+        // ResizeObserverでBAB高さ変化を監視
+        let observer = null;
+        const babs = document.querySelectorAll('.fixed.bottom-0.z-\\[9999\\]');
+        for (let el of babs) {
+            if (el.classList.contains('border-t') && el.classList.contains('bg-white')) {
+                observer = new ResizeObserver(() => {
+                    if (isMounted) updateBabHeight();
+                });
+                observer.observe(el);
+                break;
+            }
+        }
+
+        // 500ms後にも再計測（DOM構築遅延対策）
+        const timer = setTimeout(() => {
+            if (isMounted) updateBabHeight();
+        }, 500);
+
+        return () => {
+            isMounted = false;
+            if (observer) observer.disconnect();
+            clearTimeout(timer);
+        };
+    }, [viewMode]);
 
     // iframe内の教科書からのメッセージ受信
     useEffect(() => {
@@ -400,7 +449,11 @@ ${context}
             {viewMode === 'ai' && (
                 <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
                     {/* チャット履歴 */}
-                    <div ref={aiChatContainerRef} className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-4" style={{paddingBottom: '2rem'}}>
+                    <div
+                        ref={aiChatContainerRef}
+                        className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-4"
+                        style={{paddingBottom: `${babHeight + 80}px`}}
+                    >
                         {aiChatHistory.length === 0 ? (
                             <div className="text-center py-12">
                                 <Icon name="MessageCircle" size={48} className="mx-auto mb-4 text-cyan-300" />
@@ -436,12 +489,14 @@ ${context}
                                 </div>
                             </div>
                         )}
-                        {/* 下部スペーサー（入力欄の高さ分） */}
-                        <div className="h-4"></div>
                     </div>
 
-                    {/* 入力欄 */}
-                    <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0">
+                    {/* 入力欄（BABの上に固定配置） */}
+                    <div
+                        ref={aiInputContainerRef}
+                        className="fixed left-0 right-0 border-t border-gray-200 bg-white p-4 shadow-lg z-[9998]"
+                        style={{bottom: `${babHeight}px`}}
+                    >
                         <div className="flex gap-2">
                             <input
                                 type="text"
@@ -470,6 +525,7 @@ ${context}
 
 // ===== コミュニティ投稿ビュー =====
 const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, historyData }) => {
+    const [postMode, setPostMode] = useState('select'); // 'select', 'new_project', 'add_progress'
     const [postContent, setPostContent] = useState('');
     const [postCategory, setPostCategory] = useState('body');
     const [beforePhoto, setBeforePhoto] = useState(null);
@@ -482,6 +538,175 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     const beforeInputRef = useRef(null);
     const afterInputRef = useRef(null);
     const IS_PRODUCTION = false;
+
+    // プロジェクト関連のstate
+    const [projectTitle, setProjectTitle] = useState('');
+    const [projectGoal, setProjectGoal] = useState('');
+    const [progressPhoto, setProgressPhoto] = useState(null);
+    const [progressCaption, setProgressCaption] = useState('');
+    const [progressType, setProgressType] = useState('progress'); // 'progress' or 'after'
+    const [selectedProject, setSelectedProject] = useState(null);
+    const [userProjects, setUserProjects] = useState([]);
+    const [bodyWeight, setBodyWeight] = useState('');
+    const [bodyFat, setBodyFat] = useState('');
+    const photoInputRef = useRef(null);
+
+    // 当日のデイリー記録を取得
+    const [todayRecord, setTodayRecord] = useState(null);
+    const [autoFetchedData, setAutoFetchedData] = useState(null);
+
+    useEffect(() => {
+        const loadTodayRecord = async () => {
+            try {
+                const todayDate = new Date().toISOString().split('T')[0];
+                const record = await DataService.getDailyRecord(userProfile.uid, todayDate);
+                setTodayRecord(record);
+
+                // 自動取得データを計算
+                if (record) {
+                    const bodyComposition = record.bodyComposition || {};
+                    const meals = record.meals || [];
+                    const workouts = record.workouts || [];
+                    const conditions = record.conditions || {};
+
+                    // 食事データ集計
+                    const totalCalories = meals.reduce((sum, m) => sum + (m.calories || 0), 0);
+                    const totalProtein = meals.reduce((sum, m) => sum + (m.protein || 0), 0);
+                    const totalFat = meals.reduce((sum, m) => sum + (m.fat || 0), 0);
+                    const totalCarbs = meals.reduce((sum, m) => sum + (m.carbs || 0), 0);
+
+                    // 運動データ集計
+                    const totalWorkoutTime = workouts.reduce((sum, w) => {
+                        const workoutTime = w.exercises?.reduce((setSum, ex) => {
+                            return setSum + (ex.sets?.reduce((s, set) => s + (set.duration || 0), 0) || 0);
+                        }, 0) || 0;
+                        return sum + workoutTime;
+                    }, 0);
+
+                    // コンディションスコア計算（6項目の平均）
+                    const conditionValues = [
+                        conditions.sleepQuality,
+                        conditions.appetite,
+                        conditions.digestion,
+                        conditions.focus,
+                        conditions.stress
+                    ].filter(v => v !== undefined && v !== null);
+                    const conditionScore = conditionValues.length > 0
+                        ? (conditionValues.reduce((sum, v) => sum + v, 0) / conditionValues.length).toFixed(1)
+                        : null;
+
+                    // 履歴データから平均を計算
+                    let historyAverage = null;
+                    if (historyData) {
+                        const dates = Object.keys(historyData).filter(date => {
+                            const d = historyData[date];
+                            return (d.meals && d.meals.length > 0) || (d.workouts && d.workouts.length > 0);
+                        }).slice(-30); // 過去30日
+
+                        if (dates.length > 0) {
+                            let avgCalories = 0, avgProtein = 0, avgFat = 0, avgCarbs = 0, avgWorkout = 0;
+                            let avgCondition = 0, conditionCount = 0;
+
+                            dates.forEach(date => {
+                                const d = historyData[date];
+                                avgCalories += d.meals?.reduce((sum, m) => sum + (m.calories || 0), 0) || 0;
+                                avgProtein += d.meals?.reduce((sum, m) => sum + (m.protein || 0), 0) || 0;
+                                avgFat += d.meals?.reduce((sum, m) => sum + (m.fat || 0), 0) || 0;
+                                avgCarbs += d.meals?.reduce((sum, m) => sum + (m.carbs || 0), 0) || 0;
+
+                                const workoutTime = d.workouts?.reduce((sum, w) => {
+                                    return sum + (w.exercises?.reduce((setSum, ex) => {
+                                        return setSum + (ex.sets?.reduce((s, set) => s + (set.duration || 0), 0) || 0);
+                                    }, 0) || 0);
+                                }, 0) || 0;
+                                avgWorkout += workoutTime;
+
+                                if (d.conditions) {
+                                    const cv = [
+                                        d.conditions.sleepQuality,
+                                        d.conditions.appetite,
+                                        d.conditions.digestion,
+                                        d.conditions.focus,
+                                        d.conditions.stress
+                                    ].filter(v => v !== undefined && v !== null);
+                                    if (cv.length > 0) {
+                                        avgCondition += cv.reduce((sum, v) => sum + v, 0) / cv.length;
+                                        conditionCount++;
+                                    }
+                                }
+                            });
+
+                            historyAverage = {
+                                calories: Math.round(avgCalories / dates.length),
+                                protein: Math.round(avgProtein / dates.length),
+                                fat: Math.round(avgFat / dates.length),
+                                carbs: Math.round(avgCarbs / dates.length),
+                                workoutTime: Math.round(avgWorkout / dates.length),
+                                conditionScore: conditionCount > 0 ? (avgCondition / conditionCount).toFixed(1) : null,
+                                daysCount: dates.length
+                            };
+                        }
+                    }
+
+                    setAutoFetchedData({
+                        body: {
+                            weight: bodyComposition.weight || null,
+                            bodyFat: bodyComposition.bodyFatPercentage || null,
+                            lbm: bodyComposition.leanBodyMass || null
+                        },
+                        today: {
+                            calories: totalCalories,
+                            protein: totalProtein,
+                            fat: totalFat,
+                            carbs: totalCarbs,
+                            workoutTime: totalWorkoutTime,
+                            conditionScore: conditionScore
+                        },
+                        history: historyAverage
+                    });
+                }
+            } catch (error) {
+                console.error('[CommunityPost] Failed to load today record:', error);
+            }
+        };
+
+        if (userProfile?.uid) {
+            loadTodayRecord();
+        }
+    }, [userProfile?.uid, historyData]);
+
+    // ユーザーのプロジェクトを読み込み
+    useEffect(() => {
+        const loadUserProjects = async () => {
+            try {
+                if (!DEV_MODE) {
+                    const snapshot = await db.collection('communityProjects')
+                        .where('userId', '==', userProfile.uid)
+                        .where('isActive', '==', true)
+                        .orderBy('createdAt', 'desc')
+                        .get();
+
+                    const projects = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    setUserProjects(projects);
+                } else {
+                    // DEV_MODE: LocalStorageから読み込み
+                    const stored = localStorage.getItem(`projects_${userProfile.uid}`);
+                    if (stored) {
+                        setUserProjects(JSON.parse(stored));
+                    }
+                }
+            } catch (error) {
+                console.error('[CommunityPost] Failed to load projects:', error);
+            }
+        };
+
+        if (userProfile?.uid) {
+            loadUserProjects();
+        }
+    }, [userProfile?.uid]);
 
     // 最後の投稿日時を取得
     const lastBodyPostDate = localStorage.getItem('lastBodyPostDate');
@@ -778,6 +1003,721 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
         { id: 'vitamin_mineral_textbook', title: 'ビタミン・ミネラルの教科書', category: '栄養学' }
     ];
 
+    // 写真選択ハンドラー（カメラ撮影限定）
+    const handlePhotoCapture = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                if (postMode === 'new_project') {
+                    setBeforePhoto(reader.result);
+                } else if (postMode === 'add_progress') {
+                    setProgressPhoto(reader.result);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // プロジェクト作成ハンドラー
+    const handleCreateProject = async () => {
+        if (!beforePhoto) {
+            alert('ビフォー写真を撮影してください');
+            return;
+        }
+
+        if (!projectTitle.trim()) {
+            alert('プロジェクトタイトルを入力してください');
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+
+            // プロジェクトデータ作成
+            const projectData = {
+                userId: userProfile.uid,
+                userName: userProfile.nickname || userProfile.name || 'ユーザー',
+                userAvatar: (userProfile.nickname || userProfile.name || 'U')[0],
+                title: projectTitle.trim(),
+                goal: projectGoal.trim() || '',
+                createdAt: new Date().toISOString(),
+                startDate: new Date().toISOString(),
+                category: 'body_transformation',
+                approvalStatus: 'approved',
+                isActive: true,
+                progressCount: 1,
+                lastUpdatedAt: new Date().toISOString(),
+                likes: 0,
+                likedBy: [],
+                comments: []
+            };
+
+            let projectId;
+
+            if (!DEV_MODE) {
+                // Firestoreにプロジェクト作成
+                const projectRef = await db.collection('communityProjects').add(projectData);
+                projectId = projectRef.id;
+
+                // ビフォー写真をアップロード
+                const photoUrl = await DataService.uploadCommunityPhoto(userProfile.uid, beforePhoto, 'before');
+
+                // 進捗（ビフォー）を追加（自動取得したデータを使用）
+                const progressData = {
+                    projectId: projectId,
+                    progressType: 'before',
+                    progressNumber: 0,
+                    photo: photoUrl,
+                    caption: projectGoal.trim() || '開始します！',
+                    bodyData: autoFetchedData?.body || {},
+                    dailyData: autoFetchedData?.today || {},
+                    historyData: autoFetchedData?.history || {},
+                    timestamp: new Date().toISOString(),
+                    daysSinceStart: 0,
+                    approvalStatus: 'pending'
+                };
+
+                await db.collection('communityProjects').doc(projectId).collection('progress').add(progressData);
+            } else {
+                // DEV_MODE: LocalStorageに保存
+                projectId = `project_${Date.now()}`;
+                projectData.id = projectId;
+
+                const projects = [...userProjects, projectData];
+                localStorage.setItem(`projects_${userProfile.uid}`, JSON.stringify(projects));
+                setUserProjects(projects);
+            }
+
+            alert('プロジェクトを作成しました！\n管理者の承認をお待ちください。');
+            onClose();
+        } catch (error) {
+            console.error('[CreateProject] Error:', error);
+            alert('プロジェクトの作成に失敗しました');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // メンタル投稿ハンドラー
+    const [mentalTitle, setMentalTitle] = useState('');
+    const [mentalContent, setMentalContent] = useState('');
+
+    const handleSubmitMentalPost = async () => {
+        if (!mentalTitle.trim()) {
+            alert('タイトルを入力してください');
+            return;
+        }
+
+        if (!mentalContent.trim()) {
+            alert('本文を入力してください');
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+
+            const postData = {
+                userId: userProfile.uid,
+                userName: userProfile.nickname || userProfile.name || 'ユーザー',
+                userAvatar: (userProfile.nickname || userProfile.name || 'U')[0],
+                category: 'mental',
+                title: mentalTitle.trim(),
+                body: mentalContent.trim(),
+                citedModules: citedModules,
+                timestamp: new Date().toISOString(),
+                approvalStatus: 'approved', // メンタル投稿は自動承認
+                likes: 0,
+                likedBy: [],
+                comments: []
+            };
+
+            if (!DEV_MODE) {
+                // Firestoreに投稿作成
+                await db.collection('communityPosts').add(postData);
+            } else {
+                // DEV_MODE: LocalStorageに保存
+                const posts = JSON.parse(localStorage.getItem('communityPosts') || '[]');
+                postData.id = Date.now().toString();
+                posts.push(postData);
+                localStorage.setItem('communityPosts', JSON.stringify(posts));
+            }
+
+            alert('投稿しました！');
+            onClose();
+        } catch (error) {
+            console.error('[MentalPost] Error:', error);
+            alert('投稿に失敗しました');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // 進捗追加ハンドラー
+    const handleAddProgress = async () => {
+        if (!selectedProject) {
+            alert('プロジェクトを選択してください');
+            return;
+        }
+
+        if (!progressPhoto) {
+            alert('写真を撮影してください');
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+
+            const project = userProjects.find(p => p.id === selectedProject);
+            const startDate = new Date(project.startDate);
+            const daysSinceStart = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
+
+            if (!DEV_MODE) {
+                // 写真をアップロード
+                const photoUrl = await DataService.uploadCommunityPhoto(userProfile.uid, progressPhoto, 'progress');
+
+                // 進捗データを作成（自動取得したデータを使用）
+                const progressData = {
+                    projectId: selectedProject,
+                    progressType: progressType,
+                    progressNumber: project.progressCount,
+                    photo: photoUrl,
+                    caption: progressCaption.trim() || '',
+                    bodyData: autoFetchedData?.body || {},
+                    dailyData: autoFetchedData?.today || {},
+                    historyData: autoFetchedData?.history || {},
+                    timestamp: new Date().toISOString(),
+                    daysSinceStart: daysSinceStart,
+                    approvalStatus: 'pending'
+                };
+
+                await db.collection('communityProjects').doc(selectedProject).collection('progress').add(progressData);
+
+                // プロジェクトの更新
+                await db.collection('communityProjects').doc(selectedProject).update({
+                    progressCount: project.progressCount + 1,
+                    lastUpdatedAt: new Date().toISOString()
+                });
+            } else {
+                // DEV_MODE: LocalStorage更新
+                alert('DEV_MODE: 進捗追加は本番環境でのみ動作します');
+            }
+
+            alert('進捗を追加しました！\n管理者の承認をお待ちください。');
+            onClose();
+        } catch (error) {
+            console.error('[AddProgress] Error:', error);
+            alert('進捗の追加に失敗しました');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // モード選択画面
+    if (postMode === 'select') {
+        return (
+            <div className="fixed inset-0 bg-white z-50 flex flex-col">
+                <header className="p-4 flex items-center border-b bg-white flex-shrink-0">
+                    <button onClick={onClose}>
+                        <Icon name="ArrowLeft" size={24} />
+                    </button>
+                    <h1 className="text-xl font-bold mx-auto">投稿を作成</h1>
+                    <div className="w-6"></div>
+                </header>
+                <div className="flex-1 overflow-y-auto p-6">
+                    <h2 className="text-lg font-bold mb-4">投稿タイプを選択</h2>
+
+                    <div className="space-y-4">
+                        {/* 新規プロジェクト */}
+                        <button
+                            onClick={() => setPostMode('new_project')}
+                            className="w-full p-6 bg-gradient-to-br from-fuchsia-50 to-purple-50 border-2 border-fuchsia-300 rounded-xl hover:border-fuchsia-500 transition"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gradient-to-br from-fuchsia-500 to-purple-500 rounded-full flex items-center justify-center text-white">
+                                    <Icon name="Plus" size={24} />
+                                </div>
+                                <div className="flex-1 text-left">
+                                    <h3 className="font-bold text-lg text-gray-800 mb-1">新しいプロジェクトを開始</h3>
+                                    <p className="text-sm text-gray-600">ビフォー写真から変化の記録を始めましょう</p>
+                                </div>
+                            </div>
+                        </button>
+
+                        {/* 進捗追加 */}
+                        {userProjects.length > 0 && (
+                            <button
+                                onClick={() => setPostMode('add_progress')}
+                                className="w-full p-6 bg-gradient-to-br from-teal-50 to-emerald-50 border-2 border-teal-300 rounded-xl hover:border-teal-500 transition"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-full flex items-center justify-center text-white">
+                                        <Icon name="TrendingUp" size={24} />
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <h3 className="font-bold text-lg text-gray-800 mb-1">進捗を追加</h3>
+                                        <p className="text-sm text-gray-600">既存のプロジェクトに新しい写真を追加</p>
+                                        <p className="text-xs text-teal-700 font-semibold mt-1">{userProjects.length}件のプロジェクト</p>
+                                    </div>
+                                </div>
+                            </button>
+                        )}
+
+                        {/* 通常の投稿（メンタル） */}
+                        <button
+                            onClick={() => setPostMode('mental')}
+                            className="w-full p-6 bg-gradient-to-br from-orange-50 to-pink-50 border-2 border-orange-300 rounded-xl hover:border-orange-500 transition"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center text-white">
+                                    <Icon name="Brain" size={24} />
+                                </div>
+                                <div className="flex-1 text-left">
+                                    <h3 className="font-bold text-lg text-gray-800 mb-1">メンタル投稿</h3>
+                                    <p className="text-sm text-gray-600">気づきや学びをシェア</p>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+
+                    {userProjects.length === 0 && (
+                        <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-sm text-blue-800 flex items-center gap-2">
+                                <Icon name="Info" size={16} />
+                                まずは新しいプロジェクトを作成して、ビフォー写真から始めましょう！
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // プロジェクト作成画面
+    if (postMode === 'new_project') {
+        return (
+            <div className="fixed inset-0 bg-white z-50 flex flex-col">
+                <header className="p-4 flex items-center border-b bg-white flex-shrink-0">
+                    <button onClick={() => setPostMode('select')}>
+                        <Icon name="ArrowLeft" size={24} />
+                    </button>
+                    <h1 className="text-xl font-bold mx-auto">新規プロジェクト作成</h1>
+                    <div className="w-6"></div>
+                </header>
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {/* 自動取得データ表示 */}
+                    {autoFetchedData && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                                <Icon name="Database" size={18} />
+                                自動取得データ
+                            </h3>
+
+                            {/* 体組成 */}
+                            {autoFetchedData.body && (autoFetchedData.body.weight || autoFetchedData.body.bodyFat) && (
+                                <div className="mb-3">
+                                    <p className="text-sm font-semibold text-blue-800 mb-1">体組成（本日）</p>
+                                    <div className="grid grid-cols-3 gap-2 text-sm text-gray-700">
+                                        {autoFetchedData.body.weight && <div>体重: {autoFetchedData.body.weight}kg</div>}
+                                        {autoFetchedData.body.bodyFat && <div>体脂肪率: {autoFetchedData.body.bodyFat}%</div>}
+                                        {autoFetchedData.body.lbm && <div>LBM: {autoFetchedData.body.lbm}kg</div>}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 本日のデータ */}
+                            {autoFetchedData.today && (
+                                <div className="mb-3">
+                                    <p className="text-sm font-semibold text-blue-800 mb-1">本日の記録</p>
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                        <div>食事: {autoFetchedData.today.calories}kcal</div>
+                                        <div>P: {autoFetchedData.today.protein}g</div>
+                                        <div>運動: {autoFetchedData.today.workoutTime}分</div>
+                                        {autoFetchedData.today.conditionScore && (
+                                            <div>コンディション: {autoFetchedData.today.conditionScore}/5</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 履歴平均 */}
+                            {autoFetchedData.history && (
+                                <div>
+                                    <p className="text-sm font-semibold text-blue-800 mb-1">過去の平均（{autoFetchedData.history.daysCount}日間）</p>
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                        <div>食事: {autoFetchedData.history.calories}kcal</div>
+                                        <div>P: {autoFetchedData.history.protein}g</div>
+                                        <div>運動: {autoFetchedData.history.workoutTime}分</div>
+                                        {autoFetchedData.history.conditionScore && (
+                                            <div>コンディション: {autoFetchedData.history.conditionScore}/5</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* タイトル */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">
+                            プロジェクトタイトル <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={projectTitle}
+                            onChange={(e) => setProjectTitle(e.target.value)}
+                            placeholder="例: 3ヶ月で体脂肪率-5%"
+                            maxLength={50}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">{projectTitle.length}/50文字</p>
+                    </div>
+
+                    {/* 詳細 */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">
+                            詳細（任意）
+                        </label>
+                        <textarea
+                            value={projectGoal}
+                            onChange={(e) => setProjectGoal(e.target.value)}
+                            placeholder={"【目標】体脂肪率を15%まで落とす\n【現状】体脂肪率20%、体重70kg\n【方針】週5回の筋トレ、タンパク質120g/日"}
+                            maxLength={500}
+                            rows={5}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">{projectGoal.length}/500文字</p>
+                    </div>
+
+                    {/* ビフォー写真 */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">
+                            ビフォー写真 <span className="text-red-500">*</span>
+                        </label>
+                        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mb-3">
+                            <p className="text-sm text-yellow-800 flex items-center gap-2">
+                                <Icon name="Camera" size={16} />
+                                カメラ撮影限定：加工なしの写真のみ投稿できます
+                            </p>
+                        </div>
+                        <input
+                            ref={photoInputRef}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handlePhotoCapture}
+                            className="hidden"
+                        />
+                        {!beforePhoto ? (
+                            <button
+                                onClick={() => photoInputRef.current?.click()}
+                                className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-3 hover:border-fuchsia-500 hover:bg-fuchsia-50 transition"
+                            >
+                                <Icon name="Camera" size={48} className="text-gray-400" />
+                                <p className="text-gray-600 font-semibold">カメラで撮影</p>
+                            </button>
+                        ) : (
+                            <div className="relative">
+                                <img src={beforePhoto} alt="Before" className="w-full rounded-lg border-2 border-fuchsia-300" />
+                                <button
+                                    onClick={() => setBeforePhoto(null)}
+                                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition"
+                                >
+                                    <Icon name="X" size={20} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 作成ボタン */}
+                    <button
+                        onClick={handleCreateProject}
+                        disabled={isSubmitting || !beforePhoto || !projectTitle.trim()}
+                        className="w-full py-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-bold rounded-lg hover:from-fuchsia-700 hover:to-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                    >
+                        {isSubmitting ? '作成中...' : 'プロジェクトを作成'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // 進捗追加画面
+    if (postMode === 'add_progress') {
+        return (
+            <div className="fixed inset-0 bg-white z-50 flex flex-col">
+                <header className="p-4 flex items-center border-b bg-white flex-shrink-0">
+                    <button onClick={() => setPostMode('select')}>
+                        <Icon name="ArrowLeft" size={24} />
+                    </button>
+                    <h1 className="text-xl font-bold mx-auto">進捗を追加</h1>
+                    <div className="w-6"></div>
+                </header>
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {/* 自動取得データ表示 */}
+                    {autoFetchedData && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                                <Icon name="Database" size={18} />
+                                自動取得データ
+                            </h3>
+
+                            {/* 体組成 */}
+                            {autoFetchedData.body && (autoFetchedData.body.weight || autoFetchedData.body.bodyFat) && (
+                                <div className="mb-3">
+                                    <p className="text-sm font-semibold text-blue-800 mb-1">体組成（本日）</p>
+                                    <div className="grid grid-cols-3 gap-2 text-sm text-gray-700">
+                                        {autoFetchedData.body.weight && <div>体重: {autoFetchedData.body.weight}kg</div>}
+                                        {autoFetchedData.body.bodyFat && <div>体脂肪率: {autoFetchedData.body.bodyFat}%</div>}
+                                        {autoFetchedData.body.lbm && <div>LBM: {autoFetchedData.body.lbm}kg</div>}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 本日のデータ */}
+                            {autoFetchedData.today && (
+                                <div className="mb-3">
+                                    <p className="text-sm font-semibold text-blue-800 mb-1">本日の記録</p>
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                        <div>食事: {autoFetchedData.today.calories}kcal</div>
+                                        <div>P: {autoFetchedData.today.protein}g</div>
+                                        <div>運動: {autoFetchedData.today.workoutTime}分</div>
+                                        {autoFetchedData.today.conditionScore && (
+                                            <div>コンディション: {autoFetchedData.today.conditionScore}/5</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 履歴平均 */}
+                            {autoFetchedData.history && (
+                                <div>
+                                    <p className="text-sm font-semibold text-blue-800 mb-1">過去の平均（{autoFetchedData.history.daysCount}日間）</p>
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                        <div>食事: {autoFetchedData.history.calories}kcal</div>
+                                        <div>P: {autoFetchedData.history.protein}g</div>
+                                        <div>運動: {autoFetchedData.history.workoutTime}分</div>
+                                        {autoFetchedData.history.conditionScore && (
+                                            <div>コンディション: {autoFetchedData.history.conditionScore}/5</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* プロジェクト選択 */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">
+                            プロジェクトを選択 <span className="text-red-500">*</span>
+                        </label>
+                        <div className="space-y-2">
+                            {userProjects.map(project => (
+                                <button
+                                    key={project.id}
+                                    onClick={() => setSelectedProject(project.id)}
+                                    className={`w-full p-4 border-2 rounded-lg text-left transition ${
+                                        selectedProject === project.id
+                                            ? 'border-teal-500 bg-teal-50'
+                                            : 'border-gray-200 hover:border-teal-300'
+                                    }`}
+                                >
+                                    <h3 className="font-bold text-gray-800">{project.title}</h3>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        開始日: {new Date(project.startDate).toLocaleDateString('ja-JP')}
+                                    </p>
+                                    <p className="text-xs text-teal-700 mt-1">進捗: {project.progressCount}回</p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 進捗タイプ */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">進捗タイプ</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                onClick={() => setProgressType('progress')}
+                                className={`p-3 border-2 rounded-lg transition ${
+                                    progressType === 'progress'
+                                        ? 'border-teal-500 bg-teal-50'
+                                        : 'border-gray-200 hover:border-teal-300'
+                                }`}
+                            >
+                                <p className="font-semibold text-gray-800">進捗報告</p>
+                                <p className="text-xs text-gray-600 mt-1">途中経過</p>
+                            </button>
+                            <button
+                                onClick={() => setProgressType('after')}
+                                className={`p-3 border-2 rounded-lg transition ${
+                                    progressType === 'after'
+                                        ? 'border-purple-500 bg-purple-50'
+                                        : 'border-gray-200 hover:border-purple-300'
+                                }`}
+                            >
+                                <p className="font-semibold text-gray-800">アフター</p>
+                                <p className="text-xs text-gray-600 mt-1">最終結果</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 詳細 */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">詳細（任意）</label>
+                        <textarea
+                            value={progressCaption}
+                            onChange={(e) => setProgressCaption(e.target.value)}
+                            placeholder={"【変化】体重-2kg、体脂肪率-1%\n【気づき】トレーニング強度を上げてから変化が加速\n【今後】さらに食事管理を徹底する"}
+                            maxLength={500}
+                            rows={5}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">{progressCaption.length}/500文字</p>
+                    </div>
+
+                    {/* 写真撮影 */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">
+                            写真 <span className="text-red-500">*</span>
+                        </label>
+                        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mb-3">
+                            <p className="text-sm text-yellow-800 flex items-center gap-2">
+                                <Icon name="Camera" size={16} />
+                                カメラ撮影限定：加工なしの写真のみ投稿できます
+                            </p>
+                        </div>
+                        <input
+                            ref={photoInputRef}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handlePhotoCapture}
+                            className="hidden"
+                        />
+                        {!progressPhoto ? (
+                            <button
+                                onClick={() => photoInputRef.current?.click()}
+                                className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-3 hover:border-teal-500 hover:bg-teal-50 transition"
+                            >
+                                <Icon name="Camera" size={48} className="text-gray-400" />
+                                <p className="text-gray-600 font-semibold">カメラで撮影</p>
+                            </button>
+                        ) : (
+                            <div className="relative">
+                                <img src={progressPhoto} alt="Progress" className="w-full rounded-lg border-2 border-teal-300" />
+                                <button
+                                    onClick={() => setProgressPhoto(null)}
+                                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition"
+                                >
+                                    <Icon name="X" size={20} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 追加ボタン */}
+                    <button
+                        onClick={handleAddProgress}
+                        disabled={isSubmitting || !selectedProject || !progressPhoto}
+                        className="w-full py-4 bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold rounded-lg hover:from-teal-700 hover:to-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                    >
+                        {isSubmitting ? '追加中...' : '進捗を追加'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // メンタル投稿画面
+    if (postMode === 'mental') {
+        return (
+            <div className="fixed inset-0 bg-white z-50 flex flex-col">
+                <header className="p-4 flex items-center border-b bg-white flex-shrink-0">
+                    <button onClick={() => setPostMode('select')}>
+                        <Icon name="ArrowLeft" size={24} />
+                    </button>
+                    <h1 className="text-xl font-bold mx-auto">メンタル投稿</h1>
+                    <div className="w-6"></div>
+                </header>
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {/* タイトル */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">
+                            タイトル <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={mentalTitle}
+                            onChange={(e) => setMentalTitle(e.target.value)}
+                            placeholder="例: トレーニング継続のコツを見つけた"
+                            maxLength={50}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">{mentalTitle.length}/50文字</p>
+                    </div>
+
+                    {/* 本文 */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">
+                            本文 <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            value={mentalContent}
+                            onChange={(e) => setMentalContent(e.target.value)}
+                            placeholder="気づき、学び、マインドセットなどを自由に書いてください"
+                            maxLength={1000}
+                            rows={10}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">{mentalContent.length}/1000文字</p>
+                    </div>
+
+                    {/* PG BASE引用（オプション） */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">
+                            PG BASEから引用（任意）
+                        </label>
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-600 mb-3">学んだモジュールを選択できます</p>
+                            <div className="space-y-2">
+                                {pgbaseModules.map(module => (
+                                    <button
+                                        key={module.id}
+                                        onClick={() => {
+                                            if (citedModules.includes(module.id)) {
+                                                setCitedModules(citedModules.filter(id => id !== module.id));
+                                            } else {
+                                                setCitedModules([...citedModules, module.id]);
+                                            }
+                                        }}
+                                        className={`w-full p-3 border-2 rounded-lg text-left transition ${
+                                            citedModules.includes(module.id)
+                                                ? 'border-orange-500 bg-orange-50'
+                                                : 'border-gray-200 hover:border-orange-300'
+                                        }`}
+                                    >
+                                        <p className="font-semibold text-gray-800 text-sm">{module.title}</p>
+                                        <p className="text-xs text-gray-600 mt-1">{module.category}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 投稿ボタン */}
+                    <button
+                        onClick={handleSubmitMentalPost}
+                        disabled={isSubmitting || !mentalTitle.trim() || !mentalContent.trim()}
+                        className="w-full py-4 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold rounded-lg hover:from-orange-600 hover:to-pink-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                    >
+                        {isSubmitting ? '投稿中...' : '投稿する'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // 以下は既存のメンタル投稿画面（postMode === 'old_post'）- 削除予定
     return (
         <div className="fixed inset-0 bg-white z-50 flex flex-col">
             <header className="p-4 flex items-center border-b bg-white flex-shrink-0">
@@ -1524,6 +2464,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
     const [selectedPostId, setSelectedPostId] = useState(null);
     const [showThemeSpaceSelector, setShowThemeSpaceSelector] = useState(false);
     const [showMentorApplication, setShowMentorApplication] = useState(false);
+    const [babHeight, setBabHeight] = useState(60); // BAB高さ（デフォルト: 格納時）
 
     useEffect(() => {
         loadPosts();
@@ -1547,6 +2488,59 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
             }, 300);
         }
     }, [selectedPostId, posts]);
+
+    // BAB高さ監視
+    useEffect(() => {
+        let isMounted = true;
+
+        const updateBabHeight = () => {
+            if (!isMounted) return;
+
+            // BABを取得（z-indexが9999の固定要素）
+            const babs = document.querySelectorAll('.fixed.bottom-0.z-\\[9999\\]');
+            let babElement = null;
+
+            // BABを特定（border-tとbg-whiteを持つ要素）
+            for (let el of babs) {
+                if (el.classList.contains('border-t') && el.classList.contains('bg-white')) {
+                    babElement = el;
+                    break;
+                }
+            }
+
+            if (babElement && isMounted) {
+                const height = babElement.offsetHeight;
+                setBabHeight(height + 8); // 余白8px追加
+            }
+        };
+
+        // 初回計測
+        updateBabHeight();
+
+        // ResizeObserverでBAB高さ変化を監視
+        let observer = null;
+        const babs = document.querySelectorAll('.fixed.bottom-0.z-\\[9999\\]');
+        for (let el of babs) {
+            if (el.classList.contains('border-t') && el.classList.contains('bg-white')) {
+                observer = new ResizeObserver(() => {
+                    if (isMounted) updateBabHeight();
+                });
+                observer.observe(el);
+                break;
+            }
+        }
+
+        // 500ms後にも再計測（DOM構築遅延対策）
+        const timer = setTimeout(() => {
+            if (isMounted) updateBabHeight();
+        }, 500);
+
+        return () => {
+            isMounted = false;
+            if (observer) observer.disconnect();
+            clearTimeout(timer);
+        };
+    }, []);
 
     const loadPosts = async () => {
         const allPosts = await DataService.getCommunityPosts();
@@ -1946,13 +2940,10 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                         <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-20 h-20 bg-gradient-to-br from-fuchsia-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-2xl">
-                                    {userProfile.name?.[0] || 'U'}
+                                    {(userProfile.nickname || userProfile.name || 'U')[0]}
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-xl">{userProfile.name || 'ユーザー'}</h3>
-                                    <p className="text-gray-600 text-sm">
-                                        {userProfile.goal || '目標設定なし'} | {userProfile.style || '一般'}
-                                    </p>
+                                    <h3 className="font-bold text-xl">{userProfile.nickname || userProfile.name || 'ユーザー'}</h3>
                                 </div>
                             </div>
 
@@ -1996,7 +2987,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
             </div>
 
             {/* FABボタン */}
-            <div className="fixed bottom-6 right-6 z-50">
+            <div className="fixed right-6 z-50" style={{ bottom: `${babHeight + 24}px` }}>
                 {fabOpen && (
                     <div className="absolute bottom-20 right-0 flex flex-col gap-3 mb-2">
                         {activeView !== 'feed' && (
