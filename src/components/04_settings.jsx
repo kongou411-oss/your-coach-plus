@@ -3755,6 +3755,23 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     </div>
                                 </button>
 
+                                {/* 1-1. カロリー調整値について */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'calorie_adjustment' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Info" size={20} className="text-indigo-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">カロリー調整値</div>
+                                                <div className="text-xs text-gray-500">カロリー調整値の設定について</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
                                 {/* 2. ダッシュボード */}
                                 <button
                                     onClick={() => setShowHelpModal({ type: 'dashboard' })}
@@ -3766,6 +3783,40 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <div>
                                                 <div className="font-medium text-gray-800">ダッシュボード</div>
                                                 <div className="text-xs text-gray-500">ホーム画面の見方</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 2-1. 採点基準 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'scoring' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Info" size={20} className="text-indigo-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">採点基準</div>
+                                                <div className="text-xs text-gray-500">食事・運動・コンディションのスコア算出方法</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 2-2. 記録について */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'record_info' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Info" size={20} className="text-teal-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">記録について</div>
+                                                <div className="text-xs text-gray-500">通常記録・予測入力・ルーティン入力の違い</div>
                                             </div>
                                         </div>
                                         <Icon name="ChevronRight" size={16} className="text-gray-400" />
@@ -3789,6 +3840,40 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     </div>
                                 </button>
 
+                                {/* 3-1. AI食事認識 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'ai_food' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Camera" size={20} className="text-cyan-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">AI食事認識</div>
+                                                <div className="text-xs text-gray-500">写真から食事を記録する方法</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 3-2. 食事保存方法 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'meal_save_method' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Save" size={20} className="text-blue-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">食事保存方法</div>
+                                                <div className="text-xs text-gray-500">データベース保存とリスト追加の違い</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
                                 {/* 4. 運動記録 */}
                                 <button
                                     onClick={() => setShowHelpModal({ type: 'workout' })}
@@ -3800,6 +3885,57 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <div>
                                                 <div className="font-medium text-gray-800">運動記録</div>
                                                 <div className="text-xs text-gray-500">トレーニングの記録方法</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 4-1. 運動保存方法 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'workout_save_method' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Save" size={20} className="text-violet-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">運動保存方法</div>
+                                                <div className="text-xs text-gray-500">テンプレート保存とリスト追加の違い</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 4-2. RM更新記録について */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'rm_update' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="TrendingUp" size={20} className="text-orange-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">RM更新記録</div>
+                                                <div className="text-xs text-gray-500">自己ベスト更新の記録方法</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 4-3. 総時間について */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'total_time' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Clock" size={20} className="text-orange-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">総時間</div>
+                                                <div className="text-xs text-gray-500">トレーニング時間の記録について</div>
                                             </div>
                                         </div>
                                         <Icon name="ChevronRight" size={16} className="text-gray-400" />
@@ -3936,6 +4072,40 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <div>
                                                 <div className="font-medium text-gray-800">設定</div>
                                                 <div className="text-xs text-gray-500">各種設定項目の説明</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 13. プライバシーポリシー */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'privacy' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Shield" size={20} className="text-blue-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">プライバシーポリシー</div>
+                                                <div className="text-xs text-gray-500">個人情報の取り扱いについて</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 14. 利用規約 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'terms' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="FileText" size={20} className="text-slate-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">利用規約</div>
+                                                <div className="text-xs text-gray-500">サービス利用に関する規約</div>
                                             </div>
                                         </div>
                                         <Icon name="ChevronRight" size={16} className="text-gray-400" />
@@ -4732,35 +4902,32 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
         {/* ヘルプモーダル */}
         {showHelpModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={() => setShowHelpModal(null)}>
-                <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-                    <div className="p-6 border-b bg-gradient-to-r from-indigo-50 to-purple-50">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${getHelpIconColor(showHelpModal.type).replace('text-', 'bg-').replace('-600', '-100')}`}>
-                                    <Icon name={getHelpIcon(showHelpModal.type)} size={28} className={getHelpIconColor(showHelpModal.type)} />
-                                </div>
-                                {getHelpTitle(showHelpModal.type)}
-                            </h2>
-                            <button
-                                onClick={() => setShowHelpModal(null)}
-                                className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition"
-                            >
-                                <Icon name="X" size={24} />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
-                        <div className="prose prose-sm max-w-none bg-white rounded-lg p-6 shadow-sm">
-                            {getHelpContent(showHelpModal.type)}
-                        </div>
-                    </div>
-
-                    <div className="p-4 border-t bg-white">
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4" onClick={() => setShowHelpModal(null)}>
+                <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                    {/* ヘッダー */}
+                    <div className={`sticky top-0 bg-gradient-to-r ${getHelpGradient(showHelpModal.type)} text-white p-4 rounded-t-2xl flex justify-between items-center z-10`}>
+                        <h3 className="text-lg font-bold flex items-center gap-2">
+                            <Icon name={getHelpIcon(showHelpModal.type)} size={20} />
+                            {getHelpTitle(showHelpModal.type)}
+                        </h3>
                         <button
                             onClick={() => setShowHelpModal(null)}
-                            className="w-full px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-md"
+                            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                        >
+                            <Icon name="X" size={20} />
+                        </button>
+                    </div>
+
+                    {/* コンテンツ */}
+                    <div className="p-6 space-y-6">
+                        {getHelpContent(showHelpModal.type)}
+                    </div>
+
+                    {/* 閉じるボタン */}
+                    <div className="pt-4 border-t">
+                        <button
+                            onClick={() => setShowHelpModal(null)}
+                            className={`w-full px-6 py-3 bg-gradient-to-r ${getHelpGradient(showHelpModal.type)} text-white font-bold rounded-lg hover:opacity-90 transition`}
                         >
                             閉じる
                         </button>
@@ -4778,8 +4945,13 @@ const getHelpIcon = (type) => {
     const icons = {
         onboarding: 'Sparkles',
         dashboard: 'Home',
+        scoring: 'Info',
+        record_info: 'Info',
         meal: 'Utensils',
+        ai_food: 'Camera',
+        meal_save_method: 'Save',
         workout: 'Dumbbell',
+        workout_save_method: 'Save',
         supplement: 'Pill',
         condition: 'Heart',
         analysis: 'Brain',
@@ -4787,7 +4959,12 @@ const getHelpIcon = (type) => {
         routine: 'Repeat',
         history: 'LineChart',
         community: 'Users',
-        settings: 'Settings'
+        settings: 'Settings',
+        privacy: 'Shield',
+        terms: 'FileText',
+        calorie_adjustment: 'Info',
+        rm_update: 'TrendingUp',
+        total_time: 'Clock'
     };
     return icons[type] || 'HelpCircle';
 };
@@ -4796,8 +4973,13 @@ const getHelpIconColor = (type) => {
     const colors = {
         onboarding: 'text-purple-600',
         dashboard: 'text-blue-600',
+        scoring: 'text-indigo-600',
+        record_info: 'text-teal-600',
         meal: 'text-green-600',
+        ai_food: 'text-cyan-600',
+        meal_save_method: 'text-blue-600',
         workout: 'text-orange-600',
+        workout_save_method: 'text-violet-600',
         supplement: 'text-yellow-600',
         condition: 'text-red-600',
         analysis: 'text-purple-600',
@@ -4805,17 +4987,56 @@ const getHelpIconColor = (type) => {
         routine: 'text-teal-600',
         history: 'text-blue-600',
         community: 'text-pink-600',
-        settings: 'text-gray-600'
+        settings: 'text-gray-600',
+        privacy: 'text-blue-600',
+        terms: 'text-slate-600',
+        calorie_adjustment: 'text-indigo-600',
+        rm_update: 'text-orange-600',
+        total_time: 'text-orange-600'
     };
     return colors[type] || 'text-gray-600';
+};
+
+// 各モーダルタイプに応じたグラデーションカラーを返す
+const getHelpGradient = (type) => {
+    const gradients = {
+        onboarding: 'from-purple-600 to-indigo-600',
+        dashboard: 'from-blue-600 to-cyan-600',
+        scoring: 'from-indigo-600 to-purple-600',
+        record_info: 'from-teal-600 to-cyan-600',
+        meal: 'from-green-600 to-emerald-600',
+        ai_food: 'from-cyan-600 to-blue-600',
+        meal_save_method: 'from-blue-600 to-indigo-600',
+        workout: 'from-orange-600 to-red-600',
+        workout_save_method: 'from-violet-600 to-purple-600',
+        supplement: 'from-yellow-600 to-orange-600',
+        condition: 'from-red-600 to-pink-600',
+        analysis: 'from-purple-600 to-pink-600',
+        template: 'from-indigo-600 to-blue-600',
+        routine: 'from-teal-600 to-green-600',
+        history: 'from-blue-600 to-indigo-600',
+        community: 'from-pink-600 to-rose-600',
+        settings: 'from-gray-600 to-slate-600',
+        privacy: 'from-blue-600 to-cyan-600',
+        terms: 'from-slate-600 to-gray-600',
+        calorie_adjustment: 'from-indigo-600 to-purple-600',
+        rm_update: 'from-orange-600 to-amber-600',
+        total_time: 'from-orange-600 to-red-600'
+    };
+    return gradients[type] || 'from-purple-600 to-indigo-600';
 };
 
 const getHelpTitle = (type) => {
     const titles = {
         onboarding: 'はじめに',
         dashboard: 'ダッシュボード',
+        scoring: '採点基準',
+        record_info: '記録について',
         meal: '食事記録',
+        ai_food: 'AI食事認識',
+        meal_save_method: '食事保存方法',
         workout: '運動記録',
+        workout_save_method: '運動保存方法',
         supplement: 'サプリメント記録',
         condition: 'コンディション記録',
         analysis: 'AI分析',
@@ -4823,7 +5044,12 @@ const getHelpTitle = (type) => {
         routine: 'ルーティン',
         history: '履歴',
         community: 'コミュニティ',
-        settings: '設定'
+        settings: '設定',
+        privacy: 'プライバシーポリシー',
+        terms: '利用規約',
+        calorie_adjustment: 'カロリー調整値について',
+        rm_update: 'RM更新記録について',
+        total_time: '総時間について'
     };
     return titles[type] || 'ヘルプ';
 };
@@ -4877,39 +5103,499 @@ const getHelpContent = (type) => {
                 </ul>
             </>
         ),
+        scoring: (
+            <>
+                <div className="space-y-4">
+                    {/* 食事スコア */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Icon name="Utensils" size={18} className="text-green-600" />
+                            <h4 className="font-bold text-green-800">食事スコア（100点満点）</h4>
+                        </div>
+                        <div className="text-sm text-gray-700 space-y-1">
+                            <p><strong>PFCバランス</strong>（70%）</p>
+                            <ul className="list-disc list-inside ml-2 space-y-1">
+                                <li>タンパク質：目標値に対する達成率</li>
+                                <li>脂質：目標値に対する達成率</li>
+                                <li>炭水化物：目標値に対する達成率</li>
+                                <li>3項目の平均が高いほど高得点</li>
+                            </ul>
+                            <p className="mt-2"><strong>カロリー達成度</strong>（30%）</p>
+                            <ul className="list-disc list-inside ml-2">
+                                <li>目標カロリーとのズレが少ないほど高得点</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* 運動スコア */}
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Icon name="Dumbbell" size={18} className="text-orange-600" />
+                            <h4 className="font-bold text-orange-800">運動スコア（100点満点）</h4>
+                        </div>
+                        <div className="text-sm text-gray-700 space-y-1">
+                            <p><strong>運動時間</strong>（50%）</p>
+                            <ul className="list-disc list-inside ml-2 space-y-1">
+                                <li>ボディメイカー：2時間以上で満点</li>
+                                <li>一般：1時間以上で満点</li>
+                            </ul>
+                            <p className="mt-2"><strong>種目数</strong>（50%）</p>
+                            <ul className="list-disc list-inside ml-2 space-y-1">
+                                <li>ボディメイカー：5種目以上で満点</li>
+                                <li>一般：3種目以上で満点</li>
+                            </ul>
+                            <p className="mt-2 text-xs text-orange-700">※休養日に設定した日は自動的に100点</p>
+                        </div>
+                    </div>
+
+                    {/* コンディションスコア */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Icon name="HeartPulse" size={18} className="text-blue-600" />
+                            <h4 className="font-bold text-blue-800">コンディションスコア（100点満点）</h4>
+                        </div>
+                        <div className="text-sm text-gray-700 space-y-1">
+                            <p><strong>6項目の平均で評価</strong></p>
+                            <ul className="list-disc list-inside ml-2 space-y-1">
+                                <li>睡眠時間（1-5段階）</li>
+                                <li>睡眠の質（1-5段階）</li>
+                                <li>食欲（1-5段階）</li>
+                                <li>腸内環境（1-5段階）</li>
+                                <li>集中力（1-5段階）</li>
+                                <li>ストレス（1-5段階、低いほど良い）</li>
+                            </ul>
+                            <p className="mt-2 text-xs text-blue-700">※すべての項目が最高値（5）の場合、100点になります</p>
+                        </div>
+                    </div>
+                </div>
+            </>
+        ),
+        record_info: (
+            <>
+                <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-gray-800">記録の種類について</h3>
+                    <p className="text-sm text-gray-600">
+                        Your Coach+では、3種類の記録方法があります。それぞれの特徴を理解して、効率的に記録しましょう。
+                    </p>
+
+                    {/* 通常の記録 */}
+                    <div className="bg-white border border-gray-300 rounded-lg p-4 space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Icon name="Plus" size={18} className="text-green-600" />
+                            <h4 className="font-bold text-gray-800">【通常の記録】</h4>
+                        </div>
+                        <p className="text-sm text-gray-700">
+                            ＋ボタンから、食事・運動・サプリメントを記録できます。記録した内容は即座にダッシュボードに反映されます。
+                        </p>
+                        <div className="bg-gray-50 rounded p-2 mt-2">
+                            <p className="text-xs text-gray-600">
+                                💡 最も基本的な記録方法です。毎日の食事や運動を自由に記録できます。
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* 予測入力 */}
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Icon name="Sparkles" size={18} className="text-indigo-600" />
+                            <h4 className="font-bold text-indigo-900">【予測入力】</h4>
+                        </div>
+                        <p className="text-sm text-indigo-800">
+                            前日のデータから今日の食事・運動を自動的に予測して入力します。
+                        </p>
+                        <ul className="list-disc list-inside text-sm text-indigo-700 space-y-1 ml-2">
+                            <li>青背景で表示されます</li>
+                            <li>予測データは編集可能です</li>
+                            <li>そのまま分析に使用できます</li>
+                        </ul>
+                        <div className="bg-indigo-100 rounded p-2 mt-2">
+                            <p className="text-xs text-indigo-700">
+                                💡 毎日同じような食事をする方におすすめです。予測後に微調整すれば記録が楽になります。
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* ルーティン入力 */}
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Icon name="Repeat" size={18} className="text-purple-600" />
+                            <h4 className="font-bold text-purple-900">【ルーティン入力】</h4>
+                        </div>
+                        <p className="text-sm text-purple-800">
+                            設定したルーティンに紐づけたテンプレートを自動入力します。
+                        </p>
+                        <ul className="list-disc list-inside text-sm text-purple-700 space-y-1 ml-2">
+                            <li>紫背景で表示されます</li>
+                            <li>ルーティンデータは編集可能です</li>
+                            <li>そのまま分析に使用できます</li>
+                        </ul>
+                        <div className="bg-purple-100 rounded p-2 mt-2">
+                            <p className="text-xs text-purple-700 mb-1">
+                                <strong>設定方法：</strong> 設定 → ルーティン → 各日に食事・運動テンプレートを紐づけ
+                            </p>
+                            <p className="text-xs text-purple-700">
+                                💡 分割法（胸・背中・脚など）を設定している方におすすめです。曜日ごとに自動で適切なトレーニングが入力されます。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </>
+        ),
         meal: (
             <>
-                <h3>食事記録の方法</h3>
-                <p>食事を記録する方法は3つあります。</p>
+                <div className="space-y-6">
+                    {/* 記録方法 */}
+                    <div className="space-y-4">
+                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <Icon name="Plus" size={20} className="text-green-600" />
+                            食事の記録方法
+                        </h4>
+                        <div className="space-y-3">
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <p className="font-semibold text-purple-900 mb-2 flex items-center gap-2">
+                                    <Icon name="Camera" size={18} />
+                                    方法1: 写真から記録（AI解析）
+                                </p>
+                                <p className="text-sm text-purple-800 mb-2">
+                                    食事の写真を撮影すると、AIが自動で食材を認識して栄養素を計算します。最も簡単な方法です。精肉のパックを解析すると、g数がそのまま一覧に登録されます。
+                                </p>
+                                <p className="text-xs text-purple-700">
+                                    💡 クレジット1個消費 | 複数の食材を一度に認識可能
+                                </p>
+                            </div>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                    <Icon name="Search" size={18} />
+                                    方法2: 検索して記録
+                                </p>
+                                <p className="text-sm text-blue-800 mb-2">
+                                    食材名で検索してデータベースから選択します。正確な栄養素データで記録できます。
+                                </p>
+                                <p className="text-xs text-blue-700">
+                                    💡 クレジット不要 | 1,000種類以上の食材データベース
+                                </p>
+                            </div>
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                <p className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                                    <Icon name="Edit" size={18} />
+                                    方法3: 手動で作成
+                                </p>
+                                <p className="text-sm text-amber-800 mb-2">
+                                    カスタム食材を自分で作成します。栄養成分表示や八訂データを参照して入力します。
+                                </p>
+                                <p className="text-xs text-amber-700">
+                                    💡 クレジット不要 | 一度作成すると保存され、次回から簡単に使用可能
+                                </p>
+                            </div>
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                            <p className="text-sm text-green-800">
+                                <strong>💡 推奨:</strong> Your Coach+は自炊での食事管理を前提として設計されています。食材単位で記録することで、より正確な栄養管理が可能になります。
+                            </p>
+                        </div>
+                    </div>
 
-                <h4>1. 写真から記録</h4>
-                <p>料理の写真を撮影すると、AIが自動で食材を認識して栄養価を計算します。</p>
+                    {/* テンプレート機能 */}
+                    <div className="space-y-3">
+                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <Icon name="Clock" size={20} className="text-indigo-600" />
+                            テンプレート機能
+                        </h4>
+                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                            <p className="font-semibold text-indigo-900 mb-2">
+                                よく食べる食事を保存して簡単に記録
+                            </p>
+                            <p className="text-sm text-indigo-800 mb-3">
+                                12日以上利用すると開放される機能です。頻繁に食べる食事の組み合わせをテンプレートとして保存できます。
+                            </p>
+                            <div className="bg-white rounded p-3 text-sm text-gray-700 border border-indigo-300">
+                                <p className="font-semibold mb-1">使い方:</p>
+                                <ol className="list-decimal list-inside space-y-1 text-xs">
+                                    <li>食事を記録した後、「テンプレートとして保存」をタップ</li>
+                                    <li>次回から記録画面の下部にテンプレートが表示される</li>
+                                    <li>テンプレートをタップすると、保存した食事がすぐに追加される</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
 
-                <h4>2. 食材を検索</h4>
-                <p>データベースから食材を検索して追加します。一般的な食材・料理・外食メニューが登録されています。</p>
+                    {/* 編集・削除 */}
+                    <div className="space-y-3">
+                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <Icon name="Settings" size={20} className="text-gray-600" />
+                            編集・削除
+                        </h4>
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                            <p className="font-semibold text-gray-900 mb-2">食事を編集・削除する</p>
+                            <p className="text-sm text-gray-700 mb-2">
+                                食事カードの右上にある「ペン」アイコンで食事全体を編集、「ゴミ箱」アイコンで削除できます。
+                            </p>
+                            <p className="text-xs text-gray-600">
+                                💡 各食材の個別編集・削除は、編集画面で行えます。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </>
+        ),
+        meal_save_method: (
+            <>
+                <div className="space-y-4">
+                    <h3 className="text-lg font-bold">保存方法について</h3>
+                    <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded">
+                        <h4 className="font-semibold text-gray-900 mb-1">データベースに保存</h4>
+                        <p className="text-sm text-gray-700">
+                            カスタムアイテムをデータベースに保存します。今すぐ記録には追加されませんが、次回以降、食材検索から簡単に見つけて使用できます。
+                        </p>
+                        <p className="text-xs text-gray-600 mt-2">
+                            <strong>使用例：</strong>よく使う自家製料理やサプリを登録しておきたい場合
+                        </p>
+                    </div>
 
-                <h4>3. 手動で作成</h4>
-                <p>オリジナルの料理やデータベースにない食材を手動で登録できます。</p>
-
-                <h4>テンプレート機能</h4>
-                <p>よく食べる食事を「テンプレート」として保存しておくと、次回から簡単に記録できます。</p>
+                    <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 rounded">
+                        <h4 className="font-semibold text-gray-900 mb-1">リストに追加</h4>
+                        <p className="text-sm text-gray-700">
+                            カスタムアイテムをデータベースに保存し、同時に現在の記録リストにも追加します。今すぐ記録したい場合に便利です。
+                        </p>
+                        <p className="text-xs text-gray-600 mt-2">
+                            <strong>使用例：</strong>AI写真解析で検出された未登録の食品を編集して記録したい場合
+                        </p>
+                    </div>
+                </div>
             </>
         ),
         workout: (
             <>
-                <h3>運動記録の方法</h3>
-                <p>トレーニングを詳細に記録して進捗を管理しましょう。</p>
+                <div className="space-y-6">
+                    {/* 記録方法 */}
+                    <div className="space-y-4">
+                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <Icon name="Plus" size={20} className="text-orange-600" />
+                            運動の記録方法
+                        </h4>
+                        <div className="space-y-3">
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                    <Icon name="Search" size={18} />
+                                    方法1: 検索して記録
+                                </p>
+                                <p className="text-sm text-blue-800 mb-2">
+                                    種目名で検索してデータベースから選択します。
+                                </p>
+                                <p className="text-xs text-blue-700">
+                                    💡 100種類以上の運動種目データベース
+                                </p>
+                            </div>
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                <p className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                                    <Icon name="Edit" size={18} />
+                                    方法2: 手動で作成
+                                </p>
+                                <p className="text-sm text-amber-800 mb-2">
+                                    カスタム種目を自分で作成します。オリジナルの運動を記録できます。
+                                </p>
+                                <p className="text-xs text-amber-700">
+                                    💡 一度作成すると保存され、次回から簡単に使用可能
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
-                <h4>記録できる項目</h4>
-                <ul>
-                    <li><strong>種目名</strong>: ベンチプレス、スクワットなど</li>
-                    <li><strong>セット数</strong>: 各セットの重量・回数・時間</li>
-                    <li><strong>有酸素運動</strong>: ランニング、サイクリングなど</li>
-                    <li><strong>ストレッチ</strong>: ヨガ、ストレッチ時間</li>
-                </ul>
+                    {/* 入力項目 */}
+                    <div className="space-y-3">
+                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <Icon name="Edit3" size={20} className="text-purple-600" />
+                            入力項目
+                        </h4>
+                        <div className="space-y-2">
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                <p className="font-semibold text-purple-900 mb-1">種目・セット</p>
+                                <p className="text-sm text-purple-800">
+                                    運動の種目名と実施したセット数を入力します。
+                                </p>
+                            </div>
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                <p className="font-semibold text-purple-900 mb-1">重量・回数</p>
+                                <p className="text-sm text-purple-800 mb-2">
+                                    筋トレの場合は、使用重量（kg）と回数を入力します。自重トレーニングの場合は、自分の体重（kg）を記入します。
+                                </p>
+                                <p className="text-xs text-purple-700">
+                                    💡 総重量 = 重量 × 回数 × セット数
+                                </p>
+                            </div>
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                <p className="font-semibold text-purple-900 mb-1">時間</p>
+                                <p className="text-sm text-purple-800">
+                                    運動の実施時間（分）を入力します。筋トレ、有酸素運動、ストレッチなど、すべての運動で記録できます。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
-                <h4>テンプレート機能</h4>
-                <p>よく行うワークアウトを「テンプレート」として保存しておくと、メニュー作成が簡単になります。</p>
+                    {/* RM値について */}
+                    <div className="space-y-3">
+                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <Icon name="TrendingUp" size={20} className="text-green-600" />
+                            RM値とは
+                        </h4>
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p className="font-semibold text-green-900 mb-2">
+                                Repetition Maximum（最大挙上重量）
+                            </p>
+                            <p className="text-sm text-green-800 mb-3">
+                                RM値は、その重量で何回できるかを示す指標です。例えば、100kgで10回できる場合、「10RM = 100kg」となります。
+                            </p>
+                            <div className="bg-white rounded p-3 text-sm text-gray-700 border border-green-300">
+                                <p className="font-semibold mb-2">RM値の計算式:</p>
+                                <p className="text-xs mb-2">1RM（最大挙上重量） = 使用重量 × (1 + 回数 ÷ 40)</p>
+                                <p className="text-xs text-green-700">
+                                    例: 80kg × 10回 → 1RM = 100kg
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 総重量と総時間 */}
+                    <div className="space-y-3">
+                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <Icon name="BarChart3" size={20} className="text-indigo-600" />
+                            総重量と総時間の表示
+                        </h4>
+                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                            <p className="font-semibold text-indigo-900 mb-2">
+                                運動セクションの見出し横に表示
+                            </p>
+                            <p className="text-sm text-indigo-800 mb-3">
+                                その日の筋トレ総重量（kg）と全運動の総時間（分）が自動で集計されて表示されます。
+                            </p>
+                            <div className="bg-white rounded p-3 text-sm text-gray-700 border border-indigo-300 space-y-1">
+                                <p className="text-xs"><strong>総重量:</strong> すべての筋トレ種目の「重量×回数×セット数」の合計</p>
+                                <p className="text-xs"><strong>総時間:</strong> すべての運動の時間の合計</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </>
+        ),
+        workout_save_method: (
+            <>
+                <div className="space-y-4">
+                    <h3 className="text-lg font-bold">保存方法について</h3>
+                    <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded">
+                        <h4 className="font-semibold text-gray-900 mb-1">テンプレートとして保存</h4>
+                        <p className="text-sm text-gray-700">
+                            運動をテンプレートとして保存します。今すぐ記録には追加されませんが、次回以降、テンプレート一覧から簡単に呼び出して使用できます。
+                        </p>
+                        <p className="text-xs text-gray-600 mt-2">
+                            <strong>使用例：</strong>定番のトレーニングメニューを保存しておきたい場合
+                        </p>
+                    </div>
+
+                    <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 rounded">
+                        <h4 className="font-semibold text-gray-900 mb-1">リストに追加</h4>
+                        <p className="text-sm text-gray-700">
+                            運動をテンプレートとして保存し、同時に現在の記録リストにも追加します。今すぐ記録したい場合に便利です。
+                        </p>
+                        <p className="text-xs text-gray-600 mt-2">
+                            <strong>使用例：</strong>カスタム種目を作成して今日の記録に追加したい場合
+                        </p>
+                    </div>
+                </div>
+            </>
+        ),
+        ai_food: (
+            <>
+                <div className="space-y-6">
+                    {/* 全フローの説明 */}
+                    <div className="space-y-4">
+                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <Icon name="Zap" size={20} className="text-purple-600" />
+                            解析から記録までの流れ
+                        </h4>
+                        <div className="space-y-3">
+                            <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
+                                <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                                <div>
+                                    <p className="font-semibold text-gray-800">写真を撮影または選択</p>
+                                    <p className="text-sm text-gray-600 mt-1">食事の写真をカメラで撮影、またはギャラリーから選択します。</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
+                                <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
+                                <div>
+                                    <p className="font-semibold text-gray-800">AIが自動で食材を認識・解析</p>
+                                    <p className="text-sm text-gray-600 mt-1">「AIで食品を認識」ボタンを押すと、AIが写真から食材を自動で検出し、量とカロリー・PFCを推定します。</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
+                                <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
+                                <div>
+                                    <p className="font-semibold text-gray-800">認識結果を確認・調整</p>
+                                    <p className="text-sm text-gray-600 mt-1">認識された食材の名前、量、栄養素を確認します。数量を調整したり、不要な食材を削除できます。</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
+                                <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">4</div>
+                                <div>
+                                    <p className="font-semibold text-gray-800">必要に応じて食材を追加</p>
+                                    <p className="text-sm text-gray-600 mt-1">AIが見逃した食材は「食材を手動で追加」ボタンから追加できます。</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
+                                <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">5</div>
+                                <div>
+                                    <p className="font-semibold text-gray-800">「確定して追加」で記録完了</p>
+                                    <p className="text-sm text-gray-600 mt-1">内容を確認したら「確定して追加」ボタンを押して、食事に追加します。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 未登録食材の見分け方 */}
+                    <div className="space-y-3">
+                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <Icon name="AlertTriangle" size={20} className="text-yellow-600" />
+                            未登録食材の見分け方
+                        </h4>
+                        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                            <p className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
+                                <Icon name="AlertCircle" size={18} />
+                                黄色背景 + ⚠️警告表示 = データベース未登録
+                            </p>
+                            <p className="text-sm text-yellow-800">
+                                AIが認識した食材がデータベースに登録されていない場合、黄色い背景で表示され、「⚠️ データベースに未登録の食品です」という警告が表示されます。
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* 未登録食材の対処法 */}
+                    <div className="space-y-3">
+                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <Icon name="Wrench" size={20} className="text-orange-600" />
+                            未登録食材の対処法
+                        </h4>
+                        <div className="space-y-2">
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                <p className="font-semibold text-orange-900 mb-1 flex items-center gap-2">
+                                    <Icon name="Search" size={16} />
+                                    方法1: 「もしかして」候補から選択
+                                </p>
+                                <p className="text-sm text-orange-800">
+                                    AIが認識した名前に似た食材を最大3つ提案します。類似度が表示されるので、正しい食材をタップして置き換えできます。
+                                </p>
+                            </div>
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                <p className="font-semibold text-orange-900 mb-1 flex items-center gap-2">
+                                    <Icon name="Plus" size={16} />
+                                    方法2: カスタム食材として登録
+                                </p>
+                                <p className="text-sm text-orange-800">
+                                    「カスタム食材として登録」ボタンを押して、栄養素を手動で入力します。一度登録すると、次回から簡単に使用できます。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </>
         ),
         supplement: (
@@ -4945,23 +5631,56 @@ const getHelpContent = (type) => {
         ),
         analysis: (
             <>
-                <h3>AI分析の使い方</h3>
-                <p>あなたの記録をAIが分析して、パーソナライズされたアドバイスを提供します。</p>
+                <div className="space-y-4">
+                    <h3 className="text-lg font-bold">AI分析の使い方</h3>
+                    <p>あなたの記録をAIが分析して、パーソナライズされたアドバイスを提供します。</p>
 
-                <h4>分析内容</h4>
-                <ul>
-                    <li><strong>PFC評価</strong>: タンパク質・脂質・炭水化物のバランス</li>
-                    <li><strong>カロリー評価</strong>: 目標達成度の評価</li>
-                    <li><strong>運動評価</strong>: トレーニング内容の評価</li>
-                    <li><strong>コンディション評価</strong>: 体調スコアの評価</li>
-                    <li><strong>総合アドバイス</strong>: 改善点と具体的なアクション</li>
-                </ul>
+                    <h4 className="font-bold text-gray-800 mt-4">分析内容</h4>
+                    <ul className="list-disc list-inside space-y-1">
+                        <li><strong>PFC評価</strong>: タンパク質・脂質・炭水化物のバランス</li>
+                        <li><strong>カロリー評価</strong>: 目標達成度の評価</li>
+                        <li><strong>運動評価</strong>: トレーニング内容の評価</li>
+                        <li><strong>コンディション評価</strong>: 体調スコアの評価</li>
+                        <li><strong>総合アドバイス</strong>: 改善点と具体的なアクション</li>
+                    </ul>
 
-                <h4>質問機能</h4>
-                <p>AIに直接質問して、個別のアドバイスを受けることができます。</p>
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mt-4">
+                        <h4 className="font-bold text-indigo-900 mb-2">💡 質問機能</h4>
+                        <p className="text-sm text-indigo-800 mb-2">
+                            レポート生成後、AIに直接質問して個別のアドバイスを受けることができます。
+                        </p>
+                        <div className="text-sm text-indigo-700">
+                            <p className="font-semibold mb-1">質問例:</p>
+                            <ul className="list-disc list-inside space-y-1 text-xs">
+                                <li>「タンパク質が不足する原因は？」</li>
+                                <li>「この改善提案をもっと詳しく教えて」</li>
+                                <li>「睡眠の質を上げる方法は？」</li>
+                            </ul>
+                        </div>
+                    </div>
 
-                <h4>レポート保存</h4>
-                <p>生成されたレポートを保存して、後から見返すことができます。</p>
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
+                        <h4 className="font-bold text-purple-900 mb-2">📊 クレジットについて</h4>
+                        <p className="text-sm text-purple-800 mb-3">すべての分析機能で1クレジットを消費します</p>
+                        <div className="text-sm text-purple-700 space-y-2">
+                            <div>
+                                <p className="font-semibold">クレジット消費:</p>
+                                <ul className="list-disc list-inside space-y-1 text-xs ml-2">
+                                    <li>レポート生成: 1クレジット</li>
+                                    <li>質問1回: 1クレジット</li>
+                                    <li>履歴分析1項目: 1クレジット</li>
+                                </ul>
+                            </div>
+                            <div className="pt-2 border-t border-purple-300">
+                                <p className="font-semibold text-green-700">無料プラン: 月5クレジット</p>
+                                <p className="font-semibold text-yellow-700">Premium: 月100クレジット</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 className="font-bold text-gray-800 mt-4">レポート保存</h4>
+                    <p className="text-sm">生成されたレポートを保存して、後から見返すことができます。</p>
+                </div>
             </>
         ),
         template: (
@@ -5070,6 +5789,98 @@ const getHelpContent = (type) => {
                     <li><strong>テンプレート</strong>: 保存したテンプレートの管理</li>
                     <li><strong>エクスポート</strong>: データのバックアップ</li>
                 </ul>
+            </>
+        ),
+        privacy: (
+            <div className="h-[70vh]">
+                <iframe src="/privacy.html" className="w-full h-full border-0 rounded"></iframe>
+            </div>
+        ),
+        terms: (
+            <div className="h-[70vh]">
+                <iframe src="/terms.html" className="w-full h-full border-0 rounded"></iframe>
+            </div>
+        ),
+        calorie_adjustment: (
+            <>
+                <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-gray-800">カロリー調整値について</h3>
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                        <p className="text-sm text-gray-700 mb-3">
+                            目的に応じたデフォルト値が自動的に設定されます：
+                        </p>
+                        <ul className="list-disc list-inside ml-2 space-y-2 text-sm text-gray-700">
+                            <li><strong>減量（ダイエット）</strong>: -300kcal</li>
+                            <li><strong>増量（バルクアップ）</strong>: +300kcal</li>
+                            <li><strong>メンテナンス</strong>: 0kcal</li>
+                            <li><strong>リコンプ</strong>: 0kcal</li>
+                        </ul>
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                            <Icon name="Lightbulb" size={18} />
+                            使い方
+                        </p>
+                        <p className="text-sm text-gray-700">
+                            微調整したい場合のみ、この欄に数値を入力してください。<br />
+                            わからない場合は<strong>空欄のまま</strong>でOKです。デフォルト値が自動適用されます。
+                        </p>
+                    </div>
+                </div>
+            </>
+        ),
+        rm_update: (
+            <>
+                <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-gray-800">RM更新記録について</h3>
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <p className="font-semibold text-orange-900 mb-2">RM（Rep Maximum）とは？</p>
+                        <p className="text-sm text-gray-700 mb-2">
+                            特定の回数だけ持ち上げられる最大重量のことです。
+                        </p>
+                        <ul className="list-disc list-inside ml-2 space-y-1 text-sm text-gray-700">
+                            <li><strong>1RM</strong>: 1回だけ持ち上げられる最大重量</li>
+                            <li><strong>5RM</strong>: 5回だけ持ち上げられる最大重量</li>
+                            <li><strong>10RM</strong>: 10回だけ持ち上げられる最大重量</li>
+                        </ul>
+                    </div>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <p className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                            <Icon name="TrendingUp" size={18} />
+                            RM更新記録の使い方
+                        </p>
+                        <p className="text-sm text-gray-700">
+                            自己ベストを更新した時に記録します。進捗を可視化して、モチベーションアップに繋げましょう。
+                        </p>
+                        <p className="text-xs text-amber-800 mt-2">
+                            💡 <strong>任意項目</strong>です。記録しなくても問題ありません。
+                        </p>
+                    </div>
+                </div>
+            </>
+        ),
+        total_time: (
+            <>
+                <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-gray-800">総時間について</h3>
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <p className="font-semibold text-orange-900 mb-2">総時間とは？</p>
+                        <p className="text-sm text-gray-700">
+                            そのトレーニング種目にかかった合計時間（ウォームアップ、セット間の休憩時間を含む）を分単位で記録します。
+                        </p>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <p className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+                            <Icon name="Clock" size={18} />
+                            使い方
+                        </p>
+                        <ul className="list-disc list-inside ml-2 space-y-1 text-sm text-gray-700">
+                            <li>トレーニング全体の時間管理に役立ちます</li>
+                            <li>消費カロリー計算にも使用されます</li>
+                            <li><strong>任意項目</strong>です。記録しなくても問題ありません</li>
+                        </ul>
+                    </div>
+                </div>
             </>
         )
     };

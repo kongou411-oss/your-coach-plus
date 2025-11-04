@@ -1,4 +1,93 @@
 import React from 'react';
+
+// ===== Score Doughnut Chart Component =====
+const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC }) => {
+    const canvasRef = React.useRef(null);
+    const chartRef = React.useRef(null);
+
+    const scores = DataService.calculateScores(profile, dailyRecord, targetPFC);
+
+    React.useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        // 既存のチャートを破棄
+        if (chartRef.current) {
+            chartRef.current.destroy();
+        }
+
+        // 新しいチャートを作成
+        chartRef.current = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['食事', '運動', 'コンディション'],
+                datasets: [{
+                    data: [scores.food.score, scores.exercise.score, scores.condition.score],
+                    backgroundColor: ['#10b981', '#f97316', '#ef4444'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                return `${context.label}: ${context.parsed}/100`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // クリーンアップ
+        return () => {
+            if (chartRef.current) {
+                chartRef.current.destroy();
+            }
+        };
+    }, [scores.food.score, scores.exercise.score, scores.condition.score]);
+
+    const averageScore = Math.round((scores.food.score + scores.exercise.score + scores.condition.score) / 3);
+
+    return (
+        <div>
+            <div className="relative max-w-[200px] mx-auto mb-4">
+                <canvas ref={canvasRef}></canvas>
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="text-3xl font-bold text-gray-900">{averageScore}</div>
+                        <div className="text-xs text-gray-500">平均</div>
+                    </div>
+                </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-center">
+                <div>
+                    <div className="text-xs text-gray-600 mb-1">食事</div>
+                    <div className="text-2xl font-bold text-green-600">{scores.food.score}</div>
+                </div>
+                <div>
+                    <div className="text-xs text-gray-600 mb-1">運動</div>
+                    <div className="text-2xl font-bold text-orange-600">{scores.exercise.score}</div>
+                </div>
+                <div>
+                    <div className="text-xs text-gray-600 mb-1">コンディション</div>
+                    <div className="text-2xl font-bold text-red-600">{scores.condition.score}</div>
+                </div>
+            </div>
+            <p className="text-sm text-gray-500 mt-4 text-center">AIによる詳細な栄養分析を確認できます</p>
+        </div>
+    );
+};
+
 // ===== Dashboard Component =====
 const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setUserProfile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData }) => {
     // 指示書管理
@@ -1710,81 +1799,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         </div>
                         <div className="p-6">
                             {/* 当日のスコア表示（ドーナツグラフ） */}
-                            {(() => {
-                                const scores = DataService.calculateScores(profile, dailyRecord, targetPFC);
-                                const canvasId = `score-doughnut-${Date.now()}`;
-
-                                // グラフをレンダリング
-                                React.useEffect(() => {
-                                    const canvas = document.getElementById(canvasId);
-                                    if (!canvas) return;
-
-                                    const ctx = canvas.getContext('2d');
-                                    if (window.analysisChart) {
-                                        window.analysisChart.destroy();
-                                    }
-
-                                    window.analysisChart = new Chart(ctx, {
-                                        type: 'doughnut',
-                                        data: {
-                                            labels: ['食事', '運動', 'コンディション'],
-                                            datasets: [{
-                                                data: [scores.food.score, scores.exercise.score, scores.condition.score],
-                                                backgroundColor: ['#10b981', '#f97316', '#ef4444'],
-                                                borderWidth: 0
-                                            }]
-                                        },
-                                        options: {
-                                            responsive: true,
-                                            maintainAspectRatio: true,
-                                            cutout: '70%',
-                                            plugins: {
-                                                legend: {
-                                                    display: false
-                                                },
-                                                tooltip: {
-                                                    callbacks: {
-                                                        label: (context) => {
-                                                            return `${context.label}: ${context.parsed}/100`;
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    });
-                                }, [scores.food.score, scores.exercise.score, scores.condition.score]);
-
-                                const averageScore = Math.round((scores.food.score + scores.exercise.score + scores.condition.score) / 3);
-
-                                return (
-                                    <div>
-                                        <div className="relative max-w-[200px] mx-auto mb-4">
-                                            <canvas id={canvasId}></canvas>
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <div className="text-center">
-                                                    <div className="text-3xl font-bold text-gray-900">{averageScore}</div>
-                                                    <div className="text-xs text-gray-500">平均</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-3 text-center">
-                                            <div>
-                                                <div className="text-xs text-gray-600 mb-1">食事</div>
-                                                <div className="text-2xl font-bold text-green-600">{scores.food.score}</div>
-                                            </div>
-                                            <div>
-                                                <div className="text-xs text-gray-600 mb-1">運動</div>
-                                                <div className="text-2xl font-bold text-orange-600">{scores.exercise.score}</div>
-                                            </div>
-                                            <div>
-                                                <div className="text-xs text-gray-600 mb-1">コンディション</div>
-                                                <div className="text-2xl font-bold text-red-600">{scores.condition.score}</div>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm text-gray-500 mt-4 text-center">AIによる詳細な栄養分析を確認できます</p>
-                                    </div>
-                                );
-                            })()}
+                            <ScoreDoughnutChart
+                                profile={profile}
+                                dailyRecord={dailyRecord}
+                                targetPFC={targetPFC}
+                            />
                         </div>
                     </div>
                 )}
