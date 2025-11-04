@@ -1743,7 +1743,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     console.error('onAddエラー:', error);
                                 }
                             }}
-                            userProfile={userProfile}
                         />
                     )}
 
