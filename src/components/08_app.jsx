@@ -196,6 +196,19 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
 // ===== Main App Component =====
         const App = () => {
+            // window経由で公開されているコンポーネントをローカル参照
+            const DashboardView = window.DashboardView;
+            const AnalysisView = window.AnalysisView;
+            const HistoryView = window.HistoryView;
+            const HistoryV10View = window.HistoryV10View;
+            const PGBaseView = window.PGBaseView;
+            const COMYView = window.COMYView;
+            const AdminPanel = window.AdminPanel;
+            const AddItemView = window.AddItemView;
+            const SettingsView = window.SettingsView;
+            const SubscriptionView = window.SubscriptionView;
+            const ChevronShortcut = window.ChevronShortcut;
+
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
             const [userProfile, setUserProfile] = useState(null);
@@ -2824,5 +2837,5 @@ AIコーチなどの高度な機能が解放されます。
             );
         };
 
-// Appコンポーネントをグローバルに公開
+// グローバルに公開
 window.App = App;

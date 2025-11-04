@@ -1721,3 +1721,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
         </div>
     );
 };
+
+
+// グローバルに公開
+window.LoginScreen = LoginScreen;
+window.OnboardingScreen = OnboardingScreen;

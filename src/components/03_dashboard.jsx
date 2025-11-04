@@ -212,7 +212,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     };
 
     // 指示書を読み込む関数
-    const loadDirective = () => {
+    const loadDirective = React.useCallback(() => {
         const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
         if (savedDirectives) {
             const directives = JSON.parse(savedDirectives);
@@ -220,7 +220,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             const directive = directives.find(d => d.date === today);
             setTodayDirective(directive || null);
         }
-    };
+    }, [currentDate]);
 
     // 指示書を読み込む
     useEffect(() => {
@@ -228,7 +228,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         // directiveUpdatedイベントをリッスン
         window.addEventListener('directiveUpdated', loadDirective);
         return () => window.removeEventListener('directiveUpdated', loadDirective);
-    }, [currentDate]);
+    }, [loadDirective]);
 
     // 経験値・レベル情報を読み込む
     useEffect(() => {
@@ -2547,3 +2547,9 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
     );
 };
 
+
+
+// グローバルに公開
+window.DashboardView = DashboardView;
+window.LevelBanner = LevelBanner;
+window.DirectiveEditModal = DirectiveEditModal;

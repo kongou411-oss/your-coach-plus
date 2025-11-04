@@ -3069,3 +3069,10 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
         </div>
     );
 };
+
+
+// グローバルに公開
+window.PGBaseView = PGBaseView;
+window.CommunityPostView = CommunityPostView;
+window.AdminPanel = AdminPanel;
+window.COMYView = COMYView;

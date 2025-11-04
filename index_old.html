@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Your Coach+ v1.0.13</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Coach+">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#4F46E5">
+
+    <!-- React & Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+
+    <!-- Configuration & Utils -->
+    <script src="config.js?v=20251102v2"></script>
+    <script src="utils.js?v=20251102v7"></script>
+
+    <!-- Database Files -->
+    <script src="foodDatabase_v2.js"></script>
+    <script src="trainingDatabase.js"></script>
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1"></script>
+
+    <!-- Flatpickr (Date Picker) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css?v=20251022v6">
+    <link rel="stylesheet" href="styles_dark.css?v=20251022v6">
+
+    <!-- Services Layer -->
+    <script src="notification_sound.js?v=20251031v2"></script>
+    <script src="services.js?v=20251102v2"></script>
+
+    <!-- Application Components (Modularized) -->
+    <script type="text/babel" src="components/00_init.js?v=20251031v2"></script>
+    <script type="text/babel" src="components/00_feature_unlock.js?v=20251102v4"></script>
+    <script type="text/babel" src="components/01_common.js?v=20251020v7"></script>
+    <script type="text/babel" src="components/02_auth.js?v=20251104v5"></script>
+    <script type="text/babel" src="components/03_dashboard.js?v=20251104v5"></script>
+    <script type="text/babel" src="components/04_settings.js?v=20251104v1"></script>
+    <script type="text/babel" src="components/05_analysis.js?v=20251102v5"></script>
+    <script type="text/babel" src="components/06_community.js?v=20251103v4"></script>
+    <script type="text/babel" src="components/07_add_item_v2.js?v=20251102v13"></script>
+
+    <!-- New Features (Major Overhaul 2025) -->
+    <script type="text/babel" src="components/10_feedback.js"></script>
+    <script type="text/babel" src="components/11_ai_food_recognition.js?v=20251101v24"></script>
+    <script type="text/babel" src="components/12_wearable_integration.js"></script>
+    <script type="text/babel" src="components/13_collaborative_planning.js"></script>
+    <script type="text/babel" src="components/14_microlearning.js?v=20251102v1"></script>
+    <script type="text/babel" src="components/15_community_growth.js"></script>
+    <script type="text/babel" src="components/16_history_v10.js?v=20251021v16"></script>
+    <script type="text/babel" src="components/17_chevron_shortcut.js?v=20251028v1"></script>
+    <script type="text/babel" src="components/18_subscription.js?v=20251024v1"></script>
+
+    <script type="text/babel" src="components/08_app.js?v=20251104v1"></script>
+    <script type="text/babel" src="components/09_render.js?v=20251020v7"></script>
+
+    <!-- PWA & Service Worker Registration -->
+    <script>
+        // Service Worker登録
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                    .catch((error) => {
+                        console.error('[PWA] Service Worker registration failed:', error);
+                    });
+            });
+        }
+
+        // NotificationServiceの初期化（アプリ起動時）
+        window.addEventListener('load', () => {
+            // フォアグラウンド通知リスナーをセットアップ
+            if (typeof NotificationService !== 'undefined') {
+                NotificationService.setupForegroundListener();
+            }
+        });
+
+        // アプリ終了時のクリーンアップ（通知はCloud Functionsで自動送信されるため不要）
+    </script>
+</body>
+</html>

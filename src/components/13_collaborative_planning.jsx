@@ -406,3 +406,7 @@ const PlanSection = ({ section, sectionIndex, isEditing, onEditSection, onEditIt
         </div>
     );
 };
+
+
+// グローバルに公開
+window.CollaborativePlanningView = CollaborativePlanningView;

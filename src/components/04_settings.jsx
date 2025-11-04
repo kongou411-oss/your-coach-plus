@@ -4511,4 +4511,5 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     );
 };
 
+// グローバルに公開
 window.SettingsView = SettingsView;

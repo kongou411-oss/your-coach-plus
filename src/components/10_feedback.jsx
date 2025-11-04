@@ -203,3 +203,7 @@ const FeedbackTriggers = {
         showFeedback(insight, 'insight');
     }
 };
+
+
+// グローバルに公開
+window.FeedbackManager = FeedbackManager;

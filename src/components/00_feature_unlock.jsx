@@ -369,3 +369,24 @@ const checkPremiumAccessRequired = (userId, featureId, userProfile) => {
     // その他の機能は常にアクセス可能
     return { allowed: true, reason: 'free' };
 };
+
+
+// グローバルに公開
+window.FEATURES = FEATURES;
+window.getFeatureCompletionStatus = getFeatureCompletionStatus;
+window.saveFeatureCompletionStatus = saveFeatureCompletionStatus;
+window.isFeatureCompleted = isFeatureCompleted;
+window.markFeatureCompleted = markFeatureCompleted;
+window.getUnlockModalsShown = getUnlockModalsShown;
+window.saveUnlockModalsShown = saveUnlockModalsShown;
+window.isUnlockModalShown = isUnlockModalShown;
+window.markUnlockModalShown = markUnlockModalShown;
+window.checkConditionComplete = checkConditionComplete;
+window.checkMealComplete = checkMealComplete;
+window.checkTrainingComplete = checkTrainingComplete;
+window.getRegistrationDate = getRegistrationDate;
+window.calculateDaysSinceRegistration = calculateDaysSinceRegistration;
+window.calculateUnlockedFeatures = calculateUnlockedFeatures;
+window.getNextFeatureToUnlock = getNextFeatureToUnlock;
+window.checkAndCompleteFeatures = checkAndCompleteFeatures;
+window.checkPremiumAccessRequired = checkPremiumAccessRequired;

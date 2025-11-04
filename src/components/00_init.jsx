@@ -16,3 +16,9 @@ if (!DEV_MODE) {
     storage = firebase.storage();
     functions = firebase.functions();
 }
+
+// グローバルに公開（他のコンポーネントから使用できるように）
+window.auth = auth;
+window.db = db;
+window.storage = storage;
+window.functions = functions;

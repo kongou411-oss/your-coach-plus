@@ -54,3 +54,8 @@ const MarkdownRenderer = ({ text }) => {
         .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italic
     return <div dangerouslySetInnerHTML={{ __html: html.replace(/\n/g, '<br />') }} />;
 };
+
+
+// グローバルに公開
+window.Icon = Icon;
+window.MarkdownRenderer = MarkdownRenderer;

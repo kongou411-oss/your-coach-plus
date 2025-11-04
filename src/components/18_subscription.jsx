@@ -286,3 +286,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
         </div>
     );
 };
+
+
+// グローバルに公開
+window.SubscriptionView = SubscriptionView;

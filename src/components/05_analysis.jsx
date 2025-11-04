@@ -2465,3 +2465,9 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
         </div>
     );
 };
+
+
+// グローバルに公開
+window.AnalysisView = AnalysisView;
+window.CalendarView = CalendarView;
+window.HistoryView = HistoryView;

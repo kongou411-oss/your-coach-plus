@@ -726,7 +726,9 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                             <p className="font-bold text-green-600">{selectedNewItem.carbs}g</p>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-2">※100gあたり</p>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        {selectedNewItem.servingSize && selectedNewItem.servingUnit ? `※1回あたり（${selectedNewItem.servingSize}${selectedNewItem.servingUnit}）` : '※100gあたり'}
+                                    </p>
                                 </div>
 
                                 {/* 量調整 */}
@@ -988,7 +990,9 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                                                                             <span className="text-yellow-600">F:{fat}g</span>
                                                                                             <span className="text-green-600">C:{carbs}g</span>
                                                                                         </div>
-                                                                                        <span className="text-xs text-gray-400">※100gあたり</span>
+                                                                                        <span className="text-xs text-gray-400">
+                                                                                            {food.servingSize && food.servingUnit ? `※1回あたり（${food.servingSize}${food.servingUnit}）` : '※100gあたり'}
+                                                                                        </span>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
@@ -6165,3 +6169,7 @@ RM回数と重量を別々に入力してください。`
                 </div>
             );
         };
+
+
+// グローバルに公開
+window.AddItemView = AddItemView;

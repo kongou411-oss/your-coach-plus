@@ -1467,3 +1467,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
         </div>
     );
 };
+
+
+// グローバルに公開
+window.AIFoodRecognition = AIFoodRecognition;

@@ -489,3 +489,7 @@ const WearableIntegration = ({ onClose, userId, userProfile }) => {
         </div>
     );
 };
+
+
+// グローバルに公開
+window.WearableIntegration = WearableIntegration;

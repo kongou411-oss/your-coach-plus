@@ -381,3 +381,9 @@ const triggerMicroLearning = (context) => {
 
     return null;
 };
+
+
+// グローバルに公開
+window.MicroLearningPopup = MicroLearningPopup;
+window.triggerMicroLearning = triggerMicroLearning;
+window.MicroLearningLibrary = MicroLearningLibrary;

@@ -441,3 +441,9 @@ const MentorApplicationForm = ({ userId, userProfile, userStats, onClose }) => {
         </div>
     );
 };
+
+
+// グローバルに公開
+window.MentorSystem = MentorSystem;
+window.ThemeSpaceSelector = ThemeSpaceSelector;
+window.MentorApplicationForm = MentorApplicationForm;

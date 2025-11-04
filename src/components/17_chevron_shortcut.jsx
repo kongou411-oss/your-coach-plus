@@ -194,3 +194,7 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
 
 // デフォルトのショートカット設定（App.jsで管理されているため使用されていない）
 // このDEFAULT_SHORTCUTSは削除予定
+
+
+// グローバルに公開
+window.ChevronShortcut = ChevronShortcut;
