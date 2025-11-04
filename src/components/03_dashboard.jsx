@@ -965,7 +965,12 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     }}
                                     onBlur={(e) => {
                                         const value = e.target.value;
-                                        const newWeight = value === '' ? 0 : parseFloat(value);
+                                        // 空欄の場合は元の値を維持
+                                        if (value === '' || value === null) {
+                                            setWeightInput(bodyComposition.weight > 0 ? bodyComposition.weight.toString() : '');
+                                            return;
+                                        }
+                                        const newWeight = parseFloat(value);
                                         if (!isNaN(newWeight) && newWeight >= 0) {
                                             updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
                                             setWeightInput(newWeight > 0 ? newWeight.toString() : '');
@@ -974,7 +979,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         }
                                     }}
                                     onFocus={(e) => {
-                                        setWeightInput('');
+                                        // 全選択して入力しやすくする（空欄にしない）
+                                        e.target.select();
                                     }}
                                     className="w-full px-4 py-2 text-lg font-bold text-gray-900 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200 focus:outline-none hover:border-gray-400 transition"
                                 />
@@ -1054,7 +1060,12 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     }}
                                     onBlur={(e) => {
                                         const value = e.target.value;
-                                        const newBodyFat = value === '' ? 0 : parseFloat(value);
+                                        // 空欄の場合は元の値を維持
+                                        if (value === '' || value === null) {
+                                            setBodyFatInput(bodyComposition.bodyFatPercentage > 0 ? bodyComposition.bodyFatPercentage.toString() : '');
+                                            return;
+                                        }
+                                        const newBodyFat = parseFloat(value);
                                         if (!isNaN(newBodyFat) && newBodyFat >= 0) {
                                             updateBodyComposition(bodyComposition.weight, newBodyFat);
                                             setBodyFatInput(newBodyFat > 0 ? newBodyFat.toString() : '');
@@ -1063,7 +1074,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         }
                                     }}
                                     onFocus={(e) => {
-                                        setBodyFatInput('');
+                                        // 全選択して入力しやすくする（空欄にしない）
+                                        e.target.select();
                                     }}
                                     className="w-full px-4 py-2 text-lg font-bold text-gray-900 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200 focus:outline-none hover:border-gray-400 transition"
                                 />
