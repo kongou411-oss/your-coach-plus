@@ -640,6 +640,23 @@ const OnboardingScreen = ({ user, onComplete }) => {
     const [practiceItems, setPracticeItems] = useState([]);
     const [showSearchModal, setShowSearchModal] = useState(false);
 
+    // 利用規約・プライバシーポリシー関連
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
+
+    // iframe内からのpostMessageを受け取ってモーダルを閉じる
+    useEffect(() => {
+        const handleMessage = (event) => {
+            if (event.data === 'closeModal') {
+                setShowPrivacyModal(false);
+                setShowTermsModal(false);
+            }
+        };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
     const handleComplete = async () => {
         // 無料トライアル終了日（7日後）
         const now = new Date();
@@ -852,6 +869,36 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 </button>
                             </div>
                             <p className="text-xs text-gray-500 mt-2">※ボディメイカーはタンパク質の推奨量が一般の約1.8倍（一般 LBM×1.2、ボディメイカー LBM×2.2）、ビタミン・ミネラルの推奨量が2倍になります</p>
+                        </div>
+
+                        {/* 利用規約・プライバシーポリシーの同意 */}
+                        <div className="border-t pt-4 mt-4">
+                            <label className="flex items-start gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={agreedToTerms}
+                                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                    className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                                />
+                                <span className="text-sm text-gray-700">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTermsModal(true)}
+                                        className="text-blue-600 hover:underline"
+                                    >
+                                        利用規約
+                                    </button>
+                                    と
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPrivacyModal(true)}
+                                        className="text-blue-600 hover:underline"
+                                    >
+                                        プライバシーポリシー
+                                    </button>
+                                    に同意します
+                                </span>
+                            </label>
                         </div>
                     </div>
                 )}
@@ -1593,8 +1640,20 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     )}
                     {step < 5 ? (
                         <button
-                            onClick={() => setStep(step + 1)}
-                            className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700"
+                            onClick={() => {
+                                // step 0で規約同意が必要
+                                if (step === 0 && !agreedToTerms) {
+                                    alert('利用規約とプライバシーポリシーに同意してください');
+                                    return;
+                                }
+                                setStep(step + 1);
+                            }}
+                            disabled={step === 0 && !agreedToTerms}
+                            className={`flex-1 font-bold py-3 rounded-lg ${
+                                step === 0 && !agreedToTerms
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            }`}
                         >
                             次へ
                         </button>
@@ -1715,6 +1774,32 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 利用規約モーダル */}
+            {showTermsModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full h-[80vh]">
+                        <iframe
+                            src="/terms.html"
+                            className="w-full h-full rounded-2xl"
+                            title="利用規約"
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* プライバシーポリシーモーダル */}
+            {showPrivacyModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full h-[80vh]">
+                        <iframe
+                            src="/privacy.html"
+                            className="w-full h-full rounded-2xl"
+                            title="プライバシーポリシー"
+                        />
                     </div>
                 </div>
             )}
