@@ -172,10 +172,14 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
         unlocked.push('analysis');
     }
 
-    // 5. 初回分析後：すべての機能を開放（05_analysis.jsで実行）
+    // 5. テンプレート機能は初期から開放（トライアル終了後はPremium限定）
+    unlocked.push('template');
+    unlocked.push('training_template'); // 旧互換性
+
+    // 6. 初回分析後：その他の機能を開放（05_analysis.jsで実行）
     // - 指示書、履歴（モーダル①）
     // - PG BASE、COMY（モーダル②）
-    // - テンプレート、ルーティン、ショートカット、履歴分析（モーダル③）
+    // - ルーティン、ショートカット、履歴分析（モーダル③）
     if (completionStatus.directive) {
         unlocked.push('directive');
     }
@@ -190,9 +194,6 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
     }
     if (completionStatus.community) {
         unlocked.push('community');
-    }
-    if (completionStatus.template) {
-        unlocked.push('template');
     }
     if (completionStatus.routine) {
         unlocked.push('routine');
@@ -231,13 +232,9 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
         unlocked.push('community_post');
     }
 
-    // 旧互換性: history_graph と training_template は初回分析後の history と template に統合
-    // 日数ベースの自動開放は削除し、初回分析後のモーダル経由でのみ開放
+    // 旧互換性: history_graph は初回分析後の history に統合
     if (completionStatus.history) {
         unlocked.push('history_graph');
-    }
-    if (completionStatus.template) {
-        unlocked.push('training_template');
     }
 
     return unlocked;

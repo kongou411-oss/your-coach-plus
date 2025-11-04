@@ -12,7 +12,8 @@
       "Bash(for file in 00_feature_unlock 02_auth 03_dashboard 04_settings 05_analysis 07_add_item_v2 08_app 10_feedback 11_ai_food_recognition 12_wearable_integration 13_collaborative_planning 14_microlearning 15_community_growth 16_history_v10 17_chevron_shortcut 18_subscription)",
       "Bash(do echo '=== $file.jsx ===')",
       "Bash(node:*)",
-      "Bash(for file in 15_community_growth 16_history_v10 17_chevron_shortcut 18_subscription)"
+      "Bash(for file in 15_community_growth 16_history_v10 17_chevron_shortcut 18_subscription)",
+      "Bash(timeout 10 firebase functions:log:*)"
     ],
     "deny": [],
     "ask": []
