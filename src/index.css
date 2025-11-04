@@ -1,0 +1,7 @@
+/* カスタムスタイルをインポート（@tailwindより先に配置） */
+@import '../styles.css';
+@import '../styles_dark.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
