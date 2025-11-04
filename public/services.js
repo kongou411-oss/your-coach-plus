@@ -1876,11 +1876,25 @@ const NotificationService = {
 
             const messaging = firebase.messaging();
 
-            // Service Workerの登録を確認
-            const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+            // Service Workerの登録を確認（登録されていなければ登録する）
+            let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
             if (!registration) {
-                console.error('[Notification] Service Worker not registered');
-                return { success: false, error: 'Service Worker not registered' };
+                // Service Workerを登録
+                registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                // Service Workerがアクティブになるまで待機
+                await navigator.serviceWorker.ready;
+            }
+
+            // Service Workerがアクティブになるまで待機（最大10秒）
+            const maxWaitTime = 10000;
+            const startTime = Date.now();
+            while (!registration.active && (Date.now() - startTime) < maxWaitTime) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            if (!registration.active) {
+                console.error('[Notification] Service Worker not active after waiting');
+                return { success: false, error: 'Service Worker not active' };
             }
 
             const token = await messaging.getToken({
