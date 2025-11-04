@@ -1007,6 +1007,73 @@ const DataService = {
                 stress: Math.round((stress / 5) * 100)
             }
         };
+    },
+
+    // ===== 分析レポート管理 =====
+    // レポート保存
+    saveAnalysisReport: async (userId, report) => {
+        try {
+            if (DEV_MODE) {
+                const storageKey = `analysisReports_${userId}`;
+                const reports = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                const newReport = {
+                    id: Date.now().toString(),
+                    ...report,
+                    createdAt: new Date().toISOString()
+                };
+                reports.push(newReport);
+                localStorage.setItem(storageKey, JSON.stringify(reports));
+                return newReport;
+            } else {
+                const reportRef = db.collection('users').doc(userId).collection('analysisReports').doc();
+                const newReport = {
+                    id: reportRef.id,
+                    ...report,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                await reportRef.set(newReport);
+                return newReport;
+            }
+        } catch (error) {
+            console.error('Failed to save analysis report:', error);
+            throw error;
+        }
+    },
+
+    // レポート一覧取得
+    getAnalysisReports: async (userId) => {
+        try {
+            if (DEV_MODE) {
+                const storageKey = `analysisReports_${userId}`;
+                const reports = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                return reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            } else {
+                const snapshot = await db.collection('users').doc(userId).collection('analysisReports')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+                return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            }
+        } catch (error) {
+            console.error('Failed to get analysis reports:', error);
+            return [];
+        }
+    },
+
+    // レポート削除
+    deleteAnalysisReport: async (userId, reportId) => {
+        try {
+            if (DEV_MODE) {
+                const storageKey = `analysisReports_${userId}`;
+                const reports = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                const filtered = reports.filter(r => r.id !== reportId);
+                localStorage.setItem(storageKey, JSON.stringify(filtered));
+            } else {
+                await db.collection('users').doc(userId).collection('analysisReports').doc(reportId).delete();
+            }
+        } catch (error) {
+            console.error('Failed to delete analysis report:', error);
+            throw error;
+        }
     }
 };
 

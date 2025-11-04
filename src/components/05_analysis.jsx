@@ -24,6 +24,13 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     const [babHeight, setBabHeight] = useState(64); // 初期値: 格納時の高さ
     const [showHelpModal, setShowHelpModal] = useState(false);
 
+    // レポート保存関連state
+    const [showSaveReportModal, setShowSaveReportModal] = useState(false);
+    const [reportTitle, setReportTitle] = useState('');
+    const [savedReports, setSavedReports] = useState([]);
+    const [showSavedReports, setShowSavedReports] = useState(false);
+    const [selectedReport, setSelectedReport] = useState(null);
+
     const getTodayDate = () => {
         const today = new Date();
         const year = today.getFullYear();
@@ -34,7 +41,66 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
     useEffect(() => {
         performAnalysis();
+        loadSavedReports();
     }, []);
+
+    // 保存済みレポート読み込み
+    const loadSavedReports = async () => {
+        try {
+            const reports = await DataService.getAnalysisReports(userId);
+            setSavedReports(reports);
+        } catch (error) {
+            console.error('Failed to load saved reports:', error);
+        }
+    };
+
+    // レポート保存ハンドラー
+    const handleSaveReport = async () => {
+        if (!reportTitle.trim()) {
+            alert('レポートタイトルを入力してください');
+            return;
+        }
+        if (!aiAnalysis) {
+            alert('保存するレポートがありません');
+            return;
+        }
+
+        try {
+            const report = {
+                title: reportTitle.trim(),
+                content: aiAnalysis,
+                periodStart: getTodayDate(),
+                periodEnd: getTodayDate(),
+                reportType: 'daily'
+            };
+
+            await DataService.saveAnalysisReport(userId, report);
+            alert('レポートを保存しました');
+            setShowSaveReportModal(false);
+            setReportTitle('');
+            await loadSavedReports();
+        } catch (error) {
+            console.error('Failed to save report:', error);
+            alert('レポートの保存に失敗しました');
+        }
+    };
+
+    // レポート削除ハンドラー
+    const handleDeleteReport = async (reportId) => {
+        if (!confirm('このレポートを削除しますか？')) return;
+
+        try {
+            await DataService.deleteAnalysisReport(userId, reportId);
+            alert('レポートを削除しました');
+            await loadSavedReports();
+            if (selectedReport?.id === reportId) {
+                setSelectedReport(null);
+            }
+        } catch (error) {
+            console.error('Failed to delete report:', error);
+            alert('レポートの削除に失敗しました');
+        }
+    };
 
     // BABの高さを監視して入力欄の位置を動的に調整
     useEffect(() => {
@@ -1099,7 +1165,7 @@ ${conversationContext}
                 </button>
                 <div className="flex-1 text-center">
                     <h1 className="text-xl font-bold text-white">AIコーチ</h1>
-                    <p className="text-xs text-white opacity-80">トップアスリート育成プログラム</p>
+                    <p className="text-xs text-white opacity-80">デイリー分析</p>
                 </div>
                 <button onClick={() => {
                     // スコアを再計算して渡す
@@ -1179,19 +1245,92 @@ ${conversationContext}
                         </div>
                     </div>
                 ) : aiAnalysis ? (
-                    <div className="flex items-start gap-3">
-                        <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
-                            <Icon name="Bot" size={20} className="text-white" />
-                        </div>
-                        <div className="flex-1">
-                            <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
-                                <div className="text-sm text-gray-700 leading-relaxed">
-                                    <MarkdownRenderer text={aiAnalysis} />
+                    <>
+                        <div className="flex items-start gap-3">
+                            <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
+                                <Icon name="Bot" size={20} className="text-white" />
+                            </div>
+                            <div className="flex-1">
+                                <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
+                                    <div className="text-sm text-gray-700 leading-relaxed">
+                                        <MarkdownRenderer text={aiAnalysis} />
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+
+                        {/* レポート保存ボタン */}
+                        <div className="flex justify-center mt-4">
+                            <button
+                                onClick={() => {
+                                    setReportTitle(`${getTodayDate()} デイリー分析`);
+                                    setShowSaveReportModal(true);
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                            >
+                                <Icon name="Save" size={18} />
+                                <span>レポートを保存</span>
+                            </button>
+                        </div>
+                    </>
                 ) : null}
+
+                {/* 保存済みレポート一覧セクション */}
+                {!aiLoading && aiAnalysis && savedReports.length > 0 && (
+                    <div className="mt-6">
+                        <button
+                            onClick={() => setShowSavedReports(!showSavedReports)}
+                            className="w-full flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Icon name="FolderOpen" size={20} className="text-indigo-600" />
+                                <span className="font-medium text-gray-700">保存済みレポート</span>
+                                <span className="text-sm text-gray-500">({savedReports.length}件)</span>
+                            </div>
+                            <Icon name={showSavedReports ? "ChevronUp" : "ChevronDown"} size={20} className="text-gray-400" />
+                        </button>
+
+                        {showSavedReports && (
+                            <div className="mt-3 space-y-2">
+                                {savedReports.map((report) => (
+                                    <div
+                                        key={report.id}
+                                        className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition cursor-pointer"
+                                        onClick={() => setSelectedReport(report)}
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <Icon name="FileText" size={16} className="text-indigo-600" />
+                                                    <h3 className="font-medium text-gray-800">{report.title}</h3>
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {new Date(report.createdAt).toLocaleDateString('ja-JP', {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteReport(report.id);
+                                                }}
+                                                className="flex items-center gap-1 px-2 py-1 text-red-600 hover:bg-red-50 rounded transition text-sm"
+                                            >
+                                                <Icon name="Trash2" size={14} />
+                                                <span>削除</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* 区切り線: Q&Aセクション */}
                 {!aiLoading && aiAnalysis && (
@@ -2458,6 +2597,96 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                     </div>
                                 </>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* レポート保存モーダル */}
+            {showSaveReportModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
+                    <div className="bg-white rounded-lg max-w-md w-full p-6">
+                        <h2 className="text-xl font-bold mb-4 text-gray-800">レポートを保存</h2>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                レポートタイトル
+                            </label>
+                            <input
+                                type="text"
+                                value={reportTitle}
+                                onChange={(e) => setReportTitle(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="例: 2025-01-15 デイリー分析"
+                            />
+                        </div>
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    setShowSaveReportModal(false);
+                                    setReportTitle('');
+                                }}
+                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                onClick={handleSaveReport}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                            >
+                                保存
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* レポート表示モーダル */}
+            {selectedReport && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
+                    <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+                        <div className="p-4 border-b flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-gray-800">{selectedReport.title}</h2>
+                            <button
+                                onClick={() => setSelectedReport(null)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <Icon name="X" size={24} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <div className="text-sm text-gray-500 mb-4">
+                                保存日時: {new Date(selectedReport.createdAt).toLocaleDateString('ja-JP', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}
+                            </div>
+                            <div className="prose prose-sm max-w-none">
+                                <MarkdownRenderer text={selectedReport.content} />
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t flex justify-end gap-2">
+                            <button
+                                onClick={() => {
+                                    handleDeleteReport(selectedReport.id);
+                                    setSelectedReport(null);
+                                }}
+                                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                            >
+                                削除
+                            </button>
+                            <button
+                                onClick={() => setSelectedReport(null)}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                            >
+                                閉じる
+                            </button>
                         </div>
                     </div>
                 </div>
