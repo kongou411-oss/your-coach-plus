@@ -22,6 +22,23 @@ const LoginScreen = () => {
     const [signupVerificationId, setSignupVerificationId] = useState(null);
     const [signupVerificationCode, setSignupVerificationCode] = useState('');
 
+    // 利用規約・プライバシーポリシー関連
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
+
+    // iframe内からのpostMessageを受け取ってモーダルを閉じる
+    useEffect(() => {
+        const handleMessage = (event) => {
+            if (event.data === 'closeModal') {
+                setShowPrivacyModal(false);
+                setShowTermsModal(false);
+            }
+        };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
     // パスワード強度チェック
     const checkPasswordStrength = (pwd) => {
         let score = 0;
@@ -63,6 +80,10 @@ const LoginScreen = () => {
             }
             if (password !== confirmPassword) {
                 alert('パスワードが一致しません');
+                return;
+            }
+            if (!agreedToTerms) {
+                alert('利用規約とプライバシーポリシーに同意してください');
                 return;
             }
         }
@@ -138,6 +159,12 @@ const LoginScreen = () => {
     };
 
     const handleGoogleSignIn = async () => {
+        // 新規登録モードの場合は同意チェック
+        if (isSignUp && !agreedToTerms) {
+            alert('利用規約とプライバシーポリシーに同意してください');
+            return;
+        }
+
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
             await auth.signInWithPopup(provider);
@@ -399,13 +426,45 @@ const LoginScreen = () => {
                     </div>
                 )}
 
+                {isSignUp && (
+                    <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <div className="flex items-start gap-2">
+                            <input
+                                type="checkbox"
+                                id="agreeToTerms"
+                                checked={agreedToTerms}
+                                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                className="mt-1 w-4 h-4 flex-shrink-0"
+                            />
+                            <label htmlFor="agreeToTerms" className="text-sm text-gray-700">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowTermsModal(true)}
+                                    className="text-indigo-600 hover:underline font-medium"
+                                >
+                                    利用規約
+                                </button>
+                                と
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPrivacyModal(true)}
+                                    className="text-indigo-600 hover:underline font-medium"
+                                >
+                                    プライバシーポリシー
+                                </button>
+                                に同意します
+                            </label>
+                        </div>
+                    </div>
+                )}
+
                 <div className="mt-4">
                     <button
                         onClick={handleGoogleSignIn}
                         className="w-full bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2"
                     >
                         <Icon name="Chrome" size={20} />
-                        Googleでログイン
+                        {isSignUp ? 'Googleで登録' : 'Googleでログイン'}
                     </button>
                 </div>
 
@@ -504,6 +563,40 @@ const LoginScreen = () => {
                                 </button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* プライバシーポリシーモーダル */}
+            {showPrivacyModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 md:p-4" onClick={() => setShowPrivacyModal(false)}>
+                    <div className="bg-white rounded-lg w-full max-w-[95vw] md:max-w-5xl max-h-[95vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex-shrink-0 bg-white border-b p-4 flex justify-between items-center">
+                            <h2 className="text-xl md:text-2xl font-bold">プライバシーポリシー</h2>
+                            <button onClick={() => setShowPrivacyModal(false)} className="text-gray-500 hover:text-gray-700">
+                                <Icon name="X" size={24} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <iframe src="/privacy.html" className="w-full h-full border-0"></iframe>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 利用規約モーダル */}
+            {showTermsModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 md:p-4" onClick={() => setShowTermsModal(false)}>
+                    <div className="bg-white rounded-lg w-full max-w-[95vw] md:max-w-5xl max-h-[95vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex-shrink-0 bg-white border-b p-4 flex justify-between items-center">
+                            <h2 className="text-xl md:text-2xl font-bold">利用規約</h2>
+                            <button onClick={() => setShowTermsModal(false)} className="text-gray-500 hover:text-gray-700">
+                                <Icon name="X" size={24} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <iframe src="/terms.html" className="w-full h-full border-0"></iframe>
+                        </div>
                     </div>
                 </div>
             )}

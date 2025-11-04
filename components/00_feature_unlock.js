@@ -125,18 +125,15 @@ const checkTrainingComplete = (todayRecord) => {
 
 // 登録日を取得
 const getRegistrationDate = (userId) => {
-    if (DEV_MODE) {
-        const stored = localStorage.getItem(STORAGE_KEYS.REGISTRATION_DATE);
-        if (!stored) {
-            // 初回起動時は現在日時を登録日とする
-            const now = new Date().toISOString();
-            localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, now);
-            return now;
-        }
-        return stored;
+    // LocalStorageから登録日を取得（DEV_MODEに関わらず）
+    const stored = localStorage.getItem(STORAGE_KEYS.REGISTRATION_DATE);
+    if (!stored) {
+        // 初回起動時は現在日時を登録日とする
+        const now = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, now);
+        return now;
     }
-    // TODO: Firestore実装（userProfile.registrationDateから取得）
-    return new Date().toISOString();
+    return stored;
 };
 
 // 登録からの経過日数を計算
@@ -146,7 +143,7 @@ const calculateDaysSinceRegistration = (userId) => {
     const regDate = new Date(registrationDate);
     const diffTime = Math.abs(now - regDate);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return diffDays + 1; // 1日目から始まるように+1（0日目ではなく1日目から表示）
 };
 
 // 機能開放状態を計算

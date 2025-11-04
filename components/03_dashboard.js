@@ -1,5 +1,5 @@
 // ===== Dashboard Component =====
-const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers = {}, shortcuts = [], onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData }) => {
+const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData }) => {
     // 指示書管理
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
@@ -27,6 +27,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         bodyFatPercentage: 0
     });
 
+    // 体組成入力中の一時的な値（文字列で保持）
+    const [weightInput, setWeightInput] = useState('');
+    const [bodyFatInput, setBodyFatInput] = useState('');
+
     // タブ管理
     const [activeTab, setActiveTab] = useState('nutrition'); // 'nutrition', 'directive'
 
@@ -38,12 +42,23 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // 今日のdailyRecordから体組成を読み込む
     useEffect(() => {
+        let isMounted = true;
+
         const loadTodayBodyComposition = async () => {
             try {
                 const todayDate = getTodayDate();
                 const record = await DataService.getDailyRecord(user.uid, todayDate);
-                if (record?.bodyComposition) {
-                    setBodyComposition(record.bodyComposition);
+                if (record?.bodyComposition && isMounted) {
+                    // 数値に変換し、不正な値は0にする
+                    const weight = parseFloat(record.bodyComposition.weight) || 0;
+                    const bodyFat = parseFloat(record.bodyComposition.bodyFatPercentage) || 0;
+                    setBodyComposition({
+                        weight: weight,
+                        bodyFatPercentage: bodyFat
+                    });
+                    // 入力フィールドの初期値も設定
+                    setWeightInput(weight > 0 ? weight.toString() : '');
+                    setBodyFatInput(bodyFat > 0 ? bodyFat.toString() : '');
                 }
             } catch (error) {
                 console.error('[Dashboard] Failed to load body composition:', error);
@@ -52,6 +67,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         if (user?.uid) {
             loadTodayBodyComposition();
         }
+
+        return () => {
+            isMounted = false;
+        };
     }, [user?.uid]);
 
     // 体組成を更新する共通ハンドラー
@@ -79,13 +98,18 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // 機能開放モーダルのフラグをチェック（初回分析完了後に一度だけ表示）
     useEffect(() => {
+        let isMounted = true;
+        let timeoutId = null;
+
         const checkAndShowModal = () => {
             const shouldShow = localStorage.getItem('showFeatureUnlockModals');
             if (shouldShow === 'true') {
-                setTimeout(() => {
-                    setCurrentModalPage(1); // ページ1から開始
-                    setShowFeatureUnlockModal(true);
-                    localStorage.removeItem('showFeatureUnlockModals');
+                timeoutId = setTimeout(() => {
+                    if (isMounted) {
+                        setCurrentModalPage(1); // ページ1から開始
+                        setShowFeatureUnlockModal(true);
+                        localStorage.removeItem('showFeatureUnlockModals');
+                    }
                 }, 300); // 少し遅延させてスムーズに表示
             }
         };
@@ -100,17 +124,21 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         window.addEventListener('featureUnlockCompleted', handleFeatureUnlock);
 
         return () => {
+            isMounted = false;
+            if (timeoutId) clearTimeout(timeoutId);
             window.removeEventListener('featureUnlockCompleted', handleFeatureUnlock);
         };
     }, []); // 空の依存配列：コンポーネントマウント時に一度だけ実行
 
     // 新機能開放モーダル完了後、Premium誘導モーダルを表示
     useEffect(() => {
+        let isMounted = true;
+
         const checkUpgradeModalFlag = () => {
             const featureUnlockCompleted = localStorage.getItem('featureUnlockModalsCompleted');
             const upgradeModalPending = localStorage.getItem('showUpgradeModalPending');
 
-            if (featureUnlockCompleted === 'true' && upgradeModalPending === 'true') {
+            if (featureUnlockCompleted === 'true' && upgradeModalPending === 'true' && isMounted) {
                 setShowUpgradeModal(true);
                 localStorage.removeItem('featureUnlockModalsCompleted');
                 localStorage.removeItem('showUpgradeModalPending');
@@ -123,7 +151,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         // 定期的にチェック（500ms間隔）
         const intervalId = setInterval(checkUpgradeModalFlag, 500);
 
-        return () => clearInterval(intervalId);
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+        };
     }, []);
 
     // 経験値・レベル情報の状態管理
@@ -186,20 +217,34 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // 経験値・レベル情報を読み込む
     useEffect(() => {
-        loadExperienceData();
+        let isMounted = true;
+
+        const loadData = async () => {
+            if (isMounted) {
+                await loadExperienceData();
+            }
+        };
+
+        loadData();
+
         // レベルアップイベントをリッスン
         const handleLevelUp = (event) => {
-            setLevelUpData(event.detail);
-            setShowLevelUpModal(true);
-            loadExperienceData();
+            if (isMounted) {
+                setLevelUpData(event.detail);
+                setShowLevelUpModal(true);
+                loadExperienceData();
+            }
         };
         // クレジット更新イベントをリッスン（写真解析などでクレジット消費時）
         const handleCreditUpdate = () => {
-            loadExperienceData();
+            if (isMounted) {
+                loadExperienceData();
+            }
         };
         window.addEventListener('levelUp', handleLevelUp);
         window.addEventListener('creditUpdated', handleCreditUpdate);
         return () => {
+            isMounted = false;
             window.removeEventListener('levelUp', handleLevelUp);
             window.removeEventListener('creditUpdated', handleCreditUpdate);
         };
@@ -783,8 +828,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div className="flex items-center justify-center gap-2">
                             <button
                                 onClick={() => {
-                                    const newWeight = Math.max(0, bodyComposition.weight - 1);
+                                    const currentWeight = parseFloat(bodyComposition.weight) || 0;
+                                    const newWeight = Math.max(0, currentWeight - 1);
                                     updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
+                                    setWeightInput(newWeight > 0 ? newWeight.toString() : '');
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -792,30 +839,49 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </button>
                             <button
                                 onClick={() => {
-                                    const newWeight = Math.max(0, parseFloat((bodyComposition.weight - 0.1).toFixed(1)));
+                                    const currentWeight = parseFloat(bodyComposition.weight) || 0;
+                                    const newWeight = Math.max(0, parseFloat((currentWeight - 0.1).toFixed(1)));
                                     updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
+                                    setWeightInput(newWeight > 0 ? newWeight.toString() : '');
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
                                 -0.1
                             </button>
-                            <div className="relative min-w-[90px]">
+                            <div className="relative min-w-[110px]">
                                 <input
                                     type="number"
                                     step="0.1"
-                                    value={bodyComposition.weight.toFixed(1)}
+                                    min="0"
+                                    max="300"
+                                    placeholder="0.0"
+                                    value={weightInput}
                                     onChange={(e) => {
-                                        const newWeight = parseFloat(e.target.value) || 0;
-                                        updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
+                                        setWeightInput(e.target.value);
                                     }}
-                                    className="w-full px-4 py-1.5 text-lg font-bold text-gray-900 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:outline-none"
+                                    onBlur={(e) => {
+                                        const value = e.target.value;
+                                        const newWeight = value === '' ? 0 : parseFloat(value);
+                                        if (!isNaN(newWeight) && newWeight >= 0) {
+                                            updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
+                                            setWeightInput(newWeight > 0 ? newWeight.toString() : '');
+                                        } else {
+                                            setWeightInput(bodyComposition.weight > 0 ? bodyComposition.weight.toString() : '');
+                                        }
+                                    }}
+                                    onFocus={(e) => {
+                                        setWeightInput('');
+                                    }}
+                                    className="w-full px-4 py-2 text-lg font-bold text-gray-900 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200 focus:outline-none hover:border-gray-400 transition"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600 pointer-events-none">kg</span>
                             </div>
                             <button
                                 onClick={() => {
-                                    const newWeight = parseFloat((bodyComposition.weight + 0.1).toFixed(1));
+                                    const currentWeight = parseFloat(bodyComposition.weight) || 0;
+                                    const newWeight = parseFloat((currentWeight + 0.1).toFixed(1));
                                     updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
+                                    setWeightInput(newWeight.toString());
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -823,8 +889,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </button>
                             <button
                                 onClick={() => {
-                                    const newWeight = bodyComposition.weight + 1;
+                                    const currentWeight = parseFloat(bodyComposition.weight) || 0;
+                                    const newWeight = currentWeight + 1;
                                     updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
+                                    setWeightInput(newWeight.toString());
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -849,8 +917,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div className="flex items-center justify-center gap-2">
                             <button
                                 onClick={() => {
-                                    const newBodyFat = Math.max(0, bodyComposition.bodyFatPercentage - 1);
+                                    const currentBodyFat = parseFloat(bodyComposition.bodyFatPercentage) || 0;
+                                    const newBodyFat = Math.max(0, currentBodyFat - 1);
                                     updateBodyComposition(bodyComposition.weight, newBodyFat);
+                                    setBodyFatInput(newBodyFat > 0 ? newBodyFat.toString() : '');
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -858,30 +928,49 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </button>
                             <button
                                 onClick={() => {
-                                    const newBodyFat = Math.max(0, parseFloat((bodyComposition.bodyFatPercentage - 0.1).toFixed(1)));
+                                    const currentBodyFat = parseFloat(bodyComposition.bodyFatPercentage) || 0;
+                                    const newBodyFat = Math.max(0, parseFloat((currentBodyFat - 0.1).toFixed(1)));
                                     updateBodyComposition(bodyComposition.weight, newBodyFat);
+                                    setBodyFatInput(newBodyFat > 0 ? newBodyFat.toString() : '');
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
                                 -0.1
                             </button>
-                            <div className="relative min-w-[90px]">
+                            <div className="relative min-w-[110px]">
                                 <input
                                     type="number"
                                     step="0.1"
-                                    value={bodyComposition.bodyFatPercentage.toFixed(1)}
+                                    min="0"
+                                    max="100"
+                                    placeholder="0.0"
+                                    value={bodyFatInput}
                                     onChange={(e) => {
-                                        const newBodyFat = parseFloat(e.target.value) || 0;
-                                        updateBodyComposition(bodyComposition.weight, newBodyFat);
+                                        setBodyFatInput(e.target.value);
                                     }}
-                                    className="w-full px-4 py-1.5 text-lg font-bold text-gray-900 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:outline-none"
+                                    onBlur={(e) => {
+                                        const value = e.target.value;
+                                        const newBodyFat = value === '' ? 0 : parseFloat(value);
+                                        if (!isNaN(newBodyFat) && newBodyFat >= 0) {
+                                            updateBodyComposition(bodyComposition.weight, newBodyFat);
+                                            setBodyFatInput(newBodyFat > 0 ? newBodyFat.toString() : '');
+                                        } else {
+                                            setBodyFatInput(bodyComposition.bodyFatPercentage > 0 ? bodyComposition.bodyFatPercentage.toString() : '');
+                                        }
+                                    }}
+                                    onFocus={(e) => {
+                                        setBodyFatInput('');
+                                    }}
+                                    className="w-full px-4 py-2 text-lg font-bold text-gray-900 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200 focus:outline-none hover:border-gray-400 transition"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600 pointer-events-none">%</span>
                             </div>
                             <button
                                 onClick={() => {
-                                    const newBodyFat = parseFloat((bodyComposition.bodyFatPercentage + 0.1).toFixed(1));
+                                    const currentBodyFat = parseFloat(bodyComposition.bodyFatPercentage) || 0;
+                                    const newBodyFat = parseFloat((currentBodyFat + 0.1).toFixed(1));
                                     updateBodyComposition(bodyComposition.weight, newBodyFat);
+                                    setBodyFatInput(newBodyFat.toString());
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -889,8 +978,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </button>
                             <button
                                 onClick={() => {
-                                    const newBodyFat = bodyComposition.bodyFatPercentage + 1;
+                                    const currentBodyFat = parseFloat(bodyComposition.bodyFatPercentage) || 0;
+                                    const newBodyFat = currentBodyFat + 1;
                                     updateBodyComposition(bodyComposition.weight, newBodyFat);
+                                    setBodyFatInput(newBodyFat.toString());
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
@@ -2265,17 +2356,25 @@ const LevelBanner = ({ user, setInfoModal }) => {
     };
 
     useEffect(() => {
-        loadExperienceData();
+        let isMounted = true;
+
+        const loadData = async () => {
+            if (isMounted) {
+                await loadExperienceData();
+            }
+        };
+
+        loadData();
 
         // レベルアップイベントと経験値更新イベントをリッスン
         const handleLevelUp = (event) => {
-            loadExperienceData();
+            if (isMounted) loadExperienceData();
         };
         const handleExperienceUpdate = (event) => {
-            loadExperienceData();
+            if (isMounted) loadExperienceData();
         };
         const handleCreditUpdate = () => {
-            loadExperienceData();
+            if (isMounted) loadExperienceData();
         };
 
         window.addEventListener('levelUp', handleLevelUp);
@@ -2283,6 +2382,7 @@ const LevelBanner = ({ user, setInfoModal }) => {
         window.addEventListener('creditUpdated', handleCreditUpdate);
 
         return () => {
+            isMounted = false;
             window.removeEventListener('levelUp', handleLevelUp);
             window.removeEventListener('experienceUpdated', handleExperienceUpdate);
             window.removeEventListener('creditUpdated', handleCreditUpdate);

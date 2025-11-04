@@ -1,8 +1,13 @@
 const {onRequest, onCall, HttpsError} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
+const {defineSecret} = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const { VertexAI } = require("@google-cloud/vertexai");
 const nodemailer = require("nodemailer");
+
+// シークレットを定義
+const gmailUser = defineSecret("GMAIL_USER");
+const gmailAppPassword = defineSecret("GMAIL_APP_PASSWORD");
 
 admin.initializeApp();
 
@@ -305,11 +310,8 @@ exports.adminAddCredits = onCall({
 // ===== フィードバック送信 =====
 exports.sendFeedback = onCall({
   region: "asia-northeast1",
-  cors: [
-    "http://localhost:8000",
-    "https://your-coach-plus.web.app",
-    "https://your-coach-plus.firebaseapp.com",
-  ],
+  cors: true,
+  secrets: [gmailUser, gmailAppPassword], // シークレットを指定
 }, async (request) => {
   // 認証チェック
   if (!request.auth) {
@@ -323,18 +325,18 @@ exports.sendFeedback = onCall({
   }
 
   try {
-    // Gmail設定（環境変数から取得）
+    // Gmail設定（シークレットから取得）
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.GMAIL_USER, // Gmail アドレス
-        pass: process.env.GMAIL_APP_PASSWORD, // Gmail アプリパスワード
+        user: gmailUser.value(), // Gmail アドレス
+        pass: gmailAppPassword.value(), // Gmail アプリパスワード
       },
     });
 
     // メール送信
     const mailOptions = {
-      from: process.env.GMAIL_USER,
+      from: gmailUser.value(),
       to: "kongou411@gmail.com",
       subject: `[Your Coach+] ユーザーフィードバック from ${userEmail}`,
       html: `

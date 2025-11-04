@@ -65,7 +65,9 @@
       "Bash(find:*)",
       "Bash(start http://localhost:8000/design_candidates/index.html)",
       "Bash(start http://localhost:8000/design_candidates/summary_candidate_B_tabs.html)",
-      "Bash(timeout 5 powershell:*)"
+      "Bash(timeout 5 powershell:*)",
+      "Bash(git checkout:*)",
+      "Bash(firebase functions:secrets:access:*)"
     ],
     "deny": [],
     "ask": []

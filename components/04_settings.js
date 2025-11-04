@@ -259,7 +259,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
         setFeedbackSending(true);
         try {
-            const sendFeedback = firebase.functions().httpsCallable('sendFeedback');
+            const functions = firebase.app().functions('asia-northeast1');
+            const sendFeedback = functions.httpsCallable('sendFeedback');
             await sendFeedback({
                 feedback: feedbackText,
                 userId: userId,
@@ -362,127 +363,107 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         <summary className="cursor-pointer p-4 hover:bg-purple-100 font-medium flex items-center gap-2">
                             <Icon name="Crown" size={18} className="text-purple-600" />
                             プレミアム
-                            {creditInfo && creditInfo.tier === 'premium' && (
+                            {(userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE) && (
                                 <span className="ml-2 px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full">Premium会員</span>
                             )}
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t border-purple-200">
-                            {creditInfo ? (
-                                <div className="space-y-4">
-                                    {/* 無料会員 */}
-                                    {creditInfo.tier === 'free' && (
-                                        <>
-                                            {creditInfo.freeTrialActive ? (
-                                                <div className="bg-white p-4 rounded-lg border border-blue-200">
-                                                    <div className="flex items-center gap-3 mb-3">
-                                                        <Icon name="Gift" size={24} className="text-blue-600" />
-                                                        <div>
-                                                            <p className="font-bold text-gray-800">無料トライアル中</p>
-                                                            <p className="text-sm text-gray-600">残り {creditInfo.freeTrialDaysRemaining} 日</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="bg-gray-50 p-3 rounded-lg mb-3">
-                                                        <p className="text-sm font-medium text-gray-700 mb-1">残りクレジット</p>
-                                                        <p className="text-2xl font-bold text-indigo-600">{creditInfo.remainingCredits} 回</p>
-                                                    </div>
-                                                    <button
-                                                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
-                                                        onClick={() => alert('サブスクリプション画面は実装予定！')}
-                                                    >
-                                                        月額400円でPremium登録
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                                                    <div className="flex items-center gap-3 mb-3">
-                                                        <Icon name="AlertCircle" size={24} className="text-red-600" />
-                                                        <div>
-                                                            <p className="font-bold text-gray-800">無料期間終了</p>
-                                                            <p className="text-sm text-gray-600">残りを続けるにはPremium登録が必要です</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <button
-                                                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
-                                                            onClick={() => alert('サブスクリプション画面は実装予定！')}
-                                                        >
-                                                            月額400円でPremium登録
-                                                        </button>
-                                                        <button
-                                                            className="w-full bg-gray-600 text-white font-bold py-3 rounded-lg hover:bg-gray-700"
-                                                            onClick={() => alert('クレジット購入画面は実装予定！')}
-                                                        >
-                                                            クレジット追加購入
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
+                            <div className="space-y-4">
+                                {(() => {
+                                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                    const isTrial = usageDays <= 7;
+                                    const daysRemaining = isTrial ? Math.max(0, 8 - usageDays) : 0;
 
-                                    {/* Premium会員 */}
-                                    {creditInfo.tier === 'premium' && (
-                                        <div className="bg-white p-4 rounded-lg border border-purple-200">
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <Icon name="Crown" size={24} className="text-purple-600" />
-                                                <div>
-                                                    <p className="font-bold text-gray-800">Premium会員</p>
-                                                    <p className="text-sm text-gray-600">すべての機能が利用可能</p>
-                                                </div>
-                                            </div>
-
-                                            {/* クレジット残高表示 */}
-                                            <div className="space-y-2 mb-3">
-                                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-lg border border-purple-200">
-                                                    <p className="text-sm font-medium text-gray-700 mb-2">合計クレジット</p>
-                                                    <p className="text-3xl font-bold text-purple-600">{creditInfo.totalCredits}</p>
+                                    if (isPremium) {
+                                        // Premium会員
+                                        return (
+                                            <div className="bg-white p-4 rounded-lg border border-purple-200">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <Icon name="Crown" size={24} className="text-purple-600" />
+                                                    <div>
+                                                        <p className="font-bold text-gray-800">Premium会員</p>
+                                                        <p className="text-sm text-gray-600">すべての機能が利用可能</p>
+                                                    </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div className="bg-blue-50 p-2.5 rounded-lg border border-blue-200">
-                                                        <p className="text-xs font-medium text-gray-600 mb-1">無料クレジット</p>
-                                                        <p className="text-xl font-bold text-blue-600">{creditInfo.freeCredits}</p>
-                                                        <p className="text-xs text-gray-500 mt-1">レベルアップで獲得</p>
-                                                    </div>
-                                                    <div className="bg-green-50 p-2.5 rounded-lg border border-green-200">
-                                                        <p className="text-xs font-medium text-gray-600 mb-1">有料クレジット</p>
-                                                        <p className="text-xl font-bold text-green-600">{creditInfo.paidCredits}</p>
-                                                        <p className="text-xs text-gray-500 mt-1">追加購入分</p>
-                                                    </div>
+                                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200 mb-3">
+                                                    <p className="text-sm font-medium text-gray-700 mb-1">月額料金</p>
+                                                    <p className="text-3xl font-bold text-purple-600">¥740</p>
+                                                    <p className="text-xs text-gray-500 mt-1">税込</p>
                                                 </div>
-                                            </div>
 
-                                            {creditInfo.totalCredits < 20 && (
                                                 <button
-                                                    className="w-full bg-purple-600 text-white font-bold py-2 rounded-lg hover:bg-purple-700 mb-2"
-                                                    onClick={() => alert('クレジット追加購入画面は実装予定！')}
+                                                    className="w-full bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300"
+                                                    onClick={() => confirm('サブスクリプションを解約しますか？') && alert('解約処理は実装予定！')}
                                                 >
-                                                    クレジット追加購入
+                                                    サブスクリプション解約
                                                 </button>
-                                            )}
-                                            <button
-                                                className="w-full bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300"
-                                                onClick={() => confirm('サブスクリプションを解約しますか？') && alert('解約処理は実装予定！')}
-                                            >
-                                                サブスクリプション解約
-                                            </button>
-                                        </div>
-                                    )}
 
-                                    {/* 開発モード表示 */}
-                                    {creditInfo.devMode && (
-                                        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                                            <p className="text-sm text-yellow-800">
-                                                <Icon name="Code" size={16} className="inline mr-1" />
-                                                開発モード：すべてのPremium機能が有効
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-gray-600">読み込み中...</p>
-                            )}
+                                                {DEV_PREMIUM_MODE && (
+                                                    <div className="mt-3 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                                                        <p className="text-sm text-yellow-800">
+                                                            <Icon name="Code" size={16} className="inline mr-1" />
+                                                            開発モード：すべてのPremium機能が有効
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    } else if (isTrial) {
+                                        // 無料トライアル中
+                                        return (
+                                            <div className="bg-white p-4 rounded-lg border border-blue-200">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <Icon name="Gift" size={24} className="text-blue-600" />
+                                                    <div>
+                                                        <p className="font-bold text-gray-800">無料トライアル中</p>
+                                                        <p className="text-sm text-gray-600">残り {daysRemaining} 日</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-blue-50 p-3 rounded-lg mb-3">
+                                                    <p className="text-sm font-medium text-gray-700 mb-1">現在の利用日数</p>
+                                                    <p className="text-2xl font-bold text-blue-600">{usageDays} 日目</p>
+                                                    <p className="text-xs text-gray-500 mt-1">8日目以降はPremium登録が必要です</p>
+                                                </div>
+
+                                                <button
+                                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
+                                                    onClick={() => alert('サブスクリプション画面は実装予定！')}
+                                                >
+                                                    月額740円でPremium登録
+                                                </button>
+                                            </div>
+                                        );
+                                    } else {
+                                        // 無料期間終了
+                                        return (
+                                            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <Icon name="AlertCircle" size={24} className="text-red-600" />
+                                                    <div>
+                                                        <p className="font-bold text-gray-800">無料期間終了</p>
+                                                        <p className="text-sm text-gray-600">Premium登録で全機能をご利用いただけます</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-white p-3 rounded-lg mb-3">
+                                                    <p className="text-sm font-medium text-gray-700 mb-1">現在の利用日数</p>
+                                                    <p className="text-2xl font-bold text-red-600">{usageDays} 日目</p>
+                                                </div>
+
+                                                <button
+                                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
+                                                    onClick={() => alert('サブスクリプション画面は実装予定！')}
+                                                >
+                                                    月額740円でPremium登録
+                                                </button>
+                                            </div>
+                                        );
+                                    }
+                                })()}
+                            </div>
                         </div>
                     </details>
 
@@ -3832,7 +3813,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     {(() => {
                                         const completionStatus = getFeatureCompletionStatus(userId);
                                         const daysSinceReg = calculateDaysSinceRegistration(userId);
-                                        const currentDay = daysSinceReg + 1; // 1日目から表示
+                                        const currentDay = daysSinceReg; // calculateDaysSinceRegistrationが既に+1済み
                                         const isPremium = DEV_PREMIUM_MODE;
                                         const isTrial = currentDay <= 7;
 
@@ -3890,14 +3871,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <span className="text-2xl font-bold text-indigo-600">
                                                 {(() => {
                                                     const daysSinceReg = calculateDaysSinceRegistration(userId);
-                                                    return `${daysSinceReg + 1}日目`;
+                                                    return `${daysSinceReg}日目`;
                                                 })()}
                                             </span>
                                         </div>
                                         <div className="text-xs text-gray-500">
                                             {(() => {
                                                 const daysSinceReg = calculateDaysSinceRegistration(userId);
-                                                const currentDay = daysSinceReg + 1;
+                                                const currentDay = daysSinceReg; // calculateDaysSinceRegistrationが既に+1済み
                                                 const isTrial = currentDay <= 7;
                                                 const isPremium = DEV_PREMIUM_MODE;
 
@@ -3942,9 +3923,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <button
                                                 onClick={() => {
                                                     // 8日目（Premium制限開始）へジャンプ
-                                                    const date = new Date();
-                                                    date.setDate(date.getDate() - 7); // 7日前に登録したことにする
-                                                    localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, date.toISOString());
+                                                    const registrationDate = new Date();
+                                                    registrationDate.setDate(registrationDate.getDate() - 7);
+                                                    registrationDate.setHours(0, 0, 0, 0);
+                                                    localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, registrationDate.toISOString());
+
                                                     // 全機能完了マーク
                                                     const allCompleted = {
                                                         food: true,

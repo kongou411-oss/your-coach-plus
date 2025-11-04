@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>完全ストレージクリア - Your Coach+</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>完全ストレージクリア</h1>
+    <p>このツールは、LocalStorage、SessionStorage、IndexedDB、Cookieをすべてクリアします。</p>
+    <button onclick="clearAllStorage()">すべてのストレージをクリア</button>
+    <div id="result"></div>
+
+    <script>
+        async function clearAllStorage() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>クリア中...</p>';
+
+            try {
+                // LocalStorage
+                localStorage.clear();
+                resultDiv.innerHTML += '<p class="success">✅ LocalStorage クリア完了</p>';
+
+                // SessionStorage
+                sessionStorage.clear();
+                resultDiv.innerHTML += '<p class="success">✅ SessionStorage クリア完了</p>';
+
+                // IndexedDB
+                const databases = await indexedDB.databases();
+                for (const db of databases) {
+                    indexedDB.deleteDatabase(db.name);
+                    resultDiv.innerHTML += `<p class="success">✅ IndexedDB "${db.name}" 削除完了</p>`;
+                }
+
+                // Cookies
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i];
+                    const eqPos = cookie.indexOf("=");
+                    const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                }
+                resultDiv.innerHTML += '<p class="success">✅ Cookies クリア完了</p>';
+
+                resultDiv.innerHTML += '<p class="success" style="font-weight: bold; font-size: 18px;">✅ すべてのストレージをクリアしました。2秒後にトップページにリダイレクトします...</p>';
+
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } catch (error) {
+                resultDiv.innerHTML += `<p class="error">❌ エラー: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
