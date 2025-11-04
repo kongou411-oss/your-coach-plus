@@ -267,6 +267,10 @@ const DataService = {
                 const doc = await db.collection('users').doc(userId).get();
                 profile = doc.exists ? doc.data() : null;
             } catch (error) {
+                // 権限エラー（新規ユーザー）の場合は静かに null を返す
+                if (error.code === 'permission-denied') {
+                    return null;
+                }
                 console.error('Error fetching user profile:', error);
                 return null;
             }
@@ -328,6 +332,10 @@ const DataService = {
                 .get();
             return doc.exists ? doc.data() : null;
         } catch (error) {
+            // 権限エラー（新規ユーザー）の場合は静かに null を返す
+            if (error.code === 'permission-denied') {
+                return null;
+            }
             console.error('Error fetching daily record:', error);
             return null;
         }
