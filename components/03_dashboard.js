@@ -1,5 +1,5 @@
 // ===== Dashboard Component =====
-const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData }) => {
+const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setUserProfile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData }) => {
     // 指示書管理
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
@@ -91,6 +91,20 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             };
             await DataService.saveDailyRecord(user.uid, todayDate, updatedRecord);
             setDailyRecord(updatedRecord);
+
+            // userProfileも更新（推奨量の再計算のため）
+            if (profile && setUserProfile) {
+                const newLBM = LBMUtils.calculateLBM(newWeight, newBodyFat);
+                const updatedProfile = {
+                    ...profile,
+                    weight: newWeight,
+                    bodyFatPercentage: newBodyFat,
+                    leanBodyMass: newLBM
+                };
+                setUserProfile(updatedProfile);
+                // Firestoreにも保存
+                await DataService.saveUserProfile(user.uid, updatedProfile);
+            }
         } catch (error) {
             console.error('[Dashboard] Failed to save body composition to dailyRecord:', error);
         }

@@ -1479,6 +1479,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             unlockedFeatures={unlockedFeatures}
                             setUnlockedFeatures={setUnlockedFeatures}
                             profile={userProfile}
+                            setUserProfile={setUserProfile}
                             setInfoModal={setInfoModal}
                             yesterdayRecord={yesterdayRecord}
                             setDailyRecord={setDailyRecord}

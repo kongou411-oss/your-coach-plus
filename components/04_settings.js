@@ -207,11 +207,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
         onUpdateProfile(updatedProfile);
         onClose();
-
-        // スタイル変更後、ダッシュボードの推奨量を更新するためにリロード
-        setTimeout(() => {
-            window.location.reload();
-        }, 100);
     };
 
     const handleExportData = async () => {
