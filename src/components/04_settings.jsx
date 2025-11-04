@@ -104,6 +104,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const [feedbackSending, setFeedbackSending] = useState(false);
     const [feedbackSent, setFeedbackSent] = useState(false);
 
+    // ヘルプモーダル用state
+    const [showHelpModal, setShowHelpModal] = useState(null);
+
     // テンプレート読み込み
     useEffect(() => {
         loadTemplates();
@@ -3722,6 +3725,226 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                     </details>
 
+                    {/* ヘルプセクション */}
+                    <details className="border rounded-lg">
+                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                            <Icon name="HelpCircle" size={18} className="text-green-600" />
+                            ヘルプ
+                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                        </summary>
+                        <div className="p-4 pt-0 border-t">
+                            <div className="space-y-3">
+                                <p className="text-sm text-gray-600 mb-4">
+                                    アプリの各機能の使い方を確認できます。
+                                </p>
+
+                                {/* 1. はじめに（オンボーディング） */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'onboarding' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Sparkles" size={20} className="text-purple-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">はじめに</div>
+                                                <div className="text-xs text-gray-500">アプリの使い方・初期設定</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 2. ダッシュボード */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'dashboard' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Home" size={20} className="text-blue-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">ダッシュボード</div>
+                                                <div className="text-xs text-gray-500">ホーム画面の見方</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 3. 食事記録 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'meal' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Utensils" size={20} className="text-green-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">食事記録</div>
+                                                <div className="text-xs text-gray-500">食事の記録方法</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 4. 運動記録 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'workout' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Dumbbell" size={20} className="text-orange-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">運動記録</div>
+                                                <div className="text-xs text-gray-500">トレーニングの記録方法</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 5. サプリメント記録 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'supplement' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Pill" size={20} className="text-yellow-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">サプリメント記録</div>
+                                                <div className="text-xs text-gray-500">サプリの記録方法</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 6. コンディション記録 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'condition' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Heart" size={20} className="text-red-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">コンディション記録</div>
+                                                <div className="text-xs text-gray-500">体調の記録方法</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 7. AI分析 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'analysis' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Brain" size={20} className="text-purple-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">AI分析</div>
+                                                <div className="text-xs text-gray-500">AIコーチの使い方</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 8. テンプレート */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'template' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="BookTemplate" size={20} className="text-indigo-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">テンプレート</div>
+                                                <div className="text-xs text-gray-500">テンプレートの活用方法</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 9. ルーティン */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'routine' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Repeat" size={20} className="text-teal-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">ルーティン</div>
+                                                <div className="text-xs text-gray-500">ルーティンの設定方法</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 10. 履歴 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'history' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="LineChart" size={20} className="text-blue-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">履歴</div>
+                                                <div className="text-xs text-gray-500">履歴グラフの見方</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 11. コミュニティ */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'community' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Users" size={20} className="text-pink-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">コミュニティ</div>
+                                                <div className="text-xs text-gray-500">コミュニティの使い方</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+
+                                {/* 12. 設定 */}
+                                <button
+                                    onClick={() => setShowHelpModal({ type: 'settings' })}
+                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Icon name="Settings" size={20} className="text-gray-600" />
+                                            <div>
+                                                <div className="font-medium text-gray-800">設定</div>
+                                                <div className="text-xs text-gray-500">各種設定項目の説明</div>
+                                            </div>
+                                        </div>
+                                        <Icon name="ChevronRight" size={16} className="text-gray-400" />
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </details>
+
                     {/* 開発者セクション（常時表示・後日非表示か削除予定） */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
@@ -4507,8 +4730,347 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             </div>
         )}
 
+        {/* ヘルプモーダル */}
+        {showHelpModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
+                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                    <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
+                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <Icon name={getHelpIcon(showHelpModal.type)} size={24} className={getHelpIconColor(showHelpModal.type)} />
+                            {getHelpTitle(showHelpModal.type)}
+                        </h2>
+                        <button
+                            onClick={() => setShowHelpModal(null)}
+                            className="text-gray-500 hover:text-gray-700"
+                        >
+                            <Icon name="X" size={24} />
+                        </button>
+                    </div>
+
+                    <div className="p-6">
+                        <div className="prose prose-sm max-w-none">
+                            {getHelpContent(showHelpModal.type)}
+                        </div>
+                    </div>
+
+                    <div className="sticky bottom-0 bg-white border-t p-4">
+                        <button
+                            onClick={() => setShowHelpModal(null)}
+                            className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                        >
+                            閉じる
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         </>
     );
+};
+
+// ヘルプモーダル用のユーティリティ関数
+const getHelpIcon = (type) => {
+    const icons = {
+        onboarding: 'Sparkles',
+        dashboard: 'Home',
+        meal: 'Utensils',
+        workout: 'Dumbbell',
+        supplement: 'Pill',
+        condition: 'Heart',
+        analysis: 'Brain',
+        template: 'BookTemplate',
+        routine: 'Repeat',
+        history: 'LineChart',
+        community: 'Users',
+        settings: 'Settings'
+    };
+    return icons[type] || 'HelpCircle';
+};
+
+const getHelpIconColor = (type) => {
+    const colors = {
+        onboarding: 'text-purple-600',
+        dashboard: 'text-blue-600',
+        meal: 'text-green-600',
+        workout: 'text-orange-600',
+        supplement: 'text-yellow-600',
+        condition: 'text-red-600',
+        analysis: 'text-purple-600',
+        template: 'text-indigo-600',
+        routine: 'text-teal-600',
+        history: 'text-blue-600',
+        community: 'text-pink-600',
+        settings: 'text-gray-600'
+    };
+    return colors[type] || 'text-gray-600';
+};
+
+const getHelpTitle = (type) => {
+    const titles = {
+        onboarding: 'はじめに',
+        dashboard: 'ダッシュボード',
+        meal: '食事記録',
+        workout: '運動記録',
+        supplement: 'サプリメント記録',
+        condition: 'コンディション記録',
+        analysis: 'AI分析',
+        template: 'テンプレート',
+        routine: 'ルーティン',
+        history: '履歴',
+        community: 'コミュニティ',
+        settings: '設定'
+    };
+    return titles[type] || 'ヘルプ';
+};
+
+const getHelpContent = (type) => {
+    const contents = {
+        onboarding: (
+            <>
+                <h3>Your Coach+へようこそ！</h3>
+                <p>Your Coach+は、あなたの健康とフィットネスの目標達成をサポートするパーソナルコーチングアプリです。</p>
+
+                <h4>主な機能</h4>
+                <ul>
+                    <li><strong>食事記録</strong>: 写真撮影・検索・手動入力で簡単に記録</li>
+                    <li><strong>運動記録</strong>: トレーニング内容を詳細に記録</li>
+                    <li><strong>AI分析</strong>: あなたの記録をAIが分析してアドバイス</li>
+                    <li><strong>テンプレート</strong>: よく使う食事や運動を保存して再利用</li>
+                    <li><strong>コミュニティ</strong>: 他のユーザーと交流してモチベーションアップ</li>
+                </ul>
+
+                <h4>使い始め方</h4>
+                <ol>
+                    <li>まずはプロフィール設定を完了させましょう</li>
+                    <li>今日の食事を記録してみましょう</li>
+                    <li>運動をした後は運動記録を追加</li>
+                    <li>コンディション（睡眠・体調）を記録</li>
+                    <li>AI分析でアドバイスを受けましょう</li>
+                </ol>
+            </>
+        ),
+        dashboard: (
+            <>
+                <h3>ダッシュボードの見方</h3>
+                <p>ダッシュボード（ホーム画面）には、今日の記録の概要が表示されます。</p>
+
+                <h4>表示項目</h4>
+                <ul>
+                    <li><strong>PFCバランス</strong>: タンパク質・脂質・炭水化物の摂取バランス</li>
+                    <li><strong>カロリー</strong>: 目標カロリーに対する達成度</li>
+                    <li><strong>食事カード</strong>: 今日記録した食事の一覧</li>
+                    <li><strong>運動カード</strong>: 今日記録した運動の一覧</li>
+                    <li><strong>サプリメント</strong>: 今日摂取したサプリメント</li>
+                    <li><strong>コンディション</strong>: 睡眠時間・体調スコア</li>
+                </ul>
+
+                <h4>操作方法</h4>
+                <ul>
+                    <li>各カードをタップして編集・削除が可能</li>
+                    <li>右下の「＋」ボタンから新規記録を追加</li>
+                    <li>日付を変更して過去の記録を確認</li>
+                </ul>
+            </>
+        ),
+        meal: (
+            <>
+                <h3>食事記録の方法</h3>
+                <p>食事を記録する方法は3つあります。</p>
+
+                <h4>1. 写真から記録</h4>
+                <p>料理の写真を撮影すると、AIが自動で食材を認識して栄養価を計算します。</p>
+
+                <h4>2. 食材を検索</h4>
+                <p>データベースから食材を検索して追加します。一般的な食材・料理・外食メニューが登録されています。</p>
+
+                <h4>3. 手動で作成</h4>
+                <p>オリジナルの料理やデータベースにない食材を手動で登録できます。</p>
+
+                <h4>テンプレート機能</h4>
+                <p>よく食べる食事を「テンプレート」として保存しておくと、次回から簡単に記録できます。</p>
+            </>
+        ),
+        workout: (
+            <>
+                <h3>運動記録の方法</h3>
+                <p>トレーニングを詳細に記録して進捗を管理しましょう。</p>
+
+                <h4>記録できる項目</h4>
+                <ul>
+                    <li><strong>種目名</strong>: ベンチプレス、スクワットなど</li>
+                    <li><strong>セット数</strong>: 各セットの重量・回数・時間</li>
+                    <li><strong>有酸素運動</strong>: ランニング、サイクリングなど</li>
+                    <li><strong>ストレッチ</strong>: ヨガ、ストレッチ時間</li>
+                </ul>
+
+                <h4>テンプレート機能</h4>
+                <p>よく行うワークアウトを「テンプレート」として保存しておくと、メニュー作成が簡単になります。</p>
+            </>
+        ),
+        supplement: (
+            <>
+                <h3>サプリメント記録の方法</h3>
+                <p>サプリメントを記録して、微量栄養素の摂取状況を管理しましょう。</p>
+
+                <h4>記録方法</h4>
+                <ul>
+                    <li><strong>検索</strong>: 一般的なサプリメントはデータベースから検索</li>
+                    <li><strong>カスタム作成</strong>: オリジナルのサプリメントを登録</li>
+                </ul>
+
+                <h4>テンプレート機能</h4>
+                <p>毎日飲むサプリメントセットを「テンプレート」として保存できます。</p>
+            </>
+        ),
+        condition: (
+            <>
+                <h3>コンディション記録の方法</h3>
+                <p>毎日の体調を記録することで、トレンドを把握し、パフォーマンスとの関連を分析できます。</p>
+
+                <h4>記録項目（6項目）</h4>
+                <ul>
+                    <li><strong>睡眠時間</strong>: 昨晩の睡眠時間</li>
+                    <li><strong>睡眠の質</strong>: 熟睡度（1-5段階）</li>
+                    <li><strong>食欲</strong>: 食欲の状態（1-5段階）</li>
+                    <li><strong>腸内環境</strong>: お通じの調子（1-5段階）</li>
+                    <li><strong>集中力</strong>: 仕事・勉強の集中度（1-5段階）</li>
+                    <li><strong>ストレス</strong>: ストレスレベル（1-5段階）</li>
+                </ul>
+            </>
+        ),
+        analysis: (
+            <>
+                <h3>AI分析の使い方</h3>
+                <p>あなたの記録をAIが分析して、パーソナライズされたアドバイスを提供します。</p>
+
+                <h4>分析内容</h4>
+                <ul>
+                    <li><strong>PFC評価</strong>: タンパク質・脂質・炭水化物のバランス</li>
+                    <li><strong>カロリー評価</strong>: 目標達成度の評価</li>
+                    <li><strong>運動評価</strong>: トレーニング内容の評価</li>
+                    <li><strong>コンディション評価</strong>: 体調スコアの評価</li>
+                    <li><strong>総合アドバイス</strong>: 改善点と具体的なアクション</li>
+                </ul>
+
+                <h4>質問機能</h4>
+                <p>AIに直接質問して、個別のアドバイスを受けることができます。</p>
+
+                <h4>レポート保存</h4>
+                <p>生成されたレポートを保存して、後から見返すことができます。</p>
+            </>
+        ),
+        template: (
+            <>
+                <h3>テンプレートの使い方</h3>
+                <p>よく使う食事・運動・サプリメントを「テンプレート」として保存して、記録作業を効率化しましょう。</p>
+
+                <h4>テンプレートの作成</h4>
+                <ol>
+                    <li>通常通り食事・運動・サプリを記録</li>
+                    <li>「テンプレートとして保存」ボタンをクリック</li>
+                    <li>テンプレート名を入力して保存</li>
+                </ol>
+
+                <h4>テンプレートの使用</h4>
+                <ol>
+                    <li>記録画面で「テンプレート」を選択</li>
+                    <li>使用したいテンプレートを選択</li>
+                    <li>内容を確認して記録</li>
+                </ol>
+            </>
+        ),
+        routine: (
+            <>
+                <h3>ルーティンの使い方</h3>
+                <p>ルーティン機能を使うと、毎日・特定の曜日に決まった記録を自動で追加できます。</p>
+
+                <h4>ルーティンの作成</h4>
+                <ol>
+                    <li>設定画面の「ルーティン」セクションを開く</li>
+                    <li>「新規ルーティン追加」をクリック</li>
+                    <li>ルーティン名・タイプ（食事/運動/サプリ）を設定</li>
+                    <li>実行曜日を選択</li>
+                    <li>内容を設定して保存</li>
+                </ol>
+
+                <h4>自動記録</h4>
+                <p>設定した曜日になると、自動的にダッシュボードに追加されます。</p>
+            </>
+        ),
+        history: (
+            <>
+                <h3>履歴の見方</h3>
+                <p>過去の記録をグラフで視覚化して、トレンドを把握しましょう。</p>
+
+                <h4>表示できるグラフ</h4>
+                <ul>
+                    <li><strong>体重・体脂肪率</strong>: 体組成の推移</li>
+                    <li><strong>PFCバランス</strong>: 栄養バランスの推移</li>
+                    <li><strong>カロリー</strong>: 摂取カロリーの推移</li>
+                    <li><strong>運動時間</strong>: トレーニング量の推移</li>
+                    <li><strong>コンディション</strong>: 体調スコアの推移</li>
+                </ul>
+
+                <h4>期間の選択</h4>
+                <p>1週間・1ヶ月・3ヶ月・1年など、期間を選択して表示できます。</p>
+            </>
+        ),
+        community: (
+            <>
+                <h3>コミュニティの使い方</h3>
+                <p>他のユーザーと交流して、モチベーションを高めましょう。</p>
+
+                <h4>できること</h4>
+                <ul>
+                    <li><strong>投稿閲覧</strong>: 他のユーザーの投稿を見る</li>
+                    <li><strong>いいね・コメント</strong>: 投稿にリアクション</li>
+                    <li><strong>自分で投稿</strong>: 成果や経験をシェア</li>
+                </ul>
+
+                <h4>投稿の作成</h4>
+                <ol>
+                    <li>コミュニティ画面右下の「＋」ボタン</li>
+                    <li>写真・テキストを入力</li>
+                    <li>投稿ボタンをクリック</li>
+                </ol>
+
+                <p className="text-sm text-gray-600 mt-4">※投稿は管理者承認後に公開されます</p>
+            </>
+        ),
+        settings: (
+            <>
+                <h3>設定項目の説明</h3>
+                <p>各種設定を行い、アプリをカスタマイズしましょう。</p>
+
+                <h4>プロフィール設定</h4>
+                <ul>
+                    <li><strong>基本情報</strong>: 身長・体重・体脂肪率</li>
+                    <li><strong>目標</strong>: 減量・増量・維持など</li>
+                    <li><strong>活動レベル</strong>: 日常の運動量</li>
+                </ul>
+
+                <h4>Premium会員</h4>
+                <p>Premium会員になると、すべての機能が使い放題になります。</p>
+
+                <h4>アカウント管理</h4>
+                <ul>
+                    <li><strong>メールアドレス変更</strong>: ログインメールの変更</li>
+                    <li><strong>パスワード変更</strong>: セキュリティ強化</li>
+                    <li><strong>2段階認証</strong>: SMS認証の設定</li>
+                </ul>
+
+                <h4>データ管理</h4>
+                <ul>
+                    <li><strong>カスタムアイテム</strong>: 自分で作成した食材・料理</li>
+                    <li><strong>テンプレート</strong>: 保存したテンプレートの管理</li>
+                    <li><strong>エクスポート</strong>: データのバックアップ</li>
+                </ul>
+            </>
+        )
+    };
+
+    return contents[type] || <p>説明が見つかりません。</p>;
 };
 
 // グローバルに公開
