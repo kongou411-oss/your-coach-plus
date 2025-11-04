@@ -543,29 +543,35 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     // 本番モード: Firebase認証
                     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
                         if (firebaseUser) {
-                            setUser(firebaseUser);
                             const profile = await DataService.getUserProfile(firebaseUser.uid);
-                            if (profile) {
-                                setUserProfile(profile);
-                                const days = calculateDaysSinceRegistration(firebaseUser.uid);
-                                setUsageDays(days);
 
-                                // 今日の記録を取得（機能開放判定に必要）
-                                const today = getTodayDate();
-                                const todayRecord = await DataService.getDailyRecord(firebaseUser.uid, today);
-
-                                // 新しい機能開放システムで開放状態を計算
-                                const isPremium = profile.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
-                                const unlocked = calculateUnlockedFeatures(firebaseUser.uid, todayRecord, isPremium);
-                                setUnlockedFeatures(unlocked);
-
-                                // 守破離の段階を更新（21日で離、7日で破）
-                                if (days >= 21) setCurrentStage('離');
-                                else if (days >= 7) setCurrentStage('破');
-                                else setCurrentStage('守');
+                            // プロフィールが存在しない場合は、新規登録が必要なユーザー
+                            // LoginScreenのhandleGoogleSignInで処理されるため、ここでは何もしない
+                            if (!profile) {
+                                // ローディング状態を維持（LoginScreenで処理中）
+                                return;
                             }
 
+                            // プロフィールが存在する既存ユーザー
+                            setUser(firebaseUser);
+                            setUserProfile(profile);
+                            const days = calculateDaysSinceRegistration(firebaseUser.uid);
+                            setUsageDays(days);
+
+                            // 今日の記録を取得（機能開放判定に必要）
                             const today = getTodayDate();
+                            const todayRecord = await DataService.getDailyRecord(firebaseUser.uid, today);
+
+                            // 新しい機能開放システムで開放状態を計算
+                            const isPremium = profile.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                            const unlocked = calculateUnlockedFeatures(firebaseUser.uid, todayRecord, isPremium);
+                            setUnlockedFeatures(unlocked);
+
+                            // 守破離の段階を更新（21日で離、7日で破）
+                            if (days >= 21) setCurrentStage('離');
+                            else if (days >= 7) setCurrentStage('破');
+                            else setCurrentStage('守');
+
                             const record = await DataService.getDailyRecord(firebaseUser.uid, today);
                             if (record) {
                                 setDailyRecord(record);
@@ -602,11 +608,13 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             // if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                             //     NotificationService.startNotificationChecker(firebaseUser.uid);
                             // }
+
+                            setLoading(false);
                         } else {
                             setUser(null);
                             setUserProfile(null);
+                            setLoading(false);
                         }
-                        setLoading(false);
                     });
 
                     return () => unsubscribe();
