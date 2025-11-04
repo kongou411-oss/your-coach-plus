@@ -1,4 +1,383 @@
 import React from 'react';
+
+// ===== Edit Workout Modal (運動編集専用モーダル) =====
+const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
+    const [selectedExerciseIndex, setSelectedExerciseIndex] = useState(0);
+    const [exercises, setExercises] = useState(workout.exercises || []);
+    const [totalDurationInput, setTotalDurationInput] = useState(
+        // 総時間を初期化（全種目のdurationまたはsetsから計算）
+        workout.exercises?.reduce((sum, ex) => {
+            if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
+                return sum + (ex.duration || 0);
+            } else if (ex.sets) {
+                return sum + ex.sets.reduce((s, set) => s + (set.duration || 0), 0);
+            }
+            return sum;
+        }, 0) || 5
+    );
+
+    const currentExercise = exercises[selectedExerciseIndex];
+
+    // セット編集用のstate
+    const [editingSetIndex, setEditingSetIndex] = useState(null);
+    const [editingSet, setEditingSet] = useState(null);
+
+    // セット編集開始
+    const handleEditSet = (setIndex) => {
+        setEditingSetIndex(setIndex);
+        setEditingSet({ ...currentExercise.sets[setIndex] });
+    };
+
+    // セット更新
+    const handleUpdateSet = () => {
+        const updatedExercises = [...exercises];
+        updatedExercises[selectedExerciseIndex].sets[editingSetIndex] = editingSet;
+        setExercises(updatedExercises);
+        setEditingSetIndex(null);
+        setEditingSet(null);
+    };
+
+    // セット削除
+    const handleDeleteSet = (setIndex) => {
+        if (currentExercise.sets.length === 1) {
+            alert('最後のセットは削除できません。種目ごと削除してください。');
+            return;
+        }
+        const updatedExercises = [...exercises];
+        updatedExercises[selectedExerciseIndex].sets = currentExercise.sets.filter((_, i) => i !== setIndex);
+        setExercises(updatedExercises);
+    };
+
+    // 有酸素・ストレッチの時間編集
+    const handleUpdateDuration = (newDuration) => {
+        const updatedExercises = [...exercises];
+        updatedExercises[selectedExerciseIndex].duration = newDuration;
+        setExercises(updatedExercises);
+    };
+
+    // 種目削除
+    const handleDeleteExercise = (exerciseIndex) => {
+        if (exercises.length === 1) {
+            alert('最後の種目は削除できません。運動全体を削除してください。');
+            return;
+        }
+        const updatedExercises = exercises.filter((_, i) => i !== exerciseIndex);
+        setExercises(updatedExercises);
+        if (selectedExerciseIndex >= updatedExercises.length) {
+            setSelectedExerciseIndex(updatedExercises.length - 1);
+        }
+    };
+
+    // 更新保存
+    const handleSave = () => {
+        const updatedWorkout = {
+            ...workout,
+            exercises: exercises,
+            totalDuration: totalDurationInput
+        };
+        onUpdate(updatedWorkout, false);
+    };
+
+    const isCardioOrStretch = currentExercise?.exerciseType === 'aerobic' || currentExercise?.exerciseType === 'stretch';
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+                    <h2 className="text-xl font-bold">運動を編集</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <Icon name="X" size={24} />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    {/* 総時間入力 */}
+                    <div>
+                        <label className="block text-sm font-medium mb-2">総時間（分）</label>
+                        <input
+                            type="number"
+                            value={totalDurationInput}
+                            onChange={(e) => setTotalDurationInput(Number(e.target.value))}
+                            className="w-full px-4 py-2 border rounded-lg"
+                            min="0"
+                        />
+                    </div>
+
+                    {/* 種目タブ */}
+                    <div>
+                        <label className="block text-sm font-medium mb-2">種目を選択</label>
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                            {exercises.map((ex, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setSelectedExerciseIndex(index)}
+                                    className={`px-4 py-2 rounded-lg whitespace-nowrap ${
+                                        selectedExerciseIndex === index
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {ex.exercise?.name || ex.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 種目詳細編集 */}
+                    {currentExercise && (
+                        <div className="border rounded-lg p-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-lg">{currentExercise.exercise?.name || currentExercise.name}</h3>
+                                <button
+                                    onClick={() => handleDeleteExercise(selectedExerciseIndex)}
+                                    className="text-red-600 hover:text-red-800 text-sm"
+                                >
+                                    <Icon name="Trash2" size={18} />
+                                </button>
+                            </div>
+
+                            {isCardioOrStretch ? (
+                                // 有酸素・ストレッチ: 時間のみ編集
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">時間（分）</label>
+                                    <input
+                                        type="number"
+                                        value={currentExercise.duration || 0}
+                                        onChange={(e) => handleUpdateDuration(Number(e.target.value))}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                        min="0"
+                                    />
+                                </div>
+                            ) : (
+                                // 筋トレ: セット一覧と編集
+                                <div>
+                                    <div className="space-y-2 mb-4">
+                                        {currentExercise.sets?.map((set, setIndex) => (
+                                            <div key={setIndex} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                                                <div className="flex-1">
+                                                    <div className="font-medium">Set {setIndex + 1}</div>
+                                                    <div className="text-sm text-gray-600">
+                                                        {set.weight}kg × {set.reps}回
+                                                        {set.rm && set.rmWeight && (
+                                                            <span className="ml-2 text-orange-600">
+                                                                🏆 {set.rm}RM × {set.rmWeight}kg
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleEditSet(setIndex)}
+                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-200"
+                                                >
+                                                    <Icon name="Edit" size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteSet(setIndex)}
+                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-200"
+                                                >
+                                                    <Icon name="Trash2" size={18} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* セット編集モーダル */}
+                                    {editingSetIndex !== null && editingSet && (
+                                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
+                                            <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+                                                <h3 className="text-lg font-bold mb-4">Set {editingSetIndex + 1} を編集</h3>
+                                                <div className="space-y-4">
+                                                    {/* 重量入力 */}
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-1">重量（kg）</label>
+                                                        {/* スライダー */}
+                                                        <div className="mb-3">
+                                                            <input
+                                                                type="range"
+                                                                min="0"
+                                                                max="500"
+                                                                step="2.5"
+                                                                value={editingSet.weight || 0}
+                                                                onChange={(e) => setEditingSet({...editingSet, weight: Number(e.target.value)})}
+                                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                                style={{
+                                                                    background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((editingSet.weight || 0)/500)*100}%, #e5e7eb ${((editingSet.weight || 0)/500)*100}%, #e5e7eb 100%)`
+                                                                }}
+                                                            />
+                                                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 0})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">0kg</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 100})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">100kg</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 200})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">200kg</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 300})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">300kg</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 400})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">400kg</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 500})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">500kg</span>
+                                                            </div>
+                                                        </div>
+                                                        <input
+                                                            type="number"
+                                                            value={editingSet.weight || 0}
+                                                            onChange={(e) => setEditingSet({...editingSet, weight: Number(e.target.value)})}
+                                                            className="w-full px-4 py-3 border rounded-lg"
+                                                        />
+                                                        {/* 増減ボタン */}
+                                                        <div className="grid grid-cols-6 gap-1 mt-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Math.max(0, Number(editingSet.weight) - 10)})}
+                                                                className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                                                            >
+                                                                -10
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Math.max(0, Number(editingSet.weight) - 5)})}
+                                                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                            >
+                                                                -5
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Math.max(0, Number(editingSet.weight) - 2.5)})}
+                                                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                            >
+                                                                -2.5
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Number(editingSet.weight) + 2.5})}
+                                                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                            >
+                                                                +2.5
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Number(editingSet.weight) + 5})}
+                                                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                            >
+                                                                +5
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Number(editingSet.weight) + 10})}
+                                                                className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                                                            >
+                                                                +10
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 回数入力 */}
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-1">回数</label>
+                                                        {/* スライダー */}
+                                                        <div className="mb-3">
+                                                            <input
+                                                                type="range"
+                                                                min="0"
+                                                                max="50"
+                                                                step="1"
+                                                                value={editingSet.reps || 0}
+                                                                onChange={(e) => setEditingSet({...editingSet, reps: Number(e.target.value)})}
+                                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                                style={{
+                                                                    background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((editingSet.reps || 0)/50)*100}%, #e5e7eb ${((editingSet.reps || 0)/50)*100}%, #e5e7eb 100%)`
+                                                                }}
+                                                            />
+                                                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 0})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">0回</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 10})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">10回</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 20})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">20回</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 30})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">30回</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 40})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">40回</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 50})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">50回</span>
+                                                            </div>
+                                                        </div>
+                                                        <input
+                                                            type="number"
+                                                            value={editingSet.reps || 0}
+                                                            onChange={(e) => setEditingSet({...editingSet, reps: Number(e.target.value)})}
+                                                            className="w-full px-4 py-3 border rounded-lg"
+                                                        />
+                                                        {/* 増減ボタン */}
+                                                        <div className="grid grid-cols-4 gap-1 mt-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, reps: Math.max(0, Number(editingSet.reps) - 5)})}
+                                                                className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                                                            >
+                                                                -5
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, reps: Math.max(0, Number(editingSet.reps) - 1)})}
+                                                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                            >
+                                                                -1
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, reps: Number(editingSet.reps) + 1})}
+                                                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                            >
+                                                                +1
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, reps: Number(editingSet.reps) + 5})}
+                                                                className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                                                            >
+                                                                +5
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex gap-2 mt-6">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingSetIndex(null);
+                                                                setEditingSet(null);
+                                                            }}
+                                                            className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                                                        >
+                                                            キャンセル
+                                                        </button>
+                                                        <button
+                                                            onClick={handleUpdateSet}
+                                                            className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                                                        >
+                                                            更新
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* フッターボタン */}
+                <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                    >
+                        キャンセル
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                    >
+                        更新
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ===== Edit Meal Modal (食事編集専用モーダル) =====
 const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
     const [selectedItemIndex, setSelectedItemIndex] = useState(0); // 編集対象のアイテムインデックス
@@ -1142,7 +1521,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                 distance: 0.5,
                 tut: 30,
                 restInterval: 90,
-                duration: 0
+                duration: 5
             });
             const [workoutTemplates, setWorkoutTemplates] = useState([]);
             const [showCustomExerciseForm, setShowCustomExerciseForm] = useState(false);
@@ -6173,3 +6552,5 @@ RM回数と重量を別々に入力してください。`
 
 // グローバルに公開
 window.AddItemView = AddItemView;
+window.EditMealModal = EditMealModal;
+window.EditWorkoutModal = EditWorkoutModal;

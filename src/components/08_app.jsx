@@ -205,6 +205,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const COMYView = window.COMYView;
             const AdminPanel = window.AdminPanel;
             const AddItemView = window.AddItemView;
+            const EditMealModal = window.EditMealModal;
+            const EditWorkoutModal = window.EditWorkoutModal;
             const SettingsView = window.SettingsView;
             const SubscriptionView = window.SubscriptionView;
             const ChevronShortcut = window.ChevronShortcut;
@@ -224,6 +226,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [reopenTemplateEditType, setReopenTemplateEditType] = useState(null); // 再度開くテンプレート編集モーダルのタイプ
             const [editingTemplate, setEditingTemplate] = useState(null); // 編集対象のテンプレート
             const [editingMeal, setEditingMeal] = useState(null); // 編集対象の食事
+            const [editingWorkout, setEditingWorkout] = useState(null); // 編集対象の運動
             const [dailyRecord, setDailyRecord] = useState({
                 meals: [],
                 workouts: [],
@@ -360,6 +363,19 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 };
                 return () => {
                     delete window.handleEditMeal;
+                };
+            }, []);
+
+            // 運動編集用グローバル関数を定義
+            useEffect(() => {
+                window.handleEditWorkout = (workout) => {
+                    console.log('💪 運動編集開始:', workout);
+                    setEditingWorkout(workout);
+                    setAddViewType('workout');
+                    setShowAddView(true);
+                };
+                return () => {
+                    delete window.handleEditWorkout;
                 };
             }, []);
 
@@ -1543,22 +1559,29 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     const currentRecord = await DataService.getDailyRecord(userId, currentDate);
                                     let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
 
-                                    // 元の食事を見つけて削除し、新しい食事を追加（上書き）
-                                    const mealIndex = updatedRecord.meals.findIndex(m =>
-                                        m.timestamp === editingMeal.timestamp && m.name === editingMeal.name
-                                    );
+                                    // 元の食事を見つけて上書き（IDまたはタイムスタンプで識別）
+                                    const mealIndex = updatedRecord.meals.findIndex(m => {
+                                        // IDがある場合はIDで比較、なければタイムスタンプで比較
+                                        if (editingMeal.id && m.id) {
+                                            return m.id === editingMeal.id;
+                                        }
+                                        return m.timestamp === editingMeal.timestamp;
+                                    });
 
-                                    if (mealIndex !== -1) {
-                                        // 元の食事を削除
-                                        updatedRecord.meals.splice(mealIndex, 1);
-                                    }
-
-                                    // 新しい食事を追加（timestampは維持）
+                                    // 新しい食事データ（元のタイムスタンプとIDを維持）
                                     const finalMeal = {
                                         ...updatedMeal,
-                                        timestamp: editingMeal.timestamp // 元のタイムスタンプを維持
+                                        timestamp: editingMeal.timestamp, // 元のタイムスタンプを維持
+                                        id: editingMeal.id // 元のIDを維持（あれば）
                                     };
-                                    updatedRecord.meals.push(finalMeal);
+
+                                    if (mealIndex !== -1) {
+                                        // 元の食事を上書き（配列の同じ位置に置き換え）
+                                        updatedRecord.meals[mealIndex] = finalMeal;
+                                    } else {
+                                        // 見つからない場合は追加（念のため）
+                                        updatedRecord.meals.push(finalMeal);
+                                    }
 
                                     // 保存
                                     await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
@@ -1583,8 +1606,70 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         />
                     )}
 
+                    {/* 運動編集モーダル */}
+                    {editingWorkout && addViewType === 'workout' && (
+                        <EditWorkoutModal
+                            workout={editingWorkout}
+                            onClose={() => {
+                                setEditingWorkout(null);
+                                setShowAddView(false);
+                            }}
+                            onUpdate={async (updatedWorkout, keepModalOpen = true) => {
+                                const userId = user?.uid || DEV_USER_ID;
+                                try {
+                                    // 表示中の日付（currentDate）の記録を取得
+                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
+                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+
+                                    // 元の運動を見つけて上書き（IDまたはタイムスタンプで識別）
+                                    const workoutIndex = updatedRecord.workouts.findIndex(w => {
+                                        // IDがある場合はIDで比較、なければタイムスタンプで比較
+                                        if (editingWorkout.id && w.id) {
+                                            return w.id === editingWorkout.id;
+                                        }
+                                        return w.timestamp === editingWorkout.timestamp;
+                                    });
+
+                                    // 新しい運動データ（元のタイムスタンプとIDを維持）
+                                    const finalWorkout = {
+                                        ...updatedWorkout,
+                                        timestamp: editingWorkout.timestamp, // 元のタイムスタンプを維持
+                                        id: editingWorkout.id // 元のIDを維持（あれば）
+                                    };
+
+                                    if (workoutIndex !== -1) {
+                                        // 元の運動を上書き（配列の同じ位置に置き換え）
+                                        updatedRecord.workouts[workoutIndex] = finalWorkout;
+                                    } else {
+                                        // 見つからない場合は追加（念のため）
+                                        updatedRecord.workouts.push(finalWorkout);
+                                    }
+
+                                    // 保存
+                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
+
+                                    // 状態を更新（即座にダッシュボードに反映）
+                                    setDailyRecord(updatedRecord);
+
+                                    // モーダルを維持する場合、editingWorkoutを更新
+                                    if (keepModalOpen) {
+                                        setEditingWorkout(finalWorkout);
+                                    } else {
+                                        // モーダルを閉じる
+                                        setEditingWorkout(null);
+                                        setShowAddView(false);
+                                        alert('運動を更新しました！');
+                                    }
+                                } catch (error) {
+                                    console.error('運動更新エラー:', error);
+                                    alert('運動の更新に失敗しました。');
+                                }
+                            }}
+                        />
+                    )}
+
                     {/* 追加ビュー */}
-                    {showAddView && !editingMeal && (
+                    {showAddView && !editingMeal && !editingWorkout && (
                         <AddItemView
                             type={addViewType}
                             editingTemplate={editingTemplate}
