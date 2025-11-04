@@ -356,7 +356,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             // 食事編集用グローバル関数を定義
             useEffect(() => {
                 window.handleEditMeal = (meal) => {
-                    console.log('🍽️ 食事編集開始:', meal);
                     setEditingMeal(meal);
                     setAddViewType('meal');
                     setShowAddView(true);
@@ -369,7 +368,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             // 運動編集用グローバル関数を定義
             useEffect(() => {
                 window.handleEditWorkout = (workout) => {
-                    console.log('💪 運動編集開始:', workout);
                     setEditingWorkout(workout);
                     setAddViewType('workout');
                     setShowAddView(true);

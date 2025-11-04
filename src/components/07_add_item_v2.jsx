@@ -504,7 +504,6 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
     useEffect(() => {
         if (meal && meal.items && meal.items.length > 0) {
             const item = meal.items[selectedItemIndex]; // 選択されたアイテムを編集対象とする
-            console.log('📝 EditMealModal: 編集対象アイテム', item);
 
             // item.amountが文字列（"100g"など）の場合、数値とunitを分離
             let itemAmount = item.amount;
@@ -689,9 +688,6 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
         // 既存のアイテム配列をコピー
         const updatedItems = [...meal.items];
 
-        console.log('[handleUpdate] 更新前のitems:', updatedItems);
-        console.log('[handleUpdate] selectedItemIndex:', selectedItemIndex);
-
         // 選択したアイテムのみを更新（元のアイテムのプロパティを保持）
         const originalItem = updatedItems[selectedItemIndex];
         updatedItems[selectedItemIndex] = {
@@ -705,18 +701,11 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
             calories: Math.round((foodData.calories || 0) * ratio)
         };
 
-        console.log('[handleUpdate] 更新後のitems:', updatedItems);
-
         // 全アイテムのカロリー・PFCを再計算
-        const totalCalories = updatedItems.reduce((sum, item) => {
-            console.log(`[handleUpdate] アイテム: ${item.name}, カロリー: ${item.calories || 0}`);
-            return sum + (item.calories || 0);
-        }, 0);
+        const totalCalories = updatedItems.reduce((sum, item) => sum + (item.calories || 0), 0);
         const totalProtein = parseFloat(updatedItems.reduce((sum, item) => sum + (item.protein || 0), 0).toFixed(1));
         const totalFat = parseFloat(updatedItems.reduce((sum, item) => sum + (item.fat || 0), 0).toFixed(1));
         const totalCarbs = parseFloat(updatedItems.reduce((sum, item) => sum + (item.carbs || 0), 0).toFixed(1));
-
-        console.log('[handleUpdate] 合計カロリー:', totalCalories);
 
         const updatedMeal = {
             ...meal,
@@ -726,7 +715,6 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
             fat: totalFat,
             carbs: totalCarbs
         };
-        console.log('💾 更新データ:', updatedMeal);
         onUpdate(updatedMeal, false); // 更新ボタンを押したらモーダルを閉じる
     };
 
