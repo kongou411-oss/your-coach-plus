@@ -437,7 +437,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         switch (type) {
             case 'meal': return { bg: 'from-green-50 to-teal-50', border: 'border-green-600', text: 'text-green-700', icon: 'text-green-600' };
             case 'exercise': return { bg: 'from-orange-50 to-red-50', border: 'border-orange-600', text: 'text-orange-700', icon: 'text-orange-600' };
-            case 'condition': return { bg: 'from-indigo-50 to-purple-50', border: 'border-indigo-600', text: 'text-indigo-700', icon: 'text-indigo-600' };
+            case 'condition': return { bg: 'from-sky-50 to-blue-50', border: 'border-sky-600', text: 'text-sky-700', icon: 'text-sky-600' };
             default: return { bg: 'from-gray-50 to-gray-100', border: 'border-gray-600', text: 'text-gray-700', icon: 'text-gray-600' };
         }
     };
@@ -566,7 +566,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 <div className="flex border-b mb-4">
                     <button
                         onClick={() => setActiveTab('nutrition')}
-                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'nutrition' ? 'text-indigo-700 border-b-2 border-indigo-700 bg-indigo-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'nutrition' ? 'text-sky-700 border-b-2 border-sky-700 bg-sky-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                     >
                         <div className="flex items-center justify-center gap-1">
                             <Icon name="BarChart3" size={16} />
@@ -575,7 +575,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     </button>
                     <button
                         onClick={() => setActiveTab('directive')}
-                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'directive' ? 'text-indigo-700 border-b-2 border-indigo-700 bg-indigo-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'directive' ? 'text-sky-700 border-b-2 border-sky-700 bg-sky-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                     >
                         <div className="flex items-center justify-center gap-1">
                             <Icon name="ClipboardList" size={16} />
@@ -645,7 +645,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 {/* ビタミン・ミネラル詳細（守破離システムに統合 - 18日以上で開放） */}
                 {unlockedFeatures.includes(FEATURES.MICRONUTRIENTS.id) && (
                     <details className="mt-4">
-                        <summary className="cursor-pointer text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-2">
+                        <summary className="cursor-pointer text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-2">
                             <Icon name="ChevronDown" size={16} />
                             ビタミン・ミネラル+
                         </summary>
@@ -691,7 +691,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {/* ミネラル */}
                         <div>
                             <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
-                                <Icon name="Gem" size={16} className="text-purple-500" />
+                                <Icon name="Gem" size={16} className="text-amber-500" />
                                 ミネラル
                             </h4>
                             <div className="grid grid-cols-2 gap-3">
@@ -723,7 +723,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             </div>
                                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-gradient-to-r from-purple-400 to-indigo-500 transition-all"
+                                                    className="h-full bg-[#FFF59A] transition-all"
                                                     style={{ width: `${Math.min(percent, 100)}%` }}
                                                 />
                                             </div>
@@ -839,7 +839,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             title: '📝 記録について',
                             content: `【通常の記録】\n＋ボタンから、食事・運動・サプリメントを記録できます。記録した内容は即座にダッシュボードに反映されます。\n\n【予測入力】\n前日のデータから今日の食事・運動を自動的に予測して入力します。\n・青背景で表示されます\n・予測データは編集可能です\n・そのまま分析に使用できます\n\n【ルーティン入力】\n設定したルーティンに紐づけたテンプレートを自動入力します。\n・紫背景で表示されます\n・ルーティンデータは編集可能です\n・そのまま分析に使用できます\n\n設定方法：設定 → ルーティン → 各日に食事・運動テンプレートを紐づけ`
                         })}
-                        className="text-indigo-600 hover:text-indigo-800"
+                        className="text-sky-600 hover:text-sky-800"
                     >
                         <Icon name="Info" size={18} />
                     </button>
@@ -867,7 +867,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${
                                     dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)
                                         ? 'bg-gray-400 text-white hover:bg-gray-500'
-                                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                        : 'bg-sky-600 text-white hover:bg-sky-700'
                                 }`}
                             >
                                 <Icon name={(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) ? "Trash2" : "Sparkles"} size={14} />
@@ -900,7 +900,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${
                                     dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)
                                         ? 'bg-gray-400 text-white hover:bg-gray-500'
-                                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                                        : 'bg-amber-600 text-white hover:bg-amber-700'
                                 }`}
                             >
                                 <Icon name={(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? "Trash2" : "Repeat"} size={14} />
@@ -1130,8 +1130,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div className="space-y-3">
                             {dailyRecord.meals.map((meal, index) => (
                                 <div key={meal.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 hover:shadow-md transition-shadow ${
-                                    meal.isPredicted ? 'border-2 border-indigo-300 bg-indigo-50' :
-                                    meal.isRoutine ? 'border-2 border-purple-300 bg-purple-50' :
+                                    meal.isPredicted ? 'border-2 border-sky-300 bg-sky-50' :
+                                    meal.isRoutine ? 'border-2 border-amber-300 bg-amber-50' :
                                     ''
                                 }`}>
                                     <div className="flex items-start justify-between mb-3">
@@ -1139,13 +1139,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="text-xs text-gray-500">{meal.time}</span>
                                                 {meal.isPredicted && (
-                                                    <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                    <span className="text-xs bg-sky-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                         <Icon name="Sparkles" size={10} />
                                                         予測
                                                     </span>
                                                 )}
                                                 {meal.isRoutine && (
-                                                    <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                    <span className="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                         <Icon name="Repeat" size={10} />
                                                         ルーティン
                                                     </span>
@@ -1182,7 +1182,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     alert('テンプレートを保存しました');
                                                 }
                                             }}
-                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-200"
+                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-green-600 hover:bg-green-50 transition border-2 border-green-500"
                                         >
                                             <Icon name="BookTemplate" size={18} />
                                         </button>
@@ -1193,13 +1193,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     window.handleEditMeal(meal);
                                                 }
                                             }}
-                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-indigo-600 hover:bg-indigo-50 transition border-2 border-indigo-200"
+                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                         >
                                             <Icon name="Edit" size={18} />
                                         </button>
                                         <button
                                             onClick={() => onDeleteItem('meal', meal.id)}
-                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-200"
+                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                         >
                                             <Icon name="Trash2" size={18} />
                                         </button>
@@ -1247,8 +1247,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="space-y-3">
                                 {dailyRecord.workouts.map((workout, index) => (
                                     <div key={workout.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 hover:shadow-md transition-shadow ${
-                                        workout.isPredicted ? 'border-2 border-indigo-300 bg-indigo-50' :
-                                        workout.isRoutine ? 'border-2 border-purple-300 bg-purple-50' :
+                                        workout.isPredicted ? 'border-2 border-sky-300 bg-sky-50' :
+                                        workout.isRoutine ? 'border-2 border-amber-300 bg-amber-50' :
                                         ''
                                     }`}>
                                         <div className="flex items-start justify-between mb-3">
@@ -1256,13 +1256,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <span className="text-xs text-gray-500">{workout.time}</span>
                                                     {workout.isPredicted && (
-                                                        <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        <span className="text-xs bg-sky-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                             <Icon name="Sparkles" size={10} />
                                                             予測
                                                         </span>
                                                     )}
                                                     {workout.isRoutine && (
-                                                        <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        <span className="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                             <Icon name="Repeat" size={10} />
                                                             ルーティン
                                                         </span>
@@ -1337,7 +1337,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                         alert('テンプレートを保存しました');
                                                     }
                                                 }}
-                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-200"
+                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-green-600 hover:bg-green-50 transition border-2 border-green-500"
                                             >
                                                 <Icon name="BookTemplate" size={18} />
                                             </button>
@@ -1348,13 +1348,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                         window.handleEditWorkout(workout);
                                                     }
                                                 }}
-                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-orange-600 hover:bg-orange-50 transition border-2 border-orange-200"
+                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                             >
                                                 <Icon name="Edit" size={18} />
                                             </button>
                                             <button
                                                 onClick={() => onDeleteItem('workout', workout.id)}
-                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-200"
+                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                             >
                                                 <Icon name="Trash2" size={18} />
                                             </button>
@@ -1761,7 +1761,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 {/* 閃きセクション - 初回分析完了後に開放 */}
                 {unlockedFeatures.includes('idea') && (
                     <div id="idea-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
-                        <div className="px-6 py-4 bg-gradient-to-r from-yellow-50 to-amber-50 flex items-center justify-between border-b-2 border-gray-200">
+                        <div className="px-6 py-4 bg-[#FFF59A]/10 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
                                 <Icon name="Lightbulb" size={32} className="text-yellow-500" />
                                 <h4 className="font-bold text-gray-900">閃き</h4>
@@ -1790,9 +1790,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 {/* 分析ボタン - コンディション完了後に開放 */}
                 {unlockedFeatures.includes('analysis') && (
                     <div id="analysis-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
-                        <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between border-b-2 border-gray-200">
+                        <div className="px-6 py-4 bg-gradient-to-r from-sky-50 to-blue-50 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
-                                <Icon name="PieChart" size={32} className="text-indigo-600" />
+                                <Icon name="PieChart" size={32} className="text-sky-600" />
                                 <h4 className="font-bold text-gray-900">分析</h4>
                                 <button
                                     onClick={() => setShowScoringGuideModal(true)}
@@ -1804,7 +1804,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </div>
                             <button
                                 onClick={() => window.handleQuickAction && window.handleQuickAction('analysis')}
-                                className="text-sm px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition"
+                                className="text-sm px-4 py-2 bg-sky-600 text-white rounded-lg font-bold hover:bg-sky-700 transition"
                             >
                                 + 分析
                             </button>
@@ -1860,7 +1860,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             {/* ヘッダー */}
                             <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                    <Icon name="Info" size={20} className="text-indigo-600" />
+                                    <Icon name="Info" size={20} className="text-sky-600" />
                                     採点基準
                                 </h3>
                                 <button
@@ -1936,7 +1936,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             {/* 閉じるボタン */}
                             <button
                                 onClick={() => setShowScoringGuideModal(false)}
-                                className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                                className="w-full py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition font-medium"
                             >
                                 閉じる
                             </button>
@@ -1957,8 +1957,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div className="p-6 space-y-4">
                             {/* アイコン */}
                             <div className="flex justify-center">
-                                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
-                                    <Icon name="Sparkles" size={32} className="text-purple-600" />
+                                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <Icon name="Sparkles" size={32} className="text-amber-600" />
                                 </div>
                             </div>
 
@@ -1970,9 +1970,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     </h3>
                                     <div className="text-sm text-gray-600 space-y-3">
                                         <p className="text-center">分析完了おめでとうございます！</p>
-                                        <div className="bg-purple-50 rounded-lg p-4 space-y-2">
+                                        <div className="bg-yellow-50 rounded-lg p-4 space-y-2 border border-amber-200">
                                             <div className="flex items-start gap-2">
-                                                <Icon name="FileText" size={18} className="text-purple-600 mt-0.5" />
+                                                <Icon name="FileText" size={18} className="text-amber-600 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">指示書</div>
                                                     <div className="text-xs text-gray-600">明日の行動指針をAIが提案</div>
@@ -1986,7 +1986,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-2">
-                                                <Icon name="History" size={18} className="text-purple-600 mt-0.5" />
+                                                <Icon name="History" size={18} className="text-amber-600 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">履歴</div>
                                                     <div className="text-xs text-gray-600">グラフで進捗を確認</div>
@@ -2004,16 +2004,16 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         🎉 さらに機能が開放！
                                     </h3>
                                     <div className="text-sm text-gray-600 space-y-3">
-                                        <div className="bg-purple-50 rounded-lg p-4 space-y-2">
+                                        <div className="bg-yellow-50 rounded-lg p-4 space-y-2 border border-amber-200">
                                             <div className="flex items-start gap-2">
-                                                <Icon name="BookOpen" size={18} className="text-purple-600 mt-0.5" />
+                                                <Icon name="BookOpen" size={18} className="text-amber-600 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">PG BASE</div>
                                                     <div className="text-xs text-gray-600">ボディメイクの基礎知識</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-2">
-                                                <Icon name="Users" size={18} className="text-purple-600 mt-0.5" />
+                                                <Icon name="Users" size={18} className="text-amber-600 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">COMY</div>
                                                     <div className="text-xs text-gray-600">仲間と刺激し合う</div>
@@ -2032,23 +2032,23 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     </h3>
                                     <div className="text-sm text-gray-600 space-y-3">
                                         <p className="text-center">すべての機能が使えるようになりました！</p>
-                                        <div className="bg-purple-50 rounded-lg p-4 space-y-2">
+                                        <div className="bg-yellow-50 rounded-lg p-4 space-y-2 border border-amber-200">
                                             <div className="flex items-start gap-2">
-                                                <Icon name="BookTemplate" size={18} className="text-purple-600 mt-0.5" />
+                                                <Icon name="BookTemplate" size={18} className="text-amber-600 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">テンプレート</div>
                                                     <div className="text-xs text-gray-600">食事・運動を保存</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-2">
-                                                <Icon name="Calendar" size={18} className="text-purple-600 mt-0.5" />
+                                                <Icon name="Calendar" size={18} className="text-amber-600 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">ルーティン</div>
                                                     <div className="text-xs text-gray-600">曜日別トレーニング計画</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-2">
-                                                <Icon name="Zap" size={18} className="text-purple-600 mt-0.5" />
+                                                <Icon name="Zap" size={18} className="text-amber-600 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">ショートカット</div>
                                                     <div className="text-xs text-gray-600">素早い記録入力</div>
@@ -2068,7 +2068,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <div
                                         key={page}
                                         className={`w-2 h-2 rounded-full ${
-                                            page === currentModalPage ? 'bg-purple-600' : 'bg-gray-300'
+                                            page === currentModalPage ? 'bg-amber-600' : 'bg-gray-300'
                                         }`}
                                     />
                                 ))}
@@ -2087,9 +2087,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 {currentModalPage < 3 ? (
                                     <button
                                         onClick={() => setCurrentModalPage(currentModalPage + 1)}
-                                        className={`${currentModalPage === 1 ? 'w-full' : 'w-2/3'} bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors`}
+                                        className={`${currentModalPage === 1 ? 'w-full' : 'w-2/3'} bg-[#FFF59A] text-gray-800 py-3 rounded-lg font-bold hover:opacity-90 transition-colors shadow-md relative overflow-hidden`}
                                     >
-                                        次へ
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                        <span className="relative z-10">次へ</span>
                                     </button>
                                 ) : (
                                     <button
@@ -2106,9 +2107,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             }, 300);
                                         }}
-                                        className="w-2/3 bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors"
+                                        className="w-2/3 bg-[#FFF59A] text-gray-800 py-3 rounded-lg font-bold hover:opacity-90 transition-colors shadow-md relative overflow-hidden"
                                     >
-                                        確認しました
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                        <span className="relative z-10">確認しました</span>
                                     </button>
                                 )}
                             </div>
@@ -2121,19 +2123,20 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             {showUpgradeModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fade-in">
                     <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
-                        {/* ヘッダー（紫グラデーション） */}
-                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white text-center relative">
+                        {/* ヘッダー（プレミアムグラデーション） */}
+                        <div className="bg-[#FFF59A] p-6 text-gray-800 text-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                             <button
                                 onClick={() => setShowUpgradeModal(false)}
-                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition"
+                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-10"
                             >
                                 <Icon name="X" size={20} />
                             </button>
-                            <div className="mb-3">
-                                <Icon name="Crown" size={48} className="mx-auto mb-2" />
+                            <div className="mb-3 relative z-10">
+                                <Icon name="Crown" size={48} className="mx-auto mb-2 text-yellow-600" />
                             </div>
-                            <h2 className="text-2xl font-bold mb-2">🎉 初回分析完了！</h2>
-                            <p className="text-sm opacity-90">AIがあなた専用の分析レポートを作成しました</p>
+                            <h2 className="text-2xl font-bold mb-2 text-gray-900 relative z-10">🎉 初回分析完了！</h2>
+                            <p className="text-sm opacity-90 text-gray-700 relative z-10">AIがあなた専用の分析レポートを作成しました</p>
                         </div>
 
                         {/* コンテンツ */}
@@ -2141,14 +2144,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             {/* Premium会員の特典 */}
                             <div className="space-y-3">
                                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                                    <Icon name="Sparkles" size={18} className="text-purple-600" />
+                                    <Icon name="Sparkles" size={18} className="text-amber-600" />
                                     Premium会員になると...
                                 </h3>
                                 <div className="space-y-2">
                                     {[
-                                        { icon: 'BarChart3', text: '毎月100回の分析クレジット', color: 'text-indigo-600' },
+                                        { icon: 'BarChart3', text: '毎月100回の分析クレジット', color: 'text-sky-600' },
                                         { icon: 'BookOpen', text: 'PG BASE 教科書で理論を学習', color: 'text-green-600' },
-                                        { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-purple-600' },
+                                        { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-amber-600' },
                                         { icon: 'BookTemplate', text: '無制限のテンプレート保存', color: 'text-blue-600' },
                                         { icon: 'Users', text: 'COMYで仲間と刺激し合う', color: 'text-pink-600' },
                                         { icon: 'Zap', text: 'ショートカット機能で効率アップ', color: 'text-yellow-600' }
@@ -2162,9 +2165,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </div>
 
                             {/* 価格表示 */}
-                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 text-center">
+                            <div className="bg-[#FFF59A]/10 border-2 border-amber-300 rounded-lg p-4 text-center">
                                 <p className="text-sm text-gray-600 mb-1">月額</p>
-                                <p className="text-4xl font-bold text-purple-600 mb-1">¥740</p>
+                                <p className="text-4xl font-bold text-amber-600 mb-1">¥740</p>
                                 <p className="text-xs text-gray-600">1日あたり約24円</p>
                             </div>
 
@@ -2174,10 +2177,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     setShowUpgradeModal(false);
                                     alert('サブスクリプション画面は準備中です');
                                 }}
-                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg flex items-center justify-center gap-2"
+                                className="w-full bg-[#FFF59A] text-gray-800 font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2 relative overflow-hidden"
                             >
-                                <Icon name="Crown" size={20} />
-                                Premium会員に登録する
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                <Icon name="Crown" size={20} className="relative z-10" />
+                                <span className="relative z-10">Premium会員に登録する</span>
                             </button>
 
                             {/* 後で */}
@@ -2197,12 +2201,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
                     <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl animate-bounce-in">
                         {/* ヘッダー */}
-                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-center relative overflow-hidden">
+                        <div className="bg-[#FFF59A] p-6 text-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                             <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
                             <div className="relative z-10">
-                                <Icon name="Trophy" size={48} className="text-yellow-300 mx-auto mb-3" />
-                                <h2 className="text-2xl font-bold text-white mb-1">レベルアップ！</h2>
-                                <p className="text-purple-100 text-sm">おめでとうございます</p>
+                                <Icon name="Trophy" size={48} className="text-yellow-600 mx-auto mb-3" />
+                                <h2 className="text-2xl font-bold text-gray-900 mb-1">レベルアップ！</h2>
+                                <p className="text-gray-700 text-sm">おめでとうございます</p>
                             </div>
                         </div>
 
@@ -2211,11 +2216,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             {/* 新しいレベル */}
                             <div className="text-center">
                                 <p className="text-sm text-gray-600 mb-2">あなたの新しいレベル</p>
-                                <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-full px-6 py-3">
-                                    <div className="bg-purple-600 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl">
+                                <div className="inline-flex items-center gap-3 bg-[#FFF59A]/10 border-2 border-amber-300 rounded-full px-6 py-3">
+                                    <div className="bg-amber-600 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl">
                                         {levelUpData.level}
                                     </div>
-                                    <span className="text-2xl font-bold text-purple-600">Level {levelUpData.level}</span>
+                                    <span className="text-2xl font-bold text-amber-600">Level {levelUpData.level}</span>
                                 </div>
                             </div>
 
@@ -2235,9 +2240,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                             {/* マイルストーン達成 */}
                             {levelUpData.milestoneReached && levelUpData.milestoneReached.length > 0 && (
-                                <div className="bg-gradient-to-r from-pink-50 to-purple-50 border-2 border-pink-200 rounded-xl p-4">
+                                <div className="bg-[#FFF59A]/10 border-2 border-amber-300 rounded-xl p-4">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <Icon name="Star" size={18} className="text-pink-600" />
+                                        <Icon name="Star" size={18} className="text-amber-600" />
                                         <span className="text-sm font-bold text-gray-700">マイルストーン達成！</span>
                                     </div>
                                     <p className="text-xs text-gray-600">
@@ -2252,9 +2257,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     setShowLevelUpModal(false);
                                     setLevelUpData(null);
                                 }}
-                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3.5 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
+                                className="w-full bg-[#FFF59A] text-gray-800 py-3.5 rounded-lg font-bold hover:opacity-90 transition-all shadow-lg relative overflow-hidden"
                             >
-                                確認しました
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                <span className="relative z-10">確認しました</span>
                             </button>
                         </div>
                     </div>
@@ -2440,7 +2446,7 @@ const LevelBanner = ({ user, setInfoModal }) => {
     }
 
     return (
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-sm">
+        <div className="bg-gradient-to-r from-sky-500 to-blue-600 shadow-sm">
             <div className="flex items-center justify-between px-4 py-2">
                 <div className="flex items-center gap-3">
                     <span className="text-sm font-bold text-white">Lv{expData.level}</span>
@@ -2514,7 +2520,7 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
                 {/* ヘッダー */}
                 <div className="p-4 border-b flex items-center justify-between">
                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <Icon name="Edit3" size={20} className="text-purple-600" />
+                        <Icon name="Edit3" size={20} className="text-amber-600" />
                         指示書を編集
                     </h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -2551,7 +2557,7 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
                         <textarea
                             value={editedMessage}
                             onChange={(e) => setEditedMessage(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none text-sm"
                             rows="3"
                             placeholder="例: 鶏むね肉150g追加"
                         />
@@ -2562,7 +2568,7 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
                 <div className="p-4 border-t flex gap-2">
                     <button
                         onClick={handleSave}
-                        className="flex-1 bg-purple-600 text-white py-2.5 rounded-lg hover:bg-purple-700 transition font-semibold text-sm"
+                        className="flex-1 bg-amber-600 text-white py-2.5 rounded-lg hover:bg-amber-700 transition font-semibold text-sm"
                     >
                         保存
                     </button>

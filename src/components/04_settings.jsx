@@ -294,7 +294,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {/* 使い方 */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="BookOpen" size={18} className="text-purple-600" />
+                            <Icon name="BookOpen" size={18} className="text-blue-600" />
                             使い方
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -358,16 +358,19 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     </details>
 
                     {/* プレミアム */}
-                    <details className="border rounded-lg border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
-                        <summary className="cursor-pointer p-4 hover:bg-purple-100 font-medium flex items-center gap-2">
-                            <Icon name="Crown" size={18} className="text-purple-600" />
+                    <details className="border rounded-lg border-amber-200 bg-[#FFF59A]/10">
+                        <summary className="cursor-pointer p-4 hover:bg-amber-100 font-medium flex items-center gap-2">
+                            <Icon name="Crown" size={18} className="text-amber-600" />
                             プレミアム
                             {(userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE) && (
-                                <span className="ml-2 px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full">Premium会員</span>
+                                <span className="ml-2 px-2 py-0.5 bg-[#FFF59A] text-gray-800 text-xs rounded-full relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                    <span className="relative z-10">Premium会員</span>
+                                </span>
                             )}
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
-                        <div className="p-4 pt-0 border-t border-purple-200">
+                        <div className="p-4 pt-0 border-t border-amber-200">
                             <div className="space-y-4">
                                 {(() => {
                                     const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
@@ -377,18 +380,18 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     if (isPremium) {
                                         // Premium会員
                                         return (
-                                            <div className="bg-white p-4 rounded-lg border border-purple-200">
+                                            <div className="bg-white p-4 rounded-lg border border-amber-200">
                                                 <div className="flex items-center gap-3 mb-3">
-                                                    <Icon name="Crown" size={24} className="text-purple-600" />
+                                                    <Icon name="Crown" size={24} className="text-amber-600" />
                                                     <div>
                                                         <p className="font-bold text-gray-800">Premium会員</p>
                                                         <p className="text-sm text-gray-600">すべての機能が利用可能</p>
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200 mb-3">
+                                                <div className="bg-[#FFF59A]/10 p-4 rounded-lg border border-amber-200 mb-3">
                                                     <p className="text-sm font-medium text-gray-700 mb-1">月額料金</p>
-                                                    <p className="text-3xl font-bold text-purple-600">¥740</p>
+                                                    <p className="text-3xl font-bold text-amber-600">¥740</p>
                                                     <p className="text-xs text-gray-500 mt-1">税込</p>
                                                 </div>
 
@@ -428,10 +431,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
 
                                                 <button
-                                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
+                                                    className="w-full bg-[#FFF59A] text-gray-800 font-bold py-3 rounded-lg hover:opacity-90 relative overflow-hidden"
                                                     onClick={() => alert('サブスクリプション画面は実装予定！')}
                                                 >
-                                                    月額740円でPremium登録
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                                    <span className="relative z-10">月額740円でPremium登録</span>
                                                 </button>
                                             </div>
                                         );
@@ -453,10 +457,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
 
                                                 <button
-                                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
+                                                    className="w-full bg-[#FFF59A] text-gray-800 font-bold py-3 rounded-lg hover:opacity-90 relative overflow-hidden"
                                                     onClick={() => alert('サブスクリプション画面は実装予定！')}
                                                 >
-                                                    月額740円でPremium登録
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                                    <span className="relative z-10">月額740円でPremium登録</span>
                                                 </button>
                                             </div>
                                         );
@@ -469,7 +474,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {/* アカウント */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="UserCircle" size={18} className="text-purple-600" />
+                            <Icon name="UserCircle" size={18} className="text-blue-600" />
                             アカウント
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -496,19 +501,19 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                 {/* 経験値・レベル情報 */}
                                 {expData && (
-                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 p-4 rounded-lg">
+                                    <div className="bg-[#FFF59A]/10 border-2 border-amber-200 p-4 rounded-lg">
                                         <h4 className="text-xs font-bold text-gray-600 mb-3 flex items-center gap-1.5">
-                                            <Icon name="Award" size={14} className="text-purple-600" />
+                                            <Icon name="Award" size={14} className="text-amber-600" />
                                             経験値・レベル
                                         </h4>
                                         <div className="space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-xs text-gray-600">現在のレベル</span>
                                                 <div className="flex items-center gap-2">
-                                                    <div className="bg-purple-600 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm">
+                                                    <div className="bg-amber-600 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm">
                                                         {expData.level}
                                                     </div>
-                                                    <span className="font-bold text-purple-600">Level {expData.level}</span>
+                                                    <span className="font-bold text-amber-600">Level {expData.level}</span>
                                                 </div>
                                             </div>
                                             <div>
@@ -518,12 +523,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
                                                 <div className="relative w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                                                     <div
-                                                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+                                                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full transition-all duration-500"
                                                         style={{ width: `${Math.min(expData.expProgress || 0, 100)}%` }}
                                                     ></div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center justify-between pt-2 border-t border-purple-200">
+                                            <div className="flex items-center justify-between pt-2 border-t border-amber-200">
                                                 <span className="text-xs text-gray-600">累計経験値</span>
                                                 <span className="font-bold text-gray-800">{expData.experience.toLocaleString()} XP</span>
                                             </div>
@@ -550,7 +555,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
                                                 <div className="bg-white p-2 rounded">
                                                     <p className="text-xs text-gray-600 mb-0.5">有料購入</p>
-                                                    <p className="font-bold text-purple-600">{expData.paidCredits}</p>
+                                                    <p className="font-bold text-amber-600">{expData.paidCredits}</p>
                                                 </div>
                                             </div>
                                             <p className="text-xs text-gray-500 pt-2">
@@ -595,8 +600,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 )}
 
                                 {/* パスワードリセット */}
-                                <div className="border-l-4 border-purple-500 pl-4">
-                                    <h4 className="font-bold text-sm text-purple-900 mb-2">パスワード</h4>
+                                <div className="border-l-4 border-blue-500 pl-4">
+                                    <h4 className="font-bold text-sm text-blue-900 mb-2">パスワード</h4>
                                     <button
                                         onClick={async () => {
                                             const email = userProfile.email;
@@ -618,8 +623,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 </div>
 
                                 {/* 2段階認証 */}
-                                <div className="border-l-4 border-purple-500 pl-4">
-                                    <h4 className="font-bold text-sm text-purple-900 mb-2 flex items-center gap-2">
+                                <div className="border-l-4 border-blue-500 pl-4">
+                                    <h4 className="font-bold text-sm text-blue-900 mb-2 flex items-center gap-2">
                                         <Icon name="Shield" size={16} />
                                         2段階認証（2FA）
                                     </h4>
@@ -767,7 +772,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {/* プロフィール */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="User" size={18} className="text-purple-600" />
+                            <Icon name="User" size={18} className="text-blue-600" />
                             プロフィール
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -839,8 +844,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                             {/* PFCバランス */}
                                             <div>
-                                                <h5 className="font-bold text-purple-700 mb-2 flex items-center gap-1">
-                                                    <span className="bg-purple-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">4</span>
+                                                <h5 className="font-bold text-blue-700 mb-2 flex items-center gap-1">
+                                                    <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">4</span>
                                                     PFCバランス（タンパク質・脂質・炭水化物）
                                                 </h5>
                                                 <div className="pl-6 space-y-2 text-xs">
@@ -976,12 +981,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             </div>
 
                                             {profile.idealLBM && (
-                                                <div className="bg-purple-50 p-3 rounded-lg border border-purple-300">
-                                                    <p className="text-xs font-medium text-purple-700">理想のLBMを自動計算！</p>
-                                                    <p className="text-lg font-bold text-purple-900 mt-1">
+                                                <div className="bg-blue-50 p-3 rounded-lg border border-blue-300">
+                                                    <p className="text-xs font-medium text-blue-700">理想のLBMを自動計算！</p>
+                                                    <p className="text-lg font-bold text-blue-900 mt-1">
                                                         {profile.idealLBM.toFixed(1)} kg
                                                     </p>
-                                                    <p className="text-xs text-purple-600 mt-1">
+                                                    <p className="text-xs text-blue-600 mt-1">
                                                         現在より {(profile.idealLBM - (profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15))).toFixed(1)} kg
                                                     </p>
                                                 </div>
@@ -1202,8 +1207,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     </div>
 
                                     {/* STEP 4: PFCバランス設定*/}
-                                    <div className="border-l-4 border-purple-500 pl-4">
-                                        <h4 className="text-xs font-bold text-purple-700 mb-2">STEP 4: PFCバランス設定</h4>
+                                    <div className="border-l-4 border-blue-500 pl-4">
+                                        <h4 className="text-xs font-bold text-blue-700 mb-2">STEP 4: PFCバランス設定</h4>
 
                                         {/* スタイル選択*/}
                                         <div className="mb-3">
@@ -1228,8 +1233,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     onClick={() => setProfile({...profile, style: 'ボディメイカー'})}
                                                     className={`p-4 rounded-lg border-2 transition ${
                                                         profile.style === 'ボディメイカー'
-                                                            ? 'border-purple-500 bg-purple-50 shadow-md'
-                                                            : 'border-gray-200 bg-white hover:border-purple-300'
+                                                            ? 'border-amber-500 bg-amber-50 shadow-md'
+                                                            : 'border-gray-200 bg-white hover:border-amber-300'
                                                     }`}
                                                 >
                                                     <div className="font-bold text-base mb-1">ボディメイカー</div>
@@ -1409,7 +1414,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {unlockedFeatures.includes('shortcut') && (
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Zap" size={18} className="text-purple-600" />
+                            <Icon name="Zap" size={18} className="text-blue-600" />
                             ショートカット
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -1434,7 +1439,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         }}
                                         className="w-4 h-4"
                                     />
-                                    <Icon name="ChevronRight" size={16} className="text-purple-600" />
+                                    <Icon name="ChevronRight" size={16} className="text-blue-600" />
                                     <span className="text-sm font-medium">左側を表示</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
@@ -1453,7 +1458,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         }}
                                         className="w-4 h-4"
                                     />
-                                    <Icon name="ChevronLeft" size={16} className="text-purple-600" />
+                                    <Icon name="ChevronLeft" size={16} className="text-blue-600" />
                                     <span className="text-sm font-medium">右側を表示</span>
                                 </label>
                             </div>
@@ -1461,7 +1466,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             {/* 左側ショートカット */}
                             <div className="mb-6">
                                 <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                    <Icon name="ChevronRight" size={16} className="text-purple-600" />
+                                    <Icon name="ChevronRight" size={16} className="text-blue-600" />
                                     左側
                                 </h4>
                                 <div className="grid grid-cols-2 gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
@@ -1511,9 +1516,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
                                             { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
                                             { action: 'open_analysis', label: '分析', icon: 'PieChart', color: 'text-indigo-600' },
-                                            { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
+                                            { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-blue-600' },
                                             { action: 'open_pgbase', label: 'PGBASE', icon: 'BookOpen', color: 'text-cyan-600' },
-                                            { action: 'open_community', label: 'COMY', icon: 'Users', color: 'text-pink-600' },
+                                            { action: 'open_community', label: 'COMY', icon: 'Users', color: 'text-blue-600' },
                                             { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
                                         ];
 
@@ -1639,7 +1644,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             {/* 右側ショートカット */}
                             <div className="mb-4">
                                 <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                    <Icon name="ChevronLeft" size={16} className="text-purple-600" />
+                                    <Icon name="ChevronLeft" size={16} className="text-blue-600" />
                                     右側
                                 </h4>
                                 <div className="grid grid-cols-2 gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
@@ -1689,9 +1694,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             { action: 'open_condition', label: 'コンディション', icon: 'HeartPulse', color: 'text-red-600' },
                                             { action: 'open_idea', label: '閃き', icon: 'Lightbulb', color: 'text-yellow-500' },
                                             { action: 'open_analysis', label: '分析', icon: 'PieChart', color: 'text-indigo-600' },
-                                            { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-purple-600' },
+                                            { action: 'open_history', label: '履歴', icon: 'TrendingUp', color: 'text-blue-600' },
                                             { action: 'open_pgbase', label: 'PGBASE', icon: 'BookOpen', color: 'text-cyan-600' },
-                                            { action: 'open_community', label: 'COMY', icon: 'Users', color: 'text-pink-600' },
+                                            { action: 'open_community', label: 'COMY', icon: 'Users', color: 'text-blue-600' },
                                             { action: 'open_settings', label: '設定', icon: 'Settings', color: 'text-gray-600' }
                                         ];
 
@@ -1821,7 +1826,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {unlockedFeatures.includes('template') && (
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="BookTemplate" size={18} className="text-purple-600" />
+                            <Icon name="BookTemplate" size={18} className="text-blue-600" />
                             テンプレート                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
@@ -2240,16 +2245,16 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {unlockedFeatures.includes('routine') && (
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Repeat" size={18} className="text-purple-600" />
+                            <Icon name="Repeat" size={18} className="text-blue-600" />
                             ルーティン
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
                             {/* ルーティン作成 */}
                             <div className="space-y-4">
-                            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                                <h4 className="font-bold text-purple-900 mb-2">ルーティン管理</h4>
-                                <p className="text-sm text-purple-700">
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <h4 className="font-bold text-blue-900 mb-2">ルーティン管理</h4>
+                                <p className="text-sm text-blue-700">
                                     Day1~7のデフォルトルーティンと、最大5つまで追加可能な追加枠を設定できます。                                </p>
                             </div>
 
@@ -2581,7 +2586,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         {localRoutines.length < 12 && localRoutines.length >= 7 && (
                                             <button
                                                 onClick={addRoutine}
-                                                className="w-full py-3 border-2 border-dashed border-purple-300 rounded-lg text-purple-600 hover:bg-purple-50 transition font-medium"
+                                                className="w-full py-3 border-2 border-dashed border-blue-300 rounded-lg text-blue-600 hover:bg-blue-50 transition font-medium"
                                             >
                                                 <Icon name="Plus" size={18} className="inline mr-2" />
                                                 追加枠を追加 ({localRoutines.length - 7}/5)
@@ -2607,7 +2612,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         localStorage.setItem(STORAGE_KEYS.ROUTINE_ACTIVE, 'true');
                                                         window.location.reload();
                                                     }}
-                                                    className="px-6 py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition"
+                                                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition"
                                                 >
                                                     デフォルトルーティンで始める                                                </button>
                                             </div>
@@ -3512,8 +3517,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                         {/* GI値・DIAAS */}
                                                         {(selectedItemDetail.gi || selectedItemDetail.diaas) && (
-                                                            <div className="bg-purple-50 p-4 rounded-lg">
-                                                                <h4 className="font-bold mb-3 text-purple-800">栄養指標</h4>
+                                                            <div className="bg-blue-50 p-4 rounded-lg">
+                                                                <h4 className="font-bold mb-3 text-blue-800">栄養指標</h4>
                                                                 <div className="grid grid-cols-2 gap-3 text-sm">
                                                                     {selectedItemDetail.gi && (
                                                                         <div>
@@ -3970,13 +3975,13 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             </div>
 
                             {/* LocalStorage管理 */}
-                            <div className="border rounded-lg p-6 bg-purple-50">
+                            <div className="border rounded-lg p-6 bg-gray-50">
                                 <h4 className="font-bold mb-4 flex items-center gap-2">
-                                    <Icon name="Database" size={18} className="text-purple-600" />
+                                    <Icon name="Database" size={18} className="text-gray-600" />
                                     ストレージ管理（LocalStorage）
                                 </h4>
                                 <div className="space-y-3">
-                                    <div className="bg-white p-4 rounded-lg border border-purple-200 max-h-96 overflow-y-auto">
+                                    <div className="bg-white p-4 rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
                                         <div className="space-y-2">
                                             {(() => {
                                                 const keys = Object.keys(localStorage);
@@ -3998,7 +4003,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     }
                                                     return (
                                                         <details key={key} className="border rounded p-2 bg-gray-50">
-                                                            <summary className="cursor-pointer font-mono text-xs font-semibold text-purple-700 hover:text-purple-900 flex items-center justify-between">
+                                                            <summary className="cursor-pointer font-mono text-xs font-semibold text-gray-700 hover:text-gray-900 flex items-center justify-between">
                                                                 <span className="truncate">{key}</span>
                                                                 <button
                                                                     onClick={(e) => {
@@ -4283,7 +4288,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         {infoModal.show && (
             <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
                 <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                    <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center z-10">
+                    <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center z-10">
                         <h3 className="font-bold text-lg">{infoModal.title}</h3>
                         <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
                             <Icon name="X" size={20} />

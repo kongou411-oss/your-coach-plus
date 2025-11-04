@@ -57,10 +57,10 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
             'open_meal_photo': 'text-green-600',
             'open_workout': 'text-orange-600',
             'open_idea': 'text-yellow-500',
-            'open_analysis': 'text-indigo-600',
-            'open_history': 'text-purple-600',
+            'open_analysis': 'text-sky-600',
+            'open_history': 'text-sky-600',
             'open_pgbase': 'text-cyan-600',
-            'open_community': 'text-pink-600',
+            'open_community': 'text-sky-600',
             'open_settings': 'text-gray-600'
         };
         return colorMap[action] || 'text-gray-700';

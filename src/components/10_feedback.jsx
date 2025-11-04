@@ -27,12 +27,12 @@ const FeedbackPopup = ({ message, type, onClose, autoCloseMs = 3000 }) => {
             iconColor: 'text-white'
         },
         insight: {
-            bg: 'bg-gradient-to-r from-blue-500 to-indigo-500',
+            bg: 'bg-gradient-to-r from-blue-500 to-sky-500',
             icon: 'Lightbulb',
             iconColor: 'text-white'
         },
         milestone: {
-            bg: 'bg-gradient-to-r from-purple-500 to-pink-500',
+            bg: 'bg-gradient-to-r from-sky-500 to-blue-500',
             icon: 'Trophy',
             iconColor: 'text-white'
         }

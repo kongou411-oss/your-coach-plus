@@ -126,7 +126,7 @@ const ThemeSpaces = {
             name: '女性専用スペース',
             description: '女性特有の悩みや目標について話せる場所',
             icon: '👩',
-            color: 'pink',
+            color: 'sky',
             memberCount: 0
         }
     ],
@@ -201,7 +201,7 @@ const ThemeSpaceSelector = ({ userId, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                <div className="sticky top-0 bg-gradient-to-r from-sky-600 to-sky-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
                     <h3 className="text-lg font-bold flex items-center gap-2">
                         <Icon name="Users" size={20} />
                         テーマ別スペース
@@ -408,7 +408,7 @@ const MentorApplicationForm = ({ userId, userProfile, userStats, onClose }) => {
                                             }}
                                             className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition ${
                                                 expertise.includes(option)
-                                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                                                    ? 'border-sky-500 bg-sky-50 text-sky-700'
                                                     : 'border-gray-200 hover:border-gray-300'
                                             }`}
                                         >

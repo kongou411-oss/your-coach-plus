@@ -385,7 +385,7 @@ ${context}
                                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium text-sm transition ${
                                     selectedCategory === cat.value
                                         ? cat.color === 'purple' ? 'bg-cyan-600 text-white' :
-                                          cat.color === 'pink' ? 'bg-pink-600 text-white' :
+                                          cat.color === 'pink' ? 'bg-sky-600 text-white' :
                                           cat.color === 'green' ? 'bg-green-600 text-white' :
                                           'bg-orange-600 text-white'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -426,7 +426,7 @@ ${context}
                                     <div className="flex-1">
                                         <h3 className="font-bold text-gray-800 mb-1">{module.title}</h3>
                                         <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                            module.category === '心理学' ? 'bg-pink-100 text-pink-700' :
+                                            module.category === '心理学' ? 'bg-sky-100 text-sky-700' :
                                             module.category === '運動科学' ? 'bg-orange-100 text-orange-700' :
                                             'bg-green-100 text-green-700'
                                         }`}>
@@ -1552,8 +1552,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                 onClick={() => setProgressType('after')}
                                 className={`p-3 border-2 rounded-lg transition ${
                                     progressType === 'after'
-                                        ? 'border-purple-500 bg-purple-50'
-                                        : 'border-gray-200 hover:border-purple-300'
+                                        ? 'border-sky-500 bg-sky-50'
+                                        : 'border-gray-200 hover:border-sky-300'
                                 }`}
                             >
                                 <p className="font-semibold text-gray-800">アフター</p>
@@ -1759,8 +1759,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             onClick={() => setPostCategory('body')}
                             className={`p-4 rounded-lg border-2 transition-all ${
                                 postCategory === 'body'
-                                    ? 'border-indigo-600 bg-indigo-50'
-                                    : 'border-gray-200 bg-white hover:border-indigo-300'
+                                    ? 'border-sky-600 bg-sky-50'
+                                    : 'border-gray-200 bg-white hover:border-sky-300'
                             }`}
                         >
                             <div className="text-2xl mb-2">💪</div>
@@ -1823,7 +1823,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             <div className="text-gray-700 font-semibold">
                                 ✓ Your Coach+ データ連携（必須）
                             </div>
-                            <div className="text-indigo-700 mt-2 font-semibold">
+                            <div className="text-sky-700 mt-2 font-semibold">
                                 ℹ️ 投稿は運営の承認後に公開されます
                             </div>
                         </div>
@@ -1910,7 +1910,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                 {/* アフター写真 */}
                                 <div>
                                     <p className="text-xs text-gray-600 mb-2 text-center">アフター</p>
-                                    <div className="border-2 border-dashed border-indigo-300 rounded-lg p-2 text-center">
+                                    <div className="border-2 border-dashed border-sky-300 rounded-lg p-2 text-center">
                                         {afterPhoto ? (
                                             <div className="relative">
                                                 <img src={afterPhoto} alt="After" className="max-h-32 mx-auto rounded-lg" />
@@ -1936,7 +1936,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                                     disabled={!debugMode && !canPostBody}
                                                 />
                                                 <div className="py-6">
-                                                    <Icon name="Camera" size={32} className="mx-auto text-indigo-400 mb-1" />
+                                                    <Icon name="Camera" size={32} className="mx-auto text-sky-400 mb-1" />
                                                     <p className="text-xs text-gray-600">
                                                         {debugMode ? 'ファイル選択' : 'カメラ起動'}
                                                     </p>
@@ -1977,7 +1977,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                         onClick={() => setDataSelectionType('single')}
                                         className={`py-2 px-3 rounded-lg text-xs font-medium transition ${
                                             dataSelectionType === 'single'
-                                                ? 'bg-indigo-600 text-white'
+                                                ? 'bg-sky-600 text-white'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                     >
@@ -1988,7 +1988,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                         onClick={() => setDataSelectionType('average')}
                                         className={`py-2 px-3 rounded-lg text-xs font-medium transition ${
                                             dataSelectionType === 'average'
-                                                ? 'bg-indigo-600 text-white'
+                                                ? 'bg-sky-600 text-white'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                     >
@@ -2049,8 +2049,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                 if (!dataToShow) return null;
 
                                 return (
-                                    <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                                        <p className="text-xs font-semibold text-indigo-700 mb-2">{titleText}</p>
+                                    <div className="p-4 bg-sky-50 border border-sky-200 rounded-lg">
+                                        <p className="text-xs font-semibold text-sky-700 mb-2">{titleText}</p>
                                         <div className="space-y-1 text-xs text-gray-700">
                                             <div>• カロリー: {dataToShow.calories}kcal</div>
                                             <div>• タンパク質: {dataToShow.protein}g</div>
@@ -2060,7 +2060,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                             {dataToShow.weight && <div>• 体重: {dataToShow.weight}kg</div>}
                                             {dataToShow.lbm && <div>• 除脂肪体重: {dataToShow.lbm}kg</div>}
                                             {lbmChange && (
-                                                <div className="font-semibold text-indigo-700 mt-2">
+                                                <div className="font-semibold text-sky-700 mt-2">
                                                     • 過去3ヶ月のLBM変化: {lbmChange > 0 ? '+' : ''}{lbmChange}kg
                                                 </div>
                                             )}
@@ -2184,7 +2184,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                         isSubmitting
                             ? 'bg-gray-400 text-white cursor-not-allowed'
                             : debugMode || (postCategory === 'body' && canPostBody) || postCategory === 'mental'
-                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            ? 'bg-sky-600 text-white hover:bg-sky-700'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                 >
@@ -2315,7 +2315,7 @@ const AdminPanel = ({ onClose }) => {
                                     </div>
                                     <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                                         post.category === 'body'
-                                            ? 'bg-indigo-100 text-indigo-700'
+                                            ? 'bg-sky-100 text-sky-700'
                                             : 'bg-teal-100 text-teal-700'
                                     }`}>
                                         {post.category === 'body' ? '💪 ボディメイク' : '🧠 メンタル'}
@@ -2331,7 +2331,7 @@ const AdminPanel = ({ onClose }) => {
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-600 text-center mb-2 font-semibold">After</p>
-                                            <img src={post.afterPhoto} alt="After" className="w-full rounded-lg border-2 border-indigo-300" />
+                                            <img src={post.afterPhoto} alt="After" className="w-full rounded-lg border-2 border-sky-300" />
                                         </div>
                                     </div>
                                 )}
@@ -2346,8 +2346,8 @@ const AdminPanel = ({ onClose }) => {
 
                                 {/* データ連携情報 */}
                                 {post.attachedData && (
-                                    <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg mb-4">
-                                        <p className="text-xs font-semibold text-indigo-700 mb-3 flex items-center gap-1">
+                                    <div className="p-4 bg-sky-50 border border-sky-200 rounded-lg mb-4">
+                                        <p className="text-xs font-semibold text-sky-700 mb-3 flex items-center gap-1">
                                             <Icon name="Database" size={14} />
                                             データ連携情報
                                         </p>
@@ -2359,7 +2359,7 @@ const AdminPanel = ({ onClose }) => {
                                             <div>• 体重: {post.attachedData.weight}kg</div>
                                             <div>• LBM: {post.attachedData.lbm}kg</div>
                                             {post.attachedData.lbmChange && (
-                                                <div className="col-span-3 font-semibold text-indigo-700">
+                                                <div className="col-span-3 font-semibold text-sky-700">
                                                     • LBM変化: {post.attachedData.lbmChange > 0 ? '+' : ''}{post.attachedData.lbmChange}kg
                                                 </div>
                                             )}

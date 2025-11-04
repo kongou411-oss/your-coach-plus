@@ -75,20 +75,21 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
                 {/* ヘッダー */}
-                <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 z-10">
-                    <div className="flex items-center justify-between">
+                <div className="sticky top-0 bg-[#FFF59A] text-gray-800 p-6 z-10 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                    <div className="flex items-center justify-between relative z-10">
                         <div className="flex items-center gap-3">
                             <Icon name="Crown" size={32} />
                             <h2 className="text-2xl font-bold">Premium会員登録</h2>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-white/20 rounded-full transition"
+                            className="p-2 hover:bg-gray-800/20 rounded-full transition"
                         >
                             <Icon name="X" size={24} />
                         </button>
                     </div>
-                    <p className="text-sm opacity-90 mt-2">最高のボディメイク体験を手に入れよう</p>
+                    <p className="text-sm opacity-90 mt-2 relative z-10">最高のボディメイク体験を手に入れよう</p>
                 </div>
 
                 {/* タブ切り替え */}
@@ -97,7 +98,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                         onClick={() => setSelectedPlan('premium')}
                         className={`flex-1 py-3 font-bold transition ${
                             selectedPlan === 'premium'
-                                ? 'text-purple-600 border-b-2 border-purple-600'
+                                ? 'text-amber-600 border-b-2 border-amber-600'
                                 : 'text-gray-500 hover:text-gray-700'
                         }`}
                     >
@@ -107,7 +108,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                         onClick={() => setSelectedPlan('credit_pack')}
                         className={`flex-1 py-3 font-bold transition ${
                             selectedPlan === 'credit_pack'
-                                ? 'text-purple-600 border-b-2 border-purple-600'
+                                ? 'text-amber-600 border-b-2 border-amber-600'
                                 : 'text-gray-500 hover:text-gray-700'
                         }`}
                     >
@@ -120,10 +121,11 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                     {selectedPlan === 'premium' ? (
                         <>
                             {/* Premium会員プラン */}
-                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-2xl p-6">
+                            <div className="bg-[#FFF59A]/10 border-2 border-amber-300 rounded-2xl p-6">
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="bg-purple-600 text-white rounded-full p-3">
-                                        <Icon name="Crown" size={24} />
+                                    <div className="bg-[#FFF59A] text-gray-800 rounded-full p-3 relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                        <Icon name="Crown" size={24} className="relative z-10" />
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold text-gray-800">Premium会員</h3>
@@ -134,7 +136,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                 {/* 価格 */}
                                 <div className="text-center my-6">
                                     <div className="flex items-baseline justify-center gap-2">
-                                        <span className="text-5xl font-bold text-purple-600">¥740</span>
+                                        <span className="text-5xl font-bold text-amber-600">¥740</span>
                                         <span className="text-gray-600">/月</span>
                                     </div>
                                     <p className="text-sm text-gray-600 mt-2">1日あたり約24円</p>
@@ -164,17 +166,18 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                 <button
                                     onClick={handleSubscribe}
                                     disabled={loading}
-                                    className="w-full mt-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="w-full mt-6 bg-[#FFF59A] text-gray-800 font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 relative overflow-hidden"
                                 >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                                     {loading ? (
                                         <>
-                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                            処理中...
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-800 relative z-10"></div>
+                                            <span className="relative z-10">処理中...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <Icon name="Crown" size={20} />
-                                            Premium会員に登録する
+                                            <Icon name="Crown" size={20} className="relative z-10" />
+                                            <span className="relative z-10">Premium会員に登録する</span>
                                         </>
                                     )}
                                 </button>
@@ -218,8 +221,8 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                             onClick={() => setSelectedCreditPack(pack)}
                                             className={`relative border-2 rounded-xl p-5 transition ${
                                                 selectedCreditPack?.credits === pack.credits
-                                                    ? 'border-purple-600 bg-purple-50'
-                                                    : 'border-gray-200 hover:border-purple-300 bg-white'
+                                                    ? 'border-amber-600 bg-amber-50'
+                                                    : 'border-gray-200 hover:border-amber-300 bg-white'
                                             }`}
                                         >
                                             {pack.badge && (
@@ -238,11 +241,11 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                                     )}
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-3xl font-bold text-purple-600">¥{pack.price}</div>
+                                                    <div className="text-3xl font-bold text-amber-600">¥{pack.price}</div>
                                                 </div>
                                             </div>
                                             {selectedCreditPack?.credits === pack.credits && (
-                                                <div className="absolute inset-0 border-2 border-purple-600 rounded-xl pointer-events-none"></div>
+                                                <div className="absolute inset-0 border-2 border-amber-600 rounded-xl pointer-events-none"></div>
                                             )}
                                         </button>
                                     ))}
@@ -252,25 +255,26 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                 <button
                                     onClick={handlePurchaseCredits}
                                     disabled={loading || !selectedCreditPack}
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="w-full bg-[#FFF59A] text-gray-800 font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden"
                                 >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                                     {loading ? (
                                         <>
-                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                            処理中...
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-800 relative z-10"></div>
+                                            <span className="relative z-10">処理中...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <Icon name="ShoppingCart" size={20} />
-                                            {selectedCreditPack ? `${selectedCreditPack.name}を購入` : 'パックを選択してください'}
+                                            <Icon name="ShoppingCart" size={20} className="relative z-10" />
+                                            <span className="relative z-10">{selectedCreditPack ? `${selectedCreditPack.name}を購入` : 'パックを選択してください'}</span>
                                         </>
                                     )}
                                 </button>
 
                                 {/* 比較 */}
-                                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                                     <h4 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
-                                        <Icon name="Lightbulb" size={18} className="text-purple-600" />
+                                        <Icon name="Lightbulb" size={18} className="text-amber-600" />
                                         Premium会員がお得！
                                     </h4>
                                     <p className="text-sm text-gray-700">

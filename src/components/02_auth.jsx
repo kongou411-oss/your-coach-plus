@@ -263,7 +263,7 @@ const LoginScreen = () => {
     // パスワードリセット画面
     if (showForgotPassword) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 p-4">
                 <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-bold text-gray-800 mb-2">パスワードリセット</h1>
@@ -283,7 +283,7 @@ const LoginScreen = () => {
                         </div>
                         <button
                             type="submit"
-                            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                            className="w-full bg-sky-600 text-white font-bold py-3 rounded-lg hover:bg-sky-700 transition"
                         >
                             リセットメールを送信
                         </button>
@@ -292,7 +292,7 @@ const LoginScreen = () => {
                     <div className="mt-6 text-center">
                         <button
                             onClick={() => setShowForgotPassword(false)}
-                            className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                            className="text-sky-600 hover:text-sky-700 text-sm font-medium"
                         >
                             ログイン画面に戻る
                         </button>
@@ -305,7 +305,7 @@ const LoginScreen = () => {
     // MFA認証画面
     if (showMfaInput) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 p-4">
                 <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
                     <div className="text-center mb-8">
                         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -332,7 +332,7 @@ const LoginScreen = () => {
 
                         <button
                             onClick={handleMfaConfirm}
-                            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                            className="w-full bg-sky-600 text-white font-bold py-3 rounded-lg hover:bg-sky-700 transition"
                         >
                             認証
                         </button>
@@ -356,7 +356,7 @@ const LoginScreen = () => {
 
     // ログイン/サインアップ画面
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">Your Coach+</h1>
@@ -438,7 +438,7 @@ const LoginScreen = () => {
                     )}
                     <button
                         type="submit"
-                        className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                        className="w-full bg-sky-600 text-white font-bold py-3 rounded-lg hover:bg-sky-700 transition"
                     >
                         {isSignUp ? 'アカウント作成' : 'ログイン'}
                     </button>
@@ -469,7 +469,7 @@ const LoginScreen = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowTermsModal(true)}
-                                    className="text-indigo-600 hover:underline font-medium"
+                                    className="text-sky-600 hover:underline font-medium"
                                 >
                                     利用規約
                                 </button>
@@ -477,7 +477,7 @@ const LoginScreen = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowPrivacyModal(true)}
-                                    className="text-indigo-600 hover:underline font-medium"
+                                    className="text-sky-600 hover:underline font-medium"
                                 >
                                     プライバシーポリシー
                                 </button>
@@ -500,7 +500,7 @@ const LoginScreen = () => {
                 <div className="mt-6 text-center">
                     <button
                         onClick={() => setIsSignUp(!isSignUp)}
-                        className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                        className="text-sky-600 hover:text-sky-700 text-sm font-medium"
                     >
                         {isSignUp ? 'すでにアカウントをお持ちの方' : 'アカウントをお持ちでない方'}
                     </button>
@@ -766,7 +766,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl slide-up max-h-[90vh] overflow-y-auto">
                 <h2 className="text-2xl font-bold mb-2">
                     {step === 0 && '基本情報'}
@@ -871,8 +871,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     onClick={() => setProfile({...profile, style: 'ボディメイカー'})}
                                     className={`p-4 rounded-lg border-2 transition ${
                                         profile.style === 'ボディメイカー'
-                                            ? 'border-purple-500 bg-purple-50 shadow-md'
-                                            : 'border-gray-200 bg-white hover:border-purple-300'
+                                            ? 'border-sky-500 bg-sky-50 shadow-md'
+                                            : 'border-gray-200 bg-white hover:border-sky-300'
                                     }`}
                                 >
                                     <div className="font-bold text-base mb-1">ボディメイカー</div>
@@ -887,7 +887,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 {step === 1 && (
                     <div className="space-y-6">
                         {/* 教育セクション */}
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                        <div className="bg-gradient-to-r from-blue-50 to-sky-50 p-4 rounded-lg border border-blue-200">
                             <p className="text-sm text-gray-700">
                                 まずは、あなたがこのアプリを使う目的を明確にしましょう。<br />
                                 目的に応じて、最適なカロリーとPFCバランスを自動計算します。
@@ -940,11 +940,11 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 {step === 2 && (
                     <div className="space-y-6">
                         {/* 教育セクション */}
-                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
+                        <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border border-sky-200">
                             <div className="flex items-start gap-2">
-                                <Icon name="Lightbulb" size={18} className="text-purple-600 flex-shrink-0 mt-0.5" />
+                                <Icon name="Lightbulb" size={18} className="text-sky-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-purple-900 mb-1">LBMとは？</p>
+                                    <p className="text-sm font-medium text-sky-900 mb-1">LBMとは？</p>
                                     <p className="text-sm text-gray-700">
                                         筋肉や骨など、脂肪以外の体重です。健康的な体づくりの鍵は、このLBMを増やすこと（または維持すること）です。
                                     </p>
@@ -952,12 +952,12 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             </div>
                         </div>
 
-                        <div className="bg-purple-50 p-4 rounded-lg border-2 border-purple-300">
-                            <h3 className="text-sm font-bold text-purple-800 mb-3">理想の体型目標</h3>
+                        <div className="bg-sky-50 p-4 rounded-lg border-2 border-sky-300">
+                            <h3 className="text-sm font-bold text-sky-800 mb-3">理想の体型目標</h3>
 
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 text-purple-700">理想の体重 (kg)</label>
+                                    <label className="block text-sm font-medium mb-1 text-sky-700">理想の体重 (kg)</label>
                                     <input
                                         type="number"
                                         step="0.1"
@@ -972,12 +972,12 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                                     : null
                                             });
                                         }}
-                                        className="w-full px-3 py-2 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border-2 border-sky-200 rounded-lg focus:border-sky-500 focus:outline-none"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 text-purple-700">理想の体脂肪率 (%)</label>
+                                    <label className="block text-sm font-medium mb-1 text-sky-700">理想の体脂肪率 (%)</label>
                                     <input
                                         type="number"
                                         step="0.1"
@@ -992,14 +992,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                                     : null
                                             });
                                         }}
-                                        className="w-full px-3 py-2 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border-2 border-sky-200 rounded-lg focus:border-sky-500 focus:outline-none"
                                     />
                                 </div>
 
                                 {profile.idealLBM && (
-                                    <div className="bg-white p-3 rounded-lg border border-purple-300">
-                                        <p className="text-xs font-medium text-purple-700">理想のLBM（自動計算）</p>
-                                        <p className="text-xl font-bold text-purple-900 mt-1">
+                                    <div className="bg-white p-3 rounded-lg border border-sky-300">
+                                        <p className="text-xs font-medium text-sky-700">理想のLBM（自動計算）</p>
+                                        <p className="text-xl font-bold text-sky-900 mt-1">
                                             {profile.idealLBM.toFixed(1)} kg
                                         </p>
                                     </div>
@@ -1114,11 +1114,11 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 {step === 4 && (
                     <div className="space-y-6">
                         {/* 教育セクション: PFCバランス */}
-                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-200">
+                        <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border border-sky-200">
                             <div className="flex items-start gap-2">
-                                <Icon name="Lightbulb" size={18} className="text-indigo-600 flex-shrink-0 mt-0.5" />
+                                <Icon name="Lightbulb" size={18} className="text-sky-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-indigo-900 mb-1">PFCバランスとは？</p>
+                                    <p className="text-sm font-medium text-sky-900 mb-1">PFCバランスとは？</p>
                                     <p className="text-sm text-gray-700 mb-2">
                                         P: Protein（タンパク質）、F: Fat（脂質）、C: Carbohydrate（炭水化物）の3大栄養素のバランスです。
                                     </p>
@@ -1132,7 +1132,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         </div>
 
                         {/* カスタム活動レベル */}
-                        <div className="border-l-4 border-indigo-500 pl-4">
+                        <div className="border-l-4 border-sky-500 pl-4">
                             <label className="block text-sm font-medium mb-2">活動レベル</label>
                             {!profile.customActivityMultiplier && (
                                 <select
@@ -1149,8 +1149,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 </select>
                             )}
                             {profile.customActivityMultiplier && (
-                                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
-                                    <p className="text-sm text-indigo-800">
+                                <div className="p-3 bg-sky-50 border border-sky-200 rounded-lg">
+                                    <p className="text-sm text-sky-800">
                                         カスタム係数: <span className="font-bold">{profile.customActivityMultiplier}x</span>
                                     </p>
                                 </div>
@@ -1181,7 +1181,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                                     alert('1.0から2.5の間の数値を入力してください');
                                                 }
                                             }}
-                                            className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                                            className="flex-1 px-3 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700"
                                         >
                                             設定
                                         </button>
@@ -1210,7 +1210,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         setShowCustomMultiplierInput(!showCustomMultiplierInput);
                                     }
                                 }}
-                                className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 underline"
+                                className="mt-2 text-sm text-sky-600 hover:text-sky-800 underline"
                             >
                                 {profile.customActivityMultiplier ? '5段階選択に戻す' : showCustomMultiplierInput ? '入力を閉じる' : 'または、活動レベル係数を直接入力する'}
                             </button>
@@ -1228,7 +1228,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     onClick={() => {
                                         alert(`カロリー調整値について\n\n目的に応じたデフォルト値が自動的に設定されます：\n• 減量: -300kcal\n• 増量: +300kcal\n• メンテナンス: 0kcal\n• リコンプ: 0kcal\n\n微調整したい場合のみ、この欄に数値を入力してください。\nわからない場合は空欄のままでOKです。`);
                                     }}
-                                    className="text-indigo-600 hover:text-indigo-800"
+                                    className="text-sky-600 hover:text-sky-800"
                                 >
                                     <Icon name="Info" size={18} />
                                 </button>
@@ -1258,7 +1258,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         </div>
 
                         {/* PFCカスタム比率 */}
-                        <div className="border-l-4 border-purple-500 pl-4">
+                        <div className="border-l-4 border-sky-500 pl-4">
                             <label className="block text-sm font-medium mb-2 flex items-center justify-between">
                                 <div className="flex flex-col">
                                     <span>PFCバランスのカスタマイズ（任意）</span>
@@ -1400,14 +1400,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         </div>
 
                         {/* 最終目標カロリーとPFC表示 */}
-                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border-2 border-indigo-200">
-                            <h3 className="text-sm font-medium text-indigo-800 mb-3 flex items-center gap-2">
+                        <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border-2 border-sky-200">
+                            <h3 className="text-sm font-medium text-sky-800 mb-3 flex items-center gap-2">
                                 <Icon name="Target" size={16} />
                                 あなたの目標摂取量
                             </h3>
-                            <div className="bg-white p-3 rounded-lg border border-indigo-200 mb-3">
+                            <div className="bg-white p-3 rounded-lg border border-sky-200 mb-3">
                                 <p className="text-xs text-gray-600 mb-1">カロリー</p>
-                                <p className="text-3xl font-bold text-indigo-900">
+                                <p className="text-3xl font-bold text-sky-900">
                                     {(() => {
                                         const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                         const fatMass = profile.weight - lbm;
@@ -1423,9 +1423,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 </p>
                             </div>
                             <div className="grid grid-cols-3 gap-2 mb-3">
-                                <div className="bg-white p-2 rounded-lg border border-indigo-200">
+                                <div className="bg-white p-2 rounded-lg border border-sky-200">
                                     <p className="text-xs text-gray-600">タンパク質</p>
-                                    <p className="text-lg font-bold text-indigo-900">
+                                    <p className="text-lg font-bold text-sky-900">
                                         {(() => {
                                             const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                             // カスタム比率が設定されている場合はそれを使用、なければデフォルト（固定値）
@@ -1444,9 +1444,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         })()}
                                     </p>
                                 </div>
-                                <div className="bg-white p-2 rounded-lg border border-indigo-200">
+                                <div className="bg-white p-2 rounded-lg border border-sky-200">
                                     <p className="text-xs text-gray-600">脂質</p>
-                                    <p className="text-lg font-bold text-indigo-900">
+                                    <p className="text-lg font-bold text-sky-900">
                                         {(() => {
                                             const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                             const fatMass = profile.weight - lbm;
@@ -1475,9 +1475,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         })()}
                                     </p>
                                 </div>
-                                <div className="bg-white p-2 rounded-lg border border-indigo-200">
+                                <div className="bg-white p-2 rounded-lg border border-sky-200">
                                     <p className="text-xs text-gray-600">炭水化物</p>
-                                    <p className="text-lg font-bold text-indigo-900">
+                                    <p className="text-lg font-bold text-sky-900">
                                         {(() => {
                                             const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                             const fatMass = profile.weight - lbm;
@@ -1576,13 +1576,13 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <div className="w-6 h-6 bg-indigo-500 text-white rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                                    <div className="w-6 h-6 bg-sky-500 text-white rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
                                         4
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium">AI分析を実行</p>
                                         <p className="text-xs text-gray-600">
-                                            分析画面でフィードバックを受け取り、<span className="font-bold text-indigo-700">全機能が開放されます！</span>
+                                            分析画面でフィードバックを受け取り、<span className="font-bold text-sky-700">全機能が開放されます！</span>
                                         </p>
                                     </div>
                                 </div>
@@ -1590,7 +1590,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         </div>
 
                         {/* ヒント */}
-                        <div className="bg-gradient-to-r from-yellow-50 to-amber-50 p-4 rounded-lg border border-yellow-200">
+                        <div className="bg-[#FFF59A]/10 p-4 rounded-lg border border-yellow-200">
                             <h3 className="text-sm font-bold text-yellow-900 mb-2 flex items-center gap-2">
                                 <Icon name="Zap" size={16} />
                                 記録を楽にするコツ
@@ -1602,8 +1602,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             </ul>
                         </div>
 
-                        <div className="bg-indigo-50 p-4 rounded-lg border-2 border-indigo-300 text-center">
-                            <p className="text-sm text-indigo-900 font-medium">
+                        <div className="bg-sky-50 p-4 rounded-lg border-2 border-sky-300 text-center">
+                            <p className="text-sm text-sky-900 font-medium">
                                 準備完了！さっそくYour Coach+を始めましょう 🎉
                             </p>
                         </div>
@@ -1622,14 +1622,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     {step < 5 ? (
                         <button
                             onClick={() => setStep(step + 1)}
-                            className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700"
+                            className="flex-1 bg-sky-600 text-white font-bold py-3 rounded-lg hover:bg-sky-700"
                         >
                             次へ
                         </button>
                     ) : step === 5 ? (
                         <button
                             onClick={handleComplete}
-                            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700"
+                            className="flex-1 bg-gradient-to-r from-sky-600 to-blue-600 text-white font-bold py-3 rounded-lg hover:from-sky-700 hover:to-blue-700"
                         >
                             開始する
                         </button>

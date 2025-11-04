@@ -5003,7 +5003,7 @@ RM回数と重量を別々に入力してください。`
                                     <>
                                 {/* よく使う食材（予測） - 9日以上で開放 */}
                                 {usageDays >= 9 && predictedData?.commonMeals && predictedData.commonMeals.length > 0 && !searchTerm && addedItems.length === 0 && (
-                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-lg border border-purple-200">
+                                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-3 rounded-lg border border-purple-200">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Icon name="Sparkles" size={16} className="text-purple-600" />
                                             <p className="text-sm font-medium text-purple-800 flex items-center gap-2">

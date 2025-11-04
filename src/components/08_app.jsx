@@ -16,15 +16,15 @@ const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
     // シンプルな1ページコンテンツ
     const pageData = {
         icon: 'Sparkles',
-        iconColor: 'bg-gradient-to-r from-indigo-100 to-purple-100',
-        iconTextColor: 'text-indigo-600',
+        iconColor: 'bg-gradient-to-r from-sky-100 to-blue-100',
+        iconTextColor: 'text-sky-600',
         title: 'Your Coach+へようこそ！',
         content: (
             <div className="space-y-4">
                 <p className="text-center text-gray-700 text-sm">
                     LBMベースの科学的アプローチで、あなたの体づくりをサポートします。
                 </p>
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
+                <div className="bg-gradient-to-r from-blue-50 to-sky-50 p-4 rounded-lg border border-blue-200">
                     <h4 className="font-bold text-blue-900 mb-2 text-center">まずは記録を始めましょう</h4>
                     <p className="text-sm text-gray-700 text-center">
                         食事・運動・コンディションを記録して、AI分析を受けてみましょう。<br />
@@ -59,7 +59,7 @@ const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
                 {/* 開始ボタン */}
                 <button
                     onClick={handleFinish}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-bold hover:from-indigo-700 hover:to-purple-700 transition flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white py-3 rounded-lg font-bold hover:from-sky-600 hover:to-blue-700 transition flex items-center justify-center gap-2"
                 >
                     <Icon name="Check" size={20} />
                     記録を始める
@@ -126,18 +126,19 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
         <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
                 {/* ヘッダー（紫グラデーション） */}
-                <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white text-center relative">
+                <div className="bg-[#FFF59A] p-6 text-gray-800 text-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition"
+                        className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-10"
                     >
                         <Icon name="X" size={20} />
                     </button>
-                    <div className="mb-3">
+                    <div className="mb-3 relative z-10">
                         <Icon name="Lock" size={48} className="mx-auto mb-2" />
                     </div>
-                    <h2 className="text-2xl font-bold mb-2">Premium会員限定</h2>
-                    <p className="text-sm opacity-90">{featureName}はPremium会員専用の機能です</p>
+                    <h2 className="text-2xl font-bold mb-2 relative z-10">Premium会員限定</h2>
+                    <p className="text-sm opacity-90 relative z-10">{featureName}はPremium会員専用の機能です</p>
                 </div>
 
                 {/* コンテンツ */}
@@ -145,16 +146,16 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     {/* Premium会員の特典 */}
                     <div className="space-y-3">
                         <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                            <Icon name="Crown" size={18} className="text-purple-600" />
+                            <Icon name="Crown" size={18} className="text-amber-600" />
                             Premium会員になると...
                         </h3>
                         <div className="space-y-2">
                             {[
-                                { icon: 'BarChart3', text: '毎月100回の分析クレジット', color: 'text-indigo-600' },
+                                { icon: 'BarChart3', text: '毎月100回の分析クレジット', color: 'text-sky-600' },
                                 { icon: 'BookOpen', text: 'PG BASE 教科書で理論を学習', color: 'text-green-600' },
-                                { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-purple-600' },
+                                { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-blue-600' },
                                 { icon: 'BookTemplate', text: '無制限のテンプレート保存', color: 'text-blue-600' },
-                                { icon: 'Users', text: 'COMYで仲間と刺激し合う', color: 'text-pink-600' },
+                                { icon: 'Users', text: 'COMYで仲間と刺激し合う', color: 'text-rose-600' },
                                 { icon: 'Zap', text: 'ショートカット機能で効率アップ', color: 'text-yellow-600' }
                             ].map((feature, idx) => (
                                 <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
@@ -166,19 +167,20 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     </div>
 
                     {/* 価格表示 */}
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 text-center">
+                    <div className="bg-[#FFF59A]/10 border-2 border-amber-300 rounded-lg p-4 text-center">
                         <p className="text-sm text-gray-600 mb-1">月額</p>
-                        <p className="text-4xl font-bold text-purple-600 mb-1">¥740</p>
+                        <p className="text-4xl font-bold text-amber-600 mb-1">¥740</p>
                         <p className="text-xs text-gray-600">1日あたり約24円</p>
                     </div>
 
                     {/* CTA ボタン */}
                     <button
                         onClick={onUpgrade}
-                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg flex items-center justify-center gap-2"
+                        className="w-full bg-[#FFF59A] text-gray-800 font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2 relative overflow-hidden"
                     >
-                        <Icon name="Crown" size={20} />
-                        Premium会員に登録する
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                        <Icon name="Crown" size={20} className="relative z-10" />
+                        <span className="relative z-10">Premium会員に登録する</span>
                     </button>
 
                     {/* 閉じる */}
@@ -1170,7 +1172,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
                         <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden slide-up" onClick={(e) => e.stopPropagation()}>
                             {/* ヘッダー */}
-                            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center z-10">
+                            <div className="sticky top-0 bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 flex justify-between items-center z-10">
                                 <h3 className="font-bold text-lg">{infoModal.title}</h3>
                                 <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
                                     <Icon name="X" size={20} />
@@ -1191,7 +1193,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 return (
                     <div className="flex items-center justify-center min-h-screen">
                         <div className="text-center">
-                            <Icon name="Loader" size={48} className="animate-spin text-indigo-600 mx-auto mb-4" />
+                            <Icon name="Loader" size={48} className="animate-spin text-sky-600 mx-auto mb-4" />
                             <p className="text-gray-600">読み込み中...</p>
                         </div>
                     </div>
@@ -1283,7 +1285,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     }}
                                     className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition flex items-center gap-2"
                                 >
-                                    <Icon name="Calendar" size={20} className="text-indigo-600" />
+                                    <Icon name="Calendar" size={20} className="text-sky-600" />
                                     <span className="text-xl font-bold text-gray-900">
                                         {(() => {
                                             const [year, month, day] = currentDate.split('-').map(Number);
@@ -1335,7 +1337,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             <div className="px-4 py-3 bg-white border-b">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <Icon name="Repeat" size={20} className="text-purple-600" />
+                                        <Icon name="Repeat" size={20} className="text-blue-600" />
                                         <span className="text-xs text-gray-500">
                                             Day {(() => {
                                                 const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
@@ -1370,7 +1372,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 {/* ヘッダー */}
-                                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 flex items-center justify-between">
+                                <div className="bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Icon name="Calendar" size={24} />
                                         <h3 className="font-bold text-lg">日付を選択</h3>
@@ -1895,8 +1897,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     {showAIInput && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                             <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl">
-                                <div className="sticky top-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4 rounded-t-2xl flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
+                                <div className="sticky top-0 bg-[#FFF59A] text-gray-800 p-4 rounded-t-2xl flex items-center justify-between relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                    <div className="flex items-center gap-2 relative z-10">
                                         <Icon name="Sparkles" size={24} />
                                         <h2 className="text-xl font-bold">AI記録アシスタント</h2>
                                     </div>
@@ -1906,7 +1909,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                             setAiInputText('');
                                             setAiParsedData(null);
                                         }}
-                                        className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition"
+                                        className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition relative z-10"
                                     >
                                         <Icon name="X" size={20} />
                                     </button>
@@ -1915,12 +1918,12 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 <div className="p-6">
                                     {!aiParsedData ? (
                                         <>
-                                            <div className="mb-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                            <div className="mb-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
                                                 <div className="flex items-start gap-2 mb-2">
-                                                    <Icon name="Info" size={18} className="text-purple-600 mt-0.5" />
-                                                    <p className="text-sm text-purple-900 font-semibold">使い方</p>
+                                                    <Icon name="Info" size={18} className="text-amber-600 mt-0.5" />
+                                                    <p className="text-sm text-amber-900 font-semibold">使い方</p>
                                                 </div>
-                                                <p className="text-sm text-purple-700 ml-6">
+                                                <p className="text-sm text-amber-700 ml-6">
                                                     食事、運動、サプリを自然な言葉で入力してください。<br/>
                                                     AIが自動で記録に変換します。
                                                 </p>
@@ -1934,7 +1937,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                                     value={aiInputText}
                                                     onChange={(e) => setAiInputText(e.target.value)}
                                                     placeholder="例: 朝食に鶏むね肉200g、白米150g、卵2個食べた。ベンチプレス80kgを10回3セット。プロテイン25g飲んだ。"
-                                                    className="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                                                    className="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none"
                                                     disabled={aiProcessing}
                                                 />
                                             </div>
@@ -2067,17 +2070,18 @@ ${aiInputText}
                                                         }
                                                     }}
                                                     disabled={aiProcessing || !aiInputText.trim()}
-                                                    className="flex-1 py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                    className="flex-1 py-3 px-6 bg-[#FFF59A] text-gray-800 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden"
                                                 >
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                                                     {aiProcessing ? (
                                                         <>
-                                                            <Icon name="Loader" size={18} className="animate-spin" />
-                                                            <span>AIが解析中...</span>
+                                                            <Icon name="Loader" size={18} className="animate-spin relative z-10" />
+                                                            <span className="relative z-10">AIが解析中...</span>
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <Icon name="Wand2" size={18} />
-                                                            <span>AIで解析</span>
+                                                            <Icon name="Wand2" size={18} className="relative z-10" />
+                                                            <span className="relative z-10">AIで解析</span>
                                                         </>
                                                     )}
                                                 </button>
@@ -2343,10 +2347,11 @@ ${aiInputText}
                                                         setLastUpdate(Date.now());
                                                         alert('記録を追加しました！');
                                                     }}
-                                                    className="flex-1 py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition flex items-center justify-center gap-2"
+                                                    className="flex-1 py-3 px-6 bg-[#FFF59A] text-gray-800 rounded-lg font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 relative overflow-hidden"
                                                 >
-                                                    <Icon name="Check" size={18} />
-                                                    <span>記録する</span>
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                                    <Icon name="Check" size={18} className="relative z-10" />
+                                                    <span className="relative z-10">記録する</span>
                                                 </button>
                                             </div>
                                         </>
@@ -2361,7 +2366,7 @@ ${aiInputText}
                     {showStageInfo && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowStageInfo(false)}>
                             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                                <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-t-2xl">
+                                <div className="sticky top-0 bg-gradient-to-r from-sky-500 to-blue-600 text-white p-6 rounded-t-2xl">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
@@ -2490,10 +2495,11 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarMenu(null);
                                         setBottomBarExpanded(false);
                                     }}
-                                    className="flex flex-col items-center gap-1 p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg hover:from-purple-600 hover:to-pink-600 transition shadow-md"
+                                    className="flex flex-col items-center gap-1 p-2 bg-[#FFF59A] rounded-lg hover:opacity-90 transition shadow-md relative overflow-hidden"
                                 >
-                                    <Icon name="Sparkles" size={18} className="text-white" />
-                                    <span className="text-xs text-white font-bold">AI</span>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                    <Icon name="Sparkles" size={18} className="text-gray-800 relative z-10" />
+                                    <span className="text-xs text-gray-800 font-bold relative z-10">AI</span>
                                 </button>
                                 <button
                                     onClick={() => {
@@ -2537,9 +2543,9 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarMenu(null);
                                         setBottomBarExpanded(false);
                                     }}
-                                    className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-indigo-100 transition"
+                                    className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-sky-100 transition"
                                 >
-                                    <Icon name="PieChart" size={18} className="text-indigo-600" />
+                                    <Icon name="PieChart" size={18} className="text-sky-600" />
                                     <span className="text-xs text-gray-700">分析</span>
                                 </button>
                             </div>
@@ -2547,7 +2553,7 @@ AIコーチなどの高度な機能が解放されます。
                     )}
 
                     {bottomBarExpanded && bottomBarMenu === 'pgbase' && (
-                        <div className="fixed bottom-16 left-0 right-0 z-[9998] bg-purple-50 border-t shadow-lg px-4 py-3">
+                        <div className="fixed bottom-16 left-0 right-0 z-[9998] bg-blue-50 border-t shadow-lg px-4 py-3">
                             <div className="grid grid-cols-3 gap-2">
                                 <button
                                     onClick={() => {
@@ -2568,10 +2574,10 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
-                                        unlockedFeatures.includes('history_graph') ? 'hover:bg-purple-100' : 'opacity-50 cursor-not-allowed'
+                                        unlockedFeatures.includes('history_graph') ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 >
-                                    <Icon name="Calendar" size={18} className="text-purple-600" />
+                                    <Icon name="Calendar" size={18} className="text-blue-600" />
                                     <span className="text-xs text-gray-700">履歴</span>
                                     {!unlockedFeatures.includes('history_graph') && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
@@ -2596,10 +2602,10 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
-                                        unlockedFeatures.includes('pg_base') ? 'hover:bg-purple-100' : 'opacity-50 cursor-not-allowed'
+                                        unlockedFeatures.includes('pg_base') ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 >
-                                    <Icon name="BookOpen" size={18} className="text-purple-600" />
+                                    <Icon name="BookOpen" size={18} className="text-blue-600" />
                                     <span className="text-xs text-gray-700">教科書</span>
                                     {!unlockedFeatures.includes('pg_base') && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
@@ -2624,10 +2630,10 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
-                                        unlockedFeatures.includes('community') ? 'hover:bg-purple-100' : 'opacity-50 cursor-not-allowed'
+                                        unlockedFeatures.includes('community') ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 >
-                                    <Icon name="Users" size={18} className="text-purple-600" />
+                                    <Icon name="Users" size={18} className="text-blue-600" />
                                     <span className="text-xs text-gray-700">COMY</span>
                                     {!unlockedFeatures.includes('community') && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
@@ -2734,11 +2740,11 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showHistoryV10 ? 'bg-purple-100' : (unlockedFeatures.includes('history') ? 'hover:bg-gray-50' : 'opacity-50')
+                                        showHistoryV10 ? 'bg-blue-100' : (unlockedFeatures.includes('history') ? 'hover:bg-gray-50' : 'opacity-50')
                                     }`}
                                 >
-                                    <Icon name="TrendingUp" size={20} className={showHistoryV10 ? 'text-purple-700' : 'text-purple-600'} />
-                                    <span className={`text-xs font-medium ${showHistoryV10 ? 'text-purple-700' : 'text-gray-600'}`}>
+                                    <Icon name="TrendingUp" size={20} className={showHistoryV10 ? 'text-blue-700' : 'text-blue-600'} />
+                                    <span className={`text-xs font-medium ${showHistoryV10 ? 'text-blue-700' : 'text-gray-600'}`}>
                                         履歴
                                     </span>
                                 </button>
@@ -2889,7 +2895,7 @@ AIコーチなどの高度な機能が解放されます。
                                         </p>
                                         <ul className="space-y-2 text-sm text-gray-700">
                                             <li className="flex items-start gap-2">
-                                                <Icon name="Award" size={16} className="text-purple-600 flex-shrink-0 mt-0.5" />
+                                                <Icon name="Award" size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
                                                 <span><strong>レベルアップ</strong>：3クレジット/回</span>
                                             </li>
                                             <li className="flex items-start gap-2">
@@ -2905,9 +2911,10 @@ AIコーチなどの高度な機能が解放されます。
                                     <div className="text-center">
                                         <button
                                             onClick={() => setShowCreditWarning(false)}
-                                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-bold hover:opacity-90 transition"
+                                            className="w-full bg-[#FFF59A] text-gray-800 py-3 rounded-lg font-bold hover:opacity-90 transition relative overflow-hidden"
                                         >
-                                            記録を開始する
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                            <span className="relative z-10">記録を開始する</span>
                                         </button>
                                     </div>
                                 </div>

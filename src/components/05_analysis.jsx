@@ -1140,7 +1140,7 @@ ${conversationContext}
     if (!analysis) {
         return (
             <div className="fixed inset-0 bg-white z-50 flex flex-col">
-                <header className="p-4 flex items-center border-b bg-gradient-to-r from-purple-600 to-indigo-600 flex-shrink-0">
+                <header className="p-4 flex items-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0">
                     <button onClick={handleClose} className="text-white">
                         <Icon name="ArrowLeft" size={24} />
                     </button>
@@ -1159,7 +1159,7 @@ ${conversationContext}
 
     return (
         <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
-            <header className="p-4 flex items-center border-b bg-gradient-to-r from-indigo-600 to-purple-600 flex-shrink-0 sticky top-0 z-30">
+            <header className="p-4 flex items-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0 sticky top-0 z-30">
                 <button onClick={handleClose} className="text-white">
                     <Icon name="ArrowLeft" size={24} />
                 </button>
@@ -1179,7 +1179,7 @@ ${conversationContext}
             {/* クレジット表示バー */}
             {creditInfo && (
                 <div className={`px-4 py-2 border-b flex items-center justify-between ${
-                    creditInfo.tier === 'premium' ? 'bg-gradient-to-r from-purple-50 to-pink-50' : 'bg-blue-50'
+                    creditInfo.tier === 'premium' ? 'bg-[#FFF59A]/10' : 'bg-blue-50'
                 }`}>
                     <div className="flex items-center gap-2">
                         {creditInfo.tier === 'premium' ? (
@@ -1348,7 +1348,7 @@ ${conversationContext}
                             /* ユーザーの質問（右側） */
                             <div className="flex items-start gap-3 justify-end">
                                 <div className="flex-1 max-w-[85%]">
-                                    <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl rounded-tr-none p-4 shadow-md text-white">
+                                    <div className="bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl rounded-tr-none p-4 shadow-md text-white">
                                         <p className="text-sm leading-relaxed">
                                             {msg.content}
                                         </p>
@@ -1582,19 +1582,20 @@ ${conversationContext}
             {showUpgradeModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fade-in">
                     <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
-                        {/* ヘッダー（紫グラデーション） */}
-                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white text-center relative">
+                        {/* ヘッダー（プレミアムモーダル） */}
+                        <div className="bg-[#FFF59A] p-6 text-gray-800 text-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                             <button
                                 onClick={() => setShowUpgradeModal(false)}
-                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition"
+                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-10"
                             >
                                 <Icon name="X" size={20} />
                             </button>
-                            <div className="mb-3">
+                            <div className="mb-3 relative z-10">
                                 <Icon name="Crown" size={48} className="mx-auto mb-2" />
                             </div>
-                            <h2 className="text-2xl font-bold mb-2">🎉 初回分析完了！</h2>
-                            <p className="text-sm opacity-90">AIがあなた専用の分析レポートを作成しました</p>
+                            <h2 className="text-2xl font-bold mb-2 relative z-10">🎉 初回分析完了！</h2>
+                            <p className="text-sm opacity-90 relative z-10">AIがあなた専用の分析レポートを作成しました</p>
                         </div>
 
                         {/* コンテンツ */}
@@ -1634,7 +1635,7 @@ ${conversationContext}
                             </div>
 
                             {/* 価格表示 */}
-                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 text-center">
+                            <div className="bg-[#FFF59A]/10 border-2 border-purple-200 rounded-lg p-4 text-center">
                                 <p className="text-sm text-gray-600 mb-1">月額</p>
                                 <p className="text-4xl font-bold text-purple-600 mb-1">¥740</p>
                                 <p className="text-xs text-gray-600">1日あたり約24円</p>
@@ -1650,10 +1651,11 @@ ${conversationContext}
                                         alert('サブスクリプション画面は準備中です');
                                     }
                                 }}
-                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg flex items-center justify-center gap-2"
+                                className="w-full bg-[#FFF59A] text-gray-800 font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2 relative overflow-hidden"
                             >
-                                <Icon name="Crown" size={20} />
-                                Premium会員に登録する
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                <Icon name="Crown" size={20} className="relative z-10" />
+                                <span className="relative z-10">Premium会員に登録する</span>
                             </button>
 
                             {/* 後で */}
@@ -2103,7 +2105,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                 selectedMetric === 'bodyFat' ? '%' :
                                                 ['protein', 'fat', 'carbs'].includes(selectedMetric) ? 'g' : 'kg';
                                     return (
-                                        <div className="mb-3 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                                        <div className="mb-3 p-2 bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg border border-blue-200">
                                             <div className="flex items-center justify-between text-xs">
                                                 <span className="text-gray-600">全期間の範囲:</span>
                                                 <span className="font-semibold text-gray-800">
@@ -2373,7 +2375,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                     {/* 分析を見るボタン */}
                                                     <button
                                                         onClick={() => loadAnalysisForDate(day.date)}
-                                                        className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-semibold flex items-center justify-center gap-2"
+                                                        className="w-full py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-lg hover:from-sky-600 hover:to-blue-700 transition font-semibold flex items-center justify-center gap-2"
                                                     >
                                                         <Icon name="BarChart3" size={18} />
                                                         この日の分析を見る
@@ -2389,7 +2391,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                             </div>
 
                             {/* 統計情報 */}
-                            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-200">
+                            <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-xl border border-blue-200">
                                 <div className="flex items-center gap-2 mb-3">
                                     <h4 className="font-bold">統計情報</h4>
                                     <button
@@ -2434,7 +2436,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
             {selectedDateAnalysis && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto slide-up">
-                        <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center z-10 rounded-t-2xl">
+                        <div className="sticky top-0 bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 flex justify-between items-center z-10 rounded-t-2xl">
                             <h3 className="text-lg font-bold flex items-center gap-2">
                                 <Icon name="BarChart3" size={20} />
                                 {new Date(selectedDateAnalysis.date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short' })}の分析
@@ -2455,9 +2457,9 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                             ) : (
                                 <>
                                     {/* 総合評価 */}
-                                    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 text-center border border-purple-200">
+                                    <div className="bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl p-6 text-center border border-blue-200">
                                         <p className="text-sm text-gray-600 mb-2">総合達成率</p>
-                                        <p className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 mb-2">
+                                        <p className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-blue-600 mb-2">
                                             {selectedDateAnalysis.achievementRates.overall}%
                                         </p>
                                         <div className="flex items-center justify-center gap-2 mt-3">
