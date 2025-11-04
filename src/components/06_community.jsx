@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Community Components =====
 const PGBaseView = ({ onClose, userId, userProfile }) => {
     const [selectedModule, setSelectedModule] = useState(null);

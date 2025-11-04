@@ -1,14 +1,8 @@
 import React from 'react'
 
-// Firebase設定とユーティリティ（グローバルに公開）
-import './config.js'
-import './utils.js'
-import './services.js'
-import './foodDatabase.js'
-import './trainingDatabase.js'
-import './notificationSound.js'
-
 // 全コンポーネントをインポート
+// 注: config.js, utils.js等はindex.htmlで<script>タグとして読み込まれているため、
+// ここではimportしない（グローバル変数として利用可能）
 import './components/00_init.jsx'
 import './components/00_feature_unlock.jsx'
 import './components/01_common.jsx'

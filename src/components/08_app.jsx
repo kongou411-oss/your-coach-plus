@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Welcome Guide Modal Component (Simplified to 1 Page) =====
 const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
     if (!show) return null;

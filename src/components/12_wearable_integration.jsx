@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Wearable Device Integration =====
 // Apple Watch (HealthKit) / Android (Health Connect) との連携
 

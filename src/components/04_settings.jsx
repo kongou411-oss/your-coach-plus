@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Settings Components =====
 // TutorialView機能は削除されました（ダミー定義）
 const TutorialView = ({ onClose, onComplete }) => {

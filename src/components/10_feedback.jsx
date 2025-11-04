@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Immediate Feedback System =====
 // 即時フィードバックポップアップコンポーネント
 

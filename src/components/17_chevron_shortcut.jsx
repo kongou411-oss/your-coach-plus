@@ -1,3 +1,4 @@
+import React from 'react';
 // ========== ChevronShortcut コンポーネント ==========
 
 const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {

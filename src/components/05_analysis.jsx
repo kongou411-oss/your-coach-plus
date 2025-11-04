@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Analysis Components =====
 const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, setLastUpdate, onUpgradeClick, onFeatureUnlocked }) => {
     const [loading, setLoading] = useState(true);

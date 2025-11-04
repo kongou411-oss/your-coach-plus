@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Authentication Components =====
 // ===== Authentication Components =====
 const LoginScreen = () => {

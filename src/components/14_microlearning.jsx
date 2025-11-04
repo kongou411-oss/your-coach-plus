@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Contextual Micro-Learning System =====
 // 文脈的マイクロラーニング（ユーザーの課題に応じた学習コンテンツを提案）
 

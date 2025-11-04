@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Common Components =====
 // Icon, MarkdownRenderer
 

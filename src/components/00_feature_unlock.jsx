@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Feature Unlock Utilities =====
 // 機能開放システムのユーティリティ関数
 

@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== History V10 Component (Direct iframe to v10.html) =====
 const HistoryV10View = ({ onClose, userId, userProfile }) => {
     return (

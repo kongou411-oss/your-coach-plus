@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== AI Food Recognition Component =====
 // AI搭載の食事認識機能（写真から食品を自動認識）
 

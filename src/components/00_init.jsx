@@ -1,6 +1,7 @@
 // ===== Your Coach+ Beta - Initialization =====
 // React Hooks & Firebase初期化
 
+import React from 'react';
 const { useState, useEffect, useRef, useCallback } = React;
 
 // ===== Firebase初期化 =====

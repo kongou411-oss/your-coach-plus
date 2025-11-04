@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Subscription View Component =====
 const SubscriptionView = ({ onClose, userId, userProfile }) => {
     const [loading, setLoading] = useState(false);

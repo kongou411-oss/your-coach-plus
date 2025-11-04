@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Edit Meal Modal (食事編集専用モーダル) =====
 const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
     const [selectedItemIndex, setSelectedItemIndex] = useState(0); // 編集対象のアイテムインデックス

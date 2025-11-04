@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Collaborative AI Planning System =====
 // AIコーチとの協働プランニング（指示書の代わりにドラフトを提示）
 

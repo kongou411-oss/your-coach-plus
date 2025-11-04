@@ -1,3 +1,4 @@
+import React from 'react';
 // ===== Community Growth Features =====
 // コミュニティ育成システム（メンター制度、ベストアンサー、テーマスペース）
 
