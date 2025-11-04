@@ -545,10 +545,13 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         if (firebaseUser) {
                             const profile = await DataService.getUserProfile(firebaseUser.uid);
 
-                            // プロフィールが存在しない場合は、新規登録が必要なユーザー
-                            // LoginScreenのhandleGoogleSignInで処理されるため、ここでは何もしない
+                            // プロフィールが存在しない場合は新規登録ユーザー
+                            // LoginScreenのhandleGoogleLoginで未登録ユーザーは弾かれているため、
+                            // ここに到達するのは新規登録ユーザーのみ
                             if (!profile) {
-                                // ローディング状態を維持（LoginScreenで処理中）
+                                setUser(firebaseUser);
+                                setUserProfile(null);
+                                setLoading(false);
                                 return;
                             }
 

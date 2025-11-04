@@ -159,13 +159,8 @@ const LoginScreen = () => {
         }
     };
 
-    const handleGoogleSignIn = async () => {
-        // 新規登録モードの場合は規約同意チェック
-        if (isSignUp && !agreedToTerms) {
-            alert('利用規約とプライバシーポリシーに同意してください');
-            return;
-        }
-
+    // ログイン専用: Googleでログイン（既存ユーザーのみ）
+    const handleGoogleLogin = async () => {
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
             const result = await auth.signInWithPopup(provider);
@@ -174,15 +169,32 @@ const LoginScreen = () => {
             // 既存ユーザーかチェック
             const profile = await DataService.getUserProfile(user.uid);
 
-            if (!profile && !isSignUp) {
-                // ログインモードで新規ユーザーの場合
-                // Firebase Authenticationからサインアウトして、新規登録を促す
+            if (!profile) {
+                // 未登録ユーザー：サインアウトして新規登録を促す
                 await auth.signOut();
                 alert('Googleアカウントが未登録です。まずアカウントを作成してください。');
                 setIsSignUp(true); // 新規登録モードに切り替え
             }
-            // 新規登録モード（isSignUp=true）で新規ユーザー、または既存ユーザーの場合は
-            // onAuthStateChangedで処理される
+            // 既存ユーザーの場合はonAuthStateChangedで処理される
+        } catch (error) {
+            if (error.code !== 'auth/popup-closed-by-user') {
+                alert(error.message);
+            }
+        }
+    };
+
+    // 新規登録専用: Googleで登録（新規ユーザーのみ、規約同意必須）
+    const handleGoogleSignUp = async () => {
+        // 規約同意チェック
+        if (!agreedToTerms) {
+            alert('利用規約とプライバシーポリシーに同意してください');
+            return;
+        }
+
+        try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            const result = await auth.signInWithPopup(provider);
+            // 新規ユーザーの場合はonAuthStateChangedで処理される
         } catch (error) {
             if (error.code !== 'auth/popup-closed-by-user') {
                 alert(error.message);
@@ -477,7 +489,7 @@ const LoginScreen = () => {
 
                 <div className="mt-4">
                     <button
-                        onClick={handleGoogleSignIn}
+                        onClick={isSignUp ? handleGoogleSignUp : handleGoogleLogin}
                         className="w-full bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2"
                     >
                         <Icon name="Chrome" size={20} />
