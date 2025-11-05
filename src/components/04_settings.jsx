@@ -2658,15 +2658,15 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {/* 通知設定*/}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Bell" size={18} className="text-indigo-600" />
+                            <Icon name="Bell" size={18} className="text-blue-600" />
                             通知設定                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t space-y-4">
                             {/* 通知権限設定 */}
-                            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
+                            <div className="border-l-4 border-blue-500 pl-4">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Icon name="Bell" size={18} className="text-blue-600" />
-                                    <h4 className="font-bold text-sm text-blue-900">Push通知設定</h4>
+                                    <h4 className="font-bold text-sm text-blue-700">Push通知設定</h4>
                                 </div>
 
                                 {/* 権限ステータス */}
@@ -2995,7 +2995,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {/* データ管理*/}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Database" size={18} className="text-indigo-600" />
+                            <Icon name="Database" size={18} className="text-blue-600" />
                             データ管理                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
@@ -3668,7 +3668,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {/* フィードバック */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="MessageSquare" size={18} className="text-green-600" />
+                            <Icon name="MessageSquare" size={18} className="text-blue-600" />
                             フィードバック
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
@@ -3733,7 +3733,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     {/* 開発者セクション（常時表示・後日非表示か削除予定） */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Settings" size={18} className="text-orange-600" />
+                            <Icon name="Settings" size={18} className="text-blue-600" />
                             開発者                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">

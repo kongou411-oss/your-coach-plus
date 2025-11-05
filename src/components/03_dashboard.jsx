@@ -566,7 +566,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 <div className="flex border-b mb-4">
                     <button
                         onClick={() => setActiveTab('nutrition')}
-                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'nutrition' ? 'text-sky-700 border-b-2 border-sky-700 bg-sky-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'nutrition' ? 'border-b-2' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                        style={activeTab === 'nutrition' ? {color: '#4A9EFF', borderColor: '#4A9EFF', backgroundColor: '#EFF6FF'} : {}}
                     >
                         <div className="flex items-center justify-center gap-1">
                             <Icon name="BarChart3" size={16} />
@@ -575,7 +576,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     </button>
                     <button
                         onClick={() => setActiveTab('directive')}
-                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'directive' ? 'text-sky-700 border-b-2 border-sky-700 bg-sky-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'directive' ? 'border-b-2' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                        style={activeTab === 'directive' ? {color: '#4A9EFF', borderColor: '#4A9EFF', backgroundColor: '#EFF6FF'} : {}}
                     >
                         <div className="flex items-center justify-center gap-1">
                             <Icon name="ClipboardList" size={16} />
