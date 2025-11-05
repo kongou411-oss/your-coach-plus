@@ -723,7 +723,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             </div>
                                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-[#FFF59A] transition-all"
+                                                    className="h-full bg-gradient-to-r from-purple-400 to-pink-500 transition-all"
                                                     style={{ width: `${Math.min(percent, 100)}%` }}
                                                 />
                                             </div>
@@ -1402,7 +1402,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.sleepHours && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.sleepHours - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
@@ -1463,7 +1463,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.sleepQuality && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.sleepQuality - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
@@ -1524,7 +1524,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.appetite && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.appetite - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
@@ -1585,7 +1585,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.digestion && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.digestion - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
@@ -1646,7 +1646,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.focus && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.focus - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
@@ -1707,7 +1707,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 {/* スライド背景 */}
                                 {dailyRecord.conditions?.stress && (
                                     <div
-                                        className="absolute top-1.5 bottom-1.5 bg-red-500 rounded-full transition-all duration-300 ease-out"
+                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
                                         style={{
                                             left: `calc(${((dailyRecord.conditions.stress - 1) / 5) * 100}% + 0.375rem)`,
                                             width: 'calc(20% - 0.375rem)'
