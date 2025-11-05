@@ -283,7 +283,10 @@ const LoginScreen = () => {
                         </div>
                         <button
                             type="submit"
-                            className="w-full bg-sky-600 text-white font-bold py-3 rounded-lg hover:bg-sky-700 transition"
+                            className="w-full text-white font-bold py-3 rounded-lg transition"
+                            style={{backgroundColor: '#4A9EFF'}}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
                         >
                             リセットメールを送信
                         </button>
@@ -332,7 +335,10 @@ const LoginScreen = () => {
 
                         <button
                             onClick={handleMfaConfirm}
-                            className="w-full bg-sky-600 text-white font-bold py-3 rounded-lg hover:bg-sky-700 transition"
+                            className="w-full text-white font-bold py-3 rounded-lg transition"
+                            style={{backgroundColor: '#4A9EFF'}}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
                         >
                             認証
                         </button>
@@ -438,7 +444,10 @@ const LoginScreen = () => {
                     )}
                     <button
                         type="submit"
-                        className="w-full bg-sky-600 text-white font-bold py-3 rounded-lg hover:bg-sky-700 transition"
+                        className="w-full text-white font-bold py-3 rounded-lg transition"
+                        style={{backgroundColor: '#4A9EFF'}}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
                     >
                         {isSignUp ? 'アカウント作成' : 'ログイン'}
                     </button>
@@ -1407,7 +1416,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             </h3>
                             <div className="bg-white p-3 rounded-lg border border-sky-200 mb-3">
                                 <p className="text-xs text-gray-600 mb-1">カロリー</p>
-                                <p className="text-3xl font-bold text-sky-900">
+                                <p className="text-3xl font-bold text-blue-600">
                                     {(() => {
                                         const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                         const fatMass = profile.weight - lbm;
@@ -1425,7 +1434,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <div className="grid grid-cols-3 gap-2 mb-3">
                                 <div className="bg-white p-2 rounded-lg border border-sky-200">
                                     <p className="text-xs text-gray-600">タンパク質</p>
-                                    <p className="text-lg font-bold text-sky-900">
+                                    <p className="text-lg font-bold text-blue-600">
                                         {(() => {
                                             const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                             // カスタム比率が設定されている場合はそれを使用、なければデフォルト（固定値）
@@ -1446,7 +1455,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 </div>
                                 <div className="bg-white p-2 rounded-lg border border-sky-200">
                                     <p className="text-xs text-gray-600">脂質</p>
-                                    <p className="text-lg font-bold text-sky-900">
+                                    <p className="text-lg font-bold text-blue-600">
                                         {(() => {
                                             const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                             const fatMass = profile.weight - lbm;
@@ -1477,7 +1486,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 </div>
                                 <div className="bg-white p-2 rounded-lg border border-sky-200">
                                     <p className="text-xs text-gray-600">炭水化物</p>
-                                    <p className="text-lg font-bold text-sky-900">
+                                    <p className="text-lg font-bold text-blue-600">
                                         {(() => {
                                             const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                             const fatMass = profile.weight - lbm;
@@ -1622,14 +1631,20 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     {step < 5 ? (
                         <button
                             onClick={() => setStep(step + 1)}
-                            className="flex-1 bg-sky-600 text-white font-bold py-3 rounded-lg hover:bg-sky-700"
+                            className="flex-1 text-white font-bold py-3 rounded-lg"
+                            style={{backgroundColor: '#4A9EFF'}}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
                         >
                             次へ
                         </button>
                     ) : step === 5 ? (
                         <button
                             onClick={handleComplete}
-                            className="flex-1 bg-gradient-to-r from-sky-600 to-blue-600 text-white font-bold py-3 rounded-lg hover:from-sky-700 hover:to-blue-700"
+                            className="flex-1 text-white font-bold py-3 rounded-lg"
+                            style={{backgroundColor: '#4A9EFF'}}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
                         >
                             開始する
                         </button>
