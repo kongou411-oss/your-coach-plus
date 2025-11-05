@@ -544,7 +544,7 @@ const LoginScreen = () => {
 
                                 <button
                                     onClick={handleSignupMfaSendSms}
-                                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                                    className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                 >
                                     認証コードを送信
                                 </button>
@@ -579,7 +579,7 @@ const LoginScreen = () => {
 
                                 <button
                                     onClick={handleSignupMfaConfirm}
-                                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                                    className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                 >
                                     確認
                                 </button>

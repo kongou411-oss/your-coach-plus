@@ -739,8 +739,8 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                         key={idx}
                                         className={`flex items-center justify-between p-3 rounded-lg border-2 transition ${
                                             selectedItemIndex === idx
-                                                ? 'border-indigo-600 bg-indigo-50'
-                                                : 'border-gray-200 bg-white hover:border-indigo-300'
+                                                ? 'border-[#4A9EFF] bg-blue-50 shadow-md'
+                                                : 'border-gray-200 bg-white hover:border-blue-300'
                                         }`}
                                     >
                                         <button
