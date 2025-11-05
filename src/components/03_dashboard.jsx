@@ -1237,7 +1237,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </div>
                             <button
                                 onClick={() => window.handleQuickAction && window.handleQuickAction('workout')}
-                                className="text-sm px-4 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition"
+                                className="text-sm px-4 py-2 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] shadow-md transition"
                             >
                                 + 追加
                             </button>
@@ -2321,7 +2321,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             >
                                                 <div className="flex items-start gap-3">
                                                     <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                                                        isSelected ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-600'
+                                                        isSelected ? 'bg-[#4A9EFF] text-white shadow-md' : 'bg-gray-200 text-gray-600'
                                                     }`}>
                                                         {guide.level}
                                                     </div>

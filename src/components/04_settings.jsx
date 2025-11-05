@@ -1935,10 +1935,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <span className="text-sm text-gray-500">{workoutTemplates.length}件</span>
                                         <button
                                             onClick={() => onOpenAddView && onOpenAddView('workout')}
-                                            className="px-3 py-1 bg-orange-600 text-white text-xs rounded-lg hover:bg-orange-700 transition flex items-center gap-1"
+                                            className="px-3 py-1 bg-[#4A9EFF] text-white text-xs font-bold rounded-lg hover:bg-[#3b8fef] shadow-md transition flex items-center gap-1"
                                         >
                                             <Icon name="Plus" size={14} />
-                                            新規作成
+                                            作成
                                         </button>
                                     </div>
                                 </div>
@@ -2612,9 +2612,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         localStorage.setItem(STORAGE_KEYS.ROUTINE_ACTIVE, 'true');
                                                         window.location.reload();
                                                     }}
-                                                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition"
+                                                    className="px-6 py-3 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] shadow-lg transition"
                                                 >
-                                                    デフォルトルーティンで始める                                                </button>
+                                                    開始                                                </button>
                                             </div>
                                         )}
 
@@ -2718,10 +2718,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 // 再レンダリングのため状態を更新
                                                 setProfile({...profile});
                                             }}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                                            className="px-4 py-2 bg-[#4A9EFF] text-white rounded-lg text-sm font-bold hover:bg-[#3b8fef] shadow-md transition"
                                             disabled={NotificationService.checkPermission() === 'granted'}
                                         >
-                                            {NotificationService.checkPermission() === 'granted' ? '設定済み' : '権限を許可'}
+                                            {NotificationService.checkPermission() === 'granted' ? '設定済み' : '許可'}
                                         </button>
                                     </div>
                                 </div>
@@ -2979,10 +2979,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             console.error('[Settings] Manual save error:', error);
                                         }
                                     }}
-                                    className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                                    className="w-full px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
                                 >
                                     <Icon name="Save" size={18} />
-                                    通知設定を保存
+                                    保存
                                 </button>
                                 <p className="text-xs text-gray-600 mt-2 text-center">
                                     ※ 時刻を変更したら必ずこのボタンを押してください
@@ -3044,10 +3044,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 }
                                             }
                                         }}
-                                        className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition flex items-center justify-center gap-2"
+                                        className="w-full px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
                                     >
                                         <Icon name="RefreshCw" size={16} />
-                                        キャッシュをクリア
+                                        クリア
                                     </button>
                                     <p className="text-xs text-gray-500">
                                         ※ 通知設定、記録、プロフィールなどのユーザーデータは削除されません

@@ -113,7 +113,7 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
                                     onClick={() => setSelectedExerciseIndex(index)}
                                     className={`px-4 py-2 rounded-lg whitespace-nowrap ${
                                         selectedExerciseIndex === index
-                                            ? 'bg-indigo-600 text-white'
+                                            ? 'bg-[#4A9EFF] text-white font-semibold shadow-md'
                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                                 >
@@ -343,7 +343,7 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
                                                         </button>
                                                         <button
                                                             onClick={handleUpdateSet}
-                                                            className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                                                            className="flex-1 py-3 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                                         >
                                                             更新
                                                         </button>
@@ -368,7 +368,7 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
                     </button>
                     <button
                         onClick={handleSave}
-                        className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                        className="flex-1 py-3 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                     >
                         更新
                     </button>
@@ -995,7 +995,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                         </button>
                         <button
                             onClick={handleUpdate}
-                            className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                            className="flex-1 py-3 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                         >
                             更新
                         </button>
@@ -1216,9 +1216,9 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                 {/* ボタン */}
                                 <button
                                     onClick={handleAddItem}
-                                    className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                    className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                 >
-                                    アイテムを追加
+                                    追加
                                 </button>
                             </div>
                         ) : (
@@ -1787,9 +1787,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                     }, 100);
                                 }
                             }}
-                            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                            className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                         >
-                            記録する
+                            記録
                         </button>
                     </div>
                 );
@@ -2066,7 +2066,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                         setSelectedItem(null);
                                         setAmount('1');
                                     }}
-                                    className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition"
+                                    className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                 >
                                     追加
                                 </button>
@@ -2235,7 +2235,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                     onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'recipe'})}
                                                     className={`py-2 px-3 rounded-lg text-sm font-medium transition ${
                                                         customSupplementData.itemType === 'recipe'
-                                                            ? 'bg-orange-600 text-white'
+                                                            ? 'bg-[#4A9EFF] text-white font-semibold shadow-md'
                                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                     }`}
                                                 >
@@ -2247,7 +2247,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                     onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'supplement'})}
                                                     className={`py-2 px-3 rounded-lg text-sm font-medium transition ${
                                                         customSupplementData.itemType === 'supplement'
-                                                            ? 'bg-blue-600 text-white'
+                                                            ? 'bg-[#4A9EFF] text-white font-semibold shadow-md'
                                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                     }`}
                                                 >
@@ -2472,9 +2472,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
 
                                     onAdd(newSupplement);
                                 }}
-                                className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {editingTemplate ? 'テンプレートを更新' : '記録する'}
+                                {editingTemplate ? '更新' : '記録'}
                             </button>
                         )}
                     </div>
@@ -2778,9 +2778,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                                         setExercises([...exercises, ...template.exercises]);
                                                                         setShowTemplates(false);
                                                                     }}
-                                                                    className="w-full py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium"
+                                                                    className="w-full py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm"
                                                                 >
-                                                                    このテンプレートを追加
+                                                                    追加
                                                                 </button>
                                                             </summary>
 
@@ -2818,14 +2818,14 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                         value={templateName}
                                                         onChange={(e) => setTemplateName(e.target.value)}
                                                         placeholder="テンプレート名（例: 胸トレ1）"
-                                                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:outline-none"
                                                     />
                                                     <button
                                                         onClick={() => {
                                                             saveAsTemplate();
                                                             setShowTemplates(false);
                                                         }}
-                                                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
+                                                        className="px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm"
                                                     >
                                                         保存
                                                     </button>
@@ -3136,9 +3136,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                 setCustomExerciseData({ name: '', category: '胸', subcategory: 'コンパウンド' });
                                                 setExerciseSaveMethod('database'); // デフォルトに戻す
                                             }}
-                                            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
+                                            className="flex-1 px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                         >
-                                            {exerciseSaveMethod === 'addToList' ? '保存して選択' : '保存'}
+                                            {exerciseSaveMethod === 'addToList' ? '保存' : '保存'}
                                         </button>
                                         <button
                                             onClick={() => {
@@ -3159,7 +3159,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                         {showExerciseSaveMethodInfo && (
                             <div className="fixed inset-0 bg-black bg-opacity-50 z-[10003] flex items-center justify-center p-4">
                                 <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-y-auto">
-                                    <div className="sticky top-0 bg-blue-600 text-white p-4 rounded-t-lg flex justify-between items-center z-10">
+                                    <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 rounded-t-lg flex justify-between items-center z-10">
                                         <h3 className="font-bold">保存方法について</h3>
                                         <button
                                             onClick={() => setShowExerciseSaveMethodInfo(false)}
@@ -3191,7 +3191,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
 
                                         <button
                                             onClick={() => setShowExerciseSaveMethodInfo(false)}
-                                            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+                                            className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                         >
                                             閉じる
                                         </button>
@@ -3269,10 +3269,10 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                 setSets([...sets, {...currentSet}]);
                                                 setCurrentSet({ duration: currentSet.duration });
                                             }}
-                                            className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                                            className="w-full py-3 bg-[#4A9EFF] text-white font-bold px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
                                         >
                                             <Icon name="Plus" size={18} />
-                                            セットを追加
+                                            追加
                                         </button>
 
                                         {/* 追加済みセットリスト */}
@@ -3560,19 +3560,19 @@ RM回数と重量を別々に入力してください。`
                                                 onClick={() => {
                                                     setSets([...sets, { ...currentSet, setType: 'warmup' }]);
                                                 }}
-                                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2"
+                                                className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
                                             >
                                                 <Icon name="Zap" size={20} />
-                                                <span>アップセット追加</span>
+                                                <span>追加</span>
                                             </button>
                                             <button
                                                 onClick={() => {
                                                     setSets([...sets, { ...currentSet, setType: 'main' }]);
                                                 }}
-                                                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2"
+                                                className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
                                             >
                                                 <Icon name="Plus" size={20} />
-                                                <span>メインセット追加</span>
+                                                <span>追加</span>
                                             </button>
                                         </div>
                                     ) : (
@@ -3580,10 +3580,10 @@ RM回数と重量を別々に入力してください。`
                                             onClick={() => {
                                                 setSets([...sets, { ...currentSet }]);
                                             }}
-                                            className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2"
+                                            className="w-full px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
                                         >
                                             <Icon name="Plus" size={20} />
-                                            <span>セット追加</span>
+                                            <span>追加</span>
                                         </button>
                                     )}
 
@@ -3676,9 +3676,9 @@ RM回数と重量を別々に入力してください。`
                                         setSets([]);
                                     }}
                                     disabled={sets.length === 0}
-                                    className="w-full bg-orange-600 text-white font-bold py-3 rounded-lg hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    種目を追加
+                                    追加
                                 </button>
                             </div>
                         )}
@@ -3802,9 +3802,9 @@ RM回数と重量を別々に入力してください。`
                                 {/* 種目を追加ボタン */}
                                 <button
                                     onClick={() => setShowSearchModal(true)}
-                                    className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition mb-2"
+                                    className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition mb-2"
                                 >
-                                    種目を追加
+                                    追加
                                 </button>
 
                                 {/* テンプレート名入力（テンプレートモード時） */}
@@ -3825,9 +3825,9 @@ RM回数と重量を別々に入力してください。`
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={handleWorkoutSave}
-                                        className="bg-orange-600 text-white font-bold py-3 rounded-lg hover:bg-orange-700 transition"
+                                        className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                     >
-                                        {(isTemplateMode || editingTemplate) ? 'テンプレートを保存' : '記録'}
+                                        {(isTemplateMode || editingTemplate) ? '保存' : '記録'}
                                     </button>
                                     <button
                                         onClick={onClose}
@@ -4701,9 +4701,9 @@ RM回数と重量を別々に入力してください。`
                                                                     setAddedItems([...addedItems, ...template.items]);
                                                                     setShowTemplates(false);
                                                                 }}
-                                                                className="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium mb-3"
+                                                                className="w-full py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm mb-3"
                                                             >
-                                                                このテンプレートを追加
+                                                                追加
                                                             </button>
 
                                                             {/* アイテム一覧（折りたたみ） */}
@@ -4752,7 +4752,7 @@ RM回数と重量を別々に入力してください。`
                                                             saveAsTemplate();
                                                             setShowTemplates(false);
                                                         }}
-                                                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
+                                                        className="px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm"
                                                     >
                                                         保存
                                                     </button>
@@ -4876,9 +4876,9 @@ RM回数と重量を別々に入力してください。`
                                                     onClick={() => {
                                                         setSelectedItem(null);
                                                     }}
-                                                    className="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm mt-3"
+                                                    className="w-full bg-[#4A9EFF] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm mt-3"
                                                 >
-                                                    アイテムを追加
+                                                    追加
                                                 </button>
                                                 </>
                                                 )}
@@ -4952,9 +4952,9 @@ RM回数と重量を別々に入力してください。`
                                                             onAdd(newMeal);
                                                             setShowSearchModal(false);
                                                         }}
-                                                        className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                                        className="flex-1 bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                                     >
-                                                        {(editingTemplate || isTemplateMode) ? 'テンプレートを保存' : '記録'}
+                                                        {(editingTemplate || isTemplateMode) ? '保存' : '記録'}
                                                     </button>
                                                     <button
                                                         onClick={() => {
@@ -5402,7 +5402,7 @@ RM回数と重量を別々に入力してください。`
                                                 // デフォルト量にリセット（selectedItemがnullになるとuseEffectは発火しないので手動で設定）
                                                 setAmount(type === 'supplement' ? '1' : '100');
                                             }}
-                                            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                            className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                         >
                                             {editingItemIndex !== null ? '更新' : '追加'}
                                         </button>
@@ -5485,7 +5485,7 @@ RM回数と重量を別々に入力してください。`
                                                                     onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'supplement'})}
                                                                     className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
                                                                         customSupplementData.itemType === 'supplement'
-                                                                            ? 'bg-blue-600 text-white'
+                                                                            ? 'bg-[#4A9EFF] text-white font-semibold shadow-md'
                                                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                                     }`}
                                                                 >
@@ -5515,7 +5515,7 @@ RM回数と重量を別々に入力してください。`
                                                                     onClick={() => setNutritionInputMethod('ai')}
                                                                     className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1 ${
                                                                         nutritionInputMethod === 'ai'
-                                                                            ? 'bg-purple-600 text-white'
+                                                                            ? 'bg-[#4A9EFF] text-white font-semibold shadow-md'
                                                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                                     }`}
                                                                 >
@@ -5551,9 +5551,9 @@ RM回数と重量を別々に入力してください。`
                                                                                     type="button"
                                                                                     onClick={recognizeNutrition}
                                                                                     disabled={aiRecognizing}
-                                                                                    className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50 text-sm font-medium"
+                                                                                    className="flex-1 bg-[#4A9EFF] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition disabled:opacity-50 text-sm"
                                                                                 >
-                                                                                    {aiRecognizing ? 'AI解析中...' : 'AI解析を実行'}
+                                                                                    {aiRecognizing ? '解析中...' : '解析'}
                                                                                 </button>
                                                                                 <button
                                                                                     type="button"
@@ -5921,7 +5921,7 @@ RM回数と重量を別々に入力してください。`
 
                                                                     <button
                                                                         onClick={() => setShowSaveMethodInfo(false)}
-                                                                        className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                                                        className="w-full mt-4 px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                                                     >
                                                                         閉じる
                                                                     </button>
@@ -6150,9 +6150,9 @@ RM回数と重量を別々に入力してください。`
                                         setAmount('100');
                                         setShowSearchModal(true);
                                     }}
-                                    className="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm"
+                                    className="w-full bg-[#4A9EFF] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm"
                                 >
-                                    {editingItemIndex !== null ? '更新' : 'アイテムを追加'}
+                                    {editingItemIndex !== null ? '更新' : '追加'}
                                 </button>
                             </div>
                         )}
@@ -6525,7 +6525,7 @@ RM回数と重量を別々に入力してください。`
                                 <div className="p-6 border-t">
                                     <button
                                         onClick={() => setWorkoutInfoModal({ show: false, title: '', content: '' })}
-                                        className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                        className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                     >
                                         閉じる
                                     </button>

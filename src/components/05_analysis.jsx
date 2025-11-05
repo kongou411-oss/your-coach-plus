@@ -1266,10 +1266,10 @@ ${conversationContext}
                                     setReportTitle(`${getTodayDate()} デイリー分析`);
                                     setShowSaveReportModal(true);
                                 }}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                className="flex items-center gap-2 px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                             >
                                 <Icon name="Save" size={18} />
-                                <span>レポートを保存</span>
+                                <span>保存</span>
                             </button>
                         </div>
                     </>
@@ -1423,7 +1423,7 @@ ${conversationContext}
                         <button
                             onClick={handleUserQuestion}
                             disabled={!userQuestion.trim() || qaLoading}
-                            className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                            className="bg-[#4A9EFF] text-white p-2 rounded-lg hover:bg-[#3b8fef] shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                         >
                             <Icon name="Send" size={20} />
                         </button>
@@ -1737,8 +1737,8 @@ const CalendarView = ({ selectedStartDate, selectedEndDate, onDateSelect, analys
                             className={`relative w-full aspect-square flex flex-col items-center justify-center rounded-lg transition text-sm ${
                                 date.getMonth() !== currentMonth.getMonth() ? 'text-gray-300' : 'text-gray-700'
                             } ${
-                                isSelected ? 'bg-indigo-600 text-white font-bold' :
-                                inRange ? 'bg-indigo-100' :
+                                isSelected ? 'bg-[#4A9EFF] text-white font-bold shadow-md' :
+                                inRange ? 'bg-blue-100' :
                                 isToday ? 'bg-yellow-100' :
                                 'hover:bg-gray-100'
                             }`}

@@ -41,7 +41,8 @@
       "Bash(echo:*)",
       "Bash(git log:*)",
       "Bash(start level_banner_effects.html)",
-      "Bash(start level_banner_effects_extended.html)"
+      "Bash(start level_banner_effects_extended.html)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
