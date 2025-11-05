@@ -767,10 +767,10 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                             </div>
                             <button
                                 onClick={() => setShowAddItemModal(true)}
-                                className="w-full mt-3 bg-green-500 text-white font-bold py-2 rounded-lg hover:bg-green-600 transition text-sm flex items-center justify-center gap-2"
+                                className="w-full mt-3 bg-[#4A9EFF] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm flex items-center justify-center gap-2"
                             >
                                 <Icon name="Plus" size={18} />
-                                食材を追加
+                                追加
                             </button>
                         </div>
                     )}
@@ -1618,7 +1618,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                     onClick={() => onChange(opt.value)}
                                     className={`py-3 px-2 rounded-lg border-2 transition ${
                                         value === opt.value
-                                            ? 'border-indigo-600 bg-indigo-50 shadow-md'
+                                            ? 'border-[#4A9EFF] bg-blue-50 shadow-md'
                                             : 'border-gray-200 hover:border-gray-300'
                                     }`}
                                 >

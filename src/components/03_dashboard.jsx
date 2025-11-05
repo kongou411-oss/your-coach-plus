@@ -864,10 +864,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         loadPredictedData();
                                     }
                                 }}
-                                className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                                className={`text-xs px-3 py-1 rounded-lg font-bold shadow-md transition flex items-center gap-1 ${
                                     dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)
                                         ? 'bg-gray-400 text-white hover:bg-gray-500'
-                                        : 'bg-sky-600 text-white hover:bg-sky-700'
+                                        : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
                                 }`}
                             >
                                 <Icon name={(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) ? "Trash2" : "Sparkles"} size={14} />
@@ -897,10 +897,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         }
                                     }
                                 }}
-                                className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                                className={`text-xs px-3 py-1 rounded-lg font-bold shadow-md transition flex items-center gap-1 ${
                                     dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)
                                         ? 'bg-gray-400 text-white hover:bg-gray-500'
-                                        : 'bg-amber-600 text-white hover:bg-amber-700'
+                                        : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
                                 }`}
                             >
                                 <Icon name={(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? "Trash2" : "Repeat"} size={14} />
