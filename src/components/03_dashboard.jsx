@@ -864,13 +864,15 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         loadPredictedData();
                                     }
                                 }}
-                                className={`text-xs px-3 py-1 rounded-lg font-bold shadow-md transition flex items-center gap-1 ${
+                                className={`text-sm px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 ${
                                     dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)
-                                        ? 'bg-gray-400 text-white hover:bg-gray-500'
+                                        ? 'bg-red-600 text-white hover:bg-red-700'
                                         : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
                                 }`}
                             >
-                                <Icon name={(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) ? "Trash2" : "Sparkles"} size={14} />
+                                {!(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) && (
+                                    <Icon name="Sparkles" size={16} />
+                                )}
                                 {(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) ? 'クリア' : '予測'}
                             </button>
                         )}
@@ -897,13 +899,15 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         }
                                     }
                                 }}
-                                className={`text-xs px-3 py-1 rounded-lg font-bold shadow-md transition flex items-center gap-1 ${
+                                className={`text-sm px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 ${
                                     dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)
-                                        ? 'bg-gray-400 text-white hover:bg-gray-500'
+                                        ? 'bg-red-600 text-white hover:bg-red-700'
                                         : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
                                 }`}
                             >
-                                <Icon name={(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? "Trash2" : "Repeat"} size={14} />
+                                {!(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) && (
+                                    <Icon name="Repeat" size={16} />
+                                )}
                                 {(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? 'クリア' : 'ルーティン'}
                             </button>
                         )}
