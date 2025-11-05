@@ -1034,7 +1034,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         </div>
 
                         <div className="space-y-4">
-                            <div className="border-l-4 border-green-500 pl-4">
+                            <div className="border-l-4 border-teal-500 pl-4">
                                 <label className="block text-sm font-medium mb-2">身長 (cm)</label>
                                 <input
                                     type="number"
@@ -1279,7 +1279,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 {/* タンパク質 */}
                                 <div>
                                     <div className="flex justify-between items-center mb-1">
-                                        <span className="text-sm font-medium text-green-700">タンパク質 (P)</span>
+                                        <span className="text-sm font-medium text-red-600">タンパク質 (P)</span>
                                         <span className="text-sm font-bold">
                                             {profile.proteinRatioPercent || 30}%
                                             {(() => {
@@ -1322,7 +1322,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 {/* 脂質 */}
                                 <div>
                                     <div className="flex justify-between items-center mb-1">
-                                        <span className="text-sm font-medium text-yellow-700">脂質 (F)</span>
+                                        <span className="text-sm font-medium text-yellow-600">脂質 (F)</span>
                                         <span className="text-sm font-bold">
                                             {profile.fatRatioPercent || 25}%
                                             {(() => {
@@ -1365,7 +1365,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 {/* 炭水化物 */}
                                 <div>
                                     <div className="flex justify-between items-center mb-1">
-                                        <span className="text-sm font-medium text-orange-700">炭水化物 (C)</span>
+                                        <span className="text-sm font-medium text-green-600">炭水化物 (C)</span>
                                         <span className="text-sm font-bold">
                                             {profile.carbRatioPercent || 45}%
                                             {(() => {
