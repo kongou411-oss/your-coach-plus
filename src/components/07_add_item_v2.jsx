@@ -1027,8 +1027,8 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                 />
                             </div>
 
-                            {/* 食材/サプリメント タブ */}
-                            <div className="grid grid-cols-2 border-b border-gray-200">
+                            {/* 食材/料理/サプリメント タブ */}
+                            <div className="grid grid-cols-3 border-b border-gray-200">
                                 <button
                                     onClick={() => setFoodOrSupplementTab('food')}
                                     className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
@@ -1039,6 +1039,17 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                 >
                                     <Icon name="Apple" size={20} />
                                     <span className="text-sm">食材</span>
+                                </button>
+                                <button
+                                    onClick={() => setFoodOrSupplementTab('recipe')}
+                                    className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                        foodOrSupplementTab === 'recipe'
+                                            ? 'border-orange-600 text-orange-600'
+                                            : 'border-transparent text-gray-600 hover:text-orange-600'
+                                    }`}
+                                >
+                                    <Icon name="ChefHat" size={20} />
+                                    <span className="text-sm">料理</span>
                                 </button>
                                 <button
                                     onClick={() => setFoodOrSupplementTab('supplement')}
@@ -1253,7 +1264,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                     ) : searchTerm ? (
                                         // 検索結果なし
                                         <div className="text-center py-8 text-gray-500">
-                                            <p>「{searchTerm}」に一致する{foodOrSupplementTab === 'food' ? '食材' : 'サプリメント'}が見つかりませんでした</p>
+                                            <p>「{searchTerm}」に一致する{foodOrSupplementTab === 'food' ? '食材' : foodOrSupplementTab === 'recipe' ? '料理' : 'サプリメント'}が見つかりませんでした</p>
                                         </div>
                                     ) : (
                                         // カテゴリ一覧表示
@@ -1370,6 +1381,75 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                                         )}
                                                     </div>
                                                 ))
+                                            ) : foodOrSupplementTab === 'recipe' ? (
+                                                // 料理カテゴリ（カスタム料理のみ表示）
+                                                (() => {
+                                                    // LocalStorageからカスタム料理を取得
+                                                    const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
+                                                    const customRecipes = customFoods.filter(food => food.category === 'カスタム料理');
+
+                                                    if (customRecipes.length === 0) {
+                                                        return (
+                                                            <div className="text-center py-8 text-gray-500">
+                                                                <p>カスタム料理が登録されていません</p>
+                                                                <p className="text-xs mt-2">「カスタムアイテムを作成」から料理を登録できます</p>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <div className="border-t border-gray-200">
+                                                            <button
+                                                                onClick={() => setExpandedCategories(prev => ({...prev, 'カスタム料理': !prev['カスタム料理']}))}
+                                                                className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
+                                                            >
+                                                                <span className="font-medium text-sm">カスタム料理</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs text-gray-500">{customRecipes.length}品目</span>
+                                                                    <Icon name={expandedCategories['カスタム料理'] ? 'ChevronDown' : 'ChevronRight'} size={18} />
+                                                                </div>
+                                                            </button>
+                                                            {expandedCategories['カスタム料理'] && (
+                                                                <div className="p-2 space-y-1 bg-gray-50">
+                                                                    {customRecipes.map(recipe => (
+                                                                        <button
+                                                                            key={recipe.id}
+                                                                            onClick={() => {
+                                                                                setSelectedNewItem({
+                                                                                    name: recipe.name,
+                                                                                    category: recipe.category,
+                                                                                    calories: recipe.calories || 0,
+                                                                                    protein: recipe.protein || 0,
+                                                                                    fat: recipe.fat || 0,
+                                                                                    carbs: recipe.carbs || 0,
+                                                                                    vitamins: recipe.vitamins || {},
+                                                                                    minerals: recipe.minerals || {}
+                                                                                });
+                                                                            }}
+                                                                            className="w-full text-left rounded-lg transition hover:bg-gray-50 border-l-4 border-orange-500 bg-white"
+                                                                        >
+                                                                            <div className="px-3 py-2">
+                                                                                <div className="flex-1">
+                                                                                    <div className="flex justify-between items-start mb-1">
+                                                                                        <span className="text-sm font-medium">{recipe.name}</span>
+                                                                                        <span className="text-xs font-bold text-blue-600">
+                                                                                            {recipe.calories || 0}kcal
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className="flex gap-2 text-xs">
+                                                                                        <span className="text-red-600">P:{recipe.protein || 0}g</span>
+                                                                                        <span className="text-yellow-600">F:{recipe.fat || 0}g</span>
+                                                                                        <span className="text-green-600">C:{recipe.carbs || 0}g</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()
                                             ) : (
                                                 // サプリメントカテゴリ
                                                 (() => {
@@ -2214,60 +2294,64 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                 </div>
                                 {showCustomSupplementForm && (
                                     <div className="mt-3 space-y-3 max-h-96 overflow-y-auto">
-                                        {/* アイテムタイプ選択 */}
+                                        {/* 名前入力（最初） */}
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-700 mb-1">アイテムタイプ</label>
-                                            <div className="grid grid-cols-3 gap-2">
+                                            <label className="block text-xs font-medium text-gray-700 mb-1">名前</label>
+                                            <input
+                                                type="text"
+                                                value={customSupplementData.name}
+                                                onChange={(e) => setCustomSupplementData({...customSupplementData, name: e.target.value})}
+                                                placeholder={
+                                                    customSupplementData.itemType === 'food' ? '例: 自家製プロテインバー' :
+                                                    customSupplementData.itemType === 'recipe' ? '例: 自家製カレー' :
+                                                    '例: マルチビタミン'
+                                                }
+                                                className="w-full px-3 py-2 text-sm border rounded-lg"
+                                            />
+                                        </div>
+
+                                        {/* カテゴリタブ（食材検索モーダルと同じスタイル） */}
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-700 mb-1">カテゴリ</label>
+                                            <div className="grid grid-cols-3 border-b border-gray-200">
                                                 <button
                                                     type="button"
                                                     onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'food'})}
-                                                    className={`py-2 px-3 rounded-lg text-sm font-medium transition ${
+                                                    className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
                                                         customSupplementData.itemType === 'food'
-                                                            ? 'bg-green-600 text-white'
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                            ? 'border-green-600 text-green-600'
+                                                            : 'border-transparent text-gray-600 hover:text-green-600'
                                                     }`}
                                                 >
-                                                    <Icon name="Apple" size={14} className="inline mr-1" />
-                                                    食材
+                                                    <Icon name="Apple" size={16} />
+                                                    <span className="text-sm">食材</span>
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'recipe'})}
-                                                    className={`py-2 px-3 rounded-lg text-sm font-medium transition ${
+                                                    className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
                                                         customSupplementData.itemType === 'recipe'
-                                                            ? 'bg-[#4A9EFF] text-white font-semibold shadow-md'
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                            ? 'border-orange-600 text-orange-600'
+                                                            : 'border-transparent text-gray-600 hover:text-orange-600'
                                                     }`}
                                                 >
-                                                    <Icon name="ChefHat" size={14} className="inline mr-1" />
-                                                    料理
+                                                    <Icon name="ChefHat" size={16} />
+                                                    <span className="text-sm">料理</span>
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'supplement'})}
-                                                    className={`py-2 px-3 rounded-lg text-sm font-medium transition ${
+                                                    className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
                                                         customSupplementData.itemType === 'supplement'
-                                                            ? 'bg-[#4A9EFF] text-white font-semibold shadow-md'
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                            ? 'border-blue-600 text-blue-600'
+                                                            : 'border-transparent text-gray-600 hover:text-blue-600'
                                                     }`}
                                                 >
-                                                    <Icon name="Pill" size={14} className="inline mr-1" />
-                                                    サプリ
+                                                    <Icon name="Pill" size={16} />
+                                                    <span className="text-sm">サプリ</span>
                                                 </button>
                                             </div>
                                         </div>
-
-                                        <input
-                                            type="text"
-                                            value={customSupplementData.name}
-                                            onChange={(e) => setCustomSupplementData({...customSupplementData, name: e.target.value})}
-                                            placeholder={
-                                                customSupplementData.itemType === 'food' ? '名前（例: 自家製プロテインバー）' :
-                                                customSupplementData.itemType === 'recipe' ? '名前（例: 自家製カレー）' :
-                                                '名前（例: マルチビタミン）'
-                                            }
-                                            className="w-full px-3 py-2 text-sm border rounded-lg"
-                                        />
                                         <div className="grid grid-cols-2 gap-2">
                                             {customSupplementData.itemType === 'recipe' ? (
                                                 <input
@@ -4970,8 +5054,8 @@ RM回数と重量を別々に入力してください。`
                                             </div>
                                         )}
 
-                                        {/* 食材/サプリメント タブ */}
-                                        <div className="grid grid-cols-2 mt-3 border-b border-gray-200">
+                                        {/* 食材/料理/サプリメント タブ */}
+                                        <div className="grid grid-cols-3 mt-3 border-b border-gray-200">
                                             <button
                                                 onClick={() => setFoodOrSupplementTab('food')}
                                                 className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
@@ -4982,6 +5066,17 @@ RM回数と重量を別々に入力してください。`
                                             >
                                                 <Icon name="Apple" size={20} />
                                                 <span className="text-sm">食材</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setFoodOrSupplementTab('recipe')}
+                                                className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    foodOrSupplementTab === 'recipe'
+                                                        ? 'border-orange-600 text-orange-600'
+                                                        : 'border-transparent text-gray-600 hover:text-orange-600'
+                                                }`}
+                                            >
+                                                <Icon name="ChefHat" size={20} />
+                                                <span className="text-sm">料理</span>
                                             </button>
                                             <button
                                                 onClick={() => setFoodOrSupplementTab('supplement')}
@@ -5048,7 +5143,8 @@ RM回数と重量を別々に入力してください。`
                                         if (Object.keys(subcategories).length === 0) return null;
 
                                         // タブに応じてフィルタリング
-                                        if (foodOrSupplementTab === 'food' && topCategory !== '食材' && topCategory !== 'カスタム料理') return null;
+                                        if (foodOrSupplementTab === 'food' && topCategory !== '食材') return null;
+                                        if (foodOrSupplementTab === 'recipe' && topCategory !== 'カスタム料理') return null;
                                         if (foodOrSupplementTab === 'supplement' && topCategory !== 'サプリメント') return null;
 
                                         return (
@@ -5414,9 +5510,9 @@ RM回数と重量を別々に入力してください。`
                         )}
 
                         {showCustomSupplementForm && (
-                            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                            <div className="bg-white border border-gray-200 p-4 rounded-lg">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="font-bold text-green-800 flex items-center gap-2">
+                                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
                                         <Icon name="Plus" size={20} />
                                         カスタムアイテムを作成
                                     </h3>
@@ -5452,48 +5548,48 @@ RM回数と重量を別々に入力してください。`
                                         />
                                     </div>
 
-                                    {/* Row 2: アイテムタイプ選択（一覧式） */}
+                                    {/* Row 2: カテゴリタブ（食材検索モーダルと同じスタイル） */}
                                     <div>
-                                        <label className="text-xs font-medium text-gray-700 mb-1 block">種類</label>
-                                                            <div className="space-y-1">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'food'})}
-                                                                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
-                                                                        customSupplementData.itemType === 'food'
-                                                                            ? 'bg-green-600 text-white'
-                                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                                    }`}
-                                                                >
-                                                                    <Icon name="Apple" size={16} />
-                                                                    <span>食材</span>
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'recipe'})}
-                                                                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
-                                                                        customSupplementData.itemType === 'recipe'
-                                                                            ? 'bg-green-600 text-white'
-                                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                                    }`}
-                                                                >
-                                                                    <Icon name="ChefHat" size={16} />
-                                                                    <span>料理</span>
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'supplement'})}
-                                                                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
-                                                                        customSupplementData.itemType === 'supplement'
-                                                                            ? 'bg-[#4A9EFF] text-white font-semibold shadow-md'
-                                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                                    }`}
-                                                                >
-                                                                    <Icon name="Pill" size={16} />
-                                                                    <span>サプリ</span>
-                                                                </button>
-                                                            </div>
-                                                        </div>
+                                        <label className="text-xs font-medium text-gray-700 mb-1 block">カテゴリ</label>
+                                        <div className="grid grid-cols-3 border-b border-gray-200">
+                                            <button
+                                                type="button"
+                                                onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'food'})}
+                                                className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    customSupplementData.itemType === 'food'
+                                                        ? 'border-green-600 text-green-600'
+                                                        : 'border-transparent text-gray-600 hover:text-green-600'
+                                                }`}
+                                            >
+                                                <Icon name="Apple" size={16} />
+                                                <span className="text-sm">食材</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'recipe'})}
+                                                className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    customSupplementData.itemType === 'recipe'
+                                                        ? 'border-orange-600 text-orange-600'
+                                                        : 'border-transparent text-gray-600 hover:text-orange-600'
+                                                }`}
+                                            >
+                                                <Icon name="ChefHat" size={16} />
+                                                <span className="text-sm">料理</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'supplement'})}
+                                                className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    customSupplementData.itemType === 'supplement'
+                                                        ? 'border-blue-600 text-blue-600'
+                                                        : 'border-transparent text-gray-600 hover:text-blue-600'
+                                                }`}
+                                            >
+                                                <Icon name="Pill" size={16} />
+                                                <span className="text-sm">サプリ</span>
+                                            </button>
+                                        </div>
+                                    </div>
 
                                                         {/* 栄養素の入力方法タブ */}
                                                         <div className="border-t pt-3">
