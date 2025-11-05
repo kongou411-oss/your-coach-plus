@@ -1600,7 +1600,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     ) : step === 5 ? (
                         <button
                             onClick={handleComplete}
-                            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700"
+                            className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3 rounded-lg hover:from-sky-600 hover:to-blue-700"
                         >
                             開始する
                         </button>
@@ -1612,9 +1612,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
             {visualGuideModal.show && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-pink-600 text-white p-4 flex justify-between items-center z-10">
-                            <h3 className="font-bold text-lg">外見から体脂肪率を推定</h3>
-                            <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
+                        <div className="sticky top-0 bg-gradient-to-r from-yellow-200 to-amber-500 p-4 flex justify-between items-center z-10">
+                            <h3 className="font-bold text-lg text-gray-800">外見から体脂肪率を推定</h3>
+                            <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="text-gray-800 hover:bg-white hover:bg-opacity-20 rounded-full p-1">
                                 <Icon name="X" size={20} />
                             </button>
                         </div>

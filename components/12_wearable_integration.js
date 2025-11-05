@@ -402,7 +402,7 @@ const WearableIntegration = ({ onClose, userId, userProfile }) => {
                             {/* 同期状態 */}
                             {syncStatus === 'syncing' && (
                                 <div className="text-center py-4">
-                                    <Icon name="Loader" size={32} className="animate-spin text-indigo-600 mx-auto mb-2" />
+                                    <Icon name="Loader" size={32} className="animate-spin text-sky-600 mx-auto mb-2" />
                                     <p className="text-sm text-gray-600">デバイスと接続中...</p>
                                 </div>
                             )}
@@ -441,7 +441,7 @@ const WearableIntegration = ({ onClose, userId, userProfile }) => {
                                 <h5 className="font-bold">今日のデータ</h5>
                                 <div className="grid grid-cols-2 gap-3">
                                     {[
-                                        { label: '睡眠時間', value: healthData.sleepHours ? `${healthData.sleepHours}時間` : '-', icon: 'Moon', color: 'purple' },
+                                        { label: '睡眠時間', value: healthData.sleepHours ? `${healthData.sleepHours}時間` : '-', icon: 'Moon', color: 'sky' },
                                         { label: '心拍数', value: healthData.heartRate ? `${healthData.heartRate} bpm` : '-', icon: 'Heart', color: 'red' },
                                         { label: '歩数', value: healthData.steps ? `${healthData.steps.toLocaleString()}歩` : '-', icon: 'Activity', color: 'blue' },
                                         { label: '消費カロリー', value: healthData.activeCalories ? `${healthData.activeCalories} kcal` : '-', icon: 'Flame', color: 'orange' }
@@ -459,7 +459,7 @@ const WearableIntegration = ({ onClose, userId, userProfile }) => {
                             <button
                                 onClick={deviceType === 'healthkit' ? syncHealthKitData : syncHealthConnectData}
                                 disabled={syncStatus === 'syncing'}
-                                className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="w-full bg-sky-600 text-white font-bold py-3 rounded-lg hover:bg-sky-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {syncStatus === 'syncing' ? (
                                     <>

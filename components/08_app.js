@@ -15,8 +15,8 @@ const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
     // シンプルな1ページコンテンツ
     const pageData = {
         icon: 'Sparkles',
-        iconColor: 'bg-gradient-to-r from-indigo-100 to-purple-100',
-        iconTextColor: 'text-indigo-600',
+        iconColor: 'bg-gradient-to-r from-sky-100 to-blue-100',
+        iconTextColor: 'text-sky-600',
         title: 'Your Coach+へようこそ！',
         content: (
             <div className="space-y-4">
@@ -58,7 +58,7 @@ const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
                 {/* 開始ボタン */}
                 <button
                     onClick={handleFinish}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-bold hover:from-indigo-700 hover:to-purple-700 transition flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white py-3 rounded-lg font-bold hover:from-sky-600 hover:to-blue-700 transition flex items-center justify-center gap-2"
                 >
                     <Icon name="Check" size={20} />
                     記録を始める
@@ -124,19 +124,19 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
-                {/* ヘッダー（紫グラデーション） */}
-                <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white text-center relative">
+                {/* ヘッダー（Premiumグラデーション） */}
+                <div className="bg-gradient-to-r from-yellow-200 to-amber-500 p-6 text-center relative">
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition"
+                        className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition text-gray-800"
                     >
                         <Icon name="X" size={20} />
                     </button>
                     <div className="mb-3">
-                        <Icon name="Lock" size={48} className="mx-auto mb-2" />
+                        <Icon name="Lock" size={48} className="mx-auto mb-2 text-gray-800" />
                     </div>
-                    <h2 className="text-2xl font-bold mb-2">Premium会員限定</h2>
-                    <p className="text-sm opacity-90">{featureName}はPremium会員専用の機能です</p>
+                    <h2 className="text-2xl font-bold mb-2 text-gray-800">Premium会員限定</h2>
+                    <p className="text-sm text-gray-700">{featureName}はPremium会員専用の機能です</p>
                 </div>
 
                 {/* コンテンツ */}
@@ -165,16 +165,16 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     </div>
 
                     {/* 価格表示 */}
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 text-center">
+                    <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-amber-300 rounded-lg p-4 text-center">
                         <p className="text-sm text-gray-600 mb-1">月額</p>
-                        <p className="text-4xl font-bold text-purple-600 mb-1">¥740</p>
+                        <p className="text-4xl font-bold text-amber-700 mb-1">¥740</p>
                         <p className="text-xs text-gray-600">1日あたり約24円</p>
                     </div>
 
                     {/* CTA ボタン */}
                     <button
                         onClick={onUpgrade}
-                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg flex items-center justify-center gap-2"
+                        className="w-full bg-gradient-to-r from-yellow-200 to-amber-500 text-gray-800 font-bold py-4 rounded-lg hover:from-yellow-100 hover:to-amber-400 transition shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
                     >
                         <Icon name="Crown" size={20} />
                         Premium会員に登録する

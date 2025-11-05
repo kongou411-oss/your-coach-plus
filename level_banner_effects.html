@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>経験値バナー エフェクトバリエーション - Your Coach+</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 1. シャイン効果（左から右へ光が流れる） */
+        .shine-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .shine-effect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: shine 3s infinite;
+        }
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* 2. パルス効果（拡大縮小） */
+        .pulse-effect {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        /* 3. グロー効果（光の輪郭） */
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(74, 158, 255, 0.6), 0 0 40px rgba(74, 158, 255, 0.4);
+            animation: glow 2s ease-in-out infinite;
+        }
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(74, 158, 255, 0.6), 0 0 40px rgba(74, 158, 255, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(74, 158, 255, 0.8), 0 0 60px rgba(74, 158, 255, 0.6); }
+        }
+
+        /* 4. グラデーションアニメーション（色が移動） */
+        .gradient-animation {
+            background: linear-gradient(90deg, #4A9EFF, #64B5F6, #4A9EFF);
+            background-size: 200% 100%;
+            animation: gradientMove 3s linear infinite;
+        }
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        /* 5. シマー効果（キラキラ） */
+        .shimmer-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer-effect::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { left: -50%; }
+            100% { left: 150%; }
+        }
+
+        /* 6. 波紋効果（上下に波） */
+        .wave-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .wave-effect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent 25%, rgba(255, 255, 255, 0.2) 50%, transparent 75%);
+            animation: wave 4s linear infinite;
+        }
+        @keyframes wave {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0%); }
+        }
+
+        /* 7. スキャン効果（垂直線が移動） */
+        .scan-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .scan-effect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 2px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            animation: scan 2s linear infinite;
+        }
+        @keyframes scan {
+            0% { left: 0%; }
+            100% { left: 100%; }
+        }
+
+        /* 8. 粒子効果（小さな光の粒） */
+        .particle-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .particle-effect::before,
+        .particle-effect::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: particle 3s infinite;
+        }
+        .particle-effect::before {
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        .particle-effect::after {
+            top: 60%;
+            left: 30%;
+            animation-delay: 1.5s;
+        }
+        @keyframes particle {
+            0% { opacity: 0; transform: translateX(0); }
+            50% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(100px); }
+        }
+
+        /* 9. レーザー効果（斜めの光線） */
+        .laser-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .laser-effect::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.3) 50%, transparent 60%);
+            animation: laser 3s linear infinite;
+        }
+        @keyframes laser {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* 10. ネオン効果（ネオンサインのような点滅） */
+        .neon-effect {
+            box-shadow:
+                0 0 5px #4A9EFF,
+                0 0 10px #4A9EFF,
+                0 0 20px #4A9EFF,
+                0 0 40px #4A9EFF;
+            animation: neon 1.5s ease-in-out infinite;
+        }
+        @keyframes neon {
+            0%, 100% {
+                box-shadow:
+                    0 0 5px #4A9EFF,
+                    0 0 10px #4A9EFF,
+                    0 0 20px #4A9EFF,
+                    0 0 40px #4A9EFF;
+            }
+            50% {
+                box-shadow:
+                    0 0 2px #4A9EFF,
+                    0 0 5px #4A9EFF,
+                    0 0 10px #4A9EFF,
+                    0 0 20px #4A9EFF;
+            }
+        }
+
+        /* 11. リップル効果（水面の波紋） */
+        .ripple-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .ripple-effect::before,
+        .ripple-effect::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            animation: ripple 3s infinite;
+        }
+        .ripple-effect::after {
+            animation-delay: 1.5s;
+        }
+        @keyframes ripple {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+                margin-left: 0;
+                margin-top: 0;
+            }
+            100% {
+                width: 200%;
+                height: 200%;
+                opacity: 0;
+                margin-left: -100%;
+                margin-top: -100%;
+            }
+        }
+
+        /* 12. ホログラム効果（虹色の反射） */
+        .hologram-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .hologram-effect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(255, 0, 255, 0.2),
+                rgba(0, 255, 255, 0.2),
+                rgba(255, 255, 0, 0.2),
+                transparent
+            );
+            animation: hologram 4s linear infinite;
+        }
+        @keyframes hologram {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* 13. オーロラ効果（流れる色彩） */
+        .aurora-effect {
+            background: linear-gradient(90deg, #4A9EFF, #64B5F6, #90CAF9, #64B5F6, #4A9EFF);
+            background-size: 400% 100%;
+            animation: aurora 8s ease infinite;
+        }
+        @keyframes aurora {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* 14. ハートビート効果（心拍のような点滅） */
+        .heartbeat-effect {
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            10% { transform: scale(1.05); }
+            20% { transform: scale(1); }
+            30% { transform: scale(1.05); }
+            40% { transform: scale(1); }
+        }
+
+        /* 15. ストライプ効果（斜めストライプ移動） */
+        .stripe-effect {
+            background-image: repeating-linear-gradient(
+                45deg,
+                #4A9EFF,
+                #4A9EFF 10px,
+                #64B5F6 10px,
+                #64B5F6 20px
+            );
+            background-size: 200% 200%;
+            animation: stripe 3s linear infinite;
+        }
+        @keyframes stripe {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+        }
+
+        /* コードブロックスタイル */
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-2 text-gray-800">経験値バナー エフェクトバリエーション</h1>
+        <p class="text-gray-600 mb-8">Your Coach+ 経験値バナーに適用可能な視覚エフェクト集</p>
+
+        <!-- 1. シャイン効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">1. シャイン効果（Shine Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">左から右へ光が流れる、クラシックなシャイン効果。高級感を演出します。</p>
+            <div class="bg-[#4A9EFF] shadow-sm shine-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.shine-effect {
+    position: relative;
+    overflow: hidden;
+}
+.shine-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: shine 3s infinite;
+}
+@keyframes shine {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+            </div>
+        </div>
+
+        <!-- 2. パルス効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">2. パルス効果（Pulse Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">バナー全体がゆっくり拡大縮小。ユーザーの注意を引きます。</p>
+            <div class="bg-[#4A9EFF] shadow-sm pulse-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.pulse-effect {
+    animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+            </div>
+        </div>
+
+        <!-- 3. グロー効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">3. グロー効果（Glow Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">バナーの周囲が光る。柔らかく目立つ印象を与えます。</p>
+            <div class="bg-[#4A9EFF] glow-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.glow-effect {
+    box-shadow: 0 0 20px rgba(74, 158, 255, 0.6), 0 0 40px rgba(74, 158, 255, 0.4);
+    animation: glow 2s ease-in-out infinite;
+}
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(74, 158, 255, 0.6), 0 0 40px rgba(74, 158, 255, 0.4); }
+    50% { box-shadow: 0 0 30px rgba(74, 158, 255, 0.8), 0 0 60px rgba(74, 158, 255, 0.6); }
+}
+            </div>
+        </div>
+
+        <!-- 4. グラデーションアニメーション -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">4. グラデーションアニメーション（Gradient Animation）</h2>
+            <p class="text-sm text-gray-600 mb-4">グラデーションが左右に移動。ダイナミックな印象を与えます。</p>
+            <div class="gradient-animation shadow-sm">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.gradient-animation {
+    background: linear-gradient(90deg, #4A9EFF, #64B5F6, #4A9EFF);
+    background-size: 200% 100%;
+    animation: gradientMove 3s linear infinite;
+}
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+            </div>
+        </div>
+
+        <!-- 5. シマー効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">5. シマー効果（Shimmer Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">キラキラと光が速く流れる。プレミアム感を演出します。</p>
+            <div class="bg-[#4A9EFF] shadow-sm shimmer-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.shimmer-effect {
+    position: relative;
+    overflow: hidden;
+}
+.shimmer-effect::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+    0% { left: -50%; }
+    100% { left: 150%; }
+}
+            </div>
+        </div>
+
+        <!-- 6. 波紋効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">6. 波紋効果（Wave Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">波のように光が流れる。柔らかく穏やかな印象を与えます。</p>
+            <div class="bg-[#4A9EFF] shadow-sm wave-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.wave-effect {
+    position: relative;
+    overflow: hidden;
+}
+.wave-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 25%, rgba(255, 255, 255, 0.2) 50%, transparent 75%);
+    animation: wave 4s linear infinite;
+}
+@keyframes wave {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0%); }
+}
+            </div>
+        </div>
+
+        <!-- 7. スキャン効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">7. スキャン効果（Scan Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">細い垂直線が移動。SF的でテクノロジー感があります。</p>
+            <div class="bg-[#4A9EFF] shadow-sm scan-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.scan-effect {
+    position: relative;
+    overflow: hidden;
+}
+.scan-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    animation: scan 2s linear infinite;
+}
+@keyframes scan {
+    0% { left: 0%; }
+    100% { left: 100%; }
+}
+            </div>
+        </div>
+
+        <!-- 8. 粒子効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">8. 粒子効果（Particle Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">小さな光の粒が流れる。ファンタジー的な雰囲気を演出します。</p>
+            <div class="bg-[#4A9EFF] shadow-sm particle-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.particle-effect {
+    position: relative;
+    overflow: hidden;
+}
+.particle-effect::before,
+.particle-effect::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    animation: particle 3s infinite;
+}
+.particle-effect::before {
+    top: 20%;
+    left: 10%;
+    animation-delay: 0s;
+}
+.particle-effect::after {
+    top: 60%;
+    left: 30%;
+    animation-delay: 1.5s;
+}
+@keyframes particle {
+    0% { opacity: 0; transform: translateX(0); }
+    50% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(100px); }
+}
+            </div>
+        </div>
+
+        <!-- 9. レーザー効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">9. レーザー効果（Laser Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">斜めの光線が移動。シャープで先進的な印象を与えます。</p>
+            <div class="bg-[#4A9EFF] shadow-sm laser-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.laser-effect {
+    position: relative;
+    overflow: hidden;
+}
+.laser-effect::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.3) 50%, transparent 60%);
+    animation: laser 3s linear infinite;
+}
+@keyframes laser {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+            </div>
+        </div>
+
+        <!-- 10. ネオン効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">10. ネオン効果（Neon Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">ネオンサインのように点滅。レトロでポップな印象を与えます。</p>
+            <div class="bg-[#4A9EFF] neon-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.neon-effect {
+    box-shadow:
+        0 0 5px #4A9EFF,
+        0 0 10px #4A9EFF,
+        0 0 20px #4A9EFF,
+        0 0 40px #4A9EFF;
+    animation: neon 1.5s ease-in-out infinite;
+}
+@keyframes neon {
+    0%, 100% {
+        box-shadow:
+            0 0 5px #4A9EFF,
+            0 0 10px #4A9EFF,
+            0 0 20px #4A9EFF,
+            0 0 40px #4A9EFF;
+    }
+    50% {
+        box-shadow:
+            0 0 2px #4A9EFF,
+            0 0 5px #4A9EFF,
+            0 0 10px #4A9EFF,
+            0 0 20px #4A9EFF;
+    }
+}
+            </div>
+        </div>
+
+        <!-- 11. リップル効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">11. リップル効果（Ripple Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">中心から波紋が広がる。インタラクティブな印象を与えます。</p>
+            <div class="bg-[#4A9EFF] shadow-sm ripple-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.ripple-effect {
+    position: relative;
+    overflow: hidden;
+}
+.ripple-effect::before,
+.ripple-effect::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    animation: ripple 3s infinite;
+}
+.ripple-effect::after {
+    animation-delay: 1.5s;
+}
+@keyframes ripple {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 1;
+        margin-left: 0;
+        margin-top: 0;
+    }
+    100% {
+        width: 200%;
+        height: 200%;
+        opacity: 0;
+        margin-left: -100%;
+        margin-top: -100%;
+    }
+}
+            </div>
+        </div>
+
+        <!-- 12. ホログラム効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">12. ホログラム効果（Hologram Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">虹色の反射が流れる。未来的で華やかな印象を与えます。</p>
+            <div class="bg-[#4A9EFF] shadow-sm hologram-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.hologram-effect {
+    position: relative;
+    overflow: hidden;
+}
+.hologram-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(255, 0, 255, 0.2),
+        rgba(0, 255, 255, 0.2),
+        rgba(255, 255, 0, 0.2),
+        transparent
+    );
+    animation: hologram 4s linear infinite;
+}
+@keyframes hologram {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+            </div>
+        </div>
+
+        <!-- 13. オーロラ効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">13. オーロラ効果（Aurora Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">流れる色彩が変化。神秘的で美しい印象を与えます。</p>
+            <div class="aurora-effect shadow-sm">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.aurora-effect {
+    background: linear-gradient(90deg, #4A9EFF, #64B5F6, #90CAF9, #64B5F6, #4A9EFF);
+    background-size: 400% 100%;
+    animation: aurora 8s ease infinite;
+}
+@keyframes aurora {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+            </div>
+        </div>
+
+        <!-- 14. ハートビート効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">14. ハートビート効果（Heartbeat Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">心拍のようなリズミカルな拡大縮小。生命感を演出します。</p>
+            <div class="bg-[#4A9EFF] shadow-sm heartbeat-effect">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.heartbeat-effect {
+    animation: heartbeat 1.5s ease-in-out infinite;
+}
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    10% { transform: scale(1.05); }
+    20% { transform: scale(1); }
+    30% { transform: scale(1.05); }
+    40% { transform: scale(1); }
+}
+            </div>
+        </div>
+
+        <!-- 15. ストライプ効果 -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">15. ストライプ効果（Stripe Effect）</h2>
+            <p class="text-sm text-gray-600 mb-4">斜めストライプが移動。ダイナミックでスポーティな印象を与えます。</p>
+            <div class="stripe-effect shadow-sm">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-white">Lv12</span>
+                        <div class="relative w-24 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                            <div class="absolute top-0 left-0 h-full bg-white rounded-full" style="width: 65%"></div>
+                        </div>
+                        <span class="text-xs text-white font-medium">65%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">142</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 code-block">
+.stripe-effect {
+    background-image: repeating-linear-gradient(
+        45deg,
+        #4A9EFF,
+        #4A9EFF 10px,
+        #64B5F6 10px,
+        #64B5F6 20px
+    );
+    background-size: 200% 200%;
+    animation: stripe 3s linear infinite;
+}
+@keyframes stripe {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+}
+            </div>
+        </div>
+
+        <!-- 推奨 -->
+        <div class="mt-12 p-6 bg-blue-50 border-2 border-blue-300 rounded-xl">
+            <h2 class="text-xl font-bold mb-3 text-blue-900">推奨エフェクト</h2>
+            <div class="space-y-2 text-sm text-blue-800">
+                <p><strong>シンプル &amp; 上品:</strong> 1. シャイン効果、5. シマー効果</p>
+                <p><strong>目立たせたい:</strong> 2. パルス効果、3. グロー効果</p>
+                <p><strong>プレミアム感:</strong> 12. ホログラム効果、13. オーロラ効果</p>
+                <p><strong>テクノロジー感:</strong> 7. スキャン効果、9. レーザー効果</p>
+                <p><strong>動きが控えめ:</strong> 4. グラデーションアニメーション、6. 波紋効果</p>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-gray-500 text-sm">
+            <p>Your Coach+ デザインシステム v2.0.0</p>
+            <p>ベースカラー: #4A9EFF (sky-500)</p>
+        </div>
+    </div>
+</body>
+</html>

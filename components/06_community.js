@@ -425,7 +425,7 @@ ${context}
                                     <div className="flex-1">
                                         <h3 className="font-bold text-gray-800 mb-1">{module.title}</h3>
                                         <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                            module.category === '心理学' ? 'bg-pink-100 text-pink-700' :
+                                            module.category === '心理学' ? 'bg-sky-100 text-sky-700' :
                                             module.category === '運動科学' ? 'bg-orange-100 text-orange-700' :
                                             'bg-green-100 text-green-700'
                                         }`}>
@@ -1551,8 +1551,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                 onClick={() => setProgressType('after')}
                                 className={`p-3 border-2 rounded-lg transition ${
                                     progressType === 'after'
-                                        ? 'border-purple-500 bg-purple-50'
-                                        : 'border-gray-200 hover:border-purple-300'
+                                        ? 'border-sky-500 bg-sky-50'
+                                        : 'border-gray-200 hover:border-sky-300'
                                 }`}
                             >
                                 <p className="font-semibold text-gray-800">アフター</p>
@@ -1758,8 +1758,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             onClick={() => setPostCategory('body')}
                             className={`p-4 rounded-lg border-2 transition-all ${
                                 postCategory === 'body'
-                                    ? 'border-indigo-600 bg-indigo-50'
-                                    : 'border-gray-200 bg-white hover:border-indigo-300'
+                                    ? 'border-sky-600 bg-sky-50'
+                                    : 'border-gray-200 bg-white hover:border-sky-300'
                             }`}
                         >
                             <div className="text-2xl mb-2">💪</div>
@@ -1822,7 +1822,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             <div className="text-gray-700 font-semibold">
                                 ✓ Your Coach+ データ連携（必須）
                             </div>
-                            <div className="text-indigo-700 mt-2 font-semibold">
+                            <div className="text-sky-700 mt-2 font-semibold">
                                 ℹ️ 投稿は運営の承認後に公開されます
                             </div>
                         </div>
@@ -2049,7 +2049,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
 
                                 return (
                                     <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                                        <p className="text-xs font-semibold text-indigo-700 mb-2">{titleText}</p>
+                                        <p className="text-xs font-semibold text-sky-700 mb-2">{titleText}</p>
                                         <div className="space-y-1 text-xs text-gray-700">
                                             <div>• カロリー: {dataToShow.calories}kcal</div>
                                             <div>• タンパク質: {dataToShow.protein}g</div>
@@ -2059,7 +2059,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                             {dataToShow.weight && <div>• 体重: {dataToShow.weight}kg</div>}
                                             {dataToShow.lbm && <div>• 除脂肪体重: {dataToShow.lbm}kg</div>}
                                             {lbmChange && (
-                                                <div className="font-semibold text-indigo-700 mt-2">
+                                                <div className="font-semibold text-sky-700 mt-2">
                                                     • 過去3ヶ月のLBM変化: {lbmChange > 0 ? '+' : ''}{lbmChange}kg
                                                 </div>
                                             )}
@@ -2314,7 +2314,7 @@ const AdminPanel = ({ onClose }) => {
                                     </div>
                                     <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                                         post.category === 'body'
-                                            ? 'bg-indigo-100 text-indigo-700'
+                                            ? 'bg-indigo-100 text-sky-700'
                                             : 'bg-teal-100 text-teal-700'
                                     }`}>
                                         {post.category === 'body' ? '💪 ボディメイク' : '🧠 メンタル'}
@@ -2346,7 +2346,7 @@ const AdminPanel = ({ onClose }) => {
                                 {/* データ連携情報 */}
                                 {post.attachedData && (
                                     <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg mb-4">
-                                        <p className="text-xs font-semibold text-indigo-700 mb-3 flex items-center gap-1">
+                                        <p className="text-xs font-semibold text-sky-700 mb-3 flex items-center gap-1">
                                             <Icon name="Database" size={14} />
                                             データ連携情報
                                         </p>
@@ -2358,7 +2358,7 @@ const AdminPanel = ({ onClose }) => {
                                             <div>• 体重: {post.attachedData.weight}kg</div>
                                             <div>• LBM: {post.attachedData.lbm}kg</div>
                                             {post.attachedData.lbmChange && (
-                                                <div className="col-span-3 font-semibold text-indigo-700">
+                                                <div className="col-span-3 font-semibold text-sky-700">
                                                     • LBM変化: {post.attachedData.lbmChange > 0 ? '+' : ''}{post.attachedData.lbmChange}kg
                                                 </div>
                                             )}

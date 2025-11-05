@@ -74,20 +74,20 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
                 {/* ヘッダー */}
-                <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 z-10">
+                <div className="sticky top-0 bg-gradient-to-r from-yellow-200 to-amber-500 p-6 z-10">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Icon name="Crown" size={32} />
-                            <h2 className="text-2xl font-bold">Premium会員登録</h2>
+                            <Icon name="Crown" size={32} className="text-gray-800" />
+                            <h2 className="text-2xl font-bold text-gray-800">Premium会員登録</h2>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-white/20 rounded-full transition"
+                            className="p-2 hover:bg-white/20 rounded-full transition text-gray-800"
                         >
                             <Icon name="X" size={24} />
                         </button>
                     </div>
-                    <p className="text-sm opacity-90 mt-2">最高のボディメイク体験を手に入れよう</p>
+                    <p className="text-sm text-gray-700 mt-2">最高のボディメイク体験を手に入れよう</p>
                 </div>
 
                 {/* タブ切り替え */}
@@ -96,7 +96,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                         onClick={() => setSelectedPlan('premium')}
                         className={`flex-1 py-3 font-bold transition ${
                             selectedPlan === 'premium'
-                                ? 'text-purple-600 border-b-2 border-purple-600'
+                                ? 'text-amber-600 border-b-2 border-amber-600'
                                 : 'text-gray-500 hover:text-gray-700'
                         }`}
                     >
@@ -106,7 +106,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                         onClick={() => setSelectedPlan('credit_pack')}
                         className={`flex-1 py-3 font-bold transition ${
                             selectedPlan === 'credit_pack'
-                                ? 'text-purple-600 border-b-2 border-purple-600'
+                                ? 'text-amber-600 border-b-2 border-amber-600'
                                 : 'text-gray-500 hover:text-gray-700'
                         }`}
                     >
@@ -119,10 +119,10 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                     {selectedPlan === 'premium' ? (
                         <>
                             {/* Premium会員プラン */}
-                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-2xl p-6">
+                            <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-amber-300 rounded-2xl p-6">
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="bg-purple-600 text-white rounded-full p-3">
-                                        <Icon name="Crown" size={24} />
+                                    <div className="bg-gradient-to-r from-yellow-200 to-amber-500 rounded-full p-3">
+                                        <Icon name="Crown" size={24} className="text-gray-800" />
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold text-gray-800">Premium会員</h3>
@@ -133,7 +133,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                 {/* 価格 */}
                                 <div className="text-center my-6">
                                     <div className="flex items-baseline justify-center gap-2">
-                                        <span className="text-5xl font-bold text-purple-600">¥740</span>
+                                        <span className="text-5xl font-bold text-amber-700">¥740</span>
                                         <span className="text-gray-600">/月</span>
                                     </div>
                                     <p className="text-sm text-gray-600 mt-2">1日あたり約24円</p>
@@ -163,11 +163,11 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                 <button
                                     onClick={handleSubscribe}
                                     disabled={loading}
-                                    className="w-full mt-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="w-full mt-6 bg-gradient-to-r from-yellow-200 to-amber-500 text-gray-800 font-bold py-4 rounded-lg hover:from-yellow-100 hover:to-amber-400 transition shadow-lg shadow-amber-500/30 disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {loading ? (
                                         <>
-                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-800"></div>
                                             処理中...
                                         </>
                                     ) : (

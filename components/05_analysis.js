@@ -1073,7 +1073,7 @@ ${conversationContext}
     if (!analysis) {
         return (
             <div className="fixed inset-0 bg-white z-50 flex flex-col">
-                <header className="p-4 flex items-center border-b bg-gradient-to-r from-purple-600 to-indigo-600 flex-shrink-0">
+                <header className="p-4 flex items-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0">
                     <button onClick={handleClose} className="text-white">
                         <Icon name="ArrowLeft" size={24} />
                     </button>
@@ -1092,7 +1092,7 @@ ${conversationContext}
 
     return (
         <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
-            <header className="p-4 flex items-center border-b bg-gradient-to-r from-indigo-600 to-purple-600 flex-shrink-0 sticky top-0 z-30">
+            <header className="p-4 flex items-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0 sticky top-0 z-30">
                 <button onClick={handleClose} className="text-white">
                     <Icon name="ArrowLeft" size={24} />
                 </button>
@@ -1112,7 +1112,7 @@ ${conversationContext}
             {/* クレジット表示バー */}
             {creditInfo && (
                 <div className={`px-4 py-2 border-b flex items-center justify-between ${
-                    creditInfo.tier === 'premium' ? 'bg-gradient-to-r from-purple-50 to-pink-50' : 'bg-blue-50'
+                    creditInfo.tier === 'premium' ? 'bg-gradient-to-r from-yellow-50 to-amber-50' : 'bg-blue-50'
                 }`}>
                     <div className="flex items-center gap-2">
                         {creditInfo.tier === 'premium' ? (
@@ -1208,7 +1208,7 @@ ${conversationContext}
                             /* ユーザーの質問（右側） */
                             <div className="flex items-start gap-3 justify-end">
                                 <div className="flex-1 max-w-[85%]">
-                                    <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl rounded-tr-none p-4 shadow-md text-white">
+                                    <div className="bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl rounded-tr-none p-4 shadow-md text-white">
                                         <p className="text-sm leading-relaxed">
                                             {msg.content}
                                         </p>
@@ -1442,19 +1442,19 @@ ${conversationContext}
             {showUpgradeModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fade-in">
                     <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
-                        {/* ヘッダー（紫グラデーション） */}
-                        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white text-center relative">
+                        {/* ヘッダー（Premiumグラデーション） */}
+                        <div className="bg-gradient-to-r from-yellow-200 to-amber-500 p-6 text-center relative">
                             <button
                                 onClick={() => setShowUpgradeModal(false)}
-                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition"
+                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition text-gray-800"
                             >
                                 <Icon name="X" size={20} />
                             </button>
                             <div className="mb-3">
-                                <Icon name="Crown" size={48} className="mx-auto mb-2" />
+                                <Icon name="Crown" size={48} className="mx-auto mb-2 text-gray-800" />
                             </div>
-                            <h2 className="text-2xl font-bold mb-2">🎉 初回分析完了！</h2>
-                            <p className="text-sm opacity-90">AIがあなた専用の分析レポートを作成しました</p>
+                            <h2 className="text-2xl font-bold mb-2 text-gray-800">🎉 初回分析完了！</h2>
+                            <p className="text-sm text-gray-700">AIがあなた専用の分析レポートを作成しました</p>
                         </div>
 
                         {/* コンテンツ */}
@@ -1510,7 +1510,7 @@ ${conversationContext}
                                         alert('サブスクリプション画面は準備中です');
                                     }
                                 }}
-                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg flex items-center justify-center gap-2"
+                                className="w-full bg-gradient-to-r from-yellow-200 to-amber-500 text-gray-800 font-bold py-4 rounded-lg hover:from-yellow-100 hover:to-amber-400 transition shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
                             >
                                 <Icon name="Crown" size={20} />
                                 Premium会員に登録する

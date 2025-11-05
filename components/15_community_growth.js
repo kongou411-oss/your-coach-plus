@@ -200,7 +200,7 @@ const ThemeSpaceSelector = ({ userId, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                <div className="sticky top-0 bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
                     <h3 className="text-lg font-bold flex items-center gap-2">
                         <Icon name="Users" size={20} />
                         テーマ別スペース

@@ -18,22 +18,22 @@ const FeedbackPopup = ({ message, type, onClose, autoCloseMs = 3000 }) => {
         success: {
             bg: 'bg-gradient-to-r from-green-500 to-emerald-500',
             icon: 'CheckCircle',
-            iconColor: 'text-white'
+            iconColor: 'text-gray-800'
         },
         achievement: {
             bg: 'bg-gradient-to-r from-yellow-500 to-orange-500',
             icon: 'Award',
-            iconColor: 'text-white'
+            iconColor: 'text-gray-800'
         },
         insight: {
-            bg: 'bg-gradient-to-r from-blue-500 to-indigo-500',
+            bg: 'bg-gradient-to-r from-blue-500 to-sky-500',
             icon: 'Lightbulb',
-            iconColor: 'text-white'
+            iconColor: 'text-gray-800'
         },
         milestone: {
-            bg: 'bg-gradient-to-r from-purple-500 to-pink-500',
+            bg: 'bg-gradient-to-r from-yellow-200 to-amber-500',
             icon: 'Trophy',
-            iconColor: 'text-white'
+            iconColor: 'text-gray-800'
         }
     };
 
@@ -46,7 +46,7 @@ const FeedbackPopup = ({ message, type, onClose, autoCloseMs = 3000 }) => {
             }`}
             style={{ maxWidth: '90vw', width: '400px' }}
         >
-            <div className={`${style.bg} text-white p-4 rounded-2xl shadow-2xl`}>
+            <div className={`${style.bg} text-gray-800 p-4 rounded-2xl shadow-2xl`}>
                 <div className="flex items-start gap-3">
                     <div className={`flex-shrink-0 ${style.iconColor}`}>
                         <Icon name={style.icon} size={28} />

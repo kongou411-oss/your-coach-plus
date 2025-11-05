@@ -354,16 +354,16 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     </details>
 
                     {/* プレミアム */}
-                    <details className="border rounded-lg border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
-                        <summary className="cursor-pointer p-4 hover:bg-purple-100 font-medium flex items-center gap-2">
-                            <Icon name="Crown" size={18} className="text-purple-600" />
+                    <details className="border rounded-lg border-amber-200 bg-gradient-to-r from-yellow-50 to-amber-50">
+                        <summary className="cursor-pointer p-4 hover:bg-amber-100 font-medium flex items-center gap-2">
+                            <Icon name="Crown" size={18} className="text-amber-600" />
                             プレミアム
                             {(userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE) && (
-                                <span className="ml-2 px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full">Premium会員</span>
+                                <span className="ml-2 px-2 py-0.5 bg-gradient-to-r from-yellow-200 to-amber-500 text-gray-800 text-xs rounded-full">Premium会員</span>
                             )}
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
-                        <div className="p-4 pt-0 border-t border-purple-200">
+                        <div className="p-4 pt-0 border-t border-amber-200">
                             <div className="space-y-4">
                                 {(() => {
                                     const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
@@ -373,18 +373,18 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     if (isPremium) {
                                         // Premium会員
                                         return (
-                                            <div className="bg-white p-4 rounded-lg border border-purple-200">
+                                            <div className="bg-white p-4 rounded-lg border border-amber-200">
                                                 <div className="flex items-center gap-3 mb-3">
-                                                    <Icon name="Crown" size={24} className="text-purple-600" />
+                                                    <Icon name="Crown" size={24} className="text-amber-600" />
                                                     <div>
                                                         <p className="font-bold text-gray-800">Premium会員</p>
                                                         <p className="text-sm text-gray-600">すべての機能が利用可能</p>
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200 mb-3">
+                                                <div className="bg-gradient-to-r from-yellow-50 to-amber-50 p-4 rounded-lg border border-amber-300 mb-3">
                                                     <p className="text-sm font-medium text-gray-700 mb-1">月額料金</p>
-                                                    <p className="text-3xl font-bold text-purple-600">¥740</p>
+                                                    <p className="text-3xl font-bold text-amber-700">¥740</p>
                                                     <p className="text-xs text-gray-500 mt-1">税込</p>
                                                 </div>
 
@@ -424,7 +424,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
 
                                                 <button
-                                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
+                                                    className="w-full bg-gradient-to-r from-yellow-200 to-amber-500 text-gray-800 font-bold py-3 rounded-lg hover:from-yellow-100 hover:to-amber-400 shadow-lg shadow-amber-500/30"
                                                     onClick={() => alert('サブスクリプション画面は実装予定！')}
                                                 >
                                                     月額740円でPremium登録
@@ -449,7 +449,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
 
                                                 <button
-                                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700"
+                                                    className="w-full bg-gradient-to-r from-yellow-200 to-amber-500 text-gray-800 font-bold py-3 rounded-lg hover:from-yellow-100 hover:to-amber-400 shadow-lg shadow-amber-500/30"
                                                     onClick={() => alert('サブスクリプション画面は実装予定！')}
                                                 >
                                                     月額740円でPremium登録

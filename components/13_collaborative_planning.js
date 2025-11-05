@@ -167,7 +167,7 @@ JSONのみを出力し、他のテキストは含めないでください。`;
         return (
             <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
                 <div className="text-center">
-                    <Icon name="Loader" size={48} className="animate-spin text-indigo-600 mx-auto mb-4" />
+                    <Icon name="Loader" size={48} className="animate-spin text-sky-600 mx-auto mb-4" />
                     <p className="text-gray-600">AIが明日のプランを作成中...</p>
                     <p className="text-sm text-gray-500 mt-2">あなたの目標と今日の記録を分析しています</p>
                 </div>
@@ -183,7 +183,7 @@ JSONのみを出力し、他のテキストは含めないでください。`;
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                 {/* ヘッダー */}
-                <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                <div className="sticky top-0 bg-gradient-to-r from-sky-600 to-sky-700 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
                     <div>
                         <h3 className="text-lg font-bold flex items-center gap-2">
                             <Icon name="Lightbulb" size={20} />
@@ -201,8 +201,8 @@ JSONのみを出力し、他のテキストは含めないでください。`;
 
                 <div className="p-6 space-y-6">
                     {/* 概要 */}
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
-                        <p className="text-indigo-900">{editedPlan.summary}</p>
+                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-4">
+                        <p className="text-sky-900">{editedPlan.summary}</p>
                     </div>
 
                     {/* 編集モード切替 */}
@@ -212,7 +212,7 @@ JSONのみを出力し、他のテキストは含めないでください。`;
                             onClick={() => setIsEditing(!isEditing)}
                             className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
                                 isEditing
-                                    ? 'bg-indigo-600 text-white'
+                                    ? 'bg-sky-600 text-white'
                                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                             }`}
                         >
@@ -305,7 +305,7 @@ const PlanSection = ({ section, sectionIndex, isEditing, onEditSection, onEditIt
     const typeColors = {
         training: 'red',
         meal: 'green',
-        supplement: 'purple',
+        supplement: 'sky',
         rest: 'blue'
     };
 

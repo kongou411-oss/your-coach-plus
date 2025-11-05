@@ -483,7 +483,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 {/* ヘッダー */}
-                <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                <div className="sticky top-0 bg-gradient-to-r from-sky-600 to-sky-700 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
                     <h3 className="text-lg font-bold flex items-center gap-2">
                         <Icon name="Camera" size={20} />
                         AI食事認識
@@ -508,7 +508,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                 <div className="p-6 space-y-6">
                     {/* 画像選択 */}
                     {!imagePreview && (
-                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-indigo-400 transition">
+                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-sky-400 transition">
                             <input
                                 type="file"
                                 accept="image/*"
@@ -558,7 +558,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                             <button
                                 onClick={recognizeFood}
                                 disabled={recognizing}
-                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-4 rounded-xl hover:from-purple-700 hover:to-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="w-full bg-gradient-to-r from-sky-600 to-sky-700 text-white font-bold py-4 rounded-xl hover:from-sky-700 hover:to-sky-800 transition disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {recognizing ? (
                                     <>
@@ -807,40 +807,40 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                             {/* 全フローの説明 */}
                             <div className="space-y-4">
                                 <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                                    <Icon name="Zap" size={20} className="text-purple-600" />
+                                    <Icon name="Zap" size={20} className="text-sky-600" />
                                     解析から記録までの流れ
                                 </h4>
                                 <div className="space-y-3">
-                                    <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                                    <div className="flex items-start gap-3 bg-sky-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-sky-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
                                         <div>
                                             <p className="font-semibold text-gray-800">写真を撮影または選択</p>
                                             <p className="text-sm text-gray-600 mt-1">食事の写真をカメラで撮影、またはギャラリーから選択します。</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
+                                    <div className="flex items-start gap-3 bg-sky-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-sky-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
                                         <div>
                                             <p className="font-semibold text-gray-800">AIが自動で食材を認識・解析</p>
                                             <p className="text-sm text-gray-600 mt-1">「AIで食品を認識」ボタンを押すと、AIが写真から食材を自動で検出し、量とカロリー・PFCを推定します。</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
+                                    <div className="flex items-start gap-3 bg-sky-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-sky-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
                                         <div>
                                             <p className="font-semibold text-gray-800">認識結果を確認・調整</p>
                                             <p className="text-sm text-gray-600 mt-1">認識された食材の名前、量、栄養素を確認します。数量を調整したり、不要な食材を削除できます。</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">4</div>
+                                    <div className="flex items-start gap-3 bg-sky-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-sky-600 text-white rounded-full flex items-center justify-center font-bold text-sm">4</div>
                                         <div>
                                             <p className="font-semibold text-gray-800">必要に応じて食材を追加</p>
                                             <p className="text-sm text-gray-600 mt-1">AIが見逃した食材は「食材を手動で追加」ボタンから追加できます。</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">5</div>
+                                    <div className="flex items-start gap-3 bg-sky-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-sky-600 text-white rounded-full flex items-center justify-center font-bold text-sm">5</div>
                                         <div>
                                             <p className="font-semibold text-gray-800">「確定して追加」で記録完了</p>
                                             <p className="text-sm text-gray-600 mt-1">内容を確認したら「確定して追加」ボタンを押して、食事に追加します。</p>
@@ -1217,7 +1217,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                             step={(base.unit === '本' || base.unit === '1個') ? 0.1 : 5}
                             value={amount}
                             onChange={(e) => handleAmountChange(Number(e.target.value))}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sky-600"
                             style={{
                                 background: `linear-gradient(to right, #4f46e5 0%, #4f46e5 ${(amount/((base.unit === '本' || base.unit === '1個') ? 50 : 500))*100}%, #e5e7eb ${(amount/((base.unit === '本' || base.unit === '1個') ? 50 : 500))*100}%, #e5e7eb 100%)`
                             }}
@@ -1225,30 +1225,30 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                         <div className="flex justify-between text-xs text-gray-500 mt-1">
                             {base.unit === '本' ? (
                                 <>
-                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0</span>
-                                    <span onClick={() => handleAmountChange(1)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">1</span>
-                                    <span onClick={() => handleAmountChange(2)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">2</span>
-                                    <span onClick={() => handleAmountChange(5)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">5</span>
-                                    <span onClick={() => handleAmountChange(10)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">10</span>
-                                    <span onClick={() => handleAmountChange(50)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">50</span>
+                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">0</span>
+                                    <span onClick={() => handleAmountChange(1)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">1</span>
+                                    <span onClick={() => handleAmountChange(2)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">2</span>
+                                    <span onClick={() => handleAmountChange(5)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">5</span>
+                                    <span onClick={() => handleAmountChange(10)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">10</span>
+                                    <span onClick={() => handleAmountChange(50)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">50</span>
                                 </>
                             ) : base.unit === '1個' ? (
                                 <>
-                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0</span>
-                                    <span onClick={() => handleAmountChange(1)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">1</span>
-                                    <span onClick={() => handleAmountChange(10)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">10</span>
-                                    <span onClick={() => handleAmountChange(20)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">20</span>
-                                    <span onClick={() => handleAmountChange(30)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">30</span>
-                                    <span onClick={() => handleAmountChange(50)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">50</span>
+                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">0</span>
+                                    <span onClick={() => handleAmountChange(1)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">1</span>
+                                    <span onClick={() => handleAmountChange(10)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">10</span>
+                                    <span onClick={() => handleAmountChange(20)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">20</span>
+                                    <span onClick={() => handleAmountChange(30)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">30</span>
+                                    <span onClick={() => handleAmountChange(50)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">50</span>
                                 </>
                             ) : (
                                 <>
-                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0</span>
-                                    <span onClick={() => handleAmountChange(100)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">100</span>
-                                    <span onClick={() => handleAmountChange(200)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">200</span>
-                                    <span onClick={() => handleAmountChange(300)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">300</span>
-                                    <span onClick={() => handleAmountChange(400)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">400</span>
-                                    <span onClick={() => handleAmountChange(500)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">500</span>
+                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">0</span>
+                                    <span onClick={() => handleAmountChange(100)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">100</span>
+                                    <span onClick={() => handleAmountChange(200)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">200</span>
+                                    <span onClick={() => handleAmountChange(300)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">300</span>
+                                    <span onClick={() => handleAmountChange(400)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">400</span>
+                                    <span onClick={() => handleAmountChange(500)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">500</span>
                                 </>
                             )}
                         </div>
@@ -1260,7 +1260,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                         value={amount}
                         onChange={(e) => handleAmountChange(Number(e.target.value))}
                         step={(base.unit === '本' || base.unit === '1個') ? 0.1 : 1}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none mb-2"
                     />
 
                     {/* 増減ボタン */}
@@ -1348,13 +1348,13 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                     <div className="grid grid-cols-2 gap-2 mt-2">
                         <button
                             onClick={() => handleAmountChange(Math.max(0, Math.round(Number(amount) * 0.5 * 10) / 10))}
-                            className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                            className="py-1.5 bg-sky-50 text-sky-600 rounded text-xs hover:bg-sky-100 font-medium"
                         >
                             ×0.5
                         </button>
                         <button
                             onClick={() => handleAmountChange(Math.round(Number(amount) * 2 * 10) / 10)}
-                            className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                            className="py-1.5 bg-sky-50 text-sky-600 rounded text-xs hover:bg-sky-100 font-medium"
                         >
                             ×2
                         </button>
@@ -1367,9 +1367,9 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                 <div className="mt-4 pt-4 border-t border-gray-200">
                     <p className="text-xs text-gray-600 mb-2 font-medium">摂取量</p>
                     <div className="grid grid-cols-4 gap-3 text-center">
-                        <div className="bg-indigo-50 rounded-lg p-2">
+                        <div className="bg-sky-50 rounded-lg p-2">
                             <p className="text-xs text-gray-600">カロリー</p>
-                            <p className="text-base font-bold text-indigo-700">{nutrients.calories}kcal</p>
+                            <p className="text-base font-bold text-sky-700">{nutrients.calories}kcal</p>
                         </div>
                         <div className="bg-cyan-50 rounded-lg p-2">
                             <p className="text-xs text-gray-600">P</p>
