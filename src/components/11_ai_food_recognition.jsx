@@ -509,23 +509,47 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                 <div className="p-6 space-y-6">
                     {/* 画像選択 */}
                     {!imagePreview && (
-                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-sky-400 transition">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageSelect}
-                                className="hidden"
-                                id="food-image-input"
-                            />
-                            <label htmlFor="food-image-input" className="cursor-pointer">
-                                <Icon name="Camera" size={64} className="mx-auto mb-4 text-gray-300" />
-                                <p className="text-lg font-medium text-gray-700 mb-2">
-                                    食事の写真を撮影または選択
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                    タップして画像を選択してください
-                                </p>
-                            </label>
+                        <div className="space-y-3">
+                            {/* カメラで撮影ボタン */}
+                            <div className="border-2 border-gray-300 rounded-xl overflow-hidden hover:border-sky-400 transition">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    onChange={handleImageSelect}
+                                    className="hidden"
+                                    id="food-image-camera"
+                                />
+                                <label htmlFor="food-image-camera" className="cursor-pointer block bg-sky-50 hover:bg-sky-100 transition p-6 text-center">
+                                    <Icon name="Camera" size={48} className="mx-auto mb-3 text-sky-600" />
+                                    <p className="text-base font-bold text-sky-700 mb-1">
+                                        📷 カメラで撮影
+                                    </p>
+                                    <p className="text-xs text-sky-600">
+                                        その場で食事を撮影して記録
+                                    </p>
+                                </label>
+                            </div>
+
+                            {/* ギャラリーから選択ボタン */}
+                            <div className="border-2 border-gray-300 rounded-xl overflow-hidden hover:border-gray-400 transition">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageSelect}
+                                    className="hidden"
+                                    id="food-image-gallery"
+                                />
+                                <label htmlFor="food-image-gallery" className="cursor-pointer block bg-gray-50 hover:bg-gray-100 transition p-6 text-center">
+                                    <Icon name="Image" size={48} className="mx-auto mb-3 text-gray-500" />
+                                    <p className="text-base font-bold text-gray-700 mb-1">
+                                        🖼️ ギャラリーから選択
+                                    </p>
+                                    <p className="text-xs text-gray-600">
+                                        保存済みの写真から選択
+                                    </p>
+                                </label>
+                            </div>
                         </div>
                     )}
 
