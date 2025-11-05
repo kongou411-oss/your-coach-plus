@@ -691,7 +691,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {/* ミネラル */}
                         <div>
                             <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
-                                <Icon name="Gem" size={16} className="text-amber-500" />
+                                <Icon name="Gem" size={16} className="text-purple-500" />
                                 ミネラル
                             </h4>
                             <div className="grid grid-cols-2 gap-3">
@@ -1133,10 +1133,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     {dailyRecord.meals?.length > 0 ? (
                         <div className="space-y-3">
                             {dailyRecord.meals.map((meal, index) => (
-                                <div key={meal.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 hover:shadow-md transition-shadow ${
-                                    meal.isPredicted ? 'border-2 border-sky-300 bg-sky-50' :
-                                    meal.isRoutine ? 'border-2 border-amber-300 bg-amber-50' :
-                                    ''
+                                <div key={meal.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 ${
+                                    meal.isPredicted ? 'border-2 border-sky-300 bg-sky-50 shadow-sky-200/50' :
+                                    meal.isRoutine ? 'border-2 border-amber-300 bg-amber-50 shadow-amber-200/50' :
+                                    'hover:border-gray-300'
                                 }`}>
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex-1">
@@ -1250,10 +1250,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {dailyRecord.workouts?.length > 0 ? (
                             <div className="space-y-3">
                                 {dailyRecord.workouts.map((workout, index) => (
-                                    <div key={workout.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 hover:shadow-md transition-shadow ${
-                                        workout.isPredicted ? 'border-2 border-sky-300 bg-sky-50' :
-                                        workout.isRoutine ? 'border-2 border-amber-300 bg-amber-50' :
-                                        ''
+                                    <div key={workout.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 ${
+                                        workout.isPredicted ? 'border-2 border-sky-300 bg-sky-50 shadow-sky-200/50' :
+                                        workout.isRoutine ? 'border-2 border-amber-300 bg-amber-50 shadow-amber-200/50' :
+                                        'hover:border-gray-300'
                                     }`}>
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1">
@@ -1442,10 +1442,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
                                             item.value === ((dailyRecord.conditions?.sleepHours) || 0)
-                                                ? 'text-white'
-                                                : 'text-gray-500 hover:text-gray-800'
+                                                ? 'text-white shadow-lg'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
                                         }`}
                                     >
                                         {item.label}
@@ -1503,10 +1503,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
                                             item.value === ((dailyRecord.conditions?.sleepQuality) || 0)
-                                                ? 'text-white'
-                                                : 'text-gray-500 hover:text-gray-800'
+                                                ? 'text-white shadow-lg'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
                                         }`}
                                     >
                                         {item.label}
@@ -1564,10 +1564,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
                                             item.value === ((dailyRecord.conditions?.appetite) || 0)
-                                                ? 'text-white'
-                                                : 'text-gray-500 hover:text-gray-800'
+                                                ? 'text-white shadow-lg'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
                                         }`}
                                     >
                                         {item.label}
@@ -1625,10 +1625,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
                                             item.value === ((dailyRecord.conditions?.digestion) || 0)
-                                                ? 'text-white'
-                                                : 'text-gray-500 hover:text-gray-800'
+                                                ? 'text-white shadow-lg'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
                                         }`}
                                     >
                                         {item.label}
@@ -1686,10 +1686,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
                                             item.value === ((dailyRecord.conditions?.focus) || 0)
-                                                ? 'text-white'
-                                                : 'text-gray-500 hover:text-gray-800'
+                                                ? 'text-white shadow-lg'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
                                         }`}
                                     >
                                         {item.label}
@@ -1747,10 +1747,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 focus:outline-none ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
                                             item.value === ((dailyRecord.conditions?.stress) || 0)
-                                                ? 'text-white'
-                                                : 'text-gray-500 hover:text-gray-800'
+                                                ? 'text-white shadow-lg'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
                                         }`}
                                     >
                                         {item.label}
