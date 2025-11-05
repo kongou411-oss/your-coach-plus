@@ -40,33 +40,6 @@ const LoginScreen = () => {
         return () => window.removeEventListener('message', handleMessage);
     }, []);
 
-    // リダイレクト後のGoogle認証結果を取得
-    useEffect(() => {
-        const handleRedirectResult = async () => {
-            try {
-                const result = await auth.getRedirectResult();
-                if (result && result.user) {
-                    // ログインモードの場合：既存ユーザーかチェック
-                    if (!isSignUp) {
-                        const profile = await DataService.getUserProfile(result.user.uid);
-                        if (!profile) {
-                            // 未登録ユーザー：サインアウトして新規登録を促す
-                            await auth.signOut();
-                            alert('Googleアカウントが未登録です。まずアカウントを作成してください。');
-                            setIsSignUp(true);
-                        }
-                    }
-                    // 既存ユーザーまたは新規登録の場合はonAuthStateChangedで処理される
-                }
-            } catch (error) {
-                if (error.code && error.code !== 'auth/popup-closed-by-user') {
-                    alert(error.message);
-                }
-            }
-        };
-        handleRedirectResult();
-    }, []);
-
     // パスワード強度チェック
     const checkPasswordStrength = (pwd) => {
         let score = 0;
@@ -190,11 +163,23 @@ const LoginScreen = () => {
     const handleGoogleLogin = async () => {
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
-            // リダイレクト方式に変更（COOPエラー回避）
-            await auth.signInWithRedirect(provider);
-            // リダイレクト後の処理はuseEffectで実行
+            const result = await auth.signInWithPopup(provider);
+            const user = result.user;
+
+            // 既存ユーザーかチェック
+            const profile = await DataService.getUserProfile(user.uid);
+
+            if (!profile) {
+                // 未登録ユーザー：サインアウトして新規登録を促す
+                await auth.signOut();
+                alert('Googleアカウントが未登録です。まずアカウントを作成してください。');
+                setIsSignUp(true); // 新規登録モードに切り替え
+            }
+            // 既存ユーザーの場合はonAuthStateChangedで処理される
         } catch (error) {
-            alert(error.message);
+            if (error.code !== 'auth/popup-closed-by-user') {
+                alert(error.message);
+            }
         }
     };
 
@@ -208,11 +193,12 @@ const LoginScreen = () => {
 
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
-            // リダイレクト方式に変更（COOPエラー回避）
-            await auth.signInWithRedirect(provider);
-            // リダイレクト後の処理はuseEffectで実行
+            const result = await auth.signInWithPopup(provider);
+            // 新規ユーザーの場合はonAuthStateChangedで処理される
         } catch (error) {
-            alert(error.message);
+            if (error.code !== 'auth/popup-closed-by-user') {
+                alert(error.message);
+            }
         }
     };
 

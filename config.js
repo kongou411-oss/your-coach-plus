@@ -336,7 +336,7 @@ const FEATURES = {
 // Firebase Configuration
 const FIREBASE_CONFIG = {
     apiKey: "AIzaSyCvKYPLoqmg-vE_8lIdROAcXPres3ByaYU",
-    authDomain: "your-coach-plus.web.app",
+    authDomain: "your-coach-plus.firebaseapp.com",
     projectId: "your-coach-plus",
     storageBucket: "your-coach-plus.firebasestorage.app",
     messagingSenderId: "654534642431",
