@@ -613,7 +613,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.protein}g</span>
                             </div>
-                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden hover:shadow-sm transition-shadow">
                                 <div className="h-full bg-red-500" style={{ width: `${Math.min(proteinPercent, 100)}%` }}></div>
                             </div>
                         </div>
@@ -624,7 +624,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.fat}g</span>
                             </div>
-                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden hover:shadow-sm transition-shadow">
                                 <div className="h-full bg-yellow-500" style={{ width: `${Math.min((currentIntake.fat / targetPFC.fat) * 100, 100)}%` }}></div>
                             </div>
                         </div>
@@ -635,7 +635,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.carbs}g</span>
                             </div>
-                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden hover:shadow-sm transition-shadow">
                                 <div className="h-full bg-green-500" style={{ width: `${Math.min((currentIntake.carbs / targetPFC.carbs) * 100, 100)}%` }}></div>
                             </div>
                         </div>
@@ -1124,7 +1124,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         </div>
                         <button
                             onClick={() => window.handleQuickAction && window.handleQuickAction('meal')}
-                            className="text-sm px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 shadow-md hover:shadow-lg transition"
+                            className="text-sm px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 shadow-lg hover:shadow-xl transition"
                         >
                             ＋ 追加
                         </button>
@@ -1133,10 +1133,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     {dailyRecord.meals?.length > 0 ? (
                         <div className="space-y-3">
                             {dailyRecord.meals.map((meal, index) => (
-                                <div key={meal.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 ${
+                                <div key={meal.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 shadow-md border border-gray-200 ${
                                     meal.isPredicted ? 'border-2 border-sky-300 bg-sky-50 shadow-sky-200/50' :
                                     meal.isRoutine ? 'border-2 border-amber-300 bg-amber-50 shadow-amber-200/50' :
-                                    'hover:border-gray-300'
+                                    ''
                                 }`}>
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex-1">
@@ -1241,7 +1241,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </div>
                             <button
                                 onClick={() => window.handleQuickAction && window.handleQuickAction('workout')}
-                                className="text-sm px-4 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 shadow-md hover:shadow-lg transition"
+                                className="text-sm px-4 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 shadow-lg hover:shadow-xl transition"
                             >
                                 ＋ 追加
                             </button>
@@ -1250,10 +1250,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {dailyRecord.workouts?.length > 0 ? (
                             <div className="space-y-3">
                                 {dailyRecord.workouts.map((workout, index) => (
-                                    <div key={workout.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 ${
+                                    <div key={workout.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 shadow-md border border-gray-200 ${
                                         workout.isPredicted ? 'border-2 border-sky-300 bg-sky-50 shadow-sky-200/50' :
                                         workout.isRoutine ? 'border-2 border-amber-300 bg-amber-50 shadow-amber-200/50' :
-                                        'hover:border-gray-300'
+                                        ''
                                     }`}>
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1">
@@ -1808,7 +1808,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </div>
                             <button
                                 onClick={() => window.handleQuickAction && window.handleQuickAction('analysis')}
-                                className="text-sm px-4 py-2 bg-sky-600 text-white rounded-lg font-bold hover:bg-sky-700 shadow-md hover:shadow-lg transition"
+                                className="text-sm px-4 py-2 bg-sky-600 text-white rounded-lg font-bold hover:bg-sky-700 shadow-lg hover:shadow-xl transition"
                             >
                                 ＋ 分析
                             </button>
