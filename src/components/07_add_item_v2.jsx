@@ -1196,7 +1196,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                     <div className="grid grid-cols-4 gap-2">
                                         <div>
                                             <p className="text-xs text-gray-600">カロリー</p>
-                                            <p className="font-bold text-cyan-600">{Math.round(selectedNewItem.calories * newItemAmount / 100)}kcal</p>
+                                            <p className="font-bold text-blue-600">{Math.round(selectedNewItem.calories * newItemAmount / 100)}kcal</p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-600">P</p>
@@ -1242,9 +1242,9 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                                             <p className="font-medium text-gray-800">{food.name}</p>
                                                             <p className="text-xs text-gray-500">{food.category}</p>
                                                         </div>
-                                                        <div className="text-xs text-gray-600 flex gap-2">
-                                                            <span>{food.calories}kcal</span>
-                                                            <span>P:{food.protein}g</span>
+                                                        <div className="text-xs flex gap-2">
+                                                            <span className="text-blue-600 font-medium">{food.calories}kcal</span>
+                                                            <span className="text-gray-600">P:{food.protein}g</span>
                                                         </div>
                                                     </div>
                                                 </button>
@@ -1347,7 +1347,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                                                                 <div className="flex-1">
                                                                                     <div className="flex justify-between items-start mb-1">
                                                                                         <span className="text-sm font-medium">{foodName}</span>
-                                                                                        <span className="text-xs font-bold text-cyan-600">
+                                                                                        <span className="text-xs font-bold text-blue-600">
                                                                                             {calories}kcal
                                                                                         </span>
                                                                                     </div>
@@ -1891,9 +1891,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                         >
                                                             <div className="flex justify-between items-center">
                                                                 <span className="font-medium">{supp.name}</span>
-                                                                <div className="text-right text-xs text-gray-500">
-                                                                    <div>{supp.calories}kcal</div>
-                                                                    <div>P:{supp.protein}g</div>
+                                                                <div className="text-right text-xs">
+                                                                    <div className="text-blue-600 font-medium">{supp.calories}kcal</div>
+                                                                    <div className="text-gray-500">P:{supp.protein}g</div>
                                                                 </div>
                                                             </div>
                                                         </button>
@@ -5141,7 +5141,7 @@ RM回数と重量を別々に入力してください。`
                                                                                         <div className="flex-1">
                                                                                             <div className="flex justify-between items-start mb-1">
                                                                                                 <span className="text-sm font-medium">{foodName}</span>
-                                                                                                <span className="text-xs font-bold text-cyan-600">
+                                                                                                <span className="text-xs font-bold text-blue-600">
                                                                                                     {food.calories}kcal
                                                                                                 </span>
                                                                                             </div>
