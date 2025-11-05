@@ -446,6 +446,32 @@ const DataService = {
         }
     },
 
+    updateAnalysisReport: async (userId, reportId, updates) => {
+        if (DEV_MODE) {
+            const saved = localStorage.getItem('analysisReports');
+            const reports = saved ? JSON.parse(saved) : [];
+            const reportIndex = reports.findIndex(r => r.id === reportId);
+            if (reportIndex !== -1) {
+                reports[reportIndex] = { ...reports[reportIndex], ...updates };
+                localStorage.setItem('analysisReports', JSON.stringify(reports));
+            }
+            return true;
+        }
+
+        try {
+            await db
+                .collection('users')
+                .doc(userId)
+                .collection('analysisReports')
+                .doc(reportId)
+                .update(updates);
+            return true;
+        } catch (error) {
+            console.error('Error updating analysis report:', error);
+            throw error;
+        }
+    },
+
     // 写真アップロード
     uploadPhoto: async (userId, file, recordId) => {
         if (DEV_MODE) {

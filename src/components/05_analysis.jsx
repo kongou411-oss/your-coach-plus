@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 // ===== Analysis Components =====
 const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, setLastUpdate, onUpgradeClick, onFeatureUnlocked }) => {
     const [loading, setLoading] = useState(true);
@@ -30,6 +31,11 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     const [savedReports, setSavedReports] = useState([]);
     const [showSavedReports, setShowSavedReports] = useState(false);
     const [selectedReport, setSelectedReport] = useState(null);
+    const [isEditingReportTitle, setIsEditingReportTitle] = useState(false);
+    const [editedReportTitle, setEditedReportTitle] = useState('');
+
+    // タブ管理state
+    const [activeTab, setActiveTab] = useState('analysis'); // 'analysis' or 'history'
 
     const getTodayDate = () => {
         const today = new Date();
@@ -40,6 +46,8 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     };
 
     useEffect(() => {
+        // 基本分析（スコア計算・クレジットチェック）のみ実行
+        // AI分析は手動で「生成」ボタンを押したときのみ実行
         performAnalysis();
         loadSavedReports();
     }, []);
@@ -75,13 +83,19 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             };
 
             await DataService.saveAnalysisReport(userId, report);
+
             alert('レポートを保存しました');
             setShowSaveReportModal(false);
             setReportTitle('');
+
+            // レポート一覧を再読み込み
             await loadSavedReports();
+
+            // 履歴タブに自動切り替え
+            setActiveTab('history');
         } catch (error) {
             console.error('Failed to save report:', error);
-            alert('レポートの保存に失敗しました');
+            alert('レポートの保存に失敗しました: ' + error.message);
         }
     };
 
@@ -99,6 +113,31 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         } catch (error) {
             console.error('Failed to delete report:', error);
             alert('レポートの削除に失敗しました');
+        }
+    };
+
+    const handleUpdateReportTitle = async () => {
+        if (!editedReportTitle.trim()) {
+            alert('タイトルを入力してください');
+            return;
+        }
+
+        try {
+            await DataService.updateAnalysisReport(userId, selectedReport.id, {
+                title: editedReportTitle.trim()
+            });
+
+            // ローカルstateを更新
+            setSelectedReport({
+                ...selectedReport,
+                title: editedReportTitle.trim()
+            });
+
+            setIsEditingReportTitle(false);
+            await loadSavedReports();
+        } catch (error) {
+            console.error('Failed to update report title:', error);
+            alert('タイトルの更新に失敗しました');
         }
     };
 
@@ -138,7 +177,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             const upgradeModalPending = localStorage.getItem('showUpgradeModalPending');
 
             if (featureUnlockCompleted === 'true' && upgradeModalPending === 'true') {
-                console.log('[Analysis] Feature unlock completed. Showing upgrade modal...');
                 setShowUpgradeModal(true);
                 localStorage.removeItem('featureUnlockModalsCompleted');
                 localStorage.removeItem('showUpgradeModalPending');
@@ -278,7 +316,8 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     };
 
     const performAnalysis = async () => {
-        setLoading(true);
+        // ローディング表示は不要（基本分析のみでAI分析は実行しない）
+        setLoading(false);
 
         // クレジットチェック（新システム） - 最優先で実行
         try {
@@ -297,9 +336,10 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
             if (expInfo.totalCredits <= 0) {
                 setLoading(false);
-                alert('分析クレジットが不足しています。レベルアップでクレジットを獲得してください。');
-                onClose();
-                return; // ここで関数全体を終了
+                // クレジット0でもページは開く（生成ボタンを押したときにエラーを表示）
+                // alert('分析クレジットが不足しています。レベルアップでクレジットを獲得してください。');
+                // onClose();
+                // return;
             }
         } catch (error) {
             console.error('[Analysis] Credit error:', error);
@@ -371,8 +411,8 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             setMicroLearningContent(microLearningTriggered);
         }
 
-        // AI分析を実行（初回フラグとスコアを渡す）
-        generateAIAnalysis(analysisData, insights, firstAnalysisFlag, scores);
+        // AI分析は自動実行しない（ユーザーが「生成」ボタンを押したときのみ実行）
+        // generateAIAnalysis(analysisData, insights, firstAnalysisFlag, scores);
     };
 
     const generateAIDirective = (currentAnalysis, aiText) => {
@@ -428,6 +468,12 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
     // AI分析生成
     const generateAIAnalysis = async (currentAnalysis, insights, isFirstAnalysisParam = false, scores = null) => {
+        // クレジットチェック
+        if (!creditInfo || creditInfo.totalCredits <= 0) {
+            alert('分析クレジットが不足しています。\n\nレベルアップまたはクレジット購入でクレジットを獲得してください。');
+            return;
+        }
+
         setAiLoading(true);
 
         // 既存のAI分析をクリア
@@ -724,43 +770,40 @@ ${currentPurpose === '増量' ? `
 `;
 
         try {
-            // AI分析開始前にクレジット消費（1回のみ）
-            const creditResult = await ExperienceService.consumeCredits(userId, 1);
-            if (!creditResult.success) {
-                setAiLoading(false);
-                alert('クレジットが不足しています。レベルアップまたは追加購入でクレジットを獲得してください。');
-                return;
-            }
+            // クレジット消費はCloud Function側で行われるため、フロントエンドでは消費しない
+            // Cloud Functionのレスポンスから更新されたクレジット情報を取得する
 
-            // クレジット消費後、更新された情報を取得して表示
-            const updatedExpInfo = await ExperienceService.getUserExperience(userId);
-            const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
-            setCreditInfo({
-                tier: isPremium ? 'premium' : 'free',
-                totalCredits: updatedExpInfo.totalCredits,
-                freeCredits: updatedExpInfo.freeCredits,
-                paidCredits: updatedExpInfo.paidCredits,
-                remainingCredits: updatedExpInfo.totalCredits,
-                devMode: DEV_MODE,
-                allowed: updatedExpInfo.totalCredits > 0
-            });
+            // 2つのセクションを1つのプロンプトに統合（クレジット消費を1回に）
+            const combinedPrompt = `${section1Prompt}
+
+---
+
+${section2Prompt}
+
+**重要**: 上記2つのセクションを順番に生成してください。セクション間は空行で区切ってください。`;
 
             let fullAnalysis = '';
 
-            // セクション1: パフォーマンスレポートを生成
-            const response1 = await GeminiAPI.sendMessage(section1Prompt, [], userProfile, 'gemini-2.5-pro');
-            if (response1.success) {
-                fullAnalysis += response1.text + '\n\n';
+            // 統合プロンプトで1回のAPI呼び出し
+            const response = await GeminiAPI.sendMessage(combinedPrompt, [], userProfile, 'gemini-2.5-pro');
+            if (response.success) {
+                fullAnalysis = response.text;
                 setAiAnalysis(fullAnalysis);
-            } else {
-                throw new Error(response1.error || 'セクション1の生成に失敗');
-            }
 
-            // セクション2: 指示書プランを生成
-            const response2 = await GeminiAPI.sendMessage(section2Prompt, [], userProfile, 'gemini-2.5-pro');
-            if (response2.success) {
-                fullAnalysis += response2.text;
-                setAiAnalysis(fullAnalysis);
+                // Cloud Functionから返された更新済みクレジット情報で表示を更新
+                if (response.remainingCredits !== undefined) {
+                    const updatedExpInfo = await ExperienceService.getUserExperience(userId);
+                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
+                    setCreditInfo({
+                        tier: isPremium ? 'premium' : 'free',
+                        totalCredits: updatedExpInfo.totalCredits,
+                        freeCredits: updatedExpInfo.freeCredits,
+                        paidCredits: updatedExpInfo.paidCredits,
+                        remainingCredits: updatedExpInfo.totalCredits,
+                        devMode: DEV_MODE,
+                        allowed: updatedExpInfo.totalCredits > 0
+                    });
+                }
 
                 // AI分析の結果をLocalStorageに永続化
                 const today = getTodayDate();
@@ -770,8 +813,8 @@ ${currentPurpose === '増量' ? `
                     localStorage.setItem(STORAGE_KEYS.DAILY_ANALYSES, JSON.stringify(analyses));
                 }
 
-                // 指示書プランを翌日の指示書として保存
-                const directiveText = response2.text;
+                // 指示書プランを翌日の指示書として保存（fullAnalysisから抽出）
+                const directiveText = fullAnalysis;
                 // 「- 【カテゴリー】内容」の形式から抽出
                 const directiveMatch = directiveText.match(/【(.+?)】(.+)/);
                 if (directiveMatch) {
@@ -813,11 +856,26 @@ ${currentPurpose === '増量' ? `
                     window.dispatchEvent(new Event('directiveUpdated'));
                 }
             } else {
-                throw new Error(response2.error || 'セクション2の生成に失敗');
+                throw new Error(response.error || 'AI分析の生成に失敗');
             }
         } catch (error) {
             console.error('AI分析エラー:', error);
-            setAiAnalysis('申し訳ございません。AI分析の生成中に問題が発生しました。\n\nエラー内容: ' + error.message + '\n\nしばらく時間をおいて、「再生成」ボタンをタップしてお試しください。');
+
+            // エラーメッセージを分かりやすく
+            let errorMessage = '申し訳ございません。AI分析の生成中に問題が発生しました。\n\n';
+
+            if (error.message && error.message.includes('AIの呼び出し中にサーバーエラー')) {
+                errorMessage += '【原因】\nVertex AI (Gemini API) のレート制限に達しました。\n\n';
+                errorMessage += '【対処法】\n';
+                errorMessage += '1. 5〜10分程度お待ちください\n';
+                errorMessage += '2. 右上の「生成」ボタンを再度タップしてお試しください\n\n';
+                errorMessage += '※ 短時間に何度も生成すると、APIの制限に引っかかります。';
+            } else {
+                errorMessage += 'エラー内容: ' + error.message + '\n\n';
+                errorMessage += 'しばらく時間をおいて、右上の「生成」ボタンをタップしてお試しください。';
+            }
+
+            setAiAnalysis(errorMessage);
         }
 
         setAiLoading(false);
@@ -830,11 +888,9 @@ ${currentPurpose === '増量' ? `
             try {
                 const today = getTodayDate();
                 const expResult = await ExperienceService.processDailyScore(userId, today, scores);
-                console.log('[Analysis] Experience processing result:', expResult);
 
                 // レベルアップ時の通知
                 if (expResult.leveledUp) {
-                    console.log(`[Analysis] Level up! New level: ${expResult.level}, Credits earned: ${expResult.creditsEarned}`);
                     // レベルアップモーダルを表示する処理は後ほど実装
                     // グローバルイベントを発火してダッシュボードに通知
                     window.dispatchEvent(new CustomEvent('levelUp', {
@@ -982,7 +1038,6 @@ ${conversationContext}
 `;
 
             // 質問1回につき1クレジット消費
-            console.log('[Analysis Q&A] Consuming 1 credit for question');
             const creditResult = await ExperienceService.consumeCredits(userId, 1);
             if (!creditResult.success) {
                 setConversationHistory([...newHistory, {
@@ -993,7 +1048,6 @@ ${conversationContext}
                 setQaLoading(false);
                 return;
             }
-            console.log('[Analysis Q&A] Credit consumed successfully. Remaining:', creditResult.remaining);
 
             // クレジット消費後、更新された情報を取得して表示
             const updatedExpInfo = await ExperienceService.getUserExperience(userId);
@@ -1007,7 +1061,6 @@ ${conversationContext}
                 devMode: DEV_MODE,
                 allowed: updatedExpInfo.totalCredits > 0
             });
-            console.log('[Analysis Q&A] Updated credit info displayed:', updatedExpInfo.totalCredits);
 
             const response = await GeminiAPI.sendMessage(contextPrompt, [], userProfile, 'gemini-2.5-pro');
 
@@ -1140,12 +1193,11 @@ ${conversationContext}
     if (!analysis) {
         return (
             <div className="fixed inset-0 bg-white z-50 flex flex-col">
-                <header className="p-4 flex items-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0">
-                    <button onClick={handleClose} className="text-white">
+                <header className="p-4 flex items-center justify-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0 relative">
+                    <button onClick={handleClose} className="absolute left-4 text-white">
                         <Icon name="ArrowLeft" size={24} />
                     </button>
-                    <h1 className="text-xl font-bold mx-auto text-white">本日の分析</h1>
-                    <div className="w-6"></div>
+                    <h1 className="text-xl font-bold text-white">本日の分析</h1>
                 </header>
                 <div className="p-6 flex items-center justify-center flex-grow">
                     <div className="text-center text-gray-500">
@@ -1159,11 +1211,11 @@ ${conversationContext}
 
     return (
         <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
-            <header className="p-4 flex items-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0 sticky top-0 z-30">
-                <button onClick={handleClose} className="text-white">
+            <header className="p-4 flex items-center justify-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0 sticky top-0 z-30 relative">
+                <button onClick={handleClose} className="absolute left-4 text-white">
                     <Icon name="ArrowLeft" size={24} />
                 </button>
-                <div className="flex-1 text-center">
+                <div className="text-center">
                     <h1 className="text-xl font-bold text-white">AIコーチ</h1>
                     <p className="text-xs text-white opacity-80">デイリー分析</p>
                 </div>
@@ -1171,8 +1223,8 @@ ${conversationContext}
                     // スコアを再計算して渡す
                     const freshScores = calculateScores(userProfile, dailyRecord, targetPFC);
                     generateAIAnalysis(analysis, historicalInsights, false, freshScores);
-                }} className="text-sm px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-lg hover:shadow-xl transition">
-                    再生成
+                }} className="absolute right-4 text-sm px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-lg hover:shadow-xl transition">
+                    生成
                 </button>
             </header>
 
@@ -1214,21 +1266,48 @@ ${conversationContext}
                 </div>
             )}
 
+            {/* タブUI */}
+            <div className="flex border-b bg-white">
+                <button
+                    onClick={() => setActiveTab('analysis')}
+                    className={`flex-1 py-3 text-center font-medium transition ${
+                        activeTab === 'analysis'
+                            ? 'text-[#4A9EFF] border-b-2 border-[#4A9EFF]'
+                            : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                    分析
+                </button>
+                <button
+                    onClick={() => setActiveTab('history')}
+                    className={`flex-1 py-3 text-center font-medium transition ${
+                        activeTab === 'history'
+                            ? 'text-[#4A9EFF] border-b-2 border-[#4A9EFF]'
+                            : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                    履歴
+                </button>
+            </div>
+
             <div className="p-4 flex-grow overflow-y-auto space-y-3 bg-indigo-50" style={{ paddingBottom: `${babHeight + 80}px` }}>
-                {/* 日付バッジ */}
-                <div className="flex justify-center">
-                    <div className="bg-gray-200 rounded-full px-4 py-1.5 text-xs text-gray-700 font-medium flex items-center gap-2">
-                        <Icon name="Calendar" size={14} />
-                        {new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' })}
-                        {dailyRecord.routine && dailyRecord.routine.name && (
-                            <>
-                                <span>-</span>
-                                <Icon name="Dumbbell" size={14} />
-                                {dailyRecord.routine.name}
-                            </>
-                        )}
-                    </div>
-                </div>
+                {/* 分析タブ */}
+                {activeTab === 'analysis' && (
+                    <>
+                        {/* 日付バッジ */}
+                        <div className="flex justify-center">
+                            <div className="bg-gray-200 rounded-full px-4 py-1.5 text-xs text-gray-700 font-medium flex items-center gap-2">
+                                <Icon name="Calendar" size={14} />
+                                {new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' })}
+                                {dailyRecord.routine && dailyRecord.routine.name && (
+                                    <>
+                                        <span>-</span>
+                                        <Icon name="Dumbbell" size={14} />
+                                        {dailyRecord.routine.name}
+                                    </>
+                                )}
+                            </div>
+                        </div>
 
                 {/* AIからのメッセージ: AI生成分析のみ表示 */}
                 {aiLoading ? (
@@ -1274,133 +1353,212 @@ ${conversationContext}
                             </button>
                         </div>
                     </>
-                ) : null}
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-12">
+                        <Icon name="Sparkles" size={64} className="text-indigo-300 mb-4" />
+                        <p className="text-gray-700 font-medium text-center mb-2">
+                            AI分析をまだ生成していません
+                        </p>
+                        <p className="text-gray-500 text-sm text-center">
+                            右上の「生成」ボタンを押して<br />AI分析を開始してください
+                        </p>
+                    </div>
+                )}
 
-                {/* 保存済みレポート一覧セクション */}
-                {!aiLoading && aiAnalysis && savedReports.length > 0 && (
-                    <div className="mt-6">
-                        <button
-                            onClick={() => setShowSavedReports(!showSavedReports)}
-                            className="w-full flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition"
-                        >
-                            <div className="flex items-center gap-2">
-                                <Icon name="FolderOpen" size={20} className="text-indigo-600" />
-                                <span className="font-medium text-gray-700">保存済みレポート</span>
-                                <span className="text-sm text-gray-500">({savedReports.length}件)</span>
-                            </div>
-                            <Icon name={showSavedReports ? "ChevronUp" : "ChevronDown"} size={20} className="text-gray-400" />
-                        </button>
-
-                        {showSavedReports && (
-                            <div className="mt-3 space-y-2">
-                                {savedReports.map((report) => (
-                                    <div
-                                        key={report.id}
-                                        className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition cursor-pointer"
-                                        onClick={() => setSelectedReport(report)}
-                                    >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <Icon name="FileText" size={16} className="text-indigo-600" />
-                                                    <h3 className="font-medium text-gray-800">{report.title}</h3>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {new Date(report.createdAt).toLocaleDateString('ja-JP', {
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric',
-                                                        hour: '2-digit',
-                                                        minute: '2-digit'
-                                                    })}
-                                                </p>
-                                            </div>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteReport(report.id);
-                                                }}
-                                                className="flex items-center gap-1 px-2 py-1 text-red-600 hover:bg-red-50 rounded transition text-sm"
-                                            >
-                                                <Icon name="Trash2" size={14} />
-                                                <span>削除</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                        {/* 区切り線: Q&Aセクション */}
+                        {!aiLoading && aiAnalysis && (
+                            <div className="flex items-center gap-3 py-2">
+                                <div className="flex-1 h-px bg-gray-300"></div>
+                                <span className="text-xs text-gray-500 font-medium">質問・相談</span>
+                                <div className="flex-1 h-px bg-gray-300"></div>
                             </div>
                         )}
-                    </div>
-                )}
 
-                {/* 区切り線: Q&Aセクション */}
-                {!aiLoading && aiAnalysis && (
-                    <div className="flex items-center gap-3 py-2">
-                        <div className="flex-1 h-px bg-gray-300"></div>
-                        <span className="text-xs text-gray-500 font-medium">質問・相談</span>
-                        <div className="flex-1 h-px bg-gray-300"></div>
-                    </div>
-                )}
-
-                {/* 対話型Q&A: 会話履歴 */}
-                {conversationHistory.map((msg, idx) => (
-                    <div key={idx}>
-                        {msg.type === 'user' ? (
-                            /* ユーザーの質問（右側） */
-                            <div className="flex items-start gap-3 justify-end">
-                                <div className="flex-1 max-w-[85%]">
-                                    <div className="bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl rounded-tr-none p-4 shadow-md text-white">
-                                        <p className="text-sm leading-relaxed">
-                                            {msg.content}
-                                        </p>
+                        {/* 対話型Q&A: 会話履歴 */}
+                        {conversationHistory.map((msg, idx) => (
+                            <div key={idx}>
+                                {msg.type === 'user' ? (
+                                    /* ユーザーの質問（右側） */
+                                    <div className="flex items-start gap-3 justify-end">
+                                        <div className="flex-1 max-w-[85%]">
+                                            <div className="bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl rounded-tr-none p-4 shadow-md text-white">
+                                                <p className="text-sm leading-relaxed">
+                                                    {msg.content}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="bg-purple-600 rounded-full p-2 flex-shrink-0">
+                                            <Icon name="User" size={20} className="text-white" />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="bg-purple-600 rounded-full p-2 flex-shrink-0">
-                                    <Icon name="User" size={20} className="text-white" />
-                                </div>
+                                ) : (
+                                    /* AIの回答（左側） */
+                                    <div className="flex items-start gap-3">
+                                        <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
+                                            <Icon name="MessageCircle" size={20} className="text-white" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
+                                                <div className="text-sm text-gray-800 leading-relaxed">
+                                                    <MarkdownRenderer text={msg.content} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            /* AIの回答（左側） */
+                        ))}
+
+                        {/* Q&A ローディング */}
+                        {qaLoading && (
                             <div className="flex items-start gap-3">
                                 <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
                                     <Icon name="MessageCircle" size={20} className="text-white" />
                                 </div>
                                 <div className="flex-1">
                                     <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
-                                        <div className="text-sm text-gray-800 leading-relaxed">
-                                            <MarkdownRenderer text={msg.content} />
+                                        <div className="flex items-center gap-2">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+                                            <span className="text-sm text-gray-600">考え中...</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         )}
-                    </div>
-                ))}
 
-                {/* Q&A ローディング */}
-                {qaLoading && (
-                    <div className="flex items-start gap-3">
-                        <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
-                            <Icon name="MessageCircle" size={20} className="text-white" />
-                        </div>
-                        <div className="flex-1">
-                            <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
-                                <div className="flex items-center gap-2">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
-                                    <span className="text-sm text-gray-600">考え中...</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                        {/* スクロール用の参照 */}
+                        <div ref={chatEndRef}></div>
+                    </>
                 )}
 
-                {/* スクロール用の参照 */}
-                <div ref={chatEndRef}></div>
+                {/* 履歴タブ */}
+                {activeTab === 'history' && (
+                    <>
+                        {savedReports.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <Icon name="FolderOpen" size={64} className="text-gray-300 mb-4" />
+                                <p className="text-gray-500 text-center">
+                                    保存されたレポートはまだありません
+                                </p>
+                                <p className="text-gray-400 text-sm text-center mt-2">
+                                    分析タブでレポートを保存すると<br />ここに表示されます
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {savedReports.map((report) => (
+                                    <div
+                                        key={report.id}
+                                        className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div
+                                                className={isEditingReportTitle && selectedReport?.id === report.id ? "flex-1" : "flex-1 cursor-pointer"}
+                                                onClick={() => {
+                                                    // 編集モード中はクリック無効
+                                                    if (isEditingReportTitle && selectedReport?.id === report.id) {
+                                                        return;
+                                                    }
+                                                    setSelectedReport(report);
+                                                }}
+                                            >
+                                                {isEditingReportTitle && selectedReport?.id === report.id ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={editedReportTitle}
+                                                            onChange={(e) => setEditedReportTitle(e.target.value)}
+                                                            className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#4A9EFF]"
+                                                            placeholder="レポートタイトル"
+                                                            autoFocus
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex items-center gap-2">
+                                                            <Icon name="FileText" size={16} className="text-[#4A9EFF]" />
+                                                            <h3 className="font-medium text-gray-800">{report.title}</h3>
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            {(() => {
+                                                                const date = report.createdAt?.toDate ?
+                                                                    report.createdAt.toDate() :
+                                                                    new Date(report.createdAt);
+                                                                return date.toLocaleString('ja-JP', {
+                                                                    year: 'numeric',
+                                                                    month: 'long',
+                                                                    day: 'numeric',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                });
+                                                            })()}
+                                                        </p>
+                                                    </>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                {isEditingReportTitle && selectedReport?.id === report.id ? (
+                                                    <>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleUpdateReportTitle();
+                                                            }}
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-green-600 hover:bg-green-50 transition border-2 border-green-500"
+                                                        >
+                                                            <Icon name="Check" size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setIsEditingReportTitle(false);
+                                                                setEditedReportTitle('');
+                                                                setSelectedReport(null);
+                                                            }}
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-gray-600 hover:bg-gray-100 transition border-2 border-gray-400"
+                                                        >
+                                                            <Icon name="X" size={18} />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                // 編集モードに入るときはモーダルを開かないように selectedReport を一時的に設定
+                                                                setSelectedReport(report);
+                                                                setEditedReportTitle(report.title);
+                                                                setIsEditingReportTitle(true);
+                                                            }}
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                        >
+                                                            <Icon name="Edit2" size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteReport(report.id);
+                                                            }}
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                        >
+                                                            <Icon name="Trash2" size={18} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </>
+                )}
 
             </div>
 
-            {/* 質問入力エリア（BAB連動固定） */}
-            {!aiLoading && aiAnalysis && (
+            {/* 質問入力エリア（BAB連動固定） - 分析タブのみ表示 */}
+            {!aiLoading && aiAnalysis && activeTab === 'analysis' && (
                 <div
                     className="fixed left-0 right-0 border-t bg-white shadow-lg z-[9990]"
                     style={{ bottom: `${babHeight}px` }}
@@ -1564,7 +1722,6 @@ ${conversationContext}
                     onClose={() => setMicroLearningContent(null)}
                     onComplete={() => {
                         // 完了時の処理（ユーザープロフィール更新など）
-                        console.log('Micro-learning completed:', microLearningContent.title);
                     }}
                 />
             )}
@@ -1671,6 +1828,140 @@ ${conversationContext}
                     </div>
                 </div>
             )}
+
+            {/* レポート保存モーダル (body直下にPortalでレンダリング) */}
+            {showSaveReportModal ? ReactDOM.createPortal(
+                <div
+                    className="fixed inset-0 flex items-center justify-center p-4"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 999999,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)'
+                    }}
+                    onClick={() => {
+                        setShowSaveReportModal(false);
+                        setReportTitle('');
+                    }}
+                >
+                    <div
+                        className="bg-white rounded-lg max-w-md w-full p-6 shadow-2xl"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                        }}
+                    >
+                        <h2 className="text-xl font-bold mb-4 text-gray-800">レポートを保存</h2>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                レポートタイトル
+                            </label>
+                            <input
+                                type="text"
+                                value={reportTitle}
+                                onChange={(e) => setReportTitle(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="例: 2025-01-15 デイリー分析"
+                            />
+                        </div>
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowSaveReportModal(false);
+                                    setReportTitle('');
+                                }}
+                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSaveReport();
+                                }}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                            >
+                                保存
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            ) : null}
+
+            {/* レポート表示モーダル (Portalでbody直下にレンダリング) - 編集モード中は表示しない */}
+            {selectedReport && !isEditingReportTitle ? ReactDOM.createPortal(
+                <div
+                    className="fixed inset-0 flex items-center justify-center p-4"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 999999,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)'
+                    }}
+                    onClick={() => {
+                        setSelectedReport(null);
+                    }}
+                >
+                    <div
+                        className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                        }}
+                    >
+                        {/* ヘッダー */}
+                        <div className="p-4 border-b flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-gray-800">{selectedReport.title}</h2>
+                            <button
+                                onClick={() => setSelectedReport(null)}
+                                className="p-1 hover:bg-gray-100 rounded transition"
+                            >
+                                <Icon name="X" size={20} className="text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* コンテンツ */}
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <div className="text-xs text-gray-500 mb-4">
+                                保存日時: {(() => {
+                                    const date = selectedReport.createdAt?.toDate ?
+                                        selectedReport.createdAt.toDate() :
+                                        new Date(selectedReport.createdAt);
+                                    return date.toLocaleString('ja-JP', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    });
+                                })()}
+                            </div>
+                            <div className="prose prose-sm max-w-none">
+                                <MarkdownRenderer text={selectedReport.content} />
+                            </div>
+                        </div>
+
+                        {/* フッター */}
+                        <div className="p-4 border-t flex justify-end">
+                            <button
+                                onClick={() => setSelectedReport(null)}
+                                className="px-6 py-2 bg-[#4A9EFF] text-white font-medium rounded-lg hover:bg-[#3A8EEF] transition"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            ) : null}
         </div>
     );
 };
@@ -2601,96 +2892,6 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                     </div>
                                 </>
                             )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* レポート保存モーダル */}
-            {showSaveReportModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
-                    <div className="bg-white rounded-lg max-w-md w-full p-6">
-                        <h2 className="text-xl font-bold mb-4 text-gray-800">レポートを保存</h2>
-
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                レポートタイトル
-                            </label>
-                            <input
-                                type="text"
-                                value={reportTitle}
-                                onChange={(e) => setReportTitle(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="例: 2025-01-15 デイリー分析"
-                            />
-                        </div>
-
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => {
-                                    setShowSaveReportModal(false);
-                                    setReportTitle('');
-                                }}
-                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-                            >
-                                キャンセル
-                            </button>
-                            <button
-                                onClick={handleSaveReport}
-                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                            >
-                                保存
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* レポート表示モーダル */}
-            {selectedReport && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
-                    <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-                        <div className="p-4 border-b flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-gray-800">{selectedReport.title}</h2>
-                            <button
-                                onClick={() => setSelectedReport(null)}
-                                className="text-gray-500 hover:text-gray-700"
-                            >
-                                <Icon name="X" size={24} />
-                            </button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-6">
-                            <div className="text-sm text-gray-500 mb-4">
-                                保存日時: {new Date(selectedReport.createdAt).toLocaleDateString('ja-JP', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })}
-                            </div>
-                            <div className="prose prose-sm max-w-none">
-                                <MarkdownRenderer text={selectedReport.content} />
-                            </div>
-                        </div>
-
-                        <div className="p-4 border-t flex justify-end gap-2">
-                            <button
-                                onClick={() => {
-                                    handleDeleteReport(selectedReport.id);
-                                    setSelectedReport(null);
-                                }}
-                                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                            >
-                                削除
-                            </button>
-                            <button
-                                onClick={() => setSelectedReport(null)}
-                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-                            >
-                                閉じる
-                            </button>
                         </div>
                     </div>
                 </div>
