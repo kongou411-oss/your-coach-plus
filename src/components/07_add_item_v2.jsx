@@ -787,7 +787,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                         <div className="grid grid-cols-4 gap-2">
                             <div>
                                 <p className="text-xs text-gray-600">カロリー</p>
-                                <p className="font-bold" style={{color: '#7686BA'}}>{foodData.calories || 0}kcal</p>
+                                <p className="font-bold text-blue-600">{foodData.calories || 0}kcal</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-600">P</p>
@@ -968,7 +968,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                         <div className="grid grid-cols-4 gap-2">
                             <div>
                                 <p className="text-xs text-gray-600">カロリー</p>
-                                <p className="font-bold" style={{color: '#7686BA'}}>{calculatedCalories}kcal</p>
+                                <p className="font-bold text-blue-600">{calculatedCalories}kcal</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-600">P</p>
@@ -1078,7 +1078,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                     <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
                                         <div>
                                             <p className="text-gray-600">カロリー</p>
-                                            <p className="font-bold" style={{color: '#7686BA'}}>{selectedNewItem.calories}kcal</p>
+                                            <p className="font-bold text-blue-600">{selectedNewItem.calories}kcal</p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">P</p>
@@ -1925,7 +1925,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                     <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
                                         <div>
                                             <p className="text-gray-600">カロリー</p>
-                                            <p className="font-bold text-cyan-600">{selectedItem.calories}kcal</p>
+                                            <p className="font-bold text-blue-600">{selectedItem.calories}kcal</p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">P</p>
@@ -4846,7 +4846,7 @@ RM回数と重量を別々に入力してください。`
                                                     <div className="grid grid-cols-4 gap-2 text-xs">
                                                         <div>
                                                             <p className="text-gray-600">カロリー</p>
-                                                            <p className="font-bold" style={{color: '#7686BA'}}>
+                                                            <p className="font-bold text-blue-600">
                                                                 {Math.round(addedItems.reduce((sum, item) => sum + item.calories, 0))}kcal
                                                             </p>
                                                         </div>
@@ -5199,7 +5199,7 @@ RM回数と重量を別々に入力してください。`
                                             <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
                                                 <div>
                                                     <p className="text-gray-600">カロリー</p>
-                                                    <p className="font-bold" style={{color: '#7686BA'}}>{selectedItem.calories}kcal</p>
+                                                    <p className="font-bold text-blue-600">{selectedItem.calories}kcal</p>
                                                 </div>
                                                 <div>
                                                     <p className="text-gray-600">P</p>
@@ -5957,7 +5957,7 @@ RM回数と重量を別々に入力してください。`
                                     <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
                                         <div>
                                             <p className="text-gray-600">カロリー</p>
-                                            <p className="font-bold text-cyan-600">{selectedItem.calories}kcal</p>
+                                            <p className="font-bold text-blue-600">{selectedItem.calories}kcal</p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">P</p>

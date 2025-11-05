@@ -1182,7 +1182,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                         <div className="grid grid-cols-4 gap-3 text-center">
                             <div>
                                 <p className="text-xs text-gray-600">カロリー</p>
-                                <p className="text-sm font-bold">{baseNutrients.calories}kcal</p>
+                                <p className="text-sm font-bold text-blue-600">{baseNutrients.calories}kcal</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-600">P</p>
@@ -1370,7 +1370,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                     <div className="grid grid-cols-4 gap-3 text-center">
                         <div className="bg-sky-50 rounded-lg p-2">
                             <p className="text-xs text-gray-600">カロリー</p>
-                            <p className="text-base font-bold text-sky-700">{nutrients.calories}kcal</p>
+                            <p className="text-base font-bold text-blue-600">{nutrients.calories}kcal</p>
                         </div>
                         <div className="bg-cyan-50 rounded-lg p-2">
                             <p className="text-xs text-gray-600">P</p>
