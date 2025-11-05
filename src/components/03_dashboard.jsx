@@ -2446,7 +2446,7 @@ const LevelBanner = ({ user, setInfoModal }) => {
     }
 
     return (
-        <div className="bg-gradient-to-r from-sky-500 to-blue-600 shadow-sm">
+        <div className="bg-[#4A9EFF] shadow-sm">
             <div className="flex items-center justify-between px-4 py-2">
                 <div className="flex items-center gap-3">
                     <span className="text-sm font-bold text-white">Lv{expData.level}</span>
