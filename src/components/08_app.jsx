@@ -1229,6 +1229,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             // LBM計算
             const lbm = userProfile.leanBodyMass || LBMUtils.calculateLBM(userProfile.weight, userProfile.bodyFatPercentage || 15);
 
+            // Fat Mass計算
+            const fatMass = (userProfile.weight || 70) - lbm;
+
+            // TDEE計算
+            const tdee = LBMUtils.calculateTDEE(
+                lbm,
+                userProfile.activityLevel || 3,
+                userProfile.customActivityMultiplier,
+                fatMass
+            );
+
             const customPFCParam = userProfile.proteinRatio && userProfile.fatRatioPercent && userProfile.carbRatio ? {
                 P: userProfile.proteinRatio,
                 F: userProfile.fatRatioPercent,
@@ -1236,7 +1247,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             } : null;
 
             const targetPFC = LBMUtils.calculateTargetPFC(
-                userProfile.tdeeBase || 2200,
+                tdee,
                 userProfile.weightChangePace || 0,
                 lbm,
                 userProfile.style || '一般',
