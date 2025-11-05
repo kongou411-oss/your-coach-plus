@@ -596,7 +596,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <span className="text-lg text-gray-500">/</span>
                             <span className="text-lg text-gray-500">{targetPFC.calories} kcal</span>
                         </div>
-                        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden shadow-sm">
                             <div
                                 className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full transition-all duration-500"
                                 style={{ width: `${Math.min(caloriesPercent, 100)}%` }}
@@ -613,7 +613,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.protein}g</span>
                             </div>
-                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden shadow-sm">
                                 <div className="h-full bg-red-500" style={{ width: `${Math.min(proteinPercent, 100)}%` }}></div>
                             </div>
                         </div>
@@ -624,7 +624,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.fat}g</span>
                             </div>
-                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden shadow-sm">
                                 <div className="h-full bg-yellow-500" style={{ width: `${Math.min((currentIntake.fat / targetPFC.fat) * 100, 100)}%` }}></div>
                             </div>
                         </div>
@@ -635,7 +635,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.carbs}g</span>
                             </div>
-                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden shadow-sm">
                                 <div className="h-full bg-green-500" style={{ width: `${Math.min((currentIntake.carbs / targetPFC.carbs) * 100, 100)}%` }}></div>
                             </div>
                         </div>
