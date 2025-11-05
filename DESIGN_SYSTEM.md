@@ -1,9 +1,10 @@
 # Your Coach+ デザインシステム
 
-**最終更新日**: 2025年11月4日
-**バージョン**: 2.0.0 - ロゴ準拠テーマ（Sky Blue）
+**最終更新日**: 2025年11月6日
+**バージョン**: 2.2.0 - 指示書UI統一版
 **テーマ**: Logo-Based Modern & Professional
-**カラーコンセプト**: ロゴのアクセントカラー（Sky Blue #4A9EFF）を基準にしたブランド統一デザイン
+**カラーコンセプト**: ロゴのアクセントカラー（#4A9EFF）を基準にしたブランド統一デザイン
+**基本方針**: グラデーションは明確な指示がない限り禁止、単色 #4A9EFF を基本とする
 **目的**: UI/UXの一貫性とブランドアイデンティティを保ち、プロフェッショナルなデザインを維持するための統一ルール
 
 ---
@@ -22,29 +23,62 @@
 
 ## 🎨 配色
 
-### グラデーション
+### 基本色
 
-#### プライマリグラデーション（メインUI）- ロゴ準拠テーマ
+#### プライマリカラー（ロゴベース）
 ```css
-bg-gradient-to-r from-sky-500 to-blue-600
+#4A9EFF
 ```
-**用途**: ヘッダー、メインナビゲーション、重要なセクション、ログインボタン
+**カラーコード**: `#4A9EFF` (ロゴの "+" と同じ色)
+**Tailwind**: `bg-[#4A9EFF]` または `text-[#4A9EFF]`
+**インラインスタイル**: `style={{color: '#4A9EFF'}}` または `style={{backgroundColor: '#4A9EFF'}}`
+
+**使用箇所**:
+- プライマリボタン（ログイン、保存、AI分析実行）
+- リンクテキスト
+- アイコン（Info, HelpCircle）
+- ロゴの「+」
+- タブのアクティブ状態
+- スライダーのつまみ
+- ヘッダー背景
+
+**ホバー時**: `#3b8fef`（約8%暗く）
+
+---
+
+### グラデーション（限定使用）
+
+#### ❗ グラデーション使用の基本方針
+
+**原則**: グラデーションは明確な指示がない限り禁止
+
+**許可されている箇所**:
+1. **認証画面・オンボーディング画面の全画面背景のみ**
+2. **デイリー記録の固有色背景**（視覚的に機能を覚えやすくするため）
+
+**禁止箇所**:
+- ❌ プライマリボタン（単色 `bg-[#4A9EFF]` を使用）
+- ❌ モーダルヘッダー（単色 `bg-[#4A9EFF]` を使用）
+- ❌ その他のUI要素（明確な指示がない限り単色）
+
+---
+
+#### 背景グラデーション（認証画面・オンボーディング画面のみ）
+```css
+bg-gradient-to-br from-sky-500 to-blue-600
+```
+**用途**: 認証画面・オンボーディング画面の全画面背景**のみ**
 
 **カラーコード**:
-- `sky-500`: #0EA5E9 (ロゴのアクセント "+" カラー #4A9EFF に最も近い)
-- `blue-600`: #2563eb (深い青)
+- `sky-500`: #0EA5E9
+- `blue-600`: #2563eb
 
-**ロゴとの関係**:
-- ロゴの "+" アクセントカラー (#4A9EFF) ≈ `sky-500` (#0EA5E9)
-- ブランドアイデンティティと完全一致
-- ユーザーがロゴを見たときとアプリを使うときの色が統一される
+**使用箇所**:
+- 02_auth.jsx: パスワードリセット画面、メール確認画面、ログイン/新規登録画面、オンボーディング画面
 
-**例**:
-- 認証画面ヘッダー・ログインボタン
-- ダッシュボードヘッダー
-- 設定画面ヘッダー
-- 分析画面ヘッダー
-- プライマリCTAボタン
+**❌ 禁止**: モーダルヘッダー、ボタン等には使用しない
+
+---
 
 #### Premiumグラデーション（Premium機能・サブスク）
 ```css
@@ -53,14 +87,8 @@ bg-gradient-to-r from-yellow-200 to-amber-500
 **用途**: Premium機能、サブスクリプション、課金要素
 
 **カラーコード**:
-- `yellow-200`: #FEF08A (ビタミンイエロー、#FFF59Aに最も近い)
-- `amber-500`: #F59E0B (ゴールド)
-
-**色の選定理由**:
-- ユーザー指定の #FFF59A（明るいイエロー）をベースカラーとして採用
-- イエローからゴールドへのグラデーションで「エネルギー + 高級感」を両立
-- ビタミンカラーとしてヘルスケア・フィットネスと親和性が高い
-- 青（プライマリ）との補色関係で強いコントラスト
+- `yellow-200`: #FEF08A
+- `amber-500`: #F59E0B
 
 **特別感演出**:
 - ✨ シャイン効果: ホバー時の光沢アニメーション（オプション）
@@ -72,42 +100,14 @@ bg-gradient-to-r from-yellow-200 to-amber-500
 - Premium機能ロックUI
 - サブスクリプションボタン
 - Premium会員バッジ
-- 特別なCTAボタン
-
-#### アクセントカラー（軽い背景）
-```css
-/* プライマリアクセント（バッジ・軽い背景） */
-bg-gradient-to-r from-sky-50 to-blue-50
-border border-sky-200
-text-sky-700
-
-/* Premiumアクセント（バッジ・軽い背景） */
-bg-gradient-to-r from-yellow-50 to-amber-50
-border border-amber-300
-text-amber-800
-```
-
-#### ❌ 廃止するグラデーション（UI要素のみ）
-以下のグラデーションは新しいロゴ準拠テーマに統一します:
-
-- `from-purple-600 to-indigo-600` → `from-sky-500 to-blue-600`（プライマリ）
-- `from-sky-600 to-blue-600` → `from-sky-500 to-blue-600`（プライマリ）
-- `from-purple-600 to-pink-600` → `from-yellow-200 to-amber-500`（Premium）
-- `from-amber-500 to-orange-500` → `from-yellow-200 to-amber-500`（Premium）
-- `from-indigo-600 to-purple-600` → プライマリに統一
-- `from-orange-600 to-pink-600` → Premiumに統一
-- その他の組み合わせ → 上記2つに統一
-
-**注意**: デイリー記録の機能別カラー（後述）は変更対象外
 
 ---
 
-### 背景色
+#### デイリー記録の機能別カラー（特別に許可）⭐
 
-#### デイリー記録の機能別カラー（変更禁止）⭐
+ダッシュボードのデイリー記録セクションでは、機能を明確に区別するために専用の色分けシステムを使用します。**このカラーシステムは視覚的に機能を覚えやすくするため、特別に許可されています。**
 
-ダッシュボードのデイリー記録セクションでは、機能を明確に区別するために専用の色分けシステムを使用します。**このカラーシステムは変更しません。**
-
+##### **セクションヘッダー背景（グラデーション）**
 ```css
 /* 体組成 */
 bg-gradient-to-r from-teal-50 to-cyan-50
@@ -125,28 +125,45 @@ text-orange-600
 bg-gradient-to-r from-red-50 to-pink-50
 text-red-600
 
-/* 閃き */
-bg-gradient-to-r from-yellow-50 to-amber-50
-text-yellow-500
-
 /* 分析 */
 bg-gradient-to-r from-indigo-50 to-purple-50
 text-indigo-600
 ```
 
-**用途**: ダッシュボード（`components/03_dashboard.js`）のセクションヘッダー
+**使用箇所**:
+- 03_dashboard.jsx: 各セクションのヘッダー背景
+- Line 923（体組成）、1121（食事）、1238（運動）、1393（コンディション）、1801（分析）
+
 **理由**: 機能別に色で直感的に識別でき、ユーザビリティが高い
 
-#### セクションヘッダー背景（一般）
-```css
-bg-gradient-to-r from-{color}-50 to-{color}-50
+---
+
+##### **指示書カテゴリボタン（単色背景）**
+
+指示書編集モーダルのカテゴリ選択ボタンで使用される色分け。
+
+```jsx
+// getCategoryColor() - 03_dashboard.jsx Line 436-443
+case 'meal': return { bg: 'bg-green-50', border: 'border-green-600', text: 'text-green-700', icon: 'text-green-600' };
+case 'exercise': return { bg: 'bg-orange-50', border: 'border-orange-600', text: 'text-orange-700', icon: 'text-orange-600' };
+case 'condition': return { bg: 'bg-red-50', border: 'border-red-600', text: 'text-red-700', icon: 'text-red-600' };
 ```
-**カラー別用途**:
-- `green-50`: 食事関連
-- `orange-50`: 運動関連
-- `blue-50`: 分析・情報
-- `red-50`: コンディション・警告
-- `purple-50`: Premium・特別
+
+**使用箇所**:
+- 03_dashboard.jsx Line 436-443: getCategoryColor()関数
+- 03_dashboard.jsx Line 2545-2565: 指示書編集モーダルのカテゴリ選択ボタン
+- 選択状態のボタンのみカテゴリカラー背景、非選択時はグレー単色
+
+**重要な変更（2025年11月5日）**:
+- ❌ グラデーション廃止: `from-green-50 to-teal-50` → `bg-green-50`
+- ✅ 単色背景に統一: デザインシステムの原則に従い単色化
+- ✅ コンディションの色変更: 青系（sky-50）→ 赤系（red-50）に変更してセクションヘッダーと統一
+
+**理由**: カテゴリを視覚的に識別しやすくし、かつデザインの一貫性を保つため
+
+---
+
+### 背景色
 
 #### ベース背景
 ```css
@@ -335,7 +352,7 @@ rounded-full  /* アイコンボタン、アバター */
 shadow-sm
 
 /* アイコンボタン（標準） */
-shadow-md ← ダッシュボード食事セクションのボタンで使用
+shadow-md
 
 /* ボタン・強調要素 */
 shadow-lg
@@ -351,7 +368,7 @@ shadow-2xl
 ```css
 /* ホバー時の影の変化 */
 shadow-sm hover:shadow-md transition-shadow
-shadow-md hover:shadow-lg transition-shadow ← アイコンボタンで使用
+shadow-md hover:shadow-lg transition-shadow
 ```
 
 ---
@@ -384,17 +401,37 @@ border-b border-gray-200
 
 ### ボタン
 
-#### プライマリボタン（CTA）- ロゴ準拠テーマ
+#### プライマリボタン（CTA）- 単色 #4A9EFF
 ```jsx
-{/* 通常のプライマリボタン（ロゴのアクセントカラー準拠） */}
-<button className="bg-gradient-to-r from-sky-500 to-blue-600
-                   text-white font-bold py-3 px-6 rounded-lg
-                   hover:from-sky-600 hover:to-blue-700
-                   shadow-lg transition">
+{/* 標準のプライマリボタン */}
+<button className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg
+                   hover:bg-[#3b8fef] shadow-lg transition">
   ログイン
 </button>
 
-{/* Premiumボタン - ビタミンゴールド（特別感演出） */}
+{/* インラインスタイル版 */}
+<button
+    style={{backgroundColor: '#4A9EFF'}}
+    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
+    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
+    className="text-white font-bold py-3 px-6 rounded-lg shadow-lg transition">
+  AI分析を実行
+</button>
+```
+
+**使用箇所**:
+- 認証コード送信ボタン（02_auth.jsx Line 635, 670）
+- AI分析実行ボタン（03_dashboard.jsx Line 874, 909）
+- その他の主要アクションボタン
+
+**重要**: アプリ内のプライマリボタンは**全て単色 `bg-[#4A9EFF]`** を使用
+
+**❌ 禁止**: `bg-gradient-to-r from-sky-500 to-blue-600` は使用しない（認証画面背景のみ許可）
+
+---
+
+#### Premiumボタン - ビタミンゴールド（特別感演出）
+```jsx
 <button className="bg-gradient-to-r from-yellow-200 to-amber-500
                    text-gray-800 font-bold py-3 px-6 rounded-lg
                    hover:from-yellow-100 hover:to-amber-400
@@ -425,6 +462,8 @@ border-b border-gray-200
 - Premiumボタンの文字色は `text-gray-800`（濃いグレー）を使用
 - イエローは明るいため `text-white` は読みづらい
 - 影効果は控えめ（`shadow-amber-500/30`）でゴールドグローを演出
+
+---
 
 #### セカンダリボタン
 ```jsx
@@ -576,12 +615,12 @@ disabled:opacity-50 disabled:cursor-not-allowed
   <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full
                   max-h-[85vh] overflow-y-auto">
 
-    {/* ヘッダー（sticky） */}
-    <div className="sticky top-0 bg-white border-b px-6 py-4
+    {/* ヘッダー（sticky、単色 #4A9EFF） */}
+    <div className="sticky top-0 bg-[#4A9EFF] text-white p-4
                     flex items-center justify-between z-10">
       <h2 className="text-xl font-bold">タイトル</h2>
       <button onClick={onClose}
-              className="text-gray-400 hover:text-gray-600">
+              className="text-white hover:text-gray-200">
         <X size={24} />
       </button>
     </div>
@@ -593,6 +632,9 @@ disabled:opacity-50 disabled:cursor-not-allowed
   </div>
 </div>
 ```
+
+**重要**: モーダルヘッダーは**単色 `bg-[#4A9EFF]`** を使用
+**❌ 禁止**: `bg-gradient-to-r from-sky-500 to-blue-600` は使用しない
 
 #### モーダルサイズ
 ```css
@@ -611,13 +653,20 @@ max-w-2xl  /* 672px */
 ### セクションヘッダー
 
 ```jsx
-<div className="bg-gradient-to-r from-green-50 to-green-50
+{/* デイリー記録のセクションヘッダー（グラデーション許可） */}
+<div className="bg-gradient-to-r from-green-50 to-emerald-50
                 px-6 py-4 border-b-2 border-gray-200
                 flex items-center justify-between">
-  <h3 className="text-lg font-bold">セクションタイトル</h3>
-  <button className="text-sm text-purple-600 hover:text-purple-700">
+  <h3 className="text-lg font-bold">食事</h3>
+  <button className="text-sm text-[#4A9EFF] hover:text-[#3b8fef]">
     編集
   </button>
+</div>
+
+{/* 通常のセクションヘッダー（単色） */}
+<div className="bg-white px-6 py-4 border-b-2 border-gray-200
+                flex items-center justify-between">
+  <h3 className="text-lg font-bold">設定</h3>
 </div>
 ```
 
@@ -693,6 +742,7 @@ Trash2          - 削除
 Copy            - コピー
 Settings        - 設定
 Info            - 情報
+HelpCircle      - ヘルプ（?）
 Share2          - 共有
 Download        - ダウンロード
 AlertTriangle   - 警告
@@ -703,6 +753,29 @@ ChevronDown     - 下矢印
 Search          - 検索
 Camera          - カメラ
 ```
+
+#### ?アイコン（ヘルプ）の統一仕様
+
+**色**: `#4A9EFF`（プライマリカラー）
+**アイコン**: `HelpCircle`（半角?）
+**サイズ**: `size={16}` または `size={20}`
+
+```jsx
+{/* インラインスタイル版 */}
+<button onClick={openModal}>
+  <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+</button>
+
+{/* Tailwind版 */}
+<button onClick={openModal} className="text-[#4A9EFF] hover:text-[#3b8fef]">
+  <Icon name="HelpCircle" size={20} />
+</button>
+```
+
+**使用箇所**:
+- 各機能の説明モーダルを開くボタン
+- ヘルプセンターへのリンク
+- 不明な用語の説明
 
 ---
 
@@ -881,19 +954,25 @@ handleDeleteAccount() {
 
 ### フィードバック方法
 
-#### ✅ 推奨: showFeedback()のみ使用
+#### ✅ 推奨: Toast通知システム（react-hot-toast）
+
+**基本使用法**:
 ```javascript
+import toast from 'react-hot-toast';
+
 // 成功
-showFeedback('保存しました', 'success');
+toast.success('保存しました');
 
 // エラー
-showFeedback('保存に失敗しました', 'error');
+toast.error('保存に失敗しました');
 
 // 情報
-showFeedback('データを読み込み中...', 'info');
+toast('データを読み込み中...');
 
-// 達成
-showFeedback('目標達成！', 'achievement');
+// ローディング
+const loadingToast = toast.loading('処理中...');
+// 処理完了後
+toast.success('完了しました！', { id: loadingToast });
 ```
 
 #### ❌ 使用禁止: alert()
@@ -974,23 +1053,19 @@ className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
 
 ### コンポーネント作成時のチェックリスト
 
-- [ ] グラデーションはプライマリまたはPremiumを使用
+- [ ] **グラデーションは認証画面背景・デイリー記録固有色のみ**（それ以外は単色）
+- [ ] プライマリボタンは単色 `bg-[#4A9EFF]` を使用
+- [ ] モーダルヘッダーは単色 `bg-[#4A9EFF]` を使用
 - [ ] スペーシングは8px単位（Tailwind 2, 3, 4, 6, 8）
 - [ ] 角丸は`rounded-lg`, `rounded-xl`, `rounded-2xl`のいずれか（円形は特殊用途のみ`rounded-full`）
 - [ ] 影は`shadow-sm`, `shadow-md`, `shadow-lg`, `shadow-2xl`のいずれか
 - [ ] 枠線は`border-2`を使用（区切り線のみ`border-b`）
-- [ ] アイコンボタンは**ダッシュボード食事セクションのデザイン**を基準にする:
-  - サイズ: `w-10 h-10`
-  - 形状: `rounded-lg`
-  - 背景: `bg-white`
-  - 影: `shadow-md`
-  - 枠線: `border-2 border-{color}-200`
-  - アイコン: `size={18}`
-  - カラーは機能別（purple/indigo/red）
+- [ ] アイコンボタンは**OS標準色**を使用（Green/Blue/Red/Gray）
+- [ ] ?アイコンは `HelpCircle` で色は `#4A9EFF`
 - [ ] ボタンラベルは動詞のみ
 - [ ] メッセージは「〇〇しました」「〇〇できません」の形式
 - [ ] プレースホルダーは「例: 〇〇」または「〇〇を検索...」
-- [ ] `alert()`ではなく`showFeedback()`を使用
+- [ ] `alert()`ではなく`toast()`を使用
 - [ ] z-indexは定義された階層に従う
 
 ---
@@ -999,7 +1074,9 @@ className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
 
 | バージョン | 日付 | 変更内容 |
 |-----------|------|---------|
-| 2.0.0 | 2025-11-04 | **ロゴ準拠テーマ（Sky Blue）採用** - ロゴのアクセントカラー #4A9EFF を基準にプライマリカラーを `from-sky-500 to-blue-600` に統一。Premiumカラーをユーザー指定の #FFF59A ベースの `from-yellow-200 to-amber-500`（ビタミンゴールド）に変更。機能別ボタンはOS標準色を明記。Lucide Icons必須化。 |
+| 2.2.0 | 2025-11-06 | **指示書UI統一版** - 指示書編集モーダルを完全に標準化。getCategoryColor()を単色に変更（グラデーション削除）。指示書カード枠をborder-green-600に強調。完了・編集ボタンをアイコン+テキスト、同一幅（flex-1）、標準パディング（py-3 px-6）に統一。削除ボタンを削除し、保存とキャンセルの2ボタン構成に変更。編集ボタンにプライマリカラー（#4A9EFF）を採用。 |
+| 2.1.0 | 2025-11-05 | **実装基準版** - グラデーション最小化（認証画面背景・デイリー記録固有色のみ許可）。プライマリボタンを単色 `bg-[#4A9EFF]` に統一。モーダルヘッダーを単色に変更。指示書カテゴリドットの色定義を追加。Toast通知システムを推奨。?アイコンを `HelpCircle` で `#4A9EFF` に統一。 |
+| 2.0.0 | 2025-11-04 | **ロゴ準拠テーマ（Sky Blue）採用** - ロゴのアクセントカラー #4A9EFF を基準にプライマリカラーを統一。Premiumカラーをユーザー指定の #FFF59A ベースの `from-yellow-200 to-amber-500`（ビタミンゴールド）に変更。機能別ボタンはOS標準色を明記。Lucide Icons必須化。 |
 | 1.0.1 | 2025-11-04 | ダッシュボード食事セクションのアイコンボタンデザインを基準として追加 |
 | 1.0.0 | 2025-11-04 | 初版作成 |
 
@@ -1009,4 +1086,5 @@ className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
 
 このデザインシステムに関する質問や提案がある場合は、開発チームまでお問い合わせください。
 
-**最終更新**: 2025年11月4日
+**最終更新**: 2025年11月6日
+**バージョン**: 2.2.0（指示書UI統一版）

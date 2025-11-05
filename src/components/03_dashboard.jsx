@@ -435,10 +435,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     // カテゴリー色を取得
     const getCategoryColor = (type) => {
         switch (type) {
-            case 'meal': return { bg: 'from-green-50 to-teal-50', border: 'border-green-600', text: 'text-green-700', icon: 'text-green-600' };
-            case 'exercise': return { bg: 'from-orange-50 to-red-50', border: 'border-orange-600', text: 'text-orange-700', icon: 'text-orange-600' };
-            case 'condition': return { bg: 'from-sky-50 to-blue-50', border: 'border-sky-600', text: 'text-sky-700', icon: 'text-sky-600' };
-            default: return { bg: 'from-gray-50 to-gray-100', border: 'border-gray-600', text: 'text-gray-700', icon: 'text-gray-600' };
+            case 'meal': return { bg: 'bg-green-50', border: 'border-green-600', text: 'text-green-700', icon: 'text-green-600' };
+            case 'exercise': return { bg: 'bg-orange-50', border: 'border-orange-600', text: 'text-orange-700', icon: 'text-orange-600' };
+            case 'condition': return { bg: 'bg-red-50', border: 'border-red-600', text: 'text-red-700', icon: 'text-red-600' };
+            default: return { bg: 'bg-gray-50', border: 'border-gray-600', text: 'text-gray-700', icon: 'text-gray-600' };
         }
     };
 
@@ -795,7 +795,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <Icon name="Target" size={20} className="text-green-600" />
                                     <span className="text-xs text-gray-500">今日の目標</span>
                                 </div>
-                                <div className="bg-white rounded-lg border-2 border-green-200 p-4 mb-3">
+                                <div className="bg-white rounded-2xl border-2 border-green-600 p-4 mb-4 shadow-sm">
                                     <div className="text-base font-bold text-gray-900 mb-2">
                                         {todayDirective.message}
                                     </div>
@@ -804,20 +804,22 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     {!todayDirective.completed ? (
                                         <button
                                             onClick={handleCompleteDirective}
-                                            className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition text-sm"
+                                            className="flex-1 bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
                                         >
-                                            ✓ 完了
+                                            <Icon name="Check" size={18} />
+                                            完了
                                         </button>
                                     ) : (
-                                        <div className="flex items-center gap-2 text-green-600 font-medium text-sm">
-                                            <Icon name="CheckCircle" size={16} />
+                                        <div className="flex-1 flex items-center justify-center gap-2 text-green-600 font-semibold py-3">
+                                            <Icon name="CheckCircle" size={18} />
                                             完了済み
                                         </div>
                                     )}
                                     <button
                                         onClick={() => setShowDirectiveEdit(true)}
-                                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
+                                        className="flex-1 bg-[#4A9EFF] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#3A8EEF] transition flex items-center justify-center gap-2"
                                     >
+                                        <Icon name="Edit3" size={18} />
                                         編集
                                     </button>
                                 </div>
@@ -2525,20 +2527,19 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-md w-full shadow-xl">
+            <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
                 {/* ヘッダー */}
-                <div className="p-4 border-b flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <Icon name="Edit3" size={20} className="text-amber-600" />
+                <div className="p-4 border-b-2 border-gray-200 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-gray-800">
                         指示書を編集
                     </h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
                         <Icon name="X" size={24} />
                     </button>
                 </div>
 
                 {/* コンテンツ */}
-                <div className="p-4 space-y-4">
+                <div className="p-6 space-y-4">
                     {/* カテゴリー選択 */}
                     <div>
                         <label className="text-sm font-bold text-gray-700 block mb-2">カテゴリー</label>
@@ -2547,10 +2548,10 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
                                 <button
                                     key={type}
                                     onClick={() => setEditedType(type)}
-                                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition ${
+                                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition border-2 ${
                                         editedType === type
-                                            ? `bg-gradient-to-r ${getCategoryColor(type).bg} border-2 ${getCategoryColor(type).border} ${getCategoryColor(type).text}`
-                                            : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                                            ? `${getCategoryColor(type).bg} ${getCategoryColor(type).border} ${getCategoryColor(type).text}`
+                                            : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
                                     }`}
                                 >
                                     <Icon name={getCategoryIcon(type)} size={14} />
@@ -2566,7 +2567,7 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
                         <textarea
                             value={editedMessage}
                             onChange={(e) => setEditedMessage(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none text-sm"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none transition text-sm"
                             rows="3"
                             placeholder="例: 鶏むね肉150g追加"
                         />
@@ -2574,18 +2575,19 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
                 </div>
 
                 {/* アクションボタン */}
-                <div className="p-4 border-t flex gap-2">
+                <div className="p-4 border-t-2 border-gray-200 flex gap-2">
                     <button
                         onClick={handleSave}
-                        className="flex-1 bg-amber-600 text-white py-2.5 rounded-lg hover:bg-amber-700 transition font-semibold text-sm"
+                        className="flex-1 bg-[#4A9EFF] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#3A8EEF] transition flex items-center justify-center gap-2"
                     >
+                        <Icon name="Save" size={18} />
                         保存
                     </button>
                     <button
-                        onClick={onDelete}
-                        className="px-4 bg-red-50 text-red-600 py-2.5 rounded-lg hover:bg-red-100 transition font-semibold text-sm border border-red-300"
+                        onClick={onClose}
+                        className="flex-1 bg-white border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-50 transition"
                     >
-                        削除
+                        キャンセル
                     </button>
                 </div>
             </div>
