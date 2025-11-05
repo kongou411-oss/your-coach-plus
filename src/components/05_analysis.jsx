@@ -1171,8 +1171,8 @@ ${conversationContext}
                     // スコアを再計算して渡す
                     const freshScores = calculateScores(userProfile, dailyRecord, targetPFC);
                     generateAIAnalysis(analysis, historicalInsights, false, freshScores);
-                }} className="text-white">
-                    <Icon name="RefreshCw" size={20} />
+                }} className="text-sm px-4 py-2 bg-sky-600 text-white rounded-lg font-bold hover:bg-sky-700 shadow-lg hover:shadow-xl transition">
+                    再生成
                 </button>
             </header>
 
@@ -1213,7 +1213,7 @@ ${conversationContext}
                 </div>
             )}
 
-            <div className="p-4 flex-grow overflow-y-auto space-y-3" style={{ paddingBottom: `${babHeight + 80}px` }}>
+            <div className="p-4 flex-grow overflow-y-auto space-y-3 bg-indigo-50" style={{ paddingBottom: `${babHeight + 80}px` }}>
                 {/* 日付バッジ */}
                 <div className="flex justify-center">
                     <div className="bg-gray-200 rounded-full px-4 py-1.5 text-xs text-gray-700 font-medium flex items-center gap-2">
