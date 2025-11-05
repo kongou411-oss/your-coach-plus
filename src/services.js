@@ -369,6 +369,83 @@ const DataService = {
         }
     },
 
+    // 分析レポート保存
+    saveAnalysisReport: async (userId, report) => {
+        const reportData = {
+            ...report,
+            createdAt: new Date().toISOString(),
+            id: `report_${Date.now()}`
+        };
+
+        if (DEV_MODE) {
+            const saved = localStorage.getItem('analysisReports');
+            const reports = saved ? JSON.parse(saved) : [];
+            reports.push(reportData);
+            localStorage.setItem('analysisReports', JSON.stringify(reports));
+            return reportData;
+        }
+
+        try {
+            const reportRef = db
+                .collection('users')
+                .doc(userId)
+                .collection('analysisReports')
+                .doc(reportData.id);
+            await reportRef.set(reportData);
+            return reportData;
+        } catch (error) {
+            console.error('Error saving analysis report:', error);
+            throw error;
+        }
+    },
+
+    // 分析レポート取得
+    getAnalysisReports: async (userId) => {
+        if (DEV_MODE) {
+            const saved = localStorage.getItem('analysisReports');
+            const reports = saved ? JSON.parse(saved) : [];
+            // 新しい順にソート
+            return reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+
+        try {
+            const snapshot = await db
+                .collection('users')
+                .doc(userId)
+                .collection('analysisReports')
+                .orderBy('createdAt', 'desc')
+                .get();
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error('Error getting analysis reports:', error);
+            return [];
+        }
+    },
+
+    // 分析レポート削除
+    deleteAnalysisReport: async (userId, reportId) => {
+        if (DEV_MODE) {
+            const saved = localStorage.getItem('analysisReports');
+            const reports = saved ? JSON.parse(saved) : [];
+            const filtered = reports.filter(r => r.id !== reportId);
+            localStorage.setItem('analysisReports', JSON.stringify(filtered));
+            return true;
+        }
+
+        try {
+            await db
+                .collection('users')
+                .doc(userId)
+                .collection('analysisReports')
+                .doc(reportId)
+                .delete();
+            return true;
+        } catch (error) {
+            console.error('Error deleting analysis report:', error);
+            throw error;
+        }
+    },
+
     // 写真アップロード
     uploadPhoto: async (userId, file, recordId) => {
         if (DEV_MODE) {

@@ -1808,7 +1808,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </div>
                             <button
                                 onClick={() => window.handleQuickAction && window.handleQuickAction('analysis')}
-                                className="text-sm px-4 py-2 bg-sky-600 text-white rounded-lg font-bold hover:bg-sky-700 shadow-lg hover:shadow-xl transition"
+                                className="text-sm px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-lg hover:shadow-xl transition"
                             >
                                 ＋ 分析
                             </button>
