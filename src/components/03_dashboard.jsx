@@ -1794,9 +1794,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 {/* 分析ボタン - コンディション完了後に開放 */}
                 {unlockedFeatures.includes('analysis') && (
                     <div id="analysis-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
-                        <div className="px-6 py-4 bg-gradient-to-r from-sky-50 to-blue-50 flex items-center justify-between border-b-2 border-gray-200">
+                        <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
-                                <Icon name="PieChart" size={32} className="text-sky-600" />
+                                <Icon name="PieChart" size={32} className="text-indigo-600" />
                                 <h4 className="font-bold text-gray-900">分析</h4>
                                 <button
                                     onClick={() => setShowScoringGuideModal(true)}
