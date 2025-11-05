@@ -42,7 +42,13 @@
       "Bash(git log:*)",
       "Bash(start level_banner_effects.html)",
       "Bash(start level_banner_effects_extended.html)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(start http://localhost:8000)",
+      "Bash(nul)",
+      "Bash(C:Usersyourctemp_changes.txt)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

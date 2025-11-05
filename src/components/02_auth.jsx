@@ -28,6 +28,9 @@ const LoginScreen = () => {
     const [showPrivacyModal, setShowPrivacyModal] = useState(false);
     const [showTermsModal, setShowTermsModal] = useState(false);
 
+    // 認証方法の説明モーダル
+    const [showAuthInfoModal, setShowAuthInfoModal] = useState(false);
+
     // Googleリダイレクト中の状態
     const [isRedirecting, setIsRedirecting] = useState(false);
 
@@ -347,7 +350,10 @@ const LoginScreen = () => {
                     <div className="mt-6 text-center">
                         <button
                             onClick={() => setShowForgotPassword(false)}
-                            className="text-sky-600 hover:text-sky-700 text-sm font-medium"
+                            className="text-sm font-medium transition"
+                            style={{color: '#4A9EFF'}}
+                            onMouseEnter={(e) => e.currentTarget.style.color = '#3b8fef'}
+                            onMouseLeave={(e) => e.currentTarget.style.color = '#4A9EFF'}
                         >
                             ログイン画面に戻る
                         </button>
@@ -417,7 +423,9 @@ const LoginScreen = () => {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Your Coach+</h1>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                        Your Coach<span style={{color: '#4A9EFF'}}>+</span>
+                    </h1>
                     <p className="text-gray-600">LBMを中心とした科学的な体づくり</p>
                 </div>
 
@@ -530,7 +538,8 @@ const LoginScreen = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowTermsModal(true)}
-                                    className="text-sky-600 hover:underline font-medium"
+                                    className="font-medium hover:underline"
+                                    style={{color: '#4A9EFF'}}
                                 >
                                     利用規約
                                 </button>
@@ -538,7 +547,8 @@ const LoginScreen = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowPrivacyModal(true)}
-                                    className="text-sky-600 hover:underline font-medium"
+                                    className="font-medium hover:underline"
+                                    style={{color: '#4A9EFF'}}
                                 >
                                     プライバシーポリシー
                                 </button>
@@ -549,6 +559,19 @@ const LoginScreen = () => {
                 )}
 
                 <div className="mt-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm text-gray-600">または</span>
+                        <button
+                            type="button"
+                            onClick={() => setShowAuthInfoModal(true)}
+                            className="transition"
+                            style={{color: '#4A9EFF'}}
+                            onMouseEnter={(e) => e.currentTarget.style.color = '#3b8fef'}
+                            onMouseLeave={(e) => e.currentTarget.style.color = '#4A9EFF'}
+                        >
+                            <Icon name="Info" size={16} />
+                        </button>
+                    </div>
                     <button
                         type="button"
                         onClick={isSignUp ? handleGoogleSignUp : handleGoogleLogin}
@@ -562,7 +585,10 @@ const LoginScreen = () => {
                 <div className="mt-6 text-center">
                     <button
                         onClick={() => setIsSignUp(!isSignUp)}
-                        className="text-sky-600 hover:text-sky-700 text-sm font-medium"
+                        className="text-sm font-medium transition"
+                        style={{color: '#4A9EFF'}}
+                        onMouseEnter={(e) => e.currentTarget.style.color = '#3b8fef'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = '#4A9EFF'}
                     >
                         {isSignUp ? 'すでにアカウントをお持ちの方' : 'アカウントをお持ちでない方'}
                     </button>
@@ -688,6 +714,73 @@ const LoginScreen = () => {
                         <div className="flex-1 overflow-hidden">
                             <iframe src="/terms.html" className="w-full h-full border-0"></iframe>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 認証方法の説明モーダル */}
+            {showAuthInfoModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowAuthInfoModal(false)}>
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold">認証方法について</h3>
+                            <button onClick={() => setShowAuthInfoModal(false)} className="text-gray-500 hover:text-gray-700">
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Google認証 */}
+                            <div className="border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Chrome" size={20} className="text-gray-700" />
+                                    <h4 className="font-semibold">Google認証</h4>
+                                </div>
+                                <div className="text-sm text-gray-600 space-y-2">
+                                    <p className="flex items-start gap-2">
+                                        <span className="text-yellow-500 mt-0.5">⚠️</span>
+                                        <span>現在<strong>テストモード</strong>中です</span>
+                                    </p>
+                                    <p className="ml-5">
+                                        テストユーザーとして登録されたGoogleアカウントのみログインできます。
+                                    </p>
+                                    <p className="ml-5 text-xs text-gray-500">
+                                        ※ 近日中に全ユーザーがログインできるよう設定予定
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* メールアドレス認証 */}
+                            <div className="border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Mail" size={20} className="text-gray-700" />
+                                    <h4 className="font-semibold">メールアドレス認証</h4>
+                                </div>
+                                <div className="text-sm text-gray-600 space-y-2">
+                                    <p className="flex items-start gap-2">
+                                        <span className="text-green-500 mt-0.5">✓</span>
+                                        <span><strong>誰でも登録・ログイン可能</strong></span>
+                                    </p>
+                                    <p className="ml-5">
+                                        メールアドレスとパスワードでアカウントを作成できます。
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 注意事項 */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p className="text-xs text-blue-800">
+                                    <strong>ℹ️ 注意:</strong> Googleで登録したアカウントはGoogleログインのみ、メールアドレスで登録したアカウントはメールアドレスログインのみ可能です。
+                                </p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => setShowAuthInfoModal(false)}
+                            className="mt-6 w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition"
+                        >
+                            閉じる
+                        </button>
                     </div>
                 </div>
             )}
