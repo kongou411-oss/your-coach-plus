@@ -12,6 +12,16 @@ if (!DEV_MODE) {
         firebase.initializeApp(FIREBASE_CONFIG);
     }
     auth = firebase.auth();
+
+    // 永続化設定（signInWithRedirectに必須）
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .then(() => {
+            console.log('✅ Firebase Auth Persistence設定完了 (LOCAL)');
+        })
+        .catch((error) => {
+            console.error('❌ Firebase Auth Persistence設定失敗:', error);
+        });
+
     db = firebase.firestore();
     storage = firebase.storage();
     functions = firebase.functions();

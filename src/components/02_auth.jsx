@@ -28,6 +28,9 @@ const LoginScreen = () => {
     const [showPrivacyModal, setShowPrivacyModal] = useState(false);
     const [showTermsModal, setShowTermsModal] = useState(false);
 
+    // Googleリダイレクト中の状態
+    const [isRedirecting, setIsRedirecting] = useState(false);
+
     // iframe内からのpostMessageを受け取ってモーダルを閉じる
     useEffect(() => {
         const handleMessage = (event) => {
@@ -39,6 +42,32 @@ const LoginScreen = () => {
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
     }, []);
+
+    // Googleリダイレクト認証の結果を処理（signInWithPopup使用のためコメントアウト）
+    // useEffect(() => {
+    //     console.log('🔍 useEffect: リダイレクト結果処理を開始');
+    //     const handleRedirectResult = async () => {
+    //         if (!auth) return;
+    //         try {
+    //             const result = await auth.getRedirectResult();
+    //             if (result.user) {
+    //                 const user = result.user;
+    //                 console.log('✅ リダイレクト認証成功:', { uid: user.uid, email: user.email });
+    //                 if (!isSignUp) {
+    //                     const profile = await DataService.getUserProfile(user.uid);
+    //                     if (!profile) {
+    //                         await auth.signOut();
+    //                         alert('Googleアカウントが未登録です。まずアカウントを作成してください。');
+    //                         setIsSignUp(true);
+    //                     }
+    //                 }
+    //             }
+    //         } catch (error) {
+    //             console.error('❌ Redirect result error:', error);
+    //         }
+    //     };
+    //     handleRedirectResult();
+    // }, [isSignUp]);
 
     // パスワード強度チェック
     const checkPasswordStrength = (pwd) => {
@@ -160,31 +189,49 @@ const LoginScreen = () => {
     };
 
     // ログイン専用: Googleでログイン（既存ユーザーのみ）
-    const handleGoogleLogin = async () => {
+    const handleGoogleLogin = async (event) => {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        console.log('🔵 signInWithPopupを試みます...');
+
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
             const result = await auth.signInWithPopup(provider);
             const user = result.user;
+
+            console.log('✅ ポップアップ認証成功:', { uid: user.uid, email: user.email });
 
             // 既存ユーザーかチェック
             const profile = await DataService.getUserProfile(user.uid);
 
             if (!profile) {
                 // 未登録ユーザー：サインアウトして新規登録を促す
+                console.log('⚠️ 未登録ユーザー: サインアウトします');
                 await auth.signOut();
                 alert('Googleアカウントが未登録です。まずアカウントを作成してください。');
-                setIsSignUp(true); // 新規登録モードに切り替え
+                setIsSignUp(true);
             }
             // 既存ユーザーの場合はonAuthStateChangedで処理される
         } catch (error) {
-            if (error.code !== 'auth/popup-closed-by-user') {
-                alert(error.message);
+            console.error('❌ ポップアップ認証エラー:', error);
+            if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+                alert(`認証エラー: ${error.message}`);
             }
         }
     };
 
     // 新規登録専用: Googleで登録（新規ユーザーのみ、規約同意必須）
-    const handleGoogleSignUp = async () => {
+    const handleGoogleSignUp = async (event) => {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        console.log('🔵 signInWithPopupを試みます（新規登録）...');
+
         // 規約同意チェック
         if (!agreedToTerms) {
             alert('利用規約とプライバシーポリシーに同意してください');
@@ -194,10 +241,15 @@ const LoginScreen = () => {
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
             const result = await auth.signInWithPopup(provider);
+            const user = result.user;
+
+            console.log('✅ ポップアップ認証成功（新規登録）:', { uid: user.uid, email: user.email });
+
             // 新規ユーザーの場合はonAuthStateChangedで処理される
         } catch (error) {
-            if (error.code !== 'auth/popup-closed-by-user') {
-                alert(error.message);
+            console.error('❌ ポップアップ認証エラー:', error);
+            if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+                alert(`認証エラー: ${error.message}`);
             }
         }
     };
@@ -498,6 +550,7 @@ const LoginScreen = () => {
 
                 <div className="mt-4">
                     <button
+                        type="button"
                         onClick={isSignUp ? handleGoogleSignUp : handleGoogleLogin}
                         className="w-full bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2"
                     >
