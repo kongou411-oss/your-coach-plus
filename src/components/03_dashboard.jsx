@@ -1241,7 +1241,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </div>
                             <button
                                 onClick={() => window.handleQuickAction && window.handleQuickAction('workout')}
-                                className="text-sm px-4 py-2 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] shadow-md hover:shadow-lg transition"
+                                className="text-sm px-4 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 shadow-md hover:shadow-lg transition"
                             >
                                 ＋ 追加
                             </button>

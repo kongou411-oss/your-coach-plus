@@ -3563,7 +3563,7 @@ RM回数と重量を別々に入力してください。`
                                                 className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
                                             >
                                                 <Icon name="Zap" size={20} />
-                                                <span>追加</span>
+                                                <span>アップ追加</span>
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -3572,7 +3572,7 @@ RM回数と重量を別々に入力してください。`
                                                 className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
                                             >
                                                 <Icon name="Plus" size={20} />
-                                                <span>追加</span>
+                                                <span>メイン追加</span>
                                             </button>
                                         </div>
                                     ) : (
@@ -3678,7 +3678,7 @@ RM回数と重量を別々に入力してください。`
                                     disabled={sets.length === 0}
                                     className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    追加
+                                    種目追加
                                 </button>
                             </div>
                         )}
