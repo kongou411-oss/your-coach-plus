@@ -7,152 +7,133 @@ Your Coach+は、React 18とFirebaseを使用したフィットネスコーチ�
 
 ## 技術スタック
 
-- **フロントエンド**: React 18（CDN版）
-- **バックエンド**: Firebase（Auth, Firestore, Storage）
+- **フロントエンド**: React 19 + Vite
+- **バックエンド**: Firebase（Auth, Firestore, Storage, Functions）
 - **AI**: Google Gemini API
-- **スタイリング**: Tailwind CSS（CDN）
-- **アイコン**: Lucide Icons（CDN）
+- **スタイリング**: Tailwind CSS
+- **アイコン**: Lucide React
+- **ビルドツール**: Vite 7.1.12
 
 ## ファイル構造
 
 ```
 C:\Users\yourc\yourcoach_new\
-├── index.html              # メインHTMLファイル
-├── styles.css              # カスタムCSS（ダークモード対応）
-├── styles_dark.css         # ダークモードスタイル
-├── config.js               # Firebase設定とアプリ設定
-├── utils.js                # ユーティリティ関数
-├── services.js             # サービス層（DB、AI）
-├── components.js           # Reactコンポーネント（統合版）
-├── foodDatabase.js         # 食品データベース
-├── trainingDatabase.js     # トレーニングデータベース
-└── firebase.json           # Firebase Hosting設定
+├── src/                      # ソースコード（ビルド対象）
+│   ├── main.jsx             # エントリーポイント
+│   ├── App.jsx              # メインアプリコンポーネント
+│   ├── index.css            # グローバルCSS
+│   └── components/          # Reactコンポーネント（.jsx）
+│       ├── 00_init.jsx
+│       ├── 00_feature_unlock.jsx
+│       ├── 01_common.jsx
+│       ├── 02_auth.jsx
+│       ├── 03_dashboard.jsx   # ← 実際にビルドされるファイル
+│       ├── 04_settings.jsx
+│       ├── 05_analysis.jsx
+│       ├── 06_community.jsx
+│       ├── 07_add_item_v2.jsx
+│       ├── 08_app.jsx
+│       ├── 10_feedback.jsx
+│       ├── 11_ai_food_recognition.jsx
+│       ├── 12_wearable_integration.jsx
+│       ├── 13_collaborative_planning.jsx
+│       ├── 14_microlearning.jsx
+│       ├── 15_community_growth.jsx
+│       ├── 16_history_v10.jsx
+│       ├── 17_chevron_shortcut.jsx
+│       └── 18_subscription.jsx
+├── dist/                     # ビルド出力（デプロイ対象）
+├── components/               # 旧バージョン（.js）【使用されていない】
+├── public/                   # 静的ファイル
+├── config.js                 # Firebase設定
+├── services.js               # サービス層
+├── utils.js                  # ユーティリティ関数
+├── foodDatabase.js           # 食品データベース
+├── trainingDatabase.js       # トレーニングデータベース
+├── index.html                # Vite用エントリーHTML
+├── index_old.html            # 旧バージョン（使用されていない）
+├── home.html                 # 旧バージョン（使用されていない）
+├── vite.config.js            # Vite設定
+├── package.json              # 依存関係
+└── firebase.json             # Firebase設定（publicディレクトリ: dist）
 ```
+
+## 🚨 重要：ファイル構造の変更点
+
+**プロジェクトがVite化されました！**
+
+### 編集するファイル
+- ✅ **`src/components/*.jsx`** ← これを編集する
+- ❌ **`components/*.js`** ← 旧バージョン、使用されていない
+
+### ビルド・デプロイフロー
+1. `src/`内のファイルを編集
+2. `npm run build`でビルド → `dist/`に出力
+3. `firebase deploy --only hosting`で`dist/`をデプロイ
+
+**キャッシュバスターは不要**（Viteがハッシュ付きファイル名を自動生成）
 
 ## 開発コマンド
 
 ### ローカル開発サーバー
 ```bash
-python -m http.server 8000
-# ブラウザで http://localhost:8000 を開く
+npm run dev
+# Vite devサーバーが起動（http://localhost:8000）
+# ホットリロード対応
+```
+
+### ビルド
+```bash
+npm run build
+# src/ をビルドして dist/ に出力
+```
+
+### プレビュー（ビルド後の確認）
+```bash
+npm run preview
+# ビルド済みファイルをローカルでプレビュー
 ```
 
 ### Firebaseデプロイ
 ```bash
-firebase deploy
+npm run build          # 必ずビルドしてから
+firebase deploy --only hosting  # dist/をデプロイ
 ```
 
-### キャッシュクリア（開発用）
-ブラウザで `clear_cache.html` を開く
-
-### キャッシュバスターの更新（必須）
-
-**重要:** コンポーネントファイルを編集した後、ブラウザに変更を反映させるには**必ず**キャッシュバスターを更新してください。
-
-#### キャッシュバスターとは
-index.htmlで読み込まれるJavaScriptファイルのURLに付与されているバージョン番号（例: `?v=20251028v1`）のこと。この値を変更することで、ブラウザに新しいファイルを強制的に読み込ませることができます。
-
-#### 更新手順
-
-1. **編集したファイル名を確認**
-   - 例: `components/07_add_item_v2.js` を編集した場合
-
-2. **index.htmlを開く**
-
-3. **該当ファイルの読み込み行を検索**
-   ```html
-   <script type="text/babel" src="components/07_add_item_v2.js?v=20251025v11"></script>
-   ```
-
-4. **キャッシュバスターを更新**
-   - フォーマット: `YYYYMMDD + v + 連番`
-   - 例: `20251028v1` → `20251028v2`（同日2回目の更新の場合）
-   - 例: `20251025v11` → `20251028v1`（日付が変わった場合は連番をリセット）
-   ```html
-   <script type="text/babel" src="components/07_add_item_v2.js?v=20251028v1"></script>
-   ```
-
-5. **ブラウザでスーパーリロード**
-   - Windows: `Ctrl + Shift + R` または `Ctrl + F5`
-   - Mac: `Cmd + Shift + R`
-
-6. **動作確認**
-   - F12でコンソールを開き、エラーがないことを確認
-   - 実装した機能が正しく動作することを確認
-
-#### 更新が必要なケース
-- ✅ コンポーネントファイル（components/*.js）を編集した場合
-- ✅ services.js、utils.js、config.jsを編集した場合
-- ✅ styles.css、styles_dark.cssを編集した場合
-- ❌ データベースファイル（foodDatabase.js、trainingDatabase.js）は通常キャッシュバスター不要
-
-#### トラブルシューティング
-**問題:** キャッシュバスターを更新したのに変更が反映されない
-
-**対策:**
-1. ブラウザのキャッシュを完全にクリア（設定 → プライバシーとセキュリティ → 閲覧データを削除）
-2. シークレットモードで開く
-3. `clear_cache.html` を開く
-
-### ERR_CONNECTION_REFUSED エラーの対策
-
-**問題:** ブラウザで `http://localhost:8000` にアクセスすると `ERR_CONNECTION_REFUSED` エラーが表示される
-
-**原因と対策:**
-
-#### 1. サーバーが起動していない
+### デプロイの完全フロー
 ```bash
-# サーバーを起動
-python -m http.server 8000
+# 1. ビルド
+npm run build
+
+# 2. Gitコミット
+git add -A
+git commit -m "Fix: 変更内容の説明
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# 3. デプロイ
+firebase deploy --only hosting
 ```
-
-#### 2. ポート8000が既に使用されている
-```bash
-# Windowsでポート8000を使用しているプロセスを確認
-netstat -ano | findstr :8000
-
-# プロセスIDが表示されたら、タスクマネージャーで終了するか以下のコマンドで終了
-# taskkill /PID [プロセスID] /F
-```
-
-#### 3. サーバーがバックグラウンドで起動しているが応答しない
-```bash
-# すべてのPythonプロセスを終了（注意：他のPythonプログラムも終了します）
-taskkill /IM python.exe /F
-
-# サーバーを再起動
-python -m http.server 8000
-```
-
-#### 4. 代替ポートで起動（ポート8000が解放できない場合）
-```bash
-# ポート8080で起動
-python -m http.server 8080
-
-# ブラウザで http://localhost:8080 を開く
-```
-
-**推奨フロー:**
-1. まずポート8000の使用状況を確認: `netstat -ano | findstr :8000`
-2. 使用中なら強制終了: `taskkill /IM python.exe /F`
-3. サーバーを起動: `python -m http.server 8000`
-4. ブラウザで確認: `http://localhost:8000`
 
 ## 🚨 作業フロー（必須）
 
-### 1. 初回チャット開始時：ローカルサーバーを起動
+### 1. 初回チャット開始時：開発サーバーを起動
 
 **必ず最初に実行:**
 ```bash
-python -m http.server 8000
+npm run dev
+# Viteサーバーが http://localhost:8000 で起動
+# ホットリロード有効
 ```
 
-**理由:** 毎回初回接続でエラーが発生するため、チャット開始直後にサーバーを起動すること。
+**理由:** 開発中の変更をリアルタイムで確認できる。
 
 ### 2. 実装完了後：セルフエラーチェック
 
 **実装後、必ず以下を実行:**
-1. ブラウザで http://localhost:8000 を開く
+1. 開発サーバー（http://localhost:8000）を開く
 2. F12を押してコンソールを開く
 3. 構文エラー（SyntaxError）がないことを確認
 4. エラーがなければユーザーに報告
@@ -167,13 +148,27 @@ python -m http.server 8000
 
 **重要:** ユーザーが明示的に「デプロイして」と指示した場合のみ実行すること。
 
+**デプロイ手順:**
 ```bash
+# 1. ビルド
+npm run build
+
+# 2. Gitコミット
+git add -A
+git commit -m "変更内容
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# 3. デプロイ
 firebase deploy --only hosting
 ```
 
 **禁止事項:**
 - ❌ 勝手にデプロイしない
 - ❌ 実装完了＝デプロイではない
+- ❌ ビルドせずにデプロイしない
 - ❌ ユーザーの確認を待たずにデプロイしない
 
 ### 4. Git更新（バックアップ）：3時間に1回確認
