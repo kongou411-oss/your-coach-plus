@@ -1206,8 +1206,9 @@ ${conversationContext}
                         <button
                             onClick={() => setShowCreditInfoModal(true)}
                             className="p-1 hover:bg-white/50 rounded transition"
+                            style={{color: '#4A9EFF'}}
                         >
-                            <Icon name="Info" size={16} className="text-gray-500" />
+                            <Icon name="Info" size={16} />
                         </button>
                     </div>
                 </div>
@@ -1407,7 +1408,8 @@ ${conversationContext}
                     <div className="flex items-center gap-2 p-3">
                         <button
                             onClick={() => setShowHelpModal(true)}
-                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition flex-shrink-0"
+                            className="p-2 hover:bg-indigo-50 rounded-lg transition flex-shrink-0"
+                            style={{color: '#4A9EFF'}}
                         >
                             <Icon name="Info" size={20} />
                         </button>
@@ -1437,7 +1439,7 @@ ${conversationContext}
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="HelpCircle" size={24} className="text-indigo-600" />
+                                <Icon name="HelpCircle" size={24} style={{color: '#4A9EFF'}} />
                                 質問機能の使い方
                             </h3>
                             <button onClick={() => setShowHelpModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -1478,7 +1480,7 @@ ${conversationContext}
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="Info" size={24} className="text-indigo-600" />
+                                <Icon name="Info" size={24} style={{color: '#4A9EFF'}} />
                                 クレジットについて
                             </h3>
                             <button onClick={() => setShowCreditInfoModal(false)} className="text-gray-400 hover:text-gray-600">

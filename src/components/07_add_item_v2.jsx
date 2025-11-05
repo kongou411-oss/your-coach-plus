@@ -167,13 +167,13 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
                                                 </div>
                                                 <button
                                                     onClick={() => handleEditSet(setIndex)}
-                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-200"
+                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                                 >
                                                     <Icon name="Edit" size={18} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteSet(setIndex)}
-                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-200"
+                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                 >
                                                     <Icon name="Trash2" size={18} />
                                                 </button>
@@ -757,7 +757,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
                                                 e.stopPropagation();
                                                 handleDeleteItem(idx);
                                             }}
-                                            className="ml-2 p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                            className="ml-2 w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                             title="削除"
                                         >
                                             <Icon name="Trash2" size={18} />
@@ -3277,8 +3277,8 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
 
                                         {/* 追加済みセットリスト */}
                                         {sets.length > 0 && (
-                                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                                                <p className="text-xs font-bold text-blue-700 mb-2">追加済み（{sets.length}セット）</p>
+                                            <div className="p-3 rounded-lg border-2" style={{backgroundColor: '#EFF6FF', borderColor: '#4A9EFF'}}>
+                                                <p className="text-xs font-bold mb-2" style={{color: '#4A9EFF'}}>追加済み（{sets.length}セット）</p>
                                                 <div className="space-y-1">
                                                     {sets.map((set, idx) => (
                                                         <div key={idx} className="flex justify-between items-center text-sm bg-white p-2 rounded">
@@ -3685,8 +3685,8 @@ RM回数と重量を別々に入力してください。`
 
                         {/* 追加済み種目リスト */}
                         {exercises.length > 0 && !currentExercise && (
-                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                <p className="text-sm font-bold text-blue-700 mb-3">追加済み（{exercises.length}種目）</p>
+                            <div className="p-4 rounded-lg border-2" style={{backgroundColor: '#EFF6FF', borderColor: '#4A9EFF'}}>
+                                <p className="text-sm font-bold mb-3" style={{color: '#4A9EFF'}}>追加済み（{exercises.length}種目）</p>
 
                                 {/* 種目一覧 */}
                                 <div className="space-y-2 mb-3">
@@ -3744,15 +3744,15 @@ RM回数と重量を別々に入力してください。`
                                                                 }
                                                                 setExercises(exercises.filter((_, i) => i !== index));
                                                             }}
-                                                            className="text-blue-600 hover:text-blue-800"
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                                         >
-                                                            <Icon name="Edit2" size={16} />
+                                                            <Icon name="Edit" size={18} />
                                                         </button>
                                                         <button
                                                             onClick={() => setExercises(exercises.filter((_, i) => i !== index))}
-                                                            className="text-red-500 hover:text-red-700"
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                         >
-                                                            <Icon name="Trash2" size={16} />
+                                                            <Icon name="Trash2" size={18} />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -3782,7 +3782,7 @@ RM回数と重量を別々に入力してください。`
                                     {/* 総時間: すべての種目で表示 */}
                                     <div className="text-center">
                                         <p className="text-xs text-gray-600 mb-1">総時間</p>
-                                        <p className="text-lg font-bold text-blue-600">
+                                        <p className="text-lg font-bold text-orange-600">
                                             {exercises.reduce((sum, ex) => {
                                                 if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
                                                     // 有酸素・ストレッチ: durationを直接加算
@@ -4827,16 +4827,16 @@ RM回数と重量を別々に入力してください。`
                                                                         setEditingItemIndex(index);
                                                                         setShowSearchModal(false);
                                                                     }}
-                                                                    className="text-blue-500 hover:text-blue-700"
+                                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                                                     title="編集"
                                                                 >
-                                                                    <Icon name="Edit" size={16} />
+                                                                    <Icon name="Edit" size={18} />
                                                                 </button>
                                                                 <button
                                                                     onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
-                                                                    className="text-red-500 hover:text-red-700"
+                                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                                 >
-                                                                    <Icon name="Trash2" size={16} />
+                                                                    <Icon name="Trash2" size={18} />
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -6205,8 +6205,9 @@ RM回数と重量を別々に入力してください。`
                                         onClick={() => setShowMealInfoModal(true)}
                                         className="p-1.5 hover:bg-gray-100 rounded-full transition"
                                         title="使い方"
+                                        style={{color: '#4A9EFF'}}
                                     >
-                                        <Icon name="HelpCircle" size={20} className="text-green-600" />
+                                        <Icon name="HelpCircle" size={20} />
                                     </button>
                                 )}
                                 {type === 'workout' && (
@@ -6214,8 +6215,9 @@ RM回数と重量を別々に入力してください。`
                                         onClick={() => setShowWorkoutInfoModal(true)}
                                         className="p-1.5 hover:bg-gray-100 rounded-full transition"
                                         title="使い方"
+                                        style={{color: '#4A9EFF'}}
                                     >
-                                        <Icon name="HelpCircle" size={20} className="text-orange-600" />
+                                        <Icon name="HelpCircle" size={20} />
                                     </button>
                                 )}
                             </div>

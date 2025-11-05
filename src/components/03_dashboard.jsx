@@ -841,7 +841,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             title: '📝 記録について',
                             content: `【通常の記録】\n＋ボタンから、食事・運動・サプリメントを記録できます。記録した内容は即座にダッシュボードに反映されます。\n\n【予測入力】\n前日のデータから今日の食事・運動を自動的に予測して入力します。\n・青背景で表示されます\n・予測データは編集可能です\n・そのまま分析に使用できます\n\n【ルーティン入力】\n設定したルーティンに紐づけたテンプレートを自動入力します。\n・紫背景で表示されます\n・ルーティンデータは編集可能です\n・そのまま分析に使用できます\n\n設定方法：設定 → ルーティン → 各日に食事・運動テンプレートを紐づけ`
                         })}
-                        className="text-sky-600 hover:text-sky-800"
+                        style={{color: '#4A9EFF'}}
+                        onMouseEnter={(e) => e.currentTarget.style.color = '#3b8fef'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = '#4A9EFF'}
                     >
                         <Icon name="Info" size={18} />
                     </button>
@@ -924,7 +926,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <h4 className="font-bold text-gray-900">体組成</h4>
                         </div>
                         <span className="text-lg font-bold text-teal-600">
-                            LBM: {(bodyComposition.weight * (1 - bodyComposition.bodyFatPercentage / 100)).toFixed(1)}kg
+                            LBM {(bodyComposition.weight * (1 - bodyComposition.bodyFatPercentage / 100)).toFixed(1)}kg
                         </span>
                     </div>
                     <div className="p-6">
@@ -1293,8 +1295,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                             <p className="font-medium">{exercise.exercise?.name || exercise.name}</p>
                                                             {isCardioOrStretch ? (
                                                                 // 有酸素・ストレッチ: 総時間のみ表示（新旧両データ構造対応）
-                                                                <p className="text-xs text-blue-600">
-                                                                    {exercise.duration
+                                                                <p className="text-xs text-orange-600 font-medium">
+                                                                    総時間: {exercise.duration
                                                                         ? `${exercise.duration}分`
                                                                         : exercise.sets
                                                                             ? `${exercise.sets.reduce((sum, set) => sum + (set.duration || 0), 0)}分`
@@ -1804,8 +1806,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     onClick={() => setShowScoringGuideModal(true)}
                                     className="p-1 hover:bg-gray-100 rounded-full transition"
                                     title="採点基準を見る"
+                                    style={{color: '#4A9EFF'}}
                                 >
-                                    <Icon name="Info" size={16} className="text-gray-500" />
+                                    <Icon name="Info" size={16} />
                                 </button>
                             </div>
                             <button
@@ -1866,7 +1869,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             {/* ヘッダー */}
                             <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                    <Icon name="Info" size={20} className="text-sky-600" />
+                                    <Icon name="Info" size={20} style={{color: '#4A9EFF'}} />
                                     採点基準
                                 </h3>
                                 <button

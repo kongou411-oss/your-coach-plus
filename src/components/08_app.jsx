@@ -2684,9 +2684,9 @@ AIコーチなどの高度な機能が解放されます。
                                         alert('チュートリアル機能は削除されました');
                                         setBottomBarMenu(null);
                                     }}
-                                    className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-orange-100 transition"
+                                    className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-blue-100 transition"
                                 >
-                                    <Icon name="HelpCircle" size={18} className="text-orange-600" />
+                                    <Icon name="HelpCircle" size={18} style={{color: '#4A9EFF'}} />
                                     <span className="text-xs text-gray-700">使い方</span>
                                 </button>
                             </div>
