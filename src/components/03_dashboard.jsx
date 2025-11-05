@@ -915,7 +915,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 </div>
 
                 {/* 体組成セクション */}
-                <div id="body-composition-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                <div id="body-composition-section" className="mb-6 bg-white rounded-xl shadow-sm hover:shadow-lg overflow-hidden border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 -mx-6">
                     <div className="px-6 py-4 bg-gradient-to-r from-teal-50 to-cyan-50 flex items-center justify-between border-b-2 border-gray-200">
                         <div className="flex items-center gap-3">
                             <Icon name="Activity" size={32} className="text-teal-600" />
@@ -1113,7 +1113,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 </div>
 
                 {/* 食事セクション */}
-                <div id="meal-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                <div id="meal-section" className="mb-6 bg-white rounded-xl shadow-sm hover:shadow-lg overflow-hidden border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 -mx-6">
                     <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 flex items-center justify-between border-b-2 border-gray-200">
                         <div className="flex items-center gap-3">
                             <Icon name="Utensils" size={32} className="text-green-600" />
@@ -1230,7 +1230,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 {/* 運動セクション */}
                 {/* 運動セクション - 食事記録完了後に開放 */}
                 {unlockedFeatures.includes('training') && (
-                    <div id="workout-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                    <div id="workout-section" className="mb-6 bg-white rounded-xl shadow-sm hover:shadow-lg overflow-hidden border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 -mx-6">
                         <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-red-50 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
                                 <Icon name="Dumbbell" size={32} className="text-orange-600" />
@@ -1385,7 +1385,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                 {/* 体調セクション - 運動記録完了後に開放 */}
                 {unlockedFeatures.includes('condition') && (
-                    <div id="condition-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                    <div id="condition-section" className="mb-6 bg-white rounded-xl shadow-sm hover:shadow-lg overflow-hidden border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 -mx-6">
                     <div className="px-6 py-4 bg-gradient-to-r from-red-50 to-pink-50 flex items-center justify-between border-b-2 border-gray-200">
                         <div className="flex items-center gap-3">
                             <Icon name="HeartPulse" size={32} className="text-red-600" />
@@ -1442,10 +1442,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.sleepHours) || 0)
-                                                ? 'text-white shadow-lg'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
+                                                ? 'text-white shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1503,10 +1503,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.sleepQuality) || 0)
-                                                ? 'text-white shadow-lg'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
+                                                ? 'text-white shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1564,10 +1564,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.appetite) || 0)
-                                                ? 'text-white shadow-lg'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
+                                                ? 'text-white shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1625,10 +1625,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.digestion) || 0)
-                                                ? 'text-white shadow-lg'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
+                                                ? 'text-white shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1686,10 +1686,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.focus) || 0)
-                                                ? 'text-white shadow-lg'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
+                                                ? 'text-white shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1747,10 +1747,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 onFeatureUnlocked('analysis');
                                             }
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-bold transition-all duration-300 focus:outline-none shadow-md ${
+                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.stress) || 0)
-                                                ? 'text-white shadow-lg'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg'
+                                                ? 'text-white shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1764,7 +1764,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                 {/* 閃きセクション - 初回分析完了後に開放 */}
                 {unlockedFeatures.includes('idea') && (
-                    <div id="idea-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                    <div id="idea-section" className="mb-6 bg-white rounded-xl shadow-sm hover:shadow-lg overflow-hidden border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 -mx-6">
                         <div className="px-6 py-4 bg-[#FFF59A]/10 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
                                 <Icon name="Lightbulb" size={32} className="text-yellow-500" />
@@ -1793,7 +1793,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                 {/* 分析ボタン - コンディション完了後に開放 */}
                 {unlockedFeatures.includes('analysis') && (
-                    <div id="analysis-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                    <div id="analysis-section" className="mb-6 bg-white rounded-xl shadow-sm hover:shadow-lg overflow-hidden border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 -mx-6">
                         <div className="px-6 py-4 bg-gradient-to-r from-sky-50 to-blue-50 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
                                 <Icon name="PieChart" size={32} className="text-sky-600" />
