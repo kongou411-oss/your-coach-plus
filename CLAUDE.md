@@ -200,8 +200,8 @@ git commit -m "チャット内容の説明"
 
 ## コーディング規約
 
-### JavaScript
-- **モジュール形式**: ES Modules不使用（CDN版Reactのため）
+### JavaScript/JSX
+- **モジュール形式**: ES Modules（Vite使用）
 - **命名規則**:
   - コンポーネント: PascalCase（例: `DashboardView`）
   - 関数: camelCase（例: `getFoodDB`）
@@ -212,8 +212,8 @@ git commit -m "チャット内容の説明"
 
 ### CSS
 - **主要スタイル**: Tailwind CSSのユーティリティクラスを使用
-- **カスタムCSS**: `styles.css`に定義
-- **ダークモード**: `dark:`プレフィックスまたは`styles_dark.css`を使用
+- **カスタムCSS**: `src/index.css`に定義
+- **ダークモード**: `dark:`プレフィックスを使用
 - **レスポンシブ**: モバイルファーストで設計
 
 ### コンポーネント設計
@@ -223,17 +223,17 @@ git commit -m "チャット内容の説明"
 
 ## プロジェクトの主要機能
 
-### 認証（components_auth.js）
+### 認証（src/components/02_auth.jsx）
 - Email/Password認証
 - Google認証
 - オンボーディングフロー（3ステップ）
 
-### ダッシュボード（components_dashboard.js）
+### ダッシュボード（src/components/03_dashboard.jsx）
 - 日次記録の表示
 - 食事、トレーニング、サプリ、コンディションの一覧
 - カロリー・PFCバランスの表示
 
-### 入力機能（components/07_add_item.js）
+### 入力機能（src/components/07_add_item_v2.jsx）
 - 体組成入力（体重、体脂肪率）
 - 食事入力（検索、カスタム、写真解析）
 - 運動入力（検索、カスタム）
@@ -247,17 +247,17 @@ git commit -m "チャット内容の説明"
 - **検索モーダル**: 食材/サプリメントタブで切り替え可能、カテゴリは常に展開表示
 - **テンプレート**: 選択画面の下に表示（12日以上利用で開放）
 
-### 分析機能（components_analysis.js）
+### 分析機能（src/components/05_analysis.jsx）
 - AI搭載のPFC分析
 - カレンダービュー
 - 履歴グラフ・トレンド
 
-### コミュニティ（components_community.js）
+### コミュニティ（src/components/06_community.jsx）
 - 投稿の作成・閲覧
 - いいね・コメント機能
 - 管理者パネル（投稿承認）
 
-### 設定（components_settings.js）
+### 設定（src/components/04_settings.jsx）
 - プロフィール管理
 - ルーティン設定
 - テンプレート管理
@@ -280,29 +280,40 @@ git commit -m "チャット内容の説明"
 ## 開発フロー
 
 ### 新機能の追加
-1. 関連ファイルを確認（README.mdのファイル対応表を参照）
-2. 該当するcomponentsファイルまたはservices.jsを編集
-3. ブラウザで動作確認（F12でコンソールエラーをチェック）
-4. 変更をコミット
+1. `src/components/`内の該当ファイルを編集
+2. 開発サーバー（`npm run dev`）で動作確認（ホットリロード有効）
+3. F12でコンソールエラーをチェック
+4. ビルド（`npm run build`）
+5. 変更をコミット
 
 ### バグ修正
 1. ブラウザのコンソール（F12）でエラーを確認
-2. 該当するファイルを特定
+2. 該当するファイルを特定（`src/components/*.jsx`）
 3. 修正を実施
-4. 動作確認
-5. 変更をコミット
+4. 開発サーバーで動作確認
+5. ビルド → コミット
 
 ### テスト
 - **手動テスト**: ブラウザで各機能を実際に操作
 - **DEV_MODE**: `config.js`で`DEV_MODE=true`に設定すると、Firebaseを使わずにLocalStorageでテスト可能
 - **エラー確認**: 必ずブラウザのコンソール（F12）でエラーをチェック
 
-## トラブルシューティング
+## トラブルシューティング（現行版：Vite構成）
+
+### ビルドエラーが発生する
+1. `npm install`で依存関係を再インストール
+2. `node_modules`と`package-lock.json`を削除して再インストール
+3. エラーメッセージを確認して該当ファイルを修正
+
+### 開発サーバーが起動しない
+1. ポート8000が既に使用されていないか確認: `netstat -ano | findstr :8000`
+2. `vite.config.js`でポート設定を確認
+3. `npm run dev`を再実行
 
 ### コンポーネントが表示されない
 1. ブラウザのコンソール（F12）を開いてエラーを確認
-2. 全てのJSファイルが正しく読み込まれているか確認
-3. React/ReactDOMのCDNが正しく読み込まれているか確認
+2. `src/App.jsx`でコンポーネントが正しくインポートされているか確認
+3. ビルドエラーがないか確認
 
 ### Firebase接続エラー
 - `config.js`のFirebase設定が正しいか確認
@@ -314,9 +325,9 @@ git commit -m "チャット内容の説明"
 - `DEV_MODE=false`: Firebase使用
 
 ### スタイルが適用されない
-- `styles.css`が正しく読み込まれているか確認
-- Tailwind CSSのCDNが正しく読み込まれているか確認
-- ブラウザのキャッシュをクリア
+- Tailwind CSSの設定を確認（`tailwind.config.js`）
+- ビルドを再実行（`npm run build`）
+- ブラウザのキャッシュをクリア（Ctrl+Shift+R）
 
 ## 重要な注意事項
 
@@ -525,13 +536,138 @@ git commit -m "チャット内容の説明"
 
 ## 今後の改善予定
 
-1. **モジュール化**: components.jsのさらなる分割
-2. **ビルドツール**: Vite/Webpackの導入
+1. ~~**モジュール化**: components.jsのさらなる分割~~ ✅ 完了（Vite化）
+2. ~~**ビルドツール**: Vite/Webpackの導入~~ ✅ 完了（Vite 7.1.12）
 3. **TypeScript化**: 型安全性の向上
 4. **テスト**: Jest + React Testing Libraryの導入
 5. **パフォーマンス**: Code splitting, Lazy loading
 
 ---
 
-**最終更新**: 2025年10月28日
+# 📚 旧バージョン用リファレンス（components/*.js使用時）
+
+**⚠️ 注意: 以下は旧バージョン（CDN版React + components/*.js）用の情報です。**
+**現在のプロジェクトはVite構成（src/components/*.jsx）を使用しています。**
+
+## 旧バージョンのファイル構造
+
+```
+C:\Users\yourc\yourcoach_new\
+├── index_old.html           # 旧メインHTMLファイル
+├── home.html                # 旧バージョン
+├── components/              # 旧Reactコンポーネント（.js）【使用されていない】
+│   ├── 00_init.js
+│   ├── 02_auth.js
+│   ├── 03_dashboard.js
+│   └── ...
+├── styles.css               # カスタムCSS
+├── styles_dark.css          # ダークモードスタイル
+└── ...
+```
+
+## 旧バージョンの開発コマンド
+
+### ローカル開発サーバー（旧）
+```bash
+python -m http.server 8000
+# ブラウザで http://localhost:8000 を開く
+```
+
+### キャッシュバスターの更新（旧バージョンのみ必要）
+
+**重要:** 旧バージョンでコンポーネントファイルを編集した後、ブラウザに変更を反映させるには**必ず**キャッシュバスターを更新する必要がありました。
+
+#### キャッシュバスターとは
+index_old.htmlで読み込まれるJavaScriptファイルのURLに付与されているバージョン番号（例: `?v=20251028v1`）のこと。この値を変更することで、ブラウザに新しいファイルを強制的に読み込ませることができます。
+
+#### 更新手順（旧バージョン）
+
+1. **編集したファイル名を確認**
+   - 例: `components/07_add_item_v2.js` を編集した場合
+
+2. **index_old.htmlを開く**
+
+3. **該当ファイルの読み込み行を検索**
+   ```html
+   <script type="text/babel" src="components/07_add_item_v2.js?v=20251025v11"></script>
+   ```
+
+4. **キャッシュバスターを更新**
+   - フォーマット: `YYYYMMDD + v + 連番`
+   - 例: `20251028v1` → `20251028v2`（同日2回目の更新の場合）
+   - 例: `20251025v11` → `20251028v1`（日付が変わった場合は連番をリセット）
+   ```html
+   <script type="text/babel" src="components/07_add_item_v2.js?v=20251028v1"></script>
+   ```
+
+5. **ブラウザでスーパーリロード**
+   - Windows: `Ctrl + Shift + R` または `Ctrl + F5`
+   - Mac: `Cmd + Shift + R`
+
+6. **動作確認**
+   - F12でコンソールを開き、エラーがないことを確認
+   - 実装した機能が正しく動作することを確認
+
+#### 更新が必要なケース（旧バージョン）
+- ✅ コンポーネントファイル（components/*.js）を編集した場合
+- ✅ services.js、utils.js、config.jsを編集した場合
+- ✅ styles.css、styles_dark.cssを編集した場合
+- ❌ データベースファイル（foodDatabase.js、trainingDatabase.js）は通常キャッシュバスター不要
+
+#### トラブルシューティング（旧バージョン）
+**問題:** キャッシュバスターを更新したのに変更が反映されない
+
+**対策:**
+1. ブラウザのキャッシュを完全にクリア（設定 → プライバシーとセキュリティ → 閲覧データを削除）
+2. シークレットモードで開く
+3. `clear_cache.html` を開く
+
+### ERR_CONNECTION_REFUSED エラーの対策（旧バージョン）
+
+**問題:** ブラウザで `http://localhost:8000` にアクセスすると `ERR_CONNECTION_REFUSED` エラーが表示される
+
+**原因と対策:**
+
+#### 1. サーバーが起動していない
+```bash
+# サーバーを起動
+python -m http.server 8000
+```
+
+#### 2. ポート8000が既に使用されている
+```bash
+# Windowsでポート8000を使用しているプロセスを確認
+netstat -ano | findstr :8000
+
+# プロセスIDが表示されたら、タスクマネージャーで終了するか以下のコマンドで終了
+# taskkill /PID [プロセスID] /F
+```
+
+#### 3. サーバーがバックグラウンドで起動しているが応答しない
+```bash
+# すべてのPythonプロセスを終了（注意：他のPythonプログラムも終了します）
+taskkill /IM python.exe /F
+
+# サーバーを再起動
+python -m http.server 8000
+```
+
+#### 4. 代替ポートで起動（ポート8000が解放できない場合）
+```bash
+# ポート8080で起動
+python -m http.server 8080
+
+# ブラウザで http://localhost:8080 を開く
+```
+
+**推奨フロー（旧バージョン）:**
+1. まずポート8000の使用状況を確認: `netstat -ano | findstr :8000`
+2. 使用中なら強制終了: `taskkill /IM python.exe /F`
+3. サーバーを起動: `python -m http.server 8000`
+4. ブラウザで確認: `http://localhost:8000`
+
+---
+
+**最終更新**: 2025年11月5日
 **プロジェクト開始**: 2025年10月12日
+**Vite化**: 2025年11月4日
