@@ -981,12 +981,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             </div>
 
                                             {profile.idealLBM && (
-                                                <div className="bg-blue-50 p-3 rounded-lg border border-blue-300">
-                                                    <p className="text-xs font-medium text-blue-700">理想のLBMを自動計算！</p>
-                                                    <p className="text-lg font-bold text-blue-900 mt-1">
+                                                <div className="bg-teal-50 p-3 rounded-lg border border-teal-300">
+                                                    <p className="text-xs font-medium text-teal-700">理想のLBMを自動計算！</p>
+                                                    <p className="text-lg font-bold text-teal-600 mt-1">
                                                         {profile.idealLBM.toFixed(1)} kg
                                                     </p>
-                                                    <p className="text-xs text-blue-600 mt-1">
+                                                    <p className="text-xs text-teal-600 mt-1">
                                                         現在より {(profile.idealLBM - (profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15))).toFixed(1)} kg
                                                     </p>
                                                 </div>

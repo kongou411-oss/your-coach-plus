@@ -1043,7 +1043,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     className="w-full px-3 py-2 border rounded-lg"
                                 />
                             </div>
-                            <div className="border-l-4 border-green-500 pl-4">
+                            <div className="border-l-4 border-teal-500 pl-4">
                                 <label className="block text-sm font-medium mb-2">体重 (kg)</label>
                                 <input
                                     type="number"
@@ -1052,7 +1052,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     className="w-full px-3 py-2 border rounded-lg"
                                 />
                             </div>
-                            <div className="border-l-4 border-green-500 pl-4">
+                            <div className="border-l-4 border-teal-500 pl-4">
                                 <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                                     体脂肪率 (%)
                                     <button
@@ -1077,9 +1077,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         </div>
 
                         {/* 現在のLBM */}
-                        <div className="bg-cyan-50 p-4 rounded-lg border border-cyan-200">
-                            <p className="text-sm font-medium text-cyan-800">現在のLBM</p>
-                            <p className="text-2xl font-bold text-cyan-900 mt-2">
+                        <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
+                            <p className="text-sm font-medium text-teal-800">現在のLBM</p>
+                            <p className="text-2xl font-bold text-teal-600 mt-2">
                                 {LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage).toFixed(1)} kg
                             </p>
                         </div>
@@ -1434,7 +1434,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <div className="grid grid-cols-3 gap-2 mb-3">
                                 <div className="bg-white p-2 rounded-lg border border-sky-200">
                                     <p className="text-xs text-gray-600">タンパク質</p>
-                                    <p className="text-lg font-bold text-blue-600">
+                                    <p className="text-lg font-bold text-red-600">
                                         {(() => {
                                             const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                             // カスタム比率が設定されている場合はそれを使用、なければデフォルト（固定値）
@@ -1455,7 +1455,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 </div>
                                 <div className="bg-white p-2 rounded-lg border border-sky-200">
                                     <p className="text-xs text-gray-600">脂質</p>
-                                    <p className="text-lg font-bold text-blue-600">
+                                    <p className="text-lg font-bold text-yellow-600">
                                         {(() => {
                                             const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                             const fatMass = profile.weight - lbm;
@@ -1486,7 +1486,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 </div>
                                 <div className="bg-white p-2 rounded-lg border border-sky-200">
                                     <p className="text-xs text-gray-600">炭水化物</p>
-                                    <p className="text-lg font-bold text-blue-600">
+                                    <p className="text-lg font-bold text-green-600">
                                         {(() => {
                                             const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                             const fatMass = profile.weight - lbm;
