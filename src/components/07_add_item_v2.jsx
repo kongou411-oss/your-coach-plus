@@ -5318,7 +5318,7 @@ RM回数と重量を別々に入力してください。`
                                             <div className="grid grid-cols-4 gap-2">
                                                 <div>
                                                     <p className="text-xs text-gray-600">カロリー</p>
-                                                    <p className="font-bold" style={{color: '#7686BA'}}>
+                                                    <p className="font-bold text-blue-600">
                                                         {(() => {
                                                             const servingSize = selectedItem.servingSize || 100;
                                                             const ratio = Number(amount) / servingSize;
@@ -6073,7 +6073,7 @@ RM回数と重量を別々に入力してください。`
                                     <div className="grid grid-cols-4 gap-2">
                                         <div>
                                             <p className="text-xs text-gray-600">カロリー</p>
-                                            <p className="font-bold" style={{color: '#7686BA'}}>
+                                            <p className="font-bold text-blue-600">
                                                 {Math.round(selectedItem.calories * (Number(amount) / (selectedItem.servingSize || 100)))}kcal
                                             </p>
                                         </div>
