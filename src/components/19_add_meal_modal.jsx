@@ -13,14 +13,15 @@ import React, { useState, useEffect } from 'react';
 
 const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = [], usageDays = 0 }) => {
     // ===== State管理 =====
-    const [step, setStep] = useState(1); // 1: 食事名入力, 2: アイテム選択
-    const [mealName, setMealName] = useState('');
+    const [mealName, setMealName] = useState('食事');
+    const [isEditingMealName, setIsEditingMealName] = useState(false); // 食事名編集モード
     const [mealTemplates, setMealTemplates] = useState([]);
     const [addedItems, setAddedItems] = useState([]);
     const [showSearchModal, setShowSearchModal] = useState(false);
     const [showAIFoodRecognition, setShowAIFoodRecognition] = useState(false);
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
     const [showCustomForm, setShowCustomForm] = useState(false);
+    const [selectedTemplate, setSelectedTemplate] = useState(null); // 選択中のテンプレート（詳細表示用）
 
     // 検索モーダル用のstate
     const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +31,7 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
     // 量調整UI用のstate
     const [selectedItemIndex, setSelectedItemIndex] = useState(null); // 選択中のアイテム
     const [adjustmentStep, setAdjustmentStep] = useState(10); // 増減ステップ（g単位のデフォルト）
+    const [originalAmount, setOriginalAmount] = useState(null); // キャンセル用：元の量を保存
 
     // カスタムアイテムデータ
     const [customData, setCustomData] = useState({
@@ -53,17 +55,33 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
         otherNutrients: []
     });
 
-    // Icon, DataService, AIFoodRecognition はグローバルに公開されている前提
+    // Icon, AIFoodRecognition はグローバルに公開されている前提
     const Icon = window.Icon;
-    const DataService = window.DataService;
     const AIFoodRecognition = window.AIFoodRecognition;
+
+    // DataService を使用
+    const DataService = window.DataService;
 
     // ===== テンプレート読み込み =====
     useEffect(() => {
-        if (user && DataService) {
-            DataService.getMealTemplates(user.uid).then(templates => {
-                setMealTemplates(templates || []);
-            });
+        if (user) {
+            if (!window.DataService) {
+                console.error('[AddMealModal] DataService is not available on window object');
+                console.log('[AddMealModal] Available window objects:', Object.keys(window).filter(k => k.includes('Service') || k.includes('Data')));
+                setMealTemplates([]);
+                return;
+            }
+
+            const loadTemplates = async () => {
+                try {
+                    const templates = await window.DataService.getMealTemplates(user.uid);
+                    setMealTemplates(templates || []);
+                } catch (error) {
+                    console.error('テンプレート読み込みエラー:', error);
+                    setMealTemplates([]);
+                }
+            };
+            loadTemplates();
         }
     }, [user]);
 
@@ -92,12 +110,54 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
         }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
     };
 
-    // ===== テンプレートを読み込む =====
+    // ===== テンプレートを読み込む（編集用） =====
     const loadTemplate = (template) => {
         setMealName(template.name);
         setAddedItems(JSON.parse(JSON.stringify(template.items))); // ディープコピー
-        setStep(2);
-        setShowTemplateSelector(false);
+        setSelectedTemplate(null);
+    };
+
+    // ===== テンプレートから直接記録 =====
+    const addFromTemplate = (template) => {
+        const items = JSON.parse(JSON.stringify(template.items)); // ディープコピー
+
+        // 合計カロリー・PFCを計算
+        const totalPFC = items.reduce((total, item) => {
+            const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
+            const ratio = isCountUnit ? item.amount : item.amount / 100;
+            return {
+                calories: total.calories + (item.calories || 0) * ratio,
+                protein: total.protein + (item.protein || 0) * ratio,
+                fat: total.fat + (item.fat || 0) * ratio,
+                carbs: total.carbs + (item.carbs || 0) * ratio,
+            };
+        }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
+
+        const meal = {
+            id: Date.now(),
+            name: template.name,
+            items: items,
+            time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+            calories: totalPFC.calories,
+            protein: totalPFC.protein,
+            fat: totalPFC.fat,
+            carbs: totalPFC.carbs,
+            totalCalories: totalPFC.calories,
+        };
+
+        onAdd(meal);
+    };
+
+    // ===== テンプレート削除 =====
+    const deleteTemplate = async (templateId) => {
+        if (!confirm('このテンプレートを削除しますか？')) {
+            return;
+        }
+        await DataService.deleteMealTemplate(user.uid, templateId);
+        const templates = await DataService.getMealTemplates(user.uid);
+        setMealTemplates(templates);
+        setSelectedTemplate(null);
+        alert('テンプレートを削除しました');
     };
 
     // ===== AI食事認識からのコールバック =====
@@ -161,117 +221,47 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
         onAdd(meal);
     };
 
-    // ===== クイック入力ボタン =====
-    const quickMealNames = ['朝食', '昼食', '夕食', '間食', 'プロテイン', 'プレワークアウト'];
+    // ===== テンプレートとして保存 =====
+    const saveAsTemplate = async () => {
+        if (addedItems.length === 0) {
+            alert('食材を追加してください');
+            return;
+        }
 
-    // ===== Step 1: 食事名入力画面 =====
-    if (step === 1) {
-        return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={(e) => {
-                // モーダル外をクリックした場合は閉じる
-                if (e.target === e.currentTarget) {
-                    onClose();
-                }
-            }}>
-                <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                    {/* ヘッダー */}
-                    <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
-                        <h3 className="text-lg font-bold">食事名を入力</h3>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-                            <Icon name="X" size={20} />
-                        </button>
-                    </div>
+        const templateName = prompt('テンプレート名を入力してください', mealName || '');
+        if (!templateName || !templateName.trim()) {
+            return;
+        }
 
-                    <div className="p-6 space-y-6">
-                        {/* 食事名入力 */}
-                        <div>
-                            <label className="block text-sm font-medium mb-2">食事名</label>
-                            <input
-                                type="text"
-                                value={mealName}
-                                onChange={(e) => setMealName(e.target.value)}
-                                placeholder={getDefaultMealName()}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                autoFocus
-                            />
-                        </div>
+        const template = {
+            id: Date.now().toString(), // 一意のIDを生成
+            name: templateName.trim(),
+            items: addedItems,
+            createdAt: new Date().toISOString(),
+        };
 
-                        {/* クイック入力ボタン */}
-                        <div>
-                            <label className="block text-sm font-medium mb-2">よく使う食事名</label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {quickMealNames.map((name) => (
-                                    <button
-                                        key={name}
-                                        onClick={() => setMealName(name)}
-                                        className="px-3 py-2 bg-gray-100 hover:bg-blue-50 hover:border-blue-500 border-2 border-transparent rounded-lg text-sm font-medium transition"
-                                    >
-                                        {name}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+        try {
+            if (!window.DataService) {
+                console.error('[AddMealModal] DataService is not available on window object');
+                console.log('[AddMealModal] Available window objects:', Object.keys(window).filter(k => k.includes('Service') || k.includes('Data')));
+                alert('DataServiceが利用できません。ページを再読み込みしてください。');
+                return;
+            }
 
-                        {/* テンプレート一覧 */}
-                        {mealTemplates.length > 0 && (
-                            <div>
-                                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                                    <Icon name="BookOpen" size={16} />
-                                    テンプレートから選択
-                                </label>
-                                <div className="space-y-2 max-h-64 overflow-y-auto">
-                                    {mealTemplates.map((template) => {
-                                        const totalPFC = template.items.reduce((sum, item) => ({
-                                            protein: sum.protein + (item.protein || 0),
-                                            fat: sum.fat + (item.fat || 0),
-                                            carbs: sum.carbs + (item.carbs || 0),
-                                        }), { protein: 0, fat: 0, carbs: 0 });
+            // DataService経由でテンプレートを保存
+            await window.DataService.saveMealTemplate(user.uid, template);
 
-                                        return (
-                                            <button
-                                                key={template.id}
-                                                onClick={() => loadTemplate(template)}
-                                                className="w-full p-3 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200 rounded-lg text-left transition"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <div className="font-semibold text-gray-900">{template.name}</div>
-                                                        <div className="text-xs text-gray-600 mt-1">
-                                                            {template.items.length}品目
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right text-xs text-gray-700">
-                                                        <div>P {Math.round(totalPFC.protein)}g</div>
-                                                        <div>F {Math.round(totalPFC.fat)}g</div>
-                                                        <div>C {Math.round(totalPFC.carbs)}g</div>
-                                                    </div>
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+            // テンプレート一覧を再読み込み
+            const templates = await window.DataService.getMealTemplates(user.uid);
+            setMealTemplates(templates || []);
+            alert('テンプレートを保存しました');
+        } catch (error) {
+            console.error('テンプレート保存エラー:', error);
+            alert('テンプレートの保存に失敗しました: ' + error.message);
+        }
+    };
 
-                        {/* 次へボタン */}
-                        <button
-                            onClick={() => {
-                                if (!mealName.trim()) {
-                                    setMealName(getDefaultMealName());
-                                }
-                                setStep(2);
-                            }}
-                            className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
-                        >
-                            次へ
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // ===== Step 2: アイテム選択画面 =====
+    // ===== アイテム選択画面（メイン画面） =====
     const totalPFC = calculateTotalPFC();
 
     return (
@@ -283,33 +273,82 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
         }}>
             <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
                 {/* ヘッダー */}
-                <div className="bg-white border-b p-4 flex-shrink-0">
-                    <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-lg font-bold">{mealName}</h3>
+                <div className="bg-white border-b px-4 py-2 flex-shrink-0">
+                    <div className="flex justify-between items-center">
+                        {/* 食事名（編集可能） */}
+                        <div className="flex items-center gap-2 flex-1">
+                            {isEditingMealName ? (
+                                <input
+                                    type="text"
+                                    value={mealName}
+                                    onChange={(e) => setMealName(e.target.value)}
+                                    onBlur={() => {
+                                        if (!mealName.trim()) {
+                                            setMealName('食事');
+                                        }
+                                        setIsEditingMealName(false);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            if (!mealName.trim()) {
+                                                setMealName('食事');
+                                            }
+                                            setIsEditingMealName(false);
+                                        }
+                                    }}
+                                    className="text-lg font-bold border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500"
+                                    autoFocus
+                                />
+                            ) : (
+                                <>
+                                    <h3 className="text-lg font-bold">{mealName}</h3>
+                                    <button
+                                        onClick={() => setIsEditingMealName(true)}
+                                        className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                    >
+                                        <Icon name="Edit" size={18} />
+                                    </button>
+                                </>
+                            )}
+                        </div>
                         <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
                             <Icon name="X" size={20} />
                         </button>
                     </div>
+                </div>
 
-                    {/* この食事の合計 */}
-                    {addedItems.length > 0 && (
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-200">
-                            <div className="text-xs font-medium text-gray-600 mb-1">この食事の合計</div>
-                            <div className="flex items-center justify-between">
-                                <div className="text-xl font-bold" style={{color: '#60a5fa'}}>
-                                    {Math.round(totalPFC.calories)}kcal
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                    <span className="text-red-500 font-semibold">P {Math.round(totalPFC.protein)}g</span>
-                                    <span className="text-gray-400">|</span>
-                                    <span className="text-yellow-500 font-semibold">F {Math.round(totalPFC.fat)}g</span>
-                                    <span className="text-gray-400">|</span>
-                                    <span className="text-green-500 font-semibold">C {Math.round(totalPFC.carbs)}g</span>
+                {/* この食事の合計 + テンプレート保存ボタン */}
+                {addedItems.length > 0 && (
+                    <div className="px-4 pt-3 pb-2">
+                        <div className="flex gap-2">
+                            {/* 左側：この食事の合計 */}
+                            <div className="flex-1 bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-200">
+                                <div className="text-xs font-medium text-gray-600 mb-1">この食事の合計</div>
+                                <div className="flex items-center justify-between">
+                                    <div className="text-lg font-bold" style={{color: '#60a5fa'}}>
+                                        {Math.round(totalPFC.calories)}kcal
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs">
+                                        <span className="text-red-500 font-semibold">P {Math.round(totalPFC.protein)}g</span>
+                                        <span className="text-gray-400">|</span>
+                                        <span className="text-yellow-500 font-semibold">F {Math.round(totalPFC.fat)}g</span>
+                                        <span className="text-gray-400">|</span>
+                                        <span className="text-green-500 font-semibold">C {Math.round(totalPFC.carbs)}g</span>
+                                    </div>
                                 </div>
                             </div>
+
+                            {/* 右側：テンプレート保存ボタン */}
+                            <button
+                                onClick={saveAsTemplate}
+                                className="px-3 bg-purple-50 text-purple-700 border-2 border-purple-500 rounded-lg font-semibold hover:bg-purple-100 transition flex flex-col items-center justify-center"
+                            >
+                                <Icon name="BookTemplate" size={16} className="mb-1" />
+                                <span className="text-xs whitespace-nowrap">保存</span>
+                            </button>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
 
                 {/* 追加済みアイテム一覧 */}
                 <div className="flex-1 overflow-y-auto p-4">
@@ -333,7 +372,10 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                                 return (
                                     <div
                                         key={index}
-                                        onClick={() => setSelectedItemIndex(index)}
+                                        onClick={() => {
+                                            setSelectedItemIndex(index);
+                                            setOriginalAmount(item.amount); // 元の量を保存
+                                        }}
                                         className={`bg-white p-3 rounded-lg border-2 cursor-pointer transition ${
                                             isSelected ? 'border-blue-500 shadow-md' : 'border-gray-200 hover:border-gray-300'
                                         }`}
@@ -365,7 +407,7 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                     )}
                 </div>
 
-                {/* 量調整UI（選択中のアイテムがある場合） */}
+                {/* 量調整UI（選択中のアイテムがある場合） - 固定位置 */}
                 {selectedItemIndex !== null && addedItems[selectedItemIndex] && (() => {
                     const selectedItem = addedItems[selectedItemIndex];
                     const unit = selectedItem.unit || 'g';
@@ -373,81 +415,109 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                     const stepOptions = isCountUnit ? [1, 2, 3, 5, 10] : [1, 5, 10, 50, 100];
 
                     return (
-                        <div className="border-t bg-gray-50 p-3 flex-shrink-0">
-                            <div className="text-xs text-gray-600 mb-2">
-                                {selectedItem.name} の量を調整
-                                {selectedItem.servingSize && selectedItem.servingUnit && (
-                                    <span className="text-blue-600 font-semibold ml-2">
-                                        ({unit.includes('本') || unit.includes('個') || unit.includes('杯') || unit.includes('枚') ?
-                                            `1${unit} = ${selectedItem.servingSize}${selectedItem.servingUnit}` :
-                                            ''})
-                                    </span>
-                                )}
-                            </div>
+                        <div className="fixed left-0 right-0 bg-white border-t-2 border-gray-300 shadow-2xl p-4 z-[9998]" style={{bottom: '200px'}}>
+                            <div className="max-w-md mx-auto">
+                                <div className="text-sm text-gray-900 font-semibold mb-3 text-center">
+                                    {selectedItem.name} の量を調整
+                                    {selectedItem.servingSize && selectedItem.servingUnit && (
+                                        <span className="text-blue-600 font-semibold ml-2 text-xs">
+                                            ({unit.includes('本') || unit.includes('個') || unit.includes('杯') || unit.includes('枚') ?
+                                                `1${unit} = ${selectedItem.servingSize}${selectedItem.servingUnit}` :
+                                                ''})
+                                        </span>
+                                    )}
+                                </div>
 
-                            {/* 数値入力欄 */}
-                            <div className="flex items-center justify-center gap-2 mb-2">
-                                <input
-                                    type="number"
-                                    value={selectedItem.amount}
-                                    onChange={(e) => updateItemAmount(selectedItemIndex, Number(e.target.value))}
-                                    className="w-32 h-12 px-3 py-2 border-2 border-gray-300 rounded-lg text-center font-bold text-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    min="0"
-                                    step={adjustmentStep}
-                                />
-                                <span className="text-lg text-gray-700 font-bold">{unit}</span>
-                            </div>
+                                {/* 数値入力欄 */}
+                                <div className="flex items-center justify-center gap-2 mb-3">
+                                    <input
+                                        type="number"
+                                        value={selectedItem.amount}
+                                        onChange={(e) => updateItemAmount(selectedItemIndex, Number(e.target.value))}
+                                        className="w-32 h-12 px-3 py-2 border-2 border-gray-300 rounded-lg text-center font-bold text-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        min="0"
+                                        step={adjustmentStep}
+                                    />
+                                    <span className="text-lg text-gray-700 font-bold">{unit}</span>
+                                </div>
 
-                            {/* ステップ選択 */}
-                            <div className="flex gap-1 mb-2">
-                                {stepOptions.map(step => (
+                                {/* ステップ選択 */}
+                                <div className="flex gap-1 mb-3">
+                                    {stepOptions.map(step => (
+                                        <button
+                                            key={step}
+                                            onClick={() => setAdjustmentStep(step)}
+                                            className={`flex-1 py-2 text-sm rounded transition ${
+                                                adjustmentStep === step
+                                                    ? 'bg-blue-600 text-white font-semibold'
+                                                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            {step}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* 調整ボタン */}
+                                <div className="grid grid-cols-4 gap-2 mb-3">
+                                    {/* 倍減 */}
                                     <button
-                                        key={step}
-                                        onClick={() => setAdjustmentStep(step)}
-                                        className={`flex-1 py-1.5 text-xs rounded transition ${
-                                            adjustmentStep === step
-                                                ? 'bg-blue-600 text-white font-semibold'
-                                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
-                                        }`}
+                                        onClick={() => updateItemAmount(selectedItemIndex, Math.max(0, selectedItem.amount * 0.5))}
+                                        className="h-12 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition text-sm font-bold"
                                     >
-                                        {step}
+                                        ×0.5
                                     </button>
-                                ))}
-                            </div>
 
-                            {/* 調整ボタン */}
-                            <div className="grid grid-cols-4 gap-2">
-                                {/* 倍減 */}
-                                <button
-                                    onClick={() => updateItemAmount(selectedItemIndex, Math.max(0, selectedItem.amount * 0.5))}
-                                    className="h-12 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition text-sm font-bold"
-                                >
-                                    ×0.5
-                                </button>
+                                    {/* 減少 */}
+                                    <button
+                                        onClick={() => updateItemAmount(selectedItemIndex, Math.max(0, selectedItem.amount - adjustmentStep))}
+                                        className="h-12 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition font-bold flex items-center justify-center"
+                                    >
+                                        <Icon name="Minus" size={22} />
+                                    </button>
 
-                                {/* 減少 */}
-                                <button
-                                    onClick={() => updateItemAmount(selectedItemIndex, Math.max(0, selectedItem.amount - adjustmentStep))}
-                                    className="h-12 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition font-bold flex items-center justify-center"
-                                >
-                                    <Icon name="Minus" size={22} />
-                                </button>
+                                    {/* 増加 */}
+                                    <button
+                                        onClick={() => updateItemAmount(selectedItemIndex, selectedItem.amount + adjustmentStep)}
+                                        className="h-12 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition font-bold flex items-center justify-center"
+                                    >
+                                        <Icon name="Plus" size={22} />
+                                    </button>
 
-                                {/* 増加 */}
-                                <button
-                                    onClick={() => updateItemAmount(selectedItemIndex, selectedItem.amount + adjustmentStep)}
-                                    className="h-12 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition font-bold flex items-center justify-center"
-                                >
-                                    <Icon name="Plus" size={22} />
-                                </button>
+                                    {/* 倍増 */}
+                                    <button
+                                        onClick={() => updateItemAmount(selectedItemIndex, selectedItem.amount * 2)}
+                                        className="h-12 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition text-sm font-bold"
+                                    >
+                                        ×2
+                                    </button>
+                                </div>
 
-                                {/* 倍増 */}
-                                <button
-                                    onClick={() => updateItemAmount(selectedItemIndex, selectedItem.amount * 2)}
-                                    className="h-12 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition text-sm font-bold"
-                                >
-                                    ×2
-                                </button>
+                                {/* キャンセル・更新ボタン */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={() => {
+                                            // 元の量に復元
+                                            if (originalAmount !== null) {
+                                                updateItemAmount(selectedItemIndex, originalAmount);
+                                            }
+                                            setSelectedItemIndex(null);
+                                            setOriginalAmount(null);
+                                        }}
+                                        className="py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                                    >
+                                        キャンセル
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedItemIndex(null);
+                                            setOriginalAmount(null);
+                                        }}
+                                        className="py-3 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] transition shadow-md"
+                                    >
+                                        更新
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     );
@@ -455,50 +525,54 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
 
                 {/* フッター：アクションボタン */}
                 <div className="border-t p-4 space-y-2 flex-shrink-0">
-                    <div className="grid grid-cols-3 gap-2">
-                        <button
-                            onClick={() => setShowAIFoodRecognition(true)}
-                            className="px-3 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition shadow-md text-sm"
-                        >
-                            <Icon name="Camera" size={16} className="inline mr-1" />
-                            写真
-                        </button>
-                        <button
-                            onClick={() => setShowSearchModal(true)}
-                            className="px-3 py-3 bg-white border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg font-semibold transition text-sm"
-                        >
-                            <Icon name="Search" size={16} className="inline mr-1" />
-                            検索
-                        </button>
-                        <button
-                            onClick={() => setShowCustomForm(true)}
-                            className="px-3 py-3 bg-white border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 rounded-lg font-semibold transition text-sm"
-                        >
-                            <Icon name="Edit" size={16} className="inline mr-1" />
-                            手動
-                        </button>
-                    </div>
+                    {/* 1行目：写真解析 */}
+                    <button
+                        onClick={() => setShowAIFoodRecognition(true)}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition shadow-md"
+                    >
+                        <Icon name="Camera" size={16} className="inline mr-1" />
+                        写真解析
+                    </button>
 
-                    {/* 戻る・記録ボタン */}
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setStep(1)}
-                            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
-                        >
-                            戻る
-                        </button>
-                        <button
-                            onClick={handleRecord}
-                            disabled={addedItems.length === 0}
-                            className={`flex-1 py-3 rounded-lg font-bold shadow-lg transition ${
-                                addedItems.length === 0
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
-                            }`}
-                        >
-                            記録
-                        </button>
-                    </div>
+                    {/* 2行目：テンプレート */}
+                    <button
+                        onClick={() => setShowTemplateSelector(true)}
+                        className="w-full px-4 py-3 bg-purple-50 border-2 border-purple-400 text-purple-700 rounded-lg font-semibold hover:bg-purple-100 transition"
+                    >
+                        <Icon name="BookTemplate" size={16} className="inline mr-1" />
+                        テンプレート
+                    </button>
+
+                    {/* 3行目：一覧から検索 */}
+                    <button
+                        onClick={() => setShowSearchModal(true)}
+                        className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg font-semibold transition"
+                    >
+                        <Icon name="Search" size={16} className="inline mr-1" />
+                        一覧から検索
+                    </button>
+
+                    {/* 4行目：カスタム作成 */}
+                    <button
+                        onClick={() => setShowCustomForm(true)}
+                        className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 rounded-lg font-semibold transition"
+                    >
+                        <Icon name="Edit" size={16} className="inline mr-1" />
+                        カスタム作成
+                    </button>
+
+                    {/* 5行目：記録 */}
+                    <button
+                        onClick={handleRecord}
+                        disabled={addedItems.length === 0}
+                        className={`w-full py-3 rounded-lg font-bold shadow-lg transition ${
+                            addedItems.length === 0
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
+                        }`}
+                    >
+                        記録
+                    </button>
                 </div>
             </div>
 
@@ -863,6 +937,202 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                     userProfile={userProfile}
                 />
             )}
+
+            {/* テンプレート選択モーダル */}
+            {showTemplateSelector && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md max-h-[70vh] overflow-hidden flex flex-col">
+                        {/* ヘッダー */}
+                        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <Icon name="BookMarked" size={20} />
+                                テンプレートから選択
+                            </h3>
+                            <button onClick={() => setShowTemplateSelector(false)} className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full">
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+
+                        {/* テンプレート一覧 */}
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {mealTemplates.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <Icon name="BookMarked" size={48} className="mx-auto mb-3 opacity-30 text-purple-600" />
+                                    <p className="text-gray-900 font-semibold mb-2">まだテンプレートがありません</p>
+                                    <p className="text-sm text-gray-600 px-4">
+                                        食材を追加後に「保存」ボタンで保存するか、<br/>
+                                        ダッシュボードのテンプレートボタンから作成できます
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {mealTemplates.map((template) => {
+                                    const totalPFC = template.items.reduce((sum, item) => {
+                                        const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
+                                        const ratio = isCountUnit ? item.amount : item.amount / 100;
+                                        return {
+                                            calories: sum.calories + (item.calories || 0) * ratio,
+                                            protein: sum.protein + (item.protein || 0) * ratio,
+                                            fat: sum.fat + (item.fat || 0) * ratio,
+                                            carbs: sum.carbs + (item.carbs || 0) * ratio,
+                                        };
+                                    }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
+
+                                    return (
+                                        <div key={template.id} className="bg-gray-50 border-2 border-gray-200 rounded-lg p-3">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="font-semibold text-gray-900">{template.name}</div>
+                                                <button
+                                                    onClick={() => setSelectedTemplate(template)}
+                                                    className="text-xs text-blue-600 hover:text-blue-800"
+                                                >
+                                                    詳細
+                                                </button>
+                                            </div>
+                                            <div className="text-xs text-gray-600 mb-2">
+                                                {template.items.length}品目
+                                            </div>
+                                            <div className="text-xs mb-3 flex items-center gap-2">
+                                                <span className="font-semibold" style={{color: '#60a5fa'}}>{Math.round(totalPFC.calories)}kcal</span>
+                                                <span className="text-gray-400">|</span>
+                                                <span className="text-red-500 font-semibold">P {Math.round(totalPFC.protein)}g</span>
+                                                <span className="text-gray-400">|</span>
+                                                <span className="text-yellow-500 font-semibold">F {Math.round(totalPFC.fat)}g</span>
+                                                <span className="text-gray-400">|</span>
+                                                <span className="text-green-500 font-semibold">C {Math.round(totalPFC.carbs)}g</span>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        loadTemplate(template);
+                                                        setShowTemplateSelector(false);
+                                                    }}
+                                                    className="flex-1 px-4 py-2 bg-white border-2 border-blue-500 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition text-sm"
+                                                >
+                                                    編集
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        addFromTemplate(template);
+                                                        setShowTemplateSelector(false);
+                                                    }}
+                                                    className="flex-1 px-4 py-2 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] transition text-sm"
+                                                >
+                                                    追加
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* フッター */}
+                        <div className="border-t p-4">
+                            <button
+                                onClick={() => setShowTemplateSelector(false)}
+                                className="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* テンプレート詳細モーダル */}
+            {selectedTemplate && (() => {
+                const totalPFC = selectedTemplate.items.reduce((sum, item) => {
+                    const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
+                    const ratio = isCountUnit ? item.amount : item.amount / 100;
+                    return {
+                        calories: sum.calories + (item.calories || 0) * ratio,
+                        protein: sum.protein + (item.protein || 0) * ratio,
+                        fat: sum.fat + (item.fat || 0) * ratio,
+                        carbs: sum.carbs + (item.carbs || 0) * ratio,
+                    };
+                }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
+
+                return (
+                    <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col">
+                            {/* ヘッダー */}
+                            <div className="bg-purple-600 text-white p-4 flex justify-between items-center">
+                                <h3 className="text-lg font-bold">テンプレート</h3>
+                                <button onClick={() => setSelectedTemplate(null)} className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full">
+                                    <Icon name="X" size={20} />
+                                </button>
+                            </div>
+
+                            {/* コンテンツ */}
+                            <div className="flex-1 overflow-y-auto p-4">
+                                {/* テンプレート名 */}
+                                <h4 className="text-xl font-bold mb-2">{selectedTemplate.name}</h4>
+
+                                {/* 合計栄養素 */}
+                                <div className="bg-gray-50 p-3 rounded-lg mb-4">
+                                    <div className="text-sm font-semibold mb-2" style={{color: '#60a5fa'}}>
+                                        {Math.round(totalPFC.calories)}kcal
+                                    </div>
+                                    <div className="flex gap-3 text-xs">
+                                        <span className="text-red-500 font-semibold">P {Math.round(totalPFC.protein)}g</span>
+                                        <span className="text-yellow-500 font-semibold">F {Math.round(totalPFC.fat)}g</span>
+                                        <span className="text-green-500 font-semibold">C {Math.round(totalPFC.carbs)}g</span>
+                                    </div>
+                                </div>
+
+                                {/* アイテム一覧 */}
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                                        <Icon name="ChevronDown" size={14} />
+                                        内容を表示
+                                    </div>
+                                    {selectedTemplate.items.map((item, idx) => {
+                                        const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
+                                        const ratio = isCountUnit ? item.amount : item.amount / 100;
+                                        return (
+                                            <div key={idx} className="bg-gray-50 p-2 rounded text-xs">
+                                                <div className="font-semibold">{item.name}</div>
+                                                <div className="text-gray-600 mt-1">{item.amount}{item.unit || 'g'}</div>
+                                                <div className="text-gray-500 mt-1">
+                                                    {Math.round((item.calories || 0) * ratio)}kcal
+                                                    <span className="text-red-500 ml-2">P {Math.round((item.protein || 0) * ratio * 10) / 10}g</span>
+                                                    <span className="text-yellow-500 ml-1">F {Math.round((item.fat || 0) * ratio * 10) / 10}g</span>
+                                                    <span className="text-green-500 ml-1">C {Math.round((item.carbs || 0) * ratio * 10) / 10}g</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* フッター */}
+                            <div className="border-t p-4 flex gap-2">
+                                <button
+                                    onClick={() => loadTemplate(selectedTemplate)}
+                                    className="flex-1 px-4 py-3 bg-white border-2 border-blue-500 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition"
+                                >
+                                    <Icon name="Pencil" size={16} className="inline mr-1" />
+                                    編集
+                                </button>
+                                <button
+                                    onClick={() => deleteTemplate(selectedTemplate.id)}
+                                    className="px-4 py-3 bg-white border-2 border-red-500 text-red-600 rounded-lg font-semibold hover:bg-red-50 transition"
+                                >
+                                    <Icon name="Trash2" size={16} />
+                                </button>
+                                <button
+                                    onClick={() => addFromTemplate(selectedTemplate)}
+                                    className="flex-1 px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] shadow-lg transition"
+                                >
+                                    追加
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* カスタムアイテム作成モーダル */}
             {showCustomForm && (

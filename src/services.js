@@ -2382,3 +2382,11 @@ const MFAService = {
         }
     }
 };
+
+// ===== グローバルに公開 =====
+window.DataService = DataService;
+window.GeminiAPI = GeminiAPI;
+window.CreditService = CreditService;
+window.ExperienceService = ExperienceService;
+window.NotificationService = NotificationService;
+window.MFAService = MFAService;

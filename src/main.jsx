@@ -3,8 +3,8 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
 
-// foodDatabaseをインポートしてグローバルに公開
-import './foodDatabase.js'
+// グローバルセットアップ（config, utils, services, databases）
+import './globalSetup.js'
 
 // グローバルにReact/ReactDOMを公開（既存コンポーネントとの互換性のため）
 window.React = React
