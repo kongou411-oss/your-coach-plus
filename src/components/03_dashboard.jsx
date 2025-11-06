@@ -448,6 +448,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             alert('前日の記録がありません');
             return;
         }
+
+        // 現在時刻を取得（HH:MM形式）
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
         // 前日の記録を複製（IDと時刻は新しく生成）
         const copiedRecord = {
             meals: [
@@ -455,6 +460,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 ...(yesterdayRecord.meals?.map(meal => ({
                     ...meal,
                     id: Date.now() + Math.random(),
+                    time: currentTime, // 現在時刻に変更
                     isPredicted: true // 予測データであることを示すフラグ
                 })) || [])
             ],
@@ -463,10 +469,20 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 ...(yesterdayRecord.workouts?.map(workout => ({
                     ...workout,
                     id: Date.now() + Math.random(),
+                    time: currentTime, // 現在時刻に変更
                     isPredicted: true
                 })) || [])
             ],
-            conditions: dailyRecord.conditions
+            bodyComposition: yesterdayRecord.bodyComposition ? {
+                ...yesterdayRecord.bodyComposition,
+                isPredicted: true,
+                time: currentTime
+            } : dailyRecord.bodyComposition,
+            conditions: yesterdayRecord.conditions ? {
+                ...yesterdayRecord.conditions,
+                isPredicted: true,
+                time: currentTime
+            } : dailyRecord.conditions
         };
         setDailyRecord(copiedRecord);
 
@@ -854,13 +870,18 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {yesterdayRecord && (
                             <button
                                 onClick={async () => {
-                                    const hasPredicted = dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted);
+                                    const hasPredicted = dailyRecord.meals?.some(m => m.isPredicted) ||
+                                                         dailyRecord.workouts?.some(w => w.isPredicted) ||
+                                                         dailyRecord.bodyComposition?.isPredicted ||
+                                                         dailyRecord.conditions?.isPredicted;
                                     if (hasPredicted) {
                                         // クリア
                                         const clearedRecord = {
                                             ...dailyRecord,
                                             meals: dailyRecord.meals?.filter(m => !m.isPredicted) || [],
-                                            workouts: dailyRecord.workouts?.filter(w => !w.isPredicted) || []
+                                            workouts: dailyRecord.workouts?.filter(w => !w.isPredicted) || [],
+                                            bodyComposition: dailyRecord.bodyComposition?.isPredicted ? {} : dailyRecord.bodyComposition,
+                                            conditions: dailyRecord.conditions?.isPredicted ? {} : dailyRecord.conditions
                                         };
                                         setDailyRecord(clearedRecord);
                                         const userId = user?.uid || DEV_USER_ID;
@@ -871,15 +892,24 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     }
                                 }}
                                 className={`text-sm px-4 py-2 rounded-lg font-bold shadow-md hover:shadow-lg transition flex items-center gap-2 ${
-                                    dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)
+                                    dailyRecord.meals?.some(m => m.isPredicted) ||
+                                    dailyRecord.workouts?.some(w => w.isPredicted) ||
+                                    dailyRecord.bodyComposition?.isPredicted ||
+                                    dailyRecord.conditions?.isPredicted
                                         ? 'bg-red-600 text-white hover:bg-red-700'
                                         : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
                                 }`}
                             >
-                                {!(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) && (
+                                {!(dailyRecord.meals?.some(m => m.isPredicted) ||
+                                   dailyRecord.workouts?.some(w => w.isPredicted) ||
+                                   dailyRecord.bodyComposition?.isPredicted ||
+                                   dailyRecord.conditions?.isPredicted) && (
                                     <Icon name="Sparkles" size={16} />
                                 )}
-                                {(dailyRecord.meals?.some(m => m.isPredicted) || dailyRecord.workouts?.some(w => w.isPredicted)) ? 'クリア' : '予測'}
+                                {(dailyRecord.meals?.some(m => m.isPredicted) ||
+                                  dailyRecord.workouts?.some(w => w.isPredicted) ||
+                                  dailyRecord.bodyComposition?.isPredicted ||
+                                  dailyRecord.conditions?.isPredicted) ? 'クリア' : '予測'}
                             </button>
                         )}
 

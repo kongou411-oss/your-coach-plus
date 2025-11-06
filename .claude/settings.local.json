@@ -48,7 +48,13 @@
       "Bash(C:Usersyourctemp_changes.txt)",
       "Bash(git checkout:*)",
       "Bash(git reset:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(start https://console.cloud.google.com/apis/api/aiplatform.googleapis.com/quotas?project=your-coach-plus)",
+      "Bash(del nul)",
+      "Bash(start FINANCIAL_ANALYSIS_COMPLETE.html)",
+      "Bash(start PRICE_STRATEGY_COMPARISON.html)",
+      "Bash(start COMPETITIVE_ADVANTAGE_REPORT.html)",
+      "Bash(start COMPETITIVE_ADVANTAGE_REPORT_V2.md)"
     ],
     "deny": [],
     "ask": []

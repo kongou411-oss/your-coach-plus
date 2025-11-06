@@ -493,7 +493,18 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <div>
                                             <label className="block text-xs font-medium text-gray-600 mb-1">登録日</label>
                                             <p className="text-sm font-medium text-gray-800">
-                                                {userProfile.createdAt ? new Date(userProfile.createdAt).toLocaleDateString('ja-JP') : '不明'}
+                                                {(() => {
+                                                    // createdAt, joinDate, registrationDateのいずれかを使用
+                                                    const dateField = userProfile.createdAt || userProfile.joinDate || userProfile.registrationDate;
+                                                    if (!dateField) return '不明';
+
+                                                    // Firestore Timestampの場合
+                                                    if (dateField.toDate && typeof dateField.toDate === 'function') {
+                                                        return dateField.toDate().toLocaleDateString('ja-JP');
+                                                    }
+                                                    // ISO文字列の場合
+                                                    return new Date(dateField).toLocaleDateString('ja-JP');
+                                                })()}
                                             </p>
                                         </div>
                                     </div>
@@ -1841,10 +1852,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <span className="text-sm text-gray-500">{mealTemplates.length}件</span>
                                         <button
                                             onClick={() => onOpenAddView && onOpenAddView('meal')}
-                                            className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition flex items-center gap-1"
+                                            className="px-3 py-1 bg-[#4A9EFF] text-white text-xs rounded-lg hover:bg-[#3b8fef] transition flex items-center gap-1"
                                         >
                                             <Icon name="Plus" size={14} />
-                                            新規作成
+                                            作成
                                         </button>
                                     </div>
                                 </div>
@@ -1874,9 +1885,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     setTemplateEditType('meal');
                                                                     setShowTemplateEditModal(true);
                                                                 }}
-                                                                className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                                             >
-                                                                <Icon name="Edit" size={16} />
+                                                                <Icon name="Edit" size={18} />
                                                             </button>
                                                             <button
                                                                 onClick={async (e) => {
@@ -1886,9 +1897,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                         await loadTemplates();
                                                                     }
                                                                 }}
-                                                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                             >
-                                                                <Icon name="Trash2" size={16} />
+                                                                <Icon name="Trash2" size={18} />
                                                             </button>
                                                         </div>
                                                     </summary>
@@ -1947,7 +1958,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 ) : (
                                     <div className="space-y-2 mt-3">
                                         {workoutTemplates.map(template => {
-                                            const totalCals = (template.sets || []).reduce((sum, s) => sum + (s.calories || 0), 0);
+                                            // 新形式（複数種目）と旧形式（単一種目）の両方に対応
+                                            const exercises = template.exercises || (template.exercise ? [{ exercise: template.exercise, sets: template.sets || [] }] : []);
+                                            const exerciseCount = exercises.length;
+                                            const totalSets = exercises.reduce((sum, ex) => sum + (ex.sets?.length || 0), 0);
+                                            const totalDuration = exercises.reduce((sum, ex) => sum + (ex.sets || []).reduce((s, set) => s + (set.duration || 0), 0), 0);
 
                                             return (
                                                 <details key={template.id} className="bg-gray-50 p-3 rounded-lg">
@@ -1955,7 +1970,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         <div className="flex-1">
                                                             <p className="font-medium text-sm">{template.name}</p>
                                                             <p className="text-xs text-gray-600">
-                                                                {template.exercise?.name || '種目不明'} | {template.sets?.length || 0}セット | {Math.round(totalCals)}kcal
+                                                                {exerciseCount}種目 | {totalSets}セット | {totalDuration}分
                                                             </p>
                                                         </div>
                                                         <div className="flex items-center gap-1">
@@ -1965,9 +1980,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     setTemplateEditType('workout');
                                                                     setShowTemplateEditModal(true);
                                                                 }}
-                                                                className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                                             >
-                                                                <Icon name="Edit" size={16} />
+                                                                <Icon name="Edit" size={18} />
                                                             </button>
                                                             <button
                                                                 onClick={async (e) => {
@@ -1977,9 +1992,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                         await loadTemplates();
                                                                     }
                                                                 }}
-                                                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                             >
-                                                                <Icon name="Trash2" size={16} />
+                                                                <Icon name="Trash2" size={18} />
                                                             </button>
                                                         </div>
                                                     </summary>
@@ -4152,9 +4167,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 setShowTemplateEditModal(false);
                                                                 onOpenAddView && onOpenAddView('meal', true, template);
                                                             }}
-                                                            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                                         >
-                                                            <Icon name="Edit" size={16} />
+                                                            <Icon name="Edit" size={18} />
                                                         </button>
                                                         <button
                                                             onClick={async (e) => {
@@ -4164,9 +4179,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     await loadTemplates();
                                                                 }
                                                             }}
-                                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                         >
-                                                            <Icon name="Trash2" size={16} />
+                                                            <Icon name="Trash2" size={18} />
                                                         </button>
                                                     </div>
                                                 </summary>
@@ -4212,7 +4227,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     {workoutTemplates.map(template => {
                                         // 新形式（複数種目）と旧形式（単一種目）の両方に対応
                                         const exercises = template.exercises || (template.exercise ? [{ exercise: template.exercise, sets: template.sets || [] }] : []);
-                                        const totalCals = exercises.reduce((sum, ex) => sum + (ex.sets || []).reduce((s, set) => s + (set.calories || 0), 0), 0);
+                                        const totalDuration = exercises.reduce((sum, ex) => sum + (ex.sets || []).reduce((s, set) => s + (set.duration || 0), 0), 0);
 
                                         return (
                                             <details key={template.id} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
@@ -4221,7 +4236,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <div className="flex-1">
                                                         <p className="font-medium text-sm">{template.name}</p>
                                                         <p className="text-xs text-gray-600">
-                                                            {exercises.length}種目 | {exercises.reduce((sum, ex) => sum + (ex.sets?.length || 0), 0)}セット | {Math.round(totalCals)}kcal
+                                                            {exercises.length}種目 | {exercises.reduce((sum, ex) => sum + (ex.sets?.length || 0), 0)}セット | {totalDuration}分
                                                         </p>
                                                     </div>
                                                     <div className="flex gap-1">
@@ -4231,9 +4246,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 setShowTemplateEditModal(false);
                                                                 onOpenAddView && onOpenAddView('workout', true, template);
                                                             }}
-                                                            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                                         >
-                                                            <Icon name="Edit" size={16} />
+                                                            <Icon name="Edit" size={18} />
                                                         </button>
                                                         <button
                                                             onClick={async (e) => {
@@ -4243,9 +4258,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     await loadTemplates();
                                                                 }
                                                             }}
-                                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                         >
-                                                            <Icon name="Trash2" size={16} />
+                                                            <Icon name="Trash2" size={18} />
                                                         </button>
                                                     </div>
                                                 </summary>

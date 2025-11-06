@@ -2804,13 +2804,14 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                         {workoutTemplates.length > 0 ? (
                                             <div className="space-y-2">
                                                 {workoutTemplates.map(template => {
-                                                    // 総重量と総時間を計算
-                                                    let totalWeight = 0;
+                                                    // 種目数、総セット数、総時間を計算
+                                                    const exerciseCount = template.exercises?.length || 0;
+                                                    let totalSets = 0;
                                                     let totalDuration = 0;
 
                                                     template.exercises?.forEach(exercise => {
+                                                        totalSets += exercise.sets?.length || 0;
                                                         exercise.sets?.forEach(set => {
-                                                            totalWeight += (set.weight || 0) * (set.reps || 0);
                                                             totalDuration += set.duration || 0;
                                                         });
                                                     });
@@ -2822,8 +2823,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                                     <div className="flex-1">
                                                                         <p className="font-medium">{template.name}</p>
                                                                         <p className="text-xs text-gray-600 mt-1">
-                                                                            <span className="text-orange-600">総重量: {totalWeight}kg</span>
-                                                                            <span className="text-orange-600 ml-2">総時間: {totalDuration}分</span>
+                                                                            <span className="text-orange-600">{exerciseCount}種目</span>
+                                                                            <span className="text-orange-600 ml-2"> | {totalSets}セット</span>
+                                                                            <span className="text-orange-600 ml-2"> | {totalDuration}分</span>
                                                                         </p>
                                                                     </div>
                                                                     <div className="flex items-center gap-2 ml-2">
@@ -2834,10 +2836,10 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                                                 loadTemplate(template);
                                                                                 setShowTemplates(false);
                                                                             }}
-                                                                            className="p-2 text-blue-500 hover:text-blue-700"
+                                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                                                             title="編集"
                                                                         >
-                                                                            <Icon name="Pencil" size={16} />
+                                                                            <Icon name="Pencil" size={18} />
                                                                         </button>
                                                                         <button
                                                                             onClick={(e) => {
@@ -2845,10 +2847,10 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                                                 e.stopPropagation();
                                                                                 deleteTemplate(template.id);
                                                                             }}
-                                                                            className="p-2 text-red-500 hover:text-red-700"
+                                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                                             title="削除"
                                                                             >
-                                                                            <Icon name="Trash2" size={16} />
+                                                                            <Icon name="Trash2" size={18} />
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -4759,20 +4761,20 @@ RM回数と重量を別々に入力してください。`
                                                                             loadTemplate(template);
                                                                             setShowTemplates(false);
                                                                         }}
-                                                                        className="p-2 text-blue-500 hover:text-blue-700"
+                                                                        className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                                                         title="編集"
                                                                     >
-                                                                        <Icon name="Pencil" size={16} />
+                                                                        <Icon name="Pencil" size={18} />
                                                                     </button>
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.preventDefault();
                                                                             deleteTemplate(template.id);
                                                                         }}
-                                                                        className="p-2 text-red-500 hover:text-red-700"
+                                                                        className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                                         title="削除"
                                                                     >
-                                                                        <Icon name="Trash2" size={16} />
+                                                                        <Icon name="Trash2" size={18} />
                                                                     </button>
                                                                 </div>
                                                             </div>
