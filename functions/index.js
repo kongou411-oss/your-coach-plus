@@ -95,6 +95,17 @@ exports.callGemini = onCall({
     };
   } catch (error) {
     console.error("Vertex AI call failed:", error);
+
+    // 429エラー（レート制限）の場合
+    if (error.code === 429 || error.status === "RESOURCE_EXHAUSTED") {
+      throw new HttpsError(
+          "resource-exhausted",
+          "Gemini APIのレート制限に達しました。5〜10分後に再度お試しください。",
+          error.message
+      );
+    }
+
+    // その他のエラー
     throw new HttpsError("internal", "AIの呼び出し中にサーバーエラーが発生しました。", error.message);
   }
 });
