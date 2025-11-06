@@ -89,7 +89,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC }) => {
 };
 
 // ===== Dashboard Component =====
-const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setUserProfile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData }) => {
+const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setUserProfile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData, onOpenNewMealModal }) => {
     // 指示書管理
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
@@ -575,6 +575,25 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     return (
         <div className="space-y-4">
+
+            {/* 🧪 テスト用：ゴールベース食事記録ボタン */}
+            {onOpenNewMealModal && (
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="text-white">
+                            <div className="font-bold text-lg mb-1">🎯 新機能テスト中</div>
+                            <div className="text-sm opacity-90">ゴールベース食事記録モーダル</div>
+                        </div>
+                        <button
+                            onClick={onOpenNewMealModal}
+                            className="bg-white text-purple-600 px-6 py-3 rounded-lg font-bold hover:bg-purple-50 transition shadow-md flex items-center gap-2"
+                        >
+                            <Icon name="Target" size={20} />
+                            試す
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* タブ式サマリー */}
             <div className="bg-white rounded-xl shadow-sm p-6 slide-up border-2 border-gray-200">

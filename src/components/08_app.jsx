@@ -207,6 +207,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const COMYView = window.COMYView;
             const AdminPanel = window.AdminPanel;
             const AddItemView = window.AddItemView;
+            const AddMealModal = window.AddMealModal; // 新しいゴールベースモーダル
             const EditMealModal = window.EditMealModal;
             const EditWorkoutModal = window.EditWorkoutModal;
             const SettingsView = window.SettingsView;
@@ -221,6 +222,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [currentStage, setCurrentStage] = useState('守');
             const [fabOpen, setFabOpen] = useState(false);
             const [showAddView, setShowAddView] = useState(false);
+            const [showNewMealModal, setShowNewMealModal] = useState(false); // 新しいゴールベースモーダル
             const [addViewType, setAddViewType] = useState('meal');
             const [openedFromSettings, setOpenedFromSettings] = useState(false);
             const [openedFromTemplateEditModal, setOpenedFromTemplateEditModal] = useState(false); // テンプレート編集モーダルから開いたか
@@ -1543,6 +1545,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             onShortcutClick={handleShortcutClick}
                             currentRoutine={currentRoutine}
                             onLoadRoutineData={loadRoutineData}
+                            onOpenNewMealModal={() => setShowNewMealModal(true)}
                             onFeatureUnlocked={(featureId) => {
                                 if (featureId === 'analysis') {
                                     setShowAnalysisGuide(true);
@@ -1687,6 +1690,51 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     alert('運動の更新に失敗しました。');
                                 }
                             }}
+                        />
+                    )}
+
+                    {/* 新しいゴールベースの食事記録モーダル */}
+                    {showNewMealModal && AddMealModal && (
+                        <AddMealModal
+                            onClose={() => setShowNewMealModal(false)}
+                            onAdd={async (meal) => {
+                                const userId = user?.uid || DEV_USER_ID;
+                                try {
+                                    // 表示中の日付（currentDate）に記録を保存
+                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
+                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+
+                                    updatedRecord.meals = [...(updatedRecord.meals || []), meal];
+
+                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
+                                    setDailyRecord(updatedRecord);
+                                    setLastUpdate(Date.now());
+
+                                    // 新しい機能開放システム
+                                    const oldUnlocked = [...unlockedFeatures];
+                                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                    const newUnlocked = calculateUnlockedFeatures(userId, updatedRecord, isPremium);
+                                    setUnlockedFeatures(newUnlocked);
+
+                                    // 新しく開放された機能があれば誘導モーダルを表示
+                                    if (!oldUnlocked.includes('training') && newUnlocked.includes('training')) {
+                                        setShowTrainingGuide(true);
+                                    } else if (!oldUnlocked.includes('condition') && newUnlocked.includes('condition')) {
+                                        setShowConditionGuide(true);
+                                    } else if (!oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                        setShowAnalysisGuide(true);
+                                    }
+
+                                    setShowNewMealModal(false);
+                                } catch (error) {
+                                    console.error('食事記録エラー:', error);
+                                    alert('食事の記録に失敗しました');
+                                }
+                            }}
+                            user={user}
+                            userProfile={userProfile}
+                            unlockedFeatures={unlockedFeatures}
+                            usageDays={usageDays}
                         />
                     )}
 

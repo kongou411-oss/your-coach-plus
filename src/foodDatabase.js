@@ -71,26 +71,26 @@ const foodDatabase = {
     "卵類": {
         // 卵類（八訂成分表 - 1個あたり + ビタミン・ミネラル + アミノ酸スコア、PDCAAS、DIAAS、DIT）
         // 鶏卵 - サイズ別（1個あたりの重量と成分）
-        "鶏卵 SS（40g）": { "calories": 57, "protein": 4.9, "fat": 4.1, "carbs": 0.2, "unit": "1個", "category": "卵類", "cost": 1, "vitaminA": 60, "vitaminD": 0.7, "vitaminE": 0.4, "vitaminB2": 0.17, "vitaminB12": 0.4, "folicAcid": 19, "iron": 0.7, "zinc": 0.5, "selenium": 13, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 7.4 },
-        "鶏卵 S（46g）": { "calories": 65, "protein": 5.6, "fat": 4.7, "carbs": 0.2, "unit": "1個", "servingSize": 46, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 69, "vitaminD": 0.8, "vitaminE": 0.5, "vitaminB2": 0.20, "vitaminB12": 0.5, "folicAcid": 22, "iron": 0.8, "zinc": 0.6, "selenium": 15, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 8.4 },
-        "鶏卵 MS（50g）": { "calories": 71, "protein": 6.1, "fat": 5.1, "carbs": 0.2, "unit": "1個", "servingSize": 50, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 75, "vitaminD": 0.9, "vitaminE": 0.5, "vitaminB2": 0.22, "vitaminB12": 0.6, "folicAcid": 24, "iron": 0.9, "zinc": 0.7, "selenium": 16, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 9.2 },
-        "鶏卵 M（58g）": { "calories": 82, "protein": 7.1, "fat": 5.9, "carbs": 0.2, "unit": "1個", "servingSize": 58, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 87, "vitaminB1": 0.04, "vitaminB2": 0.25, "vitaminB6": 0.05, "vitaminB12": 0.7, "vitaminC": 0, "vitaminD": 1.0, "vitaminE": 0.6, "vitaminK": 8, "niacin": 0.06, "pantothenicAcid": 0.87, "biotin": 14.5, "folicAcid": 28, "sodium": 82, "potassium": 75, "calcium": 29, "magnesium": 6, "phosphorus": 100, "iron": 1.0, "zinc": 0.8, "copper": 0.04, "manganese": 0.01, "iodine": 10, "selenium": 19, "chromium": 0, "molybdenum": 2, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 10.7 },
-        "鶏卵 L（64g）": { "calories": 91, "protein": 7.8, "fat": 6.5, "carbs": 0.3, "unit": "1個", "servingSize": 64, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 96, "vitaminD": 1.2, "vitaminE": 0.6, "vitaminB2": 0.28, "vitaminB12": 0.8, "folicAcid": 31, "iron": 1.2, "zinc": 0.9, "selenium": 21, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 11.8 },
-        "鶏卵 LL（70g）": { "calories": 99, "protein": 8.5, "fat": 7.1, "carbs": 0.3, "unit": "1個", "servingSize": 70, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 105, "vitaminD": 1.3, "vitaminE": 0.7, "vitaminB2": 0.30, "vitaminB12": 0.8, "folicAcid": 34, "iron": 1.3, "zinc": 1.0, "selenium": 23, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 12.8 },
+        "鶏卵 SS（40g）": { "calories": 57, "protein": 4.9, "fat": 4.1, "carbs": 0.2, "unit": "個", "servingSize": 40, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 60, "vitaminD": 0.7, "vitaminE": 0.4, "vitaminB2": 0.17, "vitaminB12": 0.4, "folicAcid": 19, "iron": 0.7, "zinc": 0.5, "selenium": 13, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 7.4 },
+        "鶏卵 S（46g）": { "calories": 65, "protein": 5.6, "fat": 4.7, "carbs": 0.2, "unit": "個", "servingSize": 46, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 69, "vitaminD": 0.8, "vitaminE": 0.5, "vitaminB2": 0.20, "vitaminB12": 0.5, "folicAcid": 22, "iron": 0.8, "zinc": 0.6, "selenium": 15, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 8.4 },
+        "鶏卵 MS（50g）": { "calories": 71, "protein": 6.1, "fat": 5.1, "carbs": 0.2, "unit": "個", "servingSize": 50, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 75, "vitaminD": 0.9, "vitaminE": 0.5, "vitaminB2": 0.22, "vitaminB12": 0.6, "folicAcid": 24, "iron": 0.9, "zinc": 0.7, "selenium": 16, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 9.2 },
+        "鶏卵 M（58g）": { "calories": 82, "protein": 7.1, "fat": 5.9, "carbs": 0.2, "unit": "個", "servingSize": 58, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 87, "vitaminB1": 0.04, "vitaminB2": 0.25, "vitaminB6": 0.05, "vitaminB12": 0.7, "vitaminC": 0, "vitaminD": 1.0, "vitaminE": 0.6, "vitaminK": 8, "niacin": 0.06, "pantothenicAcid": 0.87, "biotin": 14.5, "folicAcid": 28, "sodium": 82, "potassium": 75, "calcium": 29, "magnesium": 6, "phosphorus": 100, "iron": 1.0, "zinc": 0.8, "copper": 0.04, "manganese": 0.01, "iodine": 10, "selenium": 19, "chromium": 0, "molybdenum": 2, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 10.7 },
+        "鶏卵 L（64g）": { "calories": 91, "protein": 7.8, "fat": 6.5, "carbs": 0.3, "unit": "個", "servingSize": 64, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 96, "vitaminD": 1.2, "vitaminE": 0.6, "vitaminB2": 0.28, "vitaminB12": 0.8, "folicAcid": 31, "iron": 1.2, "zinc": 0.9, "selenium": 21, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 11.8 },
+        "鶏卵 LL（70g）": { "calories": 99, "protein": 8.5, "fat": 7.1, "carbs": 0.3, "unit": "個", "servingSize": 70, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 105, "vitaminD": 1.3, "vitaminE": 0.7, "vitaminB2": 0.30, "vitaminB12": 0.8, "folicAcid": 34, "iron": 1.3, "zinc": 1.0, "selenium": 23, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 12.8 },
 
         // 調理済み卵（Mサイズ基準）
-        "ゆで卵 M（58g）": { "calories": 78, "protein": 7.3, "fat": 6.0, "carbs": 0.2, "unit": "1個", "servingSize": 58, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 84, "vitaminD": 1.0, "vitaminE": 0.6, "vitaminB2": 0.24, "vitaminB12": 0.7, "folicAcid": 26, "iron": 1.0, "zinc": 0.8, "selenium": 19, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 10.9 },
-        "温泉卵 M（58g）": { "calories": 78, "protein": 7.2, "fat": 6.0, "carbs": 0.2, "unit": "1個", "servingSize": 58, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 87, "vitaminD": 1.0, "vitaminE": 0.6, "vitaminB2": 0.25, "vitaminB12": 0.7, "folicAcid": 28, "iron": 1.0, "zinc": 0.8, "selenium": 19, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 10.8 },
-        "目玉焼き M（卵58g+油3g）": { "calories": 109, "protein": 7.1, "fat": 8.9, "carbs": 0.2, "unit": "1個", "servingSize": 61, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 87, "vitaminD": 1.0, "vitaminE": 1.2, "vitaminB2": 0.25, "vitaminB12": 0.7, "folicAcid": 28, "iron": 1.0, "zinc": 0.8, "selenium": 19, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 11.7 },
-        "卵焼き（卵1個分+調味料）": { "calories": 108, "protein": 7.2, "fat": 7.4, "carbs": 2.1, "unit": "1個分", "category": "卵類", "cost": 1, "vitaminA": 87, "vitaminD": 1.0, "vitaminE": 0.6, "vitaminB2": 0.25, "vitaminB12": 0.7, "folicAcid": 28, "iron": 1.0, "zinc": 0.8, "selenium": 19, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 11.4 },
+        "ゆで卵 M（58g）": { "calories": 78, "protein": 7.3, "fat": 6.0, "carbs": 0.2, "unit": "個", "servingSize": 58, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 84, "vitaminD": 1.0, "vitaminE": 0.6, "vitaminB2": 0.24, "vitaminB12": 0.7, "folicAcid": 26, "iron": 1.0, "zinc": 0.8, "selenium": 19, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 10.9 },
+        "温泉卵 M（58g）": { "calories": 78, "protein": 7.2, "fat": 6.0, "carbs": 0.2, "unit": "個", "servingSize": 58, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 87, "vitaminD": 1.0, "vitaminE": 0.6, "vitaminB2": 0.25, "vitaminB12": 0.7, "folicAcid": 28, "iron": 1.0, "zinc": 0.8, "selenium": 19, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 10.8 },
+        "目玉焼き M（卵58g+油3g）": { "calories": 109, "protein": 7.1, "fat": 8.9, "carbs": 0.2, "unit": "個", "servingSize": 61, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 87, "vitaminD": 1.0, "vitaminE": 1.2, "vitaminB2": 0.25, "vitaminB12": 0.7, "folicAcid": 28, "iron": 1.0, "zinc": 0.8, "selenium": 19, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 11.7 },
+        "卵焼き（卵1個分+調味料）": { "calories": 108, "protein": 7.2, "fat": 7.4, "carbs": 2.1, "unit": "個分", "servingSize": 60, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 87, "vitaminD": 1.0, "vitaminE": 0.6, "vitaminB2": 0.25, "vitaminB12": 0.7, "folicAcid": 28, "iron": 1.0, "zinc": 0.8, "selenium": 19, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 11.4 },
 
         // 卵の部位別（参考用 - 100gあたり）
         "鶏卵（卵黄のみ）": { "calories": 336, "protein": 16.5, "fat": 34.3, "carbs": 0.1, "unit": "100g", "category": "卵類", "cost": 1, "vitaminA": 470, "vitaminD": 5.9, "vitaminE": 3.4, "vitaminB2": 0.52, "vitaminB12": 2.0, "folicAcid": 150, "iron": 6.0, "zinc": 4.2, "selenium": 56, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.13, "dit": 32.2 },
         "鶏卵（卵白のみ）": { "calories": 44, "protein": 10.1, "fat": 0.3, "carbs": 0.4, "unit": "100g", "category": "卵類", "cost": 1, "vitaminB2": 0.39, "vitaminB12": 0.1, "folicAcid": 3, "selenium": 19, "aminoAcidScore": 100, "pdcaas": 1.00, "diaas": 1.09, "dit": 12.4 },
 
         // その他の卵
-        "うずら卵（1個10g）": { "calories": 16, "protein": 1.3, "fat": 1.3, "carbs": 0.03, "unit": "1個", "servingSize": 10, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 35, "vitaminD": 0.7, "vitaminE": 0.1, "vitaminB2": 0.07, "vitaminB12": 0.5, "folicAcid": 9, "iron": 0.3, "zinc": 0.1, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.12, "dit": 2.0 },
-        "うずら卵 水煮（1個12g）": { "calories": 18, "protein": 1.5, "fat": 1.4, "carbs": 0.03, "unit": "1個", "servingSize": 12, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 40, "vitaminD": 0.8, "vitaminE": 0.1, "vitaminB2": 0.08, "vitaminB12": 0.6, "folicAcid": 10, "iron": 0.4, "zinc": 0.2, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.12, "dit": 2.3 }
+        "うずら卵（1個10g）": { "calories": 16, "protein": 1.3, "fat": 1.3, "carbs": 0.03, "unit": "個", "servingSize": 10, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 35, "vitaminD": 0.7, "vitaminE": 0.1, "vitaminB2": 0.07, "vitaminB12": 0.5, "folicAcid": 9, "iron": 0.3, "zinc": 0.1, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.12, "dit": 2.0 },
+        "うずら卵 水煮（1個12g）": { "calories": 18, "protein": 1.5, "fat": 1.4, "carbs": 0.03, "unit": "個", "servingSize": 12, "servingUnit": "g", "category": "卵類", "cost": 1, "vitaminA": 40, "vitaminD": 0.8, "vitaminE": 0.1, "vitaminB2": 0.08, "vitaminB12": 0.6, "folicAcid": 10, "iron": 0.4, "zinc": 0.2, "aminoAcidScore": 100, "pdcaas": 0.97, "diaas": 1.12, "dit": 2.3 }
     },
     "主食": {
         // 米類（八訂成分表 + 糖質・食物繊維 + アミノ酸スコア + GI値）
@@ -225,58 +225,60 @@ const foodDatabase = {
     },
     "サプリメント": {
         // ①プロテイン（30gあたりの成分）
-        "ホエイプロテイン": { "calories": 123.6, "protein": 25.3, "fat": 1.0, "carbs": 1.2, "unit": "30g", "servingSize": 30, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "プロテイン", "aminoAcidScore": 100, "pdcaas": 1.00, "diaas": 1.09, "dit": 30.7, "vitaminA": 0, "vitaminB1": 0, "vitaminB2": 0.48, "vitaminB6": 0, "vitaminB12": 0.6, "vitaminC": 0, "vitaminD": 0, "vitaminE": 0, "vitaminK": 0, "niacin": 0, "pantothenicAcid": 0.90, "biotin": 0, "folicAcid": 0, "sodium": 150, "potassium": 120, "calcium": 180, "magnesium": 15, "phosphorus": 120, "iron": 0.3, "zinc": 0.9, "copper": 0.01, "manganese": 0, "iodine": 0, "selenium": 3, "chromium": 0, "molybdenum": 0 },
-        "カゼインプロテイン": { "calories": 111.9, "protein": 25.5, "fat": 0.3, "carbs": 1.1, "unit": "30g", "servingSize": 30, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "プロテイン", "aminoAcidScore": 100, "pdcaas": 1.00, "diaas": 1.12, "dit": 30.7, "vitaminA": 0, "vitaminB1": 0, "vitaminB2": 0.51, "vitaminB6": 0, "vitaminB12": 0.8, "vitaminC": 0, "vitaminD": 0, "vitaminE": 0, "vitaminK": 0, "niacin": 0, "pantothenicAcid": 0.95, "biotin": 0, "folicAcid": 0, "sodium": 160, "potassium": 130, "calcium": 210, "magnesium": 18, "phosphorus": 140, "iron": 0.2, "zinc": 1.0, "copper": 0.01, "manganese": 0, "iodine": 0, "selenium": 3, "chromium": 0, "molybdenum": 0 },
-        "ソイプロテイン": { "calories": 108.0, "protein": 24.0, "fat": 1.1, "carbs": 1.8, "unit": "30g", "servingSize": 30, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "プロテイン", "aminoAcidScore": 86, "pdcaas": 0.91, "diaas": 0.90, "dit": 29.3, "vitaminA": 0, "vitaminB1": 0.24, "vitaminB2": 0.08, "vitaminB6": 0.15, "vitaminB12": 0, "vitaminC": 0, "vitaminD": 0, "vitaminE": 0.3, "vitaminK": 4, "niacin": 0.3, "pantothenicAcid": 0.20, "biotin": 7.5, "folicAcid": 72, "sodium": 1, "potassium": 570, "calcium": 63, "magnesium": 63, "phosphorus": 165, "iron": 2.4, "zinc": 0.9, "copper": 0.28, "manganese": 0.24, "iodine": 0, "selenium": 2, "chromium": 0, "molybdenum": 75 },
+        "ホエイプロテイン": { "calories": 123.6, "protein": 25.3, "fat": 1.0, "carbs": 1.2, "unit": "杯", "servingSize": 30, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "プロテイン", "aminoAcidScore": 100, "pdcaas": 1.00, "diaas": 1.09, "dit": 30.7, "vitaminA": 0, "vitaminB1": 0, "vitaminB2": 0.48, "vitaminB6": 0, "vitaminB12": 0.6, "vitaminC": 0, "vitaminD": 0, "vitaminE": 0, "vitaminK": 0, "niacin": 0, "pantothenicAcid": 0.90, "biotin": 0, "folicAcid": 0, "sodium": 150, "potassium": 120, "calcium": 180, "magnesium": 15, "phosphorus": 120, "iron": 0.3, "zinc": 0.9, "copper": 0.01, "manganese": 0, "iodine": 0, "selenium": 3, "chromium": 0, "molybdenum": 0 },
+        "カゼインプロテイン": { "calories": 111.9, "protein": 25.5, "fat": 0.3, "carbs": 1.1, "unit": "杯", "servingSize": 30, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "プロテイン", "aminoAcidScore": 100, "pdcaas": 1.00, "diaas": 1.12, "dit": 30.7, "vitaminA": 0, "vitaminB1": 0, "vitaminB2": 0.51, "vitaminB6": 0, "vitaminB12": 0.8, "vitaminC": 0, "vitaminD": 0, "vitaminE": 0, "vitaminK": 0, "niacin": 0, "pantothenicAcid": 0.95, "biotin": 0, "folicAcid": 0, "sodium": 160, "potassium": 130, "calcium": 210, "magnesium": 18, "phosphorus": 140, "iron": 0.2, "zinc": 1.0, "copper": 0.01, "manganese": 0, "iodine": 0, "selenium": 3, "chromium": 0, "molybdenum": 0 },
+        "ソイプロテイン": { "calories": 108.0, "protein": 24.0, "fat": 1.1, "carbs": 1.8, "unit": "杯", "servingSize": 30, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "プロテイン", "aminoAcidScore": 86, "pdcaas": 0.91, "diaas": 0.90, "dit": 29.3, "vitaminA": 0, "vitaminB1": 0.24, "vitaminB2": 0.08, "vitaminB6": 0.15, "vitaminB12": 0, "vitaminC": 0, "vitaminD": 0, "vitaminE": 0.3, "vitaminK": 4, "niacin": 0.3, "pantothenicAcid": 0.20, "biotin": 7.5, "folicAcid": 72, "sodium": 1, "potassium": 570, "calcium": 63, "magnesium": 63, "phosphorus": 165, "iron": 2.4, "zinc": 0.9, "copper": 0.28, "manganese": 0.24, "iodine": 0, "selenium": 2, "chromium": 0, "molybdenum": 75 },
 
         // ②アミノ酸
-        "BCAA": { "calories": 20, "protein": 5.0, "fat": 0, "carbs": 0, "unit": "5g", "servingSize": 5, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "アミノ酸" },
-        "EAA": { "calories": 16, "protein": 4.0, "fat": 0, "carbs": 0, "unit": "5g", "servingSize": 5, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "アミノ酸" },
-        "グルタミン": { "calories": 16, "protein": 4.0, "fat": 0, "carbs": 0, "unit": "5g", "servingSize": 5, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "アミノ酸" },
+        "BCAA": { "calories": 20, "protein": 5.0, "fat": 0, "carbs": 0, "unit": "杯", "servingSize": 5, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "アミノ酸" },
+        "EAA": { "calories": 16, "protein": 4.0, "fat": 0, "carbs": 0, "unit": "杯", "servingSize": 5, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "アミノ酸" },
+        "グルタミン": { "calories": 20, "protein": 5.0, "fat": 0, "carbs": 0, "unit": "g", "servingSize": 5, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "アミノ酸" },
 
         // ③ビタミン・ミネラル
-        "NatureMade マルチビタミン": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminA": 600, "vitaminB1": 1.5, "vitaminB2": 1.7, "vitaminB6": 2.0, "vitaminB12": 3.0, "vitaminC": 125, "vitaminD": 10, "vitaminE": 9.0, "niacin": 15, "folicAcid": 240, "biotin": 50 },
-        "NatureMade スーパーマルチビタミン&ミネラル": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminA": 600, "vitaminB1": 1.5, "vitaminB2": 1.7, "vitaminB6": 2.0, "vitaminB12": 3.0, "vitaminC": 125, "vitaminD": 10, "vitaminE": 9.0, "niacin": 15, "calcium": 200, "magnesium": 100, "iron": 4.0, "zinc": 6.0, "copper": 0.6, "selenium": 50 },
-        "NatureMade ビタミンC 500mg": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "2粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminC": 1000 },
-        "NatureMade ビタミンD 1000IU": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminD": 25 },
-        "NatureMade ビタミンE 400IU": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminE": 268 },
-        "NatureMade ビタミンB群": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "2粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminB1": 25, "vitaminB2": 12, "vitaminB6": 10, "vitaminB12": 20, "niacin": 15, "pantothenicAcid": 5.5, "biotin": 50, "folicAcid": 240 },
-        "NatureMade 葉酸": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "folicAcid": 400 },
-        "NatureMade カルシウム 200mg": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "2粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "calcium": 400, "vitaminD": 5 },
-        "NatureMade カルシウム・マグネシウム・亜鉛": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "3粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "calcium": 500, "magnesium": 250, "zinc": 7.0 },
-        "NatureMade 鉄": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "iron": 3.0, "vitaminB12": 2.0, "folicAcid": 200 },
-        "NatureMade 亜鉛": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "zinc": 10.0 },
+        "NatureMade マルチビタミン": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminA": 600, "vitaminB1": 1.5, "vitaminB2": 1.7, "vitaminB6": 2.0, "vitaminB12": 3.0, "vitaminC": 125, "vitaminD": 10, "vitaminE": 9.0, "niacin": 15, "folicAcid": 240, "biotin": 50 },
+        "NatureMade スーパーマルチビタミン&ミネラル": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminA": 600, "vitaminB1": 1.5, "vitaminB2": 1.7, "vitaminB6": 2.0, "vitaminB12": 3.0, "vitaminC": 125, "vitaminD": 10, "vitaminE": 9.0, "niacin": 15, "calcium": 200, "magnesium": 100, "iron": 4.0, "zinc": 6.0, "copper": 0.6, "selenium": 50 },
+        "NatureMade ビタミンC 500mg": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 2, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminC": 1000 },
+        "NatureMade ビタミンD 1000IU": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminD": 25 },
+        "NatureMade ビタミンE 400IU": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminE": 268 },
+        "NatureMade ビタミンB群": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 2, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "vitaminB1": 25, "vitaminB2": 12, "vitaminB6": 10, "vitaminB12": 20, "niacin": 15, "pantothenicAcid": 5.5, "biotin": 50, "folicAcid": 240 },
+        "NatureMade 葉酸": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "folicAcid": 400 },
+        "NatureMade カルシウム 200mg": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 2, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "calcium": 400, "vitaminD": 5 },
+        "NatureMade カルシウム・マグネシウム・亜鉛": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 3, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "calcium": 500, "magnesium": 250, "zinc": 7.0 },
+        "NatureMade 鉄": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "iron": 3.0, "vitaminB12": 2.0, "folicAcid": 200 },
+        "NatureMade 亜鉛": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "ビタミン・ミネラル", "zinc": 10.0 },
 
         // ④その他
-        "マルトデキストリン": { "calories": 114.0, "protein": 0, "fat": 0, "carbs": 28.5, "unit": "30g", "servingSize": 30, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "その他" },
-        "クレアチン": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "5g", "servingSize": 5, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "その他" },
-        "NatureMade フィッシュオイル（EPA・DHA）": { "calories": 10, "protein": 0, "fat": 1.0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "その他", "EPA": 162, "DHA": 108 },
-        "NatureMade DHA": { "calories": 10, "protein": 0, "fat": 1.0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "その他", "DHA": 175, "EPA": 25 },
-        "NatureMade ルテイン": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "その他", "lutein": 16 },
-        "NatureMade アスタキサンチン": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "その他", "astaxanthin": 6 },
-        "NatureMade コエンザイムQ10": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "1粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "その他", "coQ10": 60 },
-        "NatureMade L-カルニチン": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "5粒", "servingSize": 100, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "その他", "lCarnitine": 500 },
+        "マルトデキストリン": { "calories": 114.0, "protein": 0, "fat": 0, "carbs": 28.5, "unit": "杯", "servingSize": 30, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "その他" },
+        "クレアチン": { "calories": 17.5, "protein": 4.4, "fat": 0, "carbs": 0, "unit": "g", "servingSize": 5, "servingUnit": "g", "category": "サプリ", "cost": 1, "subcategory": "その他" },
+        "NatureMade フィッシュオイル（EPA・DHA）": { "calories": 10, "protein": 0, "fat": 1.0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "その他", "EPA": 162, "DHA": 108 },
+        "NatureMade DHA": { "calories": 10, "protein": 0, "fat": 1.0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "その他", "DHA": 175, "EPA": 25 },
+        "NatureMade ルテイン": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "その他", "lutein": 16 },
+        "NatureMade アスタキサンチン": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "その他", "astaxanthin": 6 },
+        "NatureMade コエンザイムQ10": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 1, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "その他", "coQ10": 60 },
+        "NatureMade L-カルニチン": { "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "unit": "錠", "servingSize": 5, "servingUnit": "錠", "category": "サプリ", "cost": 1, "subcategory": "その他", "lCarnitine": 500 }
+    },
 
-        // ⑤ドリンク
+    // ドリンク類
+    "ドリンク": {
         "モンスターエナジー パイプラインパンチ": {
-            "calories": 156.2, "protein": 0, "fat": 0, "carbs": 35.5, "unit": "1本(355ml)",
-            "category": "サプリ", "cost": 1, "subcategory": "ドリンク",
-            "servingSize": 355, "servingUnit": "g",
+            "calories": 156.2, "protein": 0, "fat": 0, "carbs": 35.5, "unit": "本",
+            "category": "ドリンク", "cost": 1,
+            "servingSize": 355, "servingUnit": "ml",
             "vitaminB2": 2.49, "vitaminB6": 2.84, "vitaminB12": 12.43, "niacin": 30.18,
             "sodium": 81.65, // 食塩相当量0.21gから換算（100mlあたり0.06g × 3.55）
             "caffeine": 142, "lArginine": 188.15, "lCarnitine": 102.95
         },
         "ブラックコーヒー": {
-            "calories": 4, "protein": 0.2, "fat": 0, "carbs": 0.7, "unit": "100ml",
-            "category": "サプリ", "cost": 1, "subcategory": "ドリンク",
+            "calories": 4, "protein": 0.2, "fat": 0, "carbs": 0.7, "unit": "ml",
+            "category": "ドリンク", "cost": 1,
             "servingSize": 100, "servingUnit": "ml",
             "vitaminB2": 0.01, "niacin": 0.8, "biotin": 1.7,
             "sodium": 1, "potassium": 65, "calcium": 2, "magnesium": 6, "phosphorus": 7, "manganese": 0.03,
             "caffeine": 60, "tannin": 110, "polyphenol": 200, "chlorogenicAcid": 17
         },
         "緑茶（せん茶）": {
-            "calories": 2, "protein": 0.2, "fat": 0, "carbs": 0.2, "unit": "100ml",
-            "category": "サプリ", "cost": 1, "subcategory": "ドリンク",
+            "calories": 2, "protein": 0.2, "fat": 0, "carbs": 0.2, "unit": "ml",
+            "category": "ドリンク", "cost": 1,
             "servingSize": 100, "servingUnit": "ml",
             "vitaminB2": 0.05, "vitaminB6": 0.01, "vitaminC": 6, "niacin": 0.2,
             "pantothenicAcid": 0.04, "biotin": 0.8, "folicAcid": 16,
@@ -372,3 +374,10 @@ const foodDatabase = {
 function getFoodDatabase() {
     return foodDatabase;
 }
+
+// グローバルに公開（新しいモーダルで使用）
+window.foodDB = foodDatabase;
+window.getFoodDatabase = getFoodDatabase;
+
+console.log('[foodDatabase.js] Loaded successfully');
+console.log('[foodDatabase.js] Categories:', Object.keys(foodDatabase));

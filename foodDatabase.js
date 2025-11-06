@@ -372,3 +372,10 @@ const foodDatabase = {
 function getFoodDatabase() {
     return foodDatabase;
 }
+
+// グローバルに公開（新しいモーダルで使用）
+window.foodDB = foodDatabase;
+window.getFoodDatabase = getFoodDatabase;
+
+console.log('[foodDatabase.js] Loaded successfully');
+console.log('[foodDatabase.js] Categories:', Object.keys(foodDatabase));

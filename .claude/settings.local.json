@@ -54,7 +54,14 @@
       "Bash(start FINANCIAL_ANALYSIS_COMPLETE.html)",
       "Bash(start PRICE_STRATEGY_COMPARISON.html)",
       "Bash(start COMPETITIVE_ADVANTAGE_REPORT.html)",
-      "Bash(start COMPETITIVE_ADVANTAGE_REPORT_V2.md)"
+      "Bash(start COMPETITIVE_ADVANTAGE_REPORT_V2.md)",
+      "Bash(cmd /c dir C:Usersyourcyourcoach_newpublic)",
+      "Bash(copy C:Usersyourcyourcoach_newfoodDatabase.js C:Usersyourcyourcoach_newpublicfoodDatabase.js)",
+      "Bash(copy C:Usersyourcyourcoach_newconfig.js C:Usersyourcyourcoach_newpublicconfig.js)",
+      "Bash(copy C:Usersyourcyourcoach_newutils.js C:Usersyourcyourcoach_newpublicutils.js)",
+      "Bash(cmd /c move C:Usersyourcyourcoach_newfoodDatabase.js C:Usersyourcyourcoach_newsrcfoodDatabase.js)",
+      "Bash(cmd /c copy:*)",
+      "Bash(check_fooddb.js)"
     ],
     "deny": [],
     "ask": []

@@ -21,6 +21,7 @@ import './components/15_community_growth.jsx'
 import './components/16_history_v10.jsx'
 import './components/17_chevron_shortcut.jsx'
 import './components/18_subscription.jsx'
+import './components/19_add_meal_modal.jsx'
 import './components/08_app.jsx'
 
 // Appコンポーネントはwindow.Appとして公開されている
