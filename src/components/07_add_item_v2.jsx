@@ -1535,6 +1535,8 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
             const [supplementTemplates, setSupplementTemplates] = useState([]);
             const [showTemplates, setShowTemplates] = useState(false);
             const [templateName, setTemplateName] = useState('');
+            const [editingTemplateId, setEditingTemplateId] = useState(null); // 編集中のテンプレートID
+            const [editingTemplateObj, setEditingTemplateObj] = useState(null); // 編集中のテンプレートオブジェクト（ローカル用）
             const [selectedExercise, setSelectedExercise] = useState(null);
             const [showAIFoodRecognition, setShowAIFoodRecognition] = useState(false);
             const [showCustomFoodCreator, setShowCustomFoodCreator] = useState(false);
@@ -1901,21 +1903,27 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                         return;
                     }
                     const template = {
-                        id: Date.now(),
+                        id: editingTemplateId || Date.now(), // 編集中なら既存ID、新規ならタイムスタンプ
                         name: templateName,
                         items: addedItems
                     };
                     await DataService.saveSupplementTemplate(user.uid, template);
                     const templates = await DataService.getSupplementTemplates(user.uid);
                     setSupplementTemplates(templates);
-                    alert('テンプレートを保存しました');
+                    alert(editingTemplateId ? 'テンプレートを更新しました' : 'テンプレートを保存しました');
                     setTemplateName('');
+                    setEditingTemplateId(null); // 編集状態をリセット
                 };
 
                 const loadTemplate = (template) => {
+                    console.log('[Template Load] テンプレート読み込み開始:', template);
                     // ディープコピーして参照を切る（複製不具合を防止）
                     const copiedItems = JSON.parse(JSON.stringify(template.items));
+                    console.log('[Template Load] コピーされたアイテム:', copiedItems);
                     setAddedItems(copiedItems);
+                    setTemplateName(template.name); // テンプレート名も設定
+                    setEditingTemplateId(template.id); // 編集中のテンプレートIDを保存
+                    console.log('[Template Load] 読み込み完了 - テンプレート名:', template.name, 'ID:', template.id);
                 };
 
                 const deleteTemplate = async (templateId) => {
@@ -2857,12 +2865,26 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
 
                                                                 {/* 追加ボタン */}
                                                                 <button
-                                                                    onClick={(e) => {
+                                                                    onClick={async (e) => {
                                                                         e.preventDefault();
                                                                         e.stopPropagation();
-                                                                        // テンプレートのすべての運動を追加
-                                                                        setExercises([...exercises, ...template.exercises]);
+                                                                        console.log('[Workout Template Add] 追加ボタンがクリックされました');
+                                                                        console.log('[Workout Template Add] テンプレートの運動:', template.exercises);
+
+                                                                        // テンプレートの運動を直接ダッシュボードに追加
+                                                                        const workoutData = {
+                                                                            name: template.name,
+                                                                            timestamp: new Date().toISOString(),
+                                                                            time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                                                                            exercises: template.exercises,
+                                                                            isTemplate: true // テンプレートタグ
+                                                                        };
+                                                                        console.log('[Workout Template Add] ダッシュボードに追加:', workoutData);
+                                                                        await onAdd(workoutData);
+
                                                                         setShowTemplates(false);
+                                                                        onClose(); // モーダルを閉じる
+                                                                        console.log('[Workout Template Add] 追加完了');
                                                                     }}
                                                                     className="w-full py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm"
                                                                 >
@@ -4758,8 +4780,16 @@ RM回数と重量を別々に入力してください。`
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            console.log('[Template Edit] 編集ボタンがクリックされました');
+                                                                            console.log('[Template Edit] テンプレート:', template);
                                                                             loadTemplate(template);
                                                                             setShowTemplates(false);
+                                                                            setEditingTemplateId(template.id);
+                                                                            // 検索モーダルを開いて追加済みアイテムを表示
+                                                                            setShowSearchModal(true);
+                                                                            setAddedItemsExpanded(true); // 追加済みアイテムを展開
+                                                                            console.log('[Template Edit] テンプレートを編集モードで読み込み完了');
                                                                         }}
                                                                         className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                                                         title="編集"
@@ -4781,16 +4811,36 @@ RM回数と重量を別々に入力してください。`
 
                                                             {/* 追加ボタン */}
                                                             <button
-                                                                onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    // テンプレートのすべてのアイテムを追加
-                                                                    setAddedItems([...addedItems, ...template.items]);
-                                                                    setShowTemplates(false);
-                                                                }}
-                                                                className="w-full py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm mb-3"
-                                                            >
-                                                                追加
-                                                            </button>
+                                                            onClick={async (e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                console.log('[Template Add] 追加ボタンがクリックされました');
+                                                                console.log('[Template Add] テンプレートのアイテム:', template.items);
+
+                                                                // テンプレートの各アイテムを直接ダッシュボードに追加
+                                                                for (const item of template.items) {
+                                                                    const mealData = {
+                                                                        name: `${template.name} - ${item.name}`,
+                                                                        timestamp: new Date().toISOString(),
+                                                                        items: [item],
+                                                                        totalCalories: item.calories || 0,
+                                                                        totalProtein: item.protein || 0,
+                                                                        totalFat: item.fat || 0,
+                                                                        totalCarbs: item.carbs || 0,
+                                                                        isTemplate: true // テンプレートタグ
+                                                                    };
+                                                                    console.log('[Template Add] ダッシュボードに追加:', mealData);
+                                                                    await onAdd(mealData);
+                                                                }
+
+                                                                setShowTemplates(false);
+                                                                onClose(); // モーダルを閉じる
+                                                                console.log('[Template Add] 追加完了');
+                                                            }}
+                                                            className="w-full py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm mb-3"
+                                                        >
+                                                            追加
+                                                        </button>
 
                                                             {/* アイテム一覧（折りたたみ） */}
                                                             <details className="border-t border-gray-200 pt-2">
@@ -4859,7 +4909,10 @@ RM回数と重量を別々に入力してください。`
                                         <div className="flex justify-between items-center mb-4">
                                             <h3 className="text-lg font-bold">食材を検索</h3>
                                             <button
-                                                onClick={() => setShowSearchModal(false)}
+                                                onClick={() => {
+                                                    setShowSearchModal(false);
+                                                    setEditingTemplateId(null); // 編集状態をリセット
+                                                }}
                                                 className="text-gray-500 hover:text-gray-700"
                                             >
                                                 <Icon name="X" size={24} />
@@ -4876,11 +4929,18 @@ RM回数と重量を別々に入力してください。`
                                         />
 
                                         {/* 追加済みアイテム一覧 */}
-                                        {addedItems.length > 0 && (
+                                        {(() => {
+                                            console.log('[Added Items Display] addedItems.length:', addedItems.length);
+                                            console.log('[Added Items Display] addedItemsExpanded:', addedItemsExpanded);
+                                            return addedItems.length > 0;
+                                        })() && (
                                             <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mt-3">
                                                 <div
                                                     className="flex justify-between items-center mb-3 cursor-pointer"
-                                                    onClick={() => setAddedItemsExpanded(!addedItemsExpanded)}
+                                                    onClick={() => {
+                                                        console.log('[Added Items] トグルクリック - 現在:', addedItemsExpanded);
+                                                        setAddedItemsExpanded(!addedItemsExpanded);
+                                                    }}
                                                 >
                                                     <p className="text-sm font-medium text-indigo-900">追加済み ({addedItems.length}品目)</p>
                                                     <Icon name={addedItemsExpanded ? "ChevronUp" : "ChevronDown"} size={20} className="text-indigo-600" />

@@ -1172,6 +1172,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 <div key={meal.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 shadow-md border border-gray-200 ${
                                     meal.isPredicted ? 'border-2 border-sky-300 bg-sky-50 shadow-sky-200/50' :
                                     meal.isRoutine ? 'border-2 border-amber-300 bg-amber-50 shadow-amber-200/50' :
+                                    meal.isTemplate ? 'border-2 border-purple-300 bg-purple-50 shadow-purple-200/50' :
                                     ''
                                 }`}>
                                     <div className="flex items-start justify-between mb-3">
@@ -1190,6 +1191,12 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                         ルーティン
                                                     </span>
                                                 )}
+                                                {meal.isTemplate && (
+                                                    <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        <Icon name="BookTemplate" size={10} />
+                                                        テンプレ
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="text-base font-bold text-gray-900 mb-1">
                                                 {meal.name}
@@ -1202,7 +1209,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         </div>
 
                                         <div className="text-right ml-4">
-                                            <div className="text-xl font-bold text-blue-600">{meal.calories}</div>
+                                            <div className="text-xl font-bold text-blue-600">{meal.totalCalories || meal.calories || 0}</div>
                                             <div className="text-xs text-gray-500">kcal</div>
                                         </div>
                                     </div>
@@ -1289,6 +1296,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <div key={workout.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 shadow-md border border-gray-200 ${
                                         workout.isPredicted ? 'border-2 border-sky-300 bg-sky-50 shadow-sky-200/50' :
                                         workout.isRoutine ? 'border-2 border-amber-300 bg-amber-50 shadow-amber-200/50' :
+                                        workout.isTemplate ? 'border-2 border-purple-300 bg-purple-50 shadow-purple-200/50' :
                                         ''
                                     }`}>
                                         <div className="flex items-start justify-between mb-3">
@@ -1305,6 +1313,12 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                         <span className="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                             <Icon name="Repeat" size={10} />
                                                             ルーティン
+                                                        </span>
+                                                    )}
+                                                    {workout.isTemplate && (
+                                                        <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            <Icon name="BookTemplate" size={10} />
+                                                            テンプレ
                                                         </span>
                                                     )}
                                                 </div>
@@ -1359,6 +1373,24 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                         </div>
                                                     );
                                                 })}
+                                                {(() => {
+                                                    // 総時間を計算
+                                                    let totalTime = 0;
+                                                    workout.exercises?.forEach(exercise => {
+                                                        if (exercise.duration) {
+                                                            totalTime += exercise.duration;
+                                                        } else if (exercise.sets) {
+                                                            exercise.sets.forEach(set => {
+                                                                totalTime += set.duration || 0;
+                                                            });
+                                                        }
+                                                    });
+                                                    return totalTime > 0 && (
+                                                        <p className="text-xs text-orange-600 font-medium mt-2">
+                                                            総時間: {totalTime}分
+                                                        </p>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
 
