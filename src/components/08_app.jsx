@@ -1,6 +1,8 @@
 import React from 'react';
+
 // ===== Welcome Guide Modal Component (Simplified to 1 Page) =====
 const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
+    const Icon = window.Icon;
     if (!show) return null;
 
     const handleFinish = () => {
@@ -71,6 +73,7 @@ const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
 
 // ===== Guide Modal Component =====
 const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId, onClose }) => {
+    const Icon = window.Icon;
     if (!show) return null;
 
     const handleOK = () => {
@@ -120,6 +123,7 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
 
 // ===== Premium Restriction Modal Component =====
 const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
+    const Icon = window.Icon;
     if (!show) return null;
 
     return (
@@ -199,6 +203,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 // ===== Main App Component =====
         const App = () => {
             // window経由で公開されているコンポーネントをローカル参照
+            const LoginScreen = window.LoginScreen;
+            const OnboardingScreen = window.OnboardingScreen;
             const DashboardView = window.DashboardView;
             const AnalysisView = window.AnalysisView;
             const HistoryView = window.HistoryView;
@@ -208,6 +214,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const AdminPanel = window.AdminPanel;
             const AddItemView = window.AddItemView;
             const AddMealModal = window.AddMealModal; // 新しいゴールベースモーダル
+            const AddWorkoutModal = window.AddWorkoutModal; // 新しい運動記録モーダル
             const EditMealModal = window.EditMealModal;
             const EditWorkoutModal = window.EditWorkoutModal;
             const SettingsView = window.SettingsView;
@@ -223,10 +230,11 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [fabOpen, setFabOpen] = useState(false);
             const [showAddView, setShowAddView] = useState(false);
             const [showNewMealModal, setShowNewMealModal] = useState(false); // 新しいゴールベースモーダル
+            const [showNewWorkoutModal, setShowNewWorkoutModal] = useState(false); // 新しい運動記録モーダル
             const [addViewType, setAddViewType] = useState('meal');
             const [openedFromSettings, setOpenedFromSettings] = useState(false);
             const [openedFromTemplateEditModal, setOpenedFromTemplateEditModal] = useState(false); // テンプレート編集モーダルから開いたか
-            const [reopenTemplateEditModal, setReopenTemplateEditModal] = useState(false); // AddItemView閉じた後にテンプレート編集モーダルを再度開く
+            const [reopenTemplateEditModal, setReopenTemplateEditModal] = useState(false); // AddMealModal閉じた後にテンプレート編集モーダルを再度開く
             const [reopenTemplateEditType, setReopenTemplateEditType] = useState(null); // 再度開くテンプレート編集モーダルのタイプ
             const [editingTemplate, setEditingTemplate] = useState(null); // 編集対象のテンプレート
             const [editingMeal, setEditingMeal] = useState(null); // 編集対象の食事
@@ -923,6 +931,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     switch (action) {
                         case 'meal':
                             setAddViewType('meal');
+                            setEditingMeal(null); // 新規追加モードのため編集をクリア
+                            setEditingTemplate(null);
                             setShowAddView(true);
                             setBottomBarMenu(null);
                             setBottomBarExpanded(false);
@@ -1546,6 +1556,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             currentRoutine={currentRoutine}
                             onLoadRoutineData={loadRoutineData}
                             onOpenNewMealModal={() => setShowNewMealModal(true)}
+                            onOpenNewWorkoutModal={() => setShowNewWorkoutModal(true)}
                             onFeatureUnlocked={(featureId) => {
                                 if (featureId === 'analysis') {
                                     setShowAnalysisGuide(true);
@@ -1568,64 +1579,37 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         />
                     </div>
 
-                    {/* 食事編集モーダル（EditMealModal） */}
-                    {editingMeal && addViewType === 'meal' && (
-                        <EditMealModal
-                            meal={editingMeal}
+                    {/* 食事編集モーダル（AddMealModalを編集モードで使用） */}
+                    {editingMeal && addViewType === 'meal' && !showAddView && (
+                        <AddMealModal
+                            editingMeal={editingMeal}
                             onClose={() => {
                                 setEditingMeal(null);
                                 setShowAddView(false);
                             }}
-                            onUpdate={async (updatedMeal, keepModalOpen = true) => {
+                            user={user}
+                            userProfile={userProfile}
+                            unlockedFeatures={unlockedFeatures}
+                            usageDays={usageDays}
+                            onUpdate={async (updatedMeal) => {
                                 const userId = user?.uid || DEV_USER_ID;
-                                const today = getTodayDate(); // today変数を定義
                                 try {
-                                    // 表示中の日付（currentDate）の記録を取得
                                     const currentRecord = await DataService.getDailyRecord(userId, currentDate);
                                     let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
 
-                                    // 元の食事を見つけて上書き（IDまたはタイムスタンプで識別）
-                                    const mealIndex = updatedRecord.meals.findIndex(m => {
-                                        // IDがある場合はIDで比較、なければタイムスタンプで比較
-                                        if (editingMeal.id && m.id) {
-                                            return m.id === editingMeal.id;
-                                        }
-                                        return m.timestamp === editingMeal.timestamp;
-                                    });
-
-                                    // 新しい食事データ（元のタイムスタンプとIDを維持）
-                                    const finalMeal = {
-                                        ...updatedMeal,
-                                        timestamp: editingMeal.timestamp, // 元のタイムスタンプを維持
-                                        id: editingMeal.id // 元のIDを維持（あれば）
-                                    };
-
+                                    // 既存の食事を更新
+                                    const mealIndex = updatedRecord.meals.findIndex(m => m.id === updatedMeal.id);
                                     if (mealIndex !== -1) {
-                                        // 元の食事を上書き（配列の同じ位置に置き換え）
-                                        updatedRecord.meals[mealIndex] = finalMeal;
-                                    } else {
-                                        // 見つからない場合は追加（念のため）
-                                        updatedRecord.meals.push(finalMeal);
+                                        updatedRecord.meals[mealIndex] = updatedMeal;
+                                        await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
+                                        setDailyRecord(updatedRecord);
+                                        setLastUpdate(Date.now());
                                     }
 
-                                    // 保存
-                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
-
-                                    // 状態を更新（即座にダッシュボードに反映）
-                                    setDailyRecord(updatedRecord);
-
-                                    // モーダルを維持する場合、editingMealを更新
-                                    if (keepModalOpen) {
-                                        setEditingMeal(finalMeal);
-                                    } else {
-                                        // モーダルを閉じる
-                                        setEditingMeal(null);
-                                        setShowAddView(false);
-                                        alert('食事を更新しました！');
-                                    }
+                                    setEditingMeal(null);
+                                    setShowAddView(false);
                                 } catch (error) {
                                     console.error('食事更新エラー:', error);
-                                    alert('食事の更新に失敗しました。');
                                 }
                             }}
                         />
@@ -1738,13 +1722,40 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         />
                     )}
 
-                    {/* 追加ビュー */}
-                    {showAddView && !editingMeal && !editingWorkout && (
-                        <AddItemView
-                            type={addViewType}
-                            editingTemplate={editingTemplate}
+                    {/* 新しい運動記録モーダル */}
+                    {showNewWorkoutModal && AddWorkoutModal && (
+                        <AddWorkoutModal
+                            onClose={() => setShowNewWorkoutModal(false)}
+                            onAdd={async (workout) => {
+                                const userId = user?.uid || DEV_USER_ID;
+                                try {
+                                    // 表示中の日付（currentDate）に記録を保存
+                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
+                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+
+                                    updatedRecord.workouts = [...(updatedRecord.workouts || []), workout];
+
+                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
+                                    setDailyRecord(updatedRecord);
+                                    setLastUpdate(Date.now());
+
+                                    setShowNewWorkoutModal(false);
+                                } catch (error) {
+                                    console.error('運動記録エラー:', error);
+                                    alert('運動の記録に失敗しました');
+                                }
+                            }}
+                            user={user}
+                            userProfile={userProfile}
+                            unlockedFeatures={unlockedFeatures}
+                            usageDays={usageDays}
+                        />
+                    )}
+
+                    {/* 追加ビュー - 新モーダル（食事の新規追加・編集） */}
+                    {showAddView && !editingWorkout && addViewType === 'meal' && (
+                        <AddMealModal
                             editingMeal={editingMeal}
-                            isTemplateMode={openedFromTemplateEditModal}
                             onClose={() => {
                                 setShowAddView(false);
                                 setEditingTemplate(null); // 編集テンプレートをクリア
@@ -1760,13 +1771,10 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     }
                                 }
                             }}
-                            predictedData={predictedData}
-                            unlockedFeatures={unlockedFeatures}
                             user={user}
                             userProfile={userProfile}
-                            currentRoutine={currentRoutine}
+                            unlockedFeatures={unlockedFeatures}
                             usageDays={usageDays}
-                            dailyRecord={dailyRecord}
                             onAdd={async (item) => {
                                 const userId = user?.uid || DEV_USER_ID;
 
@@ -1813,6 +1821,111 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     }
                                 } catch (error) {
                                     console.error('onAddエラー:', error);
+                                }
+                            }}
+                            onUpdate={async (updatedMeal) => {
+                                const userId = user?.uid || DEV_USER_ID;
+
+                                try {
+                                    // 表示中の日付（currentDate）の記録を取得
+                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
+                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+
+                                    // 既存の食事を更新
+                                    const mealIndex = updatedRecord.meals.findIndex(m => m.id === updatedMeal.id);
+                                    if (mealIndex !== -1) {
+                                        updatedRecord.meals[mealIndex] = updatedMeal;
+                                        await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
+                                        setDailyRecord(updatedRecord);
+                                        setLastUpdate(Date.now());
+                                    }
+
+                                    setShowAddView(false);
+                                    setEditingMeal(null);
+                                    if (openedFromSettings) {
+                                        setShowSettings(true);
+                                        setOpenedFromSettings(false);
+                                    }
+                                } catch (error) {
+                                    console.error('onUpdateエラー:', error);
+                                }
+                            }}
+                        />
+                    )}
+
+                    {/* 追加ビュー - 旧モーダル（運動・サプリメント・コンディション用） */}
+                    {showAddView && !editingWorkout && addViewType !== 'meal' && (
+                        <AddItemView
+                            type={addViewType}
+                            editingTemplate={editingTemplate}
+                            editingMeal={editingMeal}
+                            isTemplateMode={openedFromTemplateEditModal}
+                            onClose={() => {
+                                setShowAddView(false);
+                                setEditingTemplate(null);
+                                setEditingMeal(null);
+                                if (openedFromSettings) {
+                                    setShowSettings(true);
+                                    setOpenedFromSettings(false);
+                                    if (openedFromTemplateEditModal) {
+                                        setReopenTemplateEditModal(true);
+                                        setReopenTemplateEditType(addViewType);
+                                        setOpenedFromTemplateEditModal(false);
+                                    }
+                                }
+                            }}
+                            predictedData={predictedData}
+                            unlockedFeatures={unlockedFeatures}
+                            user={user}
+                            userProfile={userProfile}
+                            currentRoutine={currentRoutine}
+                            usageDays={usageDays}
+                            dailyRecord={dailyRecord}
+                            onAdd={async (item) => {
+                                const userId = user?.uid || DEV_USER_ID;
+
+                                try {
+                                    // 表示中の日付（currentDate）に記録を保存
+                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
+                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+
+                                    if (addViewType === 'workout') {
+                                        updatedRecord.workouts = [...(updatedRecord.workouts || []), item];
+                                    } else if (addViewType === 'supplement') {
+                                        updatedRecord.supplements = [...(updatedRecord.supplements || []), item];
+                                    } else if (addViewType === 'condition') {
+                                        updatedRecord.conditions = item;
+                                    }
+
+                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
+                                    setDailyRecord(updatedRecord);
+                                    setLastUpdate(Date.now());
+
+                                    // 新しい機能開放システム：記録追加後に完了チェックと機能開放状態を再計算
+                                    const oldUnlocked = [...unlockedFeatures];
+
+                                    await checkAndCompleteFeatures(userId, updatedRecord);
+                                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                    const newUnlocked = calculateUnlockedFeatures(userId, updatedRecord, isPremium);
+                                    setUnlockedFeatures(newUnlocked);
+
+                                    // 新しく開放された機能があれば誘導モーダルを表示
+                                    if (!oldUnlocked.includes('training') && newUnlocked.includes('training')) {
+                                        setShowTrainingGuide(true);
+                                    } else if (!oldUnlocked.includes('condition') && newUnlocked.includes('condition')) {
+                                        setShowConditionGuide(true);
+                                    } else if (!oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                        setShowAnalysisGuide(true);
+                                    }
+
+                                    setShowAddView(false);
+                                    if (openedFromSettings) {
+                                        setShowSettings(true);
+                                        setOpenedFromSettings(false);
+                                    }
+                                } catch (error) {
+                                    console.error('Error adding item:', error);
+                                    alert('記録の保存に失敗しました');
                                 }
                             }}
                         />

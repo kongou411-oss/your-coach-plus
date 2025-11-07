@@ -6,22 +6,36 @@ import React, { useState, useEffect } from 'react';
 // Props:
 // - onClose: () => void - モーダルを閉じる
 // - onAdd: (meal) => void - 食事を記録
+// - onUpdate: (meal) => void - 食事を更新（編集モード時）
+// - editingMeal: Object | null - 編集対象の食事データ
 // - user: Object - ユーザー情報
 // - userProfile: Object - ユーザープロフィール
 // - unlockedFeatures: Array - 解放済み機能
 // - usageDays: Number - 利用日数
 
-const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = [], usageDays = 0 }) => {
+const AddMealModal = ({
+    onClose,
+    onAdd,
+    onUpdate,
+    editingMeal = null,
+    user,
+    userProfile,
+    unlockedFeatures = [],
+    usageDays = 0
+}) => {
+    // ===== 編集モード判定 =====
+    const isEditMode = !!editingMeal;
+
     // ===== State管理 =====
-    const [mealName, setMealName] = useState('食事');
+    const [mealName, setMealName] = useState(isEditMode ? editingMeal.name : '食事');
     const [isEditingMealName, setIsEditingMealName] = useState(false); // 食事名編集モード
     const [mealTemplates, setMealTemplates] = useState([]);
-    const [addedItems, setAddedItems] = useState([]);
+    const [addedItems, setAddedItems] = useState(isEditMode ? editingMeal.items || [] : []);
     const [showSearchModal, setShowSearchModal] = useState(false);
     const [showAIFoodRecognition, setShowAIFoodRecognition] = useState(false);
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
     const [showCustomForm, setShowCustomForm] = useState(false);
-    const [selectedTemplate, setSelectedTemplate] = useState(null); // 選択中のテンプレート（詳細表示用）
+    const [showHelpModal, setShowHelpModal] = useState(false); // ヘルプモーダル
 
     // 検索モーダル用のstate
     const [searchTerm, setSearchTerm] = useState('');
@@ -114,7 +128,6 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
     const loadTemplate = (template) => {
         setMealName(template.name);
         setAddedItems(JSON.parse(JSON.stringify(template.items))); // ディープコピー
-        setSelectedTemplate(null);
     };
 
     // ===== テンプレートから直接記録 =====
@@ -143,6 +156,7 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
             fat: totalPFC.fat,
             carbs: totalPFC.carbs,
             totalCalories: totalPFC.calories,
+            isTemplate: true, // テンプレートタグ
         };
 
         onAdd(meal);
@@ -150,13 +164,9 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
 
     // ===== テンプレート削除 =====
     const deleteTemplate = async (templateId) => {
-        if (!confirm('このテンプレートを削除しますか？')) {
-            return;
-        }
         await DataService.deleteMealTemplate(user.uid, templateId);
         const templates = await DataService.getMealTemplates(user.uid);
         setMealTemplates(templates);
-        setSelectedTemplate(null);
         alert('テンプレートを削除しました');
     };
 
@@ -207,10 +217,10 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
         const totalPFC = calculateTotalPFC();
 
         const meal = {
-            id: Date.now(),
+            id: isEditMode ? editingMeal.id : Date.now(),
             name: mealName,
             items: addedItems,
-            time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+            time: isEditMode ? editingMeal.time : new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
             calories: totalPFC.calories,
             protein: totalPFC.protein,
             fat: totalPFC.fat,
@@ -218,7 +228,12 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
             totalCalories: totalPFC.calories,
         };
 
-        onAdd(meal);
+        // 編集モードの場合はonUpdate、新規追加の場合はonAddを呼ぶ
+        if (isEditMode && onUpdate) {
+            onUpdate(meal);
+        } else if (onAdd) {
+            onAdd(meal);
+        }
     };
 
     // ===== テンプレートとして保存 =====
@@ -311,9 +326,20 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                                 </>
                             )}
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-                            <Icon name="X" size={20} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            {/* ヘルプボタン */}
+                            <button
+                                onClick={() => setShowHelpModal(true)}
+                                className="p-2 hover:bg-blue-50 rounded-full transition"
+                                title="使い方"
+                            >
+                                <Icon name="HelpCircle" size={20} className="text-[#4A9EFF]" />
+                            </button>
+                            {/* 閉じるボタン */}
+                            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -372,20 +398,47 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                                 return (
                                     <div
                                         key={index}
-                                        onClick={() => {
-                                            setSelectedItemIndex(index);
-                                            setOriginalAmount(item.amount); // 元の量を保存
-                                        }}
-                                        className={`bg-white p-3 rounded-lg border-2 cursor-pointer transition ${
-                                            isSelected ? 'border-blue-500 shadow-md' : 'border-gray-200 hover:border-gray-300'
+                                        className={`bg-white p-3 rounded-lg border-2 transition ${
+                                            isSelected ? 'border-blue-500 shadow-md' : 'border-gray-200'
                                         }`}
                                     >
                                         <div className="flex justify-between items-start">
-                                            <div className="flex-1">
+                                            <div
+                                                className="flex-1 cursor-pointer"
+                                                onClick={() => {
+                                                    setSelectedItemIndex(index);
+                                                    setOriginalAmount(item.amount); // 元の量を保存
+                                                }}
+                                            >
                                                 <div className="font-semibold text-gray-900">{item.name}</div>
                                                 <div className="text-sm text-gray-600 mt-1">
                                                     {item.amount}{item.unit || 'g'}
                                                 </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 ml-2">
+                                                {/* 編集ボタン（量調整を開く） */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedItemIndex(index);
+                                                        setOriginalAmount(item.amount);
+                                                    }}
+                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                    title="編集"
+                                                >
+                                                    <Icon name="Edit" size={18} />
+                                                </button>
+                                                {/* 削除ボタン */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        removeItem(index);
+                                                    }}
+                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                    title="削除"
+                                                >
+                                                    <Icon name="Trash2" size={18} />
+                                                </button>
                                             </div>
                                         </div>
                                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
@@ -534,16 +587,7 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                         写真解析
                     </button>
 
-                    {/* 2行目：テンプレート */}
-                    <button
-                        onClick={() => setShowTemplateSelector(true)}
-                        className="w-full px-4 py-3 bg-purple-50 border-2 border-purple-400 text-purple-700 rounded-lg font-semibold hover:bg-purple-100 transition"
-                    >
-                        <Icon name="BookTemplate" size={16} className="inline mr-1" />
-                        テンプレート
-                    </button>
-
-                    {/* 3行目：一覧から検索 */}
+                    {/* 2行目：一覧から検索 */}
                     <button
                         onClick={() => setShowSearchModal(true)}
                         className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg font-semibold transition"
@@ -552,7 +596,7 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                         一覧から検索
                     </button>
 
-                    {/* 4行目：カスタム作成 */}
+                    {/* 3行目：カスタム作成 */}
                     <button
                         onClick={() => setShowCustomForm(true)}
                         className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 rounded-lg font-semibold transition"
@@ -561,7 +605,16 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                         カスタム作成
                     </button>
 
-                    {/* 5行目：記録 */}
+                    {/* 4行目：テンプレート */}
+                    <button
+                        onClick={() => setShowTemplateSelector(true)}
+                        className="w-full px-4 py-3 bg-purple-50 border-2 border-purple-400 text-purple-700 rounded-lg font-semibold hover:bg-purple-100 transition"
+                    >
+                        <Icon name="BookTemplate" size={16} className="inline mr-1" />
+                        テンプレート
+                    </button>
+
+                    {/* 5行目：記録/更新 */}
                     <button
                         onClick={handleRecord}
                         disabled={addedItems.length === 0}
@@ -571,7 +624,7 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                                 : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
                         }`}
                     >
-                        記録
+                        {isEditMode ? '更新' : '記録'}
                     </button>
                 </div>
             </div>
@@ -582,10 +635,6 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                 // グローバルから食材データベースを取得
                 const foodDB = window.foodDB || {};
 
-                console.log('[19_add_meal_modal] foodDB:', foodDB);
-                console.log('[19_add_meal_modal] foodDB type:', typeof foodDB);
-                console.log('[19_add_meal_modal] foodDB keys:', Object.keys(foodDB));
-                console.log('[19_add_meal_modal] Sample data:', foodDB['肉類'] ? Object.keys(foodDB['肉類']).slice(0, 3) : 'none');
 
                 // カスタムアイテムをlocalStorageから取得
                 const getCustomFoods = () => {
@@ -598,14 +647,13 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
 
                 // カテゴリリスト（サプリメントを除く）
                 const categories = Object.keys(foodDB).filter(cat => cat !== 'サプリメント');
-                console.log('categories:', categories);
 
                 // 検索結果のフィルタリング
                 const getFilteredItems = () => {
                     let items = [];
                     const db = foodDB;
 
-                    // カスタムアイテムを追加
+                    // カスタムアイテムを取得
                     const customFoods = getCustomFoods();
                     const customItems = customFoods.filter(item => {
                         if (foodTab === 'food' && item.itemType === 'food') return true;
@@ -614,7 +662,20 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                         return false;
                     });
 
-                    // タブに応じてカテゴリを決定
+                    // 料理タブの場合は、カスタム料理のみを表示（foodDBからは取得しない）
+                    if (foodTab === 'recipe') {
+                        customItems.forEach(item => {
+                            if (!searchTerm || item.name.includes(searchTerm)) {
+                                items.push({
+                                    ...item,
+                                    isCustom: true
+                                });
+                            }
+                        });
+                        return items;
+                    }
+
+                    // タブに応じてカテゴリを決定（food, supplementのみ）
                     let targetCategory = selectedCategory;
                     if (foodTab === 'supplement') {
                         targetCategory = 'サプリメント';
@@ -623,10 +684,6 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                         targetCategory = Object.keys(db).filter(cat => cat !== 'サプリメント')[0] || '肉類';
                     }
 
-                    console.log('[19_add_meal_modal] foodTab:', foodTab);
-                    console.log('[19_add_meal_modal] targetCategory:', targetCategory);
-                    console.log('[19_add_meal_modal] db[targetCategory] exists:', !!db[targetCategory]);
-                    console.log('[19_add_meal_modal] db[targetCategory] length:', db[targetCategory] ? Object.keys(db[targetCategory]).length : 0);
 
                     if (db && targetCategory && db[targetCategory]) {
                         Object.keys(db[targetCategory]).forEach(name => {
@@ -652,9 +709,8 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                         });
                     }
 
-                    console.log('filtered items:', items.length);
 
-                    // カスタムアイテムを追加
+                    // カスタムアイテムを追加（food, supplementのみ）
                     customItems.forEach(item => {
                         if (!searchTerm || item.name.includes(searchTerm)) {
                             items.push({
@@ -679,7 +735,6 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                     const unitStr = String(item.unit || '');
                     const isCountUnit = unitStr.includes('個') || unitStr.includes('本') || unitStr.includes('杯') || unitStr.includes('枚') || unitStr.includes('錠');
 
-                    console.log('[handleSelectItem]', item.name, 'unit:', item.unit, 'unitStr:', unitStr, 'isCountUnit:', isCountUnit);
 
                     if (isCountUnit) {
                         defaultAmount = 1;
@@ -690,7 +745,6 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                         defaultAmount = item.servingSize;
                     }
 
-                    console.log('[handleSelectItem] defaultAmount:', defaultAmount, 'defaultUnit:', defaultUnit);
 
                     const newItem = {
                         id: Date.now(),
@@ -979,49 +1033,87 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                                     }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
 
                                     return (
-                                        <div key={template.id} className="bg-gray-50 border-2 border-gray-200 rounded-lg p-3">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="font-semibold text-gray-900">{template.name}</div>
+                                        <details key={template.id} className="bg-gray-50 border-2 border-gray-200 rounded-lg group">
+                                            <summary className="p-3 cursor-pointer list-none">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="font-semibold text-gray-900">{template.name}</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                loadTemplate(template);
+                                                                setShowTemplateSelector(false);
+                                                            }}
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                            title="編集"
+                                                        >
+                                                            <Icon name="Edit" size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                if (confirm(`テンプレート「${template.name}」を削除しますか？`)) {
+                                                                    deleteTemplate(template.id);
+                                                                }
+                                                            }}
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                            title="削除"
+                                                        >
+                                                            <Icon name="Trash2" size={18} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="text-xs text-gray-600 mb-2">
+                                                    {template.items.length}品目
+                                                </div>
+                                                <div className="text-xs mb-3 flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-semibold" style={{color: '#60a5fa'}}>{Math.round(totalPFC.calories)}kcal</span>
+                                                        <span className="text-gray-400">|</span>
+                                                        <span className="text-red-500 font-semibold">P {Math.round(totalPFC.protein)}g</span>
+                                                        <span className="text-gray-400">|</span>
+                                                        <span className="text-yellow-500 font-semibold">F {Math.round(totalPFC.fat)}g</span>
+                                                        <span className="text-gray-400">|</span>
+                                                        <span className="text-green-500 font-semibold">C {Math.round(totalPFC.carbs)}g</span>
+                                                    </div>
+                                                    <Icon name="ChevronRight" size={16} className="text-gray-600 group-open:rotate-90 transition-transform" />
+                                                </div>
                                                 <button
-                                                    onClick={() => setSelectedTemplate(template)}
-                                                    className="text-xs text-blue-600 hover:text-blue-800"
-                                                >
-                                                    詳細
-                                                </button>
-                                            </div>
-                                            <div className="text-xs text-gray-600 mb-2">
-                                                {template.items.length}品目
-                                            </div>
-                                            <div className="text-xs mb-3 flex items-center gap-2">
-                                                <span className="font-semibold" style={{color: '#60a5fa'}}>{Math.round(totalPFC.calories)}kcal</span>
-                                                <span className="text-gray-400">|</span>
-                                                <span className="text-red-500 font-semibold">P {Math.round(totalPFC.protein)}g</span>
-                                                <span className="text-gray-400">|</span>
-                                                <span className="text-yellow-500 font-semibold">F {Math.round(totalPFC.fat)}g</span>
-                                                <span className="text-gray-400">|</span>
-                                                <span className="text-green-500 font-semibold">C {Math.round(totalPFC.carbs)}g</span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        loadTemplate(template);
-                                                        setShowTemplateSelector(false);
-                                                    }}
-                                                    className="flex-1 px-4 py-2 bg-white border-2 border-blue-500 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition text-sm"
-                                                >
-                                                    編集
-                                                </button>
-                                                <button
-                                                    onClick={() => {
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
                                                         addFromTemplate(template);
                                                         setShowTemplateSelector(false);
                                                     }}
-                                                    className="flex-1 px-4 py-2 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] transition text-sm"
+                                                    className="w-full px-4 py-2 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] transition text-sm"
                                                 >
-                                                    追加
+                                                    記録
                                                 </button>
+                                            </summary>
+                                            <div className="px-3 pb-3 border-t border-gray-300">
+                                                <div className="text-xs font-medium text-gray-600 mt-2 mb-2">内訳を表示</div>
+                                                <div className="space-y-2">
+                                                    {template.items.map((item, idx) => {
+                                                        const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
+                                                        const ratio = isCountUnit ? item.amount : item.amount / 100;
+                                                        return (
+                                                            <div key={idx} className="bg-white p-2 rounded text-xs border border-gray-200">
+                                                                <div className="font-semibold">{item.name}</div>
+                                                                <div className="text-gray-600 mt-1">{item.amount}{item.unit || 'g'}</div>
+                                                                <div className="text-gray-500 mt-1 flex gap-2">
+                                                                    <span style={{color: '#60a5fa'}}>{Math.round((item.calories || 0) * ratio)}kcal</span>
+                                                                    <span className="text-red-500">P {Math.round((item.protein || 0) * ratio * 10) / 10}g</span>
+                                                                    <span className="text-yellow-500">F {Math.round((item.fat || 0) * ratio * 10) / 10}g</span>
+                                                                    <span className="text-green-500">C {Math.round((item.carbs || 0) * ratio * 10) / 10}g</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                        </div>
+                                        </details>
                                     );
                                 })}
                                 </div>
@@ -1041,105 +1133,13 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                 </div>
             )}
 
-            {/* テンプレート詳細モーダル */}
-            {selectedTemplate && (() => {
-                const totalPFC = selectedTemplate.items.reduce((sum, item) => {
-                    const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
-                    const ratio = isCountUnit ? item.amount : item.amount / 100;
-                    return {
-                        calories: sum.calories + (item.calories || 0) * ratio,
-                        protein: sum.protein + (item.protein || 0) * ratio,
-                        fat: sum.fat + (item.fat || 0) * ratio,
-                        carbs: sum.carbs + (item.carbs || 0) * ratio,
-                    };
-                }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
-
-                return (
-                    <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col">
-                            {/* ヘッダー */}
-                            <div className="bg-purple-600 text-white p-4 flex justify-between items-center">
-                                <h3 className="text-lg font-bold">テンプレート</h3>
-                                <button onClick={() => setSelectedTemplate(null)} className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full">
-                                    <Icon name="X" size={20} />
-                                </button>
-                            </div>
-
-                            {/* コンテンツ */}
-                            <div className="flex-1 overflow-y-auto p-4">
-                                {/* テンプレート名 */}
-                                <h4 className="text-xl font-bold mb-2">{selectedTemplate.name}</h4>
-
-                                {/* 合計栄養素 */}
-                                <div className="bg-gray-50 p-3 rounded-lg mb-4">
-                                    <div className="text-sm font-semibold mb-2" style={{color: '#60a5fa'}}>
-                                        {Math.round(totalPFC.calories)}kcal
-                                    </div>
-                                    <div className="flex gap-3 text-xs">
-                                        <span className="text-red-500 font-semibold">P {Math.round(totalPFC.protein)}g</span>
-                                        <span className="text-yellow-500 font-semibold">F {Math.round(totalPFC.fat)}g</span>
-                                        <span className="text-green-500 font-semibold">C {Math.round(totalPFC.carbs)}g</span>
-                                    </div>
-                                </div>
-
-                                {/* アイテム一覧 */}
-                                <div className="space-y-2">
-                                    <div className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                                        <Icon name="ChevronDown" size={14} />
-                                        内容を表示
-                                    </div>
-                                    {selectedTemplate.items.map((item, idx) => {
-                                        const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
-                                        const ratio = isCountUnit ? item.amount : item.amount / 100;
-                                        return (
-                                            <div key={idx} className="bg-gray-50 p-2 rounded text-xs">
-                                                <div className="font-semibold">{item.name}</div>
-                                                <div className="text-gray-600 mt-1">{item.amount}{item.unit || 'g'}</div>
-                                                <div className="text-gray-500 mt-1">
-                                                    {Math.round((item.calories || 0) * ratio)}kcal
-                                                    <span className="text-red-500 ml-2">P {Math.round((item.protein || 0) * ratio * 10) / 10}g</span>
-                                                    <span className="text-yellow-500 ml-1">F {Math.round((item.fat || 0) * ratio * 10) / 10}g</span>
-                                                    <span className="text-green-500 ml-1">C {Math.round((item.carbs || 0) * ratio * 10) / 10}g</span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* フッター */}
-                            <div className="border-t p-4 flex gap-2">
-                                <button
-                                    onClick={() => loadTemplate(selectedTemplate)}
-                                    className="flex-1 px-4 py-3 bg-white border-2 border-blue-500 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition"
-                                >
-                                    <Icon name="Pencil" size={16} className="inline mr-1" />
-                                    編集
-                                </button>
-                                <button
-                                    onClick={() => deleteTemplate(selectedTemplate.id)}
-                                    className="px-4 py-3 bg-white border-2 border-red-500 text-red-600 rounded-lg font-semibold hover:bg-red-50 transition"
-                                >
-                                    <Icon name="Trash2" size={16} />
-                                </button>
-                                <button
-                                    onClick={() => addFromTemplate(selectedTemplate)}
-                                    className="flex-1 px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] shadow-lg transition"
-                                >
-                                    追加
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                );
-            })()}
 
             {/* カスタムアイテム作成モーダル */}
             {showCustomForm && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
                         {/* ヘッダー */}
-                        <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                        <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
                             <h3 className="text-lg font-bold flex items-center gap-2">
                                 <Icon name="Edit" size={20} />
                                 カスタムアイテムを作成
@@ -1213,19 +1213,19 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                             </div>
 
                             {/* サブカテゴリ & 1回分の量 */}
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="flex gap-2">
                                 {customData.itemType === 'recipe' ? (
                                     <input
                                         type="text"
                                         value="料理"
                                         disabled
-                                        className="w-full px-3 py-2 text-sm border rounded-lg bg-gray-100"
+                                        className="flex-1 px-3 py-2 text-sm border rounded-lg bg-gray-100"
                                     />
                                 ) : (
                                     <select
                                         value={customData.category}
                                         onChange={(e) => setCustomData({...customData, category: e.target.value})}
-                                        className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        className="flex-1 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                                     >
                                         {customData.itemType === 'supplement' ? (
                                             <>
@@ -1249,24 +1249,22 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                                         )}
                                     </select>
                                 )}
-                                <div className="flex gap-2">
-                                    <input
-                                        type="number"
-                                        value={customData.servingSize}
-                                        onChange={(e) => setCustomData({...customData, servingSize: parseFloat(e.target.value) || 0})}
-                                        placeholder="1回分の量"
-                                        className="flex-1 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                    />
-                                    <select
-                                        value={customData.servingUnit}
-                                        onChange={(e) => setCustomData({...customData, servingUnit: e.target.value})}
-                                        className="px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                    >
-                                        <option value="g">g</option>
-                                        <option value="mg">mg</option>
-                                        <option value="ml">ml</option>
-                                    </select>
-                                </div>
+                                <input
+                                    type="number"
+                                    value={customData.servingSize}
+                                    onChange={(e) => setCustomData({...customData, servingSize: parseFloat(e.target.value) || 0})}
+                                    placeholder="100"
+                                    className="w-20 px-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none text-center"
+                                />
+                                <select
+                                    value={customData.servingUnit}
+                                    onChange={(e) => setCustomData({...customData, servingUnit: e.target.value})}
+                                    className="w-16 px-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                >
+                                    <option value="g">g</option>
+                                    <option value="mg">mg</option>
+                                    <option value="ml">ml</option>
+                                </select>
                             </div>
 
                             {/* 基本栄養素 */}
@@ -1453,6 +1451,12 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
                             {/* 保存ボタン */}
                             <div className="flex gap-2 pt-4">
                                 <button
+                                    onClick={() => setShowCustomForm(false)}
+                                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                                >
+                                    キャンセル
+                                </button>
+                                <button
                                     onClick={() => {
                                         if (!customData.name.trim()) {
                                             alert('アイテム名を入力してください');
@@ -1491,17 +1495,143 @@ const AddMealModal = ({ onClose, onAdd, user, userProfile, unlockedFeatures = []
 
                                         setShowCustomForm(false);
                                     }}
-                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-bold shadow-md"
+                                    className="flex-1 px-4 py-3 bg-[#4A9EFF] text-white rounded-lg hover:bg-[#3b8fef] font-bold shadow-md"
                                 >
                                     追加
                                 </button>
-                                <button
-                                    onClick={() => setShowCustomForm(false)}
-                                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
-                                >
-                                    キャンセル
-                                </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ヘルプモーダル */}
+            {showHelpModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100000] p-4">
+                    <div className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl">
+                        {/* ヘッダー */}
+                        <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between rounded-t-2xl">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <Icon name="HelpCircle" size={24} className="text-[#4A9EFF]" />
+                                食事記録の使い方
+                            </h3>
+                            <button
+                                onClick={() => setShowHelpModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition"
+                            >
+                                <Icon name="X" size={20} className="text-gray-600" />
+                            </button>
+                        </div>
+
+                        {/* コンテンツ */}
+                        <div className="p-6 space-y-6">
+                            {/* ステップ1 */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center font-bold text-sm">
+                                        1
+                                    </div>
+                                    <h4 className="font-bold text-gray-800">食事名を入力</h4>
+                                </div>
+                                <p className="text-sm text-gray-600 ml-10">
+                                    例：朝食、昼食、夕食、間食など、わかりやすい名前を付けましょう。
+                                </p>
+                            </div>
+
+                            {/* ステップ2 */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center font-bold text-sm">
+                                        2
+                                    </div>
+                                    <h4 className="font-bold text-gray-800">食材を追加</h4>
+                                </div>
+                                <div className="ml-10 space-y-2">
+                                    <div className="flex items-start gap-2">
+                                        <Icon name="Search" size={16} className="text-[#4A9EFF] mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-700">一覧から検索</p>
+                                            <p className="text-xs text-gray-500">データベースから食材を検索して追加</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <Icon name="BookTemplate" size={16} className="text-purple-600 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-700">テンプレート</p>
+                                            <p className="text-xs text-gray-500">よく食べる食事を保存したテンプレートを使用</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <Icon name="Plus" size={16} className="text-green-600 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-700">カスタム作成</p>
+                                            <p className="text-xs text-gray-500">オリジナルの食材や料理を作成</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ステップ3 */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center font-bold text-sm">
+                                        3
+                                    </div>
+                                    <h4 className="font-bold text-gray-800">量を調整</h4>
+                                </div>
+                                <p className="text-sm text-gray-600 ml-10">
+                                    追加した食材の量を調整します。±ボタンやタップで数値を変更できます。
+                                </p>
+                            </div>
+
+                            {/* ステップ4 */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-sm">
+                                        4
+                                    </div>
+                                    <h4 className="font-bold text-gray-800">テンプレート保存（任意）</h4>
+                                </div>
+                                <p className="text-sm text-gray-600 ml-10">
+                                    よく食べる食事は「テンプレートとして保存」にチェックを入れると、次回から簡単に記録できます。
+                                </p>
+                            </div>
+
+                            {/* ステップ5 */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold text-sm">
+                                        5
+                                    </div>
+                                    <h4 className="font-bold text-gray-800">記録完了</h4>
+                                </div>
+                                <p className="text-sm text-gray-600 ml-10">
+                                    「記録」ボタンを押すと、食事が保存されます。{isEditMode ? '編集モードでは、既存の食事が更新されます。' : ''}
+                                </p>
+                            </div>
+
+                            {/* Tips */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                                <div className="flex items-center gap-2 text-[#4A9EFF] font-bold">
+                                    <Icon name="Lightbulb" size={18} />
+                                    <span className="text-sm">便利な機能</span>
+                                </div>
+                                <ul className="text-xs text-gray-700 space-y-1 ml-6 list-disc">
+                                    <li>検索モーダルでカテゴリを選択すると、素早く食材を見つけられます</li>
+                                    <li>食材カードをタップすると、栄養情報の詳細を確認できます</li>
+                                    <li>テンプレートから記録した食事には、紫のタグが表示されます</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* フッター */}
+                        <div className="sticky bottom-0 bg-white border-t p-4 rounded-b-2xl">
+                            <button
+                                onClick={() => setShowHelpModal(false)}
+                                className="w-full bg-[#4A9EFF] text-white py-3 rounded-xl font-bold hover:bg-[#3A8EEF] transition"
+                            >
+                                閉じる
+                            </button>
                         </div>
                     </div>
                 </div>

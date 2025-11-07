@@ -1585,6 +1585,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
             const [exercises, setExercises] = useState([]);
             const [currentExercise, setCurrentExercise] = useState(null);
             const [sets, setSets] = useState([]);
+            const [isFromTemplate, setIsFromTemplate] = useState(false); // テンプレートから読み込んだか
             const [currentSet, setCurrentSet] = useState({
                 weight: 50,
                 reps: 10,
@@ -2640,6 +2641,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                         setCurrentExercise(template.exercise);
                         setSets(template.sets || []);
                     }
+                    setIsFromTemplate(true); // テンプレートから読み込んだことをマーク
                     setShowTemplates(false);
                 };
 
@@ -2696,6 +2698,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                             ? (exercises[0].exercise?.name || exercises[0].name)
                             : `${exercises[0].exercise?.category || exercises[0].category}トレーニング`, // 複数種目の場合はカテゴリ名
                         category: exercises[0].exercise?.category || exercises[0].category,
+                        isTemplate: isFromTemplate, // テンプレートから読み込んだ場合はtrueを付与
                         exercises: exercises.map(ex => {
                             // 有酸素・ストレッチの場合（exercise プロパティがない）
                             if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
@@ -2748,33 +2751,25 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                     <div className="space-y-4">
                         {/* ①どうやって記録しますか？ */}
                         {!currentExercise && !showCustomExerciseForm && (
-                            <div className="space-y-3">
-                                <p className="text-center text-base font-medium text-gray-700 mb-4">どうやって記録しますか？</p>
-
-                                {/* 種目を検索（グレー背景、グレー枠） */}
+                            <div className="space-y-2">
+                                {/* 一覧から検索（白背景、グレー枠） */}
                                 <button
                                     type="button"
                                     onClick={() => setShowSearchModal(true)}
-                                    className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                    className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg font-semibold transition"
                                 >
-                                    <Icon name="Search" size={32} />
-                                    <div className="text-left flex-1">
-                                        <div className="font-bold text-base">種目を検索</div>
-                                        <div className="text-xs text-gray-500 mt-0.5">データベースから選択</div>
-                                    </div>
+                                    <Icon name="Search" size={16} className="inline mr-1" />
+                                    一覧から検索
                                 </button>
 
-                                {/* 手動で作成（グレー背景、グレー枠） */}
+                                {/* カスタム作成（白背景、グレー枠） */}
                                 <button
                                     type="button"
                                     onClick={() => setShowCustomExerciseForm(true)}
-                                    className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                    className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 rounded-lg font-semibold transition"
                                 >
-                                    <Icon name="Plus" size={32} />
-                                    <div className="text-left flex-1">
-                                        <div className="font-bold text-base">手動で作成</div>
-                                        <div className="text-xs text-gray-500 mt-0.5">カスタム種目を登録</div>
-                                    </div>
+                                    <Icon name="Edit" size={16} className="inline mr-1" />
+                                    カスタム作成
                                 </button>
 
                                 {/* テンプレート - 12日以上で開放 */}
@@ -2782,13 +2777,10 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                     <button
                                         type="button"
                                         onClick={() => setShowTemplates(!showTemplates)}
-                                        className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                        className="w-full px-4 py-3 bg-purple-50 border-2 border-purple-400 text-purple-700 rounded-lg font-semibold hover:bg-purple-100 transition"
                                     >
-                                        <Icon name="BookTemplate" size={32} />
-                                        <div className="text-left flex-1">
-                                            <div className="font-bold text-base">テンプレート</div>
-                                            <div className="text-xs text-gray-500 mt-0.5">保存したワークアウトを呼び出す</div>
-                                        </div>
+                                        <Icon name="BookTemplate" size={16} className="inline mr-1" />
+                                        テンプレート
                                     </button>
                                 )}
                             </div>
@@ -2796,47 +2788,56 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
 
                         {/* テンプレートモーダル */}
                         {showTemplates && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                                <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
-                                    <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-                                        <h3 className="text-lg font-bold">テンプレート</h3>
+                            <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+                                <div className="bg-white rounded-2xl w-full max-w-md max-h-[70vh] overflow-hidden flex flex-col">
+                                    {/* ヘッダー */}
+                                    <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center">
+                                        <h3 className="text-lg font-bold flex items-center gap-2">
+                                            <Icon name="BookMarked" size={20} />
+                                            テンプレートから選択
+                                        </h3>
                                         <button
                                             onClick={() => setShowTemplates(false)}
-                                            className="text-gray-500 hover:text-gray-700"
+                                            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full"
                                         >
-                                            <Icon name="X" size={24} />
+                                            <Icon name="X" size={20} />
                                         </button>
                                     </div>
-                                    <div className="p-4 space-y-3">
-                                        {/* テンプレート一覧 */}
-                                        {workoutTemplates.length > 0 ? (
+
+                                    {/* テンプレート一覧 */}
+                                    <div className="flex-1 overflow-y-auto p-4">
+                                        {workoutTemplates.length === 0 ? (
+                                            <div className="text-center py-12">
+                                                <Icon name="BookMarked" size={48} className="mx-auto mb-3 opacity-30 text-purple-600" />
+                                                <p className="text-gray-900 font-semibold mb-2">まだテンプレートがありません</p>
+                                                <p className="text-sm text-gray-600 px-4">
+                                                    種目を追加後に「保存」ボタンで保存するか、<br/>
+                                                    ダッシュボードのテンプレートボタンから作成できます
+                                                </p>
+                                            </div>
+                                        ) : (
                                             <div className="space-y-2">
                                                 {workoutTemplates.map(template => {
-                                                    // 種目数、総セット数、総時間を計算
+                                                    // 種目数、総セット数、総重量、総時間を計算
                                                     const exerciseCount = template.exercises?.length || 0;
                                                     let totalSets = 0;
+                                                    let totalVolume = 0;
                                                     let totalDuration = 0;
 
                                                     template.exercises?.forEach(exercise => {
                                                         totalSets += exercise.sets?.length || 0;
                                                         exercise.sets?.forEach(set => {
+                                                            totalVolume += (set.weight || 0) * (set.reps || 0);
                                                             totalDuration += set.duration || 0;
                                                         });
                                                     });
 
                                                     return (
-                                                        <details key={template.id} className="bg-gray-50 rounded-lg border border-gray-200">
-                                                            <summary className="p-3 cursor-pointer hover:bg-gray-100 rounded-lg list-none">
+                                                        <details key={template.id} className="bg-gray-50 border-2 border-gray-200 rounded-lg group">
+                                                            <summary className="p-3 cursor-pointer list-none">
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <div className="flex-1">
-                                                                        <p className="font-medium">{template.name}</p>
-                                                                        <p className="text-xs text-gray-600 mt-1">
-                                                                            <span className="text-orange-600">{exerciseCount}種目</span>
-                                                                            <span className="text-orange-600 ml-2"> | {totalSets}セット</span>
-                                                                            <span className="text-orange-600 ml-2"> | {totalDuration}分</span>
-                                                                        </p>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2 ml-2">
+                                                                    <div className="font-semibold text-gray-900">{template.name}</div>
+                                                                    <div className="flex items-center gap-2">
                                                                         <button
                                                                             onClick={(e) => {
                                                                                 e.preventDefault();
@@ -2847,99 +2848,99 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                                             className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
                                                                             title="編集"
                                                                         >
-                                                                            <Icon name="Pencil" size={18} />
+                                                                            <Icon name="Edit" size={18} />
                                                                         </button>
                                                                         <button
                                                                             onClick={(e) => {
                                                                                 e.preventDefault();
                                                                                 e.stopPropagation();
-                                                                                deleteTemplate(template.id);
+                                                                                if (confirm(`テンプレート「${template.name}」を削除しますか？`)) {
+                                                                                    deleteTemplate(template.id);
+                                                                                }
                                                                             }}
                                                                             className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                                             title="削除"
-                                                                            >
+                                                                        >
                                                                             <Icon name="Trash2" size={18} />
                                                                         </button>
                                                                     </div>
                                                                 </div>
+                                                                <div className="text-xs text-gray-600 mb-2">
+                                                                    {exerciseCount}種目
+                                                                </div>
+                                                                <div className="text-xs mb-3 flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-orange-600 font-semibold">{totalSets}セット</span>
+                                                                        {totalVolume > 0 && (
+                                                                            <>
+                                                                                <span className="text-gray-400">|</span>
+                                                                                <span className="text-orange-600 font-semibold">{totalVolume}kg</span>
+                                                                            </>
+                                                                        )}
+                                                                        {totalDuration > 0 && (
+                                                                            <>
+                                                                                <span className="text-gray-400">|</span>
+                                                                                <span className="text-orange-600 font-semibold">{totalDuration}分</span>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                    <Icon name="ChevronRight" size={16} className="text-gray-600 group-open:rotate-90 transition-transform" />
+                                                                </div>
 
-                                                                {/* 追加ボタン */}
                                                                 <button
-                                                                    onClick={async (e) => {
+                                                                    onClick={(e) => {
                                                                         e.preventDefault();
                                                                         e.stopPropagation();
-                                                                        console.log('[Workout Template Add] 追加ボタンがクリックされました');
-                                                                        console.log('[Workout Template Add] テンプレートの運動:', template.exercises);
-
-                                                                        // テンプレートの運動を直接ダッシュボードに追加
                                                                         const workoutData = {
                                                                             name: template.name,
                                                                             timestamp: new Date().toISOString(),
                                                                             time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
                                                                             exercises: template.exercises,
-                                                                            isTemplate: true // テンプレートタグ
+                                                                            isTemplate: true
                                                                         };
-                                                                        console.log('[Workout Template Add] ダッシュボードに追加:', workoutData);
-                                                                        await onAdd(workoutData);
-
+                                                                        onAdd(workoutData);
                                                                         setShowTemplates(false);
-                                                                        onClose(); // モーダルを閉じる
-                                                                        console.log('[Workout Template Add] 追加完了');
+                                                                        onClose();
                                                                     }}
-                                                                    className="w-full py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm"
+                                                                    className="w-full px-4 py-2 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] transition text-sm"
                                                                 >
-                                                                    追加
+                                                                    記録
                                                                 </button>
                                                             </summary>
 
-                                                            {/* 運動一覧（折りたたみ） */}
-                                                            <div className="px-3 pb-3 pt-2 space-y-2 border-t border-gray-200">
-                                                                {template.exercises?.map((exercise, exIdx) => (
-                                                                    <div key={exIdx} className="text-sm pt-2">
-                                                                        <p className="font-medium text-gray-800">{exercise.name}</p>
-                                                                        <div className="ml-2 mt-1 space-y-1">
-                                                                            {exercise.sets?.map((set, setIdx) => (
-                                                                                <p key={setIdx} className="text-xs text-gray-600">
-                                                                                    セット{setIdx + 1}: {set.weight || 0}kg × {set.reps || 0}回
-                                                                                    {set.duration > 0 && ` (${set.duration}分)`}
-                                                                                </p>
-                                                                            ))}
+                                                            <div className="px-3 pb-3 border-t border-gray-300">
+                                                                <div className="text-xs font-medium text-gray-600 mt-2 mb-2">内訳を表示</div>
+                                                                <div className="space-y-2">
+                                                                    {template.exercises?.map((exercise, exIdx) => (
+                                                                        <div key={exIdx} className="bg-white p-2 rounded text-xs border border-gray-200">
+                                                                            <div className="font-semibold">{exercise.name}</div>
+                                                                            <div className="text-gray-600 mt-1 space-y-1">
+                                                                                {exercise.sets?.map((set, setIdx) => (
+                                                                                    <div key={setIdx}>
+                                                                                        セット{setIdx + 1}: {set.weight || 0}kg × {set.reps || 0}回
+                                                                                        {set.duration > 0 && ` (${set.duration}分)`}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                ))}
+                                                                    ))}
+                                                                </div>
                                                             </div>
                                                         </details>
                                                     );
                                                 })}
                                             </div>
-                                        ) : (
-                                            <p className="text-sm text-gray-500 text-center py-8">保存されたテンプレートはありません</p>
                                         )}
+                                    </div>
 
-                                        {/* テンプレート新規保存 */}
-                                        {exercises.length > 0 && (
-                                            <div className="pt-3 border-t border-gray-200">
-                                                <p className="text-sm font-medium mb-2">新しいテンプレートとして保存</p>
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={templateName}
-                                                        onChange={(e) => setTemplateName(e.target.value)}
-                                                        placeholder="テンプレート名（例: 胸トレ1）"
-                                                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:outline-none"
-                                                    />
-                                                    <button
-                                                        onClick={() => {
-                                                            saveAsTemplate();
-                                                            setShowTemplates(false);
-                                                        }}
-                                                        className="px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm"
-                                                    >
-                                                        保存
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
+                                    {/* フッター */}
+                                    <div className="border-t p-4">
+                                        <button
+                                            onClick={() => setShowTemplates(false)}
+                                            className="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                                        >
+                                            閉じる
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -6352,12 +6353,12 @@ RM回数と重量を別々に入力してください。`
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden slide-up flex flex-col">
                         <div className="bg-white border-b p-4 flex justify-between items-center flex-shrink-0">
+                            <h3 className="text-lg font-bold">
+                                {type === 'meal' && '食事を記録'}
+                                {type === 'workout' && '運動を記録'}
+                                {type === 'condition' && 'コンディションを記録'}
+                            </h3>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-bold">
-                                    {type === 'meal' && '食事を記録'}
-                                    {type === 'workout' && '運動を記録'}
-                                    {type === 'condition' && 'コンディションを記録'}
-                                </h3>
                                 {type === 'meal' && (
                                     <button
                                         onClick={() => setShowMealInfoModal(true)}
@@ -6378,23 +6379,23 @@ RM回数と重量を別々に入力してください。`
                                         <Icon name="HelpCircle" size={20} />
                                     </button>
                                 )}
+                                <button onClick={() => {
+                                    // 食事記録中に食材を選択している場合は、まず検索リストに戻る
+                                    if (type === 'meal' && selectedItem) {
+                                        setSelectedItem(null);
+                                    }
+                                    // トレーニング記録中に種目を選択している場合は、まず検索リストに戻る
+                                    else if (type === 'workout' && currentExercise) {
+                                        setCurrentExercise(null);
+                                    }
+                                    // それ以外の場合はモーダルを閉じる
+                                    else {
+                                        onClose();
+                                    }
+                                }} className="p-2 hover:bg-gray-100 rounded-full">
+                                    <Icon name="X" size={20} />
+                                </button>
                             </div>
-                            <button onClick={() => {
-                                // 食事記録中に食材を選択している場合は、まず検索リストに戻る
-                                if (type === 'meal' && selectedItem) {
-                                    setSelectedItem(null);
-                                }
-                                // トレーニング記録中に種目を選択している場合は、まず検索リストに戻る
-                                else if (type === 'workout' && currentExercise) {
-                                    setCurrentExercise(null);
-                                }
-                                // それ以外の場合はモーダルを閉じる
-                                else {
-                                    onClose();
-                                }
-                            }} className="p-2 hover:bg-gray-100 rounded-full">
-                                <Icon name="X" size={20} />
-                            </button>
                         </div>
                         <div className="p-6 overflow-y-auto flex-1">
                             {type === 'meal' && renderFoodInput()}

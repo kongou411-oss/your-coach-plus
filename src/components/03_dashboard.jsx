@@ -89,10 +89,13 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC }) => {
 };
 
 // ===== Dashboard Component =====
-const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setUserProfile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData, onOpenNewMealModal }) => {
+const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setUserProfile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData, onOpenNewMealModal, onOpenNewWorkoutModal }) => {
     // 指示書管理
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
+
+    // 運動カードの展開状態
+    const [expandedWorkouts, setExpandedWorkouts] = useState({});
 
     // 機能開放モーダル（1つのモーダルで3ページ）
     const [showFeatureUnlockModal, setShowFeatureUnlockModal] = useState(false);
@@ -575,25 +578,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     return (
         <div className="space-y-4">
-
-            {/* 🧪 テスト用：ゴールベース食事記録ボタン */}
-            {onOpenNewMealModal && (
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg p-4">
-                    <div className="flex items-center justify-between">
-                        <div className="text-white">
-                            <div className="font-bold text-lg mb-1">🎯 新機能テスト中</div>
-                            <div className="text-sm opacity-90">ゴールベース食事記録モーダル</div>
-                        </div>
-                        <button
-                            onClick={onOpenNewMealModal}
-                            className="bg-white text-purple-600 px-6 py-3 rounded-lg font-bold hover:bg-purple-50 transition shadow-md flex items-center gap-2"
-                        >
-                            <Icon name="Target" size={20} />
-                            試す
-                        </button>
-                    </div>
-                </div>
-            )}
 
             {/* タブ式サマリー */}
             <div className="bg-white rounded-xl shadow-sm p-6 slide-up border-2 border-gray-200">
@@ -1213,7 +1197,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 {meal.isTemplate && (
                                                     <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                         <Icon name="BookTemplate" size={10} />
-                                                        テンプレ
+                                                        テンプレート
                                                     </span>
                                                 )}
                                             </div>
@@ -1248,7 +1232,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     alert('テンプレートを保存しました');
                                                 }
                                             }}
-                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-green-600 hover:bg-green-50 transition border-2 border-green-500"
+                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-500"
                                         >
                                             <Icon name="BookTemplate" size={18} />
                                         </button>
@@ -1337,79 +1321,110 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     {workout.isTemplate && (
                                                         <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                             <Icon name="BookTemplate" size={10} />
-                                                            テンプレ
+                                                            テンプレート
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="text-base font-bold text-gray-900 mb-2">
-                                                    {workout.name}
+                                                {/* 運動名と右上のサマリー */}
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <div className="flex flex-col">
+                                                        <div className="text-base font-bold text-gray-900">
+                                                            {workout.name}
+                                                        </div>
+                                                        {/* 種目名の直下: シェブロン */}
+                                                        <button
+                                                            onClick={() => setExpandedWorkouts(prev => ({
+                                                                ...prev,
+                                                                [workout.id || index]: !prev[workout.id || index]
+                                                            }))}
+                                                            className="p-1 hover:bg-gray-100 rounded-full transition self-start"
+                                                        >
+                                                            <Icon
+                                                                name={expandedWorkouts[workout.id || index] ? "ChevronUp" : "ChevronDown"}
+                                                                size={20}
+                                                                className="text-gray-600"
+                                                            />
+                                                        </button>
+                                                    </div>
+                                                    {/* 右上: 総セット数・総重量・総時間 */}
+                                                    {(() => {
+                                                        let totalSets = 0;
+                                                        let totalVolume = 0;
+                                                        let totalTime = 0;
+                                                        workout.exercises?.forEach(exercise => {
+                                                            const isCardioOrStretch = exercise.exerciseType === 'aerobic' || exercise.exerciseType === 'stretch';
+                                                            if (exercise.sets) {
+                                                                totalSets += exercise.sets.length;
+                                                            }
+                                                            if (!isCardioOrStretch && exercise.sets) {
+                                                                totalVolume += exercise.sets.reduce((sum, set) => {
+                                                                    return sum + (set.weight || 0) * (set.reps || 0);
+                                                                }, 0);
+                                                            }
+                                                            if (exercise.duration) {
+                                                                totalTime += exercise.duration;
+                                                            } else if (exercise.sets) {
+                                                                exercise.sets.forEach(set => {
+                                                                    totalTime += set.duration || 0;
+                                                                });
+                                                            }
+                                                        });
+                                                        return (
+                                                            <div className="text-right leading-normal">
+                                                                <div className="text-base text-orange-600 font-bold leading-normal">
+                                                                    {totalSets > 0 && `${totalSets}セット`}
+                                                                </div>
+                                                                <div className="text-base text-orange-600 font-bold leading-normal">
+                                                                    {totalVolume > 0 && `${totalVolume}kg`}
+                                                                </div>
+                                                                <div className="text-base text-orange-600 font-bold leading-normal">
+                                                                    {totalTime > 0 && `${totalTime}分`}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
-                                                {workout.exercises?.map((exercise, i) => {
+
+                                                {/* 展開時の詳細 */}
+                                                {expandedWorkouts[workout.id || index] && workout.exercises?.map((exercise, i) => {
                                                     const isCardioOrStretch = exercise.exerciseType === 'aerobic' || exercise.exerciseType === 'stretch';
 
-                                                    // 総重量を計算（筋トレのみ）
-                                                    let totalVolume = 0;
-                                                    if (!isCardioOrStretch && exercise.sets) {
-                                                        totalVolume = exercise.sets.reduce((sum, set) => {
-                                                            return sum + (set.weight || 0) * (set.reps || 0);
-                                                        }, 0);
-                                                    }
-
                                                     return (
-                                                        <div key={i} className="text-sm text-gray-600 mb-2">
-                                                            <p className="font-medium">{exercise.exercise?.name || exercise.name}</p>
+                                                        <div key={i} className="text-sm text-gray-600 mb-2 pb-2 border-b border-gray-200 last:border-b-0">
+                                                            <p className="font-bold text-base">{exercise.exercise?.category || exercise.category || '運動'}</p>
+                                                            <p className="text-sm">{exercise.exercise?.subcategory || exercise.subcategory || 'その他'}</p>
                                                             {isCardioOrStretch ? (
-                                                                // 有酸素・ストレッチ: 総時間のみ表示（新旧両データ構造対応）
-                                                                <p className="text-xs text-orange-600 font-medium">
-                                                                    総時間: {exercise.duration
+                                                                // 有酸素・ストレッチ: 時間のみ表示
+                                                                <p className="text-xs text-gray-600 mt-1">
+                                                                    {exercise.duration
                                                                         ? `${exercise.duration}分`
                                                                         : exercise.sets
                                                                             ? `${exercise.sets.reduce((sum, set) => sum + (set.duration || 0), 0)}分`
                                                                             : '0分'}
                                                                 </p>
                                                             ) : (
-                                                                // 筋トレ: セット詳細と総重量を表示
-                                                                <>
-                                                                    {exercise.sets?.map((set, si) => (
-                                                                        <div key={si}>
-                                                                            <p className="text-xs">
-                                                                                Set {si + 1}: {set.weight}kg × {set.reps}回
-                                                                            </p>
-                                                                            {set.rm && set.rmWeight && (
-                                                                                <p className="text-xs text-orange-600 font-medium">
-                                                                                    🏆 RM更新: {set.rm}RM × {set.rmWeight}kg
+                                                                // 筋トレ: セット詳細を表示
+                                                                <div className="mt-1 space-y-1">
+                                                                    {exercise.sets?.map((set, si) => {
+                                                                        const volume = (set.weight || 0) * (set.reps || 0);
+                                                                        return (
+                                                                            <div key={si}>
+                                                                                <p className="text-xs text-gray-600">
+                                                                                    Set {si + 1}: {set.weight}kg × {set.reps}回 = {volume}kg
                                                                                 </p>
-                                                                            )}
-                                                                        </div>
-                                                                    ))}
-                                                                    {totalVolume > 0 && (
-                                                                        <p className="text-xs text-orange-600 font-medium mt-1">
-                                                                            総重量: {totalVolume}kg
-                                                                        </p>
-                                                                    )}
-                                                                </>
+                                                                                {set.rm && set.rmWeight && (
+                                                                                    <p className="text-xs text-orange-600 font-medium">
+                                                                                        🏆 RM更新: {set.rm}RM × {set.rmWeight}kg
+                                                                                    </p>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
                                                             )}
                                                         </div>
                                                     );
                                                 })}
-                                                {(() => {
-                                                    // 総時間を計算
-                                                    let totalTime = 0;
-                                                    workout.exercises?.forEach(exercise => {
-                                                        if (exercise.duration) {
-                                                            totalTime += exercise.duration;
-                                                        } else if (exercise.sets) {
-                                                            exercise.sets.forEach(set => {
-                                                                totalTime += set.duration || 0;
-                                                            });
-                                                        }
-                                                    });
-                                                    return totalTime > 0 && (
-                                                        <p className="text-xs text-orange-600 font-medium mt-2">
-                                                            総時間: {totalTime}分
-                                                        </p>
-                                                    );
-                                                })()}
                                             </div>
                                         </div>
 
@@ -1419,16 +1434,32 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     // テンプレート登録機能
                                                     const templateName = prompt('テンプレート名を入力してください', workout.name);
                                                     if (templateName && templateName.trim()) {
-                                                        const template = {
+                                                        // undefined値を除去するユーティリティ関数
+                                                        const removeUndefined = (obj) => {
+                                                            if (Array.isArray(obj)) {
+                                                                return obj.map(removeUndefined).filter(item => item !== undefined);
+                                                            }
+                                                            if (obj !== null && typeof obj === 'object') {
+                                                                return Object.entries(obj).reduce((acc, [key, value]) => {
+                                                                    if (value !== undefined) {
+                                                                        acc[key] = removeUndefined(value);
+                                                                    }
+                                                                    return acc;
+                                                                }, {});
+                                                            }
+                                                            return obj;
+                                                        };
+
+                                                        const template = removeUndefined({
                                                             id: Date.now(),
                                                             name: templateName,
                                                             exercises: workout.exercises
-                                                        };
+                                                        });
                                                         await DataService.saveWorkoutTemplate(user.uid, template);
                                                         alert('テンプレートを保存しました');
                                                     }
                                                 }}
-                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-green-600 hover:bg-green-50 transition border-2 border-green-500"
+                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-500"
                                             >
                                                 <Icon name="BookTemplate" size={18} />
                                             </button>
@@ -2682,3 +2713,4 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
 window.DashboardView = DashboardView;
 window.LevelBanner = LevelBanner;
 window.DirectiveEditModal = DirectiveEditModal;
+

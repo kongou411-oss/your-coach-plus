@@ -61,7 +61,11 @@
       "Bash(copy C:Usersyourcyourcoach_newutils.js C:Usersyourcyourcoach_newpublicutils.js)",
       "Bash(cmd /c move C:Usersyourcyourcoach_newfoodDatabase.js C:Usersyourcyourcoach_newsrcfoodDatabase.js)",
       "Bash(cmd /c copy:*)",
-      "Bash(check_fooddb.js)"
+      "Bash(check_fooddb.js)",
+      "Bash(start http://localhost:8002)",
+      "Bash(del nul 2)",
+      "Bash(copy:*)",
+      "Bash(C:Usersyourcyourcoach_newpubliccheck_exports.js)"
     ],
     "deny": [],
     "ask": []
