@@ -6,12 +6,16 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [recognizing, setRecognizing] = useState(false);
+    const [recognizingMessage, setRecognizingMessage] = useState('AI分析中...');
     const [recognizedFoods, setRecognizedFoods] = useState([]);
     const [error, setError] = useState(null);
     const [showManualAdd, setShowManualAdd] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [showInfoModal, setShowInfoModal] = useState(false);
+    const [editingFoodIndex, setEditingFoodIndex] = useState(null);
+    const [originalFood, setOriginalFood] = useState(null);
+    const [adjustmentStep, setAdjustmentStep] = useState(1);
 
     // 画像選択ハンドラー
     const handleImageSelect = (event) => {
@@ -43,6 +47,42 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
         });
     };
 
+    // リトライ付きAPI呼び出し（429エラー対策）
+    // DSQ (Dynamic Shared Quota) 環境に対応するため、最大5回までリトライ
+    const callGeminiWithRetry = async (callGemini, params, maxRetries = 5, timeoutMs = 30000) => {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                // タイムアウト制御を追加
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('API call timeout')), timeoutMs)
+                );
+
+                const apiCallPromise = callGemini(params);
+
+                return await Promise.race([apiCallPromise, timeoutPromise]);
+            } catch (error) {
+                const is429Error = error.message && (
+                    error.message.includes('429') ||
+                    error.message.includes('Resource exhausted') ||
+                    error.message.includes('Too Many Requests')
+                );
+
+                const isTimeoutError = error.message && error.message.includes('timeout');
+
+                if ((is429Error || isTimeoutError) && attempt < maxRetries) {
+                    // エクスポネンシャルバックオフ: 3秒、6秒、12秒、24秒、48秒
+                    const waitTime = 3000 * Math.pow(2, attempt);
+                    const errorType = isTimeoutError ? 'タイムアウト' : '429エラー';
+                    console.log(`[callGeminiWithRetry] ${errorType}発生。${waitTime/1000}秒後にリトライ (${attempt + 1}/${maxRetries})`);
+                    setRecognizingMessage(`AI処理が混雑しています。${waitTime/1000}秒後に再試行します... (${attempt + 1}/${maxRetries + 1})`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    continue;
+                }
+                throw error;
+            }
+        }
+    };
+
     // AI認識実行
     const recognizeFood = async () => {
         if (!selectedImage) {
@@ -51,6 +91,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
         }
 
         setRecognizing(true);
+        setRecognizingMessage('AI分析中...');
         setError(null);
 
         try {
@@ -71,81 +112,28 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
             const functions = firebase.app().functions('asia-northeast2');
             const callGemini = functions.httpsCallable('callGemini');
 
-            const promptText = `【最優先命令】
-あなたはヘルスケアアプリ用の食材解析AIです。あなたの最優先タスクは、視覚的な特徴（色、形、光沢）だけに惑わされず、以下の【思考ステップと文脈判断】ルールを絶対に優先して適用することです。特に卵料理の誤認識（オムライスを「卵白」や「うずら」と判断すること）は重大なエラーです。
+            const promptText = `ヘルスケアアプリ用の食材解析AI。写真から食材を認識しJSON形式で出力。
 
-【タスク】
-この食事画像を分析し、【食材単品】を個別に検出し、推定量をJSON形式で出力してください。
+優先度1: パッケージの栄養成分表示がある場合
+- 内容量、栄養成分（100gあたりに換算）を読み取る
+出力: {"hasPackageInfo": true, "packageWeight": 数値g, "nutritionPer": 数値g, "foods": [{"name": "商品名", "amount": 数値g, "confidence": 1.0, "source": "package", "nutritionPer100g": {"calories": 数値, "protein": 数値, "fat": 数値, "carbs": 数値}}]}
 
-【重要】料理名ではなく、食材単品で検出すること:
-- ❌ 悪い例: "親子丼", "カレーライス"
-- ✅ 良い例: "鶏むね肉", "白米", "鶏卵（全卵）"
+優先度2: 料理や生鮮食品の場合
+- 食材単品で検出（例: "鶏むね肉", "白米", "鶏卵（全卵）"）
+- 複合料理は構成食材に分解
+出力: {"hasPackageInfo": false, "foods": [{"name": "食材名", "amount": 推定g, "confidence": 0-1, "source": "visual_estimation"}]}
 
-出力形式:
-{
-  "foods": [
-    {
-      "name": "食材名（日本語、単品）",
-      "amount": 推定グラム数（数値のみ）,
-      "confidence": 信頼度（0-1の小数）
-    }
-  ]
-}
+JSONのみ出力、説明文不要`;
 
-【検出ルール】:
-1. 料理名ではなく、食材単品で検出（例: "鶏むね肉", "白米", "鶏卵（全卵）"）
-2. 複合的な料理は、構成食材に分解して個別に検出
-3. 調理済みの食材も生の食材名で記載（例: "焼き鮭" → "鮭"）
-4. 推定量は実際に見える量から判断
-5. 信頼度は0.0から1.0の範囲で設定
-6. 認識できない場合は空の配列を返す
-7. JSON形式のみを出力し、他のテキストは含めない
+            // 開発環境ではFlashモデルを使用（高速・429エラーが発生しにくい）
+            const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const model = isDev ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
 
-【思考ステップと文脈判断（最重要・厳格適用）】:
-検出ルールを適用する前に、以下の思考ステップに厳格に従ってください。
+            console.log(`[recognizeFood] 使用モデル: ${model} (${isDev ? '開発環境' : '本番環境'})`);
 
-ステップ1: 料理の特定（文脈の把握）
-まず、画像に写っている主要な料理が何かを心の中で特定してください。
-（例：「これはオムライスとハンバーグのプレートだ」「これは親子丼だ」）
-
-ステップ2: 文脈に基づいた食材の判断（視覚より優先）
-ステップ1で特定した料理の文脈に基づき、以下のルールを厳格に適用して食材を検出してください。
-
-卵の種類とサイズ（最重要ルール）:
-   - 文脈の絶対適用: 画像内に「オムライス」「オムレツ」「卵焼き」「目玉焼き」「親子丼」「スクランブルエッグ」など、通常全卵で作られる料理を認識した場合、その主材料は**必ず『鶏卵（全卵）』**としてください。
-   - 誤認識の厳禁 (1) - 卵白: オムライスの表面が滑らかであること、光が反射して白く見えること、またはスクランブルエッグの一部が白く見えることを理由に、これらを『卵白のみ』と絶対に誤認識しないでください。
-   - 誤認識の厳禁 (2) - うずら: 付け合わせのサラダ（ポテトサラダ等）や、料理の形状を理由に、『うずらの卵』と絶対に誤認識しないでください。
-   - 「卵白のみ」の定義（極めて特殊）: 『卵白のみ』は、「メレンゲ」「フィナンシェ」「ラング・ド・シャ」「卵白スープ」など、明らかに卵黄を含まないと断言できる特殊な料理・菓子でのみ使用してください。オムライスはこれに該当しません。
-   - 「鶏卵（全卵）」の定義: 上記（卵白のみ）以外のすべての卵料理は『鶏卵（全卵）』です。
-
-米の種類（最重要ルール）:
-   - 文脈の絶対適用: 画像内に「ご飯」「おにぎり」「丼物」「カレーライス」「チャーハン」「寿司」など、米を使った料理を認識した場合、その主材料は**必ず『白米（炊飯後）』または『玄米（炊飯後）』**としてください。
-   - 誤認識の厳禁: 「白米（精白米）」「玄米」（炊飯前の生米）と絶対に認識しないでください。これらは342-346kcal/100gで、炊飯後の2倍以上のカロリーがあり、重大な誤認識となります。
-   - 炊飯後の定義: ご飯として調理済みの状態は『白米（炊飯後）』『玄米（炊飯後）』『発芽玄米（炊飯後）』『胚芽米（炊飯後）』です。
-   - 白米と玄米の区別: 色が白ければ『白米（炊飯後）』、茶色っぽければ『玄米（炊飯後）』としてください。区別がつかない場合は『白米（炊飯後）』としてください。
-
-ソースと食材の区別:
-   - デミグラスソース、カレーソース → 「ソース」として検出、チョコレートではない
-   - 茶色い液体/ペースト状の調味料は、料理の文脈から判断（洋食ならデミグラス、カレーなど）
-   - チョコレート: デザートやスイーツの文脈でのみ検出
-
-調味料・ソース類の検出:
-   - ケチャップ、マヨネーズ、ソース類は調味料として検出
-   - 推定量は控えめに（10-30g程度）
-
-優先順位（量が多い順、カロリーが高い順に検出）:
-   - 主食（白米、パン、麺類）→ 主菜（肉、魚）→ 副菜（野菜）→ 調味料・ソース
-
-例:
-- 親子丼 → "鶏むね肉 150g", "鶏卵（全卵） 100g", "白米（炊飯後） 200g", "玉ねぎ 50g"
-- オムライスプレート → "鶏卵（全卵） 100g", "白米（炊飯後） 150g", "鶏ひき肉 50g", "ケチャップ 20g", "キャベツ 30g"
-- カレーライス → "豚もも肉 120g", "白米（炊飯後） 200g", "じゃがいも 80g", "玉ねぎ 60g", "人参 40g", "カレーソース 80g"
-- オムレツプレート → "鶏卵（全卵） 150g", "ハム 50g", "チーズ 30g"（※「卵白のみ」ではなく「鶏卵（全卵）」）
-- サラダ → "レタス 50g", "トマト 30g", "きゅうり 20g", "ドレッシング 15g"
-- ハンバーグプレート → "牛ひき肉 150g", "白米（炊飯後） 200g", "キャベツ 30g", "デミグラスソース 30g"`;
-
-            const result = await callGemini({
-                model: 'gemini-2.5-pro',
+            // 画像認識は60秒タイムアウト（画像処理は時間がかかる）
+            const result = await callGeminiWithRetry(callGemini, {
+                model: model,
                 contents: [{
                     role: 'user',
                     parts: [
@@ -170,7 +158,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                     { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
                     { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
                 ]
-            });
+            }, 5, 60000); // maxRetries=5, timeout=60秒
 
             // Cloud Functionのレスポンスを処理
             if (!result.data || !result.data.success) {
@@ -207,11 +195,49 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
             // 認識された食品をfoodDatabaseと照合
             const matchedFoods = parsedResult.foods.map(food => {
-                // 1. まずfoodDatabaseから検索
+                // 【優先度1】パッケージ情報がある場合（source: 'package'）
+                if (food.source === 'package' && food.nutritionPer100g) {
+                    console.log(`[recognizeFood] パッケージ情報を使用: ${food.name}`, food.nutritionPer100g);
+                    return {
+                        name: food.name,
+                        category: 'パッケージ',
+                        amount: food.amount || 100,
+                        calories: food.nutritionPer100g.calories || 0,
+                        protein: food.nutritionPer100g.protein || 0,
+                        fat: food.nutritionPer100g.fat || 0,
+                        carbs: food.nutritionPer100g.carbs || 0,
+                        confidence: food.confidence || 1.0,  // パッケージ情報は信頼度100%
+                        isPackageInfo: true,  // パッケージ情報フラグ
+                        packageWeight: food.packageWeight || null,  // パッケージ全体の重量
+                        nutritionPer: food.nutritionPer || 100,  // 栄養成分表示の基準量
+                        _base: {
+                            calories: food.nutritionPer100g.calories || 0,
+                            protein: food.nutritionPer100g.protein || 0,
+                            fat: food.nutritionPer100g.fat || 0,
+                            carbs: food.nutritionPer100g.carbs || 0,
+                            servingSize: 100,
+                            servingUnit: 'g',
+                            unit: '100g'
+                        }
+                    };
+                }
+
+                // 【優先度2】foodDatabaseから検索
                 let matchedItem = null;
+
+                // 鶏卵の特殊処理：「鶏卵（全卵）」などサイズ不明の場合はMサイズにマッピング
+                let searchName = food.name;
+                if (food.name.includes('鶏卵') && !food.name.match(/SS|S|MS|M|L|LL|（46g）|（50g）|（58g）|（64g）|（70g）/)) {
+                    // 卵黄のみ、卵白のみの場合は除外
+                    if (!food.name.includes('卵黄') && !food.name.includes('卵白')) {
+                        console.log(`[recognizeFood] 鶏卵サイズ不明 → Mサイズ（58g）を使用: ${food.name}`);
+                        searchName = '鶏卵 M（58g）';
+                    }
+                }
+
                 Object.keys(foodDB).forEach(category => {
                     Object.keys(foodDB[category]).forEach(itemName => {
-                        if (itemName.includes(food.name) || food.name.includes(itemName)) {
+                        if (itemName.includes(searchName) || searchName.includes(itemName)) {
                             const dbItem = foodDB[category][itemName];
                             matchedItem = {
                                 ...dbItem,
@@ -233,7 +259,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                     });
                 });
 
-                // 2. 見つからない場合、localStorageのcustomFoodsから検索
+                // 【優先度3】localStorageのcustomFoodsから検索
                 if (!matchedItem) {
                     try {
                         const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
@@ -268,7 +294,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                     }
                 }
 
-                // 3. どちらからも見つからない場合はisUnknown: true
+                // 【優先度4】どちらからも見つからない場合は八訂自動取得対象
                 return matchedItem || {
                     name: food.name,
                     amount: food.amount || 100,
@@ -277,7 +303,8 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                     protein: 0,
                     fat: 0,
                     carbs: 0,
-                    isUnknown: true,
+                    isUnknown: true,  // 未登録フラグ
+                    needsHachiteiFetch: true,  // 八訂自動取得が必要
                     _base: {
                         calories: 0,
                         protein: 0,
@@ -299,11 +326,480 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
             setRecognizedFoods(matchedFoods);
 
+            // ===== 八訂自動取得処理（レート制限対策：最大1件のみ自動取得 + 2秒遅延） =====
+            const unknownFoods = matchedFoods.filter(food => food.needsHachiteiFetch);
+
+            if (unknownFoods.length > 0) {
+                console.log(`[recognizeFood] 八訂自動取得対象: ${unknownFoods.length}件（自動取得は最大1件）`, unknownFoods.map(f => f.name));
+
+                // レート制限対策：最大1件のみ自動取得
+                const autoFetchCount = Math.min(unknownFoods.length, 1);
+
+                // 自動取得対象アイテムにローディングフラグを設定
+                const foodsWithLoading = matchedFoods.map(food => {
+                    if (food.needsHachiteiFetch && unknownFoods.findIndex(uf => uf.name === food.name) < autoFetchCount) {
+                        return { ...food, isFetchingHachitei: true };
+                    }
+                    return food;
+                });
+                setRecognizedFoods(foodsWithLoading);
+
+                // レート制限対策：画像認識直後のAPI呼び出しを避けるため2秒待機
+                console.log(`[recognizeFood] レート制限回避のため2秒待機中...`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                const hachiteiResults = [];
+
+                for (let i = 0; i < autoFetchCount; i++) {
+                    const food = unknownFoods[i];
+                    try {
+                        setRecognizingMessage(`栄養素を検索中... (${i + 1}/${autoFetchCount}): ${food.name}`);
+                        console.log(`[recognizeFood] 八訂検索中 (${i + 1}/${autoFetchCount}): ${food.name}`);
+                        const result = await fetchNutritionFromHachitei(food.name);
+                        hachiteiResults.push({ food, result });
+                    } catch (error) {
+                        console.error(`[recognizeFood] 八訂取得失敗 (${food.name}):`, error);
+                        hachiteiResults.push({ food, result: { success: false, error: error.message } });
+                    }
+                }
+
+                // 2件目以降は手動検索が必要（needsManualHachiteiFetch: true）
+                if (unknownFoods.length > 1) {
+                    console.log(`[recognizeFood] 残り${unknownFoods.length - 1}件は手動検索が必要`);
+                }
+
+                // 結果を反映してrecognizedFoodsを更新
+                const updatedFoods = matchedFoods.map((food, index) => {
+                    if (!food.needsHachiteiFetch) return food;
+
+                    // 自動取得対象（1件目）かどうか判定
+                    const unknownIndex = unknownFoods.findIndex(uf => uf.name === food.name);
+                    const isAutoFetchTarget = unknownIndex < autoFetchCount;
+
+                    if (!isAutoFetchTarget) {
+                        // 2件目以降は手動検索が必要
+                        console.log(`[recognizeFood] 手動検索が必要: ${food.name}`);
+                        return {
+                            ...food,
+                            isUnknown: true,
+                            needsHachiteiFetch: false,
+                            needsManualHachiteiFetch: true,  // 手動検索フラグ
+                            hachiteiFailed: false
+                        };
+                    }
+
+                    const hachiteiData = hachiteiResults.find(r => r.food.name === food.name);
+                    if (!hachiteiData || !hachiteiData.result.success) {
+                        console.warn(`[recognizeFood] 八訂取得失敗: ${food.name}`, hachiteiData?.result?.error);
+                        return {
+                            ...food,
+                            isUnknown: true,
+                            needsHachiteiFetch: false,
+                            isFetchingHachitei: false,  // ローディング解除
+                            hachiteiFailed: true  // 八訂取得失敗フラグ
+                        };
+                    }
+
+                    const bestMatch = hachiteiData.result.bestMatch;
+                    console.log(`[recognizeFood] 八訂取得成功: ${food.name} → ${bestMatch.name}`, {
+                        calories: bestMatch.calories,
+                        protein: bestMatch.protein,
+                        confidence: bestMatch.confidence,
+                        matchScore: bestMatch.matchScore
+                    });
+
+                    return {
+                        ...food,
+                        name: `${food.name}（${bestMatch.name}）`,
+                        category: '八訂',
+                        calories: bestMatch.calories || 0,
+                        protein: bestMatch.protein || 0,
+                        fat: bestMatch.fat || 0,
+                        carbs: bestMatch.carbs || 0,
+                        confidence: bestMatch.confidence || 0.8,
+                        isUnknown: false,
+                        needsHachiteiFetch: false,
+                        isFetchingHachitei: false,  // ローディング解除
+                        isHachitei: true,  // 八訂由来フラグ
+                        hachiteiMatchScore: bestMatch.matchScore || 0,  // 類似度スコア
+                        hachiteiCandidates: hachiteiData.result.candidates || [],  // 候補5つ
+                        _base: {
+                            calories: bestMatch.calories || 0,
+                            protein: bestMatch.protein || 0,
+                            fat: bestMatch.fat || 0,
+                            carbs: bestMatch.carbs || 0,
+                            servingSize: 100,
+                            servingUnit: 'g',
+                            unit: '100g'
+                        }
+                    };
+                });
+
+                setRecognizedFoods(updatedFoods);
+                console.log(`[recognizeFood] 八訂自動取得完了: ${unknownFoods.length}件中${updatedFoods.filter(f => f.isHachitei).length}件成功`);
+
+                // ===== 2件目以降の連鎖的自動検索を開始 =====
+                const remainingUnregistered = updatedFoods.filter(food =>
+                    food.needsManualHachiteiFetch || food.hachiteiFailed
+                );
+
+                if (remainingUnregistered.length > 0) {
+                    console.log(`[recognizeFood] 残り${remainingUnregistered.length}件の連鎖的自動検索を開始`);
+
+                    // 2秒待機してから連鎖検索を開始
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+
+                    // 連鎖的に検索
+                    let currentFoods = updatedFoods;
+                    for (let i = 0; i < remainingUnregistered.length; i++) {
+                        const targetFood = remainingUnregistered[i];
+                        const targetIndex = currentFoods.findIndex(f => f.name === targetFood.name);
+
+                        if (targetIndex === -1) continue;
+
+                        console.log(`[recognizeFood] 連鎖検索 (${i + 1}/${remainingUnregistered.length}): ${targetFood.name}`);
+
+                        // ローディング状態にする
+                        currentFoods = currentFoods.map((food, idx) =>
+                            idx === targetIndex ? { ...food, isFetchingHachitei: true } : food
+                        );
+                        setRecognizedFoods(currentFoods);
+
+                        try {
+                            const result = await fetchNutritionFromHachitei(targetFood.name);
+
+                            if (result.success && result.bestMatch) {
+                                const bestMatch = result.bestMatch;
+                                console.log(`[recognizeFood] 連鎖検索成功: ${targetFood.name} → ${bestMatch.name}`);
+
+                                currentFoods = currentFoods.map((food, idx) => {
+                                    if (idx !== targetIndex) return food;
+                                    return {
+                                        ...food,
+                                        name: `${food.name.split('（')[0]}（${bestMatch.name}）`,
+                                        category: '八訂',
+                                        calories: bestMatch.calories || 0,
+                                        protein: bestMatch.protein || 0,
+                                        fat: bestMatch.fat || 0,
+                                        carbs: bestMatch.carbs || 0,
+                                        confidence: bestMatch.confidence || 0.8,
+                                        isUnknown: false,
+                                        needsManualHachiteiFetch: false,
+                                        isFetchingHachitei: false,
+                                        hachiteiFailed: false,
+                                        isHachitei: true,
+                                        hachiteiMatchScore: bestMatch.matchScore || 0,
+                                        hachiteiCandidates: result.candidates || [],
+                                        _base: {
+                                            calories: bestMatch.calories || 0,
+                                            protein: bestMatch.protein || 0,
+                                            fat: bestMatch.fat || 0,
+                                            carbs: bestMatch.carbs || 0,
+                                            servingSize: 100,
+                                            servingUnit: 'g',
+                                            unit: '100g'
+                                        }
+                                    };
+                                });
+                            } else {
+                                console.warn(`[recognizeFood] 連鎖検索失敗: ${targetFood.name}`);
+                                currentFoods = currentFoods.map((food, idx) =>
+                                    idx === targetIndex
+                                        ? { ...food, isFetchingHachitei: false, hachiteiFailed: true }
+                                        : food
+                                );
+                            }
+
+                            setRecognizedFoods(currentFoods);
+
+                            // 次の検索前に2秒待機
+                            if (i < remainingUnregistered.length - 1) {
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+                            }
+                        } catch (error) {
+                            console.error(`[recognizeFood] 連鎖検索エラー (${targetFood.name}):`, error);
+                            currentFoods = currentFoods.map((food, idx) =>
+                                idx === targetIndex
+                                    ? { ...food, isFetchingHachitei: false, hachiteiFailed: true }
+                                    : food
+                            );
+                            setRecognizedFoods(currentFoods);
+                        }
+                    }
+
+                    console.log(`[recognizeFood] 連鎖的自動検索完了`);
+                }
+            }
+
         } catch (err) {
             console.error('Food recognition error:', err);
-            setError('食品認識中にエラーが発生しました: ' + err.message);
+
+            // エラーメッセージを分類して表示
+            if (err.message && err.message.includes('timeout')) {
+                setError('画像認識がタイムアウトしました（60秒超過）。画像サイズを小さくするか、もう一度お試しください。');
+            } else if (err.message && err.message.includes('429')) {
+                setError('AI処理が混雑しています。少し時間をおいてから再度お試しください。');
+            } else if (err.message && err.message.includes('Resource exhausted')) {
+                setError('AI処理が混雑しています。少し時間をおいてから再度お試しください。');
+            } else {
+                setError('食品認識中にエラーが発生しました: ' + err.message);
+            }
         } finally {
             setRecognizing(false);
+        }
+    };
+
+    // ===== 手動で八訂検索を実行 =====
+    const manualFetchHachitei = async (foodIndex) => {
+        const food = recognizedFoods[foodIndex];
+        if (!food || (!food.needsManualHachiteiFetch && !food.hachiteiFailed)) return;
+
+        console.log(`[manualFetchHachitei] 手動検索開始: ${food.name}`);
+
+        // 該当食材をローディング状態にする
+        const updatedFoods = [...recognizedFoods];
+        updatedFoods[foodIndex] = {
+            ...food,
+            isFetchingHachitei: true  // ローディングフラグ
+        };
+        setRecognizedFoods(updatedFoods);
+
+        try {
+            const result = await fetchNutritionFromHachitei(food.name);
+
+            if (!result.success) {
+                console.error(`[manualFetchHachitei] 八訂取得失敗: ${food.name}`, result.error);
+                updatedFoods[foodIndex] = {
+                    ...food,
+                    isFetchingHachitei: false,
+                    hachiteiFailed: true,
+                    needsManualHachiteiFetch: false
+                };
+                setRecognizedFoods(updatedFoods);
+                return;
+            }
+
+            const bestMatch = result.bestMatch;
+            console.log(`[manualFetchHachitei] 八訂取得成功: ${food.name} → ${bestMatch.name}`);
+
+            updatedFoods[foodIndex] = {
+                ...food,
+                name: `${food.name.split('（')[0]}（${bestMatch.name}）`,
+                category: '八訂',
+                calories: bestMatch.calories || 0,
+                protein: bestMatch.protein || 0,
+                fat: bestMatch.fat || 0,
+                carbs: bestMatch.carbs || 0,
+                confidence: bestMatch.confidence || 0.8,
+                isUnknown: false,
+                needsManualHachiteiFetch: false,
+                isFetchingHachitei: false,
+                hachiteiFailed: false,  // 成功時はフラグをクリア
+                isHachitei: true,
+                hachiteiMatchScore: bestMatch.matchScore || 0,
+                hachiteiCandidates: result.candidates || [],
+                _base: {
+                    calories: bestMatch.calories || 0,
+                    protein: bestMatch.protein || 0,
+                    fat: bestMatch.fat || 0,
+                    carbs: bestMatch.carbs || 0,
+                    servingSize: 100,
+                    servingUnit: 'g',
+                    unit: '100g'
+                }
+            };
+            setRecognizedFoods(updatedFoods);
+
+            // ===== 次の未登録アイテムを自動検索 =====
+            const nextUnregistered = updatedFoods.find((f, idx) =>
+                idx > foodIndex && (f.needsManualHachiteiFetch || f.hachiteiFailed)
+            );
+
+            if (nextUnregistered) {
+                const nextIndex = updatedFoods.findIndex(f => f === nextUnregistered);
+                console.log(`[manualFetchHachitei] 次の未登録アイテムを自動検索: ${nextUnregistered.name} (index: ${nextIndex})`);
+
+                // 2秒待機してから次のアイテムを検索
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                await manualFetchHachitei(nextIndex);
+            } else {
+                console.log(`[manualFetchHachitei] すべての未登録アイテムの検索完了`);
+            }
+
+        } catch (error) {
+            console.error(`[manualFetchHachitei] エラー (${food.name}):`, error);
+            updatedFoods[foodIndex] = {
+                ...food,
+                isFetchingHachitei: false,
+                hachiteiFailed: true,
+                needsManualHachiteiFetch: false
+            };
+            setRecognizedFoods(updatedFoods);
+        }
+    };
+
+    // ===== 八訂候補から選択して差し替え =====
+    const selectHachiteiCandidate = async (foodIndex, candidateName) => {
+        const food = recognizedFoods[foodIndex];
+        if (!food) return;
+
+        console.log(`[selectHachiteiCandidate] 候補選択: ${candidateName}`);
+
+        try {
+            // 選択された候補の栄養素を取得
+            const hachiteiData = await fetchNutritionFromHachitei(candidateName);
+
+            if (!hachiteiData.success || !hachiteiData.bestMatch) {
+                console.error('[selectHachiteiCandidate] 栄養素取得失敗');
+                return;
+            }
+
+            const bestMatch = hachiteiData.bestMatch;
+
+            // 食材データを更新
+            const updatedFoods = [...recognizedFoods];
+            updatedFoods[foodIndex] = {
+                ...food,
+                name: `${food.name.split('（')[0]}（${bestMatch.name}）`,
+                category: '八訂',
+                calories: bestMatch.calories || 0,
+                protein: bestMatch.protein || 0,
+                fat: bestMatch.fat || 0,
+                carbs: bestMatch.carbs || 0,
+                confidence: bestMatch.confidence || 0.8,
+                isUnknown: false,
+                needsHachiteiFetch: false,
+                isHachitei: true,
+                hachiteiMatchScore: bestMatch.matchScore || 0,
+                hachiteiCandidates: hachiteiData.candidates || [],
+                _base: {
+                    calories: bestMatch.calories || 0,
+                    protein: bestMatch.protein || 0,
+                    fat: bestMatch.fat || 0,
+                    carbs: bestMatch.carbs || 0,
+                    servingSize: 100,
+                    servingUnit: 'g',
+                    unit: '100g'
+                }
+            };
+
+            // amountに基づいて栄養素を再計算
+            const ratio = updatedFoods[foodIndex].amount / 100;
+            updatedFoods[foodIndex].calories = Math.round(updatedFoods[foodIndex]._base.calories * ratio);
+            updatedFoods[foodIndex].protein = parseFloat((updatedFoods[foodIndex]._base.protein * ratio).toFixed(1));
+            updatedFoods[foodIndex].fat = parseFloat((updatedFoods[foodIndex]._base.fat * ratio).toFixed(1));
+            updatedFoods[foodIndex].carbs = parseFloat((updatedFoods[foodIndex]._base.carbs * ratio).toFixed(1));
+
+            setRecognizedFoods(updatedFoods);
+            console.log(`[selectHachiteiCandidate] 候補選択完了: ${candidateName}`);
+        } catch (error) {
+            console.error(`[selectHachiteiCandidate] エラー:`, error);
+        }
+    };
+
+    // ===== 八訂から栄養素を自動取得（ニュアンスヒット対応） =====
+    const fetchNutritionFromHachitei = async (foodName) => {
+        try {
+            const functions = firebase.app().functions('asia-northeast2');
+            const callGemini = functions.httpsCallable('callGemini');
+
+            const promptText = `「${foodName}」の栄養素を日本食品標準成分表2020年版（八訂）から検索してJSON形式で出力してください。
+
+表記揺れ（ひらがな・カタカナ・漢字、調理状態、部位）を考慮して類似候補を5つ検索し、最も一致する候補を選択してください。
+
+出力形式:
+{
+  "searchTerm": "検索した食材名",
+  "candidates": [
+    {"name": "八訂の正式名称", "matchScore": 0-100, "matchReason": "理由"}
+  ],
+  "bestMatch": {
+    "name": "最も一致する候補",
+    "calories": 100gあたりkcal,
+    "protein": 100gあたりg,
+    "fat": 100gあたりg,
+    "carbs": 100gあたりg,
+    "confidence": 0-1,
+    "matchScore": 0-100
+  }
+}
+
+confidence基準: 1.0=完全一致, 0.95=表記揺れ, 0.9=調理状態違い, 0.85=部位表記違い, 0.8=類似食材
+matchScore基準: 100=完全一致, 90-99=表記揺れ, 80-89=調理状態/部位違い, 70-79=類似食材
+
+JSON形式のみ出力、説明文不要`;
+
+            // 開発環境ではFlashモデルを使用
+            const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const model = isDev ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+
+            console.log(`[fetchNutritionFromHachitei] 八訂検索開始: ${foodName} (モデル: ${model})`);
+
+            // 八訂検索は30秒タイムアウト（テキスト検索は画像より速い）
+            const result = await callGeminiWithRetry(callGemini, {
+                model: model,
+                contents: [{
+                    role: 'user',
+                    parts: [{ text: promptText }]
+                }],
+                generationConfig: {
+                    temperature: 0.2,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 4096,
+                }
+            }, 5, 30000); // maxRetries=5, timeout=30秒
+
+            if (!result.data || !result.data.success) {
+                throw new Error('八訂データ取得に失敗しました');
+            }
+
+            const textContent = result.data.response.candidates[0].content.parts[0].text;
+
+            // JSONを抽出
+            let jsonText = textContent.trim();
+            jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+
+            const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('栄養素の解析に失敗しました');
+            }
+
+            const response = JSON.parse(jsonMatch[0]);
+
+            if (!response.bestMatch || !response.bestMatch.name) {
+                throw new Error('最適候補が見つかりませんでした');
+            }
+
+            console.log(`[fetchNutritionFromHachitei] 八訂検索完了: ${foodName}`, {
+                searchTerm: response.searchTerm,
+                candidatesCount: response.candidates?.length || 0,
+                bestMatch: response.bestMatch.name,
+                confidence: response.bestMatch.confidence,
+                matchScore: response.bestMatch.matchScore
+            });
+
+            return {
+                success: true,
+                searchTerm: response.searchTerm,
+                candidates: response.candidates || [],
+                bestMatch: response.bestMatch
+            };
+
+        } catch (error) {
+            console.error(`[fetchNutritionFromHachitei] エラー (${foodName}):`, error);
+
+            // タイムアウトエラーの場合は専用メッセージ
+            let errorMessage = error.message;
+            if (error.message && error.message.includes('timeout')) {
+                errorMessage = '八訂検索がタイムアウトしました。もう一度お試しください。';
+                console.warn(`[fetchNutritionFromHachitei] タイムアウト: ${foodName}（30秒以内に完了しませんでした）`);
+            }
+
+            return {
+                success: false,
+                error: errorMessage
+            };
         }
     };
 
@@ -358,6 +854,16 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
     // 食品を削除
     const removeFood = (index) => {
         setRecognizedFoods(prev => prev.filter((_, i) => i !== index));
+        // 編集中の場合は編集状態をクリア
+        if (editingFoodIndex === index) {
+            setEditingFoodIndex(null);
+            setOriginalFood(null);
+        }
+    };
+
+    // 個別食品の量を更新（編集UI用）
+    const updateFoodAmount = (foodIndex, newAmount) => {
+        adjustAmount(foodIndex, newAmount);
     };
 
     // 食品を候補で置き換え（「もしかして」機能）
@@ -427,7 +933,76 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
     };
 
     // 確定して親コンポーネントに渡す
-    const confirmFoods = () => {
+    const confirmFoods = async () => {
+        // ===== 未登録食材をカスタム食材として自動保存 =====
+        const unregisteredFoods = recognizedFoods.filter(food =>
+            food.isUnknown || food.hachiteiFailed || food.needsManualHachiteiFetch
+        );
+
+        if (unregisteredFoods.length > 0) {
+            console.log(`[confirmFoods] 未登録食材を自動保存: ${unregisteredFoods.length}件`, unregisteredFoods.map(f => f.name));
+
+            for (const food of unregisteredFoods) {
+                try {
+                    // _base（100gあたり）がある場合はそれを使用、なければ現在の値を100gあたりに換算
+                    const base = food._base || {
+                        calories: food.calories || 0,
+                        protein: food.protein || 0,
+                        fat: food.fat || 0,
+                        carbs: food.carbs || 0,
+                        servingSize: 100,
+                        servingUnit: 'g'
+                    };
+
+                    // 100gあたりの値を保存（実量換算前の基準値）
+                    const customFood = {
+                        name: food.name.split('（')[0], // 括弧を除去
+                        category: 'カスタム食材',
+                        calories: base.calories || 0,
+                        protein: base.protein || 0,
+                        fat: base.fat || 0,
+                        carbs: base.carbs || 0,
+                        servingSize: 100,
+                        servingUnit: 'g',
+                        createdAt: new Date().toISOString()
+                    };
+
+                    if (window.DEV_MODE) {
+                        // LocalStorageに保存
+                        const customFoodsKey = `customFoods_${window.DEV_USER_ID}`;
+                        const existingFoods = JSON.parse(localStorage.getItem(customFoodsKey) || '[]');
+
+                        // 同名の食材があれば上書き、なければ追加
+                        const existingIndex = existingFoods.findIndex(f => f.name === customFood.name);
+                        if (existingIndex >= 0) {
+                            existingFoods[existingIndex] = customFood;
+                            console.log(`[confirmFoods] カスタム食材を上書き: ${customFood.name}`);
+                        } else {
+                            existingFoods.push(customFood);
+                            console.log(`[confirmFoods] カスタム食材を新規保存: ${customFood.name}`);
+                        }
+
+                        localStorage.setItem(customFoodsKey, JSON.stringify(existingFoods));
+                    } else {
+                        // Firestoreに保存
+                        const user = firebase.auth().currentUser;
+                        if (user) {
+                            const customFoodsRef = firebase.firestore()
+                                .collection('users')
+                                .doc(user.uid)
+                                .collection('customFoods')
+                                .doc(customFood.name);
+
+                            await customFoodsRef.set(customFood, { merge: true });
+                            console.log(`[confirmFoods] カスタム食材を保存: ${customFood.name}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`[confirmFoods] カスタム食材保存エラー (${food.name}):`, error);
+                }
+            }
+        }
+
         // 認識リストのamountは常にg単位なので、unitフィールドを削除してから渡す
         // （handleFoodsRecognizedでの誤解釈を防ぐため）
         const foodsForTransfer = recognizedFoods.map(food => {
@@ -505,6 +1080,23 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                         </button>
                     </div>
                 </div>
+
+                {/* 選択画像のサムネイル表示（ヘッダー直下） */}
+                {imagePreview && recognizedFoods.length > 0 && (
+                    <div className="border-b border-gray-200 bg-gray-50 p-3">
+                        <div className="flex items-center gap-3">
+                            <img
+                                src={imagePreview}
+                                alt="選択した食事の写真"
+                                className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                            />
+                            <div className="flex-1">
+                                <p className="text-sm font-semibold text-gray-700">選択した写真</p>
+                                <p className="text-xs text-gray-500">認識結果と照らし合わせてご確認ください</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="p-6 space-y-6">
                     {/* 画像選択 */}
@@ -588,7 +1180,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                                 {recognizing ? (
                                     <>
                                         <Icon name="Loader" size={20} className="animate-spin" />
-                                        AI分析中...
+                                        {recognizingMessage}
                                     </>
                                 ) : (
                                     <>
@@ -619,6 +1211,11 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                                         onAmountChange={(newAmount) => adjustAmount(index, newAmount)}
                                         onReplace={(suggestion) => replaceFoodWithSuggestion(index, suggestion)}
                                         onRemove={() => removeFood(index)}
+                                        onEdit={(foodIndex) => {
+                                            setEditingFoodIndex(foodIndex);
+                                            // 食品オブジェクト全体を保存（ディープコピー）
+                                            setOriginalFood({...recognizedFoods[foodIndex]});
+                                        }}
                                         onOpenCustomCreator={(foodData) => {
                                             if (onOpenCustomCreator) {
                                                 onOpenCustomCreator(foodData, (updatedData) => {
@@ -627,6 +1224,8 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                                                 });
                                             }
                                         }}
+                                        manualFetchHachitei={manualFetchHachitei}
+                                        isEditing={editingFoodIndex === index}
                                     />
                                 ))}
                             </div>
@@ -771,6 +1370,122 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                                     </div>
                                 </div>
                             )}
+
+                            {/* 固定位置の調整UIパネル */}
+                            {editingFoodIndex !== null && recognizedFoods[editingFoodIndex] && (() => {
+                                const selectedFood = recognizedFoods[editingFoodIndex];
+                                const base = selectedFood._base || {
+                                    servingSize: 100,
+                                    servingUnit: 'g',
+                                    unit: '100g'
+                                };
+                                const unit = base.unit === '1個' ? '個' : base.unit === '本' ? '本' : 'g';
+                                const isCountUnit = ['個', '本', '杯', '枚'].some(u => unit.includes(u));
+                                const stepOptions = isCountUnit ? [1, 2, 3, 5, 10] : [1, 5, 10, 50, 100];
+
+                                return (
+                                    <div className="fixed left-0 right-0 bg-white border-t-2 border-gray-300 shadow-2xl p-4 z-[9998]" style={{bottom: '200px'}}>
+                                        <div className="max-w-md mx-auto">
+                                            <div className="text-sm text-gray-900 font-semibold mb-3 text-center">
+                                                {selectedFood.name} の量を調整
+                                            </div>
+
+                                            {/* 数値入力欄 */}
+                                            <div className="flex items-center justify-center gap-2 mb-3">
+                                                <input
+                                                    type="number"
+                                                    value={selectedFood.amount}
+                                                    onChange={(e) => updateFoodAmount(editingFoodIndex, Number(e.target.value))}
+                                                    className="w-32 h-12 px-3 py-2 border-2 border-gray-300 rounded-lg text-center font-bold text-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                    min="0"
+                                                    step={adjustmentStep}
+                                                />
+                                                <span className="text-lg text-gray-700 font-bold">{unit}</span>
+                                            </div>
+
+                                            {/* ステップ選択 */}
+                                            <div className="flex gap-1 mb-3">
+                                                {stepOptions.map(step => (
+                                                    <button
+                                                        key={step}
+                                                        onClick={() => setAdjustmentStep(step)}
+                                                        className={`flex-1 py-2 text-sm rounded transition ${
+                                                            adjustmentStep === step
+                                                                ? 'bg-blue-600 text-white font-semibold'
+                                                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+                                                        }`}
+                                                    >
+                                                        {step}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* 調整ボタン */}
+                                            <div className="grid grid-cols-4 gap-2 mb-3">
+                                                {/* ×0.5 */}
+                                                <button
+                                                    onClick={() => updateFoodAmount(editingFoodIndex, Math.max(0, selectedFood.amount * 0.5))}
+                                                    className="h-12 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition text-sm font-bold"
+                                                >
+                                                    ×0.5
+                                                </button>
+
+                                                {/* - */}
+                                                <button
+                                                    onClick={() => updateFoodAmount(editingFoodIndex, Math.max(0, selectedFood.amount - adjustmentStep))}
+                                                    className="h-12 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition font-bold flex items-center justify-center"
+                                                >
+                                                    <Icon name="Minus" size={22} />
+                                                </button>
+
+                                                {/* + */}
+                                                <button
+                                                    onClick={() => updateFoodAmount(editingFoodIndex, selectedFood.amount + adjustmentStep)}
+                                                    className="h-12 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition font-bold flex items-center justify-center"
+                                                >
+                                                    <Icon name="Plus" size={22} />
+                                                </button>
+
+                                                {/* ×2 */}
+                                                <button
+                                                    onClick={() => updateFoodAmount(editingFoodIndex, selectedFood.amount * 2)}
+                                                    className="h-12 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition text-sm font-bold"
+                                                >
+                                                    ×2
+                                                </button>
+                                            </div>
+
+                                            {/* キャンセル・更新ボタン */}
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        // 元の食品オブジェクト全体を復元
+                                                        if (originalFood !== null) {
+                                                            setRecognizedFoods(prev => prev.map((food, i) =>
+                                                                i === editingFoodIndex ? originalFood : food
+                                                            ));
+                                                        }
+                                                        setEditingFoodIndex(null);
+                                                        setOriginalFood(null);
+                                                    }}
+                                                    className="py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                                                >
+                                                    キャンセル
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingFoodIndex(null);
+                                                        setOriginalFood(null);
+                                                    }}
+                                                    className="py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                                                >
+                                                    確定
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             <div className="flex gap-3">
                                 <button
@@ -1093,7 +1808,7 @@ const findTopMatches = (inputName, topN = 3) => {
 };
 
 // 食品タグコンポーネント（通常の食事記録と同じ入力方式）
-const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onOpenCustomCreator }) => {
+const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onReplace, onOpenCustomCreator, manualFetchHachitei, isEditing }) => {
     const [amount, setAmount] = useState(food.amount);
 
     // 未登録食品の場合、候補を検索（上位3つ）
@@ -1144,25 +1859,98 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
         handleAmountChange(newAmount);
     };
 
+    // 背景色と枠線の決定
+    let bgClass = 'bg-white border-gray-200';
+    let badgeClass = null;
+    let badgeText = null;
+    let badgeIcon = null;
+
+    if (food.isPackageInfo) {
+        // パッケージ情報（緑）
+        bgClass = 'bg-green-50 border-green-300';
+        badgeClass = 'bg-green-500 text-white';
+        badgeText = 'パッケージ情報';
+        badgeIcon = 'Package';
+    } else if (food.isHachitei) {
+        // 八訂自動取得（青）
+        bgClass = 'bg-blue-50 border-blue-300';
+        badgeClass = 'bg-blue-500 text-white';
+        badgeText = '八訂自動取得';
+        badgeIcon = 'Database';
+    } else if (food.isUnknown || food.hachiteiFailed) {
+        // 未登録または八訂取得失敗（黄）
+        bgClass = 'bg-yellow-50 border-yellow-300';
+        badgeClass = 'bg-yellow-500 text-white';
+        badgeText = '未登録食材';
+        badgeIcon = 'AlertTriangle';
+    }
+
     return (
-        <div className={`bg-white border-2 rounded-xl p-4 transition ${
-            food.isUnknown ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200'
-        }`}>
+        <div className={`border-2 rounded-xl p-4 transition ${bgClass} ${food.isFetchingHachitei ? 'opacity-75' : ''}`}>
             {/* ヘッダー部分 */}
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h4 className="font-bold text-base">{food.name}</h4>
-                        <button
-                            onClick={onRemove}
-                            className="text-red-500 hover:text-red-700"
-                        >
-                            <Icon name="X" size={16} />
-                        </button>
+                        {food.isFetchingHachitei ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 bg-blue-500 text-white animate-pulse">
+                                <Icon name="Loader" size={12} className="animate-spin" />
+                                検索中...
+                            </span>
+                        ) : badgeClass && (
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 ${badgeClass}`}>
+                                <Icon name={badgeIcon} size={12} />
+                                {badgeText}
+                            </span>
+                        )}
                     </div>
                     {food.category && (
                         <p className="text-xs text-gray-500">{food.category}</p>
                     )}
+                    {/* 量表示 */}
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm font-semibold text-gray-700">
+                            量: {food.amount} {base.unit === '1個' ? '個' : base.unit === '本' ? '本' : 'g'}
+                        </span>
+                    </div>
+                    {/* 信頼度とマッチスコア表示 */}
+                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-600">
+                        {food.confidence && (
+                            <span className="flex items-center gap-1">
+                                <Icon name="Target" size={12} />
+                                信頼度: {Math.round(food.confidence * 100)}%
+                            </span>
+                        )}
+                        {food.isHachitei && food.hachiteiMatchScore && (
+                            <span className="flex items-center gap-1">
+                                <Icon name="Star" size={12} />
+                                類似度: {food.hachiteiMatchScore}点
+                            </span>
+                        )}
+                    </div>
+                </div>
+                {/* 編集・削除ボタン */}
+                <div className="flex items-center gap-2 ml-2">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onEdit) onEdit(foodIndex);
+                        }}
+                        className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                        title="編集"
+                    >
+                        <Icon name="Edit" size={18} />
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onRemove();
+                        }}
+                        className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                        title="削除"
+                    >
+                        <Icon name="Trash2" size={18} />
+                    </button>
                 </div>
             </div>
 
@@ -1226,167 +2014,6 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                 );
             })()}
 
-            {/* 重量調整セクション */}
-            <div className="space-y-3">
-                <div>
-                    <label className="block text-sm font-medium mb-2">
-                        量 ({base.unit === '1個' ? '個' : base.unit === '本' ? '本' : 'g'})
-                    </label>
-
-                    {/* スライダー */}
-                    <div className="mb-3">
-                        <input
-                            type="range"
-                            min="0"
-                            max={(base.unit === '本' || base.unit === '1個') ? 50 : 500}
-                            step={(base.unit === '本' || base.unit === '1個') ? 0.1 : 5}
-                            value={amount}
-                            onChange={(e) => handleAmountChange(Number(e.target.value))}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sky-600"
-                            style={{
-                                background: `linear-gradient(to right, #0284c7 0%, #0284c7 ${(amount/((base.unit === '本' || base.unit === '1個') ? 50 : 500))*100}%, #e5e7eb ${(amount/((base.unit === '本' || base.unit === '1個') ? 50 : 500))*100}%, #e5e7eb 100%)`
-                            }}
-                        />
-                        <div className="flex justify-between text-xs text-gray-500 mt-1">
-                            {base.unit === '本' ? (
-                                <>
-                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">0</span>
-                                    <span onClick={() => handleAmountChange(1)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">1</span>
-                                    <span onClick={() => handleAmountChange(2)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">2</span>
-                                    <span onClick={() => handleAmountChange(5)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">5</span>
-                                    <span onClick={() => handleAmountChange(10)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">10</span>
-                                    <span onClick={() => handleAmountChange(50)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">50</span>
-                                </>
-                            ) : base.unit === '1個' ? (
-                                <>
-                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">0</span>
-                                    <span onClick={() => handleAmountChange(1)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">1</span>
-                                    <span onClick={() => handleAmountChange(10)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">10</span>
-                                    <span onClick={() => handleAmountChange(20)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">20</span>
-                                    <span onClick={() => handleAmountChange(30)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">30</span>
-                                    <span onClick={() => handleAmountChange(50)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">50</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span onClick={() => handleAmountChange(0)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">0</span>
-                                    <span onClick={() => handleAmountChange(100)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">100</span>
-                                    <span onClick={() => handleAmountChange(200)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">200</span>
-                                    <span onClick={() => handleAmountChange(300)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">300</span>
-                                    <span onClick={() => handleAmountChange(400)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">400</span>
-                                    <span onClick={() => handleAmountChange(500)} className="cursor-pointer hover:text-sky-600 hover:font-bold transition">500</span>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* 数値入力 */}
-                    <input
-                        type="number"
-                        value={amount}
-                        onChange={(e) => handleAmountChange(Number(e.target.value))}
-                        step={(base.unit === '本' || base.unit === '1個') ? 0.1 : 1}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none mb-2"
-                    />
-
-                    {/* 増減ボタン */}
-                    {base.unit === '本' ? (
-                        <div className="grid grid-cols-6 gap-1">
-                            <button
-                                onClick={() => adjustAmount(-1)}
-                                className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
-                            >
-                                -1
-                            </button>
-                            <button
-                                onClick={() => adjustAmount(-0.5)}
-                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
-                            >
-                                -0.5
-                            </button>
-                            <button
-                                onClick={() => adjustAmount(-0.1)}
-                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
-                            >
-                                -0.1
-                            </button>
-                            <button
-                                onClick={() => adjustAmount(0.1)}
-                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
-                            >
-                                +0.1
-                            </button>
-                            <button
-                                onClick={() => adjustAmount(0.5)}
-                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
-                            >
-                                +0.5
-                            </button>
-                            <button
-                                onClick={() => adjustAmount(1)}
-                                className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
-                            >
-                                +1
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-6 gap-1">
-                            <button
-                                onClick={() => adjustAmount(-100)}
-                                className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
-                            >
-                                -100
-                            </button>
-                            <button
-                                onClick={() => adjustAmount(-50)}
-                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
-                            >
-                                -50
-                            </button>
-                            <button
-                                onClick={() => adjustAmount(-10)}
-                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
-                            >
-                                -10
-                            </button>
-                            <button
-                                onClick={() => adjustAmount(10)}
-                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
-                            >
-                                +10
-                            </button>
-                            <button
-                                onClick={() => adjustAmount(50)}
-                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
-                            >
-                                +50
-                            </button>
-                            <button
-                                onClick={() => adjustAmount(100)}
-                                className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
-                            >
-                                +100
-                            </button>
-                        </div>
-                    )}
-
-                    {/* 倍増減ボタン */}
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                        <button
-                            onClick={() => handleAmountChange(Math.max(0, Math.round(Number(amount) * 0.5 * 10) / 10))}
-                            className="py-1.5 bg-sky-50 text-sky-600 rounded text-xs hover:bg-sky-100 font-medium"
-                        >
-                            ×0.5
-                        </button>
-                        <button
-                            onClick={() => handleAmountChange(Math.round(Number(amount) * 2 * 10) / 10)}
-                            className="py-1.5 bg-sky-50 text-sky-600 rounded text-xs hover:bg-sky-100 font-medium"
-                        >
-                            ×2
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             {/* 摂取量表示 */}
             {!food.isUnknown && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
@@ -1432,6 +2059,53 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                 </div>
             )}
 
+            {/* パッケージ情報の詳細表示 */}
+            {food.isPackageInfo && food.packageWeight && (
+                <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Icon name="Package" size={14} className="text-green-600" />
+                        <span className="text-xs font-semibold text-green-800">パッケージ情報</span>
+                    </div>
+                    <div className="space-y-1 text-xs text-green-700">
+                        <p>内容量: {food.packageWeight}g</p>
+                        <p>栄養成分表示: {food.nutritionPer || 100}gあたり</p>
+                    </div>
+                </div>
+            )}
+
+            {/* 八訂候補の展開可能表示 */}
+            {food.isHachitei && food.hachiteiCandidates && food.hachiteiCandidates.length > 0 && (
+                <div className="mt-3">
+                    <details className="bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">
+                        <summary className="px-3 py-2 cursor-pointer hover:bg-blue-100 transition flex items-center justify-between text-sm font-medium text-blue-800">
+                            <span className="flex items-center gap-2">
+                                <Icon name="Info" size={14} />
+                                八訂候補を見る（{food.hachiteiCandidates.length}件）
+                            </span>
+                            <Icon name="ChevronDown" size={14} />
+                        </summary>
+                        <div className="px-3 py-2 space-y-1.5">
+                            {food.hachiteiCandidates.map((candidate, idx) => (
+                                <div key={idx} className="bg-white rounded-lg p-2 text-xs border border-gray-200">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="font-medium text-gray-800">{candidate.name}</span>
+                                        <span className="text-blue-600 font-semibold">{candidate.matchScore}点</span>
+                                    </div>
+                                    <p className="text-gray-600 text-xs mb-2">{candidate.matchReason}</p>
+                                    <button
+                                        onClick={() => selectHachiteiCandidate(foodIndex, candidate.name)}
+                                        className="w-full bg-blue-600 text-white text-xs font-semibold py-1.5 rounded hover:bg-blue-700 transition flex items-center justify-center gap-1"
+                                    >
+                                        <Icon name="Check" size={12} />
+                                        この候補を選択
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </details>
+                </div>
+            )}
+
             {/* 未登録食品の警告とカスタム食材作成 */}
             {food.isUnknown && (
                 <div className="mt-3 space-y-2">
@@ -1467,25 +2141,104 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onReplace, onO
                         </div>
                     )}
 
-                    <button
-                        onClick={() => {
-                            if (onOpenCustomCreator) {
-                                onOpenCustomCreator({
-                                    name: food.name,
-                                    amount: amount,  // 現在の量を渡す
-                                    unit: 'g',
-                                    calories: food.calories || 0,
-                                    protein: food.protein || 0,
-                                    fat: food.fat || 0,
-                                    carbs: food.carbs || 0
-                                });
-                            }
-                        }}
-                        className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-3 rounded-lg hover:from-amber-600 hover:to-orange-600 transition flex items-center justify-center gap-2"
-                    >
-                        <Icon name="Plus" size={18} />
-                        カスタム食材として登録
-                    </button>
+                    {/* 手動八訂検索ボタン（needsManualHachiteiFetchまたはhachiteiFailed の場合） */}
+                    {(food.needsManualHachiteiFetch || food.hachiteiFailed) && !food.isFetchingHachitei && (
+                        <button
+                            onClick={() => manualFetchHachitei(foodIndex)}
+                            className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold py-3 rounded-lg hover:from-blue-600 hover:to-indigo-600 transition flex items-center justify-center gap-2 mb-2"
+                        >
+                            <Icon name="Search" size={18} />
+                            {food.hachiteiFailed ? '栄養素を再検索' : '栄養素を自動検索'}
+                        </button>
+                    )}
+
+                    {/* 八訂検索中のローディング */}
+                    {food.isFetchingHachitei && (
+                        <div className="w-full bg-blue-100 text-blue-800 font-bold py-3 rounded-lg flex items-center justify-center gap-2 mb-2">
+                            <Icon name="Loader" size={18} className="animate-spin" />
+                            検索中...
+                        </div>
+                    )}
+
+                    {/* 栄養素入力欄（常時表示・編集可能） */}
+                    <div className="bg-white border-2 border-gray-300 rounded-lg p-4 space-y-3">
+                        <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                            <Icon name="Edit" size={16} className="text-blue-600" />
+                            栄養素を編集（100gあたり）
+                        </p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-xs text-gray-600 block mb-1">カロリー (kcal)</label>
+                                <input
+                                    type="number"
+                                    value={food.calories || 0}
+                                    onChange={(e) => {
+                                        const updatedFoods = [...recognizedFoods];
+                                        updatedFoods[foodIndex] = {
+                                            ...food,
+                                            calories: Number(e.target.value) || 0
+                                        };
+                                        if (onUpdate) onUpdate(updatedFoods);
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-600 block mb-1">タンパク質 (g)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={food.protein || 0}
+                                    onChange={(e) => {
+                                        const updatedFoods = [...recognizedFoods];
+                                        updatedFoods[foodIndex] = {
+                                            ...food,
+                                            protein: Number(e.target.value) || 0
+                                        };
+                                        if (onUpdate) onUpdate(updatedFoods);
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-600 block mb-1">脂質 (g)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={food.fat || 0}
+                                    onChange={(e) => {
+                                        const updatedFoods = [...recognizedFoods];
+                                        updatedFoods[foodIndex] = {
+                                            ...food,
+                                            fat: Number(e.target.value) || 0
+                                        };
+                                        if (onUpdate) onUpdate(updatedFoods);
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-600 block mb-1">炭水化物 (g)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={food.carbs || 0}
+                                    onChange={(e) => {
+                                        const updatedFoods = [...recognizedFoods];
+                                        updatedFoods[foodIndex] = {
+                                            ...food,
+                                            carbs: Number(e.target.value) || 0
+                                        };
+                                        if (onUpdate) onUpdate(updatedFoods);
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                            ※ 編集した内容は確定時にカスタム食材として自動保存されます
+                        </p>
+                    </div>
                 </div>
             )}
         </div>
