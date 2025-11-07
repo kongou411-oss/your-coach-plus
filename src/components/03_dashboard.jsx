@@ -133,18 +133,42 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     };
 
-    // 今日のdailyRecordから体組成を読み込む
+    // 今日のdailyRecordから体組成を読み込む（なければ前日→プロフィールの順で取得）
     useEffect(() => {
         let isMounted = true;
 
         const loadTodayBodyComposition = async () => {
             try {
                 const todayDate = getTodayDate();
-                const record = await DataService.getDailyRecord(user.uid, todayDate);
-                if (record?.bodyComposition && isMounted) {
-                    // 数値に変換し、不正な値は0にする
-                    const weight = parseFloat(record.bodyComposition.weight) || 0;
-                    const bodyFat = parseFloat(record.bodyComposition.bodyFatPercentage) || 0;
+                let weight = 0;
+                let bodyFat = 0;
+
+                // 1. 今日のdailyRecordをチェック
+                const todayRecord = await DataService.getDailyRecord(user.uid, todayDate);
+                if (todayRecord?.bodyComposition?.weight && todayRecord?.bodyComposition?.bodyFatPercentage) {
+                    weight = parseFloat(todayRecord.bodyComposition.weight) || 0;
+                    bodyFat = parseFloat(todayRecord.bodyComposition.bodyFatPercentage) || 0;
+                    console.log('[Dashboard] 今日の体組成データを取得:', { weight, bodyFat });
+                } else {
+                    // 2. 前日のdailyRecordをチェック
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayDate = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+                    const yesterdayRecord = await DataService.getDailyRecord(user.uid, yesterdayDate);
+
+                    if (yesterdayRecord?.bodyComposition?.weight && yesterdayRecord?.bodyComposition?.bodyFatPercentage) {
+                        weight = parseFloat(yesterdayRecord.bodyComposition.weight) || 0;
+                        bodyFat = parseFloat(yesterdayRecord.bodyComposition.bodyFatPercentage) || 0;
+                        console.log('[Dashboard] 前日の体組成データを取得:', { weight, bodyFat });
+                    } else if (profile?.weight && profile?.bodyFatPercentage) {
+                        // 3. プロフィールデータをチェック
+                        weight = parseFloat(profile.weight) || 0;
+                        bodyFat = parseFloat(profile.bodyFatPercentage) || 0;
+                        console.log('[Dashboard] プロフィールの体組成データを取得:', { weight, bodyFat });
+                    }
+                }
+
+                if (isMounted && (weight > 0 || bodyFat > 0)) {
                     setBodyComposition({
                         weight: weight,
                         bodyFatPercentage: bodyFat
@@ -164,7 +188,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         return () => {
             isMounted = false;
         };
-    }, [user?.uid]);
+    }, [user?.uid, profile]);
 
     // 体組成を更新する共通ハンドラー
     const updateBodyComposition = async (newWeight, newBodyFat) => {

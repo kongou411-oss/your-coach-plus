@@ -686,8 +686,8 @@ const LoginScreen = () => {
 
             {/* プライバシーポリシーモーダル */}
             {showPrivacyModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 md:p-4" onClick={() => setShowPrivacyModal(false)}>
-                    <div className="bg-white rounded-lg w-full max-w-[95vw] md:max-w-5xl max-h-[95vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-1" onClick={() => setShowPrivacyModal(false)}>
+                    <div className="bg-white rounded-lg w-[98vw] h-[98vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                         <div className="flex-shrink-0 bg-white border-b p-4 flex justify-between items-center">
                             <h2 className="text-xl md:text-2xl font-bold">プライバシーポリシー</h2>
                             <button onClick={() => setShowPrivacyModal(false)} className="text-gray-500 hover:text-gray-700">
@@ -703,8 +703,8 @@ const LoginScreen = () => {
 
             {/* 利用規約モーダル */}
             {showTermsModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 md:p-4" onClick={() => setShowTermsModal(false)}>
-                    <div className="bg-white rounded-lg w-full max-w-[95vw] md:max-w-5xl max-h-[95vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-1" onClick={() => setShowTermsModal(false)}>
+                    <div className="bg-white rounded-lg w-[98vw] h-[98vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                         <div className="flex-shrink-0 bg-white border-b p-4 flex justify-between items-center">
                             <h2 className="text-xl md:text-2xl font-bold">利用規約</h2>
                             <button onClick={() => setShowTermsModal(false)} className="text-gray-500 hover:text-gray-700">
