@@ -3152,6 +3152,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     return saved ? JSON.parse(saved) : [];
                                 });
 
+                                // LocalStorageから再読み込み
+                                const reloadCustomFoods = () => {
+                                    const saved = localStorage.getItem('customFoods');
+                                    setCustomFoods(saved ? JSON.parse(saved) : []);
+                                };
+
                                 const foodItems = customFoods.filter(item => item.itemType === 'food');
                                 const recipeItems = customFoods.filter(item => item.itemType === 'recipe');
                                 const supplementItems = customFoods.filter(item => item.itemType === 'supplement');
@@ -3180,7 +3186,16 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                 return (
                                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                        <h4 className="font-bold mb-2 text-blue-800">カスタムアイテム管理</h4>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="font-bold text-blue-800">カスタムアイテム管理</h4>
+                                            <button
+                                                onClick={reloadCustomFoods}
+                                                className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
+                                            >
+                                                <Icon name="RefreshCw" size={14} />
+                                                更新
+                                            </button>
+                                        </div>
                                         <p className="text-sm text-gray-600 mb-3">手動で作成した食材・料理・サプリを管理できます。</p>
 
                                         {/* タブ切り替え */}

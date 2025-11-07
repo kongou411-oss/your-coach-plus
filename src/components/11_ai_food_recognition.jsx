@@ -249,6 +249,7 @@ JSONのみ出力、説明文不要`;
                                 ...dbItem,
                                 name: itemName,
                                 category: category,
+                                itemType: food.itemType || 'food',  // AI認識結果のitemTypeを保持
                                 amount: food.amount || 100,
                                 confidence: food.confidence || 0.5,
                                 _base: {  // 基準値を保持（特殊単位対応）
@@ -277,6 +278,7 @@ JSONのみ出力、説明文不要`;
                             matchedItem = {
                                 name: customItem.name,
                                 category: customItem.category || 'カスタム',
+                                itemType: customItem.itemType || food.itemType || 'food',  // カスタムアイテムまたはAI認識結果のitemTypeを保持
                                 calories: customItem.calories || 0,
                                 protein: customItem.protein || 0,
                                 fat: customItem.fat || 0,
@@ -419,6 +421,7 @@ JSONのみ出力、説明文不要`;
                         ...food,
                         name: `${food.name}（${bestMatch.name}）`,
                         category: '八訂',
+                        itemType: food.itemType || 'food',  // AI認識結果のitemTypeを保持
                         calories: bestMatch.calories || 0,
                         protein: bestMatch.protein || 0,
                         fat: bestMatch.fat || 0,
@@ -485,6 +488,7 @@ JSONのみ出力、説明文不要`;
                                         ...food,
                                         name: `${food.name.split('（')[0]}（${bestMatch.name}）`,
                                         category: '八訂',
+                                        itemType: food.itemType || 'food',  // AI認識結果のitemTypeを保持
                                         calories: bestMatch.calories || 0,
                                         protein: bestMatch.protein || 0,
                                         fat: bestMatch.fat || 0,
@@ -593,6 +597,7 @@ JSONのみ出力、説明文不要`;
                 ...food,
                 name: `${food.name.split('（')[0]}（${bestMatch.name}）`,
                 category: '八訂',
+                itemType: food.itemType || 'food',  // AI認識結果のitemTypeを保持
                 calories: bestMatch.calories || 0,
                 protein: bestMatch.protein || 0,
                 fat: bestMatch.fat || 0,
@@ -669,6 +674,7 @@ JSONのみ出力、説明文不要`;
                 ...food,
                 name: `${food.name.split('（')[0]}（${bestMatch.name}）`,
                 category: '八訂',
+                itemType: food.itemType || 'food',  // AI認識結果のitemTypeを保持
                 calories: bestMatch.calories || 0,
                 protein: bestMatch.protein || 0,
                 fat: bestMatch.fat || 0,
@@ -967,18 +973,22 @@ JSON形式のみ出力、説明文不要`;
                         servingUnit: 'g'
                     };
 
-                    // itemTypeに応じてcategoryを決定
+                    // itemTypeに応じてcategoryとitemTypeを決定
                     let category = 'カスタム食材';  // デフォルト
+                    let itemType = 'food';  // デフォルト
                     if (food.itemType === 'meal') {
                         category = 'カスタム料理';
+                        itemType = 'recipe';
                     } else if (food.itemType === 'supplement') {
                         category = 'カスタムサプリ';
+                        itemType = 'supplement';
                     }
 
                     // 100gあたりの値を保存（実量換算前の基準値）
                     const customFood = {
                         name: food.name.split('（')[0], // 括弧を除去
                         category: category,
+                        itemType: itemType,  // 設定画面でのフィルタリング用
                         calories: base.calories || 0,
                         protein: base.protein || 0,
                         fat: base.fat || 0,
@@ -989,21 +999,20 @@ JSON形式のみ出力、説明文不要`;
                     };
 
                     if (window.DEV_MODE) {
-                        // LocalStorageに保存
-                        const customFoodsKey = `customFoods_${window.DEV_USER_ID}`;
-                        const existingFoods = JSON.parse(localStorage.getItem(customFoodsKey) || '[]');
+                        // LocalStorageに保存（キーを統一: customFoods）
+                        const existingFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
 
                         // 同名の食材があれば上書き、なければ追加
                         const existingIndex = existingFoods.findIndex(f => f.name === customFood.name);
                         if (existingIndex >= 0) {
                             existingFoods[existingIndex] = customFood;
-                            console.log(`[confirmFoods] カスタム食材を上書き: ${customFood.name}`);
+                            console.log(`[confirmFoods] カスタムアイテムを上書き: ${customFood.name} (${itemType})`);
                         } else {
                             existingFoods.push(customFood);
-                            console.log(`[confirmFoods] カスタム食材を新規保存: ${customFood.name}`);
+                            console.log(`[confirmFoods] カスタムアイテムを新規保存: ${customFood.name} (${itemType})`);
                         }
 
-                        localStorage.setItem(customFoodsKey, JSON.stringify(existingFoods));
+                        localStorage.setItem('customFoods', JSON.stringify(existingFoods));
                     } else {
                         // Firestoreに保存
                         const user = firebase.auth().currentUser;
@@ -1015,11 +1024,11 @@ JSON形式のみ出力、説明文不要`;
                                 .doc(customFood.name);
 
                             await customFoodsRef.set(customFood, { merge: true });
-                            console.log(`[confirmFoods] カスタム食材を保存: ${customFood.name}`);
+                            console.log(`[confirmFoods] カスタムアイテムを保存: ${customFood.name} (${itemType})`);
                         }
                     }
                 } catch (error) {
-                    console.error(`[confirmFoods] カスタム食材保存エラー (${food.name}):`, error);
+                    console.error(`[confirmFoods] カスタムアイテム保存エラー (${food.name}):`, error);
                 }
             }
         }
@@ -1830,7 +1839,6 @@ const findTopMatches = (inputName, topN = 3) => {
 
 // 食品タグコンポーネント（通常の食事記録と同じ入力方式）
 const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onReplace, onOpenCustomCreator, manualFetchHachitei, isEditing }) => {
-    const [amount, setAmount] = useState(food.amount);
     const [isNutritionEditExpanded, setIsNutritionEditExpanded] = useState(false); // 栄養素編集の展開状態
 
     // 未登録食品の場合、候補を検索（上位3つ）
@@ -1853,13 +1861,14 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
     };
 
     // ratioの計算: 特殊単位（1個、本）とそれ以外で分岐
+    // food.amountを直接使用（ローカルstateは使わない）
     let ratio;
     if (base.unit === '1個' || base.unit === '本') {
         // 特殊単位の場合: amount(g) ÷ servingSize(g/個) = 個数
-        ratio = amount / (base.servingSize || 1);
+        ratio = food.amount / (base.servingSize || 1);
     } else {
         // 通常単位（100gあたり）の場合: amount(g) ÷ 100
-        ratio = amount / 100;
+        ratio = food.amount / 100;
     }
 
     const nutrients = {
@@ -1871,13 +1880,12 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
 
     // 量を変更してリアルタイム反映
     const handleAmountChange = (newAmount) => {
-        setAmount(newAmount);
         onAmountChange(newAmount);
     };
 
     // クイック調整ボタン
     const adjustAmount = (delta) => {
-        const newAmount = Math.max(0, amount + delta);
+        const newAmount = Math.max(0, food.amount + delta);
         handleAmountChange(newAmount);
     };
 
