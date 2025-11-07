@@ -1237,7 +1237,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         </div>
 
                                         <div className="text-right ml-4">
-                                            <div className="text-xl font-bold text-blue-600">{meal.totalCalories || meal.calories || 0}</div>
+                                            <div className="text-xl font-bold text-blue-600">{Math.floor(meal.totalCalories || meal.calories || 0)}</div>
                                             <div className="text-xs text-gray-500">kcal</div>
                                         </div>
                                     </div>

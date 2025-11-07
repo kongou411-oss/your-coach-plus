@@ -116,12 +116,17 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
 優先度1: パッケージの栄養成分表示がある場合
 - 内容量、栄養成分（100gあたりに換算）を読み取る
-出力: {"hasPackageInfo": true, "packageWeight": 数値g, "nutritionPer": 数値g, "foods": [{"name": "商品名", "amount": 数値g, "confidence": 1.0, "source": "package", "nutritionPer100g": {"calories": 数値, "protein": 数値, "fat": 数値, "carbs": 数値}}]}
+出力: {"hasPackageInfo": true, "packageWeight": 数値g, "nutritionPer": 数値g, "foods": [{"name": "商品名", "amount": 数値g, "confidence": 1.0, "source": "package", "itemType": "supplement", "nutritionPer100g": {"calories": 数値, "protein": 数値, "fat": 数値, "carbs": 数値}}]}
 
 優先度2: 料理や生鮮食品の場合
 - 食材単品で検出（例: "鶏むね肉", "白米", "鶏卵（全卵）"）
 - 複合料理は構成食材に分解
-出力: {"hasPackageInfo": false, "foods": [{"name": "食材名", "amount": 推定g, "confidence": 0-1, "source": "visual_estimation"}]}
+出力: {"hasPackageInfo": false, "foods": [{"name": "食材名", "amount": 推定g, "confidence": 0-1, "source": "visual_estimation", "itemType": "food"}]}
+
+itemType: "food"（食材）, "meal"（料理）, "supplement"（サプリ・プロテイン）のいずれかを指定
+- プロテイン、サプリメントは "supplement"
+- 複数の食材で構成された完成品（カレー、ハンバーグ等）は "meal"
+- 単一の食材（鶏むね肉、白米等）は "food"
 
 JSONのみ出力、説明文不要`;
 
@@ -201,6 +206,7 @@ JSONのみ出力、説明文不要`;
                     return {
                         name: food.name,
                         category: 'パッケージ',
+                        itemType: food.itemType || 'supplement',  // AI認識結果のitemTypeを使用
                         amount: food.amount || 100,
                         calories: food.nutritionPer100g.calories || 0,
                         protein: food.nutritionPer100g.protein || 0,
@@ -297,6 +303,7 @@ JSONのみ出力、説明文不要`;
                 // 【優先度4】どちらからも見つからない場合は八訂自動取得対象
                 return matchedItem || {
                     name: food.name,
+                    itemType: food.itemType || 'food',  // AI認識結果のitemTypeを使用（デフォルト: 食材）
                     amount: food.amount || 100,
                     confidence: food.confidence || 0.5,
                     calories: 0,
@@ -934,17 +941,23 @@ JSON形式のみ出力、説明文不要`;
 
     // 確定して親コンポーネントに渡す
     const confirmFoods = async () => {
-        // ===== 未登録食材をカスタム食材として自動保存 =====
-        const unregisteredFoods = recognizedFoods.filter(food =>
-            food.isUnknown || food.hachiteiFailed || food.needsManualHachiteiFetch
+        // ===== 全ての認識食材をカスタムアイテムとして自動保存 =====
+        // データベース登録済み（八訂含む）も含めて全て保存
+        const foodsToSave = recognizedFoods.filter(food =>
+            // パッケージ情報は既存データベースにないため保存
+            food.isPackageInfo ||
+            // 未登録・失敗したものも保存
+            food.isUnknown || food.hachiteiFailed || food.needsManualHachiteiFetch ||
+            // 八訂から自動取得したものも保存（isHachitei=trueかつcategoryが八訂）
+            (food.isHachitei && food.category === '八訂')
         );
 
-        if (unregisteredFoods.length > 0) {
-            console.log(`[confirmFoods] 未登録食材を自動保存: ${unregisteredFoods.length}件`, unregisteredFoods.map(f => f.name));
+        if (foodsToSave.length > 0) {
+            console.log(`[confirmFoods] 認識食材をカスタムアイテムとして自動保存: ${foodsToSave.length}件`, foodsToSave.map(f => f.name));
 
-            for (const food of unregisteredFoods) {
+            for (const food of foodsToSave) {
                 try {
-                    // _base（100gあたり）がある場合はそれを使用、なければ現在の値を100gあたりに換算
+                    // _base（100gあたり）がある場合はそれを使用、なければ現在の値を使用
                     const base = food._base || {
                         calories: food.calories || 0,
                         protein: food.protein || 0,
@@ -954,10 +967,18 @@ JSON形式のみ出力、説明文不要`;
                         servingUnit: 'g'
                     };
 
+                    // itemTypeに応じてcategoryを決定
+                    let category = 'カスタム食材';  // デフォルト
+                    if (food.itemType === 'meal') {
+                        category = 'カスタム料理';
+                    } else if (food.itemType === 'supplement') {
+                        category = 'カスタムサプリ';
+                    }
+
                     // 100gあたりの値を保存（実量換算前の基準値）
                     const customFood = {
                         name: food.name.split('（')[0], // 括弧を除去
-                        category: 'カスタム食材',
+                        category: category,
                         calories: base.calories || 0,
                         protein: base.protein || 0,
                         fat: base.fat || 0,
