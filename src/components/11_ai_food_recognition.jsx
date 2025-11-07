@@ -1831,6 +1831,7 @@ const findTopMatches = (inputName, topN = 3) => {
 // 食品タグコンポーネント（通常の食事記録と同じ入力方式）
 const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onReplace, onOpenCustomCreator, manualFetchHachitei, isEditing }) => {
     const [amount, setAmount] = useState(food.amount);
+    const [isNutritionEditExpanded, setIsNutritionEditExpanded] = useState(false); // 栄養素編集の展開状態
 
     // 未登録食品の場合、候補を検索（上位3つ）
     const [suggestions, setSuggestions] = useState([]);
@@ -2181,84 +2182,123 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                         </div>
                     )}
 
-                    {/* 栄養素入力欄（常時表示・編集可能） */}
-                    <div className="bg-white border-2 border-gray-300 rounded-lg p-4 space-y-3">
-                        <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                            <Icon name="Edit" size={16} className="text-blue-600" />
-                            栄養素を編集（100gあたり）
-                        </p>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs text-gray-600 block mb-1">カロリー (kcal)</label>
-                                <input
-                                    type="number"
-                                    value={food.calories || 0}
-                                    onChange={(e) => {
-                                        const updatedFoods = [...recognizedFoods];
-                                        updatedFoods[foodIndex] = {
-                                            ...food,
-                                            calories: Number(e.target.value) || 0
-                                        };
-                                        if (onUpdate) onUpdate(updatedFoods);
-                                    }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
+                    {/* 栄養素編集セクション（折りたたみ式） */}
+                    <div className="bg-white border-2 border-gray-300 rounded-lg overflow-hidden">
+                        <button
+                            onClick={() => setIsNutritionEditExpanded(!isNutritionEditExpanded)}
+                            className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition"
+                        >
+                            <p className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                <Icon name="Edit" size={16} className="text-blue-600" />
+                                栄養素を編集（100gあたり）
+                            </p>
+                            <Icon
+                                name={isNutritionEditExpanded ? "ChevronUp" : "ChevronDown"}
+                                size={20}
+                                className="text-gray-500"
+                            />
+                        </button>
+
+                        {isNutritionEditExpanded && (
+                            <div className="p-4 pt-0 space-y-3 border-t border-gray-200">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-xs text-gray-600 block mb-1">カロリー (kcal)</label>
+                                        <input
+                                            type="number"
+                                            value={Math.round((food.calories || 0) / (food.amount || 100) * 100)}
+                                            onChange={(e) => {
+                                                const newCaloriesPer100g = Number(e.target.value) || 0;
+                                                const ratio = (food.amount || 100) / 100;
+                                                const updatedFoods = [...recognizedFoods];
+                                                updatedFoods[foodIndex] = {
+                                                    ...food,
+                                                    calories: Math.round(newCaloriesPer100g * ratio),
+                                                    _base: {
+                                                        ...food._base,
+                                                        calories: newCaloriesPer100g
+                                                    }
+                                                };
+                                                setRecognizedFoods(updatedFoods);
+                                            }}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600 block mb-1">タンパク質 (g)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={parseFloat(((food.protein || 0) / (food.amount || 100) * 100).toFixed(1))}
+                                            onChange={(e) => {
+                                                const newProteinPer100g = Number(e.target.value) || 0;
+                                                const ratio = (food.amount || 100) / 100;
+                                                const updatedFoods = [...recognizedFoods];
+                                                updatedFoods[foodIndex] = {
+                                                    ...food,
+                                                    protein: parseFloat((newProteinPer100g * ratio).toFixed(1)),
+                                                    _base: {
+                                                        ...food._base,
+                                                        protein: newProteinPer100g
+                                                    }
+                                                };
+                                                setRecognizedFoods(updatedFoods);
+                                            }}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600 block mb-1">脂質 (g)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={parseFloat(((food.fat || 0) / (food.amount || 100) * 100).toFixed(1))}
+                                            onChange={(e) => {
+                                                const newFatPer100g = Number(e.target.value) || 0;
+                                                const ratio = (food.amount || 100) / 100;
+                                                const updatedFoods = [...recognizedFoods];
+                                                updatedFoods[foodIndex] = {
+                                                    ...food,
+                                                    fat: parseFloat((newFatPer100g * ratio).toFixed(1)),
+                                                    _base: {
+                                                        ...food._base,
+                                                        fat: newFatPer100g
+                                                    }
+                                                };
+                                                setRecognizedFoods(updatedFoods);
+                                            }}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600 block mb-1">炭水化物 (g)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={parseFloat(((food.carbs || 0) / (food.amount || 100) * 100).toFixed(1))}
+                                            onChange={(e) => {
+                                                const newCarbsPer100g = Number(e.target.value) || 0;
+                                                const ratio = (food.amount || 100) / 100;
+                                                const updatedFoods = [...recognizedFoods];
+                                                updatedFoods[foodIndex] = {
+                                                    ...food,
+                                                    carbs: parseFloat((newCarbsPer100g * ratio).toFixed(1)),
+                                                    _base: {
+                                                        ...food._base,
+                                                        carbs: newCarbsPer100g
+                                                    }
+                                                };
+                                                setRecognizedFoods(updatedFoods);
+                                            }}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    ※ 編集した内容は確定時にカスタム食材として自動保存されます
+                                </p>
                             </div>
-                            <div>
-                                <label className="text-xs text-gray-600 block mb-1">タンパク質 (g)</label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    value={food.protein || 0}
-                                    onChange={(e) => {
-                                        const updatedFoods = [...recognizedFoods];
-                                        updatedFoods[foodIndex] = {
-                                            ...food,
-                                            protein: Number(e.target.value) || 0
-                                        };
-                                        if (onUpdate) onUpdate(updatedFoods);
-                                    }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-600 block mb-1">脂質 (g)</label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    value={food.fat || 0}
-                                    onChange={(e) => {
-                                        const updatedFoods = [...recognizedFoods];
-                                        updatedFoods[foodIndex] = {
-                                            ...food,
-                                            fat: Number(e.target.value) || 0
-                                        };
-                                        if (onUpdate) onUpdate(updatedFoods);
-                                    }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-600 block mb-1">炭水化物 (g)</label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    value={food.carbs || 0}
-                                    onChange={(e) => {
-                                        const updatedFoods = [...recognizedFoods];
-                                        updatedFoods[foodIndex] = {
-                                            ...food,
-                                            carbs: Number(e.target.value) || 0
-                                        };
-                                        if (onUpdate) onUpdate(updatedFoods);
-                                    }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">
-                            ※ 編集した内容は確定時にカスタム食材として自動保存されます
-                        </p>
+                        )}
                     </div>
                 </div>
             )}
