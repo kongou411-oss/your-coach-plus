@@ -1,4 +1,5 @@
 import React from 'react';
+import toast from 'react-hot-toast';
 import ReactDOM from 'react-dom';
 // ===== Analysis Components =====
 const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, setLastUpdate, onUpgradeClick, onFeatureUnlocked }) => {
@@ -29,6 +30,9 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     const [showSaveReportModal, setShowSaveReportModal] = useState(false);
     const [reportTitle, setReportTitle] = useState('');
     const [savedReports, setSavedReports] = useState([]);
+
+    // 確認モーダル
+    const { showConfirm, ConfirmModalComponent } = window.useConfirmModal();
     const [showSavedReports, setShowSavedReports] = useState(false);
     const [selectedReport, setSelectedReport] = useState(null);
     const [isEditingReportTitle, setIsEditingReportTitle] = useState(false);
@@ -65,11 +69,11 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     // レポート保存ハンドラー
     const handleSaveReport = async () => {
         if (!reportTitle.trim()) {
-            alert('レポートタイトルを入力してください');
+            toast('レポートタイトルを入力してください');
             return;
         }
         if (!aiAnalysis) {
-            alert('保存するレポートがありません');
+            toast('保存するレポートがありません');
             return;
         }
 
@@ -84,7 +88,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
             await DataService.saveAnalysisReport(userId, report);
 
-            alert('レポートを保存しました');
+            toast.success('レポートを保存しました');
             setShowSaveReportModal(false);
             setReportTitle('');
 
@@ -95,30 +99,30 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             setActiveTab('history');
         } catch (error) {
             console.error('Failed to save report:', error);
-            alert('レポートの保存に失敗しました: ' + error.message);
+            toast.error('レポートの保存に失敗しました: ' + error.message);
         }
     };
 
     // レポート削除ハンドラー
     const handleDeleteReport = async (reportId) => {
-        if (!confirm('このレポートを削除しますか？')) return;
-
-        try {
-            await DataService.deleteAnalysisReport(userId, reportId);
-            alert('レポートを削除しました');
-            await loadSavedReports();
-            if (selectedReport?.id === reportId) {
-                setSelectedReport(null);
+        showConfirm('レポート削除の確認', 'このレポートを削除しますか？', async () => {
+            try {
+                await DataService.deleteAnalysisReport(userId, reportId);
+                toast.success('レポートを削除しました');
+                await loadSavedReports();
+                if (selectedReport?.id === reportId) {
+                    setSelectedReport(null);
+                }
+            } catch (error) {
+                console.error('Failed to delete report:', error);
+                toast.error('レポートの削除に失敗しました');
             }
-        } catch (error) {
-            console.error('Failed to delete report:', error);
-            alert('レポートの削除に失敗しました');
-        }
+        });
     };
 
     const handleUpdateReportTitle = async () => {
         if (!editedReportTitle.trim()) {
-            alert('タイトルを入力してください');
+            toast('タイトルを入力してください');
             return;
         }
 
@@ -137,7 +141,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             await loadSavedReports();
         } catch (error) {
             console.error('Failed to update report title:', error);
-            alert('タイトルの更新に失敗しました');
+            toast.error('タイトルの更新に失敗しました');
         }
     };
 
@@ -194,7 +198,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
     const handleClose = () => {
         if (aiLoading) {
-            alert('AI分析が完了するまでお待ちください。');
+            toast.success('AI分析が完了するまでお待ちください。');
             return;
         }
         onClose();
@@ -337,14 +341,14 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             if (expInfo.totalCredits <= 0) {
                 setLoading(false);
                 // クレジット0でもページは開く（生成ボタンを押したときにエラーを表示）
-                // alert('分析クレジットが不足しています。レベルアップでクレジットを獲得してください。');
+                // toast.error('分析クレジットが不足しています。レベルアップでクレジットを獲得してください。');
                 // onClose();
                 // return;
             }
         } catch (error) {
             console.error('[Analysis] Credit error:', error);
             setLoading(false);
-            alert('クレジット確認中にエラーが発生しました');
+            toast.error('クレジット確認中にエラーが発生しました');
             onClose();
             return; // ここで関数全体を終了
         }
@@ -462,7 +466,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         updatedDirectives.push(newDirective);
         localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
         setLastUpdate(Date.now()); // Appを再レンダリングさせる
-        alert('指示書をダッシュボードに反映しました。');
+        toast('指示書をダッシュボードに反映しました。');
         onClose();
     };
 
@@ -470,7 +474,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     const generateAIAnalysis = async (currentAnalysis, insights, isFirstAnalysisParam = false, scores = null) => {
         // クレジットチェック
         if (!creditInfo || creditInfo.totalCredits <= 0) {
-            alert('分析クレジットが不足しています。\n\nレベルアップまたはクレジット購入でクレジットを獲得してください。');
+            toast.error('分析クレジットが不足しています。\n\nレベルアップまたはクレジット購入でクレジットを獲得してください。');
             return;
         }
 
@@ -1807,7 +1811,7 @@ ${conversationContext}
                                     if (onUpgradeClick) {
                                         onUpgradeClick();
                                     } else {
-                                        alert('サブスクリプション画面は準備中です');
+                                        toast('サブスクリプション画面は準備中です');
                                     }
                                 }}
                                 className="w-full bg-[#FFF59A] text-gray-800 font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2 relative overflow-hidden"
@@ -2642,7 +2646,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                     {day.directive && (
                                                         <button
                                                             onClick={() => {
-                                                                alert(`📅 ${new Date(day.date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short' })}の指示書\n\n${day.directive.message}\n\n${day.directive.completed ? '✅ 完了済み' : '⚠️ 未完了'}`);
+                                                                toast(`📅 ${new Date(day.date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short' })}の指示書\n\n${day.directive.message}\n\n${day.directive.completed ? '✅ 完了済み' : '⚠️ 未完了'}`);
                                                             }}
                                                             className={`w-full p-3 rounded-lg border-2 text-left hover:opacity-80 transition ${day.directive.completed ? 'bg-gray-50 border-gray-300' : 'bg-green-50 border-green-300'}`}
                                                         >
@@ -2896,6 +2900,9 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                     </div>
                 </div>
             )}
+
+            {/* 確認モーダル */}
+            <ConfirmModalComponent />
         </div>
     );
 };

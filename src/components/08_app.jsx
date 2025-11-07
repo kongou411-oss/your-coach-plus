@@ -1,4 +1,5 @@
 import React from 'react';
+import toast from 'react-hot-toast';
 
 // ===== Welcome Guide Modal Component (Simplified to 1 Page) =====
 const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
@@ -468,17 +469,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             );
 
                             if (result.success) {
-                                alert(`AI分析結果:\n\n${result.text}`);
+                                toast(`AI分析結果:\n\n${result.text}`);
                                 // クレジット消費後、ダッシュボードの表示を更新
                                 window.dispatchEvent(new CustomEvent('creditUpdated'));
                             } else if (result.noCredits) {
-                                alert('クレジットが不足しています。レベルアップでクレジットを獲得してください。');
+                                toast.error('クレジットが不足しています。レベルアップでクレジットを獲得してください。');
                             } else {
-                                alert('AI分析に失敗しました。もう一度お試しください。');
+                                toast.error('AI分析に失敗しました。もう一度お試しください。');
                             }
                         } catch (error) {
                             console.error('[App] AI分析エラー:', error);
-                            alert('AI分析中にエラーが発生しました。');
+                            toast.error('AI分析中にエラーが発生しました。');
                         }
                     }
                 };
@@ -870,7 +871,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             // ルーティンデータ読み込み関数
             const loadRoutineData = async () => {
                 if (!currentRoutine || currentRoutine.isRestDay) {
-                    alert('休息日にはルーティン入力は使用できません');
+                    toast.error('休息日にはルーティン入力は使用できません');
                     return;
                 }
 
@@ -878,7 +879,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 const workoutTemplates = currentRoutine.workoutTemplates || [];
 
                 if (mealTemplates.length === 0 && workoutTemplates.length === 0) {
-                    alert('このルーティンにはテンプレートが紐づけられていません。\n\n設定 → ルーティン から設定してください。');
+                    toast('このルーティンにはテンプレートが紐づけられていません。\n\n設定 → ルーティン から設定してください。');
                     return;
                 }
 
@@ -983,7 +984,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 if (type === 'analysis') {
                     // コンディション記録が完了しているかチェック（6項目全て必須）
                     if (!ConditionUtils.isFullyRecorded(dailyRecord)) {
-                        alert('この機能はコンディション記録を完了後に開放されます\n（睡眠時間・睡眠の質・食欲・消化・集中力・ストレスの6項目全て）');
+                        toast.success('この機能はコンディション記録を完了後に開放されます\n（睡眠時間・睡眠の質・食欲・消化・集中力・ストレスの6項目全て）');
                         return;
                     }
                     setShowAnalysisView(true);
@@ -1067,7 +1068,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             'after_training': '最初のトレーニングを記録すると開放されます',
                             'after_condition': '最初のコンディションを記録すると開放されます'
                         };
-                        alert(triggerMessages[feature.trigger] || `この機能はまだ開放されていません`);
+                        toast(triggerMessages[feature.trigger] || `この機能はまだ開放されていません`);
                     }
                     return;
                 }
@@ -1667,11 +1668,11 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                         // モーダルを閉じる
                                         setEditingWorkout(null);
                                         setShowAddView(false);
-                                        alert('運動を更新しました！');
+                                        toast.success('運動を更新しました！');
                                     }
                                 } catch (error) {
                                     console.error('運動更新エラー:', error);
-                                    alert('運動の更新に失敗しました。');
+                                    toast.error('運動の更新に失敗しました。');
                                 }
                             }}
                         />
@@ -1712,7 +1713,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     setShowNewMealModal(false);
                                 } catch (error) {
                                     console.error('食事記録エラー:', error);
-                                    alert('食事の記録に失敗しました');
+                                    toast.error('食事の記録に失敗しました');
                                 }
                             }}
                             user={user}
@@ -1742,7 +1743,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     setShowNewWorkoutModal(false);
                                 } catch (error) {
                                     console.error('運動記録エラー:', error);
-                                    alert('運動の記録に失敗しました');
+                                    toast.error('運動の記録に失敗しました');
                                 }
                             }}
                             user={user}
@@ -1925,7 +1926,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     }
                                 } catch (error) {
                                     console.error('Error adding item:', error);
-                                    alert('記録の保存に失敗しました');
+                                    toast.error('記録の保存に失敗しました');
                                 }
                             }}
                         />
@@ -2039,7 +2040,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 // ミニマムタスク実行
                                 const today = getTodayDate();
                                 // タスク完了を記録
-                                alert(`ミニマムタスク「${userProfile.minimumTask || '腕立て1回'}」を完了しました！素晴らしいです！`);
+                                toast.success(`ミニマムタスク「${userProfile.minimumTask || '腕立て1回'}」を完了しました！素晴らしいです！`);
                                 setShowContinuitySupport(false);
                             }}
                             onCheckIn={async () => {
@@ -2050,7 +2051,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     checkInStatus: true,
                                     checkInTime: new Date().toISOString()
                                 });
-                                alert('継続の意思を記録しました。休息もトレーニングの一部です。明日も頑張りましょう！');
+                                toast('継続の意思を記録しました。休息もトレーニングの一部です。明日も頑張りましょう！');
                                 setShowContinuitySupport(false);
                             }}
                         />
@@ -2118,7 +2119,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                                 <button
                                                     onClick={async () => {
                                                         if (!aiInputText.trim()) {
-                                                            alert('記録内容を入力してください');
+                                                            toast('記録内容を入力してください');
                                                             return;
                                                         }
 
@@ -2236,7 +2237,7 @@ ${aiInputText}
 
                                                         } catch (error) {
                                                             console.error('AI処理エラー:', error);
-                                                            alert('AI処理中にエラーが発生しました: ' + error.message);
+                                                            toast.error('AI処理中にエラーが発生しました: ' + error.message);
                                                         } finally {
                                                             setAiProcessing(false);
                                                         }
@@ -2517,7 +2518,7 @@ ${aiInputText}
                                                         setAiInputText('');
                                                         setAiParsedData(null);
                                                         setLastUpdate(Date.now());
-                                                        alert('記録を追加しました！');
+                                                        toast.success('記録を追加しました！');
                                                     }}
                                                     className="flex-1 py-3 px-6 bg-[#FFF59A] text-gray-800 rounded-lg font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 relative overflow-hidden"
                                                 >
@@ -2842,7 +2843,7 @@ AIコーチなどの高度な機能が解放されます。
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('チュートリアル機能は削除されました');
+                                        toast('チュートリアル機能は削除されました');
                                         setBottomBarMenu(null);
                                     }}
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-blue-100 transition"

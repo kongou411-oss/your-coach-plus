@@ -1,4 +1,5 @@
 import React from 'react';
+import toast from 'react-hot-toast';
 // ===== Community Components =====
 const PGBaseView = ({ onClose, userId, userProfile }) => {
     const [selectedModule, setSelectedModule] = useState(null);
@@ -1023,12 +1024,12 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     // プロジェクト作成ハンドラー
     const handleCreateProject = async () => {
         if (!beforePhoto) {
-            alert('ビフォー写真を撮影してください');
+            toast('ビフォー写真を撮影してください');
             return;
         }
 
         if (!projectTitle.trim()) {
-            alert('プロジェクトタイトルを入力してください');
+            toast('プロジェクトタイトルを入力してください');
             return;
         }
 
@@ -1090,11 +1091,11 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 setUserProjects(projects);
             }
 
-            alert('プロジェクトを作成しました！\n管理者の承認をお待ちください。');
+            toast.success('プロジェクトを作成しました！\n管理者の承認をお待ちください。');
             onClose();
         } catch (error) {
             console.error('[CreateProject] Error:', error);
-            alert('プロジェクトの作成に失敗しました');
+            toast.error('プロジェクトの作成に失敗しました');
         } finally {
             setIsSubmitting(false);
         }
@@ -1106,12 +1107,12 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
 
     const handleSubmitMentalPost = async () => {
         if (!mentalTitle.trim()) {
-            alert('タイトルを入力してください');
+            toast('タイトルを入力してください');
             return;
         }
 
         if (!mentalContent.trim()) {
-            alert('本文を入力してください');
+            toast('本文を入力してください');
             return;
         }
 
@@ -1144,11 +1145,11 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 localStorage.setItem('communityPosts', JSON.stringify(posts));
             }
 
-            alert('投稿しました！');
+            toast.success('投稿しました！');
             onClose();
         } catch (error) {
             console.error('[MentalPost] Error:', error);
-            alert('投稿に失敗しました');
+            toast.error('投稿に失敗しました');
         } finally {
             setIsSubmitting(false);
         }
@@ -1157,12 +1158,12 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     // 進捗追加ハンドラー
     const handleAddProgress = async () => {
         if (!selectedProject) {
-            alert('プロジェクトを選択してください');
+            toast('プロジェクトを選択してください');
             return;
         }
 
         if (!progressPhoto) {
-            alert('写真を撮影してください');
+            toast('写真を撮影してください');
             return;
         }
 
@@ -1201,14 +1202,14 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 });
             } else {
                 // DEV_MODE: LocalStorage更新
-                alert('DEV_MODE: 進捗追加は本番環境でのみ動作します');
+                toast('DEV_MODE: 進捗追加は本番環境でのみ動作します');
             }
 
-            alert('進捗を追加しました！\n管理者の承認をお待ちください。');
+            toast.success('進捗を追加しました！\n管理者の承認をお待ちください。');
             onClose();
         } catch (error) {
             console.error('[AddProgress] Error:', error);
-            alert('進捗の追加に失敗しました');
+            toast.error('進捗の追加に失敗しました');
         } finally {
             setIsSubmitting(false);
         }
@@ -2645,7 +2646,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
             } else {
                 // フォールバック: クリップボードにコピー
                 await navigator.clipboard.writeText(`${shareData.text}\n\n${shareData.url}`);
-                alert('投稿リンクをクリップボードにコピーしました！');
+                toast.success('投稿リンクをクリップボードにコピーしました！');
             }
             setShareModalPostId(null);
         } catch (error) {

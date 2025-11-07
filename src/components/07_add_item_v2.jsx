@@ -1,4 +1,5 @@
 import React from 'react';
+import toast from 'react-hot-toast';
 
 // ===== Edit Workout Modal (運動編集専用モーダル) =====
 const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
@@ -40,7 +41,7 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
     // セット削除
     const handleDeleteSet = (setIndex) => {
         if (currentExercise.sets.length === 1) {
-            alert('最後のセットは削除できません。種目ごと削除してください。');
+            toast.error('最後のセットは削除できません。種目ごと削除してください。');
             return;
         }
         const updatedExercises = [...exercises];
@@ -58,7 +59,7 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
     // 種目削除
     const handleDeleteExercise = (exerciseIndex) => {
         if (exercises.length === 1) {
-            alert('最後の種目は削除できません。運動全体を削除してください。');
+            toast.error('最後の種目は削除できません。運動全体を削除してください。');
             return;
         }
         const updatedExercises = exercises.filter((_, i) => i !== exerciseIndex);
@@ -397,7 +398,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
     // アイテム削除ハンドラ
     const handleDeleteItem = (index) => {
         if (meal.items.length === 1) {
-            alert('最後のアイテムは削除できません。食事全体を削除してください。');
+            toast.error('最後のアイテムは削除できません。食事全体を削除してください。');
             return;
         }
 
@@ -455,7 +456,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
     // 食材追加ハンドラ
     const handleAddItem = () => {
         if (!selectedNewItem) {
-            alert('食材を選択してください');
+            toast('食材を選択してください');
             return;
         }
 
@@ -1900,7 +1901,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                 // テンプレート保存
                 const saveAsTemplate = async () => {
                     if (!templateName.trim() || addedItems.length === 0) {
-                        alert('テンプレート名を入力し、サプリメントを追加してください');
+                        toast('テンプレート名を入力し、サプリメントを追加してください');
                         return;
                     }
                     const template = {
@@ -1911,7 +1912,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                     await DataService.saveSupplementTemplate(user.uid, template);
                     const templates = await DataService.getSupplementTemplates(user.uid);
                     setSupplementTemplates(templates);
-                    alert(editingTemplateId ? 'テンプレートを更新しました' : 'テンプレートを保存しました');
+                    toast.success(editingTemplateId ? 'テンプレートを更新しました' : 'テンプレートを保存しました');
                     setTemplateName('');
                     setEditingTemplateId(null); // 編集状態をリセット
                 };
@@ -1928,11 +1929,11 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                 };
 
                 const deleteTemplate = async (templateId) => {
-                    if (confirm('このテンプレートを削除しますか？')) {
+                    window.showGlobalConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
                         await DataService.deleteSupplementTemplate(user.uid, templateId);
                         const templates = await DataService.getSupplementTemplates(user.uid);
                         setSupplementTemplates(templates);
-                    }
+                    });
                 };
 
                 return (
@@ -2493,7 +2494,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                         <button
                                             onClick={() => {
                                                 if (!customSupplementData.name.trim()) {
-                                                    alert('サプリメント名を入力してください');
+                                                    toast('サプリメント名を入力してください');
                                                     return;
                                                 }
                                                 const customSupplement = {
@@ -2536,7 +2537,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             name: mealName || editingTemplate.name
                                         };
                                         await DataService.saveSupplementTemplate(user.uid, updatedTemplate);
-                                        alert('テンプレートを更新しました');
+                                        toast('テンプレートを更新しました');
                                         onClose();
                                         return;
                                     }
@@ -2614,7 +2615,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
 
                 const saveAsTemplate = async () => {
                     if (exercises.length === 0 || !templateName.trim()) {
-                        alert('テンプレート名を入力し、種目を追加してください');
+                        toast('テンプレート名を入力し、種目を追加してください');
                         return;
                     }
                     const template = {
@@ -2625,7 +2626,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                     };
                     await DataService.saveWorkoutTemplate(user.uid, template);
                     setTemplateName('');
-                    alert('テンプレートを保存しました');
+                    toast.success('テンプレートを保存しました');
                     loadTemplates();
                 };
 
@@ -2646,15 +2647,15 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                 };
 
                 const deleteTemplate = async (templateId) => {
-                    if (confirm('このテンプレートを削除しますか？')) {
+                    window.showGlobalConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
                         await DataService.deleteWorkoutTemplate(user.uid, templateId);
                         loadTemplates();
-                    }
+                    });
                 };
 
                 const handleWorkoutSave = async () => {
                     if (exercises.length === 0) {
-                        alert('運動を追加してください');
+                        toast('運動を追加してください');
                         return;
                     }
 
@@ -2666,7 +2667,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                             name: mealName || editingTemplate.name
                         };
                         await DataService.saveWorkoutTemplate(user.uid, updatedTemplate);
-                        alert('テンプレートを更新しました');
+                        toast('テンプレートを更新しました');
                         onClose();
                         return;
                     }
@@ -2674,7 +2675,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                     // テンプレート作成モードの場合（新規）
                     if (isTemplateMode) {
                         if (!templateName.trim()) {
-                            alert('テンプレート名を入力してください');
+                            toast('テンプレート名を入力してください');
                             return;
                         }
                         const template = {
@@ -2684,7 +2685,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                             createdAt: new Date().toISOString()
                         };
                         await DataService.saveWorkoutTemplate(user.uid, template);
-                        alert('テンプレートを保存しました');
+                        toast.success('テンプレートを保存しました');
                         onClose();
                         return;
                     }
@@ -2854,9 +2855,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                                             onClick={(e) => {
                                                                                 e.preventDefault();
                                                                                 e.stopPropagation();
-                                                                                if (confirm(`テンプレート「${template.name}」を削除しますか？`)) {
+                                                                                window.showGlobalConfirm('テンプレート削除の確認', `テンプレート「${template.name}」を削除しますか？`, () => {
                                                                                     deleteTemplate(template.id);
-                                                                                }
+                                                                                });
                                                                             }}
                                                                             className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                                             title="削除"
@@ -3208,7 +3209,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                         <button
                                             onClick={async () => {
                                                 if (!customExerciseData.name.trim()) {
-                                                    alert('種目名を入力してください');
+                                                    toast('種目名を入力してください');
                                                     return;
                                                 }
 
@@ -3235,10 +3236,10 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                 if (exerciseSaveMethod === 'addToList') {
                                                     // リストに追加: 種目を選択状態にする
                                                     setCurrentExercise(customExercise);
-                                                    alert('カスタム種目を作成し、選択しました！');
+                                                    toast.success('カスタム種目を作成し、選択しました！');
                                                 } else {
                                                     // データベースに保存のみ
-                                                    alert('カスタム種目を保存しました！種目検索から追加できます。');
+                                                    toast.success('カスタム種目を保存しました！種目検索から追加できます。');
                                                 }
 
                                                 setShowCustomExerciseForm(false);
@@ -3372,7 +3373,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             type="button"
                                             onClick={() => {
                                                 if (!currentSet.duration || currentSet.duration === 0) {
-                                                    alert('時間を入力してください');
+                                                    toast('時間を入力してください');
                                                     return;
                                                 }
                                                 setSets([...sets, {...currentSet}]);
@@ -4418,7 +4419,7 @@ RM回数と重量を別々に入力してください。`
                 // AI推定（カスタム作成用）
                 const recognizeNutrition = async () => {
                     if (!aiImage) {
-                        alert('画像を選択してください');
+                        toast('画像を選択してください');
                         return;
                     }
 
@@ -4517,11 +4518,11 @@ RM回数と重量を別々に入力してください。`
 
                         setIsAICreation(true);
                         setNutritionInputMethod('manual'); // 自動的に手動入力タブに切り替え
-                        alert('AI推定が完了しました。値を確認・編集してから保存してください。');
+                        toast.success('AI推定が完了しました。値を確認・編集してから保存してください。');
 
                     } catch (error) {
                         console.error('AI recognition error:', error);
-                        alert('AI認識に失敗しました: ' + error.message);
+                        toast.error('AI認識に失敗しました: ' + error.message);
                     } finally {
                         setAiRecognizing(false);
                     }
@@ -4623,7 +4624,7 @@ RM回数と重量を別々に入力してください。`
                 // テンプレート保存
                 const saveAsTemplate = async () => {
                     if (!templateName.trim() || addedItems.length === 0) {
-                        alert('テンプレート名を入力し、食材を追加してください');
+                        toast('テンプレート名を入力し、食材を追加してください');
                         return;
                     }
                     const template = {
@@ -4634,7 +4635,7 @@ RM回数と重量を別々に入力してください。`
                     await DataService.saveMealTemplate(user.uid, template);
                     const templates = await DataService.getMealTemplates(user.uid);
                     setMealTemplates(templates);
-                    alert('テンプレートを保存しました');
+                    toast.success('テンプレートを保存しました');
                     setTemplateName('');
                 };
 
@@ -4646,11 +4647,11 @@ RM回数と重量を別々に入力してください。`
                 };
 
                 const deleteTemplate = async (templateId) => {
-                    if (confirm('このテンプレートを削除しますか？')) {
+                    window.showGlobalConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
                         await DataService.deleteMealTemplate(user.uid, templateId);
                         const templates = await DataService.getMealTemplates(user.uid);
                         setMealTemplates(templates);
-                    }
+                    });
                 };
 
                 return (
@@ -5042,7 +5043,7 @@ RM回数と重量を別々に入力してください。`
                                                                     name: mealName || editingTemplate.name
                                                                 };
                                                                 await DataService.saveMealTemplate(user.uid, updatedTemplate);
-                                                                alert('テンプレートを更新しました');
+                                                                toast('テンプレートを更新しました');
                                                                 setShowSearchModal(false);
                                                                 onClose();
                                                                 return;
@@ -5051,11 +5052,11 @@ RM回数と重量を別々に入力してください。`
                                                             // テンプレート作成モードの場合（新規）
                                                             if (isTemplateMode) {
                                                                 if (!mealName.trim()) {
-                                                                    alert('テンプレート名を入力してください');
+                                                                    toast('テンプレート名を入力してください');
                                                                     return;
                                                                 }
                                                                 if (addedItems.length === 0) {
-                                                                    alert('食材を追加してください');
+                                                                    toast('食材を追加してください');
                                                                     return;
                                                                 }
                                                                 const template = {
@@ -5064,7 +5065,7 @@ RM回数と重量を別々に入力してください。`
                                                                     items: addedItems
                                                                 };
                                                                 await DataService.saveMealTemplate(user.uid, template);
-                                                                alert('テンプレートを保存しました');
+                                                                toast.success('テンプレートを保存しました');
                                                                 setShowSearchModal(false);
                                                                 onClose();
                                                                 return;
@@ -5905,7 +5906,7 @@ RM回数と重量を別々に入力してください。`
                                                         <button
                                                             onClick={() => {
                                                                 if (!customSupplementData.name.trim()) {
-                                                                    alert('アイテム名を入力してください');
+                                                                    toast('アイテム名を入力してください');
                                                                     return;
                                                                 }
 
@@ -6033,9 +6034,9 @@ RM回数と重量を別々に入力してください。`
 
                                                                 // 通知メッセージ
                                                                 if (saveMethod === 'database') {
-                                                                    alert('カスタムアイテムを保存しました！食材検索から追加できます。');
+                                                                    toast.success('カスタムアイテムを保存しました！食材検索から追加できます。');
                                                                 } else {
-                                                                    alert('カスタムアイテムを作成し、追加しました！');
+                                                                    toast.success('カスタムアイテムを作成し、追加しました！');
                                                                 }
 
                                                                 setIsAICreation(false);

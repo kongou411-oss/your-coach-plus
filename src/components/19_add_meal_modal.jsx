@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 // ===== AddMealModal: ゴールベースの食事記録モーダル =====
 // フロー: 食事名入力 → アイテム選択・追加 → 記録
@@ -46,6 +47,9 @@ const AddMealModal = ({
     const [selectedItemIndex, setSelectedItemIndex] = useState(null); // 選択中のアイテム
     const [adjustmentStep, setAdjustmentStep] = useState(10); // 増減ステップ（g単位のデフォルト）
     const [originalAmount, setOriginalAmount] = useState(null); // キャンセル用：元の量を保存
+
+    // 確認モーダル
+    const { showConfirm, ConfirmModalComponent } = window.useConfirmModal();
 
     // カスタムアイテムデータ
     const [customData, setCustomData] = useState({
@@ -167,7 +171,7 @@ const AddMealModal = ({
         await DataService.deleteMealTemplate(user.uid, templateId);
         const templates = await DataService.getMealTemplates(user.uid);
         setMealTemplates(templates);
-        alert('テンプレートを削除しました');
+        toast.success('テンプレートを削除しました');
     };
 
     // ===== AI食事認識からのコールバック =====
@@ -209,7 +213,7 @@ const AddMealModal = ({
     // ===== 食事を記録 =====
     const handleRecord = () => {
         if (addedItems.length === 0) {
-            alert('食材を追加してください');
+            toast('食材を追加してください');
             return;
         }
 
@@ -239,7 +243,7 @@ const AddMealModal = ({
     // ===== テンプレートとして保存 =====
     const saveAsTemplate = async () => {
         if (addedItems.length === 0) {
-            alert('食材を追加してください');
+            toast('食材を追加してください');
             return;
         }
 
@@ -259,7 +263,7 @@ const AddMealModal = ({
             if (!window.DataService) {
                 console.error('[AddMealModal] DataService is not available on window object');
                 console.log('[AddMealModal] Available window objects:', Object.keys(window).filter(k => k.includes('Service') || k.includes('Data')));
-                alert('DataServiceが利用できません。ページを再読み込みしてください。');
+                toast.error('DataServiceが利用できません。ページを再読み込みしてください。');
                 return;
             }
 
@@ -269,10 +273,10 @@ const AddMealModal = ({
             // テンプレート一覧を再読み込み
             const templates = await window.DataService.getMealTemplates(user.uid);
             setMealTemplates(templates || []);
-            alert('テンプレートを保存しました');
+            toast.success('テンプレートを保存しました');
         } catch (error) {
             console.error('テンプレート保存エラー:', error);
-            alert('テンプレートの保存に失敗しました: ' + error.message);
+            toast.error('テンプレートの保存に失敗しました: ' + error.message);
         }
     };
 
@@ -1054,9 +1058,9 @@ const AddMealModal = ({
                                                             onClick={(e) => {
                                                                 e.preventDefault();
                                                                 e.stopPropagation();
-                                                                if (confirm(`テンプレート「${template.name}」を削除しますか？`)) {
+                                                                showConfirm('テンプレート削除の確認', `テンプレート「${template.name}」を削除しますか？`, () => {
                                                                     deleteTemplate(template.id);
-                                                                }
+                                                                });
                                                             }}
                                                             className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                             title="削除"
@@ -1459,7 +1463,7 @@ const AddMealModal = ({
                                 <button
                                     onClick={() => {
                                         if (!customData.name.trim()) {
-                                            alert('アイテム名を入力してください');
+                                            toast('アイテム名を入力してください');
                                             return;
                                         }
 
@@ -1636,6 +1640,9 @@ const AddMealModal = ({
                     </div>
                 </div>
             )}
+
+            {/* 確認モーダル */}
+            <ConfirmModalComponent />
         </div>
     );
 };

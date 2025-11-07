@@ -65,7 +65,8 @@
       "Bash(start http://localhost:8002)",
       "Bash(del nul 2)",
       "Bash(copy:*)",
-      "Bash(C:Usersyourcyourcoach_newpubliccheck_exports.js)"
+      "Bash(C:Usersyourcyourcoach_newpubliccheck_exports.js)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

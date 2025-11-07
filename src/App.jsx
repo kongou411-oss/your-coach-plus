@@ -1,8 +1,10 @@
 import React from 'react'
+import { Toaster } from 'react-hot-toast'
 
 // 全コンポーネントをインポート
 // 注: config.js, utils.js等はindex.htmlで<script>タグとして読み込まれているため、
 // ここではimportしない（グローバル変数として利用可能）
+import './components/00_confirm_modal.jsx'
 import './components/00_init.jsx'
 import './components/00_feature_unlock.jsx'
 import './components/01_common.jsx'
@@ -27,8 +29,39 @@ import './components/08_app.jsx'
 
 // Appコンポーネントはwindow.Appとして公開されている
 function AppWrapper() {
-  if (typeof window.App !== 'undefined') {
-    return <window.App />
+  if (typeof window.App !== 'undefined' && typeof window.GlobalConfirmModal !== 'undefined') {
+    const GlobalConfirmModal = window.GlobalConfirmModal;
+    return (
+      <>
+        <window.App />
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              duration: 4000,
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
+        <GlobalConfirmModal />
+      </>
+    )
   }
   return <div>Loading...</div>
 }

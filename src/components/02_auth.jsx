@@ -1,4 +1,5 @@
 import React from 'react';
+import toast from 'react-hot-toast';
 // ===== Authentication Components =====
 // ===== Authentication Components =====
 const LoginScreen = () => {
@@ -60,7 +61,7 @@ const LoginScreen = () => {
     //                     const profile = await DataService.getUserProfile(user.uid);
     //                     if (!profile) {
     //                         await auth.signOut();
-    //                         alert('Googleアカウントが未登録です。まずアカウントを作成してください。');
+    //                         toast('Googleアカウントが未登録です。まずアカウントを作成してください。');
     //                         setIsSignUp(true);
     //                     }
     //                 }
@@ -108,15 +109,15 @@ const LoginScreen = () => {
         // サインアップ時のバリデーション
         if (isSignUp) {
             if (password.length < 8) {
-                alert('パスワードは8文字以上にしてください');
+                toast('パスワードは8文字以上にしてください');
                 return;
             }
             if (password !== confirmPassword) {
-                alert('パスワードが一致しません');
+                toast('パスワードが一致しません');
                 return;
             }
             if (!agreedToTerms) {
-                alert('利用規約とプライバシーポリシーに同意してください');
+                toast('利用規約とプライバシーポリシーに同意してください');
                 return;
             }
         }
@@ -143,7 +144,7 @@ const LoginScreen = () => {
                 if (result.success) {
                     setMfaVerificationId(result.verificationId);
                 } else {
-                    alert('2FA認証コードの送信に失敗しました: ' + result.error);
+                    toast.error('2FA認証コードの送信に失敗しました: ' + result.error);
                 }
                 return;
             }
@@ -163,14 +164,14 @@ const LoginScreen = () => {
                 errorMessage = 'パスワードが間違っています';
             }
 
-            alert(errorMessage);
+            toast(errorMessage);
         }
     };
 
     // MFA認証コードを確認してログイン
     const handleMfaConfirm = async () => {
         if (!mfaVerificationCode || mfaVerificationCode.length !== 6) {
-            alert('6桁の認証コードを入力してください');
+            toast('6桁の認証コードを入力してください');
             return;
         }
 
@@ -187,7 +188,7 @@ const LoginScreen = () => {
             setMfaVerificationId(null);
             setMfaVerificationCode('');
         } else {
-            alert('認証に失敗しました: ' + result.error);
+            toast.error('認証に失敗しました: ' + result.error);
         }
     };
 
@@ -214,14 +215,14 @@ const LoginScreen = () => {
                 // 未登録ユーザー：サインアウトして新規登録を促す
                 console.log('⚠️ 未登録ユーザー: サインアウトします');
                 await auth.signOut();
-                alert('Googleアカウントが未登録です。まずアカウントを作成してください。');
+                toast('Googleアカウントが未登録です。まずアカウントを作成してください。');
                 setIsSignUp(true);
             }
             // 既存ユーザーの場合はonAuthStateChangedで処理される
         } catch (error) {
             console.error('❌ ポップアップ認証エラー:', error);
             if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-                alert(`認証エラー: ${error.message}`);
+                toast.error(`認証エラー: ${error.message}`);
             }
         }
     };
@@ -237,7 +238,7 @@ const LoginScreen = () => {
 
         // 規約同意チェック
         if (!agreedToTerms) {
-            alert('利用規約とプライバシーポリシーに同意してください');
+            toast('利用規約とプライバシーポリシーに同意してください');
             return;
         }
 
@@ -252,7 +253,7 @@ const LoginScreen = () => {
         } catch (error) {
             console.error('❌ ポップアップ認証エラー:', error);
             if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-                alert(`認証エラー: ${error.message}`);
+                toast.error(`認証エラー: ${error.message}`);
             }
         }
     };
@@ -261,7 +262,7 @@ const LoginScreen = () => {
         e.preventDefault();
         try {
             await auth.sendPasswordResetEmail(resetEmail);
-            alert('パスワードリセットメールを送信しました。メールをご確認ください。');
+            toast.success('パスワードリセットメールを送信しました。メールをご確認ください。');
             setShowForgotPassword(false);
             setResetEmail('');
         } catch (error) {
@@ -271,7 +272,7 @@ const LoginScreen = () => {
             } else if (error.code === 'auth/invalid-email') {
                 errorMessage = '無効なメールアドレスです';
             }
-            alert(errorMessage);
+            toast(errorMessage);
         }
     };
 
@@ -297,7 +298,7 @@ const LoginScreen = () => {
         if (result.success) {
             setSignupVerificationId(result.verificationId);
         } else {
-            alert('エラー: ' + result.error);
+            toast.error('エラー: ' + result.error);
         }
     };
 
@@ -305,13 +306,13 @@ const LoginScreen = () => {
     const handleSignupMfaConfirm = async () => {
         const result = await MFAService.confirmSMS2FA(signupVerificationId, signupVerificationCode);
         if (result.success) {
-            alert('2段階認証を設定しました');
+            toast('2段階認証を設定しました');
             setShowSignupMfaSetup(false);
             setSignupPhoneNumber('');
             setSignupVerificationId(null);
             setSignupVerificationCode('');
         } else {
-            alert('エラー: ' + result.error);
+            toast.error('エラー: ' + result.error);
         }
     };
 
@@ -1333,7 +1334,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                                     setShowCustomMultiplierInput(false);
                                                     setCustomMultiplierInputValue('');
                                                 } else {
-                                                    alert('1.0から2.5の間の数値を入力してください');
+                                                    toast('1.0から2.5の間の数値を入力してください');
                                                 }
                                             }}
                                             className="flex-1 px-3 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700"
@@ -1381,7 +1382,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        alert(`カロリー調整値について\n\n目的に応じたデフォルト値が自動的に設定されます：\n• 減量: -300kcal\n• 増量: +300kcal\n• メンテナンス: 0kcal\n• リコンプ: 0kcal\n\n微調整したい場合のみ、この欄に数値を入力してください。\nわからない場合は空欄のままでOKです。`);
+                                        toast(`カロリー調整値について\n\n目的に応じたデフォルト値が自動的に設定されます：\n• 減量: -300kcal\n• 増量: +300kcal\n• メンテナンス: 0kcal\n• リコンプ: 0kcal\n\n微調整したい場合のみ、この欄に数値を入力してください。\nわからない場合は空欄のままでOKです。`);
                                     }}
                                     className="text-sky-600 hover:text-sky-800"
                                 >

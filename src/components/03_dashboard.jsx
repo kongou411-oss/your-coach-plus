@@ -1,4 +1,5 @@
 import React from 'react';
+import toast from 'react-hot-toast';
 
 // ===== Score Doughnut Chart Component =====
 const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC }) => {
@@ -472,7 +473,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     // 予測入力を実行する関数
     const loadPredictedData = async () => {
         if (!yesterdayRecord) {
-            alert('前日の記録がありません');
+            toast('前日の記録がありません');
             return;
         }
 
@@ -1253,7 +1254,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                         items: meal.items
                                                     };
                                                     await DataService.saveMealTemplate(user.uid, template);
-                                                    alert('テンプレートを保存しました');
+                                                    toast.success('テンプレートを保存しました');
                                                 }
                                             }}
                                             className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-500"
@@ -1480,7 +1481,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                             exercises: workout.exercises
                                                         });
                                                         await DataService.saveWorkoutTemplate(user.uid, template);
-                                                        alert('テンプレートを保存しました');
+                                                        toast.success('テンプレートを保存しました');
                                                     }
                                                 }}
                                                 className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-500"
@@ -2322,7 +2323,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <button
                                 onClick={() => {
                                     setShowUpgradeModal(false);
-                                    alert('サブスクリプション画面は準備中です');
+                                    toast('サブスクリプション画面は準備中です');
                                 }}
                                 className="w-full bg-[#FFF59A] text-gray-800 font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2 relative overflow-hidden"
                             >
@@ -2655,7 +2656,7 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
 
     const handleSave = () => {
         if (!editedMessage.trim()) {
-            alert('指示内容を入力してください');
+            toast('指示内容を入力してください');
             return;
         }
         onSave({ ...directive, message: editedMessage.trim(), type: editedType });

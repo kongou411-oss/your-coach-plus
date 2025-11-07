@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 // ===== AddWorkoutModal: 新しい運動記録モーダル =====
 // フロー: 種目選択・追加 → セット記録 → 記録
@@ -35,6 +36,9 @@ const AddWorkoutModal = ({
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
     const [showCustomForm, setShowCustomForm] = useState(false);
     const [showHelpModal, setShowHelpModal] = useState(false); // ヘルプモーダル
+
+    // 確認モーダル
+    const { showConfirm, ConfirmModalComponent } = window.useConfirmModal();
 
     // 検索モーダル用のstate
     const [searchTerm, setSearchTerm] = useState('');
@@ -170,7 +174,7 @@ const AddWorkoutModal = ({
     // ===== カスタム種目作成 =====
     const createCustomExercise = () => {
         if (!customExerciseData.name.trim()) {
-            alert('種目名を入力してください');
+            toast('種目名を入力してください');
             return;
         }
 
@@ -208,14 +212,15 @@ const AddWorkoutModal = ({
 
     // ===== テンプレート削除 =====
     const deleteTemplate = async (templateId) => {
-        if (!window.confirm('このテンプレートを削除しますか？')) return;
-        try {
-            await DataService.deleteWorkoutTemplate(user.uid, templateId);
-            const templates = await DataService.getWorkoutTemplates(user.uid);
-            setWorkoutTemplates(templates || []);
-        } catch (error) {
-            console.error('テンプレート削除エラー:', error);
-        }
+        showConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
+            try {
+                await DataService.deleteWorkoutTemplate(user.uid, templateId);
+                const templates = await DataService.getWorkoutTemplates(user.uid);
+                setWorkoutTemplates(templates || []);
+            } catch (error) {
+                console.error('テンプレート削除エラー:', error);
+            }
+        });
     };
 
     // ===== テンプレート保存 =====
@@ -224,7 +229,7 @@ const AddWorkoutModal = ({
 
     const saveAsTemplate = async () => {
         if (!templateName.trim() || exercises.length === 0) {
-            alert('テンプレート名を入力し、種目を追加してください');
+            toast('テンプレート名を入力し、種目を追加してください');
             return;
         }
         const template = {
@@ -236,19 +241,19 @@ const AddWorkoutModal = ({
             await DataService.saveWorkoutTemplate(user.uid, template);
             const templates = await DataService.getWorkoutTemplates(user.uid);
             setWorkoutTemplates(templates);
-            alert('テンプレートを保存しました');
+            toast.success('テンプレートを保存しました');
             setTemplateName('');
             setShowSaveTemplateInput(false);
         } catch (error) {
             console.error('テンプレート保存エラー:', error);
-            alert('テンプレート保存に失敗しました');
+            toast.error('テンプレート保存に失敗しました');
         }
     };
 
     // ===== 記録ハンドラー =====
     const handleRecord = () => {
         if (exercises.length === 0) {
-            alert('種目を追加してください');
+            toast('種目を追加してください');
             return;
         }
 
@@ -952,6 +957,9 @@ const AddWorkoutModal = ({
                     </div>
                 )}
             </div>
+
+            {/* 確認モーダル */}
+            <ConfirmModalComponent />
         </div>
     );
 };

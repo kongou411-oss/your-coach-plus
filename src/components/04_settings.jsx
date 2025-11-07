@@ -1,4 +1,34 @@
 import React from 'react';
+import toast from 'react-hot-toast';
+
+// ===== 確認モーダルコンポーネント =====
+const ConfirmModal = ({ show, title, message, onConfirm, onCancel }) => {
+    if (!show) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl">
+                <h3 className="text-lg font-bold mb-4 dark:text-white">{title}</h3>
+                <p className="text-gray-700 dark:text-gray-300 mb-6 whitespace-pre-line">{message}</p>
+                <div className="flex gap-3 justify-end">
+                    <button
+                        onClick={onCancel}
+                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                    >
+                        キャンセル
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                    >
+                        確認
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ===== Settings Components =====
 // TutorialView機能は削除されました（ダミー定義）
 const TutorialView = ({ onClose, onComplete }) => {
@@ -29,6 +59,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const [phoneNumber, setPhoneNumber] = useState('');
     const [verificationId, setVerificationId] = useState(null);
     const [verificationCode, setVerificationCode] = useState('');
+
+    // 確認モーダルstate
+    const [confirmModal, setConfirmModal] = useState({
+        show: false,
+        title: '',
+        message: '',
+        onConfirm: () => {}
+    });
 
     // userProfileが変更されたときにprofile stateを更新
     useEffect(() => {
@@ -210,6 +248,26 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         onClose();
     };
 
+    // 確認モーダルを表示するヘルパー関数
+    const showConfirm = (title, message, onConfirm) => {
+        return new Promise((resolve) => {
+            setConfirmModal({
+                show: true,
+                title,
+                message,
+                onConfirm: () => {
+                    setConfirmModal({ show: false, title: '', message: '', onConfirm: () => {} });
+                    onConfirm();
+                    resolve(true);
+                }
+            });
+        });
+    };
+
+    const hideConfirm = () => {
+        setConfirmModal({ show: false, title: '', message: '', onConfirm: () => {} });
+    };
+
     const handleExportData = async () => {
         // 全データ取得
         const allData = {
@@ -240,16 +298,20 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     };
 
     const handleClearData = () => {
-        if (confirm('本当に全データを削除しますか？この操作は取り消せません。')) {
-            localStorage.clear();
-            alert('データを削除しました。ページをリロードしてください。');
-        }
+        showConfirm(
+            'データ削除の確認',
+            '本当に全データを削除しますか？この操作は取り消せません。',
+            () => {
+                localStorage.clear();
+                toast.success('データを削除しました。ページをリロードしてください。');
+            }
+        );
     };
 
     // フィードバック送信
     const handleSendFeedback = async () => {
         if (!feedbackText.trim()) {
-            alert('フィードバック内容を入力してください');
+            toast.error('フィードバック内容を入力してください');
             return;
         }
 
@@ -269,7 +331,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             setTimeout(() => setFeedbackSent(false), 3000);
         } catch (error) {
             console.error('[Feedback] Failed to send:', error);
-            alert('フィードバックの送信に失敗しました: ' + error.message);
+            toast.error('フィードバックの送信に失敗しました: ' + error.message);
         } finally {
             setFeedbackSending(false);
         }
@@ -397,7 +459,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                 <button
                                                     className="w-full bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300"
-                                                    onClick={() => confirm('サブスクリプションを解約しますか？') && alert('解約処理は実装予定！')}
+                                                    onClick={() => showConfirm('サブスクリプション解約の確認', 'サブスクリプションを解約しますか？', () => toast('解約処理は実装予定！'))}
                                                 >
                                                     サブスクリプション解約
                                                 </button>
@@ -432,7 +494,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                 <button
                                                     className="w-full bg-[#FFF59A] text-gray-800 font-bold py-3 rounded-lg hover:opacity-90 relative overflow-hidden"
-                                                    onClick={() => alert('サブスクリプション画面は実装予定！')}
+                                                    onClick={() => toast('サブスクリプション画面は実装予定！')}
                                                 >
                                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                                                     <span className="relative z-10">月額740円でPremium登録</span>
@@ -458,7 +520,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                 <button
                                                     className="w-full bg-[#FFF59A] text-gray-800 font-bold py-3 rounded-lg hover:opacity-90 relative overflow-hidden"
-                                                    onClick={() => alert('サブスクリプション画面は実装予定！')}
+                                                    onClick={() => toast('サブスクリプション画面は実装予定！')}
                                                 >
                                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                                                     <span className="relative z-10">月額740円でPremium登録</span>
@@ -619,12 +681,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             if (email) {
                                                 try {
                                                     await firebase.auth().sendPasswordResetEmail(email);
-                                                    alert('パスワードリセットメールを送信しました。メールをご確認ください。');
+                                                    toast.success('パスワードリセットメールを送信しました。メールをご確認ください。');
                                                 } catch (error) {
-                                                    alert('エラー: ' + error.message);
+                                                    toast.error('エラー: ' + error.message);
                                                 }
                                             } else {
-                                                alert('メールアドレスが設定されていません');
+                                                toast('メールアドレスが設定されていません');
                                             }
                                         }}
                                         className="text-sm text-blue-600 hover:text-blue-700 underline"
@@ -653,16 +715,16 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             </div>
 
                                             <button
-                                                onClick={async () => {
-                                                    if (confirm('2FAを解除しますか？セキュリティが低下します。')) {
+                                                onClick={() => {
+                                                    showConfirm('2FA解除の確認', '2FAを解除しますか？セキュリティが低下します。', async () => {
                                                         const result = await MFAService.unenrollMFA();
                                                         if (result.success) {
                                                             setMfaEnrolled(false);
-                                                            alert('2FAを解除しました');
+                                                            toast('2FAを解除しました');
                                                         } else {
-                                                            alert('エラー: ' + result.error);
+                                                            toast.error('エラー: ' + result.error);
                                                         }
-                                                    }
+                                                    });
                                                 }}
                                                 className="text-sm text-red-600 hover:text-red-700 underline"
                                             >
@@ -695,66 +757,74 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。
                                     </p>
                                     <button
-                                        onClick={async () => {
-                                            if (confirm('本当にアカウントを削除しますか？この操作は取り消せません。')) {
-                                                if (confirm('すべてのデータが完全に削除されます。本当によろしいですか？')) {
-                                                    try {
-                                                        const user = firebase.auth().currentUser;
-                                                        if (user) {
-                                                            // 先に再認証を実行（Google認証の場合）
+                                        onClick={() => {
+                                            showConfirm(
+                                                'アカウント削除の確認',
+                                                '本当にアカウントを削除しますか？この操作は取り消せません。',
+                                                () => {
+                                                    showConfirm(
+                                                        '最終確認',
+                                                        'すべてのデータが完全に削除されます。本当によろしいですか？',
+                                                        async () => {
                                                             try {
-                                                                console.log('[Account Delete] Re-authenticating user...');
-                                                                const provider = new firebase.auth.GoogleAuthProvider();
-                                                                await user.reauthenticateWithPopup(provider);
-                                                                console.log('[Account Delete] Re-authentication successful');
-                                                            } catch (reauthError) {
-                                                                console.error('[Account Delete] Re-authentication failed:', reauthError);
-                                                                if (reauthError.code === 'auth/popup-closed-by-user') {
-                                                                    alert('再認証がキャンセルされました。アカウント削除を中止します。');
-                                                                    return;
-                                                                }
-                                                                // 再認証エラーでも続行を試みる
-                                                            }
+                                                                const user = firebase.auth().currentUser;
+                                                                if (user) {
+                                                                    // 先に再認証を実行（Google認証の場合）
+                                                                    try {
+                                                                        console.log('[Account Delete] Re-authenticating user...');
+                                                                        const provider = new firebase.auth.GoogleAuthProvider();
+                                                                        await user.reauthenticateWithPopup(provider);
+                                                                        console.log('[Account Delete] Re-authentication successful');
+                                                                    } catch (reauthError) {
+                                                                        console.error('[Account Delete] Re-authentication failed:', reauthError);
+                                                                        if (reauthError.code === 'auth/popup-closed-by-user') {
+                                                                            toast('再認証がキャンセルされました。アカウント削除を中止します。');
+                                                                            return;
+                                                                        }
+                                                                        // 再認証エラーでも続行を試みる
+                                                                    }
 
-                                                            // Firestoreユーザーデータを削除
-                                                            try {
-                                                                await firebase.firestore().collection('users').doc(user.uid).delete();
-                                                                console.log('[Account Delete] Firestore user data deleted');
-                                                            } catch (firestoreError) {
-                                                                console.warn('[Account Delete] Firestore deletion failed:', firestoreError);
-                                                                // Firestoreエラーは無視して続行
-                                                            }
+                                                                    // Firestoreユーザーデータを削除
+                                                                    try {
+                                                                        await firebase.firestore().collection('users').doc(user.uid).delete();
+                                                                        console.log('[Account Delete] Firestore user data deleted');
+                                                                    } catch (firestoreError) {
+                                                                        console.warn('[Account Delete] Firestore deletion failed:', firestoreError);
+                                                                        // Firestoreエラーは無視して続行
+                                                                    }
 
-                                                            // Firebase認証アカウントを削除
-                                                            try {
-                                                                await user.delete();
-                                                                console.log('[Account Delete] Firebase auth account deleted');
-                                                            } catch (authError) {
-                                                                if (authError.code === 'auth/requires-recent-login') {
-                                                                    // それでも再認証が必要な場合
-                                                                    console.log('[Account Delete] Still requires re-authentication');
+                                                                    // Firebase認証アカウントを削除
+                                                                    try {
+                                                                        await user.delete();
+                                                                        console.log('[Account Delete] Firebase auth account deleted');
+                                                                    } catch (authError) {
+                                                                        if (authError.code === 'auth/requires-recent-login') {
+                                                                            // それでも再認証が必要な場合
+                                                                            console.log('[Account Delete] Still requires re-authentication');
+                                                                            localStorage.clear();
+                                                                            await firebase.auth().signOut();
+                                                                            toast.error('再認証に失敗しました。ログアウトして再度ログイン後、アカウント削除を実行してください。');
+                                                                            window.location.reload();
+                                                                            return;
+                                                                        }
+                                                                        throw authError;
+                                                                    }
+
+                                                                    // すべて成功したら、LocalStorageをクリア
+                                                                    console.log('[Account Delete] Clearing all localStorage data');
                                                                     localStorage.clear();
-                                                                    await firebase.auth().signOut();
-                                                                    alert('再認証に失敗しました。ログアウトして再度ログイン後、アカウント削除を実行してください。');
+                                                                    toast.success('アカウントを削除しました');
+                                                                    // ページをリロードして状態をリセット
                                                                     window.location.reload();
-                                                                    return;
                                                                 }
-                                                                throw authError;
+                                                            } catch (error) {
+                                                                console.error('[Account Delete] Error:', error);
+                                                                toast.error('アカウント削除中にエラーが発生しました: ' + error.message);
                                                             }
-
-                                                            // すべて成功したら、LocalStorageをクリア
-                                                            console.log('[Account Delete] Clearing all localStorage data');
-                                                            localStorage.clear();
-                                                            alert('アカウントを削除しました');
-                                                            // ページをリロードして状態をリセット
-                                                            window.location.reload();
                                                         }
-                                                    } catch (error) {
-                                                        console.error('[Account Delete] Error:', error);
-                                                        alert('アカウント削除中にエラーが発生しました: ' + error.message);
-                                                    }
+                                                    );
                                                 }
-                                            }
+                                            );
                                         }}
                                         className="text-sm text-red-600 hover:text-red-700 underline"
                                     >
@@ -765,13 +835,17 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 <button
                                     className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700"
                                     onClick={() => {
-                                        if (confirm('本当にログアウトしますか？')) {
-                                            // LocalStorageをクリア（オンボーディング状態や機能開放状態をリセット）
-                                            console.log('[Logout] Clearing all localStorage data');
-                                            localStorage.clear();
-                                            // ログアウト実行
-                                            auth.signOut();
-                                        }
+                                        showConfirm(
+                                            'ログアウトの確認',
+                                            '本当にログアウトしますか？',
+                                            () => {
+                                                // LocalStorageをクリア（オンボーディング状態や機能開放状態をリセット）
+                                                console.log('[Logout] Clearing all localStorage data');
+                                                localStorage.clear();
+                                                // ログアウト実行
+                                                auth.signOut();
+                                            }
+                                        );
                                     }}
                                 >
                                     ログアウト
@@ -1055,7 +1129,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 setShowCustomMultiplierInput(false);
                                                                 setCustomMultiplierInputValue('');
                                                             } else {
-                                                                alert('1.0から2.5の間の数値を入力してください');
+                                                                toast('1.0から2.5の間の数値を入力してください');
                                                             }
                                                         }}
                                                         className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
@@ -1890,12 +1964,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 <Icon name="Edit" size={18} />
                                                             </button>
                                                             <button
-                                                                onClick={async (e) => {
+                                                                onClick={(e) => {
                                                                     e.preventDefault();
-                                                                    if (confirm('このテンプレートを削除しますか？')) {
+                                                                    showConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
                                                                         await DataService.deleteMealTemplate(userId, template.id);
                                                                         await loadTemplates();
-                                                                    }
+                                                                    });
                                                                 }}
                                                                 className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                             >
@@ -1985,12 +2059,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 <Icon name="Edit" size={18} />
                                                             </button>
                                                             <button
-                                                                onClick={async (e) => {
+                                                                onClick={(e) => {
                                                                     e.preventDefault();
-                                                                    if (confirm('このテンプレートを削除しますか？')) {
+                                                                    showConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
                                                                         await DataService.deleteWorkoutTemplate(userId, template.id);
                                                                         await loadTemplates();
-                                                                    }
+                                                                    });
                                                                 }}
                                                                 className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                             >
@@ -2051,25 +2125,25 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     const supplementItems = customFoods.filter(item => item.itemType === 'supplement');
 
                                     const deleteItem = (index) => {
-                                        if (confirm('このアイテムを削除しますか？')) {
+                                        showConfirm('アイテム削除の確認', 'このアイテムを削除しますか？', () => {
                                             const updated = customFoods.filter((_, i) => i !== index);
                                             setCustomFoods(updated);
                                             localStorage.setItem('customFoods', JSON.stringify(updated));
-                                        }
+                                        });
                                     };
 
                                     const deleteAllByType = (itemType) => {
                                         const typeName = itemType === 'food' ? '食材' : itemType === 'recipe' ? '料理' : 'サプリ';
-                                        if (confirm(`すべての${typeName}を削除しますか？`)) {
+                                        showConfirm('全削除の確認', `すべての${typeName}を削除しますか？`, () => {
                                             const updated = customFoods.filter(item => item.itemType !== itemType);
                                             setCustomFoods(updated);
                                             localStorage.setItem('customFoods', JSON.stringify(updated));
-                                        }
+                                        });
                                     };
 
                                     const editItem = (item, index) => {
                                         // TODO: Open edit modal with the same form as custom creation
-                                        alert('編集機能は次の更新で実装予定です');
+                                        toast('編集機能は次の更新で実装予定です');
                                     };
 
                                     return (
@@ -2286,7 +2360,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                 const addRoutine = () => {
                                     if (localRoutines.length >= 12) {
-                                        alert('ルーティンは最大12個（Day7 + 追加5枠）まで設定できます');
+                                        toast('ルーティンは最大12個（Day7 + 追加5枠）まで設定できます');
                                         return;
                                     }
                                     const nextId = Math.max(...localRoutines.map(r => r.id), 0) + 1;
@@ -2302,13 +2376,13 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                 const deleteRoutine = (id) => {
                                     if (id <= 7) {
-                                        alert('Day1~7は削除できません');
+                                        toast.error('Day1~7は削除できません');
                                         return;
                                     }
-                                    if (confirm('この追加枠を削除しますか？')) {
+                                    showConfirm('追加枠削除の確認', 'この追加枠を削除しますか？', () => {
                                         const updated = localRoutines.filter(r => r.id !== id);
                                         saveRoutines(updated);
-                                    }
+                                    });
                                 };
 
                                 return (
@@ -2638,12 +2712,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <div className="flex gap-3 pt-4 border-t">
                                                 <button
                                                     onClick={() => {
-                                                        if (confirm('ルーティンをリセットしますか？')) {
+                                                        showConfirm('ルーティンリセットの確認', 'ルーティンをリセットしますか？', () => {
                                                             localStorage.removeItem(STORAGE_KEYS.ROUTINES);
                                                             localStorage.removeItem(STORAGE_KEYS.ROUTINE_START_DATE);
                                                             localStorage.removeItem(STORAGE_KEYS.ROUTINE_ACTIVE);
                                                             window.location.reload();
-                                                        }
+                                                        });
                                                     }}
                                                     className="flex-1 px-4 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium border border-red-200"
                                                 >
@@ -2721,14 +2795,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             onClick={async () => {
                                                 const result = await NotificationService.requestPermission();
                                                 if (result.success) {
-                                                    alert('通知権限が許可されました！');
+                                                    toast('通知権限が許可されました！');
                                                     // FCMトークンも取得
                                                     const tokenResult = await NotificationService.getFCMToken(userId);
                                                     if (tokenResult.success) {
                                                         console.log('FCM Token obtained:', tokenResult.token);
                                                     }
                                                 } else {
-                                                    alert('通知権限が拒否されました。ブラウザの設定から許可してください。');
+                                                    toast('通知権限が拒否されました。ブラウザの設定から許可してください。');
                                                 }
                                                 // 再レンダリングのため状態を更新
                                                 setProfile({...profile});
@@ -2983,14 +3057,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         try {
                                             const result = await NotificationService.scheduleNotification(userId, profile.notificationSettings);
                                             if (result.success) {
-                                                alert(`✓ 通知設定を保存しました\n\n${result.schedules.length}件のスケジュールを登録`);
+                                                toast.success(`✓ 通知設定を保存しました\n\n${result.schedules.length}件のスケジュールを登録`);
                                                 console.log('[Settings] Manual save successful:', result);
                                             } else {
-                                                alert(`✗ 保存に失敗しました\n\nエラー: ${result.error}`);
+                                                toast.error(`✗ 保存に失敗しました\n\nエラー: ${result.error}`);
                                                 console.error('[Settings] Manual save failed:', result);
                                             }
                                         } catch (error) {
-                                            alert(`✗ 保存エラー\n\n${error.message}`);
+                                            toast.error(`✗ 保存エラー\n\n${error.message}`);
                                             console.error('[Settings] Manual save error:', error);
                                         }
                                     }}
@@ -3026,8 +3100,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 </p>
                                 <div className="space-y-2">
                                     <button
-                                        onClick={async () => {
-                                            if (confirm('すべてのキャッシュをクリアしますか？\n（通知設定やユーザーデータは保持されます）')) {
+                                        onClick={() => {
+                                            showConfirm('キャッシュクリアの確認', 'すべてのキャッシュをクリアしますか？\n（通知設定やユーザーデータは保持されます）', async () => {
                                                 try {
                                                     // Service Workerのキャッシュをクリア
                                                     if ('caches' in window) {
@@ -3051,13 +3125,13 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         console.log('[Cache] Service Worker re-registered');
                                                     }
 
-                                                    alert('キャッシュをクリアしました。\nページをリロードします。');
+                                                    toast('キャッシュをクリアしました。\nページをリロードします。');
                                                     window.location.reload(true);
                                                 } catch (error) {
                                                     console.error('[Cache] Failed to clear cache:', error);
-                                                    alert('キャッシュクリアに失敗しました: ' + error.message);
+                                                    toast.error('キャッシュクリアに失敗しました: ' + error.message);
                                                 }
-                                            }
+                                            });
                                         }}
                                         className="w-full px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
                                     >
@@ -3083,25 +3157,25 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 const supplementItems = customFoods.filter(item => item.itemType === 'supplement');
 
                                 const deleteItem = (index) => {
-                                    if (confirm('このアイテムを削除しますか？')) {
+                                    showConfirm('アイテム削除の確認', 'このアイテムを削除しますか？', () => {
                                         const updated = customFoods.filter((_, i) => i !== index);
                                         setCustomFoods(updated);
                                         localStorage.setItem('customFoods', JSON.stringify(updated));
-                                    }
+                                    });
                                 };
 
                                 const deleteAllByType = (itemType) => {
                                     const typeName = itemType === 'food' ? '食材' : itemType === 'recipe' ? '料理' : 'サプリ';
-                                    if (confirm(`すべての${typeName}を削除しますか？`)) {
+                                    showConfirm('全削除の確認', `すべての${typeName}を削除しますか？`, () => {
                                         const updated = customFoods.filter(item => item.itemType !== itemType);
                                         setCustomFoods(updated);
                                         localStorage.setItem('customFoods', JSON.stringify(updated));
-                                    }
+                                    });
                                 };
 
                                 const editItem = (item, index) => {
                                     // TODO: Open edit modal with the same form as custom creation
-                                    alert('編集機能は実装予定です');
+                                    toast('編集機能は実装予定です');
                                 };
 
                                 return (
@@ -3803,9 +3877,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 localStorage.setItem('DEV_PREMIUM_MODE', 'true');
                                                 const result = await ExperienceService.addPaidCredits(userId, 100);
                                                 if (result.success) {
-                                                    alert('Premium会員に切替え、クレジット100を付与しました');
+                                                    toast('Premium会員に切替え、クレジット100を付与しました');
                                                 } else {
-                                                    alert('Premium会員に切替えました');
+                                                    toast('Premium会員に切替えました');
                                                 }
                                                 window.location.reload();
                                             }}
@@ -4023,10 +4097,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        if (confirm(`"${key}" を削除しますか？`)) {
+                                                                        showConfirm('LocalStorageキー削除の確認', `"${key}" を削除しますか？`, () => {
                                                                             localStorage.removeItem(key);
                                                                             window.location.reload();
-                                                                        }
+                                                                        });
                                                                     }}
                                                                     className="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs"
                                                                 >
@@ -4046,11 +4120,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     </div>
                                     <button
                                         onClick={() => {
-                                            if (confirm('すべてのLocalStorageデータを削除しますか？\nこの操作は取り消せません。')) {
+                                            showConfirm('全LocalStorage削除の確認', 'すべてのLocalStorageデータを削除しますか？\nこの操作は取り消せません。', () => {
                                                 localStorage.clear();
-                                                alert('LocalStorageをクリアしました');
+                                                toast('LocalStorageをクリアしました');
                                                 window.location.reload();
-                                            }
+                                            });
                                         }}
                                         className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2"
                                     >
@@ -4079,7 +4153,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     document.dispatchEvent(new CustomEvent('openAdminPanel'));
                                                 }, 100);
                                             } else if (password !== null) {
-                                                alert('パスワードが間違っています');
+                                                toast('パスワードが間違っています');
                                             }
                                         }}
                                         className="w-full py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold flex items-center justify-center gap-2"
@@ -4172,12 +4246,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             <Icon name="Edit" size={18} />
                                                         </button>
                                                         <button
-                                                            onClick={async (e) => {
+                                                            onClick={(e) => {
                                                                 e.preventDefault();
-                                                                if (confirm(`「${template.name}」を削除しますか？`)) {
+                                                                showConfirm('テンプレート削除の確認', `「${template.name}」を削除しますか？`, async () => {
                                                                     await DataService.deleteMealTemplate(userId, template.id);
                                                                     await loadTemplates();
-                                                                }
+                                                                });
                                                             }}
                                                             className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                         >
@@ -4251,12 +4325,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             <Icon name="Edit" size={18} />
                                                         </button>
                                                         <button
-                                                            onClick={async (e) => {
+                                                            onClick={(e) => {
                                                                 e.preventDefault();
-                                                                if (confirm(`「${template.name}」を削除しますか？`)) {
+                                                                showConfirm('テンプレート削除の確認', `「${template.name}」を削除しますか？`, async () => {
                                                                     await DataService.deleteWorkoutTemplate(userId, template.id);
                                                                     await loadTemplates();
-                                                                }
+                                                                });
                                                             }}
                                                             className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                         >
@@ -4466,7 +4540,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     if (result.success) {
                                         setVerificationId(result.verificationId);
                                     } else {
-                                        alert('エラー: ' + result.error);
+                                        toast.error('エラー: ' + result.error);
                                     }
                                 }}
                                 className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
@@ -4504,9 +4578,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         setVerificationId(null);
                                         setVerificationCode('');
                                         setPhoneNumber('');
-                                        alert('2FAを設定しました');
+                                        toast('2FAを設定しました');
                                     } else {
-                                        alert('エラー: ' + result.error);
+                                        toast.error('エラー: ' + result.error);
                                     }
                                 }}
                                 className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
@@ -4530,6 +4604,15 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                 </div>
             </div>
         )}
+
+        {/* 確認モーダル */}
+        <ConfirmModal
+            show={confirmModal.show}
+            title={confirmModal.title}
+            message={confirmModal.message}
+            onConfirm={confirmModal.onConfirm}
+            onCancel={hideConfirm}
+        />
 
         </>
     );

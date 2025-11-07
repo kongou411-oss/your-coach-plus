@@ -1,4 +1,6 @@
 import React from 'react';
+import toast from 'react-hot-toast';
+
 // ===== Subscription View Component =====
 const SubscriptionView = ({ onClose, userId, userProfile }) => {
     const [loading, setLoading] = useState(false);
@@ -18,7 +20,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
 
         try {
             // TODO: Stripe Checkoutセッション作成
-            alert('Stripe統合は実装中です。\n\n本番環境では、ここでStripe Checkoutにリダイレクトされます。');
+            toast('Stripe統合は実装中です。\n\n本番環境では、ここでStripe Checkoutにリダイレクトされます。');
 
             // DEV_MODE用のモック処理
             if (DEV_MODE) {
@@ -32,12 +34,12 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                     creditsResetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString()
                 };
                 await DataService.saveUserProfile(userId, updatedProfile);
-                alert('Premium会員への登録が完了しました！（開発モード）');
+                toast.success('Premium会員への登録が完了しました！（開発モード）');
                 onClose();
             }
         } catch (error) {
             console.error('[Subscription] Error:', error);
-            alert('エラーが発生しました。もう一度お試しください。');
+            toast.error('エラーが発生しました。もう一度お試しください。');
         } finally {
             setLoading(false);
         }
@@ -49,7 +51,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
 
         try {
             // TODO: Stripe Checkoutセッション作成（単発購入）
-            alert(`${selectedCreditPack.name}の購入処理は実装中です。\n\n本番環境では、ここでStripe Checkoutにリダイレクトされます。`);
+            toast(`${selectedCreditPack.name}の購入処理は実装中です。\n\n本番環境では、ここでStripe Checkoutにリダイレクトされます。`);
 
             // DEV_MODE用のモック処理
             if (DEV_MODE) {
@@ -60,12 +62,12 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                     lifetimeCreditsPurchased: (userProfile.lifetimeCreditsPurchased || 0) + selectedCreditPack.credits
                 };
                 await DataService.saveUserProfile(userId, updatedProfile);
-                alert(`${selectedCreditPack.credits}クレジットを追加しました！（開発モード）`);
+                toast.success(`${selectedCreditPack.credits}クレジットを追加しました！（開発モード）`);
                 onClose();
             }
         } catch (error) {
             console.error('[Subscription] Error:', error);
-            alert('エラーが発生しました。もう一度お試しください。');
+            toast.error('エラーが発生しました。もう一度お試しください。');
         } finally {
             setLoading(false);
         }
