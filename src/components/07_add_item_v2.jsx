@@ -4185,47 +4185,11 @@ RM回数と重量を別々に入力してください。`
                                 inputUnit: foodUnit
                             });
 
-                            // ratioの計算: servingSizeがある場合（"1個"単位など）とない場合で分岐
-                            let ratio;
-                            let displayAmount = foodAmount;
-                            let displayUnit = foodUnit;
-
-                            // "1個"や"本"など、servingSizeがある特殊単位の処理
-                            if (foundFood.unit === '1個' || foundFood.unit === '本') {
-                                console.log(`[handleFoodsRecognized] 特殊単位検出: ${foundFood.unit}`);
-
-                                // グラム入力を個数/本数に変換
-                                if (foodUnit === 'g' && foundFood.servingUnit === 'g' && foundFood.servingSize) {
-                                    // 例: 150g ÷ 12g/個 = 12.5個
-                                    const numServings = foodAmount / foundFood.servingSize;
-                                    ratio = numServings;
-                                    displayAmount = parseFloat(numServings.toFixed(1));
-                                    displayUnit = foundFood.unit; // "1個"
-                                    console.log(`[handleFoodsRecognized] g→個/本変換: ${foodAmount}g → ${displayAmount}${displayUnit}, ratio=${ratio}`);
-                                } else if (foundFood.unit === '本' && (foodUnit === '本' || foodUnit === 'ml')) {
-                                    // 本単位で入力されている、またはml入力の場合
-                                    ratio = foodAmount;
-                                    displayAmount = foodAmount;
-                                    displayUnit = '本';
-                                    console.log(`[handleFoodsRecognized] 本単位: ${displayAmount}本, ratio=${ratio}`);
-                                } else if (foundFood.unit === '1個' && (foodUnit === '個' || foodUnit === '1個')) {
-                                    // 既に個数で指定されている場合
-                                    ratio = foodAmount;
-                                    displayAmount = foodAmount;
-                                    displayUnit = '1個';
-                                    console.log(`[handleFoodsRecognized] 個単位: ${displayAmount}個, ratio=${ratio}`);
-                                } else {
-                                    // その他の場合、100g換算にフォールバック
-                                    console.warn(`[handleFoodsRecognized] 予期しない単位組み合わせ: foodUnit=${foodUnit}, foundFood.unit=${foundFood.unit}`);
-                                    ratio = foodAmount / 100;
-                                    displayUnit = 'g';
-                                    console.log(`[handleFoodsRecognized] 100g換算にフォールバック: ratio=${ratio}`);
-                                }
-                            } else {
-                                // 通常の100gあたり食材
-                                ratio = foodAmount / 100;
-                                console.log(`[handleFoodsRecognized] 通常食材（100gあたり）: ${foodAmount}g, ratio=${ratio}`);
-                            }
+                            // 常にg単位として100g換算で計算（特殊単位処理を削除）
+                            const ratio = foodAmount / 100;
+                            const displayAmount = foodAmount;
+                            const displayUnit = 'g';
+                            console.log(`[handleFoodsRecognized] 100g換算: ${foodAmount}g, ratio=${ratio}`);
 
                             const result = {
                                 name: food.name,
@@ -6325,6 +6289,9 @@ RM回数と重量を別々に入力してください。`
                                     onFoodsRecognized={handleFoodsRecognized}
                                     onClose={() => setShowAIFoodRecognition(false)}
                                     onOpenCustomCreator={handleOpenCustomFromAI}
+                                    user={user}
+                                    dailyRecord={dailyRecord}
+                                    selectedDate={selectedDate}
                                 />
                             </div>
                         )}

@@ -2,7 +2,7 @@ import React from 'react';
 // ===== AI Food Recognition Component =====
 // AI搭載の食事認識機能（写真から食品を自動認識）
 
-const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, userId, userProfile }) => {
+const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, userId, userProfile, user, dailyRecord, selectedDate }) => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [recognizing, setRecognizing] = useState(false);
@@ -16,6 +16,24 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
     const [editingFoodIndex, setEditingFoodIndex] = useState(null);
     const [originalFood, setOriginalFood] = useState(null);
     const [adjustmentStep, setAdjustmentStep] = useState(1);
+
+    // 今日の日付を取得（YYYY-MM-DD形式、ローカル時間基準）
+    const getTodayString = () => {
+        // システムのローカル時間をそのまま使用
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
+
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        console.log(`[getTodayString] システム時刻: ${hours}:${minutes}`);
+        console.log(`[getTodayString] 算出日付: ${dateString}`);
+        console.log(`[getTodayString] now.toString(): ${now.toString()}`);
+
+        return dateString;
+    };
 
     // 画像選択ハンドラー
     const handleImageSelect = (event) => {
@@ -203,20 +221,25 @@ JSONのみ出力、説明文不要`;
                 // 【優先度1】パッケージ情報がある場合（source: 'package'）
                 if (food.source === 'package' && food.nutritionPer100g) {
                     console.log(`[recognizeFood] パッケージ情報を使用: ${food.name}`, food.nutritionPer100g);
+
+                    const amount = food.amount || 100;
+                    const ratio = amount / 100;
+
                     return {
                         name: food.name,
                         category: 'パッケージ',
-                        itemType: food.itemType || 'supplement',  // AI認識結果のitemTypeを使用
-                        amount: food.amount || 100,
-                        calories: food.nutritionPer100g.calories || 0,
-                        protein: food.nutritionPer100g.protein || 0,
-                        fat: food.nutritionPer100g.fat || 0,
-                        carbs: food.nutritionPer100g.carbs || 0,
-                        confidence: food.confidence || 1.0,  // パッケージ情報は信頼度100%
-                        isPackageInfo: true,  // パッケージ情報フラグ
-                        packageWeight: food.packageWeight || null,  // パッケージ全体の重量
-                        nutritionPer: food.nutritionPer || 100,  // 栄養成分表示の基準量
-                        _base: {
+                        itemType: food.itemType || 'supplement',
+                        amount: amount,  // g単位
+                        unit: 'g',
+                        calories: Math.round((food.nutritionPer100g.calories || 0) * ratio),
+                        protein: parseFloat(((food.nutritionPer100g.protein || 0) * ratio).toFixed(1)),
+                        fat: parseFloat(((food.nutritionPer100g.fat || 0) * ratio).toFixed(1)),
+                        carbs: parseFloat(((food.nutritionPer100g.carbs || 0) * ratio).toFixed(1)),
+                        confidence: food.confidence || 1.0,
+                        isPackageInfo: true,
+                        packageWeight: food.packageWeight || null,
+                        nutritionPer: food.nutritionPer || 100,
+                        _base: {  // 100gあたりの基準値
                             calories: food.nutritionPer100g.calories || 0,
                             protein: food.nutritionPer100g.protein || 0,
                             fat: food.nutritionPer100g.fat || 0,
@@ -245,21 +268,51 @@ JSONのみ出力、説明文不要`;
                     Object.keys(foodDB[category]).forEach(itemName => {
                         if (itemName.includes(searchName) || searchName.includes(itemName)) {
                             const dbItem = foodDB[category][itemName];
+
+                            // amountはAIが推定したg数をそのまま使用
+                            const amount = food.amount || 100;
+
+                            // DBアイテムが特殊単位（1個あたり）の場合、100gあたりに換算
+                            let caloriesPer100g, proteinPer100g, fatPer100g, carbsPer100g;
+
+                            if (dbItem.servingSize && dbItem.servingSize !== 100) {
+                                // 例: 鶏卵M（58g）の場合、82kcal（1個）→ 141kcal（100g）
+                                const conversionRatio = 100 / dbItem.servingSize;
+                                caloriesPer100g = (dbItem.calories || 0) * conversionRatio;
+                                proteinPer100g = (dbItem.protein || 0) * conversionRatio;
+                                fatPer100g = (dbItem.fat || 0) * conversionRatio;
+                                carbsPer100g = (dbItem.carbs || 0) * conversionRatio;
+                                console.log(`[recognizeFood] 特殊単位を100g換算: ${itemName} (${dbItem.servingSize}g) → 100g`);
+                            } else {
+                                // 通常の100gあたり食材
+                                caloriesPer100g = dbItem.calories || 0;
+                                proteinPer100g = dbItem.protein || 0;
+                                fatPer100g = dbItem.fat || 0;
+                                carbsPer100g = dbItem.carbs || 0;
+                            }
+
+                            // 実量に換算
+                            const ratio = amount / 100;
+
                             matchedItem = {
-                                ...dbItem,
                                 name: itemName,
                                 category: category,
-                                itemType: food.itemType || 'food',  // AI認識結果のitemTypeを保持
-                                amount: food.amount || 100,
+                                itemType: food.itemType || 'food',
+                                amount: amount,  // g単位
+                                unit: 'g',
+                                calories: Math.round(caloriesPer100g * ratio),
+                                protein: parseFloat((proteinPer100g * ratio).toFixed(1)),
+                                fat: parseFloat((fatPer100g * ratio).toFixed(1)),
+                                carbs: parseFloat((carbsPer100g * ratio).toFixed(1)),
                                 confidence: food.confidence || 0.5,
-                                _base: {  // 基準値を保持（特殊単位対応）
-                                    calories: dbItem.calories,
-                                    protein: dbItem.protein,
-                                    fat: dbItem.fat,
-                                    carbs: dbItem.carbs,
-                                    servingSize: dbItem.servingSize || 100,
-                                    servingUnit: dbItem.servingUnit || 'g',
-                                    unit: dbItem.unit || '100g'
+                                _base: {  // 100gあたりの基準値
+                                    calories: caloriesPer100g,
+                                    protein: proteinPer100g,
+                                    fat: fatPer100g,
+                                    carbs: carbsPer100g,
+                                    servingSize: 100,
+                                    servingUnit: 'g',
+                                    unit: '100g'
                                 }
                             };
                         }
@@ -275,25 +328,29 @@ JSONのみ出力、説明文不要`;
                         );
 
                         if (customItem) {
+                            const amount = food.amount || 100;
+                            const ratio = amount / 100;
+
                             matchedItem = {
                                 name: customItem.name,
                                 category: customItem.category || 'カスタム',
-                                itemType: customItem.itemType || food.itemType || 'food',  // カスタムアイテムまたはAI認識結果のitemTypeを保持
-                                calories: customItem.calories || 0,
-                                protein: customItem.protein || 0,
-                                fat: customItem.fat || 0,
-                                carbs: customItem.carbs || 0,
-                                amount: food.amount || customItem.servingSize || 100,
+                                itemType: customItem.itemType || food.itemType || 'food',
+                                amount: amount,  // g単位
+                                unit: 'g',
+                                calories: Math.round((customItem.calories || 0) * ratio),
+                                protein: parseFloat(((customItem.protein || 0) * ratio).toFixed(1)),
+                                fat: parseFloat(((customItem.fat || 0) * ratio).toFixed(1)),
+                                carbs: parseFloat(((customItem.carbs || 0) * ratio).toFixed(1)),
                                 confidence: food.confidence || 0.5,
-                                isCustom: true,  // カスタムアイテムフラグ
-                                _base: {  // 基準値を保持（特殊単位対応）
+                                isCustom: true,
+                                _base: {  // 100gあたりの基準値
                                     calories: customItem.calories || 0,
                                     protein: customItem.protein || 0,
                                     fat: customItem.fat || 0,
                                     carbs: customItem.carbs || 0,
-                                    servingSize: customItem.servingSize || 100,
-                                    servingUnit: customItem.servingUnit || 'g',
-                                    unit: customItem.unit || '100g'
+                                    servingSize: 100,
+                                    servingUnit: 'g',
+                                    unit: '100g'
                                 }
                             };
                         }
@@ -305,16 +362,17 @@ JSONのみ出力、説明文不要`;
                 // 【優先度4】どちらからも見つからない場合は八訂自動取得対象
                 return matchedItem || {
                     name: food.name,
-                    itemType: food.itemType || 'food',  // AI認識結果のitemTypeを使用（デフォルト: 食材）
-                    amount: food.amount || 100,
+                    itemType: food.itemType || 'food',
+                    amount: food.amount || 100,  // g単位
+                    unit: 'g',
                     confidence: food.confidence || 0.5,
                     calories: 0,
                     protein: 0,
                     fat: 0,
                     carbs: 0,
-                    isUnknown: true,  // 未登録フラグ
-                    needsHachiteiFetch: true,  // 八訂自動取得が必要
-                    _base: {
+                    isUnknown: true,
+                    needsHachiteiFetch: true,
+                    _base: {  // 100gあたりの基準値
                         calories: 0,
                         protein: 0,
                         fat: 0,
@@ -417,23 +475,27 @@ JSONのみ出力、説明文不要`;
                         matchScore: bestMatch.matchScore
                     });
 
+                    const amount = food.amount || 100;
+                    const ratio = amount / 100;
+
                     return {
-                        ...food,
                         name: `${food.name}（${bestMatch.name}）`,
                         category: '八訂',
-                        itemType: food.itemType || 'food',  // AI認識結果のitemTypeを保持
-                        calories: bestMatch.calories || 0,
-                        protein: bestMatch.protein || 0,
-                        fat: bestMatch.fat || 0,
-                        carbs: bestMatch.carbs || 0,
+                        itemType: food.itemType || 'food',
+                        amount: amount,  // g単位
+                        unit: 'g',
+                        calories: Math.round((bestMatch.calories || 0) * ratio),
+                        protein: parseFloat(((bestMatch.protein || 0) * ratio).toFixed(1)),
+                        fat: parseFloat(((bestMatch.fat || 0) * ratio).toFixed(1)),
+                        carbs: parseFloat(((bestMatch.carbs || 0) * ratio).toFixed(1)),
                         confidence: bestMatch.confidence || 0.8,
                         isUnknown: false,
                         needsHachiteiFetch: false,
-                        isFetchingHachitei: false,  // ローディング解除
-                        isHachitei: true,  // 八訂由来フラグ
-                        hachiteiMatchScore: bestMatch.matchScore || 0,  // 類似度スコア
-                        hachiteiCandidates: hachiteiData.result.candidates || [],  // 候補5つ
-                        _base: {
+                        isFetchingHachitei: false,
+                        isHachitei: true,
+                        hachiteiMatchScore: bestMatch.matchScore || 0,
+                        hachiteiCandidates: hachiteiData.result.candidates || [],
+                        _base: {  // 100gあたりの基準値
                             calories: bestMatch.calories || 0,
                             protein: bestMatch.protein || 0,
                             fat: bestMatch.fat || 0,
@@ -816,12 +878,12 @@ JSON形式のみ出力、説明文不要`;
         }
     };
 
-    // 食品の量を調整
+    // 食品の量を調整（常にg単位で処理）
     const adjustAmount = (index, newAmount) => {
         setRecognizedFoods(prev => prev.map((food, i) => {
             if (i !== index) return food;
 
-            // _baseから基準値を取得
+            // _baseから基準値を取得（100gあたり）
             const base = food._base || {
                 calories: food.calories,
                 protein: food.protein,
@@ -832,29 +894,13 @@ JSON形式のみ出力、説明文不要`;
                 unit: '100g'
             };
 
-            // ratioの計算: 単位に応じて処理
-            let ratio;
-            let displayAmount = newAmount;
-
-            if (base.unit === '1個' || base.unit === '個') {
-                // 個単位の場合: 入力値 ÷ servingSize（1個あたりのg数）= 個数
-                // 例: 180g ÷ 12g = 15個
-                // ratio = 個数
-                const numServings = newAmount / (base.servingSize || 100);
-                ratio = numServings;
-                displayAmount = parseFloat(numServings.toFixed(1));
-            } else if (base.unit === '本') {
-                // 本単位の場合: 入力値 = 本数
-                ratio = newAmount;
-                displayAmount = newAmount;
-            } else {
-                // 通常の100gあたり食材
-                ratio = newAmount / 100;
-            }
+            // 常にg単位として100g換算で計算
+            const ratio = newAmount / 100;
 
             return {
                 ...food,
-                amount: displayAmount,
+                amount: newAmount,  // g単位のまま
+                unit: 'g',  // 単位を明示
                 calories: Math.round(base.calories * ratio),
                 protein: parseFloat((base.protein * ratio).toFixed(1)),
                 fat: parseFloat((base.fat * ratio).toFixed(1)),
@@ -1033,19 +1079,101 @@ JSON形式のみ出力、説明文不要`;
             }
         }
 
-        // 認識リストのamountは常にg単位なので、unitフィールドを削除してから渡す
-        // （handleFoodsRecognizedでの誤解釈を防ぐため）
-        const foodsForTransfer = recognizedFoods.map(food => {
-            const { unit, servingSize, servingUnit, ...rest } = food;
-            return {
-                ...rest,
-                // unitフィールドを削除（amountはg単位）
-                // _baseには特殊単位情報が保持されている
-            };
-        });
+        // ===== 直接dailyRecordsに保存 =====
+        console.log('[confirmFoods] 直接dailyRecordsに保存開始');
 
-        onFoodsRecognized(foodsForTransfer);
-        // Note: creditUpdatedイベントはクレジット消費直後(198行目)に既に発火済み
+        // 食事IDを生成（タイムスタンプ）
+        const mealId = `meal_${Date.now()}`;
+        const now = new Date();
+        const timestamp = now.toISOString();
+
+        // 認識された食材を食事アイテムに変換（g単位統一）
+        const foodItems = recognizedFoods.map(food => ({
+            name: food.name,
+            amount: food.amount,  // 常にg単位
+            unit: 'g',  // 単位を明示
+            calories: food.calories || 0,
+            protein: food.protein || 0,
+            fat: food.fat || 0,
+            carbs: food.carbs || 0,
+            category: food.category || 'その他'
+        }));
+
+        // 食事データを作成
+        const mealData = {
+            id: mealId,
+            type: 'meal',
+            mealType: 'その他',  // デフォルト値
+            timestamp: timestamp,
+            items: foodItems,
+            memo: 'AI食事認識で追加'
+        };
+
+        try {
+            // 日付の決定：selectedDateがあればそれを使用、なければ今日
+            const todayString = getTodayString();
+            const dateKey = selectedDate || todayString;
+            console.log(`[confirmFoods] 保存開始`);
+            console.log(`[confirmFoods] selectedDate:`, selectedDate);
+            console.log(`[confirmFoods] getTodayString():`, todayString);
+            console.log(`[confirmFoods] 保存先日付: ${dateKey}`);
+            console.log(`[confirmFoods] 食材数: ${foodItems.length}`);
+            console.log(`[confirmFoods] 食事データ:`, mealData);
+            console.log(`[confirmFoods] user:`, user);
+
+            // Firestoreに保存
+            const currentUser = user || firebase.auth().currentUser;
+            console.log('[confirmFoods] currentUser:', currentUser);
+
+            if (!currentUser) {
+                throw new Error('ユーザー情報が取得できません');
+            }
+
+            const dailyRecordRef = firebase.firestore()
+                .collection('users')
+                .doc(currentUser.uid)
+                .collection('dailyRecords')
+                .doc(dateKey);
+
+            console.log(`[confirmFoods] Firestore保存先: users/${currentUser.uid}/dailyRecords/${dateKey}`);
+
+            await dailyRecordRef.set({
+                meals: firebase.firestore.FieldValue.arrayUnion(mealData)
+            }, { merge: true });
+
+            console.log('[confirmFoods] Firestoreに保存完了:', mealData);
+            console.log('[confirmFoods] ✅ 保存成功 - Toast表示とダッシュボード更新を実行します');
+
+            // Toastで通知
+            if (window.Toast && window.Toast.show) {
+                window.Toast.show(`${foodItems.length}件の食材を記録しました`, 'success');
+                console.log('[confirmFoods] Toast通知を表示しました');
+            } else {
+                console.warn('[confirmFoods] Toast未定義 - alertで代替表示します');
+                alert(`✅ ${foodItems.length}件の食材を記録しました`);
+            }
+
+            // モーダルを閉じる
+            onClose();
+            console.log('[confirmFoods] AIFoodRecognitionモーダルを閉じました');
+
+            // ダッシュボード更新イベントを発火
+            console.log('[confirmFoods] recordUpdatedイベントを発火します');
+            console.log('[confirmFoods] イベント詳細:', { type: 'meal', date: dateKey });
+            window.dispatchEvent(new CustomEvent('recordUpdated', {
+                detail: { type: 'meal', date: dateKey }
+            }));
+            console.log('[confirmFoods] イベント発火完了');
+
+            // リロードしない - ダッシュボードがrecordUpdatedイベントをリッスンして自動更新するはず
+            console.log('[confirmFoods] 完了 - ダッシュボードの自動更新を待機中');
+
+        } catch (error) {
+            console.error('[confirmFoods] dailyRecords保存エラー:', error);
+            if (window.Toast && window.Toast.show) {
+                window.Toast.show('保存に失敗しました', 'error');
+            }
+        }
     };
 
     // 食材検索
@@ -2008,12 +2136,12 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
 
                 // _baseがあればそれを使用、なければ現在の量から計算
                 const baseNutrients = food._base ? {
-                    calories: food._base.calories || 0,
+                    calories: Math.floor(food._base.calories || 0),  // 小数点以下切り捨て
                     protein: food._base.protein || 0,
                     fat: food._base.fat || 0,
                     carbs: food._base.carbs || 0
                 } : {
-                    calories: Math.round((food.calories || 0) / (food.amount || 100) * 100),
+                    calories: Math.floor((food.calories || 0) / (food.amount || 100) * 100),  // 小数点以下切り捨て
                     protein: parseFloat(((food.protein || 0) / (food.amount || 100) * 100).toFixed(1)),
                     fat: parseFloat(((food.fat || 0) / (food.amount || 100) * 100).toFixed(1)),
                     carbs: parseFloat(((food.carbs || 0) / (food.amount || 100) * 100).toFixed(1))
