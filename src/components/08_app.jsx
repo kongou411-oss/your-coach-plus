@@ -824,10 +824,16 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             // 初回読み込み時のデータ取得（handleDateChangeで日付変更時は処理されるので、ここでは初回のみ）
             useEffect(() => {
                 const loadDateRecord = async () => {
-                    if (!user) return; // ユーザーがいない場合はスキップ
+                    console.log('[App] loadDateRecord開始:', { user: !!user, currentDate });
+                    if (!user) {
+                        console.log('[App] userが未定義のためスキップ');
+                        return; // ユーザーがいない場合はスキップ
+                    }
 
                     const userId = user?.uid || DEV_USER_ID;
+                    console.log('[App] データ読み込み中:', { userId, currentDate });
                     const record = await DataService.getDailyRecord(userId, currentDate);
+                    console.log('[App] getDailyRecord結果:', record);
                     setDailyRecord(record || { meals: [], workouts: [], supplements: [], conditions: null });
 
                     // 前日のデータも読み込む（予測用）
@@ -841,7 +847,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 };
 
                 loadDateRecord();
-            }, [user]); // userが確定したら一度だけ実行
+            }, [user, currentDate]); // userまたはcurrentDateが変わったら実行
 
             // This useEffect was moved to DashboardView to follow the moved function.
 

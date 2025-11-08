@@ -989,7 +989,11 @@ const AddMealModal = ({
             {/* AI食事認識モーダル */}
             {showAIFoodRecognition && AIFoodRecognition && (
                 <AIFoodRecognition
-                    onClose={() => setShowAIFoodRecognition(false)}
+                    onClose={() => {
+                        setShowAIFoodRecognition(false);
+                        // AI食事認識は直接Firestoreに保存するため、親モーダルも閉じる
+                        onClose();
+                    }}
                     onFoodsRecognized={handleFoodsRecognized}
                     userId={user?.uid}
                     userProfile={userProfile}

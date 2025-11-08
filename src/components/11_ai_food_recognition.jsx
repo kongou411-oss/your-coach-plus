@@ -1,4 +1,5 @@
 import React from 'react';
+import toast from 'react-hot-toast';
 // ===== AI Food Recognition Component =====
 // AI搭載の食事認識機能（写真から食品を自動認識）
 
@@ -8,6 +9,7 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
     const [recognizing, setRecognizing] = useState(false);
     const [recognizingMessage, setRecognizingMessage] = useState('AI分析中...');
     const [recognizedFoods, setRecognizedFoods] = useState([]);
+    const [mealName, setMealName] = useState('食事');  // 食事名編集用
     const [error, setError] = useState(null);
     const [showManualAdd, setShowManualAdd] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -28,9 +30,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
         const hours = now.getHours();
         const minutes = now.getMinutes();
-        console.log(`[getTodayString] システム時刻: ${hours}:${minutes}`);
-        console.log(`[getTodayString] 算出日付: ${dateString}`);
-        console.log(`[getTodayString] now.toString(): ${now.toString()}`);
 
         return dateString;
     };
@@ -152,7 +151,6 @@ JSONのみ出力、説明文不要`;
             const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const model = isDev ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
 
-            console.log(`[recognizeFood] 使用モデル: ${model} (${isDev ? '開発環境' : '本番環境'})`);
 
             // 画像認識は60秒タイムアウト（画像処理は時間がかかる）
             const result = await callGeminiWithRetry(callGemini, {
@@ -393,6 +391,8 @@ JSONのみ出力、説明文不要`;
 
             setRecognizedFoods(matchedFoods);
 
+            // デフォルトの食事名は「食事」のまま（ユーザーが変更しない限り）
+
             // ===== 八訂自動取得処理（レート制限対策：最大1件のみ自動取得 + 2秒遅延） =====
             const unknownFoods = matchedFoods.filter(food => food.needsHachiteiFetch);
 
@@ -546,15 +546,20 @@ JSONのみ出力、説明文不要`;
 
                                 currentFoods = currentFoods.map((food, idx) => {
                                     if (idx !== targetIndex) return food;
+
+                                    // 実量に換算（八訂は100g基準）
+                                    const amount = food.amount || 100;
+                                    const ratio = amount / 100;
+
                                     return {
                                         ...food,
                                         name: `${food.name.split('（')[0]}（${bestMatch.name}）`,
                                         category: '八訂',
                                         itemType: food.itemType || 'food',  // AI認識結果のitemTypeを保持
-                                        calories: bestMatch.calories || 0,
-                                        protein: bestMatch.protein || 0,
-                                        fat: bestMatch.fat || 0,
-                                        carbs: bestMatch.carbs || 0,
+                                        calories: Math.round((bestMatch.calories || 0) * ratio),
+                                        protein: parseFloat(((bestMatch.protein || 0) * ratio).toFixed(1)),
+                                        fat: parseFloat(((bestMatch.fat || 0) * ratio).toFixed(1)),
+                                        carbs: parseFloat(((bestMatch.carbs || 0) * ratio).toFixed(1)),
                                         confidence: bestMatch.confidence || 0.8,
                                         isUnknown: false,
                                         needsManualHachiteiFetch: false,
@@ -1080,7 +1085,6 @@ JSON形式のみ出力、説明文不要`;
         }
 
         // ===== 直接dailyRecordsに保存 =====
-        console.log('[confirmFoods] 直接dailyRecordsに保存開始');
 
         // 食事IDを生成（タイムスタンプ）
         const mealId = `meal_${Date.now()}`;
@@ -1099,13 +1103,27 @@ JSON形式のみ出力、説明文不要`;
             category: food.category || 'その他'
         }));
 
+        // 合計カロリーとPFC計算
+        const totalCalories = foodItems.reduce((sum, item) => sum + (item.calories || 0), 0);
+        const totalProtein = foodItems.reduce((sum, item) => sum + (item.protein || 0), 0);
+        const totalFat = foodItems.reduce((sum, item) => sum + (item.fat || 0), 0);
+        const totalCarbs = foodItems.reduce((sum, item) => sum + (item.carbs || 0), 0);
+
+
         // 食事データを作成
         const mealData = {
             id: mealId,
             type: 'meal',
-            mealType: 'その他',  // デフォルト値
+            name: mealName,  // ユーザーが編集可能な食事名
+            mealType: 'その他',  // 固定値
             timestamp: timestamp,
+            time: now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),  // 時刻を追加
             items: foodItems,
+            totalCalories: totalCalories,  // 合計カロリーを追加
+            calories: totalCalories,  // 互換性のため
+            protein: totalProtein,  // 合計たんぱく質を追加
+            fat: totalFat,  // 合計脂質を追加
+            carbs: totalCarbs,  // 合計炭水化物を追加
             memo: 'AI食事認識で追加'
         };
 
@@ -1113,66 +1131,38 @@ JSON形式のみ出力、説明文不要`;
             // 日付の決定：selectedDateがあればそれを使用、なければ今日
             const todayString = getTodayString();
             const dateKey = selectedDate || todayString;
-            console.log(`[confirmFoods] 保存開始`);
-            console.log(`[confirmFoods] selectedDate:`, selectedDate);
-            console.log(`[confirmFoods] getTodayString():`, todayString);
-            console.log(`[confirmFoods] 保存先日付: ${dateKey}`);
-            console.log(`[confirmFoods] 食材数: ${foodItems.length}`);
-            console.log(`[confirmFoods] 食事データ:`, mealData);
-            console.log(`[confirmFoods] user:`, user);
 
             // Firestoreに保存
             const currentUser = user || firebase.auth().currentUser;
-            console.log('[confirmFoods] currentUser:', currentUser);
 
             if (!currentUser) {
                 throw new Error('ユーザー情報が取得できません');
             }
 
             const dailyRecordRef = firebase.firestore()
-                .collection('users')
-                .doc(currentUser.uid)
                 .collection('dailyRecords')
+                .doc(currentUser.uid)
+                .collection('records')
                 .doc(dateKey);
-
-            console.log(`[confirmFoods] Firestore保存先: users/${currentUser.uid}/dailyRecords/${dateKey}`);
 
             await dailyRecordRef.set({
                 meals: firebase.firestore.FieldValue.arrayUnion(mealData)
             }, { merge: true });
 
-            console.log('[confirmFoods] Firestoreに保存完了:', mealData);
-            console.log('[confirmFoods] ✅ 保存成功 - Toast表示とダッシュボード更新を実行します');
-
             // Toastで通知
-            if (window.Toast && window.Toast.show) {
-                window.Toast.show(`${foodItems.length}件の食材を記録しました`, 'success');
-                console.log('[confirmFoods] Toast通知を表示しました');
-            } else {
-                console.warn('[confirmFoods] Toast未定義 - alertで代替表示します');
-                alert(`✅ ${foodItems.length}件の食材を記録しました`);
-            }
+            toast.success(`${foodItems.length}件の食材を記録しました`);
 
             // モーダルを閉じる
             onClose();
-            console.log('[confirmFoods] AIFoodRecognitionモーダルを閉じました');
 
             // ダッシュボード更新イベントを発火
-            console.log('[confirmFoods] recordUpdatedイベントを発火します');
-            console.log('[confirmFoods] イベント詳細:', { type: 'meal', date: dateKey });
             window.dispatchEvent(new CustomEvent('recordUpdated', {
                 detail: { type: 'meal', date: dateKey }
             }));
-            console.log('[confirmFoods] イベント発火完了');
-
-            // リロードしない - ダッシュボードがrecordUpdatedイベントをリッスンして自動更新するはず
-            console.log('[confirmFoods] 完了 - ダッシュボードの自動更新を待機中');
 
         } catch (error) {
             console.error('[confirmFoods] dailyRecords保存エラー:', error);
-            if (window.Toast && window.Toast.show) {
-                window.Toast.show('保存に失敗しました', 'error');
-            }
+            toast.error('保存に失敗しました');
         }
     };
 
@@ -1253,6 +1243,22 @@ JSON形式のみ出力、説明文不要`;
                                 <p className="text-xs text-gray-500">認識結果と照らし合わせてご確認ください</p>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* 食事名編集セクション */}
+                {recognizedFoods.length > 0 && (
+                    <div className="border-b border-gray-200 bg-white p-4">
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            食事名
+                        </label>
+                        <input
+                            type="text"
+                            value={mealName}
+                            onChange={(e) => setMealName(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            placeholder="食事名を入力"
+                        />
                     </div>
                 )}
 

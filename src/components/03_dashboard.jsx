@@ -191,6 +191,35 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         };
     }, [user?.uid, profile]);
 
+    // recordUpdatedイベントを監視して自動リロード
+    useEffect(() => {
+        console.log('[Dashboard] recordUpdatedイベントリスナーを登録:', { userId: user?.uid, currentDate });
+
+        const handleRecordUpdate = async (event) => {
+            console.log('[Dashboard] recordUpdatedイベント受信:', event.detail);
+            if (user?.uid && currentDate) {
+                try {
+                    console.log('[Dashboard] データを再読み込み中...');
+                    const record = await DataService.getDailyRecord(user.uid, currentDate);
+                    console.log('[Dashboard] 再読み込み完了:', record);
+                    setDailyRecord(record);
+                } catch (error) {
+                    console.error('[Dashboard] データ再読み込みエラー:', error);
+                }
+            } else {
+                console.log('[Dashboard] イベント受信したがuser/dateが未設定:', { user: !!user, currentDate });
+            }
+        };
+
+        window.addEventListener('recordUpdated', handleRecordUpdate);
+        console.log('[Dashboard] イベントリスナー登録完了');
+
+        return () => {
+            console.log('[Dashboard] イベントリスナーを削除');
+            window.removeEventListener('recordUpdated', handleRecordUpdate);
+        };
+    }, [user?.uid, currentDate]);
+
     // 体組成を更新する共通ハンドラー
     const updateBodyComposition = async (newWeight, newBodyFat) => {
         const updated = {
