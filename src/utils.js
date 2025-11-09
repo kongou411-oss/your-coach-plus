@@ -728,9 +728,9 @@ const CalcUtils = {
             adjustments.reason.push('睡眠不足/質低下: タンパク質+0.1、低GI食材推奨');
         }
 
-        // b. ストレスレベル
+        // b. ストレスレベル（1=極大、2=高、3=普通、4=低、5=なし）
         const stressLevel = dailyRecord?.conditions?.stress || 3;
-        if (stressLevel >= 4) {
+        if (stressLevel <= 2) {
             adjustments.reason.push('高ストレス: ビタミンC・マグネシウム推奨、低GI食材推奨');
         }
 

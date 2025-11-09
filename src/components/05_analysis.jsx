@@ -624,12 +624,12 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 - 実施種目: ${(todayRecord.workouts || []).length}種目
 
 ### コンディション
-- 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5
-- 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5
-- 食欲: ${todayRecord.conditions?.appetite || 0}/5
-- 腸内環境: ${todayRecord.conditions?.digestion || 0}/5
-- 集中力: ${todayRecord.conditions?.focus || 0}/5
-- ストレス: ${todayRecord.conditions?.stress || 0}/5
+- 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5（5=9h以上、4=8h、3=7h、2=6h、1=5h以下）
+- 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5（5=最高、1=最悪）
+- 食欲: ${todayRecord.conditions?.appetite || 0}/5（5=最適、1=なし）
+- 腸内環境: ${todayRecord.conditions?.digestion || 0}/5（5=最高、1=不調）
+- 集中力: ${todayRecord.conditions?.focus || 0}/5（5=最高、1=最低）
+- ストレス: ${todayRecord.conditions?.stress || 0}/5（5=なし、4=低、3=普通、2=高、1=極大）
 
 ## 計算済みスコア（事前計算済み、そのまま使用）
 

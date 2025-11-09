@@ -503,6 +503,41 @@ const LoginScreen = () => {
                             )}
                         </div>
                     )}
+
+                    {isSignUp && (
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                            <div className="flex items-start gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="agreeToTerms"
+                                    checked={agreedToTerms}
+                                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                    className="mt-1 w-4 h-4 flex-shrink-0"
+                                />
+                                <label htmlFor="agreeToTerms" className="text-sm text-gray-700">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTermsModal(true)}
+                                        className="font-medium hover:underline"
+                                        style={{color: '#4A9EFF'}}
+                                    >
+                                        利用規約
+                                    </button>
+                                    と
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPrivacyModal(true)}
+                                        className="font-medium hover:underline"
+                                        style={{color: '#4A9EFF'}}
+                                    >
+                                        プライバシーポリシー
+                                    </button>
+                                    に同意します
+                                </label>
+                            </div>
+                        </div>
+                    )}
+
                     <button
                         type="submit"
                         className="w-full text-white font-bold py-3 rounded-lg transition"
@@ -522,40 +557,6 @@ const LoginScreen = () => {
                         >
                             パスワードを忘れた方
                         </button>
-                    </div>
-                )}
-
-                {isSignUp && (
-                    <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-3">
-                        <div className="flex items-start gap-2">
-                            <input
-                                type="checkbox"
-                                id="agreeToTerms"
-                                checked={agreedToTerms}
-                                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                                className="mt-1 w-4 h-4 flex-shrink-0"
-                            />
-                            <label htmlFor="agreeToTerms" className="text-sm text-gray-700">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowTermsModal(true)}
-                                    className="font-medium hover:underline"
-                                    style={{color: '#4A9EFF'}}
-                                >
-                                    利用規約
-                                </button>
-                                と
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPrivacyModal(true)}
-                                    className="font-medium hover:underline"
-                                    style={{color: '#4A9EFF'}}
-                                >
-                                    プライバシーポリシー
-                                </button>
-                                に同意します
-                            </label>
-                        </div>
                     </div>
                 )}
 
@@ -1777,7 +1778,10 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     )}
                     {step < 5 ? (
                         <button
-                            onClick={() => setStep(step + 1)}
+                            onClick={() => {
+                                setStep(step + 1);
+                                window.scrollTo(0, 0);
+                            }}
                             className="flex-1 text-white font-bold py-3 rounded-lg"
                             style={{backgroundColor: '#4A9EFF'}}
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
