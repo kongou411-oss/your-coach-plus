@@ -4,6 +4,56 @@ import toast from 'react-hot-toast';
 // AI搭載の食事認識機能（写真から食品を自動認識）
 
 const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, userId, userProfile, user, dailyRecord, selectedDate }) => {
+    // 類義語マッピング（AIが認識した名前 → データベース内の正式名称）
+    const synonymMap = {
+        // ご飯・米系
+        'ご飯': ['白米（炊飯後）', '白米　炊飯後', 'めし', '精白米　水稲めし'],
+        'ごはん': ['白米（炊飯後）', '白米　炊飯後', 'めし', '精白米　水稲めし'],
+        'ライス': ['白米（炊飯後）', '白米　炊飯後', '精白米　水稲めし'],
+        '米': ['白米（炊飯後）', '白米　炊飯後', '精白米　水稲めし'],
+        '白米': ['白米（炊飯後）', '白米　炊飯後', '精白米　水稲めし'],
+        '白米（炊飯後）': ['白米（炊飯後）', '白米　炊飯後', '精白米　水稲めし'],
+        '玄米': ['玄米（炊飯後）', '玄米　炊飯後'],
+        '玄米（炊飯後）': ['玄米（炊飯後）', '玄米　炊飯後'],
+
+        // 鶏肉系
+        '鶏肉': ['鶏肉', 'とり肉', 'チキン', '鶏むね肉', '鶏もも肉'],
+        'チキン': ['鶏肉', 'とり肉', 'チキン', '鶏むね肉', '鶏もも肉'],
+        'とり肉': ['鶏肉', 'チキン', '鶏むね肉', '鶏もも肉'],
+        '鶏むね肉': ['鶏むね肉', '鶏むね', '鶏胸肉'],
+        '鶏もも肉': ['鶏もも肉', '鶏もも', '鶏腿肉'],
+
+        // 卵系（Mサイズを最優先）
+        '卵': ['鶏卵 M', '鶏卵（全卵）', '鶏卵'],
+        'たまご': ['鶏卵 M', '鶏卵（全卵）', '鶏卵'],
+        '鶏卵': ['鶏卵 M', '鶏卵（全卵）'],
+        '鶏卵（全卵）': ['鶏卵 M', '鶏卵'],
+
+        // 豚肉系
+        '豚肉': ['豚肉', 'ぶた肉', '豚ロース', '豚バラ'],
+        'ぶた肉': ['豚肉', '豚ロース', '豚バラ'],
+
+        // 牛肉系
+        '牛肉': ['牛肉', '牛もも肉', '牛バラ'],
+
+        // 魚系
+        'サーモン': ['鮭', 'さけ', 'シャケ'],
+        '鮭': ['鮭', 'さけ', 'シャケ', 'サーモン'],
+        'まぐろ': ['まぐろ', 'マグロ', '鮪'],
+
+        // 野菜系
+        'ブロッコリー': ['ブロッコリー', 'ぶろっこりー'],
+        'トマト': ['トマト', 'とまと', 'ミニトマト'],
+        'ミニトマト': ['トマト', 'ミニトマト'],
+        '玉ねぎ': ['玉ねぎ', 'たまねぎ', 'タマネギ', '玉葱'],
+        'にんじん': ['にんじん', 'ニンジン', '人参', 'にんじん、根'],
+        '人参': ['にんじん', 'ニンジン', '人参', 'にんじん、根'],
+        'きゅうり': ['きゅうり', 'キュウリ', '胡瓜'],
+        'キャベツ': ['キャベツ', 'きゃべつ'],
+        'じゃがいも': ['じゃがいも', 'ジャガイモ', 'ばれいしょ'],
+        'パセリ': ['パセリ', 'ぱせり'],
+    };
+
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [recognizing, setRecognizing] = useState(false);
@@ -18,6 +68,53 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
     const [editingFoodIndex, setEditingFoodIndex] = useState(null);
     const [originalFood, setOriginalFood] = useState(null);
     const [adjustmentStep, setAdjustmentStep] = useState(1);
+    const [customFoods, setCustomFoods] = useState([]);  // Firestoreから取得したカスタムアイテム
+
+    // コンポーネントマウント時にFirestoreからcustomFoodsを取得
+    useEffect(() => {
+        const loadCustomFoods = async () => {
+            // Firebaseの現在のユーザーを直接取得
+            const currentUser = firebase.auth().currentUser;
+            console.log('[AIFoodRecognition] useEffect実行、currentUser:', currentUser);
+
+            if (!currentUser || !currentUser.uid) {
+                console.log('[AIFoodRecognition] ユーザー未ログインのためスキップ');
+                return;
+            }
+
+            try {
+                console.log('[AIFoodRecognition] customFoods読み込み開始...');
+                const customFoodsSnapshot = await firebase.firestore()
+                    .collection('users')
+                    .doc(currentUser.uid)
+                    .collection('customFoods')
+                    .get();
+
+                const foods = customFoodsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                setCustomFoods(foods);
+                console.log(`[AIFoodRecognition] customFoods読み込み完了: ${foods.length}件`, foods.map(f => f.name));
+            } catch (error) {
+                console.error('[AIFoodRecognition] customFoods読み込みエラー:', error);
+            }
+        };
+
+        // 認証状態の変化を監視
+        const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                console.log('[AIFoodRecognition] 認証状態変化: ログイン済み');
+                loadCustomFoods();
+            } else {
+                console.log('[AIFoodRecognition] 認証状態変化: 未ログイン');
+                setCustomFoods([]);
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     // 今日の日付を取得（YYYY-MM-DD形式、ローカル時間基準）
     const getTodayString = () => {
@@ -133,17 +230,32 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
 優先度1: パッケージの栄養成分表示がある場合
 - 内容量、栄養成分（100gあたりに換算）を読み取る
-出力: {"hasPackageInfo": true, "packageWeight": 数値g, "nutritionPer": 数値g, "foods": [{"name": "商品名", "amount": 数値g, "confidence": 1.0, "source": "package", "itemType": "supplement", "nutritionPer100g": {"calories": 数値, "protein": 数値, "fat": 数値, "carbs": 数値}}]}
+出力: {"hasPackageInfo": true, "packageWeight": 数値g, "nutritionPer": 数値g, "foods": [{"name": "商品名", "amount": 数値g, "confidence": 1.0, "source": "package", "itemType": "supplement", "cookingState": "加工済み", "nutritionPer100g": {"calories": 数値, "protein": 数値, "fat": 数値, "carbs": 数値}}]}
 
 優先度2: 料理や生鮮食品の場合
-- 食材単品で検出（例: "鶏むね肉", "白米", "鶏卵（全卵）"）
-- 複合料理は構成食材に分解
-出力: {"hasPackageInfo": false, "foods": [{"name": "食材名", "amount": 推定g, "confidence": 0-1, "source": "visual_estimation", "itemType": "food"}]}
+- **重要**: 料理名ではなく、使用されている食材を個別に分解して列挙すること
+  例: 「オムライス」 → 「卵」「白米（炊飯後）」「玉ねぎ」「鶏肉」「ケチャップ」
+  例: 「ハンバーグ」 → 「牛ひき肉」「豚ひき肉」「玉ねぎ」「パン粉」「卵」
+- 食材単品で検出（例: "鶏むね肉", "白米（炊飯後）", "鶏卵（全卵）"）
+- **調理状態を必ず明記**すること
+  - 炊飯後: 「白米（炊飯後）」「玄米（炊飯後）」など
+  - 生: 「鶏むね肉（生）」「豚ロース（生）」など
+  - 茹で: 「ブロッコリー（茹で）」「卵（茹で）」など
+  - 焼き: 「鶏むね肉（焼き）」「鮭（焼き）」など
+  - 炒め: 「野菜炒め（炒め）」など
+出力: {"hasPackageInfo": false, "foods": [{"name": "食材名", "amount": 推定g, "confidence": 0-1, "source": "visual_estimation", "itemType": "food", "cookingState": "炊飯後|生|茹で|焼き|炒め|揚げ|加工済み"}]}
 
-itemType: "food"（食材）, "meal"（料理）, "supplement"（サプリ・プロテイン）のいずれかを指定
+itemType: "food"（食材）, "supplement"（サプリ・プロテイン）のいずれかを指定
 - プロテイン、サプリメントは "supplement"
-- 複数の食材で構成された完成品（カレー、ハンバーグ等）は "meal"
-- 単一の食材（鶏むね肉、白米等）は "food"
+- **料理は食材に分解するため、"meal"は使用しない**
+- 単一の食材は "food"
+
+cookingState（調理状態）の判定基準:
+- 写真から調理状態を判定し、必ず明記すること
+- 「ご飯」「ライス」→ cookingState: "炊飯後"
+- 「生肉」「刺身」→ cookingState: "生"
+- 「ゆで卵」「茹でた野菜」→ cookingState: "茹で"
+- 「焼き魚」「焼き鳥」→ cookingState: "焼き"
 
 JSONのみ出力、説明文不要`;
 
@@ -262,9 +374,37 @@ JSONのみ出力、説明文不要`;
                     }
                 }
 
+                // 類義語を考慮した検索名リストを生成
+                let searchNames = [searchName];
+                if (synonymMap[searchName]) {
+                    searchNames = searchNames.concat(synonymMap[searchName]);
+                }
+                // cookingStateが含まれている場合、それも考慮
+                if (food.cookingState) {
+                    const nameWithState = `${searchName}（${food.cookingState}）`;
+                    searchNames.push(nameWithState);
+                    if (synonymMap[searchName]) {
+                        synonymMap[searchName].forEach(syn => {
+                            searchNames.push(`${syn}（${food.cookingState}）`);
+                        });
+                    }
+                }
+
+                console.log(`[recognizeFood] 検索名リスト (${food.name}):`, searchNames);
+
+                let foundMatch = false;
                 Object.keys(foodDB).forEach(category => {
+                    if (foundMatch) return;  // 既にマッチが見つかっていたらスキップ
+
                     Object.keys(foodDB[category]).forEach(itemName => {
-                        if (itemName.includes(searchName) || searchName.includes(itemName)) {
+                        if (foundMatch) return;  // 既にマッチが見つかっていたらスキップ
+
+                        // 類義語リストのいずれかとマッチするか確認
+                        const isMatch = searchNames.some(name =>
+                            itemName.includes(name) || name.includes(itemName)
+                        );
+
+                        if (isMatch) {
                             const dbItem = foodDB[category][itemName];
 
                             // amountはAIが推定したg数をそのまま使用
@@ -313,19 +453,31 @@ JSONのみ出力、説明文不要`;
                                     unit: '100g'
                                 }
                             };
+                            foundMatch = true;
+                            console.log(`[recognizeFood] データベースマッチ: ${food.name} → ${itemName}（類義語検索）`);
                         }
                     });
                 });
 
-                // 【優先度3】localStorageのcustomFoodsから検索
+                // 【優先度3】Firestoreから取得したcustomFoodsから検索
                 if (!matchedItem) {
                     try {
-                        const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
-                        const customItem = customFoods.find(item =>
-                            item.name.includes(food.name) || food.name.includes(item.name)
-                        );
+                        console.log(`[recognizeFood] customFoods検索: ${food.name}`, customFoods.map(f => f.name));
+
+                        // 類義語も考慮した検索
+                        const customItem = customFoods.find(item => {
+                            // 直接一致
+                            if (item.name === food.name || item.name.includes(food.name) || food.name.includes(item.name)) {
+                                return true;
+                            }
+                            // 類義語リストとの照合
+                            return searchNames.some(name =>
+                                item.name.includes(name) || name.includes(item.name)
+                            );
+                        });
 
                         if (customItem) {
+                            console.log(`[recognizeFood] カスタムアイテムマッチ: ${food.name} → ${customItem.name}`);
                             const amount = food.amount || 100;
                             const ratio = amount / 100;
 
@@ -834,6 +986,12 @@ JSON形式のみ出力、説明文不要`;
                 throw new Error('八訂データ取得に失敗しました');
             }
 
+            // レスポンスの構造チェック
+            if (!result.data.response || !result.data.response.candidates || result.data.response.candidates.length === 0) {
+                console.error('[fetchNutritionFromHachitei] 不正なレスポンス:', result.data);
+                throw new Error('AIからの応答がありませんでした');
+            }
+
             const textContent = result.data.response.candidates[0].content.parts[0].text;
 
             // JSONを抽出
@@ -1049,34 +1207,27 @@ JSON形式のみ出力、説明文不要`;
                         createdAt: new Date().toISOString()
                     };
 
-                    if (window.DEV_MODE) {
-                        // LocalStorageに保存（キーを統一: customFoods）
-                        const existingFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
+                    // Firestoreに保存
+                    const currentUser = firebase.auth().currentUser;
+                    if (currentUser) {
+                        const customFoodsRef = firebase.firestore()
+                            .collection('users')
+                            .doc(currentUser.uid)
+                            .collection('customFoods')
+                            .doc(customFood.name);
 
-                        // 同名の食材があれば上書き、なければ追加
-                        const existingIndex = existingFoods.findIndex(f => f.name === customFood.name);
-                        if (existingIndex >= 0) {
-                            existingFoods[existingIndex] = customFood;
-                            console.log(`[confirmFoods] カスタムアイテムを上書き: ${customFood.name} (${itemType})`);
-                        } else {
-                            existingFoods.push(customFood);
-                            console.log(`[confirmFoods] カスタムアイテムを新規保存: ${customFood.name} (${itemType})`);
-                        }
+                        await customFoodsRef.set(customFood, { merge: true });
+                        console.log(`[confirmFoods] カスタムアイテムを保存: ${customFood.name} (${itemType})`);
 
-                        localStorage.setItem('customFoods', JSON.stringify(existingFoods));
-                    } else {
-                        // Firestoreに保存
-                        const user = firebase.auth().currentUser;
-                        if (user) {
-                            const customFoodsRef = firebase.firestore()
-                                .collection('users')
-                                .doc(user.uid)
-                                .collection('customFoods')
-                                .doc(customFood.name);
-
-                            await customFoodsRef.set(customFood, { merge: true });
-                            console.log(`[confirmFoods] カスタムアイテムを保存: ${customFood.name} (${itemType})`);
-                        }
+                        // stateも更新（即座に反映）
+                        setCustomFoods(prev => {
+                            const existing = prev.find(f => f.name === customFood.name);
+                            if (existing) {
+                                return prev.map(f => f.name === customFood.name ? customFood : f);
+                            } else {
+                                return [...prev, customFood];
+                            }
+                        });
                     }
                 } catch (error) {
                     console.error(`[confirmFoods] カスタムアイテム保存エラー (${food.name}):`, error);
@@ -1092,16 +1243,31 @@ JSON形式のみ出力、説明文不要`;
         const timestamp = now.toISOString();
 
         // 認識された食材を食事アイテムに変換（g単位統一）
-        const foodItems = recognizedFoods.map(food => ({
-            name: food.name,
-            amount: food.amount,  // 常にg単位
-            unit: 'g',  // 単位を明示
-            calories: food.calories || 0,
-            protein: food.protein || 0,
-            fat: food.fat || 0,
-            carbs: food.carbs || 0,
-            category: food.category || 'その他'
-        }));
+        // ※ _baseから実量の栄養素を再計算（編集内容を反映）
+        const foodItems = recognizedFoods.map(food => {
+            const base = food._base || {
+                calories: food.calories || 0,
+                protein: food.protein || 0,
+                fat: food.fat || 0,
+                carbs: food.carbs || 0,
+                servingSize: 100
+            };
+
+            // 実量に換算（_baseは100gあたり）
+            const amount = food.amount || 100;
+            const ratio = amount / 100;
+
+            return {
+                name: food.name,
+                amount: amount,  // 常にg単位
+                unit: 'g',  // 単位を明示
+                calories: Math.round(base.calories * ratio),
+                protein: parseFloat((base.protein * ratio).toFixed(1)),
+                fat: parseFloat((base.fat * ratio).toFixed(1)),
+                carbs: parseFloat((base.carbs * ratio).toFixed(1)),
+                category: food.category || 'その他'
+            };
+        });
 
         // 合計カロリーとPFC計算
         const totalCalories = foodItems.reduce((sum, item) => sum + (item.calories || 0), 0);
@@ -1975,14 +2141,13 @@ const findTopMatches = (inputName, topN = 3) => {
 const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onReplace, onOpenCustomCreator, manualFetchHachitei, isEditing }) => {
     const [isNutritionEditExpanded, setIsNutritionEditExpanded] = useState(false); // 栄養素編集の展開状態
 
-    // 未登録食品の場合、候補を検索（上位3つ）
+    // すべての食品に対して候補を検索（上位3つ）
     const [suggestions, setSuggestions] = useState([]);
     useEffect(() => {
-        if (food.isUnknown) {
-            const matches = findTopMatches(food.name, 3);
-            setSuggestions(matches);
-        }
-    }, [food.name, food.isUnknown]);
+        // isUnknown フラグに関係なく、全ての食品に候補を提示
+        const matches = findTopMatches(food.name, 3);
+        setSuggestions(matches);
+    }, [food.name]);
 
     // 栄養素を計算（_baseから100gあたりの値を取得）
     const base = food._base || {

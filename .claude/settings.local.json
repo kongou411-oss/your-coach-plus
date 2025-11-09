@@ -67,7 +67,9 @@
       "Bash(copy:*)",
       "Bash(C:Usersyourcyourcoach_newpubliccheck_exports.js)",
       "Bash(npm install:*)",
-      "Bash(firebase functions:log:*)"
+      "Bash(firebase functions:log:*)",
+      "Bash(if exist nul del /F nul)",
+      "Bash(if exist \"nul 2\" del /F \"nul 2\")"
     ],
     "deny": [],
     "ask": []
