@@ -69,7 +69,9 @@
       "Bash(npm install:*)",
       "Bash(firebase functions:log:*)",
       "Bash(if exist nul del /F nul)",
-      "Bash(if exist \"nul 2\" del /F \"nul 2\")"
+      "Bash(if exist \"nul 2\" del /F \"nul 2\")",
+      "Bash(tasklist:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

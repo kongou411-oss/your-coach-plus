@@ -370,7 +370,8 @@ const LBMUtils = {
             manganese: 11,    // mg
             selenium: 450,    // μg
             iodine: 3000,     // μg
-            chromium: null    // 上限なし
+            chromium: null,   // 上限なし
+            molybdenum: 600   // μg
         };
 
         // 栄養素を計算して耐容上限でキャップ
@@ -409,7 +410,8 @@ const LBMUtils = {
                 manganese: capValue(Math.round(4.0 * lbmFactor * btFactor.mineral * lifestyleBase * 10) / 10, tolerableUpperLimits.manganese),
                 selenium: capValue(Math.round(30 * lbmFactor * btFactor.antioxidant * lifestyleBase), tolerableUpperLimits.selenium),
                 iodine: capValue(Math.round(130 * lbmFactor * btFactor.mineral * lifestyleBase), tolerableUpperLimits.iodine),
-                chromium: Math.round(35 * lbmFactor * btFactor.mineral * lifestyleBase)
+                chromium: Math.round(35 * lbmFactor * btFactor.mineral * lifestyleBase),
+                molybdenum: capValue(Math.round(30 * lbmFactor * btFactor.mineral * lifestyleBase), tolerableUpperLimits.molybdenum)
             },
             // その他の栄養素: LBM × 目的 × ライフスタイル
             otherNutrients: {
@@ -851,3 +853,6 @@ const CalcUtils = {
         };
     }
 };
+
+// グローバルに公開
+window.LBMUtils = LBMUtils;

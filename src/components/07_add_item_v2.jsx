@@ -1618,6 +1618,56 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                 secondaryMuscles: []
             });
 
+            // Firestoreから読み込んだカスタムアイテム（AI解析経由で保存されたもの）
+            const [customFoods, setCustomFoods] = useState([]);
+
+            // customFoodsをFirestoreから読み込み
+            useEffect(() => {
+                console.log('[AddItemView] useEffect開始');
+                const loadCustomFoods = async () => {
+                    const currentUser = firebase.auth().currentUser;
+                    console.log('[AddItemView] loadCustomFoods実行、currentUser:', currentUser);
+                    if (!currentUser || !currentUser.uid) {
+                        console.log('[AddItemView] ユーザー未ログインのためスキップ');
+                        return;
+                    }
+
+                    try {
+                        console.log('[AddItemView] customFoods読み込み開始...');
+                        const customFoodsSnapshot = await firebase.firestore()
+                            .collection('users')
+                            .doc(currentUser.uid)
+                            .collection('customFoods')
+                            .get();
+
+                        const foods = customFoodsSnapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        }));
+
+                        setCustomFoods(foods);
+                        console.log(`[AddItemView] customFoods読み込み完了: ${foods.length}件`, foods.map(f => f.name));
+                    } catch (error) {
+                        console.error('[AddItemView] customFoods読み込みエラー:', error);
+                    }
+                };
+
+                const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                    if (user) {
+                        console.log('[AddItemView] 認証状態変化: ログイン済み');
+                        loadCustomFoods();
+                    } else {
+                        console.log('[AddItemView] 認証状態変化: 未ログイン');
+                        setCustomFoods([]);
+                    }
+                });
+
+                return () => {
+                    console.log('[AddItemView] useEffectクリーンアップ');
+                    unsubscribe();
+                };
+            }, []);
+
             // テンプレート読み込み
             useEffect(() => {
                 if (type === 'meal' && unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id)) {
@@ -4558,10 +4608,10 @@ RM回数と重量を別々に入力してください。`
                     }
                 });
 
-                // カスタム食材を食材配下に追加
-                const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
+                // カスタム食材を食材配下に追加（Firestoreから取得したcustomFoods stateを使用）
+                // itemTypeが未設定の古いデータはデフォルトで'food'として扱う
                 const filteredCustomFoods = customFoods.filter(food =>
-                    food.itemType === 'food' && fuzzyMatch(food.name, searchTerm)
+                    (!food.itemType || food.itemType === 'food') && fuzzyMatch(food.name, searchTerm)
                 );
                 if (filteredCustomFoods.length > 0) {
                     hierarchicalCategories['食材']['カスタム食材'] = filteredCustomFoods.map(f => f.name);
@@ -5203,7 +5253,7 @@ RM回数と重量を別々に入力してください。`
                                                                     const isCustom = subCategory === 'カスタム食材' || subCategory === 'カスタム料理' || subCategory === 'カスタムサプリ';
 
                                                                     if (isCustom) {
-                                                                        const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
+                                                                        // Firestoreから取得したcustomFoodsを使用
                                                                         food = customFoods.find(f => f.name === foodName);
                                                                         actualCategory = subCategory;
                                                                     } else if (topCategory === 'サプリメント' || subCategory === 'ドリンク') {

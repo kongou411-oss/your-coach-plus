@@ -717,9 +717,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     </div>
                 </div>
 
-                {/* ビタミン・ミネラル詳細（守破離システムに統合 - 18日以上で開放） */}
-                {unlockedFeatures.includes(FEATURES.MICRONUTRIENTS.id) && (
-                    <details className="mt-4">
+                {/* ビタミン・ミネラル詳細 */}
+                <details className="mt-4">
                         <summary className="cursor-pointer text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-2">
                             <Icon name="ChevronDown" size={16} />
                             ビタミン・ミネラル+
@@ -777,13 +776,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         calcium: 'カルシウム', iron: '鉄', magnesium: 'マグネシウム',
                                         phosphorus: 'リン', potassium: 'カリウム', sodium: 'ナトリウム',
                                         zinc: '亜鉛', copper: '銅', manganese: 'マンガン',
-                                        selenium: 'セレン', iodine: 'ヨウ素', chromium: 'クロム'
+                                        selenium: 'セレン', iodine: 'ヨウ素', chromium: 'クロム', molybdenum: 'モリブデン'
                                     };
                                     const mineralUnits = {
                                         calcium: 'mg', iron: 'mg', magnesium: 'mg',
                                         phosphorus: 'mg', potassium: 'mg', sodium: 'mg',
                                         zinc: 'mg', copper: 'mg', manganese: 'mg',
-                                        selenium: 'μg', iodine: 'μg', chromium: 'μg'
+                                        selenium: 'μg', iodine: 'μg', chromium: 'μg', molybdenum: 'μg'
                                     };
                                     return Object.entries(targets.minerals).map(([key, target]) => {
                                         const current = currentIntake.minerals[key] || 0;
@@ -855,7 +854,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         )}
                     </div>
                 </details>
-                )}
                     </div>
                 )}
 

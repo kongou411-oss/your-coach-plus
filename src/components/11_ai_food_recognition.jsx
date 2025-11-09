@@ -442,6 +442,38 @@ JSONのみ出力、説明文不要`;
                                 protein: parseFloat((proteinPer100g * ratio).toFixed(1)),
                                 fat: parseFloat((fatPer100g * ratio).toFixed(1)),
                                 carbs: parseFloat((carbsPer100g * ratio).toFixed(1)),
+                                // ビタミン・ミネラル（データベースから取得）
+                                vitamins: {
+                                    A: dbItem.vitaminA || 0,
+                                    B1: dbItem.vitaminB1 || 0,
+                                    B2: dbItem.vitaminB2 || 0,
+                                    B6: dbItem.vitaminB6 || 0,
+                                    B12: dbItem.vitaminB12 || 0,
+                                    C: dbItem.vitaminC || 0,
+                                    D: dbItem.vitaminD || 0,
+                                    E: dbItem.vitaminE || 0,
+                                    K: dbItem.vitaminK || 0,
+                                    niacin: dbItem.niacin || 0,
+                                    pantothenicAcid: dbItem.pantothenicAcid || 0,
+                                    biotin: dbItem.biotin || 0,
+                                    folicAcid: dbItem.folicAcid || 0
+                                },
+                                minerals: {
+                                    sodium: dbItem.sodium || 0,
+                                    potassium: dbItem.potassium || 0,
+                                    calcium: dbItem.calcium || 0,
+                                    magnesium: dbItem.magnesium || 0,
+                                    phosphorus: dbItem.phosphorus || 0,
+                                    iron: dbItem.iron || 0,
+                                    zinc: dbItem.zinc || 0,
+                                    copper: dbItem.copper || 0,
+                                    manganese: dbItem.manganese || 0,
+                                    iodine: dbItem.iodine || 0,
+                                    selenium: dbItem.selenium || 0,
+                                    chromium: dbItem.chromium || 0,
+                                    molybdenum: dbItem.molybdenum || 0
+                                },
+                                otherNutrients: [],
                                 confidence: food.confidence || 0.5,
                                 _base: {  // 100gあたりの基準値
                                     calories: caloriesPer100g,
@@ -491,6 +523,10 @@ JSONのみ出力、説明文不要`;
                                 protein: parseFloat(((customItem.protein || 0) * ratio).toFixed(1)),
                                 fat: parseFloat(((customItem.fat || 0) * ratio).toFixed(1)),
                                 carbs: parseFloat(((customItem.carbs || 0) * ratio).toFixed(1)),
+                                // ビタミン・ミネラル（カスタムアイテムから取得）
+                                vitamins: customItem.vitamins || {},
+                                minerals: customItem.minerals || {},
+                                otherNutrients: customItem.otherNutrients || [],
                                 confidence: food.confidence || 0.5,
                                 isCustom: true,
                                 _base: {  // 100gあたりの基準値
@@ -1182,21 +1218,33 @@ JSON形式のみ出力、説明文不要`;
                         servingUnit: 'g'
                     };
 
-                    // itemTypeに応じてcategoryとitemTypeを決定
-                    let category = 'カスタム食材';  // デフォルト
+                    // itemTypeとcustomLabelを決定
                     let itemType = 'food';  // デフォルト
+                    let customLabel = 'カスタム食材';  // 表示用ラベル
                     if (food.itemType === 'meal') {
-                        category = 'カスタム料理';
+                        customLabel = 'カスタム料理';
                         itemType = 'recipe';
                     } else if (food.itemType === 'supplement') {
-                        category = 'カスタムサプリ';
+                        customLabel = 'カスタムサプリ';
                         itemType = 'supplement';
+                    }
+
+                    // 実際のカテゴリ（検索フィルタ用）を決定
+                    // データベースマッチしたものはfood.categoryに肉類などが入っている
+                    // 未知のものはデフォルトで'その他'
+                    let actualCategory = food.category || 'その他';
+
+                    // サプリメントの場合は特殊処理
+                    if (itemType === 'supplement') {
+                        actualCategory = food.category || 'サプリメント';
                     }
 
                     // 100gあたりの値を保存（実量換算前の基準値）
                     const customFood = {
                         name: food.name.split('（')[0], // 括弧を除去
-                        category: category,
+                        category: actualCategory,  // 検索フィルタリング用の実際のカテゴリ
+                        customLabel: customLabel,  // 表示用ラベル（カスタム食材など）
+                        isCustom: true,  // カスタムアイテムフラグ
                         itemType: itemType,  // 設定画面でのフィルタリング用
                         calories: base.calories || 0,
                         protein: base.protein || 0,
@@ -1204,6 +1252,10 @@ JSON形式のみ出力、説明文不要`;
                         carbs: base.carbs || 0,
                         servingSize: 100,
                         servingUnit: 'g',
+                        // ビタミン・ミネラル（foodオブジェクトから取得）
+                        vitamins: food.vitamins || {},
+                        minerals: food.minerals || {},
+                        otherNutrients: food.otherNutrients || [],
                         createdAt: new Date().toISOString()
                     };
 
@@ -1257,6 +1309,22 @@ JSON形式のみ出力、説明文不要`;
             const amount = food.amount || 100;
             const ratio = amount / 100;
 
+            // ビタミン・ミネラルの実量換算
+            const vitamins = {};
+            const minerals = {};
+
+            if (food.vitamins) {
+                Object.keys(food.vitamins).forEach(key => {
+                    vitamins[key] = parseFloat(((food.vitamins[key] || 0) * ratio).toFixed(2));
+                });
+            }
+
+            if (food.minerals) {
+                Object.keys(food.minerals).forEach(key => {
+                    minerals[key] = parseFloat(((food.minerals[key] || 0) * ratio).toFixed(2));
+                });
+            }
+
             return {
                 name: food.name,
                 amount: amount,  // 常にg単位
@@ -1265,7 +1333,11 @@ JSON形式のみ出力、説明文不要`;
                 protein: parseFloat((base.protein * ratio).toFixed(1)),
                 fat: parseFloat((base.fat * ratio).toFixed(1)),
                 carbs: parseFloat((base.carbs * ratio).toFixed(1)),
-                category: food.category || 'その他'
+                category: food.category || 'その他',
+                // ビタミン・ミネラル（実量換算済み）
+                vitamins: vitamins,
+                minerals: minerals,
+                otherNutrients: food.otherNutrients || []
             };
         });
 
@@ -1893,6 +1965,7 @@ JSON形式のみ出力、説明文不要`;
                                         <div>
                                             <p className="font-semibold text-gray-800">AIが自動で食材を認識・解析</p>
                                             <p className="text-sm text-gray-600 mt-1">「AIで食品を認識」ボタンを押すと、AIが写真から食材を自動で検出し、量とカロリー・PFCを推定します。</p>
+                                            <p className="text-xs text-purple-700 mt-2 font-medium">✨ データベースにマッチした食材はビタミン・ミネラルも自動取得されます</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg">
@@ -1900,6 +1973,7 @@ JSON形式のみ出力、説明文不要`;
                                         <div>
                                             <p className="font-semibold text-gray-800">認識結果を確認・調整</p>
                                             <p className="text-sm text-gray-600 mt-1">認識された食材の名前、量、栄養素を確認します。数量を調整したり、不要な食材を削除できます。</p>
+                                            <p className="text-xs text-gray-600 mt-2">💡 認識された食材は自動的にカスタムアイテムとして保存され、次回から「食材を検索」の「カスタム」タブで簡単に使用できます。</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg">
@@ -1939,7 +2013,7 @@ JSON形式のみ出力、説明文不要`;
                             {/* 未登録食材の対処法 */}
                             <div className="space-y-3">
                                 <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                                    <Icon name="Tool" size={20} className="text-orange-600" />
+                                    <Icon name="Wrench" size={20} className="text-orange-600" />
                                     未登録食材の対処法
                                 </h4>
                                 <div className="space-y-2">
@@ -1983,7 +2057,7 @@ JSON形式のみ出力、説明文不要`;
                                     <ol className="text-sm text-green-800 space-y-2 list-decimal list-inside">
                                         <li><strong>「カスタム食材として登録」ボタンをタップ</strong></li>
                                         <li><strong>食材名を確認・編集</strong>（必要に応じて修正）</li>
-                                        <li><strong>栄養素を入力</strong>:
+                                        <li><strong>基本栄養素を入力</strong>:
                                             <ul className="ml-6 mt-1 space-y-1 list-disc list-inside">
                                                 <li>カロリー（kcal）</li>
                                                 <li>たんぱく質（g）</li>
@@ -1991,9 +2065,26 @@ JSON形式のみ出力、説明文不要`;
                                                 <li>炭水化物（g）</li>
                                             </ul>
                                         </li>
+                                        <li><strong>ビタミン・ミネラル（オプション）</strong>:
+                                            <ul className="ml-6 mt-1 space-y-1 list-disc list-inside">
+                                                <li>データベースにマッチした食材は自動で取得されます</li>
+                                                <li>未登録食材は手動で入力できます</li>
+                                                <li>ビタミン13種類、ミネラル13種類に対応</li>
+                                            </ul>
+                                        </li>
                                         <li><strong>数量を設定</strong>（グラム数や個数）</li>
                                         <li><strong>「登録」ボタンで完了</strong></li>
                                     </ol>
+                                    <div className="mt-3 bg-purple-100 border border-purple-300 rounded p-3">
+                                        <p className="text-xs text-purple-900 font-semibold flex items-center gap-1 mb-1">
+                                            <Icon name="Sparkles" size={14} />
+                                            カスタムアイテムの管理
+                                        </p>
+                                        <p className="text-xs text-purple-800">
+                                            登録したカスタム食材は「設定」→「データ管理」→「カスタムアイテム管理」から編集・削除できます。
+                                            また、「食材を検索」の「カスタム」タブからすべてのカスタムアイテムを確認できます。
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 

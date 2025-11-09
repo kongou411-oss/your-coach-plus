@@ -80,6 +80,56 @@ const AddMealModal = ({
     // DataService を使用
     const DataService = window.DataService;
 
+    // Firestoreから読み込んだカスタムアイテム
+    const [customFoods, setCustomFoods] = useState([]);
+
+    // ===== customFoodsをFirestoreから読み込み =====
+    useEffect(() => {
+        console.log('[AddMealModal] customFoods useEffect開始');
+        const loadCustomFoods = async () => {
+            const currentUser = firebase.auth().currentUser;
+            console.log('[AddMealModal] loadCustomFoods実行、currentUser:', currentUser);
+            if (!currentUser || !currentUser.uid) {
+                console.log('[AddMealModal] ユーザー未ログインのためスキップ');
+                return;
+            }
+
+            try {
+                console.log('[AddMealModal] customFoods読み込み開始...');
+                const customFoodsSnapshot = await firebase.firestore()
+                    .collection('users')
+                    .doc(currentUser.uid)
+                    .collection('customFoods')
+                    .get();
+
+                const foods = customFoodsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                setCustomFoods(foods);
+                console.log(`[AddMealModal] customFoods読み込み完了: ${foods.length}件`, foods.map(f => f.name));
+            } catch (error) {
+                console.error('[AddMealModal] customFoods読み込みエラー:', error);
+            }
+        };
+
+        const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                console.log('[AddMealModal] 認証状態変化: ログイン済み');
+                loadCustomFoods();
+            } else {
+                console.log('[AddMealModal] 認証状態変化: 未ログイン');
+                setCustomFoods([]);
+            }
+        });
+
+        return () => {
+            console.log('[AddMealModal] customFoods useEffectクリーンアップ');
+            unsubscribe();
+        };
+    }, []);
+
     // ===== テンプレート読み込み =====
     useEffect(() => {
         if (user) {
@@ -131,12 +181,37 @@ const AddMealModal = ({
     // ===== テンプレートを読み込む（編集用） =====
     const loadTemplate = (template) => {
         setMealName(template.name);
-        setAddedItems(JSON.parse(JSON.stringify(template.items))); // ディープコピー
+        // テンプレートアイテムに_baseがない場合は作成（下位互換性）
+        const items = JSON.parse(JSON.stringify(template.items)).map(item => {
+            if (!item._base && (item.vitamins || item.minerals)) {
+                return {
+                    ...item,
+                    _base: {
+                        vitamins: item.vitamins || {},
+                        minerals: item.minerals || {}
+                    }
+                };
+            }
+            return item;
+        });
+        setAddedItems(items);
     };
 
     // ===== テンプレートから直接記録 =====
     const addFromTemplate = (template) => {
-        const items = JSON.parse(JSON.stringify(template.items)); // ディープコピー
+        // テンプレートアイテムに_baseがない場合は作成（下位互換性）
+        const items = JSON.parse(JSON.stringify(template.items)).map(item => {
+            if (!item._base && (item.vitamins || item.minerals)) {
+                return {
+                    ...item,
+                    _base: {
+                        vitamins: item.vitamins || {},
+                        minerals: item.minerals || {}
+                    }
+                };
+            }
+            return item;
+        }); // ディープコピー
 
         // 合計カロリー・PFCを計算
         const totalPFC = items.reduce((total, item) => {
@@ -203,9 +278,33 @@ const AddMealModal = ({
     // ===== アイテムの量を更新 =====
     const updateItemAmount = (index, newAmount) => {
         const updatedItems = [...addedItems];
+        const item = updatedItems[index];
+
+        // 個数単位判定
+        const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
+        const newRatio = isCountUnit ? newAmount : newAmount / 100;
+
+        // ビタミン・ミネラルを再計算（_baseから）
+        const vitamins = {};
+        const minerals = {};
+
+        if (item._base?.vitamins) {
+            Object.keys(item._base.vitamins).forEach(key => {
+                vitamins[key] = parseFloat(((item._base.vitamins[key] || 0) * newRatio).toFixed(2));
+            });
+        }
+
+        if (item._base?.minerals) {
+            Object.keys(item._base.minerals).forEach(key => {
+                minerals[key] = parseFloat(((item._base.minerals[key] || 0) * newRatio).toFixed(2));
+            });
+        }
+
         updatedItems[index] = {
-            ...updatedItems[index],
-            amount: Math.max(0, newAmount) // 0未満にならないように
+            ...item,
+            amount: Math.max(0, newAmount), // 0未満にならないように
+            vitamins: vitamins,
+            minerals: minerals
         };
         setAddedItems(updatedItems);
     };
@@ -640,27 +739,18 @@ const AddMealModal = ({
                 const foodDB = window.foodDB || {};
 
 
-                // カスタムアイテムをlocalStorageから取得
-                const getCustomFoods = () => {
-                    try {
-                        return JSON.parse(localStorage.getItem('customFoods') || '[]');
-                    } catch {
-                        return [];
-                    }
-                };
-
-                // カテゴリリスト（サプリメントを除く）
-                const categories = Object.keys(foodDB).filter(cat => cat !== 'サプリメント');
+                // カテゴリリスト（サプリメントを除く）+ カスタムカテゴリを追加
+                const categories = [...Object.keys(foodDB).filter(cat => cat !== 'サプリメント'), 'カスタム'];
 
                 // 検索結果のフィルタリング
                 const getFilteredItems = () => {
                     let items = [];
                     const db = foodDB;
 
-                    // カスタムアイテムを取得
-                    const customFoods = getCustomFoods();
+                    // カスタムアイテムを取得（Firestoreから読み込んだcustomFoods stateを使用）
+                    // itemTypeが未設定の古いデータはデフォルトで'food'として扱う
                     const customItems = customFoods.filter(item => {
-                        if (foodTab === 'food' && item.itemType === 'food') return true;
+                        if (foodTab === 'food' && (!item.itemType || item.itemType === 'food')) return true;
                         if (foodTab === 'recipe' && item.itemType === 'recipe') return true;
                         if (foodTab === 'supplement' && item.itemType === 'supplement') return true;
                         return false;
@@ -688,41 +778,58 @@ const AddMealModal = ({
                         targetCategory = Object.keys(db).filter(cat => cat !== 'サプリメント')[0] || '肉類';
                     }
 
-
-                    if (db && targetCategory && db[targetCategory]) {
-                        Object.keys(db[targetCategory]).forEach(name => {
-                            const itemData = db[targetCategory][name];
-
-                            // サプリメントの場合、サブカテゴリでフィルタ
-                            if (foodTab === 'supplement') {
-                                const targetSubcategory = selectedCategory || 'プロテイン';
-                                if (itemData.subcategory !== targetSubcategory) {
-                                    return; // このアイテムをスキップ
-                                }
-                            }
-
-                            // 検索語でフィルタ
-                            if (!searchTerm || name.includes(searchTerm)) {
+                    // 「カスタム」カテゴリが選択された場合はカスタムアイテムのみを表示
+                    if (targetCategory === 'カスタム') {
+                        customItems.forEach(item => {
+                            if (!searchTerm || item.name.includes(searchTerm)) {
                                 items.push({
-                                    name,
-                                    ...itemData,
-                                    category: targetCategory,
-                                    isCustom: false
+                                    ...item,
+                                    isCustom: true
+                                });
+                            }
+                        });
+                    } else {
+                        // 通常のカテゴリの場合：データベースアイテムとカスタムアイテムの両方を表示
+                        if (db && targetCategory && db[targetCategory]) {
+                            Object.keys(db[targetCategory]).forEach(name => {
+                                const itemData = db[targetCategory][name];
+
+                                // サプリメントの場合、サブカテゴリでフィルタ
+                                if (foodTab === 'supplement') {
+                                    const targetSubcategory = selectedCategory || 'プロテイン';
+                                    if (itemData.subcategory !== targetSubcategory) {
+                                        return; // このアイテムをスキップ
+                                    }
+                                }
+
+                                // 検索語でフィルタ
+                                if (!searchTerm || name.includes(searchTerm)) {
+                                    items.push({
+                                        name,
+                                        ...itemData,
+                                        category: targetCategory,
+                                        isCustom: false
+                                    });
+                                }
+                            });
+                        }
+
+                        // カスタムアイテムを追加（カテゴリが一致するもののみ）
+                        customItems.forEach(item => {
+                            const itemCategory = item.category || '穀類';
+                            // 選択中のカテゴリと一致するか、またはサプリメントタブの場合はサブカテゴリをチェック
+                            const categoryMatches = foodTab === 'supplement'
+                                ? itemCategory === selectedCategory
+                                : itemCategory === targetCategory;
+
+                            if (categoryMatches && (!searchTerm || item.name.includes(searchTerm))) {
+                                items.push({
+                                    ...item,
+                                    isCustom: true
                                 });
                             }
                         });
                     }
-
-
-                    // カスタムアイテムを追加（food, supplementのみ）
-                    customItems.forEach(item => {
-                        if (!searchTerm || item.name.includes(searchTerm)) {
-                            items.push({
-                                ...item,
-                                isCustom: true
-                            });
-                        }
-                    });
 
                     return items;
                 };
@@ -731,12 +838,60 @@ const AddMealModal = ({
 
                 // アイテムを選択して追加
                 const handleSelectItem = (item) => {
+                    // データベースの個別キーをvitamins/mineralsオブジェクトに変換
+                    const vitaminsFromDB = {
+                        A: item.vitaminA || 0,
+                        B1: item.vitaminB1 || 0,
+                        B2: item.vitaminB2 || 0,
+                        B6: item.vitaminB6 || 0,
+                        B12: item.vitaminB12 || 0,
+                        C: item.vitaminC || 0,
+                        D: item.vitaminD || 0,
+                        E: item.vitaminE || 0,
+                        K: item.vitaminK || 0,
+                        niacin: item.niacin || 0,
+                        pantothenicAcid: item.pantothenicAcid || 0,
+                        biotin: item.biotin || 0,
+                        folicAcid: item.folicAcid || 0
+                    };
+
+                    const mineralsFromDB = {
+                        sodium: item.sodium || 0,
+                        potassium: item.potassium || 0,
+                        calcium: item.calcium || 0,
+                        magnesium: item.magnesium || 0,
+                        phosphorus: item.phosphorus || 0,
+                        iron: item.iron || 0,
+                        zinc: item.zinc || 0,
+                        copper: item.copper || 0,
+                        manganese: item.manganese || 0,
+                        iodine: item.iodine || 0,
+                        selenium: item.selenium || 0,
+                        chromium: item.chromium || 0,
+                        molybdenum: item.molybdenum || 0
+                    };
+
+                    // itemにvitamins/mineralsがない場合はDBから変換したものを使用
+                    const itemWithNutrients = {
+                        ...item,
+                        vitamins: item.vitamins || vitaminsFromDB,
+                        minerals: item.minerals || mineralsFromDB
+                    };
+
+                    console.log('[AddMealModal] アイテム選択:', {
+                        name: itemWithNutrients.name,
+                        vitamins: itemWithNutrients.vitamins,
+                        minerals: itemWithNutrients.minerals,
+                        hasVitamins: !!itemWithNutrients.vitamins,
+                        hasMinerals: !!itemWithNutrients.minerals
+                    });
+
                     // デフォルトの量と単位を決定
                     let defaultAmount = 100;
-                    let defaultUnit = item.unit || 'g';
+                    let defaultUnit = itemWithNutrients.unit || 'g';
 
                     // 個数単位（個、本、杯、枚、錠など）の場合
-                    const unitStr = String(item.unit || '');
+                    const unitStr = String(itemWithNutrients.unit || '');
                     const isCountUnit = unitStr.includes('個') || unitStr.includes('本') || unitStr.includes('杯') || unitStr.includes('枚') || unitStr.includes('錠');
 
 
@@ -744,27 +899,57 @@ const AddMealModal = ({
                         defaultAmount = 1;
                         // 単位から先頭の数字を削除（例: "1個" → "個", "本" → "本"）
                         defaultUnit = unitStr.replace(/^\d+/, '');
-                    } else if (item.servingSize && item.servingSize < 100 && item.servingUnit === 'g') {
+                    } else if (itemWithNutrients.servingSize && itemWithNutrients.servingSize < 100 && itemWithNutrients.servingUnit === 'g') {
                         // servingSizeが100g未満の場合は、そのservingSizeをデフォルトにする（グルタミン、クレアチンなど）
-                        defaultAmount = item.servingSize;
+                        defaultAmount = itemWithNutrients.servingSize;
                     }
 
+                    // 実際の量に応じて栄養素をスケーリング
+                    const ratio = isCountUnit ? defaultAmount : defaultAmount / 100;
+
+                    // ビタミン・ミネラルの実量換算
+                    const vitamins = {};
+                    const minerals = {};
+
+                    if (itemWithNutrients.vitamins) {
+                        Object.keys(itemWithNutrients.vitamins).forEach(key => {
+                            vitamins[key] = parseFloat(((itemWithNutrients.vitamins[key] || 0) * ratio).toFixed(2));
+                        });
+                    }
+
+                    if (itemWithNutrients.minerals) {
+                        Object.keys(itemWithNutrients.minerals).forEach(key => {
+                            minerals[key] = parseFloat(((itemWithNutrients.minerals[key] || 0) * ratio).toFixed(2));
+                        });
+                    }
 
                     const newItem = {
                         id: Date.now(),
-                        name: item.name,
+                        name: itemWithNutrients.name,
                         amount: defaultAmount,
                         unit: defaultUnit,
-                        calories: item.calories || 0,
-                        protein: item.protein || 0,
-                        fat: item.fat || 0,
-                        carbs: item.carbs || 0,
-                        servingSize: item.servingSize || null,
-                        servingUnit: item.servingUnit || null,
-                        vitamins: item.vitamins || {},
-                        minerals: item.minerals || {},
-                        isCustom: item.isCustom || false
+                        calories: itemWithNutrients.calories || 0,  // 100g base (ratio applied during display)
+                        protein: itemWithNutrients.protein || 0,     // 100g base (ratio applied during display)
+                        fat: itemWithNutrients.fat || 0,            // 100g base (ratio applied during display)
+                        carbs: itemWithNutrients.carbs || 0,         // 100g base (ratio applied during display)
+                        servingSize: itemWithNutrients.servingSize || null,
+                        servingUnit: itemWithNutrients.servingUnit || null,
+                        vitamins: vitamins,  // ← SCALED to actual amount
+                        minerals: minerals,  // ← SCALED to actual amount
+                        isCustom: itemWithNutrients.isCustom || false,
+                        _base: {  // 100g base values for recalculation
+                            vitamins: itemWithNutrients.vitamins || {},
+                            minerals: itemWithNutrients.minerals || {}
+                        }
                     };
+
+                    console.log('[AddMealModal] 追加されたアイテム:', {
+                        name: newItem.name,
+                        amount: newItem.amount,
+                        vitamins: newItem.vitamins,
+                        minerals: newItem.minerals,
+                        _base: newItem._base
+                    });
 
                     setAddedItems([...addedItems, newItem]);
                     setSearchTerm(''); // 検索語クリア
@@ -919,7 +1104,7 @@ const AddMealModal = ({
                                                             {item.name}
                                                             {item.isCustom && (
                                                                 <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                                                    カスタム
+                                                                    {item.customLabel || 'カスタム'}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -1465,19 +1650,159 @@ const AddMealModal = ({
                                     キャンセル
                                 </button>
                                 <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         if (!customData.name.trim()) {
                                             toast('アイテム名を入力してください');
                                             return;
                                         }
 
+                                        // Firestoreに保存（AI解析経由と同じ形式）
+                                        const currentUser = firebase.auth().currentUser;
+                                        if (currentUser) {
+                                            try {
+                                                const customFood = {
+                                                    name: customData.name,
+                                                    category: customData.category,
+                                                    itemType: customData.itemType,
+                                                    calories: customData.calories || 0,
+                                                    protein: customData.protein || 0,
+                                                    fat: customData.fat || 0,
+                                                    carbs: customData.carbs || 0,
+                                                    servingSize: customData.servingSize || 100,
+                                                    servingUnit: customData.servingUnit || 'g',
+                                                    // ビタミン・ミネラルをvitamins/mineralsオブジェクトに格納
+                                                    vitamins: {
+                                                        A: customData.vitaminA || 0,
+                                                        B1: customData.vitaminB1 || 0,
+                                                        B2: customData.vitaminB2 || 0,
+                                                        B6: customData.vitaminB6 || 0,
+                                                        B12: customData.vitaminB12 || 0,
+                                                        C: customData.vitaminC || 0,
+                                                        D: customData.vitaminD || 0,
+                                                        E: customData.vitaminE || 0,
+                                                        K: customData.vitaminK || 0,
+                                                        niacin: customData.niacin || 0,
+                                                        pantothenicAcid: customData.pantothenicAcid || 0,
+                                                        biotin: customData.biotin || 0,
+                                                        folicAcid: customData.folicAcid || 0
+                                                    },
+                                                    minerals: {
+                                                        sodium: customData.sodium || 0,
+                                                        potassium: customData.potassium || 0,
+                                                        calcium: customData.calcium || 0,
+                                                        magnesium: customData.magnesium || 0,
+                                                        phosphorus: customData.phosphorus || 0,
+                                                        iron: customData.iron || 0,
+                                                        zinc: customData.zinc || 0,
+                                                        copper: customData.copper || 0,
+                                                        manganese: customData.manganese || 0,
+                                                        iodine: customData.iodine || 0,
+                                                        selenium: customData.selenium || 0,
+                                                        chromium: customData.chromium || 0,
+                                                        molybdenum: customData.molybdenum || 0
+                                                    },
+                                                    otherNutrients: customData.otherNutrients || [],
+                                                    createdAt: new Date().toISOString()
+                                                };
+
+                                                await firebase.firestore()
+                                                    .collection('users')
+                                                    .doc(currentUser.uid)
+                                                    .collection('customFoods')
+                                                    .doc(customFood.name)
+                                                    .set(customFood, { merge: true });
+
+                                                console.log(`[AddMealModal] カスタムアイテムを保存: ${customFood.name} (${customFood.itemType})`);
+
+                                                // stateも更新（即座に反映）
+                                                setCustomFoods(prev => {
+                                                    const existing = prev.find(f => f.name === customFood.name);
+                                                    if (existing) {
+                                                        return prev.map(f => f.name === customFood.name ? customFood : f);
+                                                    } else {
+                                                        return [...prev, customFood];
+                                                    }
+                                                });
+
+                                                toast.success('カスタムアイテムを保存しました');
+                                            } catch (error) {
+                                                console.error('[AddMealModal] カスタムアイテム保存エラー:', error);
+                                                toast.error('保存に失敗しました');
+                                            }
+                                        }
+
                                         // カスタムアイテムをaddedItemsに追加
+                                        // 個数単位判定
+                                        const unitStr = String(customData.servingUnit || '');
+                                        const isCountUnit = unitStr.includes('個') || unitStr.includes('本') || unitStr.includes('杯') || unitStr.includes('枚') || unitStr.includes('錠');
+                                        const ratio = isCountUnit ? customData.servingSize : customData.servingSize / 100;
+
+                                        // ビタミン・ミネラルオブジェクトを作成（100g基準）
+                                        const vitamins = {
+                                            A: customData.vitaminA || 0,
+                                            B1: customData.vitaminB1 || 0,
+                                            B2: customData.vitaminB2 || 0,
+                                            B6: customData.vitaminB6 || 0,
+                                            B12: customData.vitaminB12 || 0,
+                                            C: customData.vitaminC || 0,
+                                            D: customData.vitaminD || 0,
+                                            E: customData.vitaminE || 0,
+                                            K: customData.vitaminK || 0,
+                                            niacin: customData.niacin || 0,
+                                            pantothenicAcid: customData.pantothenicAcid || 0,
+                                            biotin: customData.biotin || 0,
+                                            folicAcid: customData.folicAcid || 0
+                                        };
+
+                                        const minerals = {
+                                            sodium: customData.sodium || 0,
+                                            potassium: customData.potassium || 0,
+                                            calcium: customData.calcium || 0,
+                                            magnesium: customData.magnesium || 0,
+                                            phosphorus: customData.phosphorus || 0,
+                                            iron: customData.iron || 0,
+                                            zinc: customData.zinc || 0,
+                                            copper: customData.copper || 0,
+                                            manganese: customData.manganese || 0,
+                                            iodine: customData.iodine || 0,
+                                            selenium: customData.selenium || 0,
+                                            chromium: customData.chromium || 0,
+                                            molybdenum: customData.molybdenum || 0
+                                        };
+
+                                        // 実際の量に応じてスケーリング
+                                        const scaledVitamins = {};
+                                        const scaledMinerals = {};
+
+                                        Object.keys(vitamins).forEach(key => {
+                                            scaledVitamins[key] = parseFloat(((vitamins[key] || 0) * ratio).toFixed(2));
+                                        });
+
+                                        Object.keys(minerals).forEach(key => {
+                                            scaledMinerals[key] = parseFloat(((minerals[key] || 0) * ratio).toFixed(2));
+                                        });
+
                                         const newItem = {
-                                            ...customData,
                                             id: Date.now(),
+                                            name: customData.name,
                                             amount: customData.servingSize,
                                             unit: customData.servingUnit,
-                                            isCustom: true
+                                            calories: customData.calories || 0,
+                                            protein: customData.protein || 0,
+                                            fat: customData.fat || 0,
+                                            carbs: customData.carbs || 0,
+                                            category: customData.category,
+                                            itemType: customData.itemType,
+                                            servingSize: customData.servingSize,
+                                            servingUnit: customData.servingUnit,
+                                            vitamins: scaledVitamins,  // ← SCALED to actual amount
+                                            minerals: scaledMinerals,  // ← SCALED to actual amount
+                                            otherNutrients: customData.otherNutrients || [],
+                                            isCustom: true,
+                                            _base: {  // 100g base values for recalculation
+                                                vitamins: vitamins,
+                                                minerals: minerals
+                                            }
                                         };
 
                                         setAddedItems([...addedItems, newItem]);
