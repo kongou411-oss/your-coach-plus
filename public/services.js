@@ -920,53 +920,72 @@ const DataService = {
 
         // 運動データ
         const workouts = record.workouts || [];
-        const totalDuration = workouts.reduce((sum, w) => {
-            return sum + (w.sets || []).reduce((s, set) => s + (set.duration || 0), 0);
+
+        // 種目数を計算（workouts配列内の全エクササイズ）
+        const exerciseCount = workouts.reduce((sum, w) => {
+            return sum + (w.exercises || []).length;
         }, 0);
-        const exerciseCount = workouts.length;
+
+        // 総セット数を計算（筋トレのセット数）
+        const totalSets = workouts.reduce((sum, w) => {
+            return sum + (w.exercises || []).reduce((s, ex) => {
+                // 筋トレの場合はsets配列の長さ
+                if (ex.sets && Array.isArray(ex.sets)) {
+                    return s + ex.sets.length;
+                }
+                // 有酸素・ストレッチの場合は時間を15分/10分単位で換算してセット数化
+                if (ex.exerciseType === 'aerobic' && ex.duration) {
+                    return s + Math.ceil(ex.duration / 15); // 15分 = 1セット
+                }
+                if (ex.exerciseType === 'stretch' && ex.duration) {
+                    return s + Math.ceil(ex.duration / 10); // 10分 = 1セット
+                }
+                return s;
+            }, 0);
+        }, 0);
 
         // 休養日判定（ルーティンで明示的に設定されている場合）
         const isRestDay = record.routine?.is_rest_day === true;
 
         // 運動スコア計算（ボディメイカー/一般で基準が異なる）
-        let durationScore = 0;
+        let setsScore = 0;
         let exerciseCountScore = 0;
 
         // 休養日の場合は運動スコアを100点として扱う（計画的な休養）
         if (isRestDay) {
-            durationScore = 100;
+            setsScore = 100;
             exerciseCountScore = 100;
         } else if (isBodymaker) {
             // ボディメイカー基準
-            if (totalDuration === 0) durationScore = 0;
-            else if (totalDuration >= 120) durationScore = 100; // 2時間以上
-            else if (totalDuration >= 90) durationScore = 75;   // 1.5時間以上
-            else if (totalDuration >= 60) durationScore = 50;   // 1時間以上
-            else if (totalDuration >= 30) durationScore = 25;   // 30分以上
-            else durationScore = 0;
-
             if (exerciseCount === 0) exerciseCountScore = 0;
             else if (exerciseCount >= 5) exerciseCountScore = 100;
-            else if (exerciseCount === 4) exerciseCountScore = 80;
-            else if (exerciseCount === 3) exerciseCountScore = 60;
-            else if (exerciseCount === 2) exerciseCountScore = 40;
+            else if (exerciseCount >= 4) exerciseCountScore = 80;
+            else if (exerciseCount >= 3) exerciseCountScore = 60;
+            else if (exerciseCount >= 2) exerciseCountScore = 40;
             else if (exerciseCount === 1) exerciseCountScore = 20;
+
+            if (totalSets === 0) setsScore = 0;
+            else if (totalSets >= 20) setsScore = 100;
+            else if (totalSets >= 15) setsScore = 80;
+            else if (totalSets >= 10) setsScore = 60;
+            else if (totalSets >= 5) setsScore = 40;
+            else setsScore = 20;
         } else {
             // 一般基準
-            if (totalDuration === 0) durationScore = 0;
-            else if (totalDuration >= 60) durationScore = 100;  // 1時間以上
-            else if (totalDuration >= 45) durationScore = 75;   // 45分以上
-            else if (totalDuration >= 30) durationScore = 50;   // 30分以上
-            else if (totalDuration >= 15) durationScore = 25;   // 15分以上
-            else durationScore = 0;
-
             if (exerciseCount === 0) exerciseCountScore = 0;
             else if (exerciseCount >= 3) exerciseCountScore = 100;
             else if (exerciseCount === 2) exerciseCountScore = 66;
             else if (exerciseCount === 1) exerciseCountScore = 33;
+
+            if (totalSets === 0) setsScore = 0;
+            else if (totalSets >= 12) setsScore = 100;
+            else if (totalSets >= 9) setsScore = 80;
+            else if (totalSets >= 6) setsScore = 60;
+            else if (totalSets >= 3) setsScore = 40;
+            else setsScore = 20;
         }
 
-        const exerciseScore = Math.round((durationScore + exerciseCountScore) / 2);
+        const exerciseScore = Math.round((exerciseCountScore + setsScore) / 2);
 
         // コンディションデータ（全項目1-5の値として扱う）
         const sleepHours = record.conditions?.sleepHours || 0;
@@ -992,9 +1011,9 @@ const DataService = {
             },
             exercise: {
                 score: exerciseScore,
-                duration: Math.round(durationScore),
+                sets: Math.round(setsScore),
                 exerciseCount: Math.round(exerciseCountScore),
-                totalMinutes: totalDuration,
+                totalSets: totalSets,
                 count: exerciseCount
             },
             condition: {

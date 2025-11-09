@@ -409,7 +409,8 @@ const LBMUtils = {
                 manganese: capValue(Math.round(4.0 * lbmFactor * btFactor.mineral * lifestyleBase * 10) / 10, tolerableUpperLimits.manganese),
                 selenium: capValue(Math.round(30 * lbmFactor * btFactor.antioxidant * lifestyleBase), tolerableUpperLimits.selenium),
                 iodine: capValue(Math.round(130 * lbmFactor * btFactor.mineral * lifestyleBase), tolerableUpperLimits.iodine),
-                chromium: Math.round(35 * lbmFactor * btFactor.mineral * lifestyleBase)
+                chromium: Math.round(35 * lbmFactor * btFactor.mineral * lifestyleBase),
+                molybdenum: capValue(Math.round(30 * lbmFactor * btFactor.mineral * lifestyleBase), tolerableUpperLimits.molybdenum)
             },
             // その他の栄養素: LBM × 目的 × ライフスタイル
             otherNutrients: {

@@ -568,7 +568,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             A: 0, D: 0, E: 0, K: 0, B1: 0, B2: 0, B3: 0, B5: 0, B6: 0, B7: 0, B9: 0, B12: 0, C: 0
         },
         minerals: {
-            calcium: 0, iron: 0, magnesium: 0, phosphorus: 0, potassium: 0, sodium: 0, zinc: 0, copper: 0, manganese: 0, selenium: 0, iodine: 0, chromium: 0
+            calcium: 0, iron: 0, magnesium: 0, phosphorus: 0, potassium: 0, sodium: 0, zinc: 0, copper: 0, manganese: 0, selenium: 0, iodine: 0, chromium: 0, molybdenum: 0
         }
     };
 
@@ -2074,15 +2074,17 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <h4 className="font-bold text-orange-800">運動スコア（100点満点）</h4>
                                 </div>
                                 <div className="text-sm text-gray-700 space-y-1">
-                                    <p><strong>運動時間</strong>（50%）</p>
-                                    <ul className="list-disc list-inside ml-2 space-y-1">
-                                        <li>ボディメイカー：2時間以上で満点</li>
-                                        <li>一般：1時間以上で満点</li>
-                                    </ul>
-                                    <p className="mt-2"><strong>種目数</strong>（50%）</p>
+                                    <p><strong>種目数</strong>（50%）</p>
                                     <ul className="list-disc list-inside ml-2 space-y-1">
                                         <li>ボディメイカー：5種目以上で満点</li>
                                         <li>一般：3種目以上で満点</li>
+                                    </ul>
+                                    <p className="mt-2"><strong>総セット数</strong>（50%）</p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1">
+                                        <li>ボディメイカー：20セット以上で満点</li>
+                                        <li>一般：12セット以上で満点</li>
+                                        <li>有酸素：15分 = 1セット換算</li>
+                                        <li>ストレッチ：10分 = 1セット換算</li>
                                     </ul>
                                     <p className="mt-2 text-xs text-orange-700">※休養日に設定した日は自動的に100点</p>
                                 </div>
@@ -2097,12 +2099,12 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 <div className="text-sm text-gray-700 space-y-1">
                                     <p><strong>6項目の平均で評価</strong></p>
                                     <ul className="list-disc list-inside ml-2 space-y-1">
-                                        <li>睡眠時間（1-5段階）</li>
-                                        <li>睡眠の質（1-5段階）</li>
-                                        <li>食欲（1-5段階）</li>
-                                        <li>腸内環境（1-5段階）</li>
-                                        <li>集中力（1-5段階）</li>
-                                        <li>ストレス（1-5段階、低いほど良い）</li>
+                                        <li>睡眠時間（1-5段階、5=9h以上）</li>
+                                        <li>睡眠の質（1-5段階、5=最高）</li>
+                                        <li>食欲（1-5段階、5=最適）</li>
+                                        <li>腸内環境（1-5段階、5=最高）</li>
+                                        <li>集中力（1-5段階、5=最高）</li>
+                                        <li>ストレス（1-5段階、5=なし、1=極大）</li>
                                     </ul>
                                     <p className="mt-2 text-xs text-blue-700">※すべての項目が最高値（5）の場合、100点になります</p>
                                 </div>
