@@ -2021,12 +2021,12 @@ const NotificationService = {
                 localStorage.setItem(`fcmToken_${userId}`, token);
                 return { success: true };
             } else {
-                // Firestoreのユーザードキュメントのtokensサブコレクションに保存
-                await db.collection('users').doc(userId).collection('tokens').doc(token).set({
-                    token,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                // Firestoreのユーザードキュメント直下にfcmTokenとして保存
+                await db.collection('users').doc(userId).set({
+                    fcmToken: token,
+                    fcmTokenUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                console.log('[Notification] Token saved to Firestore:', userId);
                 return { success: true };
             }
         } catch (error) {
