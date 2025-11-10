@@ -192,11 +192,16 @@ exports.sendScheduledNotifications = onSchedule({
                 body: schedule.body,
               },
               webpush: {
+                headers: {
+                  Urgency: "high", // 優先度を高に設定
+                },
                 notification: {
                   tag: `${schedule.type}_${schedule.time}`, // Web用tag
                   icon: "/icons/icon-192.png",
+                  badge: "/icons/icon-72.png",
                   vibrate: [200, 100, 200],
-                  requireInteraction: false,
+                  requireInteraction: true, // ユーザーが操作するまで表示
+                  silent: false, // 音を鳴らす
                 },
               },
               data: {

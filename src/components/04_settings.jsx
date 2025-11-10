@@ -216,11 +216,21 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             notificationSettings: newSettings
         };
         setProfile(updatedProfile);
-        // 即座に保存
-        onUpdateProfile(updatedProfile);
 
-        // 通知をスケジュール
+        // 通知設定のみを保存（fcmTokenを含む他のフィールドを上書きしない）
         try {
+            if (DEV_MODE) {
+                // DEV_MODEの場合はプロファイル全体を保存
+                onUpdateProfile(updatedProfile);
+            } else {
+                // 本番環境では通知設定のみを更新（merge: trueで他のフィールドを保護）
+                await db.collection('users').doc(userId).set({
+                    notificationSettings: newSettings,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            }
+
+            // 通知をスケジュール（これはnotificationSchedulesフィールドのみを更新）
             const result = await NotificationService.scheduleNotification(userId, newSettings);
             if (result.success) {
                 console.log('[Settings] Notifications scheduled:', result.schedules);
