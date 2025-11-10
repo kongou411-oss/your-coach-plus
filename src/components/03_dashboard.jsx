@@ -578,9 +578,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     dailyRecord.meals?.forEach(meal => {
         currentIntake.calories += meal.calories || 0;
         meal.items?.forEach(item => {
-            currentIntake.protein += item.protein || 0;
-            currentIntake.fat += item.fat || 0;
-            currentIntake.carbs += item.carbs || 0;
+            // 個数単位（本、個、杯、枚、錠）と重量単位（g、ml）でratio計算を分岐
+            const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
+            const ratio = isCountUnit ? item.amount : item.amount / 100;
+
+            currentIntake.protein += (item.protein || 0) * ratio;
+            currentIntake.fat += (item.fat || 0) * ratio;
+            currentIntake.carbs += (item.carbs || 0) * ratio;
 
             // ビタミン・ミネラル（オブジェクト形式）
             if (item.vitamins) {
@@ -1258,7 +1262,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             </div>
                                             {meal.items?.map((item, i) => (
                                                 <div key={i} className="text-xs text-gray-500">
-                                                    {item.name} {item.amount}
+                                                    {item.name} {item.amount}{item.unit || 'g'}
                                                 </div>
                                             ))}
                                         </div>

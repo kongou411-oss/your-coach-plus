@@ -1014,9 +1014,24 @@ const DataService = {
 
         // 食事データ
         const totalCalories = (record.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
-        const totalProtein = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
-        const totalFat = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
-        const totalCarbs = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
+        const totalProtein = (record.meals || []).reduce((sum, m) =>
+            sum + (m.items || []).reduce((s, i) => {
+                const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (i.unit || '').includes(u));
+                const ratio = isCountUnit ? i.amount : i.amount / 100;
+                return s + (i.protein || 0) * ratio;
+            }, 0), 0);
+        const totalFat = (record.meals || []).reduce((sum, m) =>
+            sum + (m.items || []).reduce((s, i) => {
+                const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (i.unit || '').includes(u));
+                const ratio = isCountUnit ? i.amount : i.amount / 100;
+                return s + (i.fat || 0) * ratio;
+            }, 0), 0);
+        const totalCarbs = (record.meals || []).reduce((sum, m) =>
+            sum + (m.items || []).reduce((s, i) => {
+                const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (i.unit || '').includes(u));
+                const ratio = isCountUnit ? i.amount : i.amount / 100;
+                return s + (i.carbs || 0) * ratio;
+            }, 0), 0);
 
         // 食事スコア計算
         const proteinRate = Math.min(100, target.protein > 0 ? (totalProtein / target.protein) * 100 : 0);

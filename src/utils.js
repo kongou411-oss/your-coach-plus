@@ -647,13 +647,31 @@ const ConditionUtils = {
 
 // 計算ユーティリティ
 const CalcUtils = {
-    // 合計栄養素計算
+    // ratio計算（個数単位と重量単位で分岐）
+    calculateRatio: (item) => {
+        const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
+        return isCountUnit ? item.amount : item.amount / 100;
+    },
+
+    // 合計栄養素計算（ratio適用版）
     sumNutrients: (items) => {
         return {
-            calories: items.reduce((sum, item) => sum + (item.calories || 0), 0),
-            protein: items.reduce((sum, item) => sum + (item.protein || 0), 0),
-            fat: items.reduce((sum, item) => sum + (item.fat || 0), 0),
-            carbs: items.reduce((sum, item) => sum + (item.carbs || 0), 0)
+            calories: items.reduce((sum, item) => {
+                const ratio = CalcUtils.calculateRatio(item);
+                return sum + (item.calories || 0) * ratio;
+            }, 0),
+            protein: items.reduce((sum, item) => {
+                const ratio = CalcUtils.calculateRatio(item);
+                return sum + (item.protein || 0) * ratio;
+            }, 0),
+            fat: items.reduce((sum, item) => {
+                const ratio = CalcUtils.calculateRatio(item);
+                return sum + (item.fat || 0) * ratio;
+            }, 0),
+            carbs: items.reduce((sum, item) => {
+                const ratio = CalcUtils.calculateRatio(item);
+                return sum + (item.carbs || 0) * ratio;
+            }, 0)
         };
     },
 

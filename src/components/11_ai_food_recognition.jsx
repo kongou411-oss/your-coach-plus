@@ -1329,23 +1329,38 @@ JSON形式のみ出力、説明文不要`;
                 name: food.name,
                 amount: amount,  // 常にg単位
                 unit: 'g',  // 単位を明示
-                calories: Math.round(base.calories * ratio),
-                protein: parseFloat((base.protein * ratio).toFixed(1)),
-                fat: parseFloat((base.fat * ratio).toFixed(1)),
-                carbs: parseFloat((base.carbs * ratio).toFixed(1)),
+                // PFCは100g基準で保存（手動記録と統一）
+                calories: base.calories,
+                protein: base.protein,
+                fat: base.fat,
+                carbs: base.carbs,
+                servingSize: base.servingSize || 100,
+                servingUnit: base.servingUnit || 'g',
                 category: food.category || 'その他',
-                // ビタミン・ミネラル（実量換算済み）
+                // ビタミン・ミネラルは実量換算済み（既存の仕様を維持）
                 vitamins: vitamins,
                 minerals: minerals,
                 otherNutrients: food.otherNutrients || []
             };
         });
 
-        // 合計カロリーとPFC計算
-        const totalCalories = foodItems.reduce((sum, item) => sum + (item.calories || 0), 0);
-        const totalProtein = foodItems.reduce((sum, item) => sum + (item.protein || 0), 0);
-        const totalFat = foodItems.reduce((sum, item) => sum + (item.fat || 0), 0);
-        const totalCarbs = foodItems.reduce((sum, item) => sum + (item.carbs || 0), 0);
+        // 合計カロリーとPFC計算（itemは100g基準なのでratio適用）
+        const totalCalories = foodItems.reduce((sum, item) => {
+            const ratio = item.amount / 100;
+            return sum + (item.calories || 0) * ratio;
+        }, 0);
+        const totalProtein = foodItems.reduce((sum, item) => {
+            const ratio = item.amount / 100;
+            return sum + (item.protein || 0) * ratio;
+        }, 0);
+        const totalFat = foodItems.reduce((sum, item) => {
+            const ratio = item.amount / 100;
+            return sum + (item.fat || 0) * ratio;
+        }, 0);
+        const totalCarbs = foodItems.reduce((sum, item) => {
+            const ratio = item.amount / 100;
+            return sum + (item.carbs || 0) * ratio;
+        }, 0);
 
 
         // 食事データを作成
