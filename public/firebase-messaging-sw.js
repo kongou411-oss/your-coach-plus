@@ -21,31 +21,15 @@ const messaging = firebase.messaging();
 // バックグラウンド通知を受信した時の処理
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] バックグラウンド通知受信:', payload);
-  console.log('[firebase-messaging-sw.js] payload.notification:', payload.notification);
-  console.log('[firebase-messaging-sw.js] payload.data:', payload.data);
-  console.log('[firebase-messaging-sw.js] payload.data.tag:', payload.data?.tag);
 
   const notificationTitle = payload.notification?.title || 'Your Coach+';
-  // タグを生成: ユニークなタイムスタンプを付与して、スワイプ後も再表示可能にする
-  const baseTag = payload.data?.tag ||
-                  (payload.data?.type && payload.data?.time ? `${payload.data.type}_${payload.data.time}` : null) ||
-                  notificationTitle.replace(/\s+/g, '_');
-
-  // タイムスタンプを付与してユニークにする
-  const notificationTag = `${baseTag}_${Date.now()}`;
-
-  console.log('[firebase-messaging-sw.js] Title:', notificationTitle);
-  console.log('[firebase-messaging-sw.js] Body:', payload.notification?.body);
-  console.log('[firebase-messaging-sw.js] Using tag:', notificationTag);
-
   const notificationOptions = {
     body: payload.notification?.body || '新しい通知があります',
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-72.png',
     vibrate: [200, 100, 200],
-    tag: notificationTag,
+    tag: payload.data?.tag || 'default',
     requireInteraction: false,
-    renotify: true, // 同じtagでも再通知を強制
     data: {
       url: payload.data?.url || '/',
       ...payload.data
