@@ -85,9 +85,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const loadExperienceData = async () => {
         if (!userId) return;
         try {
-            const data = await ExperienceService.getUserExperience(userId);
-            const expToNext = ExperienceService.getExpToNextLevel(data.level, data.experience);
-            const milestonesData = await ExperienceService.getMilestones(userId);
+            const data = await window.ExperienceService.getUserExperience(userId);
+            const expToNext = window.ExperienceService.getExpToNextLevel(data.level, data.experience);
+            const milestonesData = await window.ExperienceService.getMilestones(userId);
 
             setExpData({
                 ...data,
@@ -103,9 +103,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
     // MFA登録状況を確認
     useEffect(() => {
-        if (userId && typeof MFAService !== 'undefined' && typeof firebase !== 'undefined') {
+        if (userId && typeof window.MFAService !== 'undefined' && typeof firebase !== 'undefined') {
             try {
-                setMfaEnrolled(MFAService.isMFAEnrolled());
+                setMfaEnrolled(window.MFAService.isMFAEnrolled());
             } catch (error) {
                 console.error('[Settings] Failed to check MFA enrollment:', error);
                 setMfaEnrolled(false);
@@ -179,7 +179,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     const loadCreditInfo = async () => {
         try {
             // 新しい経験値システムから取得
-            const expInfo = await ExperienceService.getUserExperience(userId);
+            const expInfo = await window.ExperienceService.getUserExperience(userId);
 
             // Premium会員かどうかの判定
             const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
@@ -206,12 +206,16 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     }, [reopenTemplateEditModal, reopenTemplateEditType]);
 
     const loadTemplates = async () => {
-        const meals = await DataService.getMealTemplates(userId);
-        const workouts = await DataService.getWorkoutTemplates(userId);
-        const supplements = await DataService.getSupplementTemplates(userId);
-        setMealTemplates(meals);
-        setWorkoutTemplates(workouts);
-        setSupplementTemplates(supplements);
+        if (!window.DataService) {
+            console.error('[Settings] DataService is not available');
+            return;
+        }
+        const meals = await window.DataService.getMealTemplates(userId);
+        const workouts = await window.DataService.getWorkoutTemplates(userId);
+        const supplements = await window.DataService.getSupplementTemplates(userId);
+        setMealTemplates(meals || []);
+        setWorkoutTemplates(workouts || []);
+        setSupplementTemplates(supplements || []);
     };
 
     /*
@@ -316,7 +320,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             const date = new Date();
             date.setDate(date.getDate() - i);
             const dateStr = date.toISOString().split('T')[0];
-            const record = await DataService.getDailyRecord(userId, dateStr);
+            const record = await window.DataService.getDailyRecord(userId, dateStr);
             if (record) {
                 allData.records[dateStr] = record;
             }
@@ -753,7 +757,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <button
                                                 onClick={() => {
                                                     showConfirm('2FA解除の確認', '2FAを解除しますか？セキュリティが低下します。', async () => {
-                                                        const result = await MFAService.unenrollMFA();
+                                                        const result = await window.MFAService.unenrollMFA();
                                                         if (result.success) {
                                                             setMfaEnrolled(false);
                                                             toast('2FAを解除しました');
@@ -2003,7 +2007,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
                                                                     showConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
-                                                                        await DataService.deleteMealTemplate(userId, template.id);
+                                                                        await window.DataService.deleteMealTemplate(userId, template.id);
                                                                         await loadTemplates();
                                                                     });
                                                                 }}
@@ -2098,7 +2102,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
                                                                     showConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
-                                                                        await DataService.deleteWorkoutTemplate(userId, template.id);
+                                                                        await window.DataService.deleteWorkoutTemplate(userId, template.id);
                                                                         await loadTemplates();
                                                                     });
                                                                 }}
@@ -4131,7 +4135,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             onClick={async () => {
                                                 // Premium会員に切替えてクレジット100付与
                                                 localStorage.setItem('DEV_PREMIUM_MODE', 'true');
-                                                const result = await ExperienceService.addPaidCredits(userId, 100);
+                                                const result = await window.ExperienceService.addPaidCredits(userId, 100);
                                                 if (result.success) {
                                                     toast('Premium会員に切替え、クレジット100を付与しました');
                                                 } else {
@@ -4505,7 +4509,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             onClick={(e) => {
                                                                 e.preventDefault();
                                                                 showConfirm('テンプレート削除の確認', `「${template.name}」を削除しますか？`, async () => {
-                                                                    await DataService.deleteMealTemplate(userId, template.id);
+                                                                    await window.DataService.deleteMealTemplate(userId, template.id);
                                                                     await loadTemplates();
                                                                 });
                                                             }}
@@ -4584,7 +4588,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             onClick={(e) => {
                                                                 e.preventDefault();
                                                                 showConfirm('テンプレート削除の確認', `「${template.name}」を削除しますか？`, async () => {
-                                                                    await DataService.deleteWorkoutTemplate(userId, template.id);
+                                                                    await window.DataService.deleteWorkoutTemplate(userId, template.id);
                                                                     await loadTemplates();
                                                                 });
                                                             }}
@@ -4792,7 +4796,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         );
                                     }
 
-                                    const result = await MFAService.enrollSMS2FA(phoneNumber);
+                                    const result = await window.MFAService.enrollSMS2FA(phoneNumber);
                                     if (result.success) {
                                         setVerificationId(result.verificationId);
                                     } else {
@@ -4827,7 +4831,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                             <button
                                 onClick={async () => {
-                                    const result = await MFAService.confirmSMS2FA(verificationId, verificationCode);
+                                    const result = await window.MFAService.confirmSMS2FA(verificationId, verificationCode);
                                     if (result.success) {
                                         setMfaEnrolled(true);
                                         setShow2FASetup(false);
