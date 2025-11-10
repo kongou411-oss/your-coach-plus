@@ -2022,7 +2022,9 @@ const NotificationService = {
                 return { success: true };
             } else {
                 // Firestoreのユーザードキュメント直下にfcmTokenとして保存
-                await db.collection('users').doc(userId).set({
+                // グローバルdbまたはfirebase.firestore()を使用
+                const firestore = window.db || firebase.firestore();
+                await firestore.collection('users').doc(userId).set({
                     fcmToken: token,
                     fcmTokenUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
