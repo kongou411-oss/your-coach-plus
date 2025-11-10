@@ -81,7 +81,8 @@
       "Bash(src/components/04_settings_temp.jsx)",
       "Bash(move /Y srccomponents04_settings_temp.jsx srccomponents04_settings.jsx:*)",
       "Bash(powershell -Command:*)",
-      "Bash(sort:*)"
+      "Bash(sort:*)",
+      "Bash(public/firebase-messaging-sw.js)"
     ],
     "deny": [],
     "ask": []
