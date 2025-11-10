@@ -230,11 +230,11 @@ const AddMealModal = ({
             name: template.name,
             items: items,
             time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-            calories: totalPFC.calories,
-            protein: totalPFC.protein,
-            fat: totalPFC.fat,
-            carbs: totalPFC.carbs,
-            totalCalories: totalPFC.calories,
+            calories: Math.round(totalPFC.calories),
+            protein: parseFloat(totalPFC.protein.toFixed(1)),
+            fat: parseFloat(totalPFC.fat.toFixed(1)),
+            carbs: parseFloat(totalPFC.carbs.toFixed(1)),
+            totalCalories: Math.round(totalPFC.calories),
             isTemplate: true, // テンプレートタグ
         };
 
@@ -324,11 +324,11 @@ const AddMealModal = ({
             name: mealName,
             items: addedItems,
             time: isEditMode ? editingMeal.time : new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-            calories: totalPFC.calories,
-            protein: totalPFC.protein,
-            fat: totalPFC.fat,
-            carbs: totalPFC.carbs,
-            totalCalories: totalPFC.calories,
+            calories: Math.round(totalPFC.calories),
+            protein: parseFloat(totalPFC.protein.toFixed(1)),
+            fat: parseFloat(totalPFC.fat.toFixed(1)),
+            carbs: parseFloat(totalPFC.carbs.toFixed(1)),
+            totalCalories: Math.round(totalPFC.calories),
         };
 
         // 編集モードの場合はonUpdate、新規追加の場合はonAddを呼ぶ

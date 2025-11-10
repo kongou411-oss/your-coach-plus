@@ -590,12 +590,24 @@ JSONのみ出力、説明文不要`;
                 // レート制限対策：最大1件のみ自動取得
                 const autoFetchCount = Math.min(unknownFoods.length, 1);
 
-                // 自動取得対象アイテムにローディングフラグを設定
+                // 自動取得対象アイテムにローディングフラグを設定 & 2件目以降に待機フラグを設定
                 const foodsWithLoading = matchedFoods.map(food => {
-                    if (food.needsHachiteiFetch && unknownFoods.findIndex(uf => uf.name === food.name) < autoFetchCount) {
+                    if (!food.needsHachiteiFetch) return food;
+
+                    const unknownIndex = unknownFoods.findIndex(uf => uf.name === food.name);
+
+                    // 1件目: 検索中フラグ
+                    if (unknownIndex < autoFetchCount) {
                         return { ...food, isFetchingHachitei: true };
                     }
-                    return food;
+
+                    // 2件目以降: 待機中フラグ
+                    return {
+                        ...food,
+                        isUnknown: true,
+                        needsManualHachiteiFetch: true,
+                        needsHachiteiFetch: false
+                    };
                 });
                 setRecognizedFoods(foodsWithLoading);
 
@@ -710,20 +722,20 @@ JSONのみ出力、説明文不要`;
                     await new Promise(resolve => setTimeout(resolve, 2000));
 
                     // 連鎖的に検索
-                    let currentFoods = updatedFoods;
                     for (let i = 0; i < remainingUnregistered.length; i++) {
                         const targetFood = remainingUnregistered[i];
-                        const targetIndex = currentFoods.findIndex(f => f.name === targetFood.name);
-
-                        if (targetIndex === -1) continue;
 
                         console.log(`[recognizeFood] 連鎖検索 (${i + 1}/${remainingUnregistered.length}): ${targetFood.name}`);
 
-                        // ローディング状態にする
-                        currentFoods = currentFoods.map((food, idx) =>
-                            idx === targetIndex ? { ...food, isFetchingHachitei: true } : food
-                        );
-                        setRecognizedFoods(currentFoods);
+                        // ローディング状態にする（最新のstateを参照）
+                        setRecognizedFoods(prevFoods => {
+                            const targetIndex = prevFoods.findIndex(f => f.name === targetFood.name);
+                            if (targetIndex === -1) return prevFoods;
+
+                            return prevFoods.map((food, idx) =>
+                                idx === targetIndex ? { ...food, isFetchingHachitei: true } : food
+                            );
+                        });
 
                         try {
                             const result = await fetchNutritionFromHachitei(targetFood.name);
@@ -732,51 +744,57 @@ JSONのみ出力、説明文不要`;
                                 const bestMatch = result.bestMatch;
                                 console.log(`[recognizeFood] 連鎖検索成功: ${targetFood.name} → ${bestMatch.name}`);
 
-                                currentFoods = currentFoods.map((food, idx) => {
-                                    if (idx !== targetIndex) return food;
+                                // 取得成功時の更新（最新のstateを参照）
+                                setRecognizedFoods(prevFoods => {
+                                    return prevFoods.map((food) => {
+                                        // 対象の食材のみ更新（名前で判定、ユーザーが編集した可能性があるため）
+                                        if (food.name !== targetFood.name) return food;
 
-                                    // 実量に換算（八訂は100g基準）
-                                    const amount = food.amount || 100;
-                                    const ratio = amount / 100;
+                                        // ユーザーが編集したamountを保持
+                                        const amount = food.amount || 100;
+                                        const ratio = amount / 100;
 
-                                    return {
-                                        ...food,
-                                        name: `${food.name.split('（')[0]}（${bestMatch.name}）`,
-                                        category: '八訂',
-                                        itemType: food.itemType || 'food',  // AI認識結果のitemTypeを保持
-                                        calories: Math.round((bestMatch.calories || 0) * ratio),
-                                        protein: parseFloat(((bestMatch.protein || 0) * ratio).toFixed(1)),
-                                        fat: parseFloat(((bestMatch.fat || 0) * ratio).toFixed(1)),
-                                        carbs: parseFloat(((bestMatch.carbs || 0) * ratio).toFixed(1)),
-                                        confidence: bestMatch.confidence || 0.8,
-                                        isUnknown: false,
-                                        needsManualHachiteiFetch: false,
-                                        isFetchingHachitei: false,
-                                        hachiteiFailed: false,
-                                        isHachitei: true,
-                                        hachiteiMatchScore: bestMatch.matchScore || 0,
-                                        hachiteiCandidates: result.candidates || [],
-                                        _base: {
-                                            calories: bestMatch.calories || 0,
-                                            protein: bestMatch.protein || 0,
-                                            fat: bestMatch.fat || 0,
-                                            carbs: bestMatch.carbs || 0,
-                                            servingSize: 100,
-                                            servingUnit: 'g',
-                                            unit: '100g'
-                                        }
-                                    };
+                                        return {
+                                            ...food,
+                                            name: `${food.name.split('（')[0]}（${bestMatch.name}）`,
+                                            category: '八訂',
+                                            itemType: food.itemType || 'food',
+                                            calories: Math.round((bestMatch.calories || 0) * ratio),
+                                            protein: parseFloat(((bestMatch.protein || 0) * ratio).toFixed(1)),
+                                            fat: parseFloat(((bestMatch.fat || 0) * ratio).toFixed(1)),
+                                            carbs: parseFloat(((bestMatch.carbs || 0) * ratio).toFixed(1)),
+                                            confidence: bestMatch.confidence || 0.8,
+                                            isUnknown: false,
+                                            needsManualHachiteiFetch: false,
+                                            isFetchingHachitei: false,
+                                            hachiteiFailed: false,
+                                            isHachitei: true,
+                                            hachiteiMatchScore: bestMatch.matchScore || 0,
+                                            hachiteiCandidates: result.candidates || [],
+                                            _base: {
+                                                calories: bestMatch.calories || 0,
+                                                protein: bestMatch.protein || 0,
+                                                fat: bestMatch.fat || 0,
+                                                carbs: bestMatch.carbs || 0,
+                                                servingSize: 100,
+                                                servingUnit: 'g',
+                                                unit: '100g'
+                                            }
+                                        };
+                                    });
                                 });
                             } else {
                                 console.warn(`[recognizeFood] 連鎖検索失敗: ${targetFood.name}`);
-                                currentFoods = currentFoods.map((food, idx) =>
-                                    idx === targetIndex
-                                        ? { ...food, isFetchingHachitei: false, hachiteiFailed: true }
-                                        : food
-                                );
-                            }
 
-                            setRecognizedFoods(currentFoods);
+                                // 取得失敗時の更新（最新のstateを参照）
+                                setRecognizedFoods(prevFoods => {
+                                    return prevFoods.map((food) =>
+                                        food.name === targetFood.name
+                                            ? { ...food, isFetchingHachitei: false, hachiteiFailed: true }
+                                            : food
+                                    );
+                                });
+                            }
 
                             // 次の検索前に2秒待機
                             if (i < remainingUnregistered.length - 1) {
@@ -784,12 +802,15 @@ JSONのみ出力、説明文不要`;
                             }
                         } catch (error) {
                             console.error(`[recognizeFood] 連鎖検索エラー (${targetFood.name}):`, error);
-                            currentFoods = currentFoods.map((food, idx) =>
-                                idx === targetIndex
-                                    ? { ...food, isFetchingHachitei: false, hachiteiFailed: true }
-                                    : food
-                            );
-                            setRecognizedFoods(currentFoods);
+
+                            // エラー時の更新（最新のstateを参照）
+                            setRecognizedFoods(prevFoods => {
+                                return prevFoods.map((food) =>
+                                    food.name === targetFood.name
+                                        ? { ...food, isFetchingHachitei: false, hachiteiFailed: true }
+                                        : food
+                                );
+                            });
                         }
                     }
 
@@ -912,12 +933,27 @@ JSONのみ出力、説明文不要`;
 
         console.log(`[selectHachiteiCandidate] 候補選択: ${candidateName}`);
 
+        // ローディング状態を設定
+        const updatedFoods = [...recognizedFoods];
+        updatedFoods[foodIndex] = {
+            ...food,
+            isSelectingCandidate: true  // 候補選択中フラグ
+        };
+        setRecognizedFoods(updatedFoods);
+
         try {
             // 選択された候補の栄養素を取得
             const hachiteiData = await fetchNutritionFromHachitei(candidateName);
 
             if (!hachiteiData.success || !hachiteiData.bestMatch) {
                 console.error('[selectHachiteiCandidate] 栄養素取得失敗');
+                // ローディング解除
+                const errorFoods = [...recognizedFoods];
+                errorFoods[foodIndex] = {
+                    ...food,
+                    isSelectingCandidate: false
+                };
+                setRecognizedFoods(errorFoods);
                 return;
             }
 
@@ -940,6 +976,7 @@ JSONのみ出力、説明文不要`;
                 isHachitei: true,
                 hachiteiMatchScore: bestMatch.matchScore || 0,
                 hachiteiCandidates: hachiteiData.candidates || [],
+                isSelectingCandidate: false,  // ローディング解除
                 _base: {
                     calories: bestMatch.calories || 0,
                     protein: bestMatch.protein || 0,
@@ -962,6 +999,13 @@ JSONのみ出力、説明文不要`;
             console.log(`[selectHachiteiCandidate] 候補選択完了: ${candidateName}`);
         } catch (error) {
             console.error(`[selectHachiteiCandidate] エラー:`, error);
+            // エラー時もローディング解除
+            const errorFoods = [...recognizedFoods];
+            errorFoods[foodIndex] = {
+                ...food,
+                isSelectingCandidate: false
+            };
+            setRecognizedFoods(errorFoods);
         }
     };
 
@@ -1345,22 +1389,22 @@ JSON形式のみ出力、説明文不要`;
         });
 
         // 合計カロリーとPFC計算（itemは100g基準なのでratio適用）
-        const totalCalories = foodItems.reduce((sum, item) => {
+        const totalCalories = Math.round(foodItems.reduce((sum, item) => {
             const ratio = item.amount / 100;
             return sum + (item.calories || 0) * ratio;
-        }, 0);
-        const totalProtein = foodItems.reduce((sum, item) => {
+        }, 0));
+        const totalProtein = parseFloat(foodItems.reduce((sum, item) => {
             const ratio = item.amount / 100;
             return sum + (item.protein || 0) * ratio;
-        }, 0);
-        const totalFat = foodItems.reduce((sum, item) => {
+        }, 0).toFixed(1));
+        const totalFat = parseFloat(foodItems.reduce((sum, item) => {
             const ratio = item.amount / 100;
             return sum + (item.fat || 0) * ratio;
-        }, 0);
-        const totalCarbs = foodItems.reduce((sum, item) => {
+        }, 0).toFixed(1));
+        const totalCarbs = parseFloat(foodItems.reduce((sum, item) => {
             const ratio = item.amount / 100;
             return sum + (item.carbs || 0) * ratio;
-        }, 0);
+        }, 0).toFixed(1));
 
 
         // 食事データを作成
@@ -1642,6 +1686,7 @@ JSON形式のみ出力、説明文不要`;
                                             }
                                         }}
                                         manualFetchHachitei={manualFetchHachitei}
+                                        selectHachiteiCandidate={selectHachiteiCandidate}
                                         isEditing={editingFoodIndex === index}
                                     />
                                 ))}
@@ -2244,7 +2289,7 @@ const findTopMatches = (inputName, topN = 3) => {
 };
 
 // 食品タグコンポーネント（通常の食事記録と同じ入力方式）
-const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onReplace, onOpenCustomCreator, manualFetchHachitei, isEditing }) => {
+const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onReplace, onOpenCustomCreator, manualFetchHachitei, selectHachiteiCandidate, isEditing }) => {
     const [isNutritionEditExpanded, setIsNutritionEditExpanded] = useState(false); // 栄養素編集の展開状態
 
     // すべての食品に対して候補を検索（上位3つ）
@@ -2300,7 +2345,14 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
     let badgeText = null;
     let badgeIcon = null;
 
-    if (food.isPackageInfo) {
+    // 優先順位: 取得待機中 > パッケージ情報 > 八訂自動取得 > 未登録食材
+    if (food.needsManualHachiteiFetch && !food.isFetchingHachitei) {
+        // 八訂取得待機中（グレー）- 順次取得キューに入っているが、まだ取得されていない
+        bgClass = 'bg-gray-50 border-gray-300';
+        badgeClass = 'bg-gray-500 text-white';
+        badgeText = '取得待機中';
+        badgeIcon = 'Clock';
+    } else if (food.isPackageInfo) {
         // パッケージ情報（緑）
         bgClass = 'bg-green-50 border-green-300';
         badgeClass = 'bg-green-500 text-white';
@@ -2529,10 +2581,24 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                     <p className="text-gray-600 text-xs mb-2">{candidate.matchReason}</p>
                                     <button
                                         onClick={() => selectHachiteiCandidate(foodIndex, candidate.name)}
-                                        className="w-full bg-blue-600 text-white text-xs font-semibold py-1.5 rounded hover:bg-blue-700 transition flex items-center justify-center gap-1"
+                                        disabled={food.isSelectingCandidate}
+                                        className={`w-full text-white text-xs font-semibold py-1.5 rounded transition flex items-center justify-center gap-1 ${
+                                            food.isSelectingCandidate
+                                                ? 'bg-gray-400 cursor-not-allowed'
+                                                : 'bg-blue-600 hover:bg-blue-700'
+                                        }`}
                                     >
-                                        <Icon name="Check" size={12} />
-                                        この候補を選択
+                                        {food.isSelectingCandidate ? (
+                                            <>
+                                                <Icon name="Loader" size={12} className="animate-spin" />
+                                                取得中...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Icon name="Check" size={12} />
+                                                この候補を選択
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             ))}
