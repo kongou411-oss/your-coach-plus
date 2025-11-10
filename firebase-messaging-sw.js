@@ -7,12 +7,13 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 // Firebase設定（config.jsと同じ設定を使用）
 // 注意: 本番環境ではFirebase Consoleの設定を使用してください
 firebase.initializeApp({
-  apiKey: "AIzaSyADHPx0AkWNeXTsgg8rrfsPMHIUsX2g8zM",
-  authDomain: "your-coach-plus.firebaseapp.com",
+  apiKey: "AIzaSyCvKYPLoqmg-vE_8lIdROAcXPres3ByaYU",
+  authDomain: "your-coach-plus.web.app",
   projectId: "your-coach-plus",
   storageBucket: "your-coach-plus.firebasestorage.app",
   messagingSenderId: "654534642431",
-  appId: "1:654534642431:web:4eb24b2cc84dbdd39e6bb2"
+  appId: "1:654534642431:web:4eb24b2cc84dbdd39e6bb2",
+  measurementId: "G-1NLXFYDCJF"
 });
 
 const messaging = firebase.messaging();
