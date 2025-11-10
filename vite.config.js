@@ -10,6 +10,9 @@ export default defineConfig({
     minify: 'terser',
     rollupOptions: {
       output: {
+        entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+        chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+        assetFileNames: `assets/[name]-[hash].[ext]`,
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
           'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage', 'firebase/functions'],
