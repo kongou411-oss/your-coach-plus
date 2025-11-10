@@ -18,7 +18,7 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             id: 'mental_textbook',
             title: 'メンタルの教科書',
             category: '心理学',
-            path: './module/mental_textbook_new.html',
+            path: '/module/mental_textbook_new.html',
             description: 'モチベーション、習慣形成、ストレス管理などメンタル面の科学的アプローチ',
             icon: 'Brain'
         },
@@ -26,7 +26,7 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             id: 'protein_textbook',
             title: 'タンパク質の教科書',
             category: '栄養学',
-            path: './module/Nutrition/macro/protein_textbook_new.html',
+            path: '/module/Nutrition/macro/protein_textbook_new.html',
             description: 'タンパク質の役割、アミノ酸スコア、摂取タイミング、プロテインの選び方',
             icon: 'Apple'
         },
@@ -34,7 +34,7 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             id: 'carb_textbook',
             title: '炭水化物の教科書',
             category: '栄養学',
-            path: './module/Nutrition/macro/carb_textbook_new.html',
+            path: '/module/Nutrition/macro/carb_textbook_new.html',
             description: '炭水化物の種類、GI値、タイミング、糖質制限の科学',
             icon: 'Apple'
         },
@@ -42,7 +42,7 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             id: 'fat_textbook',
             title: '脂質の教科書',
             category: '栄養学',
-            path: './module/Nutrition/macro/fat_textbook_new.html',
+            path: '/module/Nutrition/macro/fat_textbook_new.html',
             description: '脂質の種類、オメガ3/6/9、トランス脂肪酸、ケトジェニックダイエット',
             icon: 'Apple'
         },
@@ -50,7 +50,7 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             id: 'basic_supplements_textbook',
             title: '基礎サプリメントの教科書',
             category: '栄養学',
-            path: './module/basic_supplements_textbook_new.html',
+            path: '/module/basic_supplements_textbook_new.html',
             description: 'クレアチン、アミノ酸、ベータアラニン、HMBなど基礎サプリメントの科学',
             icon: 'Apple'
         },
@@ -58,7 +58,7 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             id: 'vitamin_mineral_textbook',
             title: 'ビタミン・ミネラルの教科書',
             category: '栄養学',
-            path: './module/Nutrition/micro/vitamin_mineral_textbook_new.html',
+            path: '/module/Nutrition/micro/vitamin_mineral_textbook_new.html',
             description: '微量栄養素の役割、欠乏症、過剰症、サプリメント摂取の考え方',
             icon: 'Apple'
         }

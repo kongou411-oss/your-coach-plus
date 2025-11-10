@@ -1,1 +1,0 @@
-console.log('=== foodDB check ==='); console.log('foodDB:', typeof window.foodDB); console.log('foodDB keys:', Object.keys(window.foodDB || {}).length); console.log('Sample:', Object.keys(window.foodDB || {}).slice(0, 5));

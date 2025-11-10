@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>脂質科学とオメガバランス - PGBASE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.8;
+            background-color: #f9fafb;
+        }
+
+        .conclusion-box {
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-header {
+            border-left: 4px solid #14b8a6;
+            padding-left: 1rem;
+            margin: 2rem 0 1rem 0;
+            color: #0f766e;
+        }
+
+        .evidence-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .key-point {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border-left: 4px solid #10b981;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .source-card {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .meta-info {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 1px solid #22c55e;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 2rem 0;
+            font-size: 0.875rem;
+        }
+
+        .expert-quote {
+            background: #f0fdfa;
+            border-left: 4px solid #14b8a6;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            font-style: italic;
+        }
+
+        .action-list {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid #22c55e;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .action-list h4 {
+            color: #15803d;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 2px solid #f87171;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .warning-box h4 {
+            color: #dc2626;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .fat-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .fat-table th {
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: #ffffff;
+            font-weight: 600;
+            padding: 0.75rem;
+            text-align: left;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .fat-table td {
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            color: #374151;
+            background-color: white;
+        }
+
+        .fat-table tr:nth-child(even) td {
+            background-color: #f9fafb;
+        }
+
+        .qa-item {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .qa-question {
+            padding: 1rem;
+            color: #0f766e;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f0fdfa;
+            transition: all 0.3s;
+        }
+
+        .qa-question:hover {
+            background-color: #ccfbf1;
+        }
+
+        .qa-answer {
+            padding: 1rem;
+            color: #374151;
+            display: none;
+            background-color: white;
+        }
+
+        .qa-answer.active {
+            display: block;
+        }
+
+        .related-link {
+            display: inline-block;
+            color: #0891b2;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border: 2px solid #14b8a6;
+            border-radius: 8px;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .related-link:hover {
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 1.25rem;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-top-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(20, 184, 166, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-4xl mx-auto p-6 bg-white shadow-lg min-h-screen">
+
+        <!-- ヘッダー -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="evidence-badge">🧬 栄養科学</span>
+                    <span class="text-sm text-gray-600">レベル: 中級レベル</span>
+                </div>
+                <a href="#" onclick="window.parent.postMessage('return-to-pgbase-store', '*'); return false;" class="text-sm px-4 py-2 rounded-lg transition" style="color: #0891b2; border: 2px solid #0891b2; text-decoration: none; font-weight: 500;">← ストアに戻る</a>
+            </div>
+            <h1 class="text-4xl font-bold mb-4" style="color: #0f766e;">
+                脂質科学とオメガバランス
+            </h1>
+            <p class="text-lg text-gray-600">
+                炎症抑制とパフォーマンス最大化のための脂質戦略
+            </p>
+            <div class="flex gap-4 mt-4 text-sm text-gray-500 flex-wrap">
+                <span>📚 カテゴリ: 栄養学</span>
+                <span>⏱️ 読了時間: 25分</span>
+                <span>📅 最終更新: 2025年10月</span>
+            </div>
+        </header>
+
+        <!-- 結論（冒頭） -->
+        <section class="conclusion-box">
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>📋</span>
+                <span>この記事の結論</span>
+            </h2>
+            <div class="text-lg leading-relaxed">
+                <ol class="list-decimal list-inside space-y-2 ml-2">
+                    <li>脂質摂取量は総カロリーの20-35%（オメガ3重視）</li>
+                    <li>オメガ3:オメガ6比率は1:4以下が理想（現代人は1:10-20）</li>
+                    <li>EPA・DHA摂取量は最低1000mg/日、理想は2000-3000mg/日</li>
+                    <li>トランス脂肪酸は完全回避、飽和脂肪酸は総カロリーの10%以下</li>
+                    <li>脂質の質がパフォーマンス・健康・体組成を大きく左右する</li>
+                </ol>
+            </div>
+            <div class="mt-6 pt-6 border-t border-white/30">
+                <p class="font-semibold mb-2">🎯 こんな人におすすめ</p>
+                <p>・慢性炎症を抑制したいアスリート<br>
+                ・脂質バランスを科学的に理解したい人<br>
+                ・体脂肪減少と筋量維持を両立したい人<br>
+                ・脳機能・認知機能を向上させたい人</p>
+            </div>
+        </section>
+
+        <!-- 目次 -->
+        <nav class="bg-gray-100 p-6 rounded-lg mb-8">
+            <h2 class="text-xl font-bold mb-4 text-gray-900">📋 目次</h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li><a href="#section1" class="hover:text-cyan-600">AIコーチによる要約</a></li>
+                <li><a href="#section2" class="hover:text-cyan-600">科学的根拠 / 仕組みの解説</a></li>
+                <li><a href="#section3" class="hover:text-cyan-600">メリット（期待できる効果）</a></li>
+                <li><a href="#section4" class="hover:text-cyan-600">リスクと考慮事項</a></li>
+                <li><a href="#section5" class="hover:text-cyan-600">具体的な実践プラン</a></li>
+                <li><a href="#section6" class="hover:text-cyan-600">Q&A / よくある質問</a></li>
+            </ol>
+        </nav>
+
+        <!-- セクション1: AIコーチによる要約 -->
+        <section id="section1" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                1. 🤖 AIコーチによる要約
+            </h2>
+            <p class="text-gray-700 mt-4">
+                脂質は「太る原因」として誤解されがちですが、実際は細胞膜の構成、ホルモン合成、脂溶性ビタミンの吸収、長期間のエネルギー供給など、生命維持に不可欠な栄養素です。特にアスリートやトレーニーにとって、適切な脂質摂取は最高のパフォーマンス発揮の鍵となります。
+            </p>
+            <p class="text-gray-700 mt-4">
+                現代の脂質科学は、「量」よりも「質」と「バランス」を重視します。オメガ3とオメガ6の比率、EPA・DHAの十分な摂取、トランス脂肪酸の完全回避が、炎症抑制・体組成改善・認知機能向上の核心です。
+            </p>
+            <div class="key-point mt-6">
+                <p class="font-semibold mb-2" style="color: #065f46;">💡 キーポイント</p>
+                <p class="text-gray-700">
+                    脂質の真価 = 質の選択 × バランスの最適化 × タイミングの調整
+                </p>
+            </div>
+        </section>
+
+        <!-- セクション2: 科学的根拠 -->
+        <section id="section2" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                2. 🧬 科学的根拠 / 仕組みの解説
+            </h2>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.1 脂質の分類と機能</h3>
+            <p class="text-gray-700">
+                脂質は化学構造により大きく4つに分類されます：
+            </p>
+
+            <table class="fat-table">
+                <thead>
+                    <tr>
+                        <th>脂質タイプ</th>
+                        <th>主な特徴</th>
+                        <th>主要な働き</th>
+                        <th>代表的食材</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>飽和脂肪酸</td>
+                        <td>二重結合なし、常温で固体</td>
+                        <td>エネルギー貯蔵、細胞膜安定化</td>
+                        <td>バター、牛肉、ココナッツオイル</td>
+                    </tr>
+                    <tr>
+                        <td>一価不飽和脂肪酸</td>
+                        <td>二重結合1つ、オレイン酸が主</td>
+                        <td>LDL低下、血管保護</td>
+                        <td>オリーブオイル、アボカド、ナッツ</td>
+                    </tr>
+                    <tr>
+                        <td>多価不飽和脂肪酸</td>
+                        <td>二重結合複数、必須脂肪酸</td>
+                        <td>炎症調節、脳機能、ホルモン合成</td>
+                        <td>魚油、亜麻仁油、くるみ</td>
+                    </tr>
+                    <tr>
+                        <td>トランス脂肪酸</td>
+                        <td>人工的構造変化、有害</td>
+                        <td>炎症促進、動脈硬化促進</td>
+                        <td>マーガリン、加工食品</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.2 オメガ脂肪酸の生理作用</h3>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">オメガ3脂肪酸（α-リノレン酸系）</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>EPA（エイコサペンタエン酸）</strong>: 抗炎症作用、血小板凝集抑制</li>
+                <li><strong>DHA（ドコサヘキサエン酸）</strong>: 脳機能改善、神経保護</li>
+                <li><strong>プロスタグランジン合成</strong>: PGE3系で抗炎症シグナル放出</li>
+            </ul>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">オメガ6脂肪酸（リノール酸系）</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>アラキドン酸</strong>: 炎症性メディエーター産生（適量必要）</li>
+                <li><strong>γ-リノレン酸（GLA）</strong>: 抗炎症作用（少量）</li>
+                <li><strong>プロスタグランジン合成</strong>: PGE2系で炎症反応調節</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.3 脂質代謝のメカニズム</h3>
+            <p class="text-gray-700">
+                脂質は以下の過程を経てエネルギーとして利用されます：
+            </p>
+            <ol class="list-decimal list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li><strong>乳化</strong>: 胆汁酸による微細化</li>
+                <li><strong>加水分解</strong>: リパーゼによる分解</li>
+                <li><strong>吸収</strong>: 腸管での取り込み</li>
+                <li><strong>カイロミクロン形成</strong>: リンパ系への輸送</li>
+                <li><strong>β酸化</strong>: アセチルCoAへの変換</li>
+                <li><strong>TCA回路</strong>: ATP産生</li>
+            </ol>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.4 ケトン体代謝</h3>
+            <p class="text-gray-700">
+                低糖質状態では脂質から産生されるケトン体が重要なエネルギー源となります：
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>アセトアセテート</strong>: 水溶性、筋肉で利用</li>
+                <li><strong>β-ヒドロキシ酪酸</strong>: 主要ケトン体、脳で利用</li>
+                <li><strong>アセトン</strong>: 呼気で排出（ケトン臭の原因）</li>
+            </ul>
+        </section>
+
+        <!-- セクション3: メリット -->
+        <section id="section3" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                3. ✅ メリット（期待できる効果）
+            </h2>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.1 パフォーマンス向上効果</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>持久力向上</strong>: 脂肪酸化能力の向上により糖質節約</li>
+                <li><strong>回復促進</strong>: オメガ3による炎症抑制で疲労軽減</li>
+                <li><strong>集中力向上</strong>: DHAによる脳機能最適化</li>
+                <li><strong>筋力維持</strong>: 脂質由来のテストステロン合成サポート</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.2 体組成改善効果</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>体脂肪減少</strong>: 熱産生促進、満腹感持続</li>
+                <li><strong>筋量維持</strong>: タンパク質節約効果</li>
+                <li><strong>代謝率向上</strong>: 褐色脂肪細胞の活性化</li>
+                <li><strong>内臓脂肪減少</strong>: オメガ3による脂肪分解促進</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.3 健康・アンチエイジング効果</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>心血管疾患予防</strong>: HDL上昇、血圧正常化</li>
+                <li><strong>脳機能保護</strong>: 認知症リスク低下、記憶力向上</li>
+                <li><strong>関節痛軽減</strong>: 抗炎症作用による症状改善</li>
+                <li><strong>皮膚・髪質改善</strong>: 細胞膜の質向上</li>
+                <li><strong>免疫機能調節</strong>: 過剰炎症の抑制</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.4 ホルモン最適化効果</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>テストステロン合成</strong>: コレステロールからのホルモン産生</li>
+                <li><strong>成長ホルモン分泌</strong>: 深い睡眠の質向上</li>
+                <li><strong>インスリン感受性</strong>: 細胞膜の流動性改善</li>
+                <li><strong>コルチゾール調節</strong>: ストレス反応の正常化</li>
+            </ul>
+        </section>
+
+        <!-- セクション4: リスクと考慮事項 -->
+        <section id="section4" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                4. ⚠️ リスクと考慮事項
+            </h2>
+
+            <div class="warning-box">
+                <h4>過剰摂取・質の悪い脂質のリスク</h4>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li><strong>体重増加</strong>: 1g=9kcalの高カロリー密度</li>
+                    <li><strong>消化不良</strong>: 胆汁酸不足時の脂肪便</li>
+                    <li><strong>炎症促進</strong>: オメガ6過剰によるアラキドン酸カスケード</li>
+                    <li><strong>酸化ストレス</strong>: 不安定な脂質の酸化による細胞損傷</li>
+                </ul>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.1 トランス脂肪酸の危険性</h3>
+            <p class="text-gray-700">
+                人工的に作られたトランス脂肪酸は以下の健康リスクを持ちます：
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>動脈硬化促進</strong>: LDL増加、HDL減少</li>
+                <li><strong>炎症促進</strong>: 慢性炎症状態の悪化</li>
+                <li><strong>インスリン抵抗性</strong>: 2型糖尿病リスク増加</li>
+                <li><strong>認知機能低下</strong>: 脳血管への悪影響</li>
+                <li><strong>不妊リスク</strong>: ホルモンバランスの乱れ</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.2 個人差・体質の考慮</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>胆嚢疾患</strong>: 脂質消化能力の低下</li>
+                <li><strong>膵炎既往</strong>: リパーゼ分泌不全</li>
+                <li><strong>肝機能低下</strong>: 脂質代謝異常</li>
+                <li><strong>血液凝固異常</strong>: EPA・DHA過剰による出血傾向</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.3 薬物相互作用</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>抗凝固薬</strong>: オメガ3による出血リスク増加</li>
+                <li><strong>血圧薬</strong>: オメガ3による血圧低下の相乗効果</li>
+                <li><strong>糖尿病薬</strong>: 脂質摂取タイミングによる血糖変動</li>
+            </ul>
+        </section>
+
+        <!-- セクション5: 具体的な実践プラン -->
+        <section id="section5" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                5. 🎯 具体的な実践プラン
+            </h2>
+
+            <div class="action-list">
+                <h4>基本脂質戦略</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                    <li><strong>総摂取量設定</strong>: 総カロリーの25-30%を脂質から摂取</li>
+                    <li><strong>オメガバランス調整</strong>: オメガ3:オメガ6を1:4以下に設定</li>
+                    <li><strong>EPA・DHA確保</strong>: 魚油またはサプリで1日2g以上</li>
+                    <li><strong>トランス脂肪酸除去</strong>: 加工食品・マーガリン類を完全回避</li>
+                    <li><strong>摂取タイミング調整</strong>: トレーニング前後は控えめに</li>
+                </ol>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.1 目的別脂質プロトコル</h3>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">筋肥大期プロトコル</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>総脂質量</strong>: 総カロリーの25-30%</li>
+                <li><strong>飽和脂肪酸</strong>: 総カロリーの8-10%（テストステロン合成）</li>
+                <li><strong>一価不飽和脂肪酸</strong>: 総カロリーの15%（オリーブオイル、ナッツ）</li>
+                <li><strong>オメガ3</strong>: EPA/DHA 2-3g/日</li>
+                <li><strong>タイミング</strong>: トレーニング2時間前以降は控えめ</li>
+            </ul>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">減量期プロトコル</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>総脂質量</strong>: 総カロリーの20-25%（最低値維持）</li>
+                <li><strong>MCTオイル</strong>: 10-15g/日（ケトン体産生促進）</li>
+                <li><strong>オメガ3強化</strong>: EPA/DHA 3-4g/日（炎症抑制）</li>
+                <li><strong>GLA補給</strong>: 月見草オイル500mg/日</li>
+                <li><strong>空腹時活用</strong>: 朝食前の脂肪燃焼促進</li>
+            </ul>
+
+            <h4 class="text-lg font-semibold mt-4 mb-2 text-gray-800">持久系アスリートプロトコル</h4>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>総脂質量</strong>: 総カロリーの30-35%</li>
+                <li><strong>中鎖脂肪酸（MCT）</strong>: 20-30g/日（即効性エネルギー）</li>
+                <li><strong>オメガ3最大化</strong>: EPA/DHA 4-5g/日</li>
+                <li><strong>分散摂取</strong>: 3-4時間おきに少量ずつ</li>
+                <li><strong>運動中補給</strong>: MCT入りドリンク活用</li>
+            </ul>
+
+            <div class="action-list mt-6">
+                <h4>高品質脂質源の選択基準</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                    <li><strong>魚類</strong>: 天然・小型魚優先（サバ、イワシ、アンチョビ）</li>
+                    <li><strong>ナッツ・種子</strong>: 生・無塩・酸化防止包装品</li>
+                    <li><strong>オイル</strong>: 低温圧搾・遮光瓶・小容量を選択</li>
+                    <li><strong>アボカド</strong>: 完熟・オーガニック品を優先</li>
+                    <li><strong>サプリメント</strong>: 第三者機関検査済み製品</li>
+                </ol>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.2 1日の理想的脂質摂取例</h3>
+            <p class="text-gray-700"><strong>体重70kg、トレーニング日（2500kcal想定）</strong></p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li><strong>朝食</strong>: アボカド1/2個、ナッツ10g</li>
+                <li><strong>昼食</strong>: サバ100g、オリーブオイル大さじ1</li>
+                <li><strong>間食</strong>: MCTオイル10g、クルミ15g</li>
+                <li><strong>夕食</strong>: サーモン120g、亜麻仁油小さじ1</li>
+                <li><strong>サプリ</strong>: フィッシュオイル（EPA1200mg、DHA800mg）</li>
+            </ul>
+
+            <p class="text-gray-700 mt-4">
+                <strong>総脂質量</strong>: 約80-85g（総カロリーの約30%）<br>
+                <strong>オメガ3総量</strong>: 約3.5g<br>
+                <strong>オメガ6比率</strong>: 1:3.5（理想的バランス）
+            </p>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.3 MCTオイルとココナッツオイルの比較</h3>
+            <table class="fat-table">
+                <thead>
+                    <tr>
+                        <th>特性</th>
+                        <th>MCTオイル</th>
+                        <th>ココナッツオイル</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>主成分</td>
+                        <td>C8（カプリル酸）、C10（カプリン酸）</td>
+                        <td>50%が長鎖脂肪酸（C16、C18）</td>
+                    </tr>
+                    <tr>
+                        <td>ケトン体産生</td>
+                        <td>30分以内に産生、即効性</td>
+                        <td>中鎖脂肪酸は約50%のみ</td>
+                    </tr>
+                    <tr>
+                        <td>吸収速度</td>
+                        <td>消化酵素不要、直接肝臓でエネルギー化</td>
+                        <td>長鎖脂肪酸は通常の消化過程必要</td>
+                    </tr>
+                    <tr>
+                        <td>体脂肪蓄積</td>
+                        <td>蓄積されにくい</td>
+                        <td>長鎖脂肪酸は蓄積可能性あり</td>
+                    </tr>
+                    <tr>
+                        <td>特別な効果</td>
+                        <td>即効性エネルギー、ケトジェニック最適</td>
+                        <td>抗菌作用（ラウリン酸）</td>
+                    </tr>
+                    <tr>
+                        <td>価格・入手</td>
+                        <td>高価</td>
+                        <td>安価で入手しやすい</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- セクション6: Q&A -->
+        <section id="section6" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                6. ❓ Q&A / よくある質問
+            </h2>
+            <div class="space-y-4 mt-6">
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q1: 脂質を摂ると太るのではないですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: これは最大の誤解です。脂質自体が肥満の原因ではなく、「総カロリー過多」が問題です。実際、適切な脂質摂取は以下の理由で体重管理に有効です：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>満腹感持続</strong>: CCK、GLP-1ホルモン分泌で空腹感抑制</li>
+                            <li><strong>熱産生効果</strong>: 褐色脂肪細胞活性化で代謝向上</li>
+                            <li><strong>インスリン安定化</strong>: 血糖値スパイクの抑制</li>
+                            <li><strong>脂肪燃焼促進</strong>: β酸化酵素の活性化</li>
+                        </ul>
+                        <p class="mt-2">重要なのは「量」より「質」です。トランス脂肪酸を避け、オメガバランスを整えることで、脂質は最強の味方となります。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q2: フィッシュオイルサプリは必要ですか？食事だけでは不十分？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 理想的には食事から摂取すべきですが、現実的にはサプリメントが効果的です：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>必要量の確保困難</strong>: EPA/DHA 2gには魚100-200g/日が必要</li>
+                            <li><strong>水銀・PCB汚染回避</strong>: 精製されたサプリの方が安全</li>
+                            <li><strong>酸化リスク低減</strong>: 新鮮な状態で摂取可能</li>
+                            <li><strong>コスト効率</strong>: 毎日の魚摂取より経済的</li>
+                        </ul>
+                        <p class="mt-2">選択基準：分子蒸留精製、第三者機関検査済み、EPA/DHA比率2:1程度、小容量包装（酸化防止）の製品を推奨します。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q3: MCTオイルとココナッツオイルはどう違いますか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 両者は中鎖脂肪酸を含みますが、組成と効果が大きく異なります：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>MCTオイル</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>C8（カプリル酸）、C10（カプリン酸）が主成分</li>
+                                    <li>30分以内にケトン体産生、即効性エネルギー</li>
+                                    <li>消化酵素不要、直接肝臓でエネルギー化</li>
+                                    <li>体脂肪として蓄積されにくい</li>
+                                </ul>
+                            </li>
+                            <li class="mt-2"><strong>ココナッツオイル</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>50%が長鎖脂肪酸（C16、C18）</li>
+                                    <li>中鎖脂肪酸は約50%のみ</li>
+                                    <li>抗菌作用（ラウリン酸）があるが即効性は劣る</li>
+                                    <li>安価で入手しやすい</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <p class="mt-2">用途別推奨：即効性エネルギーやケトジェニック目的ならMCT、日常調理や抗菌効果目的ならココナッツオイルが適しています。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q4: トレーニング前後の脂質摂取はどうすべきですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: トレーニング前後での脂質摂取は慎重な調整が必要です：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>トレーニング前（2-3時間前まで）</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>MCTオイル10-15g: 持続的エネルギー供給</li>
+                                    <li>長鎖脂肪酸は避ける: 消化に時間がかかる</li>
+                                    <li>胃もたれ防止のため少量に留める</li>
+                                </ul>
+                            </li>
+                            <li class="mt-2"><strong>トレーニング中</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>MCTパウダー5-10g: 持久系運動での補給</li>
+                                    <li>筋力系では基本的に不要</li>
+                                </ul>
+                            </li>
+                            <li class="mt-2"><strong>トレーニング後（1-2時間後から）</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>オメガ3重視: EPA/DHA 1-2g（抗炎症）</li>
+                                    <li>適度な飽和脂肪酸: ホルモン合成促進</li>
+                                    <li>タンパク質・糖質摂取後に摂取</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <p class="mt-2">個人差があるため、消化能力と体調を観察しながら調整してください。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q5: 植物性と動物性の脂質、どちらが優秀ですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: それぞれに独自の利点があり、バランス良く摂取することが理想的です：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>動物性脂質の利点</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>EPA/DHA（魚類）: 直接利用可能、変換効率100%</li>
+                                    <li>飽和脂肪酸: ホルモン合成、細胞膜安定化</li>
+                                    <li>脂溶性ビタミン豊富（A、D、E、K）</li>
+                                    <li>コレステロール: 必要な場合の直接供給</li>
+                                </ul>
+                            </li>
+                            <li class="mt-2"><strong>植物性脂質の利点</strong>:
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>α-リノレン酸（亜麻仁、チア）: オメガ3前駆体</li>
+                                    <li>オレイン酸（オリーブ、アボカド）: 心血管保護</li>
+                                    <li>ファイトケミカル: 抗酸化、抗炎症作用</li>
+                                    <li>繊維質同時摂取: 腸内環境改善</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <p class="mt-2">推奨配分：動物性60%（魚類中心）、植物性40%（多様性重視）で、両者の利点を最大化できます。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 結論とまとめ -->
+        <section class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                7. 結論とまとめ
+            </h2>
+            <div class="conclusion-box">
+                <h3 class="text-2xl font-bold mb-4">📌 本モジュールのまとめ</h3>
+                <ul class="space-y-3 text-lg">
+                    <li>✅ 脂質摂取量は総カロリーの20-35%（オメガ3重視）</li>
+                    <li>✅ オメガ3:オメガ6比率は1:4以下が理想（現代人は1:10-20）</li>
+                    <li>✅ EPA・DHA摂取量は最低1000mg/日、理想は2000-3000mg/日</li>
+                    <li>✅ トランス脂肪酸は完全回避、飽和脂肪酸は総カロリーの10%以下</li>
+                    <li>✅ 脂質の質がパフォーマンス・健康・体組成を大きく左右する</li>
+                </ul>
+                <div class="mt-6 pt-6 border-t border-white/30">
+                    <p class="text-xl font-semibold mb-3">🎯 今日から始められること</p>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>現在の脂質摂取量・種類を1週間記録</li>
+                        <li>トランス脂肪酸含有食品を冷蔵庫から除去</li>
+                        <li>高品質フィッシュオイルサプリを選択・購入</li>
+                        <li>オメガ3:オメガ6比率を計算・調整</li>
+                        <li>Your Coach+で脂質バランス記録を開始</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- 関連モジュール -->
+        <section class="mb-12 rounded-lg p-6" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #3b82f6;">
+            <h2 class="text-2xl font-bold mb-4" style="color: #1e40af;">🔗 関連モジュール</h2>
+            <div class="flex flex-wrap gap-2">
+                <a href="../../pg_formula_textbook_new.html" class="related-link">PG式カロリー計算</a>
+                <a href="protein_textbook_new.html" class="related-link">プロテイン科学と実践</a>
+                <a href="carb_textbook_new.html" class="related-link">炭水化物の教科書</a>
+                <a href="../micro/vitamin_mineral_textbook_new.html" class="related-link">ビタミン・ミネラル最適化</a>
+                <a href="../../mental_textbook_new.html" class="related-link">メンタルトレーニング基礎</a>
+            </div>
+        </section>
+
+        <!-- メタ情報 -->
+        <section class="meta-info">
+            <h3 class="font-bold text-gray-900 mb-3">📝 モジュール情報</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-700">
+                <div>
+                    <p><strong>編纂者:</strong> PG BASE編集チーム</p>
+                    <p><strong>作成日:</strong> 2025年10月</p>
+                    <p><strong>更新日:</strong> 2025年10月</p>
+                    <p><strong>バージョン:</strong> 2.0</p>
+                </div>
+                <div>
+                    <p><strong>カテゴリー:</strong> 栄養学</p>
+                    <p><strong>レベル:</strong> 中級レベル</p>
+                    <p><strong>読了時間:</strong> 約25分</p>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t" style="border-color: #22c55e;">
+                <p class="font-bold text-gray-900 mb-2">🔍 編纂プロセス</p>
+                <p class="text-sm text-gray-700">
+                    本モジュールは、複数の信頼できる科学的情報源を参照し、運動栄養学の専門知識と実践経験に基づいて作成されています。
+                    定期的に内容を見直し、最新の研究成果を反映するよう更新しています。
+                </p>
+            </div>
+        </section>
+
+        <!-- 免責事項 -->
+        <section class="bg-gray-100 p-6 rounded-lg mt-8 text-sm text-gray-600">
+            <p class="font-bold text-gray-900 mb-2">⚠️ 免責事項</p>
+            <p>
+                本モジュールの情報は教育・情報提供目的で作成されており、医療アドバイスの代替ではありません。
+                個別の健康状態や医学的な問題については、必ず医師・管理栄養士・専門家にご相談ください。
+                本情報は信頼できる情報源に基づいていますが、完全性・正確性を保証するものではありません。
+                本情報の利用により生じたいかなる損害についても、Your Coach+および編纂者は責任を負いかねます。
+            </p>
+        </section>
+
+    </div>
+
+    <!-- スクロールトップボタン -->
+    <button
+        onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+        class="scroll-top-btn"
+        aria-label="ページトップへ"
+    >
+        ↑
+    </button>
+
+    <script>
+        function toggleQA(element) {
+            const answer = element.nextElementSibling;
+            const icon = element.querySelector('span');
+
+            answer.classList.toggle('active');
+            icon.textContent = answer.classList.contains('active') ? '-' : '+';
+        }
+    </script>
+</body>
+</html>

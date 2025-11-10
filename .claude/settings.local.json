@@ -80,7 +80,8 @@
       "Bash(cd:*)",
       "Bash(src/components/04_settings_temp.jsx)",
       "Bash(move /Y srccomponents04_settings_temp.jsx srccomponents04_settings.jsx:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(sort:*)"
     ],
     "deny": [],
     "ask": []

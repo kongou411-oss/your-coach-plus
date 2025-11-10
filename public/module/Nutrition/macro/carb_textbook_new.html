@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>炭水化物の教科書 - PGBASE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.8;
+            background-color: #f9fafb;
+        }
+
+        .conclusion-box {
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-header {
+            border-left: 4px solid #14b8a6;
+            padding-left: 1rem;
+            margin: 2rem 0 1rem 0;
+            color: #0f766e;
+        }
+
+        .evidence-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .key-point {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border-left: 4px solid #10b981;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .action-list {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid #22c55e;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .action-list h4 {
+            color: #15803d;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 2px solid #f87171;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .warning-box h4 {
+            color: #dc2626;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .carb-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .carb-table th {
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: #ffffff;
+            font-weight: 600;
+            padding: 0.75rem;
+            text-align: left;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .carb-table td {
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            color: #374151;
+            background-color: white;
+        }
+
+        .carb-table tr:nth-child(even) td {
+            background-color: #f9fafb;
+        }
+
+        .qa-item {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .qa-question {
+            padding: 1rem;
+            color: #0f766e;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f0fdfa;
+            transition: all 0.3s;
+        }
+
+        .qa-question:hover {
+            background-color: #ccfbf1;
+        }
+
+        .qa-answer {
+            padding: 1rem;
+            color: #374151;
+            display: none;
+            background-color: white;
+        }
+
+        .qa-answer.active {
+            display: block;
+        }
+
+        .related-link {
+            display: inline-block;
+            color: #0891b2;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border: 2px solid #14b8a6;
+            border-radius: 8px;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .related-link:hover {
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 1.25rem;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-top-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(20, 184, 166, 0.5);
+        }
+
+        .meta-info {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 1px solid #22c55e;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 2rem 0;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-4xl mx-auto p-6 bg-white shadow-lg min-h-screen">
+
+        <!-- ヘッダー -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="evidence-badge">🎯 栄養科学</span>
+                    <span class="text-sm text-gray-600">レベル: 基礎レベル</span>
+                </div>
+                <a href="#" onclick="window.parent.postMessage('return-to-pgbase-store', '*'); return false;" class="text-sm px-4 py-2 rounded-lg transition" style="color: #0891b2; border: 2px solid #0891b2; text-decoration: none; font-weight: 500;">← ストアに戻る</a>
+            </div>
+            <h1 class="text-4xl font-bold mb-4" style="color: #0f766e;">
+                炭水化物の教科書
+            </h1>
+            <p class="text-lg text-gray-600">
+                GI値コントロールとタイミング戦略
+            </p>
+            <div class="flex gap-4 mt-4 text-sm text-gray-500 flex-wrap">
+                <span>📚 カテゴリ: 栄養学</span>
+                <span>⏱️ 読了時間: 10分</span>
+                <span>📅 最終更新: 2025年10月</span>
+            </div>
+        </header>
+
+        <!-- 結論（冒頭） -->
+        <section class="conclusion-box">
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>📋</span>
+                <span>この記事の結論</span>
+            </h2>
+            <div class="text-lg leading-relaxed">
+                <ol class="list-decimal list-inside space-y-2 ml-2">
+                    <li>トレーニング直後以外は、吸収の遅い「低GI値」の炭水化物を選ぶ</li>
+                    <li>トレーニング直後は、吸収の速い「高GI値」の炭水化物を戦略的に摂取する</li>
+                    <li>食物繊維も意識して摂取し、腸内環境を整える</li>
+                    <li>炭水化物は敵ではなく、適切なタイミングで摂取すれば最強のエネルギー源</li>
+                </ol>
+            </div>
+            <div class="mt-6 pt-6 border-t border-white/30">
+                <p class="font-semibold mb-2">🎯 こんな人におすすめ</p>
+                <p>・炭水化物を敵視している人<br>
+                ・GI値について理解したい人<br>
+                ・エネルギーレベルを安定させたい人<br>
+                ・体脂肪を増やさずに筋肉をつけたい人</p>
+            </div>
+        </section>
+
+        <!-- 目次 -->
+        <nav class="bg-gray-100 p-6 rounded-lg mb-8">
+            <h2 class="text-xl font-bold mb-4 text-gray-900">📋 目次</h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li><a href="#section1" class="hover:text-cyan-600">AIコーチによる要約</a></li>
+                <li><a href="#section2" class="hover:text-cyan-600">科学的根拠 / 炭水化物とは何か？</a></li>
+                <li><a href="#section3" class="hover:text-cyan-600">メリット（期待できる効果）</a></li>
+                <li><a href="#section4" class="hover:text-cyan-600">リスクと考慮事項</a></li>
+                <li><a href="#section5" class="hover:text-cyan-600">炭水化物を味方につける技術</a></li>
+                <li><a href="#section6" class="hover:text-cyan-600">Q&A / よくある質問</a></li>
+            </ol>
+        </nav>
+
+        <!-- セクション1: AIコーチによる要約 -->
+        <section id="section1" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                1. 🤖 AIコーチによる要約
+            </h2>
+            <p class="text-gray-700 mt-4">
+                ボディメイク成功の鍵は、エネルギーのコントロールにあります。炭水化物は、あなたの身体を動かすための最も重要な「ガソリン」です。これを抜きすぎれば筋肉は元気をなくし、摂りすぎれば体脂肪に変わる。
+            </p>
+            <p class="text-gray-700 mt-4">
+                この炭水化物というエネルギー源を正しく理解し、自在に操ることこそが、理想の身体への最短ルートとなります。
+            </p>
+            <div class="key-point mt-6">
+                <p class="font-semibold mb-2" style="color: #065f46;">💡 キーポイント</p>
+                <p class="text-gray-700">
+                    炭水化物マスタリー = GI値の理解 × タイミング戦略 × インスリンコントロール
+                </p>
+            </div>
+        </section>
+
+        <!-- セクション2: 科学的根拠 -->
+        <section id="section2" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                2. 🧬 科学的根拠 / 炭水化物とは何か？
+            </h2>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.1 炭水化物の正体</h3>
+            <p class="text-gray-700">
+                「糖質」と「食物繊維」を合わせたものの総称です。
+            </p>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.2 糖質の役割</h3>
+            <p class="text-gray-700">
+                体内でブドウ糖に変わり、脳や筋肉を動かすための主要なエネルギー源として供給されます。
+            </p>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.3 食物繊維の役割</h3>
+            <p class="text-gray-700">
+                腸の働きを活発にして排泄を促すほか、腸内の善玉菌を増やして腸内環境を整える作用があります。また、ブドウ糖の吸収を緩やかにして血糖値の急上昇を防ぐ働きも持ちます。
+            </p>
+
+            <div class="warning-box mt-6">
+                <h4>不足した場合</h4>
+                <p class="text-gray-700">
+                    エネルギー不足から疲労感や脱力感が生じます。さらに、身体はエネルギーを作り出すために筋肉を構成しているタンパク質を分解し始めるため（糖新生）、筋肉量が減少するリスクがあります。
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <h4>過剰摂取した場合</h4>
+                <p class="text-gray-700">
+                    使い切れなかったブドウ糖は、まず肝臓や筋肉にグリコーゲンとして貯蔵されますが、その容量を超えると体脂肪として蓄積され、肥満などの原因になります。
+                </p>
+            </div>
+        </section>
+
+        <!-- セクション3: メリット -->
+        <section id="section3" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                3. ✅ メリット（期待できる効果）
+            </h2>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.1 パフォーマンス向上</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>持続的エネルギー供給</strong>: 低GI炭水化物により安定したエネルギーレベル</li>
+                <li><strong>トレーニング強度維持</strong>: 筋グリコーゲンの適切な補充</li>
+                <li><strong>集中力向上</strong>: 脳への安定したブドウ糖供給</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.2 筋肉合成促進</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>インスリン効果</strong>: タンパク質合成の促進と分解抑制</li>
+                <li><strong>栄養配送システム</strong>: 筋肉への栄養素輸送の最適化</li>
+                <li><strong>回復促進</strong>: グリコーゲン再補充による疲労回復</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.3 体組成改善</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>体脂肪抑制</strong>: GI値コントロールによる脂肪蓄積の最小化</li>
+                <li><strong>筋肉保護</strong>: 糖新生による筋肉分解の防止</li>
+                <li><strong>代謝向上</strong>: 適切なカロリー摂取による代謝維持</li>
+            </ul>
+        </section>
+
+        <!-- セクション4: リスクと考慮事項 -->
+        <section id="section4" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                4. ⚠️ リスクと考慮事項
+            </h2>
+
+            <div class="warning-box">
+                <h4>摂取タイミングの重要性</h4>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li><strong>夜間の過剰摂取</strong>: 活動量の少ない時間帯での高GI炭水化物摂取は体脂肪蓄積のリスク</li>
+                    <li><strong>トレーニング前の高GI摂取</strong>: 血糖値スパイクとその後の急降下による体調不良</li>
+                    <li><strong>食物繊維不足</strong>: 精製された炭水化物ばかりでは腸内環境が悪化</li>
+                </ul>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.1 個人差の考慮</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>インスリン感受性</strong>: 個人によって血糖値の上昇度合いが異なる</li>
+                <li><strong>消化能力</strong>: 食物繊維の消化能力に個人差がある</li>
+                <li><strong>活動レベル</strong>: 運動量によって必要な炭水化物量が大きく変わる</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.2 糖尿病等の疾患がある場合</h3>
+            <p class="text-gray-700">
+                血糖値管理が必要な疾患をお持ちの方は、炭水化物摂取について必ず医師と相談してください。
+            </p>
+        </section>
+
+        <!-- セクション5: 具体的な実践プラン -->
+        <section id="section5" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                5. 🎯 炭水化物を味方につける技術
+            </h2>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.1 GI値（グリセミック・インデックス）を理解する</h3>
+            <p class="text-gray-700">
+                GI値とは、炭水化物がどれくらいの速さで身体に吸収されるかを示した数値です。数値が高いほど吸収が速くなります。
+            </p>
+
+            <table class="carb-table">
+                <thead>
+                    <tr>
+                        <th>分類</th>
+                        <th>GI値</th>
+                        <th>食品例</th>
+                        <th>最適な摂取タイミング</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>高GI食品</td>
+                        <td>70以上</td>
+                        <td>パン類、コーンフレーク、にんじん、温かいじゃがいも・サツマイモ</td>
+                        <td>トレーニング直後</td>
+                    </tr>
+                    <tr>
+                        <td>低GI食品</td>
+                        <td>55以下</td>
+                        <td>ごはん、オートミール、そば、トマト、リンゴ、豆腐、納豆</td>
+                        <td>通常の食事</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.2 インスリンをコントロールし、筋肉の成長を促す</h3>
+            <p class="text-gray-700">
+                炭水化物を摂ると血糖値が上がり、それを下げるために「インスリン」というホルモンが分泌されます。インスリンは、糖を全身の細胞に送り込む働きと同時に、タンパク質の合成を促進し、分解を抑制するという、筋肉の成長にとって非常に重要な役割も担っています。
+            </p>
+
+            <div class="action-list mt-6">
+                <h4>戦略的摂取プロトコル</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                    <li><strong>トレーニング直後</strong>: 筋肉が栄養を最も欲しているこのタイミングでは、意図的にブドウ糖などの「高GI値」の炭水化物を摂取する</li>
+                    <li><strong>それ以外の食事</strong>: 「低GI値」の炭水化物を中心に食べることで、血糖値の急上昇とインスリンの過剰分泌を抑え、体脂肪の蓄積を防ぎながら、安定的にエネルギーを供給する</li>
+                    <li><strong>食物繊維と組み合わせ</strong>: 野菜や海藻類と一緒に摂取することで、血糖値上昇をさらに緩やかにする</li>
+                </ol>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.3 戦略的摂取プロトコル表</h3>
+            <table class="carb-table">
+                <thead>
+                    <tr>
+                        <th>タイミング</th>
+                        <th>GI値</th>
+                        <th>推奨食品例</th>
+                        <th>理由</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>起床後</td>
+                        <td>低GI</td>
+                        <td>オートミール、玄米、全粒粉パン</td>
+                        <td>安定したエネルギー供給</td>
+                    </tr>
+                    <tr>
+                        <td>トレーニング前（2-3時間前）</td>
+                        <td>低GI</td>
+                        <td>玄米、サツマイモ、そば</td>
+                        <td>持続的エネルギー確保</td>
+                    </tr>
+                    <tr>
+                        <td>トレーニング直後</td>
+                        <td>高GI</td>
+                        <td>バナナ、白米、マルトデキストリン</td>
+                        <td>素早いグリコーゲン補充</td>
+                    </tr>
+                    <tr>
+                        <td>通常の食事</td>
+                        <td>低GI</td>
+                        <td>玄米、オートミール、豆類</td>
+                        <td>血糖値安定、体脂肪抑制</td>
+                    </tr>
+                    <tr>
+                        <td>就寝前</td>
+                        <td>低GI（少量）</td>
+                        <td>オートミール、野菜</td>
+                        <td>夜間の筋分解防止</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.4 1日の炭水化物摂取プラン例</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>朝食</strong>: オートミール + フルーツ（低GI）</li>
+                <li><strong>昼食</strong>: 玄米 + 野菜（低GI）</li>
+                <li><strong>トレーニング後</strong>: バナナ + マルトデキストリン（高GI）</li>
+                <li><strong>夕食</strong>: サツマイモ + 野菜（低GI）</li>
+            </ul>
+        </section>
+
+        <!-- セクション6: Q&A -->
+        <section id="section6" class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                6. ❓ Q&A / よくある質問
+            </h2>
+            <div class="space-y-4 mt-6">
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q1: 減量中は炭水化物を完全に抜いた方がいいのでしょうか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: いいえ、完全に抜くのは危険です。炭水化物を極端に制限すると、筋肉分解（糖新生）が起こり、せっかく築いた筋肉量が減ってしまいます。適切な量の低GI炭水化物を摂取し、トレーニング後には高GI炭水化物で筋肉の回復を促すことが重要です。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q2: 白米と玄米、どちらがボディメイクに適していますか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 目的によって使い分けるのがベストです。玄米は食物繊維が豊富で血糖値上昇が緩やか（低GI）なので通常の食事に適しています。一方、白米は消化が早く吸収されやすいため、トレーニング後の素早いエネルギー補給には適しています。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q3: トレーニング後に摂取すべき炭水化物の量はどれくらいですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 一般的には体重1kgあたり0.5-1.0gが目安です。70kgの方であれば35-70g程度です。トレーニング強度や個人の目標に応じて調整してください。バナナ中1本は約25g、おにぎり1個は約35g程度です。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q4: 夜遅くに炭水化物を食べても大丈夫ですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 夜遅い時間の炭水化物摂取は、活動量が少ないため体脂肪として蓄積されやすくなります。夕食は就寝の3-4時間前に済ませ、炭水化物も適度な量に留めることを推奨します。どうしても遅くなる場合は、低GI炭水化物を少量にしましょう。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 結論とまとめ -->
+        <section class="mb-12">
+            <h2 class="section-header text-3xl font-bold">
+                7. 結論とまとめ
+            </h2>
+            <div class="conclusion-box">
+                <h3 class="text-2xl font-bold mb-4">📌 本モジュールのまとめ</h3>
+                <ul class="space-y-3 text-lg">
+                    <li>✅ トレーニング直後以外は、吸収の遅い「低GI値」の炭水化物を選ぶ</li>
+                    <li>✅ トレーニング直後は、吸収の速い「高GI値」の炭水化物を戦略的に摂取する</li>
+                    <li>✅ 食物繊維も意識して摂取し、腸内環境を整える</li>
+                    <li>✅ 炭水化物は敵ではなく、適切なタイミングで摂取すれば最強のエネルギー源</li>
+                </ul>
+                <div class="mt-6 pt-6 border-t border-white/30">
+                    <p class="text-xl font-semibold mb-3">🎯 今日から始められること</p>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>普段食べている炭水化物のGI値をチェックする</li>
+                        <li>トレーニング後用の高GI炭水化物を準備する（バナナ、マルトデキストリンなど）</li>
+                        <li>通常の食事を低GI炭水化物に置き換える（白米→玄米、パン→オートミールなど）</li>
+                        <li>食物繊維を含む野菜を毎食に追加する</li>
+                        <li>Your Coach+で炭水化物摂取タイミングを記録</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- 関連モジュール -->
+        <section class="mb-12 rounded-lg p-6" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #3b82f6;">
+            <h2 class="text-2xl font-bold mb-4" style="color: #1e40af;">🔗 関連モジュール</h2>
+            <div class="flex flex-wrap gap-2">
+                <a href="../../pg_formula_textbook_new.html" class="related-link">PG式カロリー計算</a>
+                <a href="protein_textbook_new.html" class="related-link">プロテイン科学と実践</a>
+                <a href="fat_textbook_new.html" class="related-link">脂質科学とオメガバランス</a>
+                <a href="../micro/vitamin_mineral_textbook_new.html" class="related-link">ビタミン・ミネラル最適化</a>
+                <a href="../../mental_textbook_new.html" class="related-link">メンタルトレーニング基礎</a>
+            </div>
+        </section>
+
+        <!-- メタ情報 -->
+        <section class="meta-info">
+            <h3 class="font-bold text-gray-900 mb-3">📝 モジュール情報</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-700">
+                <div>
+                    <p><strong>編纂者:</strong> PG BASE編集チーム</p>
+                    <p><strong>作成日:</strong> 2025年10月</p>
+                    <p><strong>更新日:</strong> 2025年10月</p>
+                    <p><strong>バージョン:</strong> 2.0</p>
+                </div>
+                <div>
+                    <p><strong>カテゴリー:</strong> 栄養学</p>
+                    <p><strong>レベル:</strong> 基礎レベル</p>
+                    <p><strong>読了時間:</strong> 約10分</p>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t" style="border-color: #22c55e;">
+                <p class="font-bold text-gray-900 mb-2">🔍 編纂プロセス</p>
+                <p class="text-sm text-gray-700">
+                    本モジュールは、複数の信頼できる科学的情報源を参照し、運動栄養学の専門知識と実践経験に基づいて作成されています。
+                    定期的に内容を見直し、最新の研究成果を反映するよう更新しています。
+                </p>
+            </div>
+        </section>
+
+        <!-- 免責事項 -->
+        <section class="bg-gray-100 p-6 rounded-lg mt-8 text-sm text-gray-600">
+            <p class="font-bold text-gray-900 mb-2">⚠️ 免責事項</p>
+            <p>
+                本モジュールの情報は教育・情報提供目的で作成されており、医療アドバイスの代替ではありません。
+                個別の健康状態や医学的な問題については、必ず医師・管理栄養士・専門家にご相談ください。
+                本情報は信頼できる情報源に基づいていますが、完全性・正確性を保証するものではありません。
+                本情報の利用により生じたいかなる損害についても、Your Coach+および編纂者は責任を負いかねます。
+            </p>
+        </section>
+
+    </div>
+
+    <!-- スクロールトップボタン -->
+    <button
+        onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+        class="scroll-top-btn"
+        aria-label="ページトップへ"
+    >
+        ↑
+    </button>
+
+    <script>
+        function toggleQA(element) {
+            const answer = element.nextElementSibling;
+            const icon = element.querySelector('span');
+
+            answer.classList.toggle('active');
+            icon.textContent = answer.classList.contains('active') ? '-' : '+';
+        }
+    </script>
+</body>
+</html>

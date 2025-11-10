@@ -1,6 +1,6 @@
 /* カスタムスタイルをインポート（@tailwindより先に配置） */
-@import '../styles.css';
-@import '../styles_dark.css';
+/* @import '../styles.css'; */ /* 削除済み（旧CDN版用） */
+/* @import '../styles_dark.css'; */ /* 削除済み（旧CDN版用） */
 
 @tailwind base;
 @tailwind components;
