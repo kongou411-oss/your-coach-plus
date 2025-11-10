@@ -2013,7 +2013,7 @@ const NotificationService = {
         }
     },
 
-    // FCMトークンをFirestoreに保存
+    // FCMトークンをFirestoreに保存 (updated 2025-11-10)
     saveToken: async (userId, token) => {
         try {
             if (DEV_MODE) {
