@@ -167,16 +167,10 @@ exports.sendScheduledNotifications = onSchedule({
         console.log(`[Scheduler] ${userId} - ${schedule.type} ${schedule.time}: diff=${timeDiff}`);
 
         if (timeDiff >= 0 && timeDiff <= 1) {
-          // FCMトークンを取得
-          const tokensSnapshot = await admin.firestore()
-              .collection("users")
-              .doc(userId)
-              .collection("tokens")
-              .get();
+          // FCMトークンを取得（ユーザードキュメント直下から）
+          const token = userData.fcmToken;
 
-          for (const tokenDoc of tokensSnapshot.docs) {
-            const token = tokenDoc.data().token;
-
+          if (token) {
             notifications.push({
               token: token,
               notification: {
