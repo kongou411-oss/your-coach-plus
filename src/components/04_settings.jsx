@@ -152,6 +152,25 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         loadCreditInfo();
     }, [userId, userProfile]);
 
+    // 初期設定時に通知スケジュールを自動保存
+    useEffect(() => {
+        const initializeNotificationSchedule = async () => {
+            // 通知設定が存在し、かつ通知権限が許可されている場合のみ実行
+            if (profile.notificationSettings && NotificationService.checkPermission() === 'granted') {
+                try {
+                    const result = await NotificationService.scheduleNotification(userId, profile.notificationSettings);
+                    if (result.success) {
+                        console.log('[Settings] Initial notification schedule saved:', result.schedules);
+                    }
+                } catch (error) {
+                    console.error('[Settings] Failed to initialize notification schedule:', error);
+                }
+            }
+        };
+
+        initializeNotificationSchedule();
+    }, [userId, profile.notificationSettings]);
+
     const loadCreditInfo = async () => {
         try {
             // 新しい経験値システムから取得
@@ -2821,6 +2840,46 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     <p>食事時間、運動時間、記録リマインダーなどを通知で受け取れます。</p>
                                     <p className="mt-1 text-gray-600">※ 通知を受け取るには、まず「権限を許可」ボタンをクリックしてください。</p>
                                 </div>
+
+                                {/* テスト・管理ボタン */}
+                                {NotificationService.checkPermission() === 'granted' && (
+                                    <div className="flex gap-2 mt-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const result = NotificationService.sendTestNotification();
+                                                if (result.success) {
+                                                    toast('テスト通知を送信しました！');
+                                                } else {
+                                                    toast('テスト通知の送信に失敗しました: ' + result.error);
+                                                }
+                                            }}
+                                            className="flex-1 px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600 shadow transition flex items-center justify-center gap-2"
+                                        >
+                                            <Icon name="Bell" size={16} />
+                                            通知をテスト
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                toast('FCMトークンを再取得中...');
+                                                // 古いトークンをクリーンアップ
+                                                await NotificationService.cleanupInvalidTokens(userId);
+                                                // 新しいトークンを取得
+                                                const result = await NotificationService.getFCMToken(userId);
+                                                if (result.success) {
+                                                    toast('FCMトークンを再取得しました！');
+                                                } else {
+                                                    toast('FCMトークンの再取得に失敗: ' + result.error);
+                                                }
+                                            }}
+                                            className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-bold hover:bg-blue-600 shadow transition flex items-center justify-center gap-2"
+                                        >
+                                            <Icon name="RefreshCw" size={16} />
+                                            トークン再取得
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             {/* ルーティン通知 */}

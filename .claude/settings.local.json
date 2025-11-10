@@ -71,7 +71,10 @@
       "Bash(if exist nul del /F nul)",
       "Bash(if exist \"nul 2\" del /F \"nul 2\")",
       "Bash(tasklist:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(firebase functions:list:*)",
+      "Bash(npm run preview:*)",
+      "Bash(if exist functionsnul del /F functionsnul)"
     ],
     "deny": [],
     "ask": []

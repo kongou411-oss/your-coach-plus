@@ -129,9 +129,10 @@ exports.sendScheduledNotifications = onSchedule({
     console.log(`[Scheduler] Current JST time: ${currentTime}`);
 
     // 全ユーザーの通知スケジュールをチェック
+    // 注: where("notificationSchedules", "!=", null) はインデックスが必要で、
+    //     空配列の場合もマッチしないため、全ユーザーを取得してフィルタリング
     const usersSnapshot = await admin.firestore()
         .collection("users")
-        .where("notificationSchedules", "!=", null)
         .get();
 
     const notifications = [];
@@ -140,6 +141,13 @@ exports.sendScheduledNotifications = onSchedule({
       const userId = userDoc.id;
       const userData = userDoc.data();
       const schedules = userData.notificationSchedules || [];
+
+      // スケジュールがない、または空配列の場合はスキップ
+      if (!schedules || schedules.length === 0) {
+        continue;
+      }
+
+      console.log(`[Scheduler] Processing user ${userId} with ${schedules.length} schedules`);
 
       // 今日送信済みの通知を取得
       const sentDoc = await admin.firestore()
@@ -151,10 +159,16 @@ exports.sendScheduledNotifications = onSchedule({
 
       // 該当する通知を抽出
       for (const schedule of schedules) {
-        if (!schedule.enabled) continue;
+        console.log(`[Scheduler] Checking schedule:`, JSON.stringify(schedule));
+
+        if (!schedule.enabled) {
+          console.log(`[Scheduler] Schedule ${schedule.type} ${schedule.time} is disabled`);
+          continue;
+        }
 
         const notificationId = `${schedule.type}_${schedule.time}`;
         if (sentNotifications.includes(notificationId)) {
+          console.log(`[Scheduler] Schedule ${schedule.type} ${schedule.time} already sent today`);
           continue; // 既に送信済み
         }
 
