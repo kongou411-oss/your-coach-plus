@@ -671,14 +671,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     <div className="mb-6">
                         <div className="text-sm text-gray-500 mb-2">カロリー</div>
                         <div className="flex items-end gap-2 mb-2 justify-end">
-                            <span className="text-3xl font-bold text-blue-600">{Math.round(currentIntake.calories)}</span>
+                            <span className="text-3xl font-bold" style={{color: '#60a5fa'}}>{Math.round(currentIntake.calories)}</span>
                             <span className="text-lg text-gray-500">/</span>
                             <span className="text-lg text-gray-500">{targetPFC.calories} kcal</span>
                         </div>
                         <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden shadow-md">
                             <div
-                                className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full transition-all duration-500"
-                                style={{ width: `${Math.min(caloriesPercent, 100)}%` }}
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${Math.min(caloriesPercent, 100)}%`, background: 'linear-gradient(to right, #60a5fa, #3b82f6)' }}
                             ></div>
                         </div>
                     </div>
@@ -688,7 +688,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div>
                             <div className="text-sm text-gray-500 mb-2">タンパク質</div>
                             <div className="flex items-end gap-1 mb-2 justify-end">
-                                <span className="text-3xl font-bold text-red-600">{Math.round(currentIntake.protein)}</span>
+                                <span className="text-3xl font-bold text-red-500">{Math.round(currentIntake.protein)}</span>
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.protein}g</span>
                             </div>
@@ -699,7 +699,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div>
                             <div className="text-sm text-gray-500 mb-2">脂質</div>
                             <div className="flex items-end gap-1 mb-2 justify-end">
-                                <span className="text-3xl font-bold text-yellow-600">{Math.round(currentIntake.fat)}</span>
+                                <span className="text-3xl font-bold text-yellow-500">{Math.round(currentIntake.fat)}</span>
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.fat}g</span>
                             </div>
@@ -710,7 +710,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div>
                             <div className="text-sm text-gray-500 mb-2">炭水化物</div>
                             <div className="flex items-end gap-1 mb-2 justify-end">
-                                <span className="text-3xl font-bold text-green-600">{Math.round(currentIntake.carbs)}</span>
+                                <span className="text-3xl font-bold text-green-500">{Math.round(currentIntake.carbs)}</span>
                                 <span className="text-lg text-gray-500">/</span>
                                 <span className="text-lg text-gray-500">{targetPFC.carbs}g</span>
                             </div>

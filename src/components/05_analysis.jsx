@@ -2312,8 +2312,8 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                             </summary>
                             <div className="p-3 flex gap-2 flex-wrap bg-white">
                                 {[
-                                    { id: 'calories', label: 'カロリー', color: 'indigo' },
-                                    { id: 'protein', label: 'P（タンパク質）', color: 'cyan' },
+                                    { id: 'calories', label: 'カロリー', color: 'blue' },
+                                    { id: 'protein', label: 'P（タンパク質）', color: 'red' },
                                     { id: 'fat', label: 'F（脂質）', color: 'yellow' },
                                     { id: 'carbs', label: 'C（炭水化物）', color: 'green' }
                                 ].map(metric => (

@@ -2481,19 +2481,19 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                         <div className="grid grid-cols-4 gap-3 text-center">
                             <div>
                                 <p className="text-xs text-gray-600">カロリー</p>
-                                <p className="text-sm font-bold text-blue-600">{baseNutrients.calories}kcal</p>
+                                <p className="text-sm font-bold" style={{color: '#60a5fa'}}>{baseNutrients.calories}kcal</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-600">P</p>
-                                <p className="text-sm font-bold">{baseNutrients.protein.toFixed(1)}g</p>
+                                <p className="text-sm font-bold text-red-500">{baseNutrients.protein.toFixed(1)}g</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-600">F</p>
-                                <p className="text-sm font-bold">{baseNutrients.fat.toFixed(1)}g</p>
+                                <p className="text-sm font-bold text-yellow-500">{baseNutrients.fat.toFixed(1)}g</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-600">C</p>
-                                <p className="text-sm font-bold">{baseNutrients.carbs.toFixed(1)}g</p>
+                                <p className="text-sm font-bold text-green-500">{baseNutrients.carbs.toFixed(1)}g</p>
                             </div>
                         </div>
                         <p className="text-xs text-gray-500 text-center mt-1">{perServingLabel}</p>
@@ -2508,19 +2508,19 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                     <div className="grid grid-cols-4 gap-3 text-center">
                         <div className="bg-sky-50 rounded-lg p-2">
                             <p className="text-xs text-gray-600">カロリー</p>
-                            <p className="text-base font-bold text-blue-600">{nutrients.calories}kcal</p>
+                            <p className="text-base font-bold" style={{color: '#60a5fa'}}>{nutrients.calories}kcal</p>
                         </div>
-                        <div className="bg-cyan-50 rounded-lg p-2">
+                        <div className="bg-red-50 rounded-lg p-2">
                             <p className="text-xs text-gray-600">P</p>
-                            <p className="text-base font-bold text-cyan-700">{nutrients.protein}g</p>
+                            <p className="text-base font-bold text-red-500">{nutrients.protein}g</p>
                         </div>
                         <div className="bg-yellow-50 rounded-lg p-2">
                             <p className="text-xs text-gray-600">F</p>
-                            <p className="text-base font-bold text-yellow-700">{nutrients.fat}g</p>
+                            <p className="text-base font-bold text-yellow-500">{nutrients.fat}g</p>
                         </div>
                         <div className="bg-green-50 rounded-lg p-2">
                             <p className="text-xs text-gray-600">C</p>
-                            <p className="text-base font-bold text-green-700">{nutrients.carbs}g</p>
+                            <p className="text-base font-bold text-green-500">{nutrients.carbs}g</p>
                         </div>
                     </div>
                 </div>
