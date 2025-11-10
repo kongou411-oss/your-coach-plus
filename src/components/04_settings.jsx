@@ -68,6 +68,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         onConfirm: () => {}
     });
 
+
     // userProfileが変更されたときにprofile stateを更新
     useEffect(() => {
         setProfile({...userProfile});
@@ -112,6 +113,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         }
     }, [userId]);
 
+
     // 詳細設定用のstate（デフォルト値をプロフィールから取得）
     const [advancedSettings, setAdvancedSettings] = useState({
         proteinCoefficient: userProfile.proteinCoefficient || 2.5,
@@ -152,6 +154,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         loadCreditInfo();
     }, [userId, userProfile]);
 
+    // ========== 通知関連（凍結 2025-11-10） ==========
+    /*
     // 初期設定時に通知スケジュールを自動保存
     useEffect(() => {
         const initializeNotificationSchedule = async () => {
@@ -170,6 +174,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
         initializeNotificationSchedule();
     }, [userId, profile.notificationSettings]);
+    */
 
     const loadCreditInfo = async () => {
         try {
@@ -209,7 +214,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         setSupplementTemplates(supplements);
     };
 
-    // 通知設定を更新して自動保存
+    /*
+    // 通知設定を更新して自動保存（凍結 2025-11-10）
     const handleNotificationSettingChange = async (newSettings) => {
         const updatedProfile = {
             ...profile,
@@ -241,6 +247,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             console.error('[Settings] Error scheduling notifications:', error);
         }
     };
+    */
 
     const handleSave = () => {
         // LBM再計算
@@ -2773,382 +2780,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     </details>
                     )}
 
-                    {/* 通知設定*/}
-                    <details className="border rounded-lg">
-                        <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                            <Icon name="Bell" size={18} className="text-blue-600" />
-                            通知設定                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
-                        </summary>
-                        <div className="p-4 pt-0 border-t space-y-4">
-                            {/* 通知権限設定 */}
-                            <div className="border-l-4 border-blue-500 pl-4">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Icon name="Bell" size={18} className="text-blue-600" />
-                                    <h4 className="font-bold text-sm text-blue-700">Push通知設定</h4>
-                                </div>
-
-                                {/* 権限ステータス */}
-                                <div className="bg-white rounded-lg p-3 border border-blue-200">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="text-xs font-medium text-gray-700 mb-1">通知権限</div>
-                                            <div className="text-sm font-bold">
-                                                {NotificationService.checkPermission() === 'granted' && (
-                                                    <span className="text-green-600 flex items-center gap-1">
-                                                        <Icon name="CheckCircle" size={16} />
-                                                        許可済み
-                                                    </span>
-                                                )}
-                                                {NotificationService.checkPermission() === 'denied' && (
-                                                    <span className="text-red-600 flex items-center gap-1">
-                                                        <Icon name="XCircle" size={16} />
-                                                        拒否
-                                                    </span>
-                                                )}
-                                                {NotificationService.checkPermission() === 'default' && (
-                                                    <span className="text-gray-600 flex items-center gap-1">
-                                                        <Icon name="AlertCircle" size={16} />
-                                                        未設定
-                                                    </span>
-                                                )}
-                                                {NotificationService.checkPermission() === 'unsupported' && (
-                                                    <span className="text-gray-600 flex items-center gap-1">
-                                                        <Icon name="AlertCircle" size={16} />
-                                                        非対応
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={async () => {
-                                                const result = await NotificationService.requestPermission();
-                                                if (result.success) {
-                                                    toast('通知権限が許可されました！');
-                                                    // FCMトークンも取得
-                                                    const tokenResult = await NotificationService.getFCMToken(userId);
-                                                    if (tokenResult.success) {
-                                                        console.log('FCM Token obtained:', tokenResult.token);
-                                                    }
-                                                } else {
-                                                    toast('通知権限が拒否されました。ブラウザの設定から許可してください。');
-                                                }
-                                                // 再レンダリングのため状態を更新
-                                                setProfile({...profile});
-                                            }}
-                                            className="px-4 py-2 bg-[#4A9EFF] text-white rounded-lg text-sm font-bold hover:bg-[#3b8fef] shadow-md transition"
-                                            disabled={NotificationService.checkPermission() === 'granted'}
-                                        >
-                                            {NotificationService.checkPermission() === 'granted' ? '設定済み' : '許可'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* 説明 */}
-                                <div className="text-xs text-gray-700 bg-white rounded p-2 border border-blue-100">
-                                    <p className="mb-1">📱 <strong>Push通知を有効にする</strong></p>
-                                    <p>食事時間、運動時間、記録リマインダーなどを通知で受け取れます。</p>
-                                    <p className="mt-1 text-gray-600">※ 通知を受け取るには、まず「権限を許可」ボタンをクリックしてください。</p>
-                                </div>
-
-                                {/* テスト・管理ボタン */}
-                                {NotificationService.checkPermission() === 'granted' && (
-                                    <div className="flex gap-2 mt-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const result = NotificationService.sendTestNotification();
-                                                if (result.success) {
-                                                    toast('テスト通知を送信しました！');
-                                                } else {
-                                                    toast('テスト通知の送信に失敗しました: ' + result.error);
-                                                }
-                                            }}
-                                            className="flex-1 px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600 shadow transition flex items-center justify-center gap-2"
-                                        >
-                                            <Icon name="Bell" size={16} />
-                                            通知をテスト
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={async () => {
-                                                toast('FCMトークンを再取得中...');
-                                                // 古いトークンをクリーンアップ
-                                                await NotificationService.cleanupInvalidTokens(userId);
-                                                // 新しいトークンを取得
-                                                const result = await NotificationService.getFCMToken(userId);
-                                                if (result.success) {
-                                                    toast('FCMトークンを再取得しました！');
-                                                } else {
-                                                    toast('FCMトークンの再取得に失敗: ' + result.error);
-                                                }
-                                            }}
-                                            className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-bold hover:bg-blue-600 shadow transition flex items-center justify-center gap-2"
-                                        >
-                                            <Icon name="RefreshCw" size={16} />
-                                            トークン再取得
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* ルーティン通知 */}
-                            <div className="border rounded-lg p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={profile.notificationSettings?.routine !== false}
-                                            onChange={(e) => setProfile({
-                                                ...profile,
-                                                notificationSettings: {
-                                                    ...(profile.notificationSettings || {}),
-                                                    routine: e.target.checked
-                                                }
-                                            })}
-                                            className="rounded"
-                                        />
-                                        <div>
-                                            <div className="font-medium text-sm">ルーティン通知</div>
-                                            <div className="text-xs text-gray-600">その日のトレーニング内容をお知らせ</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="ml-6">
-                                    <label className="block text-xs font-medium mb-1">通知時刻</label>
-                                    <input
-                                        type="time"
-                                        value={profile.notificationSettings?.routineTime || '08:00'}
-                                        onChange={(e) => handleNotificationSettingChange({
-                                            ...(profile.notificationSettings || {}),
-                                            routineTime: e.target.value
-                                        })}
-                                        className="px-3 py-2 border rounded-lg text-sm"
-                                        disabled={profile.notificationSettings?.routine === false}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* 記録リマインダー*/}
-                            <div className="border rounded-lg p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={profile.notificationSettings?.recordReminder !== false}
-                                            onChange={(e) => setProfile({
-                                                ...profile,
-                                                notificationSettings: {
-                                                    ...(profile.notificationSettings || {}),
-                                                    recordReminder: e.target.checked
-                                                }
-                                            })}
-                                            className="rounded"
-                                        />
-                                        <div>
-                                            <div className="font-medium text-sm">記録リマインド</div>
-                                            <div className="text-xs text-gray-600">記録がない場合に通知</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="ml-6">
-                                    <label className="block text-xs font-medium mb-1">通知時刻</label>
-                                    <input
-                                        type="time"
-                                        value={profile.notificationSettings?.recordReminderTime || '19:30'}
-                                        onChange={(e) => handleNotificationSettingChange({
-                                            ...(profile.notificationSettings || {}),
-                                            recordReminderTime: e.target.value
-                                        })}
-                                        className="px-3 py-2 border rounded-lg text-sm"
-                                        disabled={profile.notificationSettings?.recordReminder === false}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* サマリー通知 */}
-                            <div className="border rounded-lg p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={profile.notificationSettings?.summary !== false}
-                                            onChange={(e) => setProfile({
-                                                ...profile,
-                                                notificationSettings: {
-                                                    ...(profile.notificationSettings || {}),
-                                                    summary: e.target.checked
-                                                }
-                                            })}
-                                            className="rounded"
-                                        />
-                                        <div>
-                                            <div className="font-medium text-sm">サマリー通知</div>
-                                            <div className="text-xs text-gray-600">1日の終わりに達成状況を要約</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="ml-6">
-                                    <label className="block text-xs font-medium mb-1">通知時刻</label>
-                                    <input
-                                        type="time"
-                                        value={profile.notificationSettings?.summaryTime || '23:00'}
-                                        onChange={(e) => handleNotificationSettingChange({
-                                            ...(profile.notificationSettings || {}),
-                                            summaryTime: e.target.value
-                                        })}
-                                        className="px-3 py-2 border rounded-lg text-sm"
-                                        disabled={profile.notificationSettings?.summary === false}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* 食事通知（複数時間枠） */}
-                            <div className="border rounded-lg p-3 bg-green-50 border-green-200">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={profile.notificationSettings?.meal !== false}
-                                            onChange={(e) => setProfile({
-                                                ...profile,
-                                                notificationSettings: {
-                                                    ...(profile.notificationSettings || {}),
-                                                    meal: e.target.checked
-                                                }
-                                            })}
-                                            className="rounded"
-                                        />
-                                        <div>
-                                            <div className="font-medium text-sm">食事通知</div>
-                                            <div className="text-xs text-gray-600">食事時間をリマインド（複数設定可能）</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="ml-6 space-y-2">
-                                    <label className="block text-xs font-medium mb-1">通知時刻（複数設定可）</label>
-                                    {(profile.notificationSettings?.mealTimes || ['07:00', '12:00', '19:00']).map((time, index) => (
-                                        <div key={index} className="flex items-center gap-2">
-                                            <input
-                                                type="time"
-                                                value={time}
-                                                onChange={(e) => {
-                                                    const newTimes = [...(profile.notificationSettings?.mealTimes || ['07:00', '12:00', '19:00'])];
-                                                    newTimes[index] = e.target.value;
-                                                    handleNotificationSettingChange({
-                                                        ...(profile.notificationSettings || {}),
-                                                        mealTimes: newTimes
-                                                    });
-                                                }}
-                                                className="px-3 py-2 border rounded-lg text-sm flex-1"
-                                                disabled={profile.notificationSettings?.meal === false}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const currentTimes = profile.notificationSettings?.mealTimes || ['07:00', '12:00', '19:00'];
-                                                    if (currentTimes.length > 1) {
-                                                        const newTimes = currentTimes.filter((_, i) => i !== index);
-                                                        handleNotificationSettingChange({
-                                                            ...(profile.notificationSettings || {}),
-                                                            mealTimes: newTimes
-                                                        });
-                                                    }
-                                                }}
-                                                className="px-2 py-1 text-red-600 hover:bg-red-50 rounded text-sm"
-                                                disabled={profile.notificationSettings?.meal === false || (profile.notificationSettings?.mealTimes || ['07:00', '12:00', '19:00']).length <= 1}
-                                            >
-                                                <Icon name="X" size={16} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const currentTimes = profile.notificationSettings?.mealTimes || ['07:00', '12:00', '19:00'];
-                                            const newTimes = [...currentTimes, '15:00'];
-                                            handleNotificationSettingChange({
-                                                ...(profile.notificationSettings || {}),
-                                                mealTimes: newTimes
-                                            });
-                                        }}
-                                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-green-700 hover:bg-green-100 rounded border border-green-300"
-                                        disabled={profile.notificationSettings?.meal === false}
-                                    >
-                                        <Icon name="Plus" size={14} />
-                                        時間枠を追加
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* 運動通知 */}
-                            <div className="border rounded-lg p-3 bg-orange-50 border-orange-200">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={profile.notificationSettings?.workout !== false}
-                                            onChange={(e) => setProfile({
-                                                ...profile,
-                                                notificationSettings: {
-                                                    ...(profile.notificationSettings || {}),
-                                                    workout: e.target.checked
-                                                }
-                                            })}
-                                            className="rounded"
-                                        />
-                                        <div>
-                                            <div className="font-medium text-sm">運動通知</div>
-                                            <div className="text-xs text-gray-600">トレーニング時間をリマインド</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="ml-6">
-                                    <label className="block text-xs font-medium mb-1">通知時刻</label>
-                                    <input
-                                        type="time"
-                                        value={profile.notificationSettings?.workoutTime || '18:00'}
-                                        onChange={(e) => handleNotificationSettingChange({
-                                            ...(profile.notificationSettings || {}),
-                                            workoutTime: e.target.value
-                                        })}
-                                        className="px-3 py-2 border rounded-lg text-sm"
-                                        disabled={profile.notificationSettings?.workout === false}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* 手動保存ボタン */}
-                            <div className="mt-4 pt-4 border-t">
-                                <button
-                                    type="button"
-                                    onClick={async () => {
-                                        try {
-                                            const result = await NotificationService.scheduleNotification(userId, profile.notificationSettings);
-                                            if (result.success) {
-                                                toast.success(`✓ 通知設定を保存しました\n\n${result.schedules.length}件のスケジュールを登録`);
-                                                console.log('[Settings] Manual save successful:', result);
-                                            } else {
-                                                toast.error(`✗ 保存に失敗しました\n\nエラー: ${result.error}`);
-                                                console.error('[Settings] Manual save failed:', result);
-                                            }
-                                        } catch (error) {
-                                            toast.error(`✗ 保存エラー\n\n${error.message}`);
-                                            console.error('[Settings] Manual save error:', error);
-                                        }
-                                    }}
-                                    className="w-full px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
-                                >
-                                    <Icon name="Save" size={18} />
-                                    保存
-                                </button>
-                                <p className="text-xs text-gray-600 mt-2 text-center">
-                                    ※ 時刻を変更したら必ずこのボタンを押してください
-                                </p>
-                            </div>
-
-                        </div>
-                    </details>
+                    {/* ========== 通知設定（凍結 2025-11-10）========== */}
+                    {/* 通知機能は凍結されました。実装内容は NOTIFICATION_IMPLEMENTATION_ARCHIVE.md を参照してください */}
+                    {/* ========== 通知設定ここまで ========== */}
 
                     {/* データ管理*/}
                     <details className="border rounded-lg">
@@ -4791,9 +4425,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                         </div>
                     </details>
-                    </div>
 
             </div>
+        </div>
             </div>
         </div>
 

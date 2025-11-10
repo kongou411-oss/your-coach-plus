@@ -112,7 +112,7 @@ exports.callGemini = onCall({
 
 // ===== スケジュール通知送信 =====
 exports.sendScheduledNotifications = onSchedule({
-  schedule: "every 1 minutes",
+  schedule: "every 1 minutes", // 毎分実行（秒単位のスケジュールは非対応）
   region: "asia-northeast1",
   timeZone: "Asia/Tokyo", // 日本時間で実行
   memory: "512MiB", // Vertex AI SDKが読み込まれるためメモリを増やす
@@ -123,10 +123,11 @@ exports.sendScheduledNotifications = onSchedule({
     // 日本時間(JST)で取得
     const now = new Date();
     const jstNow = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
+    const currentSeconds = jstNow.getSeconds();
     const currentTime = `${String(jstNow.getHours()).padStart(2, "0")}:${String(jstNow.getMinutes()).padStart(2, "0")}`;
     const today = `${jstNow.getFullYear()}-${String(jstNow.getMonth() + 1).padStart(2, "0")}-${String(jstNow.getDate()).padStart(2, "0")}`;
 
-    console.log(`[Scheduler] Current JST time: ${currentTime}`);
+    console.log(`[Scheduler] Current JST time: ${currentTime}:${String(currentSeconds).padStart(2, "0")}`);
 
     // 全ユーザーの通知スケジュールをチェック
     // 注: where("notificationSchedules", "!=", null) はインデックスが必要で、
@@ -141,6 +142,25 @@ exports.sendScheduledNotifications = onSchedule({
       const userId = userDoc.id;
       const userData = userDoc.data();
       const schedules = userData.notificationSchedules || [];
+      let sentToday = userData.notificationsSentToday || {}; // 今日送信した通知を記録
+      const lastSentDate = userData.notificationsSentTodayDate;
+
+      // 日付が変わったら送信記録をクリア
+      if (lastSentDate && lastSentDate !== today) {
+        console.log(`[Scheduler] Clearing sent notifications for user ${userId} (date changed from ${lastSentDate} to ${today})`);
+        sentToday = {};
+        try {
+          await admin.firestore()
+              .collection("users")
+              .doc(userId)
+              .update({
+                notificationsSentToday: {},
+                notificationsSentTodayDate: today,
+              });
+        } catch (error) {
+          console.error(`[Scheduler] Failed to clear sent notifications:`, error);
+        }
+      }
 
       // スケジュールがない、または空配列の場合はスキップ
       if (!schedules || schedules.length === 0) {
@@ -149,13 +169,7 @@ exports.sendScheduledNotifications = onSchedule({
 
       console.log(`[Scheduler] Processing user ${userId} with ${schedules.length} schedules`);
 
-      // 今日送信済みの通知を取得
-      const sentDoc = await admin.firestore()
-          .collection("notificationsSent")
-          .doc(`${userId}_${today}`)
-          .get();
-
-      const sentNotifications = sentDoc.exists ? sentDoc.data().sent || [] : [];
+      const newSentToday = {}; // 今日送信する通知を記録
 
       // 該当する通知を抽出
       for (const schedule of schedules) {
@@ -166,21 +180,23 @@ exports.sendScheduledNotifications = onSchedule({
           continue;
         }
 
-        const notificationId = `${schedule.type}_${schedule.time}`;
-        if (sentNotifications.includes(notificationId)) {
-          console.log(`[Scheduler] Schedule ${schedule.type} ${schedule.time} already sent today`);
-          continue; // 既に送信済み
+        // 通知の一意なID
+        const notificationId = `${today}_${schedule.type}_${schedule.time}`;
+
+        // 今日既に送信済みかチェック
+        if (sentToday[notificationId]) {
+          console.log(`[Scheduler] Already sent today: ${notificationId}`);
+          continue;
         }
 
-        // 時刻チェック（指定時刻〜1分後まで）
+        // 時刻チェック（分単位で完全一致）
+        // ユーザーは時:分のみ設定、実行は00〜03秒に制限済み
         const [scheduleHours, scheduleMinutes] = schedule.time.split(":").map(Number);
-        const scheduledMinutes = scheduleHours * 60 + scheduleMinutes;
-        const currentMinutes = jstNow.getHours() * 60 + jstNow.getMinutes();
-        const timeDiff = currentMinutes - scheduledMinutes;
+        const isMatch = jstNow.getHours() === scheduleHours && jstNow.getMinutes() === scheduleMinutes;
 
-        console.log(`[Scheduler] ${userId} - ${schedule.type} ${schedule.time}: diff=${timeDiff}`);
+        console.log(`[Scheduler] ${userId} - ${schedule.type} ${schedule.time}: match=${isMatch} (current: ${currentTime}:${String(currentSeconds).padStart(2, "0")})`);
 
-        if (timeDiff >= 0 && timeDiff <= 1) {
+        if (isMatch) {
           // FCMトークンを取得（ユーザードキュメント直下から）
           const token = userData.fcmToken;
 
@@ -213,7 +229,9 @@ exports.sendScheduledNotifications = onSchedule({
               android: {
                 notification: {
                   tag: `${schedule.type}_${schedule.time}`, // Android用tag
+                  notificationCount: 1,
                 },
+                collapseKey: schedule.type, // 同じタイプの通知をグループ化しない
               },
               apns: {
                 payload: {
@@ -223,19 +241,30 @@ exports.sendScheduledNotifications = onSchedule({
                 },
               },
             });
-          }
 
-          // 送信済みとしてマーク
-          sentNotifications.push(notificationId);
+            // 送信予定としてマーク
+            newSentToday[notificationId] = true;
+          }
         }
       }
 
-      // 送信済み通知を保存
-      if (sentNotifications.length > 0) {
-        await admin.firestore()
-            .collection("notificationsSent")
-            .doc(`${userId}_${today}`)
-            .set({sent: sentNotifications});
+      // Firestoreに送信記録を保存（送信予定があれば）
+      if (Object.keys(newSentToday).length > 0) {
+        try {
+          await admin.firestore()
+              .collection("users")
+              .doc(userId)
+              .update({
+                notificationsSentToday: {
+                  ...sentToday,
+                  ...newSentToday,
+                },
+                notificationsSentTodayDate: today, // 日付を記録（翌日にクリアする用）
+              });
+          console.log(`[Scheduler] Updated sent notifications for user ${userId}`);
+        } catch (error) {
+          console.error(`[Scheduler] Failed to update sent notifications:`, error);
+        }
       }
     }
 
@@ -245,7 +274,7 @@ exports.sendScheduledNotifications = onSchedule({
       for (const notification of notifications) {
         try {
           await messaging.send(notification);
-          console.log(`Notification sent to ${notification.data.userId}`);
+          console.log(`Notification sent to ${notification.data.userId}: ${notification.notification.title}`);
         } catch (error) {
           console.error(`Failed to send notification:`, error);
         }

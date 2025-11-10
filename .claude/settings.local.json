@@ -74,7 +74,13 @@
       "Bash(rm:*)",
       "Bash(firebase functions:list:*)",
       "Bash(npm run preview:*)",
-      "Bash(if exist functionsnul del /F functionsnul)"
+      "Bash(if exist functionsnul del /F functionsnul)",
+      "Bash(test:*)",
+      "Bash(gcloud scheduler jobs:*)",
+      "Bash(cd:*)",
+      "Bash(src/components/04_settings_temp.jsx)",
+      "Bash(move /Y srccomponents04_settings_temp.jsx srccomponents04_settings.jsx:*)",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": []

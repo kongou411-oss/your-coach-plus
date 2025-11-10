@@ -600,10 +600,15 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 generatePredictions(prevDayRecord);
                             }
 
+                            // ========== FCM通知（凍結 2025-11-10） ==========
+                            /*
                             // FCMトークンを取得してFirestoreに保存（スマホPWA通知用）
                             // エラーが発生してもログイン処理は続行
                             if (typeof NotificationService !== 'undefined' && typeof Notification !== 'undefined') {
                                 try {
+                                    // フォアグラウンド通知リスナーをセットアップ
+                                    NotificationService.setupForegroundListener();
+
                                     if (Notification.permission === 'granted') {
                                         // 既に権限がある場合はトークンを取得（バックグラウンドで実行）
                                         NotificationService.requestNotificationPermission(firebaseUser.uid)
@@ -619,6 +624,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     console.warn('[App] FCM initialization skipped:', error);
                                 }
                             }
+                            */
 
                             // 通知チェッカーは停止（Cloud Functionsで自動送信するため不要）
                             // if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {

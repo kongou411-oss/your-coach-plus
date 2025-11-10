@@ -2002,20 +2002,21 @@ const NotificationService = {
         }
     },
 
-    // FCMトークンをFirestoreに保存
+    // FCMトークンをFirestoreに保存 (updated 2025-11-10)
     saveToken: async (userId, token) => {
         try {
             if (DEV_MODE) {
-                // DEV_MODEではLocalStorageに保存
                 localStorage.setItem(`fcmToken_${userId}`, token);
                 return { success: true };
             } else {
-                // Firestoreのユーザードキュメントのtokensサブコレクションに保存
-                await db.collection('users').doc(userId).collection('tokens').doc(token).set({
-                    token,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                // Firestoreのユーザードキュメント直下にfcmTokenとして保存
+                // グローバルdbまたはfirebase.firestore()を使用
+                const firestore = window.db || firebase.firestore();
+                await firestore.collection('users').doc(userId).set({
+                    fcmToken: token,
+                    fcmTokenUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                console.log('[Notification] Token saved to Firestore:', userId);
                 return { success: true };
             }
         } catch (error) {
@@ -2029,34 +2030,60 @@ const NotificationService = {
         try {
             // DEV_MODEの場合はスキップ
             if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
+                console.log('[Notification] Foreground listener skipped (DEV_MODE)');
                 return;
             }
 
             // Firebaseアプリが初期化されているか確認
             if (!firebase.apps || firebase.apps.length === 0) {
+                console.log('[Notification] Foreground listener skipped (Firebase not initialized)');
                 return;
             }
 
             if (!firebase.messaging.isSupported()) {
+                console.log('[Notification] Foreground listener skipped (Messaging not supported)');
                 return;
             }
 
             const messaging = firebase.messaging();
+            console.log('[Notification] Foreground listener setup started');
 
-            messaging.onMessage((payload) => {
-                // 通知を表示
+            messaging.onMessage(async (payload) => {
+                console.log('[Notification] Foreground message received:', payload);
+
+                // Service Workerを使って通知を表示（actionsをサポート）
                 const notificationTitle = payload.notification?.title || 'Your Coach+';
                 const notificationOptions = {
                     body: payload.notification?.body || '新しい通知があります',
                     icon: '/icons/icon-192.png',
+                    badge: '/icons/icon-72.png',
                     tag: payload.data?.tag || 'default',
-                    data: payload.data
+                    data: payload.data,
+                    requireInteraction: false,
+                    actions: [
+                        {
+                            action: 'open',
+                            title: '開く',
+                            icon: '/icons/icon-72.png'
+                        },
+                        {
+                            action: 'close',
+                            title: '閉じる'
+                        }
+                    ]
                 };
 
                 if (Notification.permission === 'granted') {
-                    new Notification(notificationTitle, notificationOptions);
+                    console.log('[Notification] Showing notification:', notificationTitle);
+                    // Service Workerのregistrationを使用
+                    const registration = await navigator.serviceWorker.ready;
+                    await registration.showNotification(notificationTitle, notificationOptions);
+                } else {
+                    console.warn('[Notification] Permission not granted:', Notification.permission);
                 }
             });
+
+            console.log('[Notification] Foreground listener setup completed');
         } catch (error) {
             console.error('[Notification] Failed to setup foreground listener:', error);
         }
@@ -2371,3 +2398,8 @@ const MFAService = {
         }
     }
 };
+
+// グローバル変数として公開 (2025-11-10)
+window.NotificationService = NotificationService;
+window.DataService = DataService;
+window.MFAService = MFAService;
