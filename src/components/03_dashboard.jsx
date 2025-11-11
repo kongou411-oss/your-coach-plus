@@ -1426,15 +1426,24 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                         });
                                                         return (
                                                             <div className="text-right leading-normal">
-                                                                <div className="text-base text-orange-600 font-bold leading-normal">
-                                                                    {totalSets > 0 && `${totalSets}セット`}
-                                                                </div>
-                                                                <div className="text-base text-orange-600 font-bold leading-normal">
-                                                                    {totalVolume > 0 && `${totalVolume}kg`}
-                                                                </div>
-                                                                <div className="text-base text-orange-600 font-bold leading-normal">
-                                                                    {totalTime > 0 && `${totalTime}分`}
-                                                                </div>
+                                                                {totalSets > 0 && (
+                                                                    <div className="leading-normal">
+                                                                        <span className="text-base text-orange-600 font-bold">{totalSets}</span>
+                                                                        <span className="text-xs text-gray-500">セット</span>
+                                                                    </div>
+                                                                )}
+                                                                {totalVolume > 0 && (
+                                                                    <div className="leading-normal">
+                                                                        <span className="text-base text-orange-600 font-bold">{totalVolume}</span>
+                                                                        <span className="text-xs text-gray-500">kg</span>
+                                                                    </div>
+                                                                )}
+                                                                {totalTime > 0 && (
+                                                                    <div className="leading-normal">
+                                                                        <span className="text-base text-orange-600 font-bold">{totalTime}</span>
+                                                                        <span className="text-xs text-gray-500">分</span>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         );
                                                     })()}

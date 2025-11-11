@@ -436,7 +436,7 @@ const AddMealModal = ({
                 <div className="bg-white border-b px-4 py-2 flex-shrink-0">
                     <div className="flex justify-between items-center">
                         {/* 食事名（編集可能） */}
-                        <div className="flex items-center gap-2 flex-1">
+                        <div className="flex-1 min-w-0 mr-2">
                             {isEditingMealName ? (
                                 <input
                                     type="text"
@@ -456,22 +456,24 @@ const AddMealModal = ({
                                             setIsEditingMealName(false);
                                         }
                                     }}
-                                    className="text-lg font-bold border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500"
+                                    className="text-lg font-bold border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 w-full"
                                     autoFocus
                                 />
                             ) : (
-                                <>
-                                    <h3 className="text-lg font-bold">{mealName}</h3>
-                                    <button
-                                        onClick={() => setIsEditingMealName(true)}
-                                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
-                                    >
-                                        <Icon name="Edit" size={18} />
-                                    </button>
-                                </>
+                                <h3 className="text-lg font-bold truncate">{mealName}</h3>
                             )}
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                            {/* 編集ボタン */}
+                            {!isEditingMealName && (
+                                <button
+                                    onClick={() => setIsEditingMealName(true)}
+                                    className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
+                                    title="編集"
+                                >
+                                    <Icon name="Edit" size={18} />
+                                </button>
+                            )}
                             {/* ヘルプボタン */}
                             <button
                                 onClick={() => setShowHelpModal(true)}
