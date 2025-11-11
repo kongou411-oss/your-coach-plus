@@ -1121,7 +1121,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         }, 100);
                         break;
                     case 'open_idea':
-                        // 閃き（指示書）セクションへスクロール（ルーティン下に余白を作る）
+                        // 閃き（指示書）タブに切り替えてからスクロール
+                        setActiveTab('directive');
                         setTimeout(() => {
                             const element = document.getElementById('directive-section');
                             if (element) {
@@ -1570,6 +1571,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             onLoadRoutineData={loadRoutineData}
                             onOpenNewMealModal={() => setShowNewMealModal(true)}
                             onOpenNewWorkoutModal={() => setShowNewWorkoutModal(true)}
+                            activeTab={activeTab}
+                            onActiveTabChange={setActiveTab}
                             onFeatureUnlocked={(featureId) => {
                                 if (featureId === 'analysis') {
                                     setShowAnalysisGuide(true);

@@ -322,7 +322,7 @@ const LoginScreen = () => {
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 p-4">
                 <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[95vw] sm:max-w-md slide-up">
                     <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-gray-800 mb-2">パスワードリセット</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">パスワードリセット</h1>
                         <p className="text-gray-600">登録したメールアドレスを入力してください</p>
                     </div>
 
@@ -373,7 +373,7 @@ const LoginScreen = () => {
                         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Icon name="Shield" size={32} className="text-blue-600" />
                         </div>
-                        <h1 className="text-3xl font-bold text-gray-800 mb-2">2段階認証</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">2段階認証</h1>
                         <p className="text-gray-600">SMSで送信された認証コードを入力してください</p>
                     </div>
 
@@ -424,7 +424,7 @@ const LoginScreen = () => {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
                         Your Coach<span style={{color: '#4A9EFF'}}>+</span>
                     </h1>
                     <p className="text-gray-600">LBMを中心とした科学的な体づくり</p>
@@ -1564,7 +1564,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             </h3>
                             <div className="bg-white p-3 rounded-lg border border-sky-200 mb-3">
                                 <p className="text-xs text-gray-600 mb-1">カロリー</p>
-                                <p className="text-3xl font-bold text-blue-600">
+                                <p className="text-2xl sm:text-3xl font-bold text-blue-600">
                                     {(() => {
                                         const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
                                         const fatMass = profile.weight - lbm;
@@ -1882,7 +1882,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
 
                             <div className="bg-gradient-to-r from-orange-50 to-pink-50 p-4 rounded-lg border border-orange-200">
                                 <p className="text-sm font-medium text-gray-600 mb-2">推定結果</p>
-                                <p className="text-3xl font-bold text-orange-600">
+                                <p className="text-2xl sm:text-3xl font-bold text-orange-600">
                                     {LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel).bodyFatPercentage}%
                                 </p>
                                 <p className="text-sm text-gray-600 mt-2">

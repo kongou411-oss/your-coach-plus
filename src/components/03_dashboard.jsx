@@ -65,7 +65,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC }) => {
                 <canvas ref={canvasRef}></canvas>
                 <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                        <div className="text-3xl font-bold text-gray-800">{averageScore}</div>
+                        <div className="text-2xl sm:text-3xl font-bold text-gray-800">{averageScore}</div>
                         <div className="text-xs text-gray-600">平均</div>
                     </div>
                 </div>
@@ -90,7 +90,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC }) => {
 };
 
 // ===== Dashboard Component =====
-const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setUserProfile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData, onOpenNewMealModal, onOpenNewWorkoutModal }) => {
+const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setUserProfile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData, onOpenNewMealModal, onOpenNewWorkoutModal, activeTab: externalActiveTab, onActiveTabChange }) => {
     // 指示書管理
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
@@ -125,8 +125,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     const [weightInput, setWeightInput] = useState('');
     const [bodyFatInput, setBodyFatInput] = useState('');
 
-    // タブ管理
-    const [activeTab, setActiveTab] = useState('nutrition'); // 'nutrition', 'directive'
+    // タブ管理（外部から制御可能）
+    const [internalActiveTab, setInternalActiveTab] = useState('nutrition'); // 'nutrition', 'directive'
+    const activeTab = externalActiveTab !== undefined ? externalActiveTab : internalActiveTab;
+    const setActiveTab = onActiveTabChange || setInternalActiveTab;
 
     // 今日の日付を取得
     const getTodayDate = () => {
@@ -671,7 +673,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     <div className="mb-6">
                         <div className="text-sm text-gray-600 mb-2">カロリー</div>
                         <div className="flex items-end gap-2 mb-2 justify-end">
-                            <span className="text-3xl font-bold text-blue-600">{Math.round(currentIntake.calories)}</span>
+                            <span className="text-2xl sm:text-3xl font-bold text-blue-600">{Math.round(currentIntake.calories)}</span>
                             <span className="text-lg text-gray-600">/</span>
                             <span className="text-lg text-gray-600">{targetPFC.calories} kcal</span>
                         </div>
@@ -688,7 +690,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div>
                             <div className="text-sm text-gray-600 mb-2">タンパク質</div>
                             <div className="flex items-end gap-1 mb-2 justify-end">
-                                <span className="text-3xl font-bold text-red-500">{Math.round(currentIntake.protein)}</span>
+                                <span className="text-2xl sm:text-3xl font-bold text-red-500">{Math.round(currentIntake.protein)}</span>
                                 <span className="text-lg text-gray-600">/</span>
                                 <span className="text-lg text-gray-600">{targetPFC.protein}g</span>
                             </div>
@@ -699,7 +701,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div>
                             <div className="text-sm text-gray-600 mb-2">脂質</div>
                             <div className="flex items-end gap-1 mb-2 justify-end">
-                                <span className="text-3xl font-bold text-yellow-500">{Math.round(currentIntake.fat)}</span>
+                                <span className="text-2xl sm:text-3xl font-bold text-yellow-500">{Math.round(currentIntake.fat)}</span>
                                 <span className="text-lg text-gray-600">/</span>
                                 <span className="text-lg text-gray-600">{targetPFC.fat}g</span>
                             </div>
@@ -710,7 +712,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div>
                             <div className="text-sm text-gray-600 mb-2">炭水化物</div>
                             <div className="flex items-end gap-1 mb-2 justify-end">
-                                <span className="text-3xl font-bold text-green-500">{Math.round(currentIntake.carbs)}</span>
+                                <span className="text-2xl sm:text-3xl font-bold text-green-500">{Math.round(currentIntake.carbs)}</span>
                                 <span className="text-lg text-gray-600">/</span>
                                 <span className="text-lg text-gray-600">{targetPFC.carbs}g</span>
                             </div>
@@ -863,7 +865,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                 {/* タブコンテンツ（指示書） */}
                 {activeTab === 'directive' && (
-                    <div>
+                    <div id="directive-section">
                         {todayDirective ? (
                             <>
                                 <div className="flex items-center gap-3 mb-3">

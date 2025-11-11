@@ -85,7 +85,8 @@
       "Bash(public/firebase-messaging-sw.js)",
       "Bash(for file in C:/Users/yourc/yourcoach_new/src/components/*.jsx)",
       "Bash(python:*)",
-      "Bash(for file in 02_auth.jsx 05_analysis.jsx 08_app.jsx 11_ai_food_recognition.jsx 19_add_meal_modal.jsx)"
+      "Bash(for file in 02_auth.jsx 05_analysis.jsx 08_app.jsx 11_ai_food_recognition.jsx 19_add_meal_modal.jsx)",
+      "Bash(for file in 03_dashboard.jsx 04_settings.jsx 05_analysis.jsx 08_app.jsx 11_ai_food_recognition.jsx 19_add_meal_modal.jsx)"
     ],
     "deny": [],
     "ask": []

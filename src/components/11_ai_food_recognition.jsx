@@ -90,10 +90,12 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                     .collection('customFoods')
                     .get();
 
-                const foods = customFoodsSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                const foods = customFoodsSnapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }))
+                    .filter(food => !food.hidden); // 非表示アイテムを除外
 
                 setCustomFoods(foods);
                 console.log(`[AIFoodRecognition] customFoods読み込み完了: ${foods.length}件`, foods.map(f => f.name));
@@ -1788,7 +1790,7 @@ JSON形式のみ出力、説明文不要`;
                                             type="text"
                                             value={searchQuery}
                                             onChange={(e) => searchIngredients(e.target.value)}
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                             placeholder="食材名を入力（例: 鶏むね肉、白米、卵）"
                                             autoFocus
                                         />

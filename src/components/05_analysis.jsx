@@ -1204,11 +1204,102 @@ ${conversationContext}
     };
 
     if (loading) {
+        // マイクロラーニングコンテンツ（一般的な知識、不足を指摘しない）
+        const learningTips = [
+            {
+                title: 'タンパク質の役割',
+                content: 'タンパク質は筋肉を作る材料です。トレーニングで筋繊維を破壊し、タンパク質で修復することで筋肉が成長します。',
+                icon: 'Beef'
+            },
+            {
+                title: '炭水化物はエネルギー源',
+                content: '炭水化物は筋肉のエネルギー源（グリコーゲン）として貯蔵されます。トレーニング前後の摂取が効果的です。',
+                icon: 'Wheat'
+            },
+            {
+                title: '睡眠と筋肉の関係',
+                content: '筋肉の成長は睡眠中に起こります。成長ホルモンは深い睡眠時に最も多く分泌されます。7-9時間の睡眠が理想です。',
+                icon: 'Moon'
+            },
+            {
+                title: 'PFCバランスとは',
+                content: 'P（タンパク質）F（脂質）C（炭水化物）のバランスのこと。目的に応じた適切なバランスが体づくりの鍵です。',
+                icon: 'PieChart'
+            },
+            {
+                title: 'LBM（除脂肪体重）',
+                content: 'LBMは体重から体脂肪を除いた重量。LBMベースで栄養計算することで、より精確な体づくりが可能です。',
+                icon: 'Activity'
+            },
+            {
+                title: '水分補給の重要性',
+                content: '体の60%は水分です。筋肉にも水分が必要で、脱水状態ではパフォーマンスが低下します。1日2-3Lを目安に。',
+                icon: 'Droplet'
+            },
+            {
+                title: 'プログレッシブオーバーロード',
+                content: '筋肉を成長させるには、徐々に負荷を増やしていくことが重要です。重量、回数、セット数を少しずつ増やしましょう。',
+                icon: 'TrendingUp'
+            },
+            {
+                title: '食事のタイミング',
+                content: 'トレーニング前後2時間の栄養摂取が特に重要です。この「ゴールデンタイム」を意識しましょう。',
+                icon: 'Clock'
+            }
+        ];
+
+        const [tipIndex, setTipIndex] = useState(Math.floor(Math.random() * learningTips.length));
+        const currentTip = learningTips[tipIndex];
+
+        // 5秒ごとに次のTIPに切り替え
+        useEffect(() => {
+            const interval = setInterval(() => {
+                setTipIndex((prev) => (prev + 1) % learningTips.length);
+            }, 5000);
+            return () => clearInterval(interval);
+        }, []);
+
         return (
-            <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">分析中...</p>
+            <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-cyan-50 z-50 flex items-center justify-center p-6">
+                <div className="max-w-md w-full">
+                    {/* ローディングスピナー */}
+                    <div className="text-center mb-8">
+                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
+                        <p className="text-lg font-semibold text-gray-700">AI分析中...</p>
+                        <p className="text-sm text-gray-500 mt-1">少々お待ちください</p>
+                    </div>
+
+                    {/* マイクロラーニングカード */}
+                    <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-100 slide-up">
+                        <div className="flex items-start gap-4 mb-4">
+                            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+                                <Icon name={currentTip.icon} size={24} className="text-white" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold text-gray-800 mb-2">{currentTip.title}</h3>
+                                <p className="text-sm text-gray-600 leading-relaxed">{currentTip.content}</p>
+                            </div>
+                        </div>
+
+                        {/* プログレスインジケーター */}
+                        <div className="flex gap-1 mt-4">
+                            {learningTips.map((_, index) => (
+                                <div
+                                    key={index}
+                                    className={`flex-1 h-1 rounded-full transition-all duration-300 ${
+                                        index === tipIndex ? 'bg-blue-600' : 'bg-gray-200'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="mt-4 text-center">
+                            <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
+                                <Icon name="Lightbulb" size={12} />
+                                待ち時間に学習しよう
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         );

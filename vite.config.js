@@ -8,15 +8,33 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     minify: 'terser',
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
         chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
         assetFileNames: `assets/[name]-[hash].[ext]`,
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage', 'firebase/functions'],
-          'charts': ['chart.js', 'chartjs-plugin-annotation'],
+        manualChunks(id) {
+          // React関連を分離
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor';
+          }
+          // Firebase関連を分離
+          if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
+            return 'firebase';
+          }
+          // Chart.js関連を分離
+          if (id.includes('node_modules/chart.js')) {
+            return 'charts';
+          }
+          // Lucide React（アイコン）を分離
+          if (id.includes('node_modules/lucide-react')) {
+            return 'icons';
+          }
+          // その他の大きなライブラリを分離
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
         }
       }
     }

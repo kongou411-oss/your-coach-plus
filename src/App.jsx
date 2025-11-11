@@ -37,11 +37,15 @@ function AppWrapper() {
         <Toaster
           position="top-center"
           reverseOrder={false}
+          containerStyle={{
+            zIndex: 10001,
+          }}
           toastOptions={{
             duration: 3000,
             style: {
               background: '#363636',
               color: '#fff',
+              zIndex: 10001,
             },
             success: {
               duration: 3000,

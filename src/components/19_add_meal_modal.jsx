@@ -83,6 +83,48 @@ const AddMealModal = ({
     // Firestoreから読み込んだカスタムアイテム
     const [customFoods, setCustomFoods] = useState([]);
 
+    // 非表示設定
+    const [hiddenStandardItems, setHiddenStandardItems] = useState([]);
+    const [hiddenCategories, setHiddenCategories] = useState([]);
+
+    // ===== 非表示設定をFirestoreから読み込み =====
+    useEffect(() => {
+        const loadHiddenSettings = async () => {
+            const currentUser = firebase.auth().currentUser;
+            if (!currentUser || !currentUser.uid) return;
+
+            try {
+                // 非表示アイテムを読み込み
+                const itemsDoc = await firebase.firestore()
+                    .collection('users')
+                    .doc(currentUser.uid)
+                    .collection('settings')
+                    .doc('hiddenStandardItems')
+                    .get();
+
+                if (itemsDoc.exists) {
+                    setHiddenStandardItems(itemsDoc.data().items || []);
+                }
+
+                // 非表示カテゴリを読み込み
+                const categoriesDoc = await firebase.firestore()
+                    .collection('users')
+                    .doc(currentUser.uid)
+                    .collection('settings')
+                    .doc('hiddenCategories')
+                    .get();
+
+                if (categoriesDoc.exists) {
+                    setHiddenCategories(categoriesDoc.data().categories || []);
+                }
+            } catch (error) {
+                console.error('[AddMealModal] Failed to load hidden settings:', error);
+            }
+        };
+
+        loadHiddenSettings();
+    }, []);
+
     // ===== customFoodsをFirestoreから読み込み =====
     useEffect(() => {
         console.log('[AddMealModal] customFoods useEffect開始');
@@ -740,7 +782,8 @@ const AddMealModal = ({
 
 
                 // カテゴリリスト（サプリメントを除く）+ カスタムカテゴリを追加
-                const categories = [...Object.keys(foodDB).filter(cat => cat !== 'サプリメント'), 'カスタム'];
+                // 非表示カテゴリを除外
+                const categories = [...Object.keys(foodDB).filter(cat => cat !== 'サプリメント' && !hiddenCategories.includes(cat)), 'カスタム'];
 
                 // 検索結果のフィルタリング
                 const getFilteredItems = () => {
@@ -759,6 +802,9 @@ const AddMealModal = ({
                     // 料理タブの場合は、カスタム料理のみを表示（foodDBからは取得しない）
                     if (foodTab === 'recipe') {
                         customItems.forEach(item => {
+                            // 非表示設定されているアイテムをスキップ
+                            if (item.hidden) return;
+
                             if (!searchTerm || item.name.includes(searchTerm)) {
                                 items.push({
                                     ...item,
@@ -781,6 +827,9 @@ const AddMealModal = ({
                     // 「カスタム」カテゴリが選択された場合はカスタムアイテムのみを表示
                     if (targetCategory === 'カスタム') {
                         customItems.forEach(item => {
+                            // 非表示設定されているアイテムをスキップ
+                            if (item.hidden) return;
+
                             if (!searchTerm || item.name.includes(searchTerm)) {
                                 items.push({
                                     ...item,
@@ -793,6 +842,11 @@ const AddMealModal = ({
                         if (db && targetCategory && db[targetCategory]) {
                             Object.keys(db[targetCategory]).forEach(name => {
                                 const itemData = db[targetCategory][name];
+
+                                // 非表示アイテムをスキップ
+                                if (hiddenStandardItems.includes(name)) {
+                                    return;
+                                }
 
                                 // サプリメントの場合、サブカテゴリでフィルタ
                                 if (foodTab === 'supplement') {
@@ -816,6 +870,9 @@ const AddMealModal = ({
 
                         // カスタムアイテムを追加（カテゴリが一致するもののみ）
                         customItems.forEach(item => {
+                            // 非表示設定されているアイテムをスキップ
+                            if (item.hidden) return;
+
                             const itemCategory = item.category || '穀類';
                             // 選択中のカテゴリと一致するか、またはサプリメントタブの場合はサブカテゴリをチェック
                             const categoryMatches = foodTab === 'supplement'

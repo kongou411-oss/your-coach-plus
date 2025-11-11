@@ -379,7 +379,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
     return (
         <>
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden slide-up">
                 {/* ヘッダー（固定） */}
                 <div className="flex-shrink-0 bg-white border-b p-4 flex justify-between items-center">
@@ -1012,7 +1012,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     type="text"
                                                     value={profile.nickname}
                                                     onChange={(e) => setProfile({...profile, nickname: e.target.value})}
-                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                 />
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1022,7 +1022,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         type="number"
                                                         value={profile.age}
                                                         onChange={(e) => setProfile({...profile, age: e.target.value === '' ? '' : Number(e.target.value)})}
-                                                        className="w-full px-3 py-2 border rounded-lg"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                     />
                                                 </div>
                                                 <div>
@@ -1030,7 +1030,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <select
                                                         value={profile.gender}
                                                         onChange={(e) => setProfile({...profile, gender: e.target.value})}
-                                                        className="w-full px-3 py-2 border rounded-lg"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                     >
                                                         <option value="男性">男性</option>
                                                         <option value="女性">女性</option>
@@ -1081,7 +1081,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 : null
                                                         });
                                                     }}
-                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                 />
                                             </div>
 
@@ -1101,7 +1101,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 : null
                                                         });
                                                     }}
-                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                 />
                                             </div>
 
@@ -1129,7 +1129,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <select
                                                 value={profile.activityLevel}
                                                 onChange={(e) => setProfile({...profile, activityLevel: e.target.value === '' ? '' : Number(e.target.value)})}
-                                                className="w-full px-3 py-2 border rounded-lg"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                 disabled={profile.customActivityMultiplier}
                                             >
                                                 <option value={1}>デスクワーク中心- 1.05x</option>
@@ -1156,7 +1156,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     max="2.5"
                                                     value={customMultiplierInputValue}
                                                     onChange={(e) => setCustomMultiplierInputValue(e.target.value)}
-                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                     placeholder="例 1.45"
                                                 />
                                                 <div className="flex gap-2">
@@ -1325,7 +1325,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     const value = e.target.value === '' ? null : Number(e.target.value);
                                                     setProfile({...profile, calorieAdjustment: value});
                                                 }}
-                                                className="w-full px-3 py-2 border rounded-lg"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                 placeholder="0"
                                             />
                                         </div>
@@ -3062,37 +3062,76 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 </button>
                                                             </div>
                                                             {foodItems.map((item, idx) => (
-                                                                <div key={item.id || idx} className="bg-white p-3 rounded-lg border flex justify-between items-center">
-                                                                    <div className="flex-1">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <p className="font-medium text-sm">{item.name}</p>
-                                                                            {item.customLabel && (
-                                                                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                                                                    {item.customLabel}
-                                                                                </span>
-                                                                            )}
-                                                                            {item.category && item.category !== 'カスタム食材' && (
-                                                                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                                                    {item.category}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <p className="text-xs text-gray-600">
-                                                                            {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                <div key={item.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
+                                                                    {/* 1行目: アイテム名 */}
+                                                                    <p className="font-bold text-sm">{item.name}</p>
+
+                                                                    {/* 2行目: タグ */}
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        {item.customLabel && (
+                                                                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                                                                                {item.customLabel}
+                                                                            </span>
+                                                                        )}
+                                                                        {item.category && item.category !== 'カスタム食材' && (
+                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                                                                {item.category}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* 3行目: 栄養情報（色分け） */}
+                                                                    <div className="text-xs space-y-0.5">
+                                                                        <p className="text-gray-600">{item.servingSize}{item.servingUnit}あたり</p>
+                                                                        <p>
+                                                                            <span className="text-blue-600 font-semibold">{item.calories}kcal</span>
+                                                                            <span className="text-gray-600"> | </span>
+                                                                            <span className="text-red-500 font-semibold">P:{item.protein}g</span>
+                                                                            <span className="text-gray-600"> </span>
+                                                                            <span className="text-yellow-600 font-semibold">F:{item.fat}g</span>
+                                                                            <span className="text-gray-600"> </span>
+                                                                            <span className="text-green-600 font-semibold">C:{item.carbs}g</span>
                                                                         </p>
                                                                     </div>
-                                                                    <div className="flex gap-1">
+
+                                                                    {/* 4行目: アイコンボタン */}
+                                                                    <div className="flex gap-2 justify-end">
+                                                                        <button
+                                                                            onClick={async () => {
+                                                                                try {
+                                                                                    await firebase.firestore()
+                                                                                        .collection('users')
+                                                                                        .doc(userId)
+                                                                                        .collection('customFoods')
+                                                                                        .doc(item.name)
+                                                                                        .update({ hidden: !item.hidden });
+                                                                                    toast.success(item.hidden ? '表示しました' : '非表示にしました');
+                                                                                    loadCustomFoods();
+                                                                                } catch (error) {
+                                                                                    console.error('表示切替エラー:', error);
+                                                                                    toast.error('更新に失敗しました');
+                                                                                }
+                                                                            }}
+                                                                            className={`p-1 transition ${
+                                                                                item.hidden
+                                                                                    ? 'text-gray-400 hover:text-gray-600'
+                                                                                    : 'text-green-600 hover:text-green-800'
+                                                                            }`}
+                                                                            title={item.hidden ? '表示する' : '非表示にする'}
+                                                                        >
+                                                                            <Icon name={item.hidden ? 'EyeOff' : 'Eye'} size={18} />
+                                                                        </button>
                                                                         <button
                                                                             onClick={() => editItem(item)}
-                                                                            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                                            className="p-1 text-blue-600 hover:text-blue-800 transition"
                                                                         >
-                                                                            <Icon name="Edit" size={16} />
+                                                                            <Icon name="Edit" size={18} />
                                                                         </button>
                                                                         <button
                                                                             onClick={() => deleteItem(item)}
-                                                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
                                                                         >
-                                                                            <Icon name="Trash2" size={16} />
+                                                                            <Icon name="Trash2" size={18} />
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -3117,37 +3156,76 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 </button>
                                                             </div>
                                                             {recipeItems.map((item, idx) => (
-                                                                <div key={item.id || idx} className="bg-white p-3 rounded-lg border flex justify-between items-center">
-                                                                    <div className="flex-1">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <p className="font-medium text-sm">{item.name}</p>
-                                                                            {item.customLabel && (
-                                                                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                                                                    {item.customLabel}
-                                                                                </span>
-                                                                            )}
-                                                                            {item.category && item.category !== 'カスタム料理' && (
-                                                                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                                                    {item.category}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <p className="text-xs text-gray-600">
-                                                                            {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                <div key={item.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
+                                                                    {/* 1行目: アイテム名 */}
+                                                                    <p className="font-bold text-sm">{item.name}</p>
+
+                                                                    {/* 2行目: タグ */}
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        {item.customLabel && (
+                                                                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                                                                                {item.customLabel}
+                                                                            </span>
+                                                                        )}
+                                                                        {item.category && item.category !== 'カスタム料理' && (
+                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                                                                {item.category}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* 3行目: 栄養情報（色分け） */}
+                                                                    <div className="text-xs space-y-0.5">
+                                                                        <p className="text-gray-600">{item.servingSize}{item.servingUnit}あたり</p>
+                                                                        <p>
+                                                                            <span className="text-blue-600 font-semibold">{item.calories}kcal</span>
+                                                                            <span className="text-gray-600"> | </span>
+                                                                            <span className="text-red-500 font-semibold">P:{item.protein}g</span>
+                                                                            <span className="text-gray-600"> </span>
+                                                                            <span className="text-yellow-600 font-semibold">F:{item.fat}g</span>
+                                                                            <span className="text-gray-600"> </span>
+                                                                            <span className="text-green-600 font-semibold">C:{item.carbs}g</span>
                                                                         </p>
                                                                     </div>
-                                                                    <div className="flex gap-1">
+
+                                                                    {/* 4行目: アイコンボタン */}
+                                                                    <div className="flex gap-2 justify-end">
+                                                                        <button
+                                                                            onClick={async () => {
+                                                                                try {
+                                                                                    await firebase.firestore()
+                                                                                        .collection('users')
+                                                                                        .doc(userId)
+                                                                                        .collection('customFoods')
+                                                                                        .doc(item.name)
+                                                                                        .update({ hidden: !item.hidden });
+                                                                                    toast.success(item.hidden ? '表示しました' : '非表示にしました');
+                                                                                    loadCustomFoods();
+                                                                                } catch (error) {
+                                                                                    console.error('表示切替エラー:', error);
+                                                                                    toast.error('更新に失敗しました');
+                                                                                }
+                                                                            }}
+                                                                            className={`p-1 transition ${
+                                                                                item.hidden
+                                                                                    ? 'text-gray-400 hover:text-gray-600'
+                                                                                    : 'text-green-600 hover:text-green-800'
+                                                                            }`}
+                                                                            title={item.hidden ? '表示する' : '非表示にする'}
+                                                                        >
+                                                                            <Icon name={item.hidden ? 'EyeOff' : 'Eye'} size={18} />
+                                                                        </button>
                                                                         <button
                                                                             onClick={() => editItem(item)}
-                                                                            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                                            className="p-1 text-blue-600 hover:text-blue-800 transition"
                                                                         >
-                                                                            <Icon name="Edit" size={16} />
+                                                                            <Icon name="Edit" size={18} />
                                                                         </button>
                                                                         <button
                                                                             onClick={() => deleteItem(item)}
-                                                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
                                                                         >
-                                                                            <Icon name="Trash2" size={16} />
+                                                                            <Icon name="Trash2" size={18} />
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -3172,37 +3250,76 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 </button>
                                                             </div>
                                                             {supplementItems.map((item, idx) => (
-                                                                <div key={item.id || idx} className="bg-white p-3 rounded-lg border flex justify-between items-center">
-                                                                    <div className="flex-1">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <p className="font-medium text-sm">{item.name}</p>
-                                                                            {item.customLabel && (
-                                                                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                                                                    {item.customLabel}
-                                                                                </span>
-                                                                            )}
-                                                                            {item.category && item.category !== 'カスタムサプリ' && (
-                                                                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                                                    {item.category}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <p className="text-xs text-gray-600">
-                                                                            {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                <div key={item.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
+                                                                    {/* 1行目: アイテム名 */}
+                                                                    <p className="font-bold text-sm">{item.name}</p>
+
+                                                                    {/* 2行目: タグ */}
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        {item.customLabel && (
+                                                                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                                                                                {item.customLabel}
+                                                                            </span>
+                                                                        )}
+                                                                        {item.category && item.category !== 'カスタムサプリ' && (
+                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                                                                {item.category}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* 3行目: 栄養情報（色分け） */}
+                                                                    <div className="text-xs space-y-0.5">
+                                                                        <p className="text-gray-600">{item.servingSize}{item.servingUnit}あたり</p>
+                                                                        <p>
+                                                                            <span className="text-blue-600 font-semibold">{item.calories}kcal</span>
+                                                                            <span className="text-gray-600"> | </span>
+                                                                            <span className="text-red-500 font-semibold">P:{item.protein}g</span>
+                                                                            <span className="text-gray-600"> </span>
+                                                                            <span className="text-yellow-600 font-semibold">F:{item.fat}g</span>
+                                                                            <span className="text-gray-600"> </span>
+                                                                            <span className="text-green-600 font-semibold">C:{item.carbs}g</span>
                                                                         </p>
                                                                     </div>
-                                                                    <div className="flex gap-1">
+
+                                                                    {/* 4行目: アイコンボタン */}
+                                                                    <div className="flex gap-2 justify-end">
+                                                                        <button
+                                                                            onClick={async () => {
+                                                                                try {
+                                                                                    await firebase.firestore()
+                                                                                        .collection('users')
+                                                                                        .doc(userId)
+                                                                                        .collection('customFoods')
+                                                                                        .doc(item.name)
+                                                                                        .update({ hidden: !item.hidden });
+                                                                                    toast.success(item.hidden ? '表示しました' : '非表示にしました');
+                                                                                    loadCustomFoods();
+                                                                                } catch (error) {
+                                                                                    console.error('表示切替エラー:', error);
+                                                                                    toast.error('更新に失敗しました');
+                                                                                }
+                                                                            }}
+                                                                            className={`p-1 transition ${
+                                                                                item.hidden
+                                                                                    ? 'text-gray-400 hover:text-gray-600'
+                                                                                    : 'text-green-600 hover:text-green-800'
+                                                                            }`}
+                                                                            title={item.hidden ? '表示する' : '非表示にする'}
+                                                                        >
+                                                                            <Icon name={item.hidden ? 'EyeOff' : 'Eye'} size={18} />
+                                                                        </button>
                                                                         <button
                                                                             onClick={() => editItem(item)}
-                                                                            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                                                            className="p-1 text-blue-600 hover:text-blue-800 transition"
                                                                         >
-                                                                            <Icon name="Edit" size={16} />
+                                                                            <Icon name="Edit" size={18} />
                                                                         </button>
                                                                         <button
                                                                             onClick={() => deleteItem(item)}
-                                                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
                                                                         >
-                                                                            <Icon name="Trash2" size={16} />
+                                                                            <Icon name="Trash2" size={18} />
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -3628,6 +3745,107 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 const [expandedCategories, setExpandedCategories] = React.useState({});
                                 const [selectedItemDetail, setSelectedItemDetail] = React.useState(null);
                                 const [showDetailModal, setShowDetailModal] = React.useState(false);
+                                const [hiddenStandardItems, setHiddenStandardItems] = React.useState([]);
+                                const [hiddenCategories, setHiddenCategories] = React.useState([]);
+                                const [loadingHidden, setLoadingHidden] = React.useState(false);
+
+                                // Firestoreから非表示アイテムを読み込み
+                                const loadHiddenItems = async () => {
+                                    if (!userId) return;
+                                    try {
+                                        const doc = await firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('settings')
+                                            .doc('hiddenStandardItems')
+                                            .get();
+
+                                        if (doc.exists) {
+                                            setHiddenStandardItems(doc.data().items || []);
+                                        }
+                                    } catch (error) {
+                                        console.error('[Settings] Failed to load hidden items:', error);
+                                    }
+                                };
+
+                                // Firestoreから非表示カテゴリを読み込み
+                                const loadHiddenCategories = async () => {
+                                    if (!userId) return;
+                                    try {
+                                        const doc = await firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('settings')
+                                            .doc('hiddenCategories')
+                                            .get();
+
+                                        if (doc.exists) {
+                                            setHiddenCategories(doc.data().categories || []);
+                                        }
+                                    } catch (error) {
+                                        console.error('[Settings] Failed to load hidden categories:', error);
+                                    }
+                                };
+
+                                // 初回読み込み
+                                React.useEffect(() => {
+                                    loadHiddenItems();
+                                    loadHiddenCategories();
+                                }, [userId]);
+
+                                // アイテムの表示非表示を切り替え
+                                const toggleItemVisibility = async (itemName) => {
+                                    const isHidden = hiddenStandardItems.includes(itemName);
+                                    const newHiddenItems = isHidden
+                                        ? hiddenStandardItems.filter(name => name !== itemName)
+                                        : [...hiddenStandardItems, itemName];
+
+                                    setHiddenStandardItems(newHiddenItems);
+
+                                    // Firestoreに保存
+                                    try {
+                                        await firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('settings')
+                                            .doc('hiddenStandardItems')
+                                            .set({ items: newHiddenItems });
+
+                                        toast.success(isHidden ? `${itemName}を表示しました` : `${itemName}を非表示にしました`);
+                                    } catch (error) {
+                                        console.error('[Settings] Failed to save hidden items:', error);
+                                        toast.error('保存に失敗しました');
+                                        // エラー時は元に戻す
+                                        setHiddenStandardItems(hiddenStandardItems);
+                                    }
+                                };
+
+                                // カテゴリの表示非表示を切り替え
+                                const toggleCategoryVisibility = async (categoryName) => {
+                                    const isHidden = hiddenCategories.includes(categoryName);
+                                    const newHiddenCategories = isHidden
+                                        ? hiddenCategories.filter(name => name !== categoryName)
+                                        : [...hiddenCategories, categoryName];
+
+                                    setHiddenCategories(newHiddenCategories);
+
+                                    // Firestoreに保存
+                                    try {
+                                        await firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('settings')
+                                            .doc('hiddenCategories')
+                                            .set({ categories: newHiddenCategories });
+
+                                        toast.success(isHidden ? `${categoryName}を表示しました` : `${categoryName}を非表示にしました`);
+                                    } catch (error) {
+                                        console.error('[Settings] Failed to save hidden categories:', error);
+                                        toast.error('保存に失敗しました');
+                                        // エラー時は元に戻す
+                                        setHiddenCategories(hiddenCategories);
+                                    }
+                                };
 
                                 const toggleCategory = (category) => {
                                     setExpandedCategories(prev => ({
@@ -3726,36 +3944,88 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 {Object.keys(organizedFoodDB).length === 0 ? (
                                                     <p className="text-sm text-gray-600 text-center py-4">該当するアイテムがありません</p>
                                                 ) : (
-                                                    Object.keys(organizedFoodDB).map(category => (
-                                                        <div key={category} className="bg-white rounded-lg border border-gray-200">
-                                                            <button
-                                                                onClick={() => toggleCategory(category)}
-                                                                className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition"
-                                                            >
-                                                                <span className="font-medium text-sm">{category} ({organizedFoodDB[category].length})</span>
-                                                                <Icon name={expandedCategories[category] ? "ChevronUp" : "ChevronDown"} size={16} />
-                                                            </button>
+                                                    Object.keys(organizedFoodDB).map(category => {
+                                                        const isCategoryHidden = hiddenCategories.includes(category);
+                                                        return (
+                                                            <div key={category} className="bg-white rounded-lg border border-gray-200">
+                                                                <div className="flex items-center justify-between p-3">
+                                                                    <button
+                                                                        onClick={() => toggleCategory(category)}
+                                                                        className="flex-1 flex items-center justify-between hover:bg-gray-50 transition rounded"
+                                                                    >
+                                                                        <span className="font-medium text-sm">{category} ({organizedFoodDB[category].length})</span>
+                                                                        <Icon name={expandedCategories[category] ? "ChevronUp" : "ChevronDown"} size={16} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            toggleCategoryVisibility(category);
+                                                                        }}
+                                                                        className={`ml-2 p-1 transition ${
+                                                                            isCategoryHidden
+                                                                                ? 'text-gray-400 hover:text-gray-600'
+                                                                                : 'text-green-600 hover:text-green-800'
+                                                                        }`}
+                                                                        title={isCategoryHidden ? 'カテゴリを表示' : 'カテゴリを非表示'}
+                                                                    >
+                                                                        <Icon name={isCategoryHidden ? 'EyeOff' : 'Eye'} size={18} />
+                                                                    </button>
+                                                                </div>
                                                             {expandedCategories[category] && (
-                                                                <div className="p-3 pt-0 space-y-1 max-h-60 overflow-y-auto">
-                                                                    {organizedFoodDB[category].map((item, idx) => (
-                                                                        <button
-                                                                            key={idx}
-                                                                            onClick={() => {
-                                                                                setSelectedItemDetail(item);
-                                                                                setShowDetailModal(true);
-                                                                            }}
-                                                                            className="w-full text-sm py-1.5 px-2 bg-gray-50 rounded flex justify-between items-center hover:bg-gray-100 transition cursor-pointer"
-                                                                        >
-                                                                            <span className="text-left">{item.name}</span>
-                                                                            <span className="text-xs text-gray-600">
-                                                                                {item.calories}kcal • P:{item.protein}g • F:{item.fat}g • C:{item.carbs}g
-                                                                            </span>
-                                                                        </button>
-                                                                    ))}
+                                                                <div className="p-3 pt-0 space-y-2 max-h-60 overflow-y-auto">
+                                                                    {organizedFoodDB[category].map((item, idx) => {
+                                                                        const isHidden = hiddenStandardItems.includes(item.name);
+                                                                        return (
+                                                                            <div key={idx} className="bg-white p-2 rounded-lg border space-y-1">
+                                                                                {/* 1行目: アイテム名 */}
+                                                                                <p className="font-bold text-sm">{item.name}</p>
+
+                                                                                {/* 2行目: 栄養情報 */}
+                                                                                <div className="text-xs space-y-0.5">
+                                                                                    <p className="text-gray-600">100gあたり</p>
+                                                                                    <p>
+                                                                                        <span className="text-blue-600 font-semibold">{item.calories}kcal</span>
+                                                                                        <span className="text-gray-600"> | </span>
+                                                                                        <span className="text-red-500 font-semibold">P:{item.protein}g</span>
+                                                                                        <span className="text-gray-600"> </span>
+                                                                                        <span className="text-yellow-600 font-semibold">F:{item.fat}g</span>
+                                                                                        <span className="text-gray-600"> </span>
+                                                                                        <span className="text-green-600 font-semibold">C:{item.carbs}g</span>
+                                                                                    </p>
+                                                                                </div>
+
+                                                                                {/* 3行目: アイコン */}
+                                                                                <div className="flex gap-2 justify-end">
+                                                                                    <button
+                                                                                        onClick={() => {
+                                                                                            setSelectedItemDetail(item);
+                                                                                            setShowDetailModal(true);
+                                                                                        }}
+                                                                                        className="p-1 text-blue-600 hover:text-blue-800 transition"
+                                                                                        title="詳細を表示"
+                                                                                    >
+                                                                                        <Icon name="Info" size={18} />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={() => toggleItemVisibility(item.name)}
+                                                                                        className={`p-1 transition ${
+                                                                                            isHidden
+                                                                                                ? 'text-gray-400 hover:text-gray-600'
+                                                                                                : 'text-green-600 hover:text-green-800'
+                                                                                        }`}
+                                                                                        title={isHidden ? '表示する' : '非表示にする'}
+                                                                                    >
+                                                                                        <Icon name={isHidden ? 'EyeOff' : 'Eye'} size={18} />
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    ))
+                                                    );
+                                                })
                                                 )}
                                             </div>
                                         )}
