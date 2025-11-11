@@ -29,6 +29,256 @@ const ConfirmModal = ({ show, title, message, onConfirm, onCancel }) => {
     );
 };
 
+// ===== カスタムアイテム管理コンポーネント =====
+const CustomItemsManager = ({ userId, showConfirm, toast }) => {
+    const [customItemTab, setCustomItemTab] = useState('food');
+    const [customFoods, setCustomFoods] = useState([]);
+    const [customExercises, setCustomExercises] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
+
+    // 運動のカウントを計算
+    const strengthCount = customExercises.filter(ex => !ex.exerciseTab || ex.exerciseTab === 'strength').length;
+    const cardioCount = customExercises.filter(ex => ex.exerciseTab === 'cardio').length;
+    const stretchCount = customExercises.filter(ex => ex.exerciseTab === 'stretch').length;
+
+    // Firestoreから読み込み
+    const loadCustomFoods = async () => {
+        if (!userId) {
+            console.log('[Settings] ユーザーIDがないためスキップ');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            console.log('[Settings] customFoods読み込み開始...');
+            const customFoodsSnapshot = await firebase.firestore()
+                .collection('users')
+                .doc(userId)
+                .collection('customFoods')
+                .get();
+
+            const foods = customFoodsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            setCustomFoods(foods);
+            console.log(`[Settings] customFoods読み込み完了: ${foods.length}件`);
+        } catch (error) {
+            console.error('[Settings] customFoods読み込みエラー:', error);
+            toast.error('読み込みに失敗しました');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // LocalStorageからカスタム運動を読み込み
+    const loadCustomExercises = () => {
+        try {
+            const saved = localStorage.getItem('customExercises');
+            const exercises = saved ? JSON.parse(saved) : [];
+            setCustomExercises(exercises);
+            console.log(`[Settings] customExercises読み込み完了: ${exercises.length}件`);
+        } catch (error) {
+            console.error('[Settings] customExercises読み込みエラー:', error);
+            setCustomExercises([]);
+        }
+    };
+
+    // 初回読み込み
+    useEffect(() => {
+        if (!userId) return;
+        loadCustomFoods();
+        loadCustomExercises();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId]);
+
+    // itemTypeが未設定の古いデータはデフォルトで'food'として扱う
+    const foodItems = customFoods.filter(item => !item.itemType || item.itemType === 'food');
+    const recipeItems = customFoods.filter(item => item.itemType === 'recipe');
+    const supplementItems = customFoods.filter(item => item.itemType === 'supplement');
+
+    const deleteItem = async (item) => {
+        showConfirm('アイテム削除の確認', `「${item.name}」を削除しますか？`, async () => {
+            try {
+                await firebase.firestore()
+                    .collection('users')
+                    .doc(userId)
+                    .collection('customFoods')
+                    .doc(item.name)
+                    .delete();
+
+                console.log(`[Settings] カスタムアイテムを削除: ${item.name}`);
+                toast.success('削除しました');
+                loadCustomFoods(); // 再読み込み
+            } catch (error) {
+                console.error('[Settings] 削除エラー:', error);
+                toast.error('削除に失敗しました');
+            }
+        });
+    };
+
+    const deleteAllByType = async (itemType) => {
+        const typeName = itemType === 'food' ? '食材' : itemType === 'recipe' ? '料理' : 'サプリ';
+        const itemsToDelete = customFoods.filter(item =>
+            itemType === 'food' ? (!item.itemType || item.itemType === 'food') : item.itemType === itemType
+        );
+
+        showConfirm('全削除の確認', `すべての${typeName}（${itemsToDelete.length}件）を削除しますか？`, async () => {
+            try {
+                const batch = firebase.firestore().batch();
+                itemsToDelete.forEach(item => {
+                    const docRef = firebase.firestore()
+                        .collection('users')
+                        .doc(userId)
+                        .collection('customFoods')
+                        .doc(item.name);
+                    batch.delete(docRef);
+                });
+
+                await batch.commit();
+                console.log(`[Settings] ${typeName}を全削除: ${itemsToDelete.length}件`);
+                toast.success(`${typeName}を全削除しました`);
+                loadCustomFoods(); // 再読み込み
+            } catch (error) {
+                console.error('[Settings] 全削除エラー:', error);
+                toast.error('削除に失敗しました');
+            }
+        });
+    };
+
+    // カスタム運動の削除
+    const deleteExercise = (exercise) => {
+        showConfirm('種目削除の確認', `「${exercise.name}」を削除しますか？`, () => {
+            try {
+                const saved = localStorage.getItem('customExercises');
+                const exercises = saved ? JSON.parse(saved) : [];
+                const filtered = exercises.filter(ex => ex.id !== exercise.id);
+                localStorage.setItem('customExercises', JSON.stringify(filtered));
+                console.log(`[Settings] カスタム種目を削除: ${exercise.name}`);
+                toast.success('削除しました');
+                loadCustomExercises(); // 再読み込み
+            } catch (error) {
+                console.error('[Settings] 削除エラー:', error);
+                toast.error('削除に失敗しました');
+            }
+        });
+    };
+
+    // カスタム運動の全削除
+    const deleteAllExercises = () => {
+        showConfirm('全削除の確認', `すべての運動（${customExercises.length}件）を削除しますか？`, () => {
+            try {
+                localStorage.setItem('customExercises', JSON.stringify([]));
+                console.log(`[Settings] 運動を全削除: ${customExercises.length}件`);
+                toast.success('運動を全削除しました');
+                loadCustomExercises(); // 再読み込み
+            } catch (error) {
+                console.error('[Settings] 全削除エラー:', error);
+                toast.error('削除に失敗しました');
+            }
+        });
+    };
+
+    const editItem = (item) => {
+        // vitamins/mineralsをフラットな構造に展開
+        const editData = {
+            name: item.name,
+            itemType: item.itemType || 'food',
+            category: item.category || '穀類',
+            servingSize: item.servingSize || 100,
+            servingUnit: item.servingUnit || 'g',
+            calories: item.calories || 0,
+            protein: item.protein || 0,
+            fat: item.fat || 0,
+            carbs: item.carbs || 0,
+            // ビタミン
+            vitaminA: item.vitamins?.A || 0,
+            vitaminB1: item.vitamins?.B1 || 0,
+            vitaminB2: item.vitamins?.B2 || 0,
+            vitaminB6: item.vitamins?.B6 || 0,
+            vitaminB12: item.vitamins?.B12 || 0,
+            vitaminC: item.vitamins?.C || 0,
+            vitaminD: item.vitamins?.D || 0,
+            vitaminE: item.vitamins?.E || 0,
+            vitaminK: item.vitamins?.K || 0,
+            niacin: item.vitamins?.niacin || 0,
+            pantothenicAcid: item.vitamins?.pantothenicAcid || 0,
+            biotin: item.vitamins?.biotin || 0,
+            folicAcid: item.vitamins?.folicAcid || 0,
+            // ミネラル
+            sodium: item.minerals?.sodium || 0,
+            potassium: item.minerals?.potassium || 0,
+            calcium: item.minerals?.calcium || 0,
+            magnesium: item.minerals?.magnesium || 0,
+            phosphorus: item.minerals?.phosphorus || 0,
+            iron: item.minerals?.iron || 0,
+            zinc: item.minerals?.zinc || 0,
+            copper: item.minerals?.copper || 0,
+            manganese: item.minerals?.manganese || 0,
+            iodine: item.minerals?.iodine || 0,
+            selenium: item.minerals?.selenium || 0,
+            chromium: item.minerals?.chromium || 0,
+            molybdenum: item.minerals?.molybdenum || 0,
+            // その他
+            otherNutrients: item.otherNutrients || []
+        };
+
+        setEditingItem(editData);
+        setShowEditModal(true);
+    };
+
+    return (
+        <div>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        <Icon name="Edit3" size={18} />
+                        カスタムアイテム管理
+                    </h3>
+                </div>
+
+                <div className="space-y-3">
+                    {/* 食事/運動 切り替え */}
+                    <div className="flex gap-2 mb-3">
+                        <button
+                            onClick={() => {
+                                const isFoodTab = ['food', 'recipe', 'supplement'].includes(customItemTab);
+                                if (!isFoodTab) setCustomItemTab('food');
+                            }}
+                            className={`flex-1 py-2 px-4 rounded-lg font-medium transition text-sm ${
+                                ['food', 'recipe', 'supplement'].includes(customItemTab)
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                            }`}>
+                            食事
+                        </button>
+                        <button
+                            onClick={() => {
+                                const isExerciseTab = ['exercise_strength', 'exercise_cardio', 'exercise_stretch'].includes(customItemTab);
+                                if (!isExerciseTab) setCustomItemTab('exercise_strength');
+                            }}
+                            className={`flex-1 py-2 px-4 rounded-lg font-medium transition text-sm ${
+                                ['exercise_strength', 'exercise_cardio', 'exercise_stretch'].includes(customItemTab)
+                                    ? 'bg-orange-600 text-white'
+                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                            }`}>
+                            運動
+                        </button>
+                    </div>
+
+                    {/* TODO: ここに残りのUI（タブコンテンツ、編集モーダル等）を追加 */}
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">
+                        カスタムアイテム管理機能（実装中）
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ===== Settings Components =====
 // TutorialView機能は削除されました（ダミー定義）
 const TutorialView = ({ onClose, onComplete }) => {
@@ -2851,1151 +3101,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 </div>
                             </div>
 
-                            {/* カスタムアイテム管理 */}
-                            {(() => {
-                                const [customItemTab, setCustomItemTab] = React.useState('food');
-                                const [customFoods, setCustomFoods] = React.useState([]);
-                                const [customExercises, setCustomExercises] = React.useState([]);
-                                const [loading, setLoading] = React.useState(false);
-                                const [showEditModal, setShowEditModal] = React.useState(false);
-                                const [editingItem, setEditingItem] = React.useState(null);
-
-                                // Firestoreから読み込み
-                                const loadCustomFoods = async () => {
-                                    if (!userId) {
-                                        console.log('[Settings] ユーザーIDがないためスキップ');
-                                        return;
-                                    }
-
-                                    setLoading(true);
-                                    try {
-                                        console.log('[Settings] customFoods読み込み開始...');
-                                        const customFoodsSnapshot = await firebase.firestore()
-                                            .collection('users')
-                                            .doc(userId)
-                                            .collection('customFoods')
-                                            .get();
-
-                                        const foods = customFoodsSnapshot.docs.map(doc => ({
-                                            id: doc.id,
-                                            ...doc.data()
-                                        }));
-
-                                        setCustomFoods(foods);
-                                        console.log(`[Settings] customFoods読み込み完了: ${foods.length}件`);
-                                    } catch (error) {
-                                        console.error('[Settings] customFoods読み込みエラー:', error);
-                                        toast.error('読み込みに失敗しました');
-                                    } finally {
-                                        setLoading(false);
-                                    }
-                                };
-
-                                // LocalStorageからカスタム運動を読み込み
-                                const loadCustomExercises = () => {
-                                    try {
-                                        const saved = localStorage.getItem('customExercises');
-                                        const exercises = saved ? JSON.parse(saved) : [];
-                                        setCustomExercises(exercises);
-                                        console.log(`[Settings] customExercises読み込み完了: ${exercises.length}件`);
-                                    } catch (error) {
-                                        console.error('[Settings] customExercises読み込みエラー:', error);
-                                        setCustomExercises([]);
-                                    }
-                                };
-
-                                // 初回読み込み
-                                React.useEffect(() => {
-                                    loadCustomFoods();
-                                    loadCustomExercises();
-                                }, [userId]);
-
-                                // itemTypeが未設定の古いデータはデフォルトで'food'として扱う
-                                const foodItems = customFoods.filter(item => !item.itemType || item.itemType === 'food');
-                                const recipeItems = customFoods.filter(item => item.itemType === 'recipe');
-                                const supplementItems = customFoods.filter(item => item.itemType === 'supplement');
-
-                                const deleteItem = async (item) => {
-                                    showConfirm('アイテム削除の確認', `「${item.name}」を削除しますか？`, async () => {
-                                        try {
-                                            await firebase.firestore()
-                                                .collection('users')
-                                                .doc(userId)
-                                                .collection('customFoods')
-                                                .doc(item.name)
-                                                .delete();
-
-                                            console.log(`[Settings] カスタムアイテムを削除: ${item.name}`);
-                                            toast.success('削除しました');
-                                            loadCustomFoods(); // 再読み込み
-                                        } catch (error) {
-                                            console.error('[Settings] 削除エラー:', error);
-                                            toast.error('削除に失敗しました');
-                                        }
-                                    });
-                                };
-
-                                const deleteAllByType = async (itemType) => {
-                                    const typeName = itemType === 'food' ? '食材' : itemType === 'recipe' ? '料理' : 'サプリ';
-                                    const itemsToDelete = customFoods.filter(item =>
-                                        itemType === 'food' ? (!item.itemType || item.itemType === 'food') : item.itemType === itemType
-                                    );
-
-                                    showConfirm('全削除の確認', `すべての${typeName}（${itemsToDelete.length}件）を削除しますか？`, async () => {
-                                        try {
-                                            const batch = firebase.firestore().batch();
-                                            itemsToDelete.forEach(item => {
-                                                const docRef = firebase.firestore()
-                                                    .collection('users')
-                                                    .doc(userId)
-                                                    .collection('customFoods')
-                                                    .doc(item.name);
-                                                batch.delete(docRef);
-                                            });
-
-                                            await batch.commit();
-                                            console.log(`[Settings] ${typeName}を全削除: ${itemsToDelete.length}件`);
-                                            toast.success(`${typeName}を全削除しました`);
-                                            loadCustomFoods(); // 再読み込み
-                                        } catch (error) {
-                                            console.error('[Settings] 全削除エラー:', error);
-                                            toast.error('削除に失敗しました');
-                                        }
-                                    });
-                                };
-
-                                // カスタム運動の削除
-                                const deleteExercise = (exercise) => {
-                                    showConfirm('種目削除の確認', `「${exercise.name}」を削除しますか？`, () => {
-                                        try {
-                                            const saved = localStorage.getItem('customExercises');
-                                            const exercises = saved ? JSON.parse(saved) : [];
-                                            const filtered = exercises.filter(ex => ex.id !== exercise.id);
-                                            localStorage.setItem('customExercises', JSON.stringify(filtered));
-                                            console.log(`[Settings] カスタム種目を削除: ${exercise.name}`);
-                                            toast.success('削除しました');
-                                            loadCustomExercises(); // 再読み込み
-                                        } catch (error) {
-                                            console.error('[Settings] 削除エラー:', error);
-                                            toast.error('削除に失敗しました');
-                                        }
-                                    });
-                                };
-
-                                // カスタム運動の全削除
-                                const deleteAllExercises = () => {
-                                    showConfirm('全削除の確認', `すべての運動（${customExercises.length}件）を削除しますか？`, () => {
-                                        try {
-                                            localStorage.setItem('customExercises', JSON.stringify([]));
-                                            console.log(`[Settings] 運動を全削除: ${customExercises.length}件`);
-                                            toast.success('運動を全削除しました');
-                                            loadCustomExercises(); // 再読み込み
-                                        } catch (error) {
-                                            console.error('[Settings] 全削除エラー:', error);
-                                            toast.error('削除に失敗しました');
-                                        }
-                                    });
-                                };
-
-                                const editItem = (item) => {
-                                    // vitamins/mineralsをフラットな構造に展開
-                                    const editData = {
-                                        name: item.name,
-                                        itemType: item.itemType || 'food',
-                                        category: item.category || '穀類',
-                                        servingSize: item.servingSize || 100,
-                                        servingUnit: item.servingUnit || 'g',
-                                        calories: item.calories || 0,
-                                        protein: item.protein || 0,
-                                        fat: item.fat || 0,
-                                        carbs: item.carbs || 0,
-                                        // ビタミン
-                                        vitaminA: item.vitamins?.A || 0,
-                                        vitaminB1: item.vitamins?.B1 || 0,
-                                        vitaminB2: item.vitamins?.B2 || 0,
-                                        vitaminB6: item.vitamins?.B6 || 0,
-                                        vitaminB12: item.vitamins?.B12 || 0,
-                                        vitaminC: item.vitamins?.C || 0,
-                                        vitaminD: item.vitamins?.D || 0,
-                                        vitaminE: item.vitamins?.E || 0,
-                                        vitaminK: item.vitamins?.K || 0,
-                                        niacin: item.vitamins?.niacin || 0,
-                                        pantothenicAcid: item.vitamins?.pantothenicAcid || 0,
-                                        biotin: item.vitamins?.biotin || 0,
-                                        folicAcid: item.vitamins?.folicAcid || 0,
-                                        // ミネラル
-                                        sodium: item.minerals?.sodium || 0,
-                                        potassium: item.minerals?.potassium || 0,
-                                        calcium: item.minerals?.calcium || 0,
-                                        magnesium: item.minerals?.magnesium || 0,
-                                        phosphorus: item.minerals?.phosphorus || 0,
-                                        iron: item.minerals?.iron || 0,
-                                        zinc: item.minerals?.zinc || 0,
-                                        copper: item.minerals?.copper || 0,
-                                        manganese: item.minerals?.manganese || 0,
-                                        iodine: item.minerals?.iodine || 0,
-                                        selenium: item.minerals?.selenium || 0,
-                                        chromium: item.minerals?.chromium || 0,
-                                        molybdenum: item.minerals?.molybdenum || 0,
-                                        // その他
-                                        otherNutrients: item.otherNutrients || []
-                                    };
-                                    setEditingItem(editData);
-                                    setShowEditModal(true);
-                                };
-
-                                return (
-                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h4 className="font-bold text-blue-800">カスタムアイテム管理</h4>
-                                            <button
-                                                onClick={() => {
-                                                    loadCustomFoods();
-                                                    loadCustomExercises();
-                                                }}
-                                                disabled={loading}
-                                                className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition flex items-center gap-1 disabled:opacity-50"
-                                            >
-                                                <Icon name="RefreshCw" size={14} className={loading ? 'animate-spin' : ''} />
-                                                更新
-                                            </button>
-                                        </div>
-                                        <p className="text-sm text-gray-600 mb-3">AI解析や手動で作成した食材・料理・サプリ・運動を管理できます。</p>
-
-                                        {/* 食事/運動 切り替え */}
-                                        <div className="flex gap-2 mb-3">
-                                            <button
-                                                onClick={() => {
-                                                    const isFoodTab = ['food', 'recipe', 'supplement'].includes(customItemTab);
-                                                    if (!isFoodTab) setCustomItemTab('food');
-                                                }}
-                                                className={`flex-1 py-2 px-4 rounded-lg font-medium transition text-sm ${
-                                                    ['food', 'recipe', 'supplement'].includes(customItemTab)
-                                                        ? 'bg-green-600 text-white'
-                                                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                                }`}
-                                            >
-                                                食事
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    const isExerciseTab = ['exercise_strength', 'exercise_cardio', 'exercise_stretch'].includes(customItemTab);
-                                                    if (!isExerciseTab) setCustomItemTab('exercise_strength');
-                                                }}
-                                                className={`flex-1 py-2 px-4 rounded-lg font-medium transition text-sm ${
-                                                    ['exercise_strength', 'exercise_cardio', 'exercise_stretch'].includes(customItemTab)
-                                                        ? 'bg-orange-600 text-white'
-                                                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                                }`}
-                                            >
-                                                運動
-                                            </button>
-                                        </div>
-
-                                        {/* タブ切り替え */}
-                                        {['food', 'recipe', 'supplement'].includes(customItemTab) && (
-                                            <div className="flex gap-2 border-b mb-3">
-                                                <button
-                                                    onClick={() => setCustomItemTab('food')}
-                                                    className={`px-4 py-2 font-medium transition text-sm ${
-                                                        customItemTab === 'food'
-                                                            ? 'border-b-2 border-green-600 text-green-600'
-                                                            : 'text-gray-600 hover:text-gray-600'
-                                                    }`}
-                                                >
-                                                    食材 ({foodItems.length})
-                                                </button>
-                                                <button
-                                                    onClick={() => setCustomItemTab('recipe')}
-                                                    className={`px-4 py-2 font-medium transition text-sm ${
-                                                        customItemTab === 'recipe'
-                                                            ? 'border-b-2 border-green-600 text-green-600'
-                                                            : 'text-gray-600 hover:text-gray-600'
-                                                    }`}
-                                                >
-                                                    料理 ({recipeItems.length})
-                                                </button>
-                                                <button
-                                                    onClick={() => setCustomItemTab('supplement')}
-                                                    className={`px-4 py-2 font-medium transition text-sm ${
-                                                        customItemTab === 'supplement'
-                                                            ? 'border-b-2 border-blue-600 text-blue-600'
-                                                            : 'text-gray-600 hover:text-gray-600'
-                                                    }`}
-                                                >
-                                                    サプリ ({supplementItems.length})
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {['exercise_strength', 'exercise_cardio', 'exercise_stretch'].includes(customItemTab) && (
-                                            <div className="flex gap-2 border-b mb-3">
-                                                <button
-                                                    onClick={() => setCustomItemTab('exercise_strength')}
-                                                    className={`px-4 py-2 font-medium transition text-sm ${
-                                                        customItemTab === 'exercise_strength'
-                                                            ? 'border-b-2 border-orange-600 text-orange-600'
-                                                            : 'text-gray-600 hover:text-gray-600'
-                                                    }`}
-                                                >
-                                                    筋トレ ({customExercises.filter(ex => !ex.exerciseTab || ex.exerciseTab === 'strength').length})
-                                                </button>
-                                                <button
-                                                    onClick={() => setCustomItemTab('exercise_cardio')}
-                                                    className={`px-4 py-2 font-medium transition text-sm ${
-                                                        customItemTab === 'exercise_cardio'
-                                                            ? 'border-b-2 border-blue-600 text-blue-600'
-                                                            : 'text-gray-600 hover:text-gray-600'
-                                                    }`}
-                                                >
-                                                    有酸素 ({customExercises.filter(ex => ex.exerciseTab === 'cardio').length})
-                                                </button>
-                                                <button
-                                                    onClick={() => setCustomItemTab('exercise_stretch')}
-                                                    className={`px-4 py-2 font-medium transition text-sm ${
-                                                        customItemTab === 'exercise_stretch'
-                                                            ? 'border-b-2 border-green-600 text-green-600'
-                                                            : 'text-gray-600 hover:text-gray-600'
-                                                    }`}
-                                                >
-                                                    ストレッチ ({customExercises.filter(ex => ex.exerciseTab === 'stretch').length})
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {/* アイテム一覧 */}
-                                        <div className="space-y-2 max-h-96 overflow-y-auto">
-                                            {customItemTab === 'food' && (
-                                                <>
-                                                    {foodItems.length === 0 ? (
-                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタム食材はありません</p>
-                                                    ) : (
-                                                        <>
-                                                            <div className="flex justify-end mb-2">
-                                                                <button
-                                                                    onClick={() => deleteAllByType('food')}
-                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
-                                                                >
-                                                                    すべて削除
-                                                                </button>
-                                                            </div>
-                                                            {foodItems.map((item, idx) => (
-                                                                <div key={item.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
-                                                                    {/* 1行目: アイテム名 */}
-                                                                    <p className="font-bold text-sm">{item.name}</p>
-
-                                                                    {/* 2行目: タグ */}
-                                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                                        {item.customLabel && (
-                                                                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                                                                {item.customLabel}
-                                                                            </span>
-                                                                        )}
-                                                                        {item.category && item.category !== 'カスタム食材' && (
-                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                                                {item.category}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* 3行目: 栄養情報（色分け） */}
-                                                                    <div className="text-xs space-y-0.5">
-                                                                        <p className="text-gray-600">{item.servingSize}{item.servingUnit}あたり</p>
-                                                                        <p>
-                                                                            <span className="text-blue-600 font-semibold">{item.calories}kcal</span>
-                                                                            <span className="text-gray-600"> | </span>
-                                                                            <span className="text-red-500 font-semibold">P:{item.protein}g</span>
-                                                                            <span className="text-gray-600"> </span>
-                                                                            <span className="text-yellow-600 font-semibold">F:{item.fat}g</span>
-                                                                            <span className="text-gray-600"> </span>
-                                                                            <span className="text-green-600 font-semibold">C:{item.carbs}g</span>
-                                                                        </p>
-                                                                    </div>
-
-                                                                    {/* 4行目: アイコンボタン */}
-                                                                    <div className="flex gap-2 justify-end">
-                                                                        <button
-                                                                            onClick={async () => {
-                                                                                try {
-                                                                                    await firebase.firestore()
-                                                                                        .collection('users')
-                                                                                        .doc(userId)
-                                                                                        .collection('customFoods')
-                                                                                        .doc(item.name)
-                                                                                        .update({ hidden: !item.hidden });
-                                                                                    toast.success(item.hidden ? '表示しました' : '非表示にしました');
-                                                                                    loadCustomFoods();
-                                                                                } catch (error) {
-                                                                                    console.error('表示切替エラー:', error);
-                                                                                    toast.error('更新に失敗しました');
-                                                                                }
-                                                                            }}
-                                                                            className={`p-1 transition ${
-                                                                                item.hidden
-                                                                                    ? 'text-gray-400 hover:text-gray-600'
-                                                                                    : 'text-green-600 hover:text-green-800'
-                                                                            }`}
-                                                                            title={item.hidden ? '表示する' : '非表示にする'}
-                                                                        >
-                                                                            <Icon name={item.hidden ? 'EyeOff' : 'Eye'} size={18} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => editItem(item)}
-                                                                            className="p-1 text-blue-600 hover:text-blue-800 transition"
-                                                                        >
-                                                                            <Icon name="Edit" size={18} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => deleteItem(item)}
-                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
-                                                                        >
-                                                                            <Icon name="Trash2" size={18} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </>
-                                                    )}
-                                                </>
-                                            )}
-
-                                            {customItemTab === 'recipe' && (
-                                                <>
-                                                    {recipeItems.length === 0 ? (
-                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタム料理はありません</p>
-                                                    ) : (
-                                                        <>
-                                                            <div className="flex justify-end mb-2">
-                                                                <button
-                                                                    onClick={() => deleteAllByType('recipe')}
-                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
-                                                                >
-                                                                    すべて削除
-                                                                </button>
-                                                            </div>
-                                                            {recipeItems.map((item, idx) => (
-                                                                <div key={item.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
-                                                                    {/* 1行目: アイテム名 */}
-                                                                    <p className="font-bold text-sm">{item.name}</p>
-
-                                                                    {/* 2行目: タグ */}
-                                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                                        {item.customLabel && (
-                                                                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                                                                {item.customLabel}
-                                                                            </span>
-                                                                        )}
-                                                                        {item.category && item.category !== 'カスタム料理' && (
-                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                                                {item.category}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* 3行目: 栄養情報（色分け） */}
-                                                                    <div className="text-xs space-y-0.5">
-                                                                        <p className="text-gray-600">{item.servingSize}{item.servingUnit}あたり</p>
-                                                                        <p>
-                                                                            <span className="text-blue-600 font-semibold">{item.calories}kcal</span>
-                                                                            <span className="text-gray-600"> | </span>
-                                                                            <span className="text-red-500 font-semibold">P:{item.protein}g</span>
-                                                                            <span className="text-gray-600"> </span>
-                                                                            <span className="text-yellow-600 font-semibold">F:{item.fat}g</span>
-                                                                            <span className="text-gray-600"> </span>
-                                                                            <span className="text-green-600 font-semibold">C:{item.carbs}g</span>
-                                                                        </p>
-                                                                    </div>
-
-                                                                    {/* 4行目: アイコンボタン */}
-                                                                    <div className="flex gap-2 justify-end">
-                                                                        <button
-                                                                            onClick={async () => {
-                                                                                try {
-                                                                                    await firebase.firestore()
-                                                                                        .collection('users')
-                                                                                        .doc(userId)
-                                                                                        .collection('customFoods')
-                                                                                        .doc(item.name)
-                                                                                        .update({ hidden: !item.hidden });
-                                                                                    toast.success(item.hidden ? '表示しました' : '非表示にしました');
-                                                                                    loadCustomFoods();
-                                                                                } catch (error) {
-                                                                                    console.error('表示切替エラー:', error);
-                                                                                    toast.error('更新に失敗しました');
-                                                                                }
-                                                                            }}
-                                                                            className={`p-1 transition ${
-                                                                                item.hidden
-                                                                                    ? 'text-gray-400 hover:text-gray-600'
-                                                                                    : 'text-green-600 hover:text-green-800'
-                                                                            }`}
-                                                                            title={item.hidden ? '表示する' : '非表示にする'}
-                                                                        >
-                                                                            <Icon name={item.hidden ? 'EyeOff' : 'Eye'} size={18} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => editItem(item)}
-                                                                            className="p-1 text-blue-600 hover:text-blue-800 transition"
-                                                                        >
-                                                                            <Icon name="Edit" size={18} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => deleteItem(item)}
-                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
-                                                                        >
-                                                                            <Icon name="Trash2" size={18} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </>
-                                                    )}
-                                                </>
-                                            )}
-
-                                            {customItemTab === 'supplement' && (
-                                                <>
-                                                    {supplementItems.length === 0 ? (
-                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタムサプリはありません</p>
-                                                    ) : (
-                                                        <>
-                                                            <div className="flex justify-end mb-2">
-                                                                <button
-                                                                    onClick={() => deleteAllByType('supplement')}
-                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
-                                                                >
-                                                                    すべて削除
-                                                                </button>
-                                                            </div>
-                                                            {supplementItems.map((item, idx) => (
-                                                                <div key={item.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
-                                                                    {/* 1行目: アイテム名 */}
-                                                                    <p className="font-bold text-sm">{item.name}</p>
-
-                                                                    {/* 2行目: タグ */}
-                                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                                        {item.customLabel && (
-                                                                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                                                                {item.customLabel}
-                                                                            </span>
-                                                                        )}
-                                                                        {item.category && item.category !== 'カスタムサプリ' && (
-                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                                                {item.category}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* 3行目: 栄養情報（色分け） */}
-                                                                    <div className="text-xs space-y-0.5">
-                                                                        <p className="text-gray-600">{item.servingSize}{item.servingUnit}あたり</p>
-                                                                        <p>
-                                                                            <span className="text-blue-600 font-semibold">{item.calories}kcal</span>
-                                                                            <span className="text-gray-600"> | </span>
-                                                                            <span className="text-red-500 font-semibold">P:{item.protein}g</span>
-                                                                            <span className="text-gray-600"> </span>
-                                                                            <span className="text-yellow-600 font-semibold">F:{item.fat}g</span>
-                                                                            <span className="text-gray-600"> </span>
-                                                                            <span className="text-green-600 font-semibold">C:{item.carbs}g</span>
-                                                                        </p>
-                                                                    </div>
-
-                                                                    {/* 4行目: アイコンボタン */}
-                                                                    <div className="flex gap-2 justify-end">
-                                                                        <button
-                                                                            onClick={async () => {
-                                                                                try {
-                                                                                    await firebase.firestore()
-                                                                                        .collection('users')
-                                                                                        .doc(userId)
-                                                                                        .collection('customFoods')
-                                                                                        .doc(item.name)
-                                                                                        .update({ hidden: !item.hidden });
-                                                                                    toast.success(item.hidden ? '表示しました' : '非表示にしました');
-                                                                                    loadCustomFoods();
-                                                                                } catch (error) {
-                                                                                    console.error('表示切替エラー:', error);
-                                                                                    toast.error('更新に失敗しました');
-                                                                                }
-                                                                            }}
-                                                                            className={`p-1 transition ${
-                                                                                item.hidden
-                                                                                    ? 'text-gray-400 hover:text-gray-600'
-                                                                                    : 'text-green-600 hover:text-green-800'
-                                                                            }`}
-                                                                            title={item.hidden ? '表示する' : '非表示にする'}
-                                                                        >
-                                                                            <Icon name={item.hidden ? 'EyeOff' : 'Eye'} size={18} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => editItem(item)}
-                                                                            className="p-1 text-blue-600 hover:text-blue-800 transition"
-                                                                        >
-                                                                            <Icon name="Edit" size={18} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => deleteItem(item)}
-                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
-                                                                        >
-                                                                            <Icon name="Trash2" size={18} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </>
-                                                    )}
-                                                </>
-                                            )}
-
-                                            {customItemTab === 'exercise_strength' && (
-                                                <>
-                                                    {customExercises.filter(ex => !ex.exerciseTab || ex.exerciseTab === 'strength').length === 0 ? (
-                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタム運動（筋トレ）はありません</p>
-                                                    ) : (
-                                                        <>
-                                                            <div className="flex justify-end mb-2">
-                                                                <button
-                                                                    onClick={deleteAllExercises}
-                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
-                                                                >
-                                                                    すべて削除
-                                                                </button>
-                                                            </div>
-                                                            {customExercises.filter(ex => !ex.exerciseTab || ex.exerciseTab === 'strength').map((exercise, idx) => (
-                                                                <div key={exercise.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
-                                                                    {/* 1行目: 種目名 */}
-                                                                    <p className="font-bold text-sm">{exercise.name}</p>
-
-                                                                    {/* 2行目: タグ */}
-                                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
-                                                                            カスタム
-                                                                        </span>
-                                                                        {exercise.subcategory && (
-                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                                                {exercise.subcategory}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* 3行目: 削除ボタン */}
-                                                                    <div className="flex gap-2 justify-end">
-                                                                        <button
-                                                                            onClick={() => deleteExercise(exercise)}
-                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
-                                                                        >
-                                                                            <Icon name="Trash2" size={18} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </>
-                                                    )}
-                                                </>
-                                            )}
-
-                                            {customItemTab === 'exercise_cardio' && (
-                                                <>
-                                                    {customExercises.filter(ex => ex.exerciseTab === 'cardio').length === 0 ? (
-                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタム運動（有酸素）はありません</p>
-                                                    ) : (
-                                                        <>
-                                                            <div className="flex justify-end mb-2">
-                                                                <button
-                                                                    onClick={deleteAllExercises}
-                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
-                                                                >
-                                                                    すべて削除
-                                                                </button>
-                                                            </div>
-                                                            {customExercises.filter(ex => ex.exerciseTab === 'cardio').map((exercise, idx) => (
-                                                                <div key={exercise.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
-                                                                    {/* 1行目: 種目名 */}
-                                                                    <p className="font-bold text-sm">{exercise.name}</p>
-
-                                                                    {/* 2行目: タグ */}
-                                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
-                                                                            カスタム
-                                                                        </span>
-                                                                        {exercise.subcategory && (
-                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                                                {exercise.subcategory}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* 3行目: 削除ボタン */}
-                                                                    <div className="flex gap-2 justify-end">
-                                                                        <button
-                                                                            onClick={() => deleteExercise(exercise)}
-                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
-                                                                        >
-                                                                            <Icon name="Trash2" size={18} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </>
-                                                    )}
-                                                </>
-                                            )}
-
-                                            {customItemTab === 'exercise_stretch' && (
-                                                <>
-                                                    {customExercises.filter(ex => ex.exerciseTab === 'stretch').length === 0 ? (
-                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタム運動（ストレッチ）はありません</p>
-                                                    ) : (
-                                                        <>
-                                                            <div className="flex justify-end mb-2">
-                                                                <button
-                                                                    onClick={deleteAllExercises}
-                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
-                                                                >
-                                                                    すべて削除
-                                                                </button>
-                                                            </div>
-                                                            {customExercises.filter(ex => ex.exerciseTab === 'stretch').map((exercise, idx) => (
-                                                                <div key={exercise.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
-                                                                    {/* 1行目: 種目名 */}
-                                                                    <p className="font-bold text-sm">{exercise.name}</p>
-
-                                                                    {/* 2行目: タグ */}
-                                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
-                                                                            カスタム
-                                                                        </span>
-                                                                        {exercise.subcategory && (
-                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                                                {exercise.subcategory}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* 3行目: 削除ボタン */}
-                                                                    <div className="flex gap-2 justify-end">
-                                                                        <button
-                                                                            onClick={() => deleteExercise(exercise)}
-                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
-                                                                        >
-                                                                            <Icon name="Trash2" size={18} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {/* 編集モーダル */}
-                                        {showEditModal && editingItem && (
-                                            <div className="fixed inset-0 bg-black bg-opacity-60 z-[10001] flex items-center justify-center p-4">
-                                                <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-lg max-h-[80vh] overflow-y-auto">
-                                                    {/* ヘッダー */}
-                                                    <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
-                                                        <h3 className="text-lg font-bold flex items-center gap-2">
-                                                            <Icon name="Edit" size={20} />
-                                                            カスタムアイテムを編集
-                                                        </h3>
-                                                        <button
-                                                            onClick={() => {
-                                                                setShowEditModal(false);
-                                                                setEditingItem(null);
-                                                            }}
-                                                            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
-                                                        >
-                                                            <Icon name="X" size={20} />
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="p-6 space-y-4">
-                                                        {/* 名前 */}
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-gray-600 mb-1">名前</label>
-                                                            <input
-                                                                type="text"
-                                                                value={editingItem.name}
-                                                                onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
-                                                                className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                            />
-                                                        </div>
-
-                                                        {/* カテゴリ */}
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-gray-600 mb-1">カテゴリ</label>
-                                                            <select
-                                                                value={editingItem.itemType}
-                                                                onChange={(e) => setEditingItem({...editingItem, itemType: e.target.value})}
-                                                                className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                            >
-                                                                <option value="food">食材</option>
-                                                                <option value="recipe">料理</option>
-                                                                <option value="supplement">サプリ</option>
-                                                            </select>
-                                                        </div>
-
-                                                        {/* サブカテゴリ & 1回分の量 */}
-                                                        <div className="flex gap-2">
-                                                            <div className="flex-1">
-                                                                <label className="block text-xs text-gray-600 mb-1">サブカテゴリ</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={editingItem.category}
-                                                                    onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
-                                                                    className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-xs text-gray-600 mb-1">1回分の量</label>
-                                                                <div className="flex gap-1">
-                                                                    <input
-                                                                        type="number"
-                                                                        value={editingItem.servingSize}
-                                                                        onChange={(e) => setEditingItem({...editingItem, servingSize: parseFloat(e.target.value) || 0})}
-                                                                        className="w-20 px-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none text-center"
-                                                                    />
-                                                                    <select
-                                                                        value={editingItem.servingUnit}
-                                                                        onChange={(e) => setEditingItem({...editingItem, servingUnit: e.target.value})}
-                                                                        className="w-16 px-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                                                    >
-                                                                        <option value="g">g</option>
-                                                                        <option value="mg">mg</option>
-                                                                        <option value="ml">ml</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 基本栄養素 */}
-                                                        <div className="border-t pt-4">
-                                                            <p className="text-sm font-medium text-gray-600 mb-2">
-                                                                基本栄養素（{editingItem.servingSize}{editingItem.servingUnit}あたり）
-                                                            </p>
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">カロリー (kcal)</label>
-                                                                    <input
-                                                                        type="number"
-                                                                        step="0.1"
-                                                                        value={editingItem.calories || ''}
-                                                                        onChange={(e) => setEditingItem({...editingItem, calories: parseFloat(e.target.value) || 0})}
-                                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">タンパク質 (g)</label>
-                                                                    <input
-                                                                        type="number"
-                                                                        step="0.1"
-                                                                        value={editingItem.protein || ''}
-                                                                        onChange={(e) => setEditingItem({...editingItem, protein: parseFloat(e.target.value) || 0})}
-                                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">脂質 (g)</label>
-                                                                    <input
-                                                                        type="number"
-                                                                        step="0.1"
-                                                                        value={editingItem.fat || ''}
-                                                                        onChange={(e) => setEditingItem({...editingItem, fat: parseFloat(e.target.value) || 0})}
-                                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">炭水化物 (g)</label>
-                                                                    <input
-                                                                        type="number"
-                                                                        step="0.1"
-                                                                        value={editingItem.carbs || ''}
-                                                                        onChange={(e) => setEditingItem({...editingItem, carbs: parseFloat(e.target.value) || 0})}
-                                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* ビタミン */}
-                                                        <div className="border-t pt-4">
-                                                            <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
-                                                                <Icon name="Droplet" size={16} className="text-orange-500" />
-                                                                ビタミン
-                                                            </p>
-                                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">A (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.vitaminA || ''} onChange={(e) => setEditingItem({...editingItem, vitaminA: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">B1 (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.vitaminB1 || ''} onChange={(e) => setEditingItem({...editingItem, vitaminB1: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">B2 (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.vitaminB2 || ''} onChange={(e) => setEditingItem({...editingItem, vitaminB2: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">B6 (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.vitaminB6 || ''} onChange={(e) => setEditingItem({...editingItem, vitaminB6: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">B12 (μg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.vitaminB12 || ''} onChange={(e) => setEditingItem({...editingItem, vitaminB12: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">C (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.vitaminC || ''} onChange={(e) => setEditingItem({...editingItem, vitaminC: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">D (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.vitaminD || ''} onChange={(e) => setEditingItem({...editingItem, vitaminD: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">E (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.vitaminE || ''} onChange={(e) => setEditingItem({...editingItem, vitaminE: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">K (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.vitaminK || ''} onChange={(e) => setEditingItem({...editingItem, vitaminK: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">ナイアシン (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.niacin || ''} onChange={(e) => setEditingItem({...editingItem, niacin: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">パントテン酸 (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.pantothenicAcid || ''} onChange={(e) => setEditingItem({...editingItem, pantothenicAcid: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">ビオチン (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.biotin || ''} onChange={(e) => setEditingItem({...editingItem, biotin: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">葉酸 (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.folicAcid || ''} onChange={(e) => setEditingItem({...editingItem, folicAcid: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* ミネラル */}
-                                                        <div className="border-t pt-4">
-                                                            <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
-                                                                <Icon name="Gem" size={16} className="text-blue-500" />
-                                                                ミネラル
-                                                            </p>
-                                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">ナトリウム (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.sodium || ''} onChange={(e) => setEditingItem({...editingItem, sodium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">カリウム (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.potassium || ''} onChange={(e) => setEditingItem({...editingItem, potassium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">カルシウム (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.calcium || ''} onChange={(e) => setEditingItem({...editingItem, calcium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">マグネシウム (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.magnesium || ''} onChange={(e) => setEditingItem({...editingItem, magnesium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">リン (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.phosphorus || ''} onChange={(e) => setEditingItem({...editingItem, phosphorus: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">鉄 (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.iron || ''} onChange={(e) => setEditingItem({...editingItem, iron: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">亜鉛 (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.zinc || ''} onChange={(e) => setEditingItem({...editingItem, zinc: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">銅 (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.copper || ''} onChange={(e) => setEditingItem({...editingItem, copper: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">マンガン (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.manganese || ''} onChange={(e) => setEditingItem({...editingItem, manganese: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">ヨウ素 (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.iodine || ''} onChange={(e) => setEditingItem({...editingItem, iodine: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">セレン (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.selenium || ''} onChange={(e) => setEditingItem({...editingItem, selenium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">クロム (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.chromium || ''} onChange={(e) => setEditingItem({...editingItem, chromium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600">モリブデン (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.molybdenum || ''} onChange={(e) => setEditingItem({...editingItem, molybdenum: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* その他の栄養素 */}
-                                                        <div className="border-t pt-4">
-                                                            <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
-                                                                <Icon name="Plus" size={16} className="text-purple-500" />
-                                                                その他の栄養素
-                                                            </p>
-                                                            <div className="space-y-2">
-                                                                {(editingItem.otherNutrients || []).map((nutrient, idx) => (
-                                                                    <div key={idx} className="flex gap-2 items-center">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={nutrient.name || ''}
-                                                                            onChange={(e) => {
-                                                                                const updated = [...(editingItem.otherNutrients || [])];
-                                                                                updated[idx] = {...updated[idx], name: e.target.value};
-                                                                                setEditingItem({...editingItem, otherNutrients: updated});
-                                                                            }}
-                                                                            placeholder="栄養素名 (例: クレアチン)"
-                                                                            className="flex-1 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-purple-400 focus:outline-none"
-                                                                        />
-                                                                        <input
-                                                                            type="number"
-                                                                            step="0.1"
-                                                                            value={nutrient.value || ''}
-                                                                            onChange={(e) => {
-                                                                                const updated = [...(editingItem.otherNutrients || [])];
-                                                                                updated[idx] = {...updated[idx], value: parseFloat(e.target.value) || 0};
-                                                                                setEditingItem({...editingItem, otherNutrients: updated});
-                                                                            }}
-                                                                            placeholder="量"
-                                                                            className="w-20 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-purple-400 focus:outline-none"
-                                                                        />
-                                                                        <input
-                                                                            type="text"
-                                                                            value={nutrient.unit || ''}
-                                                                            onChange={(e) => {
-                                                                                const updated = [...(editingItem.otherNutrients || [])];
-                                                                                updated[idx] = {...updated[idx], unit: e.target.value};
-                                                                                setEditingItem({...editingItem, otherNutrients: updated});
-                                                                            }}
-                                                                            placeholder="単位"
-                                                                            className="w-16 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-purple-400 focus:outline-none"
-                                                                        />
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                const updated = (editingItem.otherNutrients || []).filter((_, i) => i !== idx);
-                                                                                setEditingItem({...editingItem, otherNutrients: updated});
-                                                                            }}
-                                                                            className="p-1 text-red-500 hover:bg-red-50 rounded"
-                                                                        >
-                                                                            <Icon name="X" size={16} />
-                                                                        </button>
-                                                                    </div>
-                                                                ))}
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const updated = [...(editingItem.otherNutrients || []), {name: '', value: 0, unit: 'g'}];
-                                                                        setEditingItem({...editingItem, otherNutrients: updated});
-                                                                    }}
-                                                                    className="w-full px-3 py-2 border-2 border-dashed border-purple-300 rounded-lg text-purple-600 hover:bg-purple-50 transition text-sm flex items-center justify-center gap-1"
-                                                                >
-                                                                    <Icon name="Plus" size={14} />
-                                                                    栄養素を追加
-                                                                </button>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 保存ボタン */}
-                                                        <div className="flex gap-2 pt-4">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setShowEditModal(false);
-                                                                    setEditingItem(null);
-                                                                }}
-                                                                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
-                                                            >
-                                                                キャンセル
-                                                            </button>
-                                                            <button
-                                                                onClick={async () => {
-                                                                    try {
-                                                                        const customFood = {
-                                                                            name: editingItem.name,
-                                                                            category: editingItem.category,
-                                                                            itemType: editingItem.itemType,
-                                                                            calories: editingItem.calories || 0,
-                                                                            protein: editingItem.protein || 0,
-                                                                            fat: editingItem.fat || 0,
-                                                                            carbs: editingItem.carbs || 0,
-                                                                            servingSize: editingItem.servingSize || 100,
-                                                                            servingUnit: editingItem.servingUnit || 'g',
-                                                                            vitamins: {
-                                                                                A: editingItem.vitaminA || 0,
-                                                                                B1: editingItem.vitaminB1 || 0,
-                                                                                B2: editingItem.vitaminB2 || 0,
-                                                                                B6: editingItem.vitaminB6 || 0,
-                                                                                B12: editingItem.vitaminB12 || 0,
-                                                                                C: editingItem.vitaminC || 0,
-                                                                                D: editingItem.vitaminD || 0,
-                                                                                E: editingItem.vitaminE || 0,
-                                                                                K: editingItem.vitaminK || 0,
-                                                                                niacin: editingItem.niacin || 0,
-                                                                                pantothenicAcid: editingItem.pantothenicAcid || 0,
-                                                                                biotin: editingItem.biotin || 0,
-                                                                                folicAcid: editingItem.folicAcid || 0
-                                                                            },
-                                                                            minerals: {
-                                                                                sodium: editingItem.sodium || 0,
-                                                                                potassium: editingItem.potassium || 0,
-                                                                                calcium: editingItem.calcium || 0,
-                                                                                magnesium: editingItem.magnesium || 0,
-                                                                                phosphorus: editingItem.phosphorus || 0,
-                                                                                iron: editingItem.iron || 0,
-                                                                                zinc: editingItem.zinc || 0,
-                                                                                copper: editingItem.copper || 0,
-                                                                                manganese: editingItem.manganese || 0,
-                                                                                iodine: editingItem.iodine || 0,
-                                                                                selenium: editingItem.selenium || 0,
-                                                                                chromium: editingItem.chromium || 0,
-                                                                                molybdenum: editingItem.molybdenum || 0
-                                                                            },
-                                                                            otherNutrients: editingItem.otherNutrients || [],
-                                                                            updatedAt: new Date().toISOString()
-                                                                        };
-
-                                                                        await firebase.firestore()
-                                                                            .collection('users')
-                                                                            .doc(userId)
-                                                                            .collection('customFoods')
-                                                                            .doc(customFood.name)
-                                                                            .set(customFood, { merge: true });
-
-                                                                        console.log(`[Settings] カスタムアイテムを更新: ${customFood.name}`);
-                                                                        toast.success('更新しました');
-                                                                        loadCustomFoods(); // 再読み込み
-                                                                        setShowEditModal(false);
-                                                                        setEditingItem(null);
-                                                                    } catch (error) {
-                                                                        console.error('[Settings] 更新エラー:', error);
-                                                                        toast.error('更新に失敗しました');
-                                                                    }
-                                                                }}
-                                                                className="flex-1 px-4 py-3 bg-[#4A9EFF] text-white rounded-lg hover:bg-[#3b8fef] font-bold shadow-md"
-                                                            >
-                                                                保存
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })()}
+                            <CustomItemsManager userId={userId} showConfirm={showConfirm} toast={toast} />
 
                             {/* 全データベースアイテム一覧 */}
                             {(() => {

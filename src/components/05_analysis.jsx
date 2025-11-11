@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import ReactDOM from 'react-dom';
 // ===== Analysis Components =====
@@ -31,8 +31,43 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     const [reportTitle, setReportTitle] = useState('');
     const [savedReports, setSavedReports] = useState([]);
 
-    // 確認モーダル
-    const { showConfirm, ConfirmModalComponent } = window.useConfirmModal();
+    // 確認モーダル（カスタムHookとして直接実装）
+    const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', callback: null });
+
+    const showConfirm = useCallback((title, message, callback) => {
+        setConfirmState({ isOpen: true, title, message, callback });
+    }, []);
+
+    const ConfirmModalComponent = () => {
+        if (!confirmState.isOpen) return null;
+
+        return ReactDOM.createPortal(
+            <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-50">
+                <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+                    <h3 className="text-lg font-bold mb-3">{confirmState.title}</h3>
+                    <p className="text-gray-600 mb-6">{confirmState.message}</p>
+                    <div className="flex gap-3 justify-end">
+                        <button
+                            onClick={() => setConfirmState({ isOpen: false, title: '', message: '', callback: null })}
+                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                        >
+                            キャンセル
+                        </button>
+                        <button
+                            onClick={() => {
+                                confirmState.callback?.();
+                                setConfirmState({ isOpen: false, title: '', message: '', callback: null });
+                            }}
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                        >
+                            削除
+                        </button>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        );
+    };
     const [showSavedReports, setShowSavedReports] = useState(false);
     const [selectedReport, setSelectedReport] = useState(null);
     const [isEditingReportTitle, setIsEditingReportTitle] = useState(false);
@@ -40,6 +75,9 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
     // タブ管理state
     const [activeTab, setActiveTab] = useState('analysis'); // 'analysis' or 'history'
+
+    // ローディング画面のマイクロラーニングTIP用state
+    const [tipIndex, setTipIndex] = useState(0);
 
     const getTodayDate = () => {
         const today = new Date();
@@ -173,6 +211,17 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         const intervalId = setInterval(updateBabHeight, 500);
         return () => clearInterval(intervalId);
     }, []);
+
+    // ローディング画面のTIP自動切り替え（5秒ごと）
+    useEffect(() => {
+        if (!loading) return; // ローディング中のみ動作
+
+        const learningTipsCount = 8; // TIPの総数
+        const interval = setInterval(() => {
+            setTipIndex((prev) => (prev + 1) % learningTipsCount);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [loading]);
 
     // 新機能開放モーダル完了後、Premium誘導モーダルを表示
     useEffect(() => {
@@ -1248,16 +1297,7 @@ ${conversationContext}
             }
         ];
 
-        const [tipIndex, setTipIndex] = useState(Math.floor(Math.random() * learningTips.length));
         const currentTip = learningTips[tipIndex];
-
-        // 5秒ごとに次のTIPに切り替え
-        useEffect(() => {
-            const interval = setInterval(() => {
-                setTipIndex((prev) => (prev + 1) % learningTips.length);
-            }, 5000);
-            return () => clearInterval(interval);
-        }, []);
 
         return (
             <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-cyan-50 z-50 flex items-center justify-center p-6">

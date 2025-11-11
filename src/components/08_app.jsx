@@ -1914,6 +1914,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             userProfile={userProfile}
                             dailyRecord={dailyRecord}
                             targetPFC={targetPFC}
+                            setLastUpdate={setLastUpdate}
                             onUpgradeClick={() => {
                                 setShowAnalysisView(false);
                                 setShowSubscriptionView(true);
