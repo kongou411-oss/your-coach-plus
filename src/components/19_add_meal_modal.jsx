@@ -748,7 +748,7 @@ const AddMealModal = ({
                         onClick={() => setShowCustomForm(true)}
                         className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 rounded-lg font-semibold transition"
                     >
-                        <Icon name="Edit" size={16} className="inline mr-1" />
+                        <Icon name="PlusCircle" size={16} className="inline mr-1" />
                         カスタム作成
                     </button>
 

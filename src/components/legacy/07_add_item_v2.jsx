@@ -2874,7 +2874,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                     onClick={() => setShowCustomExerciseForm(true)}
                                     className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 rounded-lg font-semibold transition"
                                 >
-                                    <Icon name="Edit" size={16} className="inline mr-1" />
+                                    <Icon name="PlusCircle" size={16} className="inline mr-1" />
                                     カスタム作成
                                 </button>
 
@@ -3216,27 +3216,49 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                             </div>
                         )}
 
-                        {/* カスタム種目作成フォーム */}
+                        {/* カスタム種目作成モーダル */}
                         {showCustomExerciseForm && (
-                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-300">
-                                <h4 className="font-bold mb-3">カスタム種目を作成</h4>
-                                <div className="space-y-3">
+                            <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+                                <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+                                    {/* ヘッダー */}
+                                    <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-500 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                                        <h3 className="text-lg font-bold flex items-center gap-2">
+                                            <Icon name="PlusCircle" size={20} />
+                                            カスタム種目を作成
+                                        </h3>
+                                        <button
+                                            onClick={() => {
+                                                setShowCustomExerciseForm(false);
+                                                setCustomExerciseData({ name: '', category: '胸', subcategory: 'コンパウンド' });
+                                                setExerciseSaveMethod('database');
+                                            }}
+                                            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                                        >
+                                            <Icon name="X" size={20} />
+                                        </button>
+                                    </div>
+
+                                    {/* コンテンツ */}
+                                    <div className="p-6 space-y-4">
+                                    {/* 種目名 */}
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">種目名</label>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">種目名</label>
                                         <input
                                             type="text"
                                             value={customExerciseData.name}
                                             onChange={(e) => setCustomExerciseData({...customExerciseData, name: e.target.value})}
                                             placeholder="例: マイトレーニング"
-                                            className="w-full px-3 py-2 border rounded-lg"
+                                            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                                         />
                                     </div>
+
+                                    {/* カテゴリ */}
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">カテゴリ</label>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">カテゴリ</label>
                                         <select
                                             value={customExerciseData.category}
                                             onChange={(e) => setCustomExerciseData({...customExerciseData, category: e.target.value})}
-                                            className="w-full px-3 py-2 border rounded-lg"
+                                            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                                         >
                                             <option value="胸">胸</option>
                                             <option value="背中">背中</option>
@@ -3250,12 +3272,13 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             <option value="カスタム">カスタム</option>
                                         </select>
                                     </div>
+                                    {/* 種類 */}
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">種類</label>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">種類</label>
                                         <select
                                             value={customExerciseData.subcategory}
                                             onChange={(e) => setCustomExerciseData({...customExerciseData, subcategory: e.target.value})}
-                                            className="w-full px-3 py-2 border rounded-lg"
+                                            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                                         >
                                             <option value="コンパウンド">コンパウンド</option>
                                             <option value="アイソレーション">アイソレーション</option>
@@ -3269,17 +3292,21 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                     {/* 保存方法選択 */}
                                     <div>
                                         <div className="flex items-center gap-2 mb-2">
-                                            <label className="text-sm font-medium text-gray-700">保存方法</label>
+                                            <label className="text-sm font-medium text-gray-600">保存方法</label>
                                             <button
                                                 type="button"
                                                 onClick={() => setShowExerciseSaveMethodInfo(true)}
-                                                className="text-blue-600 hover:text-blue-700"
+                                                className="text-[#4A9EFF] hover:text-[#3b8fef]"
                                             >
                                                 <Icon name="Info" size={16} />
                                             </button>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                            <label className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition ${
+                                                exerciseSaveMethod === 'database'
+                                                    ? 'border-orange-500 bg-orange-50'
+                                                    : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                                            }`}>
                                                 <input
                                                     type="radio"
                                                     name="exerciseSaveMethod"
@@ -3293,7 +3320,11 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                     <div className="text-xs text-gray-600 mt-0.5">後で検索して使用できます</div>
                                                 </div>
                                             </label>
-                                            <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                            <label className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition ${
+                                                exerciseSaveMethod === 'addToList'
+                                                    ? 'border-orange-500 bg-orange-50'
+                                                    : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                                            }`}>
                                                 <input
                                                     type="radio"
                                                     name="exerciseSaveMethod"
@@ -3310,7 +3341,18 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2">
+                                    {/* ボタン */}
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            onClick={() => {
+                                                setShowCustomExerciseForm(false);
+                                                setCustomExerciseData({ name: '', category: '胸', subcategory: 'コンパウンド' });
+                                                setExerciseSaveMethod('database');
+                                            }}
+                                            className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition"
+                                        >
+                                            キャンセル
+                                        </button>
                                         <button
                                             onClick={async () => {
                                                 if (!customExerciseData.name.trim()) {
@@ -3351,19 +3393,9 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                 setCustomExerciseData({ name: '', category: '胸', subcategory: 'コンパウンド' });
                                                 setExerciseSaveMethod('database'); // デフォルトに戻す
                                             }}
-                                            className="flex-1 px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
+                                            className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-lg hover:opacity-90 shadow-lg transition"
                                         >
-                                            {exerciseSaveMethod === 'addToList' ? '保存' : '保存'}
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setShowCustomExerciseForm(false);
-                                                setCustomExerciseData({ name: '', category: '胸', subcategory: 'コンパウンド' });
-                                                setExerciseSaveMethod('database'); // デフォルトに戻す
-                                            }}
-                                            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition"
-                                        >
-                                            キャンセル
+                                            保存
                                         </button>
                                     </div>
                                 </div>
@@ -4054,7 +4086,7 @@ RM回数と重量を別々に入力してください。`
                             </div>
                         )}
                     </div>
-                );
+                )
             };
 
 // ========== 運動記録コンポーネント終了 ==========
