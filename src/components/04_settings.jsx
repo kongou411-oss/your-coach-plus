@@ -6,7 +6,7 @@ const ConfirmModal = ({ show, title, message, onConfirm, onCancel }) => {
     if (!show) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[9950] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-[95vw] sm:max-w-md p-6 shadow-xl">
                 <h3 className="text-lg font-bold mb-4 dark:text-white">{title}</h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-6 whitespace-pre-line">{message}</p>
@@ -581,7 +581,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                         </summary>
                         <div className="p-4 pt-0 border-t">
-                            <div className="space-y-4">
+                            <div className="space-y-4 max-h-[70vh] overflow-y-auto pb-4">
                                 <div className="bg-gray-50 p-4 rounded-lg">
                                     <div className="space-y-3">
                                         <div>
@@ -3332,7 +3332,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                         {/* 編集モーダル */}
                                         {showEditModal && editingItem && (
-                                            <div className="fixed inset-0 bg-black bg-opacity-60 z-[10000] flex items-center justify-center p-4">
+                                            <div className="fixed inset-0 bg-black bg-opacity-60 z-[10001] flex items-center justify-center p-4">
                                                 <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-lg max-h-[80vh] overflow-y-auto">
                                                     {/* ヘッダー */}
                                                     <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
@@ -4838,7 +4838,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
         {/* テンプレート編集  択モーダル */}
         {showTemplateEditModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[80vh] overflow-y-auto">
                     {/* ヘッダー */}
                     <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center rounded-t-2xl">
@@ -5036,7 +5036,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
         {/* 情報モーダル */}
         {infoModal.show && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
                 <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                     <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center z-10">
                         <h3 className="font-bold text-lg">{infoModal.title}</h3>

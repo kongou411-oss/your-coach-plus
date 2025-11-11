@@ -425,7 +425,7 @@ const AddMealModal = ({
     const totalPFC = calculateTotalPFC();
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={(e) => {
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={(e) => {
             // モーダル外をクリックした場合は閉じる
             if (e.target === e.currentTarget) {
                 onClose();
@@ -1015,7 +1015,7 @@ const AddMealModal = ({
                 };
 
                 return (
-                    <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black bg-opacity-60 z-[10001] flex items-center justify-center p-4">
                         <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[70vh] overflow-hidden flex flex-col">
                             {/* ヘッダー */}
                             <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-t-2xl z-10">
