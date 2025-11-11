@@ -819,12 +819,118 @@ const OnboardingScreen = ({ user, onComplete }) => {
         fatRatioPercent: 25, // PFCカスタム比率（%）- 脂質
         carbRatioPercent: 45 // PFCカスタム比率（%）- 炭水化物
     });
+
+    // 性別変更時にデフォルト値を更新
+    const handleGenderChange = (newGender) => {
+        const genderDefaults = {
+            '男性': {
+                height: 170,
+                weight: 70,
+                bodyFatPercentage: 15,
+                idealWeight: 70,
+                idealBodyFatPercentage: 15
+            },
+            '女性': {
+                height: 158,
+                weight: 55,
+                bodyFatPercentage: 25,
+                idealWeight: 55,
+                idealBodyFatPercentage: 25
+            },
+            'その他': {
+                height: 165,
+                weight: 62,
+                bodyFatPercentage: 20,
+                idealWeight: 62,
+                idealBodyFatPercentage: 20
+            }
+        };
+
+        const defaults = genderDefaults[newGender] || genderDefaults['男性'];
+
+        setProfile({
+            ...profile,
+            gender: newGender,
+            // 値が初期値のままなら性別に応じたデフォルト値を適用
+            height: profile.height === 170 || profile.height === 158 || profile.height === 165 ? defaults.height : profile.height,
+            weight: profile.weight === 70 || profile.weight === 55 || profile.weight === 62 ? defaults.weight : profile.weight,
+            bodyFatPercentage: profile.bodyFatPercentage === 15 || profile.bodyFatPercentage === 25 || profile.bodyFatPercentage === 20 ? defaults.bodyFatPercentage : profile.bodyFatPercentage,
+            idealWeight: profile.idealWeight === 70 || profile.idealWeight === 55 || profile.idealWeight === 62 ? defaults.idealWeight : profile.idealWeight,
+            idealBodyFatPercentage: profile.idealBodyFatPercentage === 15 || profile.idealBodyFatPercentage === 25 || profile.idealBodyFatPercentage === 20 ? defaults.idealBodyFatPercentage : profile.idealBodyFatPercentage,
+            idealLBM: defaults.idealWeight && defaults.idealBodyFatPercentage
+                ? LBMUtils.calculateLBM(defaults.idealWeight, defaults.idealBodyFatPercentage)
+                : null
+        });
+    };
     const [visualGuideModal, setVisualGuideModal] = useState({ show: false, gender: '男性', selectedLevel: null });
     const [showCustomMultiplierInput, setShowCustomMultiplierInput] = useState(false);
     const [customMultiplierInputValue, setCustomMultiplierInputValue] = useState('');
     // Step 5用の状態
     const [practiceItems, setPracticeItems] = useState([]);
     const [showSearchModal, setShowSearchModal] = useState(false);
+    // バリデーションエラー
+    const [validationError, setValidationError] = useState('');
+
+    // バリデーション関数
+    const validateStep = (currentStep) => {
+        setValidationError('');
+
+        switch (currentStep) {
+            case 0: // 基本情報
+                if (!profile.displayName || profile.displayName.trim() === '') {
+                    setValidationError('氏名を入力してください');
+                    return false;
+                }
+                if (!profile.age || profile.age < 10 || profile.age > 120) {
+                    setValidationError('年齢は10〜120歳の範囲で入力してください');
+                    return false;
+                }
+                if (!profile.style) {
+                    setValidationError('トレーニングスタイルを選択してください');
+                    return false;
+                }
+                return true;
+
+            case 1: // 目的
+                if (!profile.purpose) {
+                    setValidationError('目的を選択してください');
+                    return false;
+                }
+                return true;
+
+            case 2: // 現在の体組成
+                if (!profile.height || profile.height < 100 || profile.height > 250) {
+                    setValidationError('身長は100〜250cmの範囲で入力してください');
+                    return false;
+                }
+                if (!profile.weight || profile.weight < 30 || profile.weight > 300) {
+                    setValidationError('体重は30〜300kgの範囲で入力してください');
+                    return false;
+                }
+                if (!profile.bodyFatPercentage || profile.bodyFatPercentage < 3 || profile.bodyFatPercentage > 50) {
+                    setValidationError('体脂肪率は3〜50%の範囲で入力してください');
+                    return false;
+                }
+                return true;
+
+            case 3: // 理想の体型（現時点では任意）
+                // スキップ可能なので常にtrue
+                return true;
+
+            case 4: // 活動レベル
+                if (!profile.activityLevel || profile.activityLevel < 1 || profile.activityLevel > 5) {
+                    setValidationError('活動レベルを選択してください');
+                    return false;
+                }
+                return true;
+
+            case 5: // ガイダンス（バリデーション不要）
+                return true;
+
+            default:
+                return true;
+        }
+    };
 
     const handleComplete = async () => {
         // 無料トライアル終了日（7日後）
@@ -929,9 +1035,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 <h2 className="text-2xl font-bold mb-2">
                     {step === 0 && '基本情報'}
                     {step === 1 && 'あなたの目的は？'}
-                    {step === 2 && '理想の体型を設定'}
-                    {step === 3 && '現在の体組成を知る'}
-                    {step === 4 && '達成方法を理解する'}
+                    {step === 2 && '現在の体組成を知る'}
+                    {step === 3 && '理想の体型を設定'}
+                    {step === 4 && '活動レベルを設定'}
                     {step === 5 && '実際に記録してみる'}
                 </h2>
                 <p className="text-sm text-gray-600 mb-6">ステップ {step + 1}/6</p>
@@ -965,13 +1071,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <label className="block text-sm font-medium mb-2">性別</label>
                             <select
                                 value={profile.gender}
-                                onChange={(e) => setProfile({...profile, gender: e.target.value})}
+                                onChange={(e) => handleGenderChange(e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             >
                                 <option value="男性">男性</option>
                                 <option value="女性">女性</option>
                                 <option value="その他">その他</option>
                             </select>
+                            <p className="text-xs text-gray-600 mt-1">※性別に応じて体組成のデフォルト値が設定されます</p>
                         </div>
                         <div className="border-l-4 border-blue-500 pl-4">
                             <label className="block text-sm font-medium mb-2">年齢</label>
@@ -1056,30 +1163,40 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <label className="block text-sm font-medium mb-2">あなたの目的を選んでください</label>
                             <div className="space-y-3">
                                 {[
-                                    { value: 'ダイエット', label: 'ダイエット', sub: '脂肪を落としてスリムな体に', pace: -1, adjustment: -300, color: 'pink' },
-                                    { value: 'バルクアップ', label: 'バルクアップ', sub: '筋肉をつけて大きな体に', pace: 1, adjustment: 300, color: 'blue' },
-                                    { value: 'メンテナンス', label: 'メンテナンス', sub: '今の体型を維持する', pace: 0, adjustment: 0, color: 'green' },
-                                    { value: 'リコンプ', label: 'リコンプ', sub: '筋肉を増やしつつ脂肪を減らす', pace: 0, adjustment: 0, color: 'purple' }
-                                ].map(({ value, label, sub, pace, adjustment, color }) => (
-                                    <button
-                                        key={value}
-                                        type="button"
-                                        onClick={() => setProfile({...profile, purpose: value, weightChangePace: pace, calorieAdjustment: adjustment})}
-                                        className={`w-full p-4 rounded-lg border-2 transition flex items-start justify-between ${
-                                            profile.purpose === value
-                                                ? `border-${color}-500 bg-${color}-50 shadow-md`
-                                                : 'border-gray-200 bg-white hover:border-orange-300 hover:shadow'
-                                        }`}
-                                    >
-                                        <div className="text-left">
-                                            <div className="font-bold text-base">{label}</div>
-                                            <div className="text-sm text-gray-600 mt-1">{sub}</div>
-                                        </div>
-                                        {profile.purpose === value && (
-                                            <Icon name="CheckCircle" size={24} className="text-orange-600 flex-shrink-0" />
-                                        )}
-                                    </button>
-                                ))}
+                                    { value: 'ダイエット', label: 'ダイエット', sub: '脂肪を落としてスリムな体に', pace: -1, adjustment: -300 },
+                                    { value: 'バルクアップ', label: 'バルクアップ', sub: '筋肉をつけて大きな体に', pace: 1, adjustment: 300 },
+                                    { value: 'メンテナンス', label: 'メンテナンス', sub: '今の体型を維持する', pace: 0, adjustment: 0 },
+                                    { value: 'リコンプ', label: 'リコンプ', sub: '筋肉を増やしつつ脂肪を減らす', pace: 0, adjustment: 0 }
+                                ].map(({ value, label, sub, pace, adjustment }) => {
+                                    const isSelected = profile.purpose === value;
+                                    let selectedClass = '';
+                                    if (isSelected) {
+                                        if (value === 'ダイエット') selectedClass = 'border-pink-500 bg-pink-50 shadow-md';
+                                        else if (value === 'バルクアップ') selectedClass = 'border-blue-500 bg-blue-50 shadow-md';
+                                        else if (value === 'メンテナンス') selectedClass = 'border-green-500 bg-green-50 shadow-md';
+                                        else if (value === 'リコンプ') selectedClass = 'border-purple-500 bg-purple-50 shadow-md';
+                                    }
+                                    return (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => setProfile({...profile, purpose: value, weightChangePace: pace, calorieAdjustment: adjustment})}
+                                            className={`w-full p-4 rounded-lg border-2 transition flex items-start justify-between ${
+                                                isSelected
+                                                    ? selectedClass
+                                                    : 'border-gray-200 bg-white hover:border-orange-300 hover:shadow'
+                                            }`}
+                                        >
+                                            <div className="text-left">
+                                                <div className="font-bold text-base">{label}</div>
+                                                <div className="text-sm text-gray-600 mt-1">{sub}</div>
+                                            </div>
+                                            {isSelected && (
+                                                <Icon name="CheckCircle" size={24} className="text-orange-600 flex-shrink-0" />
+                                            )}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -1096,78 +1213,6 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 )}
 
                 {step === 2 && (
-                    <div className="space-y-6">
-                        {/* 教育セクション */}
-                        <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border border-sky-200">
-                            <div className="flex items-start gap-2">
-                                <Icon name="Lightbulb" size={18} className="text-sky-600 flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm font-medium text-sky-900 mb-1">LBMとは？</p>
-                                    <p className="text-sm text-gray-600">
-                                        筋肉や骨など、脂肪以外の体重です。健康的な体づくりの鍵は、このLBMを増やすこと（または維持すること）です。
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-sky-50 p-4 rounded-lg border-2 border-sky-300">
-                            <h3 className="text-sm font-bold text-sky-800 mb-3">理想の体型目標</h3>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-sky-700">理想の体重 (kg)</label>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        value={profile.idealWeight}
-                                        onChange={(e) => {
-                                            const newIdealWeight = e.target.value === '' ? '' : Number(e.target.value);
-                                            setProfile({
-                                                ...profile,
-                                                idealWeight: newIdealWeight,
-                                                idealLBM: newIdealWeight && profile.idealBodyFatPercentage
-                                                    ? LBMUtils.calculateLBM(newIdealWeight, profile.idealBodyFatPercentage)
-                                                    : null
-                                            });
-                                        }}
-                                        className="w-full px-3 py-2 border-2 border-sky-200 rounded-lg focus:border-sky-500 focus:outline-none"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-sky-700">理想の体脂肪率 (%)</label>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        value={profile.idealBodyFatPercentage}
-                                        onChange={(e) => {
-                                            const newIdealBF = e.target.value === '' ? '' : Number(e.target.value);
-                                            setProfile({
-                                                ...profile,
-                                                idealBodyFatPercentage: newIdealBF,
-                                                idealLBM: profile.idealWeight && newIdealBF
-                                                    ? LBMUtils.calculateLBM(profile.idealWeight, newIdealBF)
-                                                    : null
-                                            });
-                                        }}
-                                        className="w-full px-3 py-2 border-2 border-sky-200 rounded-lg focus:border-sky-500 focus:outline-none"
-                                    />
-                                </div>
-
-                                {profile.idealLBM && (
-                                    <div className="bg-white p-3 rounded-lg border border-sky-300">
-                                        <p className="text-xs font-medium text-sky-700">理想のLBM（自動計算）</p>
-                                        <p className="text-xl font-bold text-sky-900 mt-1">
-                                            {profile.idealLBM.toFixed(1)} kg
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {step === 3 && (
                     <div className="space-y-6">
                         {/* 教育セクション */}
                         <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded-lg border border-cyan-200">
@@ -1269,21 +1314,89 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     </div>
                 )}
 
-                {step === 4 && (
+                {step === 3 && (
                     <div className="space-y-6">
-                        {/* 教育セクション: PFCバランス */}
+                        {/* 教育セクション */}
                         <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border border-sky-200">
                             <div className="flex items-start gap-2">
                                 <Icon name="Lightbulb" size={18} className="text-sky-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-sky-900 mb-1">PFCバランスとは？</p>
-                                    <p className="text-sm text-gray-600 mb-2">
-                                        P: Protein（タンパク質）、F: Fat（脂質）、C: Carbohydrate（炭水化物）の3大栄養素のバランスです。
+                                    <p className="text-sm font-medium text-sky-900 mb-1">理想の体型について</p>
+                                    <p className="text-sm text-gray-600">
+                                        理想の体型目標を設定することで、より効果的な計画を立てられます。後からでも設定できるので、まだ決まっていない場合は「後で設定する」をクリックしてください。
                                     </p>
-                                    <p className="text-xs text-gray-600">
-                                        特にタンパク質はLBMを維持・増やすために最も重要です。<br/>
-                                        • 一般：LBM 1kgあたり1.2g<br/>
-                                        • ボディメイカー：LBM 1kgあたり2.2g
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-sky-50 p-4 rounded-lg border-2 border-sky-300">
+                            <h3 className="text-sm font-bold text-sky-800 mb-3">理想の体型目標</h3>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-sky-700">理想の体重 (kg)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={profile.idealWeight}
+                                        onChange={(e) => {
+                                            const newIdealWeight = e.target.value === '' ? '' : Number(e.target.value);
+                                            setProfile({
+                                                ...profile,
+                                                idealWeight: newIdealWeight,
+                                                idealLBM: newIdealWeight && profile.idealBodyFatPercentage
+                                                    ? LBMUtils.calculateLBM(newIdealWeight, profile.idealBodyFatPercentage)
+                                                    : null
+                                            });
+                                        }}
+                                        className="w-full px-3 py-2 border-2 border-sky-200 rounded-lg focus:border-sky-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-sky-700">理想の体脂肪率 (%)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={profile.idealBodyFatPercentage}
+                                        onChange={(e) => {
+                                            const newIdealBF = e.target.value === '' ? '' : Number(e.target.value);
+                                            setProfile({
+                                                ...profile,
+                                                idealBodyFatPercentage: newIdealBF,
+                                                idealLBM: profile.idealWeight && newIdealBF
+                                                    ? LBMUtils.calculateLBM(profile.idealWeight, newIdealBF)
+                                                    : null
+                                            });
+                                        }}
+                                        className="w-full px-3 py-2 border-2 border-sky-200 rounded-lg focus:border-sky-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                {profile.idealLBM && (
+                                    <div className="bg-white p-3 rounded-lg border border-sky-300">
+                                        <p className="text-xs font-medium text-sky-700">理想のLBM（自動計算）</p>
+                                        <p className="text-xl font-bold text-sky-900 mt-1">
+                                            {profile.idealLBM.toFixed(1)} kg
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {step === 4 && (
+                    <div className="space-y-6">
+                        {/* 教育セクション */}
+                        <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border border-sky-200">
+                            <div className="flex items-start gap-2">
+                                <Icon name="Lightbulb" size={18} className="text-sky-600 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-medium text-sky-900 mb-1">活動レベルについて</p>
+                                    <p className="text-sm text-gray-600">
+                                        あなたの日常の活動レベルに基づいて、目標カロリーとPFCバランス（タンパク質・脂質・炭水化物）を自動計算します。
+                                        PFCの詳細な調整は、後から設定画面で変更できます。
                                     </p>
                                 </div>
                             </div>
@@ -1415,148 +1528,6 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             </p>
                         </div>
 
-                        {/* PFCカスタム比率 */}
-                        <div className="border-l-4 border-sky-500 pl-4">
-                            <label className="block text-sm font-medium mb-2 flex items-center justify-between">
-                                <div className="flex flex-col">
-                                    <span>PFCバランスのカスタマイズ（任意）</span>
-                                    <span className="text-xs text-gray-600 font-normal mt-0.5">スライダーで調整できます</span>
-                                </div>
-                            </label>
-
-                            <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
-                                {/* タンパク質 */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-sm font-medium text-red-600">タンパク質 (P)</span>
-                                        <span className="text-sm font-bold">
-                                            {profile.proteinRatioPercent || 30}%
-                                            {(() => {
-                                                const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
-                                                const fatMass = profile.weight - lbm;
-                                                const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass);
-                                                const effectiveAdjustment = profile.calorieAdjustment !== null && profile.calorieAdjustment !== undefined
-                                                    ? profile.calorieAdjustment
-                                                    : (() => {
-                                                        const defaults = { 'ダイエット': -300, 'バルクアップ': +300, 'メンテナンス': 0, 'リコンプ': 0 };
-                                                        return defaults[profile.purpose] || 0;
-                                                    })();
-                                                const targetCalories = tdee + effectiveAdjustment;
-                                                const proteinG = Math.round((targetCalories * (profile.proteinRatioPercent || 30) / 100) / 4);
-                                                return ` (${proteinG}g)`;
-                                            })()}
-                                        </span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="15"
-                                        max="50"
-                                        step="1"
-                                        value={profile.proteinRatioPercent || 30}
-                                        onChange={(e) => {
-                                            const newP = Number(e.target.value);
-                                            const currentF = profile.fatRatioPercent || 25;
-                                            const newC = 100 - newP - currentF;
-                                            if (newC >= 15 && newC <= 60) {
-                                                setProfile({
-                                                    ...profile,
-                                                    proteinRatioPercent: newP,
-                                                    carbRatioPercent: newC
-                                                });
-                                            }
-                                        }}
-                                        className="w-full"
-                                    />
-                                </div>
-                                {/* 脂質 */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-sm font-medium text-yellow-600">脂質 (F)</span>
-                                        <span className="text-sm font-bold">
-                                            {profile.fatRatioPercent || 25}%
-                                            {(() => {
-                                                const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
-                                                const fatMass = profile.weight - lbm;
-                                                const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass);
-                                                const effectiveAdjustment = profile.calorieAdjustment !== null && profile.calorieAdjustment !== undefined
-                                                    ? profile.calorieAdjustment
-                                                    : (() => {
-                                                        const defaults = { 'ダイエット': -300, 'バルクアップ': +300, 'メンテナンス': 0, 'リコンプ': 0 };
-                                                        return defaults[profile.purpose] || 0;
-                                                    })();
-                                                const targetCalories = tdee + effectiveAdjustment;
-                                                const fatG = Math.round((targetCalories * (profile.fatRatioPercent || 25) / 100) / 9);
-                                                return ` (${fatG}g)`;
-                                            })()}
-                                        </span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="15"
-                                        max="40"
-                                        step="1"
-                                        value={profile.fatRatioPercent || 25}
-                                        onChange={(e) => {
-                                            const newF = Number(e.target.value);
-                                            const currentP = profile.proteinRatioPercent || 30;
-                                            const newC = 100 - currentP - newF;
-                                            if (newC >= 15 && newC <= 60) {
-                                                setProfile({
-                                                    ...profile,
-                                                    fatRatioPercent: newF,
-                                                    carbRatioPercent: newC
-                                                });
-                                            }
-                                        }}
-                                        className="w-full"
-                                    />
-                                </div>
-                                {/* 炭水化物 */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-sm font-medium text-green-600">炭水化物 (C)</span>
-                                        <span className="text-sm font-bold">
-                                            {profile.carbRatioPercent || 45}%
-                                            {(() => {
-                                                const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
-                                                const fatMass = profile.weight - lbm;
-                                                const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass);
-                                                const effectiveAdjustment = profile.calorieAdjustment !== null && profile.calorieAdjustment !== undefined
-                                                    ? profile.calorieAdjustment
-                                                    : (() => {
-                                                        const defaults = { 'ダイエット': -300, 'バルクアップ': +300, 'メンテナンス': 0, 'リコンプ': 0 };
-                                                        return defaults[profile.purpose] || 0;
-                                                    })();
-                                                const targetCalories = tdee + effectiveAdjustment;
-                                                const carbG = Math.round((targetCalories * (profile.carbRatioPercent || 45) / 100) / 4);
-                                                return ` (${carbG}g)`;
-                                            })()}
-                                        </span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="15"
-                                        max="60"
-                                        step="1"
-                                        value={profile.carbRatioPercent || 45}
-                                        onChange={(e) => {
-                                            const newC = Number(e.target.value);
-                                            const currentP = profile.proteinRatioPercent || 30;
-                                            const newF = 100 - currentP - newC;
-                                            if (newF >= 15 && newF <= 40) {
-                                                setProfile({
-                                                    ...profile,
-                                                    carbRatioPercent: newC,
-                                                    fatRatioPercent: newF
-                                                });
-                                            }
-                                        }}
-                                        className="w-full"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
                         {/* 最終目標カロリーとPFC表示 */}
                         <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border-2 border-sky-200">
                             <h3 className="text-sm font-medium text-sky-800 mb-3 flex items-center gap-2">
@@ -1685,103 +1656,109 @@ const OnboardingScreen = ({ user, onComplete }) => {
 
                 {step === 5 && (
                     <div className="space-y-6">
-                        {/* 教育セクション */}
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
-                            <div className="flex items-start gap-2">
-                                <Icon name="Lightbulb" size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm font-medium text-green-900 mb-1">記録の継続がカギ</p>
-                                    <p className="text-sm text-gray-600">
-                                        記録を続けることで、あなたの体質や習慣をAIが学習し、最適なアドバイスを提供します。
-                                        まずは初日に食事・運動・コンディションを記録して、分析機能を試してみましょう！
-                                    </p>
+                        {/* メインメッセージ */}
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border-2 border-green-300 text-center">
+                            <div className="flex items-center justify-center mb-4">
+                                <div className="bg-green-500 text-white rounded-full p-3">
+                                    <Icon name="CheckCircle" size={32} />
                                 </div>
                             </div>
-                        </div>
-
-                        {/* 初回記録の流れ */}
-                        <div className="bg-white p-4 rounded-lg border-2 border-green-300">
-                            <h3 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
-                                <Icon name="CheckCircle" size={16} />
-                                初日にやること
+                            <h3 className="text-xl font-bold text-green-900 mb-2">
+                                設定完了！
                             </h3>
-                            <div className="space-y-2">
-                                <div className="flex items-start gap-2">
-                                    <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                                        1
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">食事を記録</p>
-                                        <p className="text-xs text-gray-600">朝食・昼食・夕食を追加してみましょう</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <div className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                                        2
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">運動を記録</p>
-                                        <p className="text-xs text-gray-600">トレーニングや有酸素運動を追加</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                                        3
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">コンディションを記録</p>
-                                        <p className="text-xs text-gray-600">睡眠・体調を記録しましょう</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <div className="w-6 h-6 bg-sky-500 text-white rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                                        4
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">AI分析を実行</p>
-                                        <p className="text-xs text-gray-600">
-                                            分析画面でフィードバックを受け取り、<span className="font-bold text-sky-700">全機能が開放されます！</span>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* ヒント */}
-                        <div className="bg-[#FFF59A]/10 p-4 rounded-lg border border-yellow-200">
-                            <h3 className="text-sm font-bold text-yellow-900 mb-2 flex items-center gap-2">
-                                <Icon name="Zap" size={16} />
-                                記録を楽にするコツ
-                            </h3>
-                            <ul className="text-sm text-gray-600 space-y-1">
-                                <li>• よく食べる食事は「テンプレート」として保存</li>
-                                <li>• 写真から食事を記録できる「AI食事認識」機能を活用</li>
-                                <li>• 画面左右のショートカットから素早くアクセス</li>
-                            </ul>
-                        </div>
-
-                        <div className="bg-sky-50 p-4 rounded-lg border-2 border-sky-300 text-center">
-                            <p className="text-sm text-sky-900 font-medium">
-                                準備完了！さっそくYour Coach+を始めましょう 🎉
+                            <p className="text-sm text-gray-700">
+                                Your Coach+の準備が整いました。<br />
+                                さっそく記録を始めましょう！
                             </p>
                         </div>
+
+                        {/* 簡潔なガイド */}
+                        <div className="bg-white p-4 rounded-lg border border-gray-200">
+                            <h4 className="text-sm font-bold text-gray-800 mb-3">次のステップ（順番に1つずつ）</h4>
+                            <div className="space-y-2 text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
+                                    <Icon name="Utensils" size={16} className="text-green-600" />
+                                    <span>食事を記録</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Icon name="Dumbbell" size={16} className="text-orange-600" />
+                                    <span>運動を記録</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Icon name="HeartPulse" size={16} className="text-red-600" />
+                                    <span>コンディションを記録</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Icon name="PieChart" size={16} className="text-indigo-600" />
+                                    <span>相関分析レポートを生成</span>
+                                </div>
+                            </div>
+                            <div className="mt-3 flex items-center gap-2">
+                                <Icon name="CheckCircle" size={16} className="text-green-600" />
+                                <p className="text-sm text-gray-600">
+                                    初回分析完了で全機能開放
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div className="flex items-start gap-2">
+                                <Icon name="Info" size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-gray-600">
+                                    入力した設定は、画面右下の「設定」ボタン → 「プロフィール」からいつでも変更・確認できます。
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-sky-50 p-4 rounded-lg border border-sky-200 text-center">
+                            <p className="text-sm text-sky-900 font-medium">
+                                下の「開始」ボタンをタップ
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* バリデーションエラーメッセージ */}
+                {validationError && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                        <Icon name="AlertCircle" size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-red-700">{validationError}</p>
                     </div>
                 )}
 
                 <div className="flex gap-4 mt-8">
                     {step > 0 && (
                         <button
-                            onClick={() => setStep(step - 1)}
+                            onClick={() => {
+                                setValidationError(''); // エラーをクリア
+                                setStep(step - 1);
+                            }}
                             className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-lg hover:bg-gray-300"
                         >
                             戻る
                         </button>
                     )}
+                    {step === 3 && (
+                        <button
+                            onClick={() => {
+                                // Step 3はスキップ可能
+                                setValidationError('');
+                                setStep(step + 1);
+                                window.scrollTo(0, 0);
+                            }}
+                            className="flex-1 bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400"
+                        >
+                            後で設定する
+                        </button>
+                    )}
                     {step < 5 ? (
                         <button
                             onClick={() => {
-                                setStep(step + 1);
-                                window.scrollTo(0, 0);
+                                // バリデーションチェック
+                                if (validateStep(step)) {
+                                    setStep(step + 1);
+                                    window.scrollTo(0, 0);
+                                }
                             }}
                             className="flex-1 text-white font-bold py-3 rounded-lg"
                             style={{backgroundColor: '#4A9EFF'}}
@@ -1798,7 +1775,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
                         >
-                            開始する
+                            開始
                         </button>
                     ) : null}
                 </div>
