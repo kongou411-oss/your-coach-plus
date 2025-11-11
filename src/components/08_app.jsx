@@ -1,76 +1,8 @@
 import React from 'react';
 import toast from 'react-hot-toast';
 
-// ===== Welcome Guide Modal Component (Simplified to 1 Page) =====
-const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
-    const Icon = window.Icon;
-    if (!show) return null;
-
-    const handleFinish = () => {
-        onClose();
-        // 親コンポーネントのonFinishハンドラを呼び出す（食事誘導モーダルを表示）
-        if (onFinish) {
-            setTimeout(() => {
-                onFinish();
-            }, 300);
-        }
-    };
-
-    // シンプルな1ページコンテンツ
-    const pageData = {
-        icon: 'Sparkles',
-        iconColor: 'bg-gradient-to-r from-sky-100 to-blue-100',
-        iconTextColor: 'text-sky-600',
-        title: 'Your Coach+へようこそ！',
-        content: (
-            <div className="space-y-4">
-                <p className="text-center text-gray-600 text-sm">
-                    LBMベースの科学的アプローチで、あなたの体づくりをサポートします。
-                </p>
-                <div className="bg-gradient-to-r from-blue-50 to-sky-50 p-4 rounded-lg border border-blue-200">
-                    <h4 className="font-bold text-blue-900 mb-2 text-center">まずは記録を始めましょう</h4>
-                    <p className="text-sm text-gray-600 text-center">
-                        食事・運動・コンディションを記録して、AI分析を受けてみましょう。<br />
-                        初日に分析まで完了すれば、すべての機能がすぐに使えます！
-                    </p>
-                </div>
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
-                    <p className="text-xs text-gray-600 text-center">
-                        💡 記録を続けることで、AIがあなたを学習し、より精度の高い提案を提供します
-                    </p>
-                </div>
-            </div>
-        )
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-[95vw] sm:max-w-md mx-4 slide-up">
-                {/* ヘッダー */}
-                <div className="flex flex-col items-center gap-3 mb-4">
-                    <div className={`w-16 h-16 ${pageData.iconColor} rounded-full flex items-center justify-center`}>
-                        <Icon name={pageData.icon} size={32} className={pageData.iconTextColor} />
-                    </div>
-                    <h3 className="text-2xl font-bold text-center">{pageData.title}</h3>
-                </div>
-
-                {/* コンテンツ */}
-                <div className="mb-6">
-                    {pageData.content}
-                </div>
-
-                {/* 開始ボタン */}
-                <button
-                    onClick={handleFinish}
-                    className="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white py-3 rounded-lg font-bold hover:from-sky-600 hover:to-blue-700 transition flex items-center justify-center gap-2"
-                >
-                    <Icon name="Check" size={20} />
-                    記録を始める
-                </button>
-            </div>
-        </div>
-    );
-};
+// ===== Welcome Guide Modal Component - REMOVED =====
+// オンボーディング完了後、直接食事誘導モーダルを表示するため削除
 
 // ===== Guide Modal Component =====
 const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId, onClose }) => {
@@ -323,7 +255,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             });
 
             // 誘導モーダルの状態管理
-            const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);     // オンボーディング後（新）
+            // showWelcomeGuide - 削除済み（オンボーディング完了後、直接食事誘導モーダルを表示）
             const [showMealGuide, setShowMealGuide] = useState(false);           // オンボーディング後（旧：互換性のため残す）
             const [showTrainingGuide, setShowTrainingGuide] = useState(false); // 食事記録後
             const [showConditionGuide, setShowConditionGuide] = useState(false); // 運動記録後
@@ -1245,9 +1177,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     setUserProfile(completedProfile);
                     // オンボーディング完了フラグを設定（クレジット不足モーダルを表示しない）
                     sessionStorage.setItem('onboardingJustCompleted', 'true');
-                    // オンボーディング完了後、ウェルカムガイドモーダルを表示
+                    // オンボーディング完了後、直接食事誘導モーダルを表示
                     setTimeout(() => {
-                        setShowWelcomeGuide(true);
+                        setShowMealGuide(true);
                     }, 500);
                 }} />;
             }
@@ -3002,12 +2934,7 @@ AIコーチなどの高度な機能が解放されます。
                     </div>
 
                     {/* 誘導モーダル群 */}
-                    {/* ウェルカムガイド（4ページ） */}
-                    <WelcomeGuideModal
-                        show={showWelcomeGuide}
-                        onClose={() => setShowWelcomeGuide(false)}
-                        onFinish={() => setShowMealGuide(true)}
-                    />
+                    {/* ウェルカムガイド（4ページ） - オンボーディングと重複するため削除 */}
                     {/* 旧ガイドモーダル（互換性のため残す） */}
                     <GuideModal
                         show={showMealGuide}

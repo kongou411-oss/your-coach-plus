@@ -333,16 +333,13 @@ const LoginScreen = () => {
                                 type="email"
                                 value={resetEmail}
                                 onChange={(e) => setResetEmail(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-transparent"
                                 required
                             />
                         </div>
                         <button
                             type="submit"
-                            className="w-full text-white font-bold py-3 rounded-lg transition"
-                            style={{backgroundColor: '#4A9EFF'}}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
+                            className="w-full bg-[#4A9EFF] hover:bg-[#3b8fef] text-white font-bold py-3 rounded-lg transition"
                         >
                             リセットメールを送信
                         </button>
@@ -388,16 +385,13 @@ const LoginScreen = () => {
                                 onChange={(e) => setMfaVerificationCode(e.target.value)}
                                 placeholder="123456"
                                 maxLength={6}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-[#4A9EFF] focus:border-transparent"
                             />
                         </div>
 
                         <button
                             onClick={handleMfaConfirm}
-                            className="w-full text-white font-bold py-3 rounded-lg transition"
-                            style={{backgroundColor: '#4A9EFF'}}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
+                            className="w-full bg-[#4A9EFF] hover:bg-[#3b8fef] text-white font-bold py-3 rounded-lg transition"
                         >
                             認証
                         </button>
@@ -493,7 +487,7 @@ const LoginScreen = () => {
                                 type={showPassword ? 'text' : 'password'}
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-transparent"
                                 required
                                 minLength={8}
                                 autocomplete="new-password"
@@ -540,10 +534,7 @@ const LoginScreen = () => {
 
                     <button
                         type="submit"
-                        className="w-full text-white font-bold py-3 rounded-lg transition"
-                        style={{backgroundColor: '#4A9EFF'}}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
+                        className="w-full bg-[#4A9EFF] hover:bg-[#3b8fef] text-white font-bold py-3 rounded-lg transition"
                     >
                         {isSignUp ? 'アカウント作成' : 'ログイン'}
                     </button>
@@ -664,7 +655,7 @@ const LoginScreen = () => {
                                         onChange={(e) => setSignupVerificationCode(e.target.value)}
                                         placeholder="123456"
                                         maxLength={6}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-[#4A9EFF] focus:outline-none"
                                     />
                                 </div>
 
@@ -870,6 +861,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
     const [showSearchModal, setShowSearchModal] = useState(false);
     // バリデーションエラー
     const [validationError, setValidationError] = useState('');
+    // Step 3: 理想値が現在値と同じかどうか
+    const [isIdealSameAsCurrent, setIsIdealSameAsCurrent] = useState(false);
 
     // バリデーション関数
     const validateStep = (currentStep) => {
@@ -878,7 +871,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
         switch (currentStep) {
             case 0: // 基本情報
                 if (!profile.displayName || profile.displayName.trim() === '') {
-                    setValidationError('氏名を入力してください');
+                    setValidationError('ニックネームを入力してください');
                     return false;
                 }
                 if (!profile.age || profile.age < 10 || profile.age > 120) {
@@ -1040,39 +1033,42 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     {step === 4 && '活動レベルを設定'}
                     {step === 5 && '実際に記録してみる'}
                 </h2>
-                <p className="text-sm text-gray-600 mb-6">ステップ {step + 1}/6</p>
+                <p className="text-sm text-gray-600 mb-2">ステップ {step + 1}/6</p>
+
+                {/* プログレスバー */}
+                <div className="mb-6">
+                    <div className="flex gap-1">
+                        {[0, 1, 2, 3, 4, 5].map((i) => (
+                            <div
+                                key={i}
+                                className={`flex-1 h-2 rounded-full transition-all duration-300 ${
+                                    i <= step ? 'bg-[#4A9EFF]' : 'bg-gray-200'
+                                }`}
+                            />
+                        ))}
+                    </div>
+                </div>
 
                 {step === 0 && (
                     <div className="space-y-6">
-                        <div className="border-l-4 border-blue-500 pl-4">
-                            <label className="block text-sm font-medium mb-2">氏名</label>
+                        <div className="border-l-4 border-[#4A9EFF] pl-4">
+                            <label className="block text-sm font-medium mb-2">ニックネーム</label>
                             <input
                                 type="text"
                                 value={profile.displayName}
-                                onChange={(e) => setProfile({...profile, displayName: e.target.value})}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                placeholder="例: 山田 太郎"
+                                onChange={(e) => setProfile({...profile, displayName: e.target.value, nickname: e.target.value})}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
+                                placeholder="例: トレーニー太郎"
                                 required
                             />
-                            <p className="text-xs text-gray-600 mt-1">※本名をご入力ください</p>
+                            <p className="text-xs text-gray-600 mt-1">※アプリ内で表示される名前です</p>
                         </div>
-                        <div className="border-l-4 border-blue-500 pl-4">
-                            <label className="block text-sm font-medium mb-2">ニックネーム（任意）</label>
-                            <input
-                                type="text"
-                                value={profile.nickname}
-                                onChange={(e) => setProfile({...profile, nickname: e.target.value})}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                placeholder="例: トレーニー太郎"
-                            />
-                            <p className="text-xs text-gray-600 mt-1">※アプリ内で表示される名前</p>
-                        </div>
-                        <div className="border-l-4 border-blue-500 pl-4">
+                        <div className="border-l-4 border-[#4A9EFF] pl-4">
                             <label className="block text-sm font-medium mb-2">性別</label>
                             <select
                                 value={profile.gender}
                                 onChange={(e) => handleGenderChange(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                             >
                                 <option value="男性">男性</option>
                                 <option value="女性">女性</option>
@@ -1080,16 +1076,17 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             </select>
                             <p className="text-xs text-gray-600 mt-1">※性別に応じて体組成のデフォルト値が設定されます</p>
                         </div>
-                        <div className="border-l-4 border-blue-500 pl-4">
+                        <div className="border-l-4 border-[#4A9EFF] pl-4">
                             <label className="block text-sm font-medium mb-2">年齢</label>
                             <input
                                 type="number"
                                 value={profile.age}
                                 onChange={(e) => setProfile({...profile, age: e.target.value === '' ? '' : Number(e.target.value)})}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
+                                placeholder="例: 25"
                             />
                         </div>
-                        <div className="border-l-4 border-blue-500 pl-4">
+                        <div className="border-l-4 border-[#4A9EFF] pl-4">
                             <label className="block text-sm font-medium mb-2">理想の睡眠時間</label>
                             <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5">
                                 {[
@@ -1105,7 +1102,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         onClick={() => setProfile({...profile, idealSleepHours: item.value})}
                                         className={`flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 ${
                                             item.value === (profile.idealSleepHours || 4)
-                                                ? 'bg-blue-500 text-white'
+                                                ? 'bg-[#4A9EFF] text-white'
                                                 : 'text-gray-600 hover:text-gray-800'
                                         }`}
                                     >
@@ -1116,7 +1113,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <p className="text-xs text-gray-600 mt-1">※成人の推奨睡眠時間は7-8時間です</p>
                         </div>
 
-                        <div className="border-l-4 border-blue-500 pl-4">
+                        <div className="border-l-4 border-[#4A9EFF] pl-4">
                             <label className="block text-sm font-medium mb-2">トレーニングスタイル</label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <button
@@ -1124,8 +1121,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     onClick={() => setProfile({...profile, style: '一般'})}
                                     className={`p-4 rounded-lg border-2 transition ${
                                         profile.style === '一般'
-                                            ? 'border-blue-500 bg-blue-50 shadow-md'
-                                            : 'border-gray-200 bg-white hover:border-blue-300'
+                                            ? 'border-[#4A9EFF] bg-blue-50 shadow-md'
+                                            : 'border-gray-200 bg-white hover:border-[#4A9EFF]'
                                     }`}
                                 >
                                     <div className="font-bold text-base mb-1">一般</div>
@@ -1136,8 +1133,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     onClick={() => setProfile({...profile, style: 'ボディメイカー'})}
                                     className={`p-4 rounded-lg border-2 transition ${
                                         profile.style === 'ボディメイカー'
-                                            ? 'border-sky-500 bg-sky-50 shadow-md'
-                                            : 'border-gray-200 bg-white hover:border-sky-300'
+                                            ? 'border-[#4A9EFF] bg-blue-50 shadow-md'
+                                            : 'border-gray-200 bg-white hover:border-[#4A9EFF]'
                                     }`}
                                 >
                                     <div className="font-bold text-base mb-1">ボディメイカー</div>
@@ -1159,7 +1156,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             </p>
                         </div>
 
-                        <div className="border-l-4 border-orange-500 pl-4">
+                        <div className="border-l-4 border-[#4A9EFF] pl-4">
                             <label className="block text-sm font-medium mb-2">あなたの目的を選んでください</label>
                             <div className="space-y-3">
                                 {[
@@ -1169,13 +1166,6 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     { value: 'リコンプ', label: 'リコンプ', sub: '筋肉を増やしつつ脂肪を減らす', pace: 0, adjustment: 0 }
                                 ].map(({ value, label, sub, pace, adjustment }) => {
                                     const isSelected = profile.purpose === value;
-                                    let selectedClass = '';
-                                    if (isSelected) {
-                                        if (value === 'ダイエット') selectedClass = 'border-pink-500 bg-pink-50 shadow-md';
-                                        else if (value === 'バルクアップ') selectedClass = 'border-blue-500 bg-blue-50 shadow-md';
-                                        else if (value === 'メンテナンス') selectedClass = 'border-green-500 bg-green-50 shadow-md';
-                                        else if (value === 'リコンプ') selectedClass = 'border-purple-500 bg-purple-50 shadow-md';
-                                    }
                                     return (
                                         <button
                                             key={value}
@@ -1183,8 +1173,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                             onClick={() => setProfile({...profile, purpose: value, weightChangePace: pace, calorieAdjustment: adjustment})}
                                             className={`w-full p-4 rounded-lg border-2 transition flex items-start justify-between ${
                                                 isSelected
-                                                    ? selectedClass
-                                                    : 'border-gray-200 bg-white hover:border-orange-300 hover:shadow'
+                                                    ? 'border-[#4A9EFF] bg-blue-50 shadow-md'
+                                                    : 'border-gray-200 bg-white hover:border-[#4A9EFF] hover:shadow'
                                             }`}
                                         >
                                             <div className="text-left">
@@ -1192,7 +1182,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                                 <div className="text-sm text-gray-600 mt-1">{sub}</div>
                                             </div>
                                             {isSelected && (
-                                                <Icon name="CheckCircle" size={24} className="text-orange-600 flex-shrink-0" />
+                                                <Icon name="CheckCircle" size={20} className="text-[#4A9EFF] flex-shrink-0" />
                                             )}
                                         </button>
                                     );
@@ -1204,7 +1194,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         {profile.purpose && (
                             <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-4 rounded-lg border-2 border-orange-300">
                                 <p className="text-sm font-medium text-orange-900 flex items-center gap-2">
-                                    <Icon name="Target" size={16} />
+                                    <Icon name="Target" size={20} />
                                     あなたのゴールは「{profile.purpose}」です！一緒に達成しましょう
                                 </p>
                             </div>
@@ -1215,11 +1205,11 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 {step === 2 && (
                     <div className="space-y-6">
                         {/* 教育セクション */}
-                        <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded-lg border border-cyan-200">
+                        <div className="bg-gradient-to-r from-blue-50 to-sky-50 p-4 rounded-lg border border-blue-200">
                             <div className="flex items-start gap-2">
-                                <Icon name="Lightbulb" size={18} className="text-cyan-600 flex-shrink-0 mt-0.5" />
+                                <Icon name="Lightbulb" size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-cyan-900 mb-1">体脂肪率の測り方</p>
+                                    <p className="text-sm font-medium text-blue-900 mb-1">体脂肪率の測り方</p>
                                     <p className="text-sm text-gray-600">
                                         体組成計での測定を推奨します。不明な場合は「外見から推定」ボタンでおおよその値を確認できます。
                                     </p>
@@ -1234,16 +1224,19 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     type="number"
                                     value={profile.height}
                                     onChange={(e) => setProfile({...profile, height: e.target.value === '' ? '' : Number(e.target.value)})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:outline-none"
+                                    placeholder="例: 170"
                                 />
                             </div>
                             <div className="border-l-4 border-teal-500 pl-4">
                                 <label className="block text-sm font-medium mb-2">体重 (kg)</label>
                                 <input
                                     type="number"
+                                    step="0.1"
                                     value={profile.weight}
                                     onChange={(e) => setProfile({...profile, weight: e.target.value === '' ? '' : Number(e.target.value)})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:outline-none"
+                                    placeholder="例: 70.0"
                                 />
                             </div>
                             <div className="border-l-4 border-teal-500 pl-4">
@@ -1262,7 +1255,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     step="0.1"
                                     value={profile.bodyFatPercentage}
                                     onChange={(e) => setProfile({...profile, bodyFatPercentage: e.target.value === '' ? '' : Number(e.target.value)})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:outline-none"
+                                    placeholder="例: 15.0"
                                 />
                                 <p className="text-sm text-gray-600 mt-1">
                                     不明な場合は<button type="button" onClick={() => setVisualGuideModal({ ...visualGuideModal, show: true, gender: profile.gender })} className="text-orange-600 hover:underline">「外見から推定」</button>をお試しください
@@ -1282,7 +1276,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         {profile.idealLBM && (
                             <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg border-2 border-orange-300">
                                 <h3 className="text-sm font-bold text-orange-800 mb-3 flex items-center gap-2">
-                                    <Icon name="Target" size={16} />
+                                    <Icon name="Target" size={20} />
                                     目標までの距離
                                 </h3>
                                 <div className="space-y-2">
@@ -1290,7 +1284,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         <span className="text-sm text-gray-600">LBM:</span>
                                         <span className={`text-lg font-bold ${
                                             (profile.idealLBM - LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage)) >= 0
-                                                ? 'text-blue-600'
+                                                ? 'text-green-600'
                                                 : 'text-red-600'
                                         }`}>
                                             {(profile.idealLBM - LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage)) >= 0 ? '+' : ''}
@@ -1301,7 +1295,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         <span className="text-sm text-gray-600">体脂肪率:</span>
                                         <span className={`text-lg font-bold ${
                                             (profile.idealBodyFatPercentage - profile.bodyFatPercentage) <= 0
-                                                ? 'text-blue-600'
+                                                ? 'text-green-600'
                                                 : 'text-red-600'
                                         }`}>
                                             {(profile.idealBodyFatPercentage - profile.bodyFatPercentage) >= 0 ? '+' : ''}
@@ -1317,11 +1311,11 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 {step === 3 && (
                     <div className="space-y-6">
                         {/* 教育セクション */}
-                        <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border border-sky-200">
+                        <div className="bg-gradient-to-r from-blue-50 to-sky-50 p-4 rounded-lg border border-blue-200">
                             <div className="flex items-start gap-2">
-                                <Icon name="Lightbulb" size={18} className="text-sky-600 flex-shrink-0 mt-0.5" />
+                                <Icon name="Lightbulb" size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-sky-900 mb-1">理想の体型について</p>
+                                    <p className="text-sm font-medium text-blue-900 mb-1">理想の体型について</p>
                                     <p className="text-sm text-gray-600">
                                         理想の体型目標を設定することで、より効果的な計画を立てられます。後からでも設定できるので、まだ決まっていない場合は「後で設定する」をクリックしてください。
                                     </p>
@@ -1330,7 +1324,44 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         </div>
 
                         <div className="bg-sky-50 p-4 rounded-lg border-2 border-sky-300">
-                            <h3 className="text-sm font-bold text-sky-800 mb-3">理想の体型目標</h3>
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-sm font-bold text-sky-800">理想の体型目標</h3>
+                                {!isIdealSameAsCurrent ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setProfile({
+                                                ...profile,
+                                                idealWeight: profile.weight,
+                                                idealBodyFatPercentage: profile.bodyFatPercentage,
+                                                idealLBM: LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage)
+                                            });
+                                            setIsIdealSameAsCurrent(true);
+                                        }}
+                                        className="text-xs px-3 py-1 bg-sky-600 text-white rounded hover:bg-sky-700 transition"
+                                    >
+                                        現在と同じ値を使う
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            // 入力欄を空欄にリセット
+                                            setProfile({
+                                                ...profile,
+                                                idealWeight: '',
+                                                idealBodyFatPercentage: '',
+                                                idealLBM: null
+                                            });
+                                            setIsIdealSameAsCurrent(false);
+                                        }}
+                                        className="text-xs px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition flex items-center gap-1"
+                                    >
+                                        <Icon name="X" size={14} />
+                                        クリア
+                                    </button>
+                                )}
+                            </div>
 
                             <div className="space-y-4">
                                 <div>
@@ -1350,6 +1381,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                             });
                                         }}
                                         className="w-full px-3 py-2 border-2 border-sky-200 rounded-lg focus:border-sky-500 focus:outline-none"
+                                        placeholder={`現在: ${profile.weight}kg`}
                                     />
                                 </div>
 
@@ -1370,6 +1402,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                             });
                                         }}
                                         className="w-full px-3 py-2 border-2 border-sky-200 rounded-lg focus:border-sky-500 focus:outline-none"
+                                        placeholder={`現在: ${profile.bodyFatPercentage}%`}
                                     />
                                 </div>
 
@@ -1389,11 +1422,11 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 {step === 4 && (
                     <div className="space-y-6">
                         {/* 教育セクション */}
-                        <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border border-sky-200">
+                        <div className="bg-gradient-to-r from-blue-50 to-sky-50 p-4 rounded-lg border border-blue-200">
                             <div className="flex items-start gap-2">
-                                <Icon name="Lightbulb" size={18} className="text-sky-600 flex-shrink-0 mt-0.5" />
+                                <Icon name="Lightbulb" size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-sky-900 mb-1">活動レベルについて</p>
+                                    <p className="text-sm font-medium text-blue-900 mb-1">活動レベルについて</p>
                                     <p className="text-sm text-gray-600">
                                         あなたの日常の活動レベルに基づいて、目標カロリーとPFCバランス（タンパク質・脂質・炭水化物）を自動計算します。
                                         PFCの詳細な調整は、後から設定画面で変更できます。
@@ -1403,13 +1436,13 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         </div>
 
                         {/* カスタム活動レベル */}
-                        <div className="border-l-4 border-sky-500 pl-4">
+                        <div className="border-l-4 border-[#4A9EFF] pl-4">
                             <label className="block text-sm font-medium mb-2">活動レベル</label>
                             {!profile.customActivityMultiplier && (
                                 <select
                                     value={profile.activityLevel}
                                     onChange={(e) => setProfile({...profile, activityLevel: e.target.value === '' ? '' : Number(e.target.value)})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                                     disabled={profile.customActivityMultiplier}
                                 >
                                     <option value={1}>デスクワーク中心 - 1.05x</option>
@@ -1436,10 +1469,20 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         max="2.5"
                                         value={customMultiplierInputValue}
                                         onChange={(e) => setCustomMultiplierInputValue(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:outline-none"
                                         placeholder="例: 1.4"
                                     />
                                     <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowCustomMultiplierInput(false);
+                                                setCustomMultiplierInputValue('');
+                                            }}
+                                            className="flex-1 px-3 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300"
+                                        >
+                                            キャンセル
+                                        </button>
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -1452,19 +1495,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                                     toast('1.0から2.5の間の数値を入力してください');
                                                 }
                                             }}
-                                            className="flex-1 px-3 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700"
+                                            className="flex-1 px-3 py-2 bg-[#4A9EFF] text-white rounded-lg hover:bg-[#3b8fef]"
                                         >
                                             設定
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setShowCustomMultiplierInput(false);
-                                                setCustomMultiplierInputValue('');
-                                            }}
-                                            className="flex-1 px-3 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300"
-                                        >
-                                            キャンセル
                                         </button>
                                     </div>
                                 </div>
@@ -1481,14 +1514,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         setShowCustomMultiplierInput(!showCustomMultiplierInput);
                                     }
                                 }}
-                                className="mt-2 text-sm text-sky-600 hover:text-sky-800 underline"
+                                className="mt-2 text-sm text-[#4A9EFF] hover:text-[#3b8fef] underline"
                             >
                                 {profile.customActivityMultiplier ? '5段階選択に戻す' : showCustomMultiplierInput ? '入力を閉じる' : 'または、活動レベル係数を直接入力する'}
                             </button>
                         </div>
 
                         {/* カロリー調整値 */}
-                        <div className="border-l-4 border-orange-500 pl-4">
+                        <div className="border-l-4 border-[#4A9EFF] pl-4">
                             <label className="block text-sm font-medium mb-2 flex items-center justify-between">
                                 <div className="flex flex-col">
                                     <span>カロリー調整値（kcal/日）</span>
@@ -1497,11 +1530,11 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        toast(`カロリー調整値について\n\n目的に応じたデフォルト値が自動的に設定されます：\n• 減量: -300kcal\n• 増量: +300kcal\n• メンテナンス: 0kcal\n• リコンプ: 0kcal\n\n微調整したい場合のみ、この欄に数値を入力してください。\nわからない場合は空欄のままでOKです。`);
+                                        toast(`カロリー調整値について\n\n目的に応じたデフォルト値が自動的に設定されます：\n• 減量: -300kcal\n• 増量: +300kcal\n• メンテナンス: 0kcal\n• リコンプ: 0kcal\n\n微調整したい場合のみ、この欄に数値を入力してください。\n分からない場合はデフォルトのままでOKです。`);
                                     }}
-                                    className="text-sky-600 hover:text-sky-800"
+                                    className="text-[#4A9EFF] hover:text-[#3b8fef]"
                                 >
-                                    <Icon name="Info" size={18} />
+                                    <Icon name="Info" size={16} />
                                 </button>
                             </label>
                             <input
@@ -1512,7 +1545,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     const value = e.target.value === '' ? null : Number(e.target.value);
                                     setProfile({...profile, calorieAdjustment: value});
                                 }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                                 placeholder={(() => {
                                     const defaults = {
                                         '減量': '-300 (減量のデフォルト)',
@@ -1531,7 +1564,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         {/* 最終目標カロリーとPFC表示 */}
                         <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border-2 border-sky-200">
                             <h3 className="text-sm font-medium text-sky-800 mb-3 flex items-center gap-2">
-                                <Icon name="Target" size={16} />
+                                <Icon name="Target" size={20} />
                                 あなたの目標摂取量
                             </h3>
                             <div className="bg-white p-3 rounded-lg border border-sky-200 mb-3">
@@ -1760,20 +1793,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     window.scrollTo(0, 0);
                                 }
                             }}
-                            className="flex-1 text-white font-bold py-3 rounded-lg"
-                            style={{backgroundColor: '#4A9EFF'}}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
+                            className="flex-1 bg-[#4A9EFF] hover:bg-[#3b8fef] text-white font-bold py-3 rounded-lg transition"
                         >
                             次へ
                         </button>
                     ) : step === 5 ? (
                         <button
                             onClick={handleComplete}
-                            className="flex-1 text-white font-bold py-3 rounded-lg"
-                            style={{backgroundColor: '#4A9EFF'}}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b8fef'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A9EFF'}
+                            className="flex-1 bg-[#4A9EFF] hover:bg-[#3b8fef] text-white font-bold py-3 rounded-lg transition"
                         >
                             開始
                         </button>
