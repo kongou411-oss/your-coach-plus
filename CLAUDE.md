@@ -232,6 +232,57 @@ git commit -m "チャット内容の説明"
 - **Props**: 明確な命名とデフォルト値の設定
 - **State管理**: ローカルstateは最小限に、必要に応じてグローバル化
 
+### アイコン使用規則
+
+**重要**: アプリ内の情報表示アイコンは以下のルールに従って統一されています。
+
+#### アイコンの使い分け
+
+- **？アイコン（HelpCircle）**: 使い方・操作方法・手順の説明
+  - 例: 「食事記録の使い方」「AI食事認識の使い方」「質問機能の使い方」
+  - 用途: ユーザーが操作方法を知りたい時に使用
+  - ボタンラベル: 「使い方」または「使い方を見る」
+  - モーダルタイトル: 「〇〇の使い方」
+
+- **iアイコン（Info）**: 数値の意味・計算方法・ノウハウ・コンセプトの説明
+  - 例: 「採点基準」「クレジットシステム」「目的別設定」「守破離システム」
+  - 用途: 仕組みや概念を理解したい時に使用
+  - ボタンラベル: 「〇〇について」「〇〇とは？」「詳細を見る」
+  - モーダルタイトル: 「〇〇について」「〇〇とは？」
+
+#### 実装ガイドライン
+
+```jsx
+// ？アイコン（使い方系）- 青系の色
+<button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
+  <Icon name="HelpCircle" size={18} />
+  <span className="text-sm">使い方</span>
+</button>
+
+// iアイコン（ノウハウ・数値系）- グレー系の色
+<button className="flex items-center gap-1 text-gray-600 hover:text-gray-700">
+  <Icon name="Info" size={18} />
+  <span className="text-sm">詳細を見る</span>
+</button>
+
+// 装飾アイコン（クリック不可）
+<div className="flex items-center gap-2 text-gray-500">
+  <Icon name="Info" size={16} className="flex-shrink-0" />
+  <span className="text-sm">{説明文}</span>
+</div>
+```
+
+#### アイコンサイズの統一
+- ボタン内アイコン: `size={18}` または `size={20}`
+- 装飾アイコン: `size={14}` または `size={16}`
+- タイトルアイコン: `size={20}` または `size={24}`
+
+#### 新規実装時の判断基準
+1. 「どうやって〇〇するか」を説明する → ？アイコン
+2. 「〇〇とは何か」「なぜそうなるのか」を説明する → iアイコン
+3. 数値の計算方法や基準を説明する → iアイコン
+4. 操作手順やフローを説明する → ？アイコン
+
 ## プロジェクトの主要機能
 
 ### 認証（src/components/02_auth.jsx）

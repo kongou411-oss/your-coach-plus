@@ -570,6 +570,7 @@ const LoginScreen = () => {
                             style={{color: '#4A9EFF'}}
                             onMouseEnter={(e) => e.currentTarget.style.color = '#3b8fef'}
                             onMouseLeave={(e) => e.currentTarget.style.color = '#4A9EFF'}
+                            title="認証について"
                         >
                             <Icon name="Info" size={16} />
                         </button>
@@ -725,7 +726,7 @@ const LoginScreen = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowAuthInfoModal(false)}>
                     <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold">認証方法について</h3>
+                            <h3 className="text-lg font-bold">認証について</h3>
                             <button onClick={() => setShowAuthInfoModal(false)} className="text-gray-600 hover:text-gray-600">
                                 <Icon name="X" size={20} />
                             </button>

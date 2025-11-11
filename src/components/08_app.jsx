@@ -2108,7 +2108,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                         <>
                                             <div className="mb-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
                                                 <div className="flex items-start gap-2 mb-2">
-                                                    <Icon name="Info" size={18} className="text-amber-600 mt-0.5" />
+                                                    <Icon name="HelpCircle" size={18} className="text-amber-600 mt-0.5" />
                                                     <p className="text-sm text-amber-900 font-semibold">使い方</p>
                                                 </div>
                                                 <p className="text-sm text-amber-700 ml-6">
@@ -2855,16 +2855,6 @@ AIコーチなどの高度な機能が解放されます。
                                 >
                                     <Icon name="Award" size={18} className="text-orange-600" />
                                     <span className="text-xs text-gray-600">バッジ</span>
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        toast('チュートリアル機能は削除されました');
-                                        setBottomBarMenu(null);
-                                    }}
-                                    className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-blue-100 transition"
-                                >
-                                    <Icon name="HelpCircle" size={18} style={{color: '#4A9EFF'}} />
-                                    <span className="text-xs text-gray-600">使い方</span>
                                 </button>
                             </div>
                         </div>

@@ -1557,6 +1557,10 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
             const [showMealInfoModal, setShowMealInfoModal] = useState(false); // 食事記録の使い方モーダル
             const [showWorkoutInfoModal, setShowWorkoutInfoModal] = useState(false); // 運動記録の使い方モーダル
             const [nutritionInputMethod, setNutritionInputMethod] = useState('manual'); // 'manual' or 'ai'
+
+            // 非表示設定（運動用）
+            const [hiddenStandardTrainings, setHiddenStandardTrainings] = useState([]);
+            const [hiddenTrainingCategories, setHiddenTrainingCategories] = useState([]);
             const [aiImage, setAiImage] = useState(null); // AI推定用の画像
             const [aiImagePreview, setAiImagePreview] = useState(null); // AI推定用の画像プレビュー
             const [aiRecognizing, setAiRecognizing] = useState(false); // AI認識中
@@ -1666,6 +1670,53 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                     console.log('[AddItemView] useEffectクリーンアップ');
                     unsubscribe();
                 };
+            }, []);
+
+            // 非表示設定をFirestoreから読み込み（運動用）
+            useEffect(() => {
+                const loadHiddenTrainings = async () => {
+                    const currentUser = firebase.auth().currentUser;
+                    if (!currentUser || !currentUser.uid) return;
+
+                    try {
+                        // 非表示運動アイテムを読み込み
+                        const itemsDoc = await firebase.firestore()
+                            .collection('users')
+                            .doc(currentUser.uid)
+                            .collection('settings')
+                            .doc('hiddenStandardTrainings')
+                            .get();
+
+                        if (itemsDoc.exists) {
+                            setHiddenStandardTrainings(itemsDoc.data().items || []);
+                        }
+
+                        // 非表示運動カテゴリを読み込み
+                        const categoriesDoc = await firebase.firestore()
+                            .collection('users')
+                            .doc(currentUser.uid)
+                            .collection('settings')
+                            .doc('hiddenTrainingCategories')
+                            .get();
+
+                        if (categoriesDoc.exists) {
+                            setHiddenTrainingCategories(categoriesDoc.data().categories || []);
+                        }
+                    } catch (error) {
+                        console.error('[AddItemView] Failed to load hidden trainings:', error);
+                    }
+                };
+
+                const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                    if (user) {
+                        loadHiddenTrainings();
+                    } else {
+                        setHiddenStandardTrainings([]);
+                        setHiddenTrainingCategories([]);
+                    }
+                });
+
+                return () => unsubscribe();
             }, []);
 
             // テンプレート読み込み
@@ -2786,10 +2837,14 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                 // exerciseDBとカスタム種目をマージ
                 const allExercises = [...exerciseDB, ...customExercises];
 
-                const filteredExercises = allExercises.filter(ex =>
-                    fuzzyMatch(ex.name, searchTerm) ||
-                    fuzzyMatch(ex.category, searchTerm)
-                );
+                const filteredExercises = allExercises.filter(ex => {
+                    // 非表示アイテムまたはカテゴリをスキップ
+                    if (hiddenStandardTrainings.includes(ex.name) || hiddenTrainingCategories.includes(ex.category)) {
+                        return false;
+                    }
+                    // 検索フィルタ
+                    return fuzzyMatch(ex.name, searchTerm) || fuzzyMatch(ex.category, searchTerm);
+                });
 
                 // セット単位では体積のみを記録
                 const calculateSetVolume = (set) => {

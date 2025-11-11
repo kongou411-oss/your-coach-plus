@@ -3747,6 +3747,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 const [showDetailModal, setShowDetailModal] = React.useState(false);
                                 const [hiddenStandardItems, setHiddenStandardItems] = React.useState([]);
                                 const [hiddenCategories, setHiddenCategories] = React.useState([]);
+                                const [hiddenStandardTrainings, setHiddenStandardTrainings] = React.useState([]);
+                                const [hiddenTrainingCategories, setHiddenTrainingCategories] = React.useState([]);
                                 const [loadingHidden, setLoadingHidden] = React.useState(false);
 
                                 // Firestoreから非表示アイテムを読み込み
@@ -3787,10 +3789,50 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     }
                                 };
 
+                                // Firestoreから非表示トレーニングアイテムを読み込み
+                                const loadHiddenTrainings = async () => {
+                                    if (!userId) return;
+                                    try {
+                                        const doc = await firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('settings')
+                                            .doc('hiddenStandardTrainings')
+                                            .get();
+
+                                        if (doc.exists) {
+                                            setHiddenStandardTrainings(doc.data().items || []);
+                                        }
+                                    } catch (error) {
+                                        console.error('[Settings] Failed to load hidden trainings:', error);
+                                    }
+                                };
+
+                                // Firestoreから非表示トレーニングカテゴリを読み込み
+                                const loadHiddenTrainingCategories = async () => {
+                                    if (!userId) return;
+                                    try {
+                                        const doc = await firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('settings')
+                                            .doc('hiddenTrainingCategories')
+                                            .get();
+
+                                        if (doc.exists) {
+                                            setHiddenTrainingCategories(doc.data().categories || []);
+                                        }
+                                    } catch (error) {
+                                        console.error('[Settings] Failed to load hidden training categories:', error);
+                                    }
+                                };
+
                                 // 初回読み込み
                                 React.useEffect(() => {
                                     loadHiddenItems();
                                     loadHiddenCategories();
+                                    loadHiddenTrainings();
+                                    loadHiddenTrainingCategories();
                                 }, [userId]);
 
                                 // アイテムの表示非表示を切り替え
@@ -3844,6 +3886,60 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         toast.error('保存に失敗しました');
                                         // エラー時は元に戻す
                                         setHiddenCategories(hiddenCategories);
+                                    }
+                                };
+
+                                // トレーニングアイテムの表示非表示を切り替え
+                                const toggleTrainingVisibility = async (itemName) => {
+                                    const isHidden = hiddenStandardTrainings.includes(itemName);
+                                    const newHiddenItems = isHidden
+                                        ? hiddenStandardTrainings.filter(name => name !== itemName)
+                                        : [...hiddenStandardTrainings, itemName];
+
+                                    setHiddenStandardTrainings(newHiddenItems);
+
+                                    // Firestoreに保存
+                                    try {
+                                        await firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('settings')
+                                            .doc('hiddenStandardTrainings')
+                                            .set({ items: newHiddenItems });
+
+                                        toast.success(isHidden ? `${itemName}を表示しました` : `${itemName}を非表示にしました`);
+                                    } catch (error) {
+                                        console.error('[Settings] Failed to save hidden trainings:', error);
+                                        toast.error('保存に失敗しました');
+                                        // エラー時は元に戻す
+                                        setHiddenStandardTrainings(hiddenStandardTrainings);
+                                    }
+                                };
+
+                                // トレーニングカテゴリの表示非表示を切り替え
+                                const toggleTrainingCategoryVisibility = async (categoryName) => {
+                                    const isHidden = hiddenTrainingCategories.includes(categoryName);
+                                    const newHiddenCategories = isHidden
+                                        ? hiddenTrainingCategories.filter(name => name !== categoryName)
+                                        : [...hiddenTrainingCategories, categoryName];
+
+                                    setHiddenTrainingCategories(newHiddenCategories);
+
+                                    // Firestoreに保存
+                                    try {
+                                        await firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('settings')
+                                            .doc('hiddenTrainingCategories')
+                                            .set({ categories: newHiddenCategories });
+
+                                        toast.success(isHidden ? `${categoryName}を表示しました` : `${categoryName}を非表示にしました`);
+                                    } catch (error) {
+                                        console.error('[Settings] Failed to save hidden training categories:', error);
+                                        toast.error('保存に失敗しました');
+                                        // エラー時は元に戻す
+                                        setHiddenTrainingCategories(hiddenTrainingCategories);
                                     }
                                 };
 
@@ -4036,33 +4132,68 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 {Object.keys(organizedTrainingDB).length === 0 ? (
                                                     <p className="text-sm text-gray-600 text-center py-4">該当するアイテムがありません</p>
                                                 ) : (
-                                                    Object.keys(organizedTrainingDB).map(category => (
-                                                        <div key={category} className="bg-white rounded-lg border border-gray-200">
-                                                            <button
-                                                                onClick={() => toggleCategory(category)}
-                                                                className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition"
-                                                            >
-                                                                <span className="font-medium text-sm">{category} ({organizedTrainingDB[category].length})</span>
-                                                                <Icon name={expandedCategories[category] ? "ChevronUp" : "ChevronDown"} size={16} />
-                                                            </button>
-                                                            {expandedCategories[category] && (
-                                                                <div className="p-3 pt-0 space-y-1 max-h-60 overflow-y-auto">
-                                                                    {organizedTrainingDB[category].map((item, idx) => (
-                                                                        <div
-                                                                            key={idx}
-                                                                            className="w-full text-sm py-1.5 px-2 bg-gray-50 rounded flex justify-between items-center"
-                                                                        >
-                                                                            <span className="text-left">{item.name}</span>
-                                                                            <span className="text-xs text-gray-600">
-                                                                                {item.met && `MET: ${item.met}`}
-                                                                                {item.category && ` • ${item.category}`}
-                                                                            </span>
-                                                                        </div>
-                                                                    ))}
+                                                    Object.keys(organizedTrainingDB).map(category => {
+                                                        const isCategoryHidden = hiddenTrainingCategories.includes(category);
+                                                        return (
+                                                            <div key={category} className="bg-white rounded-lg border border-gray-200">
+                                                                <div className="flex items-center justify-between p-3">
+                                                                    <button
+                                                                        onClick={() => toggleCategory(category)}
+                                                                        className="flex-1 flex items-center justify-between hover:bg-gray-50 transition rounded"
+                                                                    >
+                                                                        <span className="font-medium text-sm">{category} ({organizedTrainingDB[category].length})</span>
+                                                                        <Icon name={expandedCategories[category] ? "ChevronUp" : "ChevronDown"} size={16} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            toggleTrainingCategoryVisibility(category);
+                                                                        }}
+                                                                        className={`ml-2 p-1 transition ${
+                                                                            isCategoryHidden
+                                                                                ? 'text-gray-400 hover:text-gray-600'
+                                                                                : 'text-green-600 hover:text-green-800'
+                                                                        }`}
+                                                                        title={isCategoryHidden ? 'カテゴリを表示' : 'カテゴリを非表示'}
+                                                                    >
+                                                                        <Icon name={isCategoryHidden ? 'EyeOff' : 'Eye'} size={18} />
+                                                                    </button>
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    ))
+                                                                {expandedCategories[category] && (
+                                                                    <div className="p-3 pt-0 space-y-1 max-h-60 overflow-y-auto">
+                                                                        {organizedTrainingDB[category].map((item, idx) => {
+                                                                            const isHidden = hiddenStandardTrainings.includes(item.name);
+                                                                            return (
+                                                                                <div
+                                                                                    key={idx}
+                                                                                    className="w-full text-sm py-2 px-2 bg-gray-50 rounded flex justify-between items-center gap-2"
+                                                                                >
+                                                                                    <div className="flex-1 min-w-0">
+                                                                                        <div className="font-medium text-gray-800">{item.name}</div>
+                                                                                        <div className="text-xs text-gray-600 mt-0.5">
+                                                                                            {item.met && `MET: ${item.met}`}
+                                                                                            {item.category && ` • ${item.category}`}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <button
+                                                                                        onClick={() => toggleTrainingVisibility(item.name)}
+                                                                                        className={`p-1 transition flex-shrink-0 ${
+                                                                                            isHidden
+                                                                                                ? 'text-gray-400 hover:text-gray-600'
+                                                                                                : 'text-green-600 hover:text-green-800'
+                                                                                        }`}
+                                                                                        title={isHidden ? '表示する' : '非表示にする'}
+                                                                                    >
+                                                                                        <Icon name={isHidden ? 'EyeOff' : 'Eye'} size={18} />
+                                                                                    </button>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })
                                                 )}
                                             </div>
                                         )}

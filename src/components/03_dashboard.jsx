@@ -97,6 +97,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // 運動カードの展開状態
     const [expandedWorkouts, setExpandedWorkouts] = useState({});
+    const [expandedMeals, setExpandedMeals] = useState({});
 
     // 機能開放モーダル（1つのモーダルで3ページ）
     const [showFeatureUnlockModal, setShowFeatureUnlockModal] = useState(false);
@@ -924,7 +925,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         onMouseEnter={(e) => e.currentTarget.style.color = '#3b8fef'}
                         onMouseLeave={(e) => e.currentTarget.style.color = '#4A9EFF'}
                     >
-                        <Icon name="Info" size={18} />
+                        <Icon name="HelpCircle" size={18} />
                     </button>
                     <div className="ml-auto flex gap-2">
                         {/* 予測入力ボタン（トグル） */}
@@ -1259,11 +1260,17 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="text-base font-bold text-gray-800 mb-1">
-                                                {meal.name}
+                                            <div
+                                                onClick={() => setExpandedMeals(prev => ({...prev, [meal.id || index]: !prev[meal.id || index]}))}
+                                                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded p-1 -ml-1"
+                                            >
+                                                <Icon name={expandedMeals[meal.id || index] ? "ChevronDown" : "ChevronRight"} size={16} className="text-gray-400" />
+                                                <div className="text-base font-bold text-gray-800">
+                                                    {meal.name}
+                                                </div>
                                             </div>
-                                            {meal.items?.map((item, i) => (
-                                                <div key={i} className="text-xs text-gray-600">
+                                            {expandedMeals[meal.id || index] && meal.items?.map((item, i) => (
+                                                <div key={i} className="text-xs text-gray-600 ml-6 mt-1">
                                                     {item.name} {item.amount}{item.unit || 'g'}
                                                 </div>
                                             ))}
@@ -1385,24 +1392,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 </div>
                                                 {/* 運動名と右上のサマリー */}
                                                 <div className="flex items-start justify-between mb-2">
-                                                    <div className="flex flex-col">
+                                                    <div
+                                                        onClick={() => setExpandedWorkouts(prev => ({...prev, [workout.id || index]: !prev[workout.id || index]}))}
+                                                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded p-1 -ml-1"
+                                                    >
+                                                        <Icon name={expandedWorkouts[workout.id || index] ? "ChevronDown" : "ChevronRight"} size={16} className="text-gray-400" />
                                                         <div className="text-base font-bold text-gray-800">
                                                             {workout.name}
                                                         </div>
-                                                        {/* 種目名の直下: シェブロン */}
-                                                        <button
-                                                            onClick={() => setExpandedWorkouts(prev => ({
-                                                                ...prev,
-                                                                [workout.id || index]: !prev[workout.id || index]
-                                                            }))}
-                                                            className="p-1 hover:bg-gray-100 rounded-full transition self-start"
-                                                        >
-                                                            <Icon
-                                                                name={expandedWorkouts[workout.id || index] ? "ChevronUp" : "ChevronDown"}
-                                                                size={20}
-                                                                className="text-gray-600"
-                                                            />
-                                                        </button>
                                                     </div>
                                                     {/* 右上: 総セット数・総重量・総時間 */}
                                                     {(() => {

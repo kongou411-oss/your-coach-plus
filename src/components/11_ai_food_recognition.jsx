@@ -1517,7 +1517,7 @@ JSON形式のみ出力、説明文不要`;
                             className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
                             title="使い方"
                         >
-                            <Icon name="Info" size={20} />
+                            <Icon name="HelpCircle" size={20} />
                         </button>
                         <button
                             onClick={onClose}
@@ -1828,7 +1828,7 @@ JSON形式のみ出力、説明文不要`;
 
                                     <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
                                         <p className="text-xs text-blue-800">
-                                            <Icon name="Info" size={14} className="inline mr-1" />
+                                            <Icon name="HelpCircle" size={14} className="inline mr-1" />
                                             AIが認識できなかった食材を手動で追加できます
                                         </p>
                                     </div>
