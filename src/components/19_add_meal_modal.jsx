@@ -422,7 +422,7 @@ const AddMealModal = ({
                                     <h3 className="text-lg font-bold">{mealName}</h3>
                                     <button
                                         onClick={() => setIsEditingMealName(true)}
-                                        className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
                                     >
                                         <Icon name="Edit" size={18} />
                                     </button>
@@ -454,7 +454,7 @@ const AddMealModal = ({
                             <div className="flex-1 bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-200">
                                 <div className="text-xs font-medium text-gray-600 mb-1">この食事の合計</div>
                                 <div className="flex items-center justify-between">
-                                    <div className="text-lg font-bold" style={{color: '#60a5fa'}}>
+                                    <div className="text-lg font-bold text-blue-600">
                                         {Math.round(totalPFC.calories)}kcal
                                     </div>
                                     <div className="flex items-center gap-1 text-xs">
@@ -482,7 +482,7 @@ const AddMealModal = ({
                 {/* 追加済みアイテム一覧 */}
                 <div className="flex-1 overflow-y-auto p-4">
                     {addedItems.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500">
+                        <div className="text-center py-12 text-gray-600">
                             <Icon name="Plus" size={48} className="mx-auto mb-3 opacity-30" />
                             <p>食材を追加してください</p>
                         </div>
@@ -513,7 +513,7 @@ const AddMealModal = ({
                                                     setOriginalAmount(item.amount); // 元の量を保存
                                                 }}
                                             >
-                                                <div className="font-semibold text-gray-900">{item.name}</div>
+                                                <div className="font-semibold text-gray-800">{item.name}</div>
                                                 <div className="text-sm text-gray-600 mt-1">
                                                     {item.amount}{item.unit || 'g'}
                                                 </div>
@@ -526,7 +526,7 @@ const AddMealModal = ({
                                                         setSelectedItemIndex(index);
                                                         setOriginalAmount(item.amount);
                                                     }}
-                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                    className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
                                                     title="編集"
                                                 >
                                                     <Icon name="Edit" size={18} />
@@ -537,7 +537,7 @@ const AddMealModal = ({
                                                         e.stopPropagation();
                                                         removeItem(index);
                                                     }}
-                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                    className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                     title="削除"
                                                 >
                                                     <Icon name="Trash2" size={18} />
@@ -545,7 +545,7 @@ const AddMealModal = ({
                                             </div>
                                         </div>
                                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
-                                            <div className="text-sm font-bold" style={{color: '#60a5fa'}}>
+                                            <div className="text-sm font-bold text-blue-600">
                                                 {displayCalories}kcal
                                             </div>
                                             <div className="flex items-center gap-2 text-xs">
@@ -573,7 +573,7 @@ const AddMealModal = ({
                     return (
                         <div className="fixed left-0 right-0 bg-white border-t-2 border-gray-300 shadow-2xl p-4 z-[9998]" style={{bottom: '200px'}}>
                             <div className="max-w-md mx-auto">
-                                <div className="text-sm text-gray-900 font-semibold mb-3 text-center">
+                                <div className="text-sm text-gray-800 font-semibold mb-3 text-center">
                                     {selectedItem.name} の量を調整
                                     {selectedItem.servingSize && selectedItem.servingUnit && (
                                         <span className="text-blue-600 font-semibold ml-2 text-xs">
@@ -594,7 +594,7 @@ const AddMealModal = ({
                                         min="0"
                                         step={adjustmentStep}
                                     />
-                                    <span className="text-lg text-gray-700 font-bold">{unit}</span>
+                                    <span className="text-lg text-gray-600 font-bold">{unit}</span>
                                 </div>
 
                                 {/* ステップ選択 */}
@@ -606,7 +606,7 @@ const AddMealModal = ({
                                             className={`flex-1 py-2 text-sm rounded transition ${
                                                 adjustmentStep === step
                                                     ? 'bg-blue-600 text-white font-semibold'
-                                                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+                                                    : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
                                             }`}
                                         >
                                             {step}
@@ -660,7 +660,7 @@ const AddMealModal = ({
                                             setSelectedItemIndex(null);
                                             setOriginalAmount(null);
                                         }}
-                                        className="py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                                        className="py-3 bg-gray-200 text-gray-600 rounded-lg font-semibold hover:bg-gray-300 transition"
                                     >
                                         キャンセル
                                     </button>
@@ -723,7 +723,7 @@ const AddMealModal = ({
                         disabled={addedItems.length === 0}
                         className={`w-full py-3 rounded-lg font-bold shadow-lg transition ${
                             addedItems.length === 0
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
                                 : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
                         }`}
                     >
@@ -985,7 +985,7 @@ const AddMealModal = ({
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="食材名で検索..."
-                                    className="w-full px-4 py-2 rounded-lg text-gray-900 focus:ring-2 focus:ring-white focus:outline-none"
+                                    className="w-full px-4 py-2 rounded-lg text-gray-800 focus:ring-2 focus:ring-white focus:outline-none"
                                 />
 
                                 {/* タブ */}
@@ -1046,7 +1046,7 @@ const AddMealModal = ({
                                                 className={`px-3 py-1 rounded-full text-xs font-medium transition ${
                                                     (selectedCategory || '穀類') === cat
                                                         ? 'bg-green-600 text-white'
-                                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                                                 }`}
                                             >
                                                 {cat}
@@ -1072,7 +1072,7 @@ const AddMealModal = ({
                                                     className={`px-3 py-1 rounded-full text-xs font-medium transition ${
                                                         (selectedCategory || 'プロテイン') === subcat
                                                             ? 'bg-blue-600 text-white'
-                                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                                                     }`}
                                                 >
                                                     {subcat}
@@ -1086,7 +1086,7 @@ const AddMealModal = ({
                             {/* アイテム一覧 */}
                             <div className="flex-1 overflow-y-auto p-4">
                                 {filteredItems.length === 0 ? (
-                                    <div className="text-center py-12 text-gray-500">
+                                    <div className="text-center py-12 text-gray-600">
                                         <Icon name="Search" size={48} className="mx-auto mb-3 opacity-30" />
                                         <p>該当する食材が見つかりません</p>
                                     </div>
@@ -1100,7 +1100,7 @@ const AddMealModal = ({
                                             >
                                                 <div className="flex justify-between items-start">
                                                     <div className="flex-1">
-                                                        <div className="font-semibold text-gray-900 flex items-center gap-2">
+                                                        <div className="font-semibold text-gray-800 flex items-center gap-2">
                                                             {item.name}
                                                             {item.isCustom && (
                                                                 <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
@@ -1109,14 +1109,14 @@ const AddMealModal = ({
                                                             )}
                                                         </div>
                                                         <div className="text-xs mt-1 flex items-center gap-2 flex-wrap">
-                                                            <span className="font-semibold" style={{color: '#60a5fa'}}>{item.calories}kcal</span>
+                                                            <span className="font-semibold text-blue-600">{item.calories}kcal</span>
                                                             <span className="text-gray-400">|</span>
                                                             <span className="text-red-500 font-semibold">P {item.protein}g</span>
                                                             <span className="text-gray-400">|</span>
                                                             <span className="text-yellow-500 font-semibold">F {item.fat}g</span>
                                                             <span className="text-gray-400">|</span>
                                                             <span className="text-green-500 font-semibold">C {item.carbs}g</span>
-                                                            <span className="text-gray-500 text-[10px] ml-1">
+                                                            <span className="text-gray-600 text-[10px] ml-1">
                                                                 {(() => {
                                                                     // servingSizeとservingUnitがあればそれを使用
                                                                     if (item.servingSize && item.servingUnit) {
@@ -1160,7 +1160,7 @@ const AddMealModal = ({
                                     className={`w-full px-4 py-3 rounded-lg font-medium transition ${
                                         addedItems.length > 0
                                             ? 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
-                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                                     }`}
                                 >
                                     {addedItems.length > 0 ? `閉じる（追加済み ${addedItems.length}種）` : '閉じる'}
@@ -1205,7 +1205,7 @@ const AddMealModal = ({
                             {mealTemplates.length === 0 ? (
                                 <div className="text-center py-12">
                                     <Icon name="BookMarked" size={48} className="mx-auto mb-3 opacity-30 text-purple-600" />
-                                    <p className="text-gray-900 font-semibold mb-2">まだテンプレートがありません</p>
+                                    <p className="text-gray-800 font-semibold mb-2">まだテンプレートがありません</p>
                                     <p className="text-sm text-gray-600 px-4">
                                         食材を追加後に「保存」ボタンで保存するか、<br/>
                                         ダッシュボードのテンプレートボタンから作成できます
@@ -1229,7 +1229,7 @@ const AddMealModal = ({
                                         <details key={template.id} className="bg-gray-50 border-2 border-gray-200 rounded-lg group">
                                             <summary className="p-3 cursor-pointer list-none">
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <div className="font-semibold text-gray-900">{template.name}</div>
+                                                    <div className="font-semibold text-gray-800">{template.name}</div>
                                                     <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={(e) => {
@@ -1238,7 +1238,7 @@ const AddMealModal = ({
                                                                 loadTemplate(template);
                                                                 setShowTemplateSelector(false);
                                                             }}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
                                                             title="編集"
                                                         >
                                                             <Icon name="Edit" size={18} />
@@ -1251,7 +1251,7 @@ const AddMealModal = ({
                                                                     deleteTemplate(template.id);
                                                                 });
                                                             }}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                             title="削除"
                                                         >
                                                             <Icon name="Trash2" size={18} />
@@ -1263,7 +1263,7 @@ const AddMealModal = ({
                                                 </div>
                                                 <div className="text-xs mb-3 flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-semibold" style={{color: '#60a5fa'}}>{Math.round(totalPFC.calories)}kcal</span>
+                                                        <span className="font-semibold text-blue-600">{Math.round(totalPFC.calories)}kcal</span>
                                                         <span className="text-gray-400">|</span>
                                                         <span className="text-red-500 font-semibold">P {Math.round(totalPFC.protein)}g</span>
                                                         <span className="text-gray-400">|</span>
@@ -1295,8 +1295,8 @@ const AddMealModal = ({
                                                             <div key={idx} className="bg-white p-2 rounded text-xs border border-gray-200">
                                                                 <div className="font-semibold">{item.name}</div>
                                                                 <div className="text-gray-600 mt-1">{item.amount}{item.unit || 'g'}</div>
-                                                                <div className="text-gray-500 mt-1 flex gap-2">
-                                                                    <span style={{color: '#60a5fa'}}>{Math.round((item.calories || 0) * ratio)}kcal</span>
+                                                                <div className="text-gray-600 mt-1 flex gap-2">
+                                                                    <span className="text-blue-600">{Math.round((item.calories || 0) * ratio)}kcal</span>
                                                                     <span className="text-red-500">P {Math.round((item.protein || 0) * ratio * 10) / 10}g</span>
                                                                     <span className="text-yellow-500">F {Math.round((item.fat || 0) * ratio * 10) / 10}g</span>
                                                                     <span className="text-green-500">C {Math.round((item.carbs || 0) * ratio * 10) / 10}g</span>
@@ -1317,7 +1317,7 @@ const AddMealModal = ({
                         <div className="border-t p-4">
                             <button
                                 onClick={() => setShowTemplateSelector(false)}
-                                className="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                                className="w-full px-4 py-3 bg-gray-200 text-gray-600 rounded-lg font-semibold hover:bg-gray-300 transition"
                             >
                                 閉じる
                             </button>
@@ -1348,7 +1348,7 @@ const AddMealModal = ({
                         <div className="p-6 space-y-4">
                             {/* 名前 */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">名前</label>
+                                <label className="block text-sm font-medium text-gray-600 mb-1">名前</label>
                                 <input
                                     type="text"
                                     value={customData.name}
@@ -1364,7 +1364,7 @@ const AddMealModal = ({
 
                             {/* カテゴリタブ */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリ</label>
+                                <label className="block text-sm font-medium text-gray-600 mb-2">カテゴリ</label>
                                 <div className="grid grid-cols-3 border-b border-gray-200">
                                     <button
                                         type="button"
@@ -1462,7 +1462,7 @@ const AddMealModal = ({
 
                             {/* 基本栄養素 */}
                             <div className="border-t pt-4">
-                                <p className="text-sm font-medium text-gray-700 mb-2">
+                                <p className="text-sm font-medium text-gray-600 mb-2">
                                     基本栄養素（{customData.servingSize}{customData.servingUnit}あたり）
                                 </p>
                                 <div className="grid grid-cols-2 gap-2">
@@ -1507,7 +1507,7 @@ const AddMealModal = ({
 
                             {/* ビタミン（折りたたみ） */}
                             <details className="border-t pt-4">
-                                <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-green-600 flex items-center gap-2">
+                                <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-green-600 flex items-center gap-2">
                                     <Icon name="ChevronDown" size={14} />
                                     ビタミン（{customData.servingSize}{customData.servingUnit}あたり）
                                 </summary>
@@ -1542,7 +1542,7 @@ const AddMealModal = ({
 
                             {/* ミネラル（折りたたみ） */}
                             <details className="border-t pt-4">
-                                <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-green-600 flex items-center gap-2">
+                                <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-green-600 flex items-center gap-2">
                                     <Icon name="ChevronDown" size={14} />
                                     ミネラル（{customData.servingSize}{customData.servingUnit}あたり）
                                 </summary>
@@ -1577,7 +1577,7 @@ const AddMealModal = ({
 
                             {/* その他栄養素（折りたたみ） */}
                             <details className="border-t pt-4">
-                                <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-green-600 flex items-center gap-2">
+                                <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-green-600 flex items-center gap-2">
                                     <Icon name="ChevronDown" size={14} />
                                     その他栄養素（クレアチン、食物繊維など）
                                 </summary>
@@ -1840,7 +1840,7 @@ const AddMealModal = ({
 
             {/* ヘルプモーダル */}
             {showHelpModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100000] p-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
                     <div className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl">
                         {/* ヘッダー */}
                         <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between rounded-t-2xl">
@@ -1883,22 +1883,22 @@ const AddMealModal = ({
                                     <div className="flex items-start gap-2">
                                         <Icon name="Search" size={16} className="text-[#4A9EFF] mt-0.5" />
                                         <div>
-                                            <p className="text-sm font-medium text-gray-700">一覧から検索</p>
-                                            <p className="text-xs text-gray-500">データベースから食材を検索して追加</p>
+                                            <p className="text-sm font-medium text-gray-600">一覧から検索</p>
+                                            <p className="text-xs text-gray-600">データベースから食材を検索して追加</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-2">
                                         <Icon name="BookTemplate" size={16} className="text-purple-600 mt-0.5" />
                                         <div>
-                                            <p className="text-sm font-medium text-gray-700">テンプレート</p>
-                                            <p className="text-xs text-gray-500">よく食べる食事を保存したテンプレートを使用</p>
+                                            <p className="text-sm font-medium text-gray-600">テンプレート</p>
+                                            <p className="text-xs text-gray-600">よく食べる食事を保存したテンプレートを使用</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-2">
                                         <Icon name="Plus" size={16} className="text-green-600 mt-0.5" />
                                         <div>
-                                            <p className="text-sm font-medium text-gray-700">カスタム作成</p>
-                                            <p className="text-xs text-gray-500">オリジナルの食材や料理を作成</p>
+                                            <p className="text-sm font-medium text-gray-600">カスタム作成</p>
+                                            <p className="text-xs text-gray-600">オリジナルの食材や料理を作成</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1949,7 +1949,7 @@ const AddMealModal = ({
                                     <Icon name="Lightbulb" size={18} />
                                     <span className="text-sm">便利な機能</span>
                                 </div>
-                                <ul className="text-xs text-gray-700 space-y-1 ml-6 list-disc">
+                                <ul className="text-xs text-gray-600 space-y-1 ml-6 list-disc">
                                     <li>検索モーダルでカテゴリを選択すると、素早く食材を見つけられます</li>
                                     <li>食材カードをタップすると、栄養情報の詳細を確認できます</li>
                                     <li>テンプレートから記録した食事には、紫のタグが表示されます</li>
@@ -1961,7 +1961,7 @@ const AddMealModal = ({
                         <div className="sticky bottom-0 bg-white border-t p-4 rounded-b-2xl">
                             <button
                                 onClick={() => setShowHelpModal(false)}
-                                className="w-full bg-[#4A9EFF] text-white py-3 rounded-xl font-bold hover:bg-[#3A8EEF] transition"
+                                className="w-full bg-[#4A9EFF] text-white py-3 rounded-xl font-bold hover:bg-[#3b8fef] transition"
                             >
                                 閉じる
                             </button>

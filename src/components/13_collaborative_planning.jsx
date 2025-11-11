@@ -170,7 +170,7 @@ JSONのみを出力し、他のテキストは含めないでください。`;
                 <div className="text-center">
                     <Icon name="Loader" size={48} className="animate-spin text-sky-600 mx-auto mb-4" />
                     <p className="text-gray-600">AIが明日のプランを作成中...</p>
-                    <p className="text-sm text-gray-500 mt-2">あなたの目標と今日の記録を分析しています</p>
+                    <p className="text-sm text-gray-600 mt-2">あなたの目標と今日の記録を分析しています</p>
                 </div>
             </div>
         );
@@ -214,7 +214,7 @@ JSONのみを出力し、他のテキストは含めないでください。`;
                             className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
                                 isEditing
                                     ? 'bg-sky-600 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                             }`}
                         >
                             <Icon name={isEditing ? "Check" : "Edit2"} size={16} />
@@ -261,7 +261,7 @@ JSONのみを出力し、他のテキストは含めないでください。`;
                     <div className="flex gap-3">
                         <button
                             onClick={generatePlanDraft}
-                            className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition flex items-center justify-center gap-2"
+                            className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-lg hover:bg-gray-300 transition flex items-center justify-center gap-2"
                         >
                             <Icon name="RefreshCw" size={18} />
                             別のプランを提案

@@ -350,7 +350,7 @@ ${context}
                         className={`px-5 py-2 rounded-t-lg font-medium text-sm transition ${
                             viewMode === 'modules'
                                 ? 'bg-cyan-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                     >
                         <Icon name="BookOpen" size={16} className="inline mr-1" />
@@ -361,7 +361,7 @@ ${context}
                         className={`px-5 py-2 rounded-t-lg font-medium text-sm transition ${
                             viewMode === 'ai'
                                 ? 'bg-cyan-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                     >
                         <Icon name="Sparkles" size={16} className="inline mr-1" />
@@ -389,7 +389,7 @@ ${context}
                                           cat.color === 'pink' ? 'bg-sky-600 text-white' :
                                           cat.color === 'green' ? 'bg-green-600 text-white' :
                                           'bg-orange-600 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                             >
                                 <Icon name={cat.icon} size={16} />
@@ -406,7 +406,7 @@ ${context}
                 {filteredModules.length === 0 ? (
                     <div className="text-center py-12">
                         <Icon name="Search" size={48} className="mx-auto mb-4 text-gray-300" />
-                        <p className="text-gray-500">該当するモジュールが見つかりませんでした</p>
+                        <p className="text-gray-600">該当するモジュールが見つかりませんでした</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -460,7 +460,7 @@ ${context}
                             <div className="text-center py-12">
                                 <Icon name="MessageCircle" size={48} className="mx-auto mb-4 text-cyan-300" />
                                 <p className="text-gray-600 font-medium mb-2">PG BASE AIモード</p>
-                                <p className="text-sm text-gray-500 px-8">
+                                <p className="text-sm text-gray-600 px-8">
                                     あなたの記録データと傾向をもとに、最適な知識モジュールを提案します。<br/>
                                     気になることや悩みを気軽に質問してください。
                                 </p>
@@ -1319,7 +1319,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             {autoFetchedData.body && (autoFetchedData.body.weight || autoFetchedData.body.bodyFat) && (
                                 <div className="mb-3">
                                     <p className="text-sm font-semibold text-blue-800 mb-1">体組成（本日）</p>
-                                    <div className="grid grid-cols-3 gap-2 text-sm text-gray-700">
+                                    <div className="grid grid-cols-3 gap-2 text-sm text-gray-600">
                                         {autoFetchedData.body.weight && <div>体重: {autoFetchedData.body.weight}kg</div>}
                                         {autoFetchedData.body.bodyFat && <div>体脂肪率: {autoFetchedData.body.bodyFat}%</div>}
                                         {autoFetchedData.body.lbm && <div>LBM: {autoFetchedData.body.lbm}kg</div>}
@@ -1331,7 +1331,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             {autoFetchedData.today && (
                                 <div className="mb-3">
                                     <p className="text-sm font-semibold text-blue-800 mb-1">本日の記録</p>
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                                         <div>食事: {autoFetchedData.today.calories}kcal</div>
                                         <div>P: {autoFetchedData.today.protein}g</div>
                                         <div>運動: {autoFetchedData.today.workoutTime}分</div>
@@ -1346,7 +1346,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             {autoFetchedData.history && (
                                 <div>
                                     <p className="text-sm font-semibold text-blue-800 mb-1">過去の平均（{autoFetchedData.history.daysCount}日間）</p>
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                                         <div>食事: {autoFetchedData.history.calories}kcal</div>
                                         <div>P: {autoFetchedData.history.protein}g</div>
                                         <div>運動: {autoFetchedData.history.workoutTime}分</div>
@@ -1372,7 +1372,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             maxLength={50}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
                         />
-                        <p className="text-xs text-gray-500 mt-1">{projectTitle.length}/50文字</p>
+                        <p className="text-xs text-gray-600 mt-1">{projectTitle.length}/50文字</p>
                     </div>
 
                     {/* 詳細 */}
@@ -1388,7 +1388,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             rows={5}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
                         />
-                        <p className="text-xs text-gray-500 mt-1">{projectGoal.length}/500文字</p>
+                        <p className="text-xs text-gray-600 mt-1">{projectGoal.length}/500文字</p>
                     </div>
 
                     {/* ビフォー写真 */}
@@ -1468,7 +1468,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             {autoFetchedData.body && (autoFetchedData.body.weight || autoFetchedData.body.bodyFat) && (
                                 <div className="mb-3">
                                     <p className="text-sm font-semibold text-blue-800 mb-1">体組成（本日）</p>
-                                    <div className="grid grid-cols-3 gap-2 text-sm text-gray-700">
+                                    <div className="grid grid-cols-3 gap-2 text-sm text-gray-600">
                                         {autoFetchedData.body.weight && <div>体重: {autoFetchedData.body.weight}kg</div>}
                                         {autoFetchedData.body.bodyFat && <div>体脂肪率: {autoFetchedData.body.bodyFat}%</div>}
                                         {autoFetchedData.body.lbm && <div>LBM: {autoFetchedData.body.lbm}kg</div>}
@@ -1480,7 +1480,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             {autoFetchedData.today && (
                                 <div className="mb-3">
                                     <p className="text-sm font-semibold text-blue-800 mb-1">本日の記録</p>
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                                         <div>食事: {autoFetchedData.today.calories}kcal</div>
                                         <div>P: {autoFetchedData.today.protein}g</div>
                                         <div>運動: {autoFetchedData.today.workoutTime}分</div>
@@ -1495,7 +1495,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             {autoFetchedData.history && (
                                 <div>
                                     <p className="text-sm font-semibold text-blue-800 mb-1">過去の平均（{autoFetchedData.history.daysCount}日間）</p>
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                                         <div>食事: {autoFetchedData.history.calories}kcal</div>
                                         <div>P: {autoFetchedData.history.protein}g</div>
                                         <div>運動: {autoFetchedData.history.workoutTime}分</div>
@@ -1574,7 +1574,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             rows={5}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                         />
-                        <p className="text-xs text-gray-500 mt-1">{progressCaption.length}/500文字</p>
+                        <p className="text-xs text-gray-600 mt-1">{progressCaption.length}/500文字</p>
                     </div>
 
                     {/* 写真撮影 */}
@@ -1655,7 +1655,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             maxLength={50}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         />
-                        <p className="text-xs text-gray-500 mt-1">{mentalTitle.length}/50文字</p>
+                        <p className="text-xs text-gray-600 mt-1">{mentalTitle.length}/50文字</p>
                     </div>
 
                     {/* 本文 */}
@@ -1671,7 +1671,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             rows={10}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         />
-                        <p className="text-xs text-gray-500 mt-1">{mentalContent.length}/1000文字</p>
+                        <p className="text-xs text-gray-600 mt-1">{mentalContent.length}/1000文字</p>
                     </div>
 
                     {/* PG BASE引用（オプション） */}
@@ -1754,7 +1754,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
 
                 {/* カテゴリー選択 */}
                 <div className="mb-6">
-                    <label className="font-medium text-sm text-gray-700 mb-3 block">投稿カテゴリー</label>
+                    <label className="font-medium text-sm text-gray-600 mb-3 block">投稿カテゴリー</label>
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             onClick={() => setPostCategory('body')}
@@ -1818,10 +1818,10 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                     </div>
                                 </>
                             )}
-                            <div className="text-gray-700 mt-2 font-semibold">
+                            <div className="text-gray-600 mt-2 font-semibold">
                                 ✓ アプリ内カメラでビフォー・アフター写真撮影（必須）
                             </div>
-                            <div className="text-gray-700 font-semibold">
+                            <div className="text-gray-600 font-semibold">
                                 ✓ Your Coach+ データ連携（必須）
                             </div>
                             <div className="text-sky-700 mt-2 font-semibold">
@@ -1847,7 +1847,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                     {/* ビフォー・アフター写真 */}
                     {postCategory === 'body' && (
                         <div>
-                            <label className="font-medium text-sm text-gray-700 mb-2 block">
+                            <label className="font-medium text-sm text-gray-600 mb-2 block">
                                 ビフォー・アフター写真（首から下）<span className="text-red-500">*</span>
                             </label>
                             <div className={`border rounded-lg p-3 mb-3 ${
@@ -1952,7 +1952,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
 
                     {/* 投稿内容 */}
                     <div>
-                        <label className="font-medium text-sm text-gray-700 mb-2 block">投稿内容</label>
+                        <label className="font-medium text-sm text-gray-600 mb-2 block">投稿内容</label>
                         <textarea
                             value={postContent}
                             onChange={(e) => setPostContent(e.target.value)}
@@ -1967,7 +1967,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                     {postCategory === 'body' && (
                         <>
                             <div>
-                                <label className="font-medium text-sm text-gray-700 mb-2 block">
+                                <label className="font-medium text-sm text-gray-600 mb-2 block">
                                     引用する記録データを選択<span className="text-red-500">*</span>
                                 </label>
 
@@ -1979,7 +1979,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                         className={`py-2 px-3 rounded-lg text-xs font-medium transition ${
                                             dataSelectionType === 'single'
                                                 ? 'bg-sky-600 text-white'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                     >
                                         特定日
@@ -1990,7 +1990,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                         className={`py-2 px-3 rounded-lg text-xs font-medium transition ${
                                             dataSelectionType === 'average'
                                                 ? 'bg-sky-600 text-white'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                     >
                                         日次平均
@@ -2052,7 +2052,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                 return (
                                     <div className="p-4 bg-sky-50 border border-sky-200 rounded-lg">
                                         <p className="text-xs font-semibold text-sky-700 mb-2">{titleText}</p>
-                                        <div className="space-y-1 text-xs text-gray-700">
+                                        <div className="space-y-1 text-xs text-gray-600">
                                             <div>• カロリー: {dataToShow.calories}kcal</div>
                                             <div>• タンパク質: {dataToShow.protein}g</div>
                                             <div>• 脂質: {dataToShow.fat}g</div>
@@ -2074,7 +2074,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
 
                     {/* PGBASEモジュール引用（カテゴリ別折り畳み式・複数選択可能） */}
                     <div>
-                        <label className="font-medium text-sm text-gray-700 mb-2 block">
+                        <label className="font-medium text-sm text-gray-600 mb-2 block">
                             PG BASE モジュール引用（任意・複数選択可）
                         </label>
                         <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-2">
@@ -2101,7 +2101,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                             onClick={() => toggleCategory(category)}
                                             className="w-full flex items-center justify-between px-3 py-2 bg-gray-100 hover:bg-gray-200 transition"
                                         >
-                                            <span className="font-semibold text-sm text-gray-700">
+                                            <span className="font-semibold text-sm text-gray-600">
                                                 {category} ({categoryGroups[category].length})
                                             </span>
                                             <Icon name={expandedModuleCategories[category] ? "ChevronUp" : "ChevronDown"} size={16} />
@@ -2186,7 +2186,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             ? 'bg-gray-400 text-white cursor-not-allowed'
                             : debugMode || (postCategory === 'body' && canPostBody) || postCategory === 'mental'
                             ? 'bg-sky-600 text-white hover:bg-sky-700'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-gray-300 text-gray-600 cursor-not-allowed'
                     }`}
                 >
                     {isSubmitting
@@ -2309,7 +2309,7 @@ const AdminPanel = ({ onClose }) => {
                                         </div>
                                         <div>
                                             <p className="font-bold text-gray-800">{post.author}</p>
-                                            <p className="text-xs text-gray-500">
+                                            <p className="text-xs text-gray-600">
                                                 {new Date(post.timestamp).toLocaleString('ja-JP')}
                                             </p>
                                         </div>
@@ -2339,7 +2339,7 @@ const AdminPanel = ({ onClose }) => {
 
                                 {/* 投稿内容 */}
                                 <div className="mb-4">
-                                    <p className="text-sm font-semibold text-gray-700 mb-2">投稿内容:</p>
+                                    <p className="text-sm font-semibold text-gray-600 mb-2">投稿内容:</p>
                                     <p className="text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">
                                         {post.content}
                                     </p>
@@ -2352,7 +2352,7 @@ const AdminPanel = ({ onClose }) => {
                                             <Icon name="Database" size={14} />
                                             データ連携情報
                                         </p>
-                                        <div className="grid grid-cols-3 gap-3 text-xs text-gray-700">
+                                        <div className="grid grid-cols-3 gap-3 text-xs text-gray-600">
                                             <div>• 継続: {post.attachedData.usageDays}日</div>
                                             <div>• 記録: {post.attachedData.recordDays}日</div>
                                             <div>• カロリー: {post.attachedData.totalCalories}kcal</div>
@@ -2395,7 +2395,7 @@ const AdminPanel = ({ onClose }) => {
             {confirmAction && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
                     <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">投稿を承認しますか？</h3>
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">投稿を承認しますか？</h3>
                         <p className="text-sm text-gray-600 mb-6">承認すると、この投稿がCOMYフィードに公開されます。</p>
                         <div className="flex gap-3">
                             <button
@@ -2419,7 +2419,7 @@ const AdminPanel = ({ onClose }) => {
             {showRejectDialog && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
                     <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">投稿を却下</h3>
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">投稿を却下</h3>
                         <p className="text-sm text-gray-600 mb-4">却下理由を入力してください（投稿者には通知されません）</p>
                         <textarea
                             value={rejectReason}
@@ -2721,7 +2721,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                         {approvedPosts.length === 0 ? (
                             <div className="text-center py-12">
                                 <Icon name="MessageSquare" size={64} className="mx-auto mb-4 text-gray-300" />
-                                <p className="text-gray-500 mb-2 font-medium">まだ投稿がありません</p>
+                                <p className="text-gray-600 mb-2 font-medium">まだ投稿がありません</p>
                                 <p className="text-sm text-gray-400">最初の投稿をしてみましょう!</p>
                             </div>
                         ) : (
@@ -2742,7 +2742,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                         }`}>
                                             {post.category === 'body' ? '💪 ボディメイク' : '🧠 メンタル'}
                                         </span>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-gray-600">
                                             {new Date(post.timestamp).toLocaleString('ja-JP')}
                                         </p>
                                     </div>
@@ -2770,13 +2770,13 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                     </div>
 
                                     {/* 投稿内容 */}
-                                    <p className="text-gray-700 mb-3 whitespace-pre-wrap">{post.content}</p>
+                                    <p className="text-gray-600 mb-3 whitespace-pre-wrap">{post.content}</p>
 
                                     {/* データ連携情報 */}
                                     {post.attachedData && (
                                         <div className="p-3 bg-fuchsia-50 border border-fuchsia-200 rounded-lg mb-3">
                                             <p className="text-xs font-semibold text-fuchsia-700 mb-2">📊 データ連携</p>
-                                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                                                 <div>• 継続: {post.attachedData.usageDays}日</div>
                                                 <div>• 記録: {post.attachedData.recordDays}日</div>
                                                 <div>• カロリー: {post.attachedData.totalCalories}kcal</div>
@@ -2840,11 +2840,11 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                                                     {comment.author?.[0] || 'U'}
                                                                 </div>
                                                                 <span className="text-xs font-semibold text-gray-800">{comment.author}</span>
-                                                                <span className="text-xs text-gray-500">
+                                                                <span className="text-xs text-gray-600">
                                                                     {new Date(comment.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-sm text-gray-700 ml-8">{comment.content}</p>
+                                                            <p className="text-sm text-gray-600 ml-8">{comment.content}</p>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -2911,7 +2911,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                 >
                                     メンターに応募
                                 </button>
-                                <p className="text-xs text-gray-500 text-center">
+                                <p className="text-xs text-gray-600 text-center">
                                     ※ 30日以上の利用、10回以上の貢献が必要です
                                 </p>
                             </div>
@@ -2923,7 +2923,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                 <Icon name="Star" size={20} className="text-amber-600" />
                                 ベストアンサー制度
                             </h3>
-                            <p className="text-sm text-gray-700 mb-3">
+                            <p className="text-sm text-gray-600 mb-3">
                                 質問に対して最も役立つ回答をベストアンサーとして選べます
                             </p>
                             <div className="bg-white rounded-lg p-3 text-sm text-gray-600">
@@ -2968,16 +2968,16 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                         </div>
 
                         <div className="space-y-4">
-                            <h4 className="font-bold text-gray-700">あなたの投稿</h4>
+                            <h4 className="font-bold text-gray-600">あなたの投稿</h4>
                             {posts.filter(p => p.userId === userId).length === 0 ? (
                                 <div className="text-center py-8 bg-white rounded-lg">
-                                    <p className="text-gray-500">まだ投稿がありません</p>
+                                    <p className="text-gray-600">まだ投稿がありません</p>
                                 </div>
                             ) : (
                                 posts.filter(p => p.userId === userId).map(post => (
                                     <div key={post.id} className="bg-white rounded-lg shadow-sm p-4">
-                                        <p className="text-gray-700 mb-2">{post.content}</p>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-gray-600 mb-2">{post.content}</p>
+                                        <p className="text-xs text-gray-600">
                                             {new Date(post.timestamp).toLocaleString('ja-JP')}
                                         </p>
                                     </div>

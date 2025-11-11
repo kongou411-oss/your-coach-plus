@@ -1224,7 +1224,7 @@ ${conversationContext}
                     <h1 className="text-xl font-bold text-white">本日の分析</h1>
                 </header>
                 <div className="p-6 flex items-center justify-center flex-grow">
-                    <div className="text-center text-gray-500">
+                    <div className="text-center text-gray-600">
                         <Icon name="AlertCircle" size={48} className="mx-auto mb-4 text-gray-300" />
                         <p>本日の記録がまだありません</p>
                     </div>
@@ -1263,7 +1263,7 @@ ${conversationContext}
                         ) : (
                             <Icon name="Gift" size={16} className="text-blue-600" />
                         )}
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-gray-600">
                             {creditInfo.tier === 'premium' ? 'Premium会員' : '無料プラン'}
                         </span>
                     </div>
@@ -1276,7 +1276,7 @@ ${conversationContext}
                         }`}>
                             {creditInfo.totalCredits}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-600">
                             (無料:{creditInfo.freeCredits} / 有料:{creditInfo.paidCredits})
                         </span>
                         <button
@@ -1297,7 +1297,7 @@ ${conversationContext}
                     className={`flex-1 py-3 text-center font-medium transition ${
                         activeTab === 'analysis'
                             ? 'text-[#4A9EFF] border-b-2 border-[#4A9EFF]'
-                            : 'text-gray-500 hover:text-gray-700'
+                            : 'text-gray-600 hover:text-gray-600'
                     }`}
                 >
                     分析
@@ -1307,7 +1307,7 @@ ${conversationContext}
                     className={`flex-1 py-3 text-center font-medium transition ${
                         activeTab === 'history'
                             ? 'text-[#4A9EFF] border-b-2 border-[#4A9EFF]'
-                            : 'text-gray-500 hover:text-gray-700'
+                            : 'text-gray-600 hover:text-gray-600'
                     }`}
                 >
                     履歴
@@ -1320,7 +1320,7 @@ ${conversationContext}
                     <>
                         {/* 日付バッジ */}
                         <div className="flex justify-center">
-                            <div className="bg-gray-200 rounded-full px-4 py-1.5 text-xs text-gray-700 font-medium flex items-center gap-2">
+                            <div className="bg-gray-200 rounded-full px-4 py-1.5 text-xs text-gray-600 font-medium flex items-center gap-2">
                                 <Icon name="Calendar" size={14} />
                                 {new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' })}
                                 {dailyRecord.routine && dailyRecord.routine.name && (
@@ -1356,7 +1356,7 @@ ${conversationContext}
                             </div>
                             <div className="flex-1">
                                 <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
-                                    <div className="text-sm text-gray-700 leading-relaxed">
+                                    <div className="text-sm text-gray-600 leading-relaxed">
                                         <MarkdownRenderer text={aiAnalysis} />
                                     </div>
                                 </div>
@@ -1380,10 +1380,10 @@ ${conversationContext}
                 ) : (
                     <div className="flex flex-col items-center justify-center py-12">
                         <Icon name="Sparkles" size={64} className="text-indigo-300 mb-4" />
-                        <p className="text-gray-700 font-medium text-center mb-2">
+                        <p className="text-gray-600 font-medium text-center mb-2">
                             AI分析をまだ生成していません
                         </p>
-                        <p className="text-gray-500 text-sm text-center">
+                        <p className="text-gray-600 text-sm text-center">
                             右上の「生成」ボタンを押して<br />AI分析を開始してください
                         </p>
                     </div>
@@ -1393,7 +1393,7 @@ ${conversationContext}
                         {!aiLoading && aiAnalysis && (
                             <div className="flex items-center gap-3 py-2">
                                 <div className="flex-1 h-px bg-gray-300"></div>
-                                <span className="text-xs text-gray-500 font-medium">質問・相談</span>
+                                <span className="text-xs text-gray-600 font-medium">質問・相談</span>
                                 <div className="flex-1 h-px bg-gray-300"></div>
                             </div>
                         )}
@@ -1461,7 +1461,7 @@ ${conversationContext}
                         {savedReports.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-12">
                                 <Icon name="FolderOpen" size={64} className="text-gray-300 mb-4" />
-                                <p className="text-gray-500 text-center">
+                                <p className="text-gray-600 text-center">
                                     保存されたレポートはまだありません
                                 </p>
                                 <p className="text-gray-400 text-sm text-center mt-2">
@@ -1504,7 +1504,7 @@ ${conversationContext}
                                                             <Icon name="FileText" size={16} className="text-[#4A9EFF]" />
                                                             <h3 className="font-medium text-gray-800">{report.title}</h3>
                                                         </div>
-                                                        <p className="text-xs text-gray-500 mt-1">
+                                                        <p className="text-xs text-gray-600 mt-1">
                                                             {(() => {
                                                                 const date = report.createdAt?.toDate ?
                                                                     report.createdAt.toDate() :
@@ -1529,7 +1529,7 @@ ${conversationContext}
                                                                 e.stopPropagation();
                                                                 handleUpdateReportTitle();
                                                             }}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-green-600 hover:bg-green-50 transition border-2 border-green-500"
+                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-green-600 hover:bg-green-50 transition border-2 border-green-500"
                                                         >
                                                             <Icon name="Check" size={18} />
                                                         </button>
@@ -1540,7 +1540,7 @@ ${conversationContext}
                                                                 setEditedReportTitle('');
                                                                 setSelectedReport(null);
                                                             }}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-gray-600 hover:bg-gray-100 transition border-2 border-gray-400"
+                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-gray-600 hover:bg-gray-100 transition border-2 border-gray-400"
                                                         >
                                                             <Icon name="X" size={18} />
                                                         </button>
@@ -1555,7 +1555,7 @@ ${conversationContext}
                                                                 setEditedReportTitle(report.title);
                                                                 setIsEditingReportTitle(true);
                                                             }}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
                                                         >
                                                             <Icon name="Edit2" size={18} />
                                                         </button>
@@ -1564,7 +1564,7 @@ ${conversationContext}
                                                                 e.stopPropagation();
                                                                 handleDeleteReport(report.id);
                                                             }}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                         >
                                                             <Icon name="Trash2" size={18} />
                                                         </button>
@@ -1618,7 +1618,7 @@ ${conversationContext}
             {/* ヘルプモーダル */}
             {showHelpModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={() => setShowHelpModal(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md p-6" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                                 <Icon name="HelpCircle" size={24} style={{color: '#4A9EFF'}} />
@@ -1628,7 +1628,7 @@ ${conversationContext}
                                 <Icon name="X" size={20} />
                             </button>
                         </div>
-                        <div className="space-y-3 text-sm text-gray-700">
+                        <div className="space-y-3 text-sm text-gray-600">
                             <p className="font-medium text-indigo-600">💡 質問例</p>
                             <ul className="space-y-2 pl-4">
                                 <li className="flex items-start gap-2">
@@ -1648,7 +1648,7 @@ ${conversationContext}
                                     <span>「目的達成のために何を優先すべき？」</span>
                                 </li>
                             </ul>
-                            <p className="text-xs text-gray-500 mt-4 pt-4 border-t">
+                            <p className="text-xs text-gray-600 mt-4 pt-4 border-t">
                                 AIコーチがレポート内容に基づいて、あなたの疑問に答えます。
                             </p>
                         </div>
@@ -1659,7 +1659,7 @@ ${conversationContext}
             {/* クレジット消費説明モーダル */}
             {showCreditInfoModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={() => setShowCreditInfoModal(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md p-6" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                                 <Icon name="Info" size={24} style={{color: '#4A9EFF'}} />
@@ -1669,7 +1669,7 @@ ${conversationContext}
                                 <Icon name="X" size={20} />
                             </button>
                         </div>
-                        <div className="space-y-4 text-sm text-gray-700">
+                        <div className="space-y-4 text-sm text-gray-600">
                             {/* クレジット消費ルール */}
                             <div>
                                 <p className="font-bold text-indigo-600 mb-2">📊 クレジット消費ルール</p>
@@ -1764,7 +1764,7 @@ ${conversationContext}
             {/* 初回分析後の販促モーダル */}
             {showUpgradeModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
+                    <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden animate-slide-up">
                         {/* ヘッダー（プレミアムモーダル） */}
                         <div className="bg-[#FFF59A] p-6 text-gray-800 text-center relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
@@ -1785,7 +1785,7 @@ ${conversationContext}
                         <div className="p-6 space-y-4">
                             {/* 残りクレジット */}
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                                <p className="text-sm text-gray-700 mb-1">今月の残りクレジット</p>
+                                <p className="text-sm text-gray-600 mb-1">今月の残りクレジット</p>
                                 <p className="text-3xl font-bold text-blue-600">
                                     {creditInfo ? creditInfo.remainingCredits : 20} 回
                                 </p>
@@ -1811,7 +1811,7 @@ ${conversationContext}
                                     ].map((feature, idx) => (
                                         <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
                                             <Icon name={feature.icon} size={18} className={feature.color} />
-                                            <span className="text-sm text-gray-700">{feature.text}</span>
+                                            <span className="text-sm text-gray-600">{feature.text}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -1872,7 +1872,7 @@ ${conversationContext}
                     }}
                 >
                     <div
-                        className="bg-white rounded-lg max-w-md w-full p-6 shadow-2xl"
+                        className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-md p-6 shadow-2xl"
                         onClick={(e) => {
                             e.stopPropagation();
                         }}
@@ -1880,7 +1880,7 @@ ${conversationContext}
                         <h2 className="text-xl font-bold mb-4 text-gray-800">レポートを保存</h2>
 
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-600 mb-2">
                                 レポートタイトル
                             </label>
                             <input
@@ -1899,7 +1899,7 @@ ${conversationContext}
                                     setShowSaveReportModal(false);
                                     setReportTitle('');
                                 }}
-                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition"
                             >
                                 キャンセル
                             </button>
@@ -1936,7 +1936,7 @@ ${conversationContext}
                     }}
                 >
                     <div
-                        className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
+                        className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-3xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
                         onClick={(e) => {
                             e.stopPropagation();
                         }}
@@ -1948,13 +1948,13 @@ ${conversationContext}
                                 onClick={() => setSelectedReport(null)}
                                 className="p-1 hover:bg-gray-100 rounded transition"
                             >
-                                <Icon name="X" size={20} className="text-gray-500" />
+                                <Icon name="X" size={20} className="text-gray-600" />
                             </button>
                         </div>
 
                         {/* コンテンツ */}
                         <div className="flex-1 overflow-y-auto p-6">
-                            <div className="text-xs text-gray-500 mb-4">
+                            <div className="text-xs text-gray-600 mb-4">
                                 保存日時: {(() => {
                                     const date = selectedReport.createdAt?.toDate ?
                                         selectedReport.createdAt.toDate() :
@@ -1977,7 +1977,7 @@ ${conversationContext}
                         <div className="p-4 border-t flex justify-end">
                             <button
                                 onClick={() => setSelectedReport(null)}
-                                className="px-6 py-2 bg-[#4A9EFF] text-white font-medium rounded-lg hover:bg-[#3A8EEF] transition"
+                                className="px-6 py-2 bg-[#4A9EFF] text-white font-medium rounded-lg hover:bg-[#3b8fef] transition"
                             >
                                 閉じる
                             </button>
@@ -2033,7 +2033,7 @@ const CalendarView = ({ selectedStartDate, selectedEndDate, onDateSelect, analys
                     <Icon name="ChevronRight" size={20} />
                 </button>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-500 mb-2">
+            <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-600 mb-2">
                 {['日', '月', '火', '水', '木', '金', '土'].map(day => <div key={day}>{day}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-1">
@@ -2052,7 +2052,7 @@ const CalendarView = ({ selectedStartDate, selectedEndDate, onDateSelect, analys
                             key={dateStr}
                             onClick={() => onDateSelect(date)}
                             className={`relative w-full aspect-square flex flex-col items-center justify-center rounded-lg transition text-sm ${
-                                date.getMonth() !== currentMonth.getMonth() ? 'text-gray-300' : 'text-gray-700'
+                                date.getMonth() !== currentMonth.getMonth() ? 'text-gray-300' : 'text-gray-600'
                             } ${
                                 isSelected ? 'bg-[#4A9EFF] text-white font-bold shadow-md' :
                                 inRange ? 'bg-blue-100' :
@@ -2251,7 +2251,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto slide-up">
+            <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto slide-up">
                 <div className="sticky top-0 bg-white border-b p-4 z-10">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-lg font-bold">履歴</h3>
@@ -2265,11 +2265,11 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Icon name="FileText" size={16} className="text-green-600" />
-                                    <span className="text-sm font-medium text-gray-700">指示書達成率</span>
+                                    <span className="text-sm font-medium text-gray-600">指示書達成率</span>
                                 </div>
                                 <div className="text-right">
                                     <span className="text-2xl font-bold text-green-600">{directiveAchievementRate}%</span>
-                                    <span className="text-xs text-gray-500 ml-2">({completedDirectives}/{directivesWithData.length})</span>
+                                    <span className="text-xs text-gray-600 ml-2">({completedDirectives}/{directivesWithData.length})</span>
                                 </div>
                             </div>
                         </div>
@@ -2369,7 +2369,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                     <div className="space-y-2">
                                         {historyData.filter(d => d.rmUpdates && d.rmUpdates.length > 0).map(d => (
                                             <div key={d.date} className="border-l-4 border-purple-500 pl-3 py-2">
-                                                <div className="text-xs text-gray-500">{d.date}</div>
+                                                <div className="text-xs text-gray-600">{d.date}</div>
                                                 {d.rmUpdates.map((rm, idx) => (
                                                     <div key={idx} className="text-sm font-medium text-purple-700">{rm}</div>
                                                 ))}
@@ -2377,7 +2377,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-sm text-gray-500 text-center py-2">RM更新記録がありません</div>
+                                    <div className="text-sm text-gray-600 text-center py-2">RM更新記録がありません</div>
                                 )}
                             </div>
                         </details>
@@ -2523,7 +2523,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                         })()}
                                     </svg>
                                     {/* Y軸ラベル（単位表示） */}
-                                    <div className="absolute left-0 top-0 flex flex-col justify-between h-full text-xs text-gray-500 pr-2" style={{ width: '50px' }}>
+                                    <div className="absolute left-0 top-0 flex flex-col justify-between h-full text-xs text-gray-600 pr-2" style={{ width: '50px' }}>
                                         <span>{Math.round(Math.max(...historyData.map(d => d[selectedMetric] || 0), 1) * 100) / 100}{selectedMetric === 'calories' ? 'kcal' : selectedMetric === 'weight' ? 'kg' : selectedMetric === 'bodyFat' ? '%' : 'g'}</span>
                                         <span>{Math.round(Math.max(...historyData.map(d => d[selectedMetric] || 0), 1) * 0.75 * 100) / 100}{selectedMetric === 'calories' ? 'kcal' : selectedMetric === 'weight' ? 'kg' : selectedMetric === 'bodyFat' ? '%' : 'g'}</span>
                                         <span>{Math.round(Math.max(...historyData.map(d => d[selectedMetric] || 0), 1) * 0.5 * 100) / 100}{selectedMetric === 'calories' ? 'kcal' : selectedMetric === 'weight' ? 'kg' : selectedMetric === 'bodyFat' ? '%' : 'g'}</span>
@@ -2531,7 +2531,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                         <span>0{selectedMetric === 'calories' ? 'kcal' : selectedMetric === 'weight' ? 'kg' : selectedMetric === 'bodyFat' ? '%' : 'g'}</span>
                                     </div>
                                     {/* X軸ラベル */}
-                                    <div className="flex justify-between text-xs text-gray-500 mt-2">
+                                    <div className="flex justify-between text-xs text-gray-600 mt-2">
                                         <span>{new Date(historyData[0]?.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}</span>
                                         <span>{new Date(historyData[Math.floor(historyData.length / 2)]?.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}</span>
                                         <span>{new Date(historyData[historyData.length - 1]?.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}</span>
@@ -2558,7 +2558,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                 className="w-full p-4 flex justify-between items-center hover:bg-gray-100 transition rounded-xl"
                                             >
                                                 <div className="flex items-center gap-2">
-                                                    <Icon name={isExpanded ? "ChevronDown" : "ChevronRight"} size={20} className="text-gray-500" />
+                                                    <Icon name={isExpanded ? "ChevronDown" : "ChevronRight"} size={20} className="text-gray-600" />
                                                     <h4 className="font-bold">
                                                         {new Date(day.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' })}
                                                     </h4>
@@ -2672,8 +2672,8 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                         >
                                                             <h5 className="font-bold text-sm mb-2 flex items-center justify-between">
                                                                 <div className="flex items-center gap-1">
-                                                                    <Icon name="FileText" size={14} className={day.directive.completed ? "text-gray-500" : "text-green-600"} />
-                                                                    <span className={day.directive.completed ? "text-gray-500 line-through" : "text-green-900"}>指示書</span>
+                                                                    <Icon name="FileText" size={14} className={day.directive.completed ? "text-gray-600" : "text-green-600"} />
+                                                                    <span className={day.directive.completed ? "text-gray-600 line-through" : "text-green-900"}>指示書</span>
                                                                 </div>
                                                                 {day.directive.completed && (
                                                                     <span className="text-xs text-green-600 flex items-center gap-1">
@@ -2682,7 +2682,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                                     </span>
                                                                 )}
                                                             </h5>
-                                                            <p className={`text-xs whitespace-pre-wrap ${day.directive.completed ? 'text-gray-500 line-through' : 'text-gray-700'}`}>
+                                                            <p className={`text-xs whitespace-pre-wrap ${day.directive.completed ? 'text-gray-600 line-through' : 'text-gray-600'}`}>
                                                                 {day.directive.message.length > 50 ? day.directive.message.substring(0, 50) + '...' : day.directive.message}
                                                             </p>
                                                             <p className="text-xs text-gray-400 mt-1">タップして全文を表示</p>
@@ -2703,7 +2703,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                     );
                                 })}
                                 {historyData.filter(d => d.calories > 0).length === 0 && (
-                                    <p className="text-center text-gray-500 py-12">この期間の記録はありません</p>
+                                    <p className="text-center text-gray-600 py-12">この期間の記録はありません</p>
                                 )}
                             </div>
 
@@ -2752,7 +2752,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
             {/* 分析モーダル */}
             {selectedDateAnalysis && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto slide-up">
+                    <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-lg max-h-[80vh] overflow-y-auto slide-up">
                         <div className="sticky top-0 bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 flex justify-between items-center z-10 rounded-t-2xl">
                             <h3 className="text-lg font-bold flex items-center gap-2">
                                 <Icon name="BarChart3" size={20} />
@@ -2769,7 +2769,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                 <div className="text-center py-12">
                                     <Icon name="AlertCircle" size={48} className="mx-auto mb-4 text-gray-300" />
                                     <p className="text-gray-600 mb-2 font-semibold">{selectedDateAnalysis.error}</p>
-                                    <p className="text-sm text-gray-500">{selectedDateAnalysis.comment}</p>
+                                    <p className="text-sm text-gray-600">{selectedDateAnalysis.comment}</p>
                                 </div>
                             ) : (
                                 <>
@@ -2814,7 +2814,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                 <Icon name="MessageSquare" size={18} className="text-purple-600" />
                                                 AIコーチからの評価
                                             </h4>
-                                            <div className="text-sm text-gray-700 leading-relaxed">
+                                            <div className="text-sm text-gray-600 leading-relaxed">
                                                 <MarkdownRenderer text={selectedDateAnalysis.aiComment} />
                                             </div>
                                         </div>
@@ -2830,7 +2830,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                             {/* カロリー */}
                                             <div>
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-sm font-medium text-gray-700">カロリー</span>
+                                                    <span className="text-sm font-medium text-gray-600">カロリー</span>
                                                     <span className="text-sm font-bold text-indigo-600">{selectedDateAnalysis.achievementRates.calories}%</span>
                                                 </div>
                                                 <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -2839,7 +2839,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                         style={{ width: `${Math.min(selectedDateAnalysis.achievementRates.calories, 100)}%` }}
                                                     ></div>
                                                 </div>
-                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                <div className="flex justify-between text-xs text-gray-600 mt-1">
                                                     <span>実績: {selectedDateAnalysis.actual.calories}kcal</span>
                                                     <span>目標: {selectedDateAnalysis.target.calories}kcal</span>
                                                 </div>
@@ -2848,7 +2848,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                             {/* タンパク質 */}
                                             <div>
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-sm font-medium text-gray-700">タンパク質</span>
+                                                    <span className="text-sm font-medium text-gray-600">タンパク質</span>
                                                     <span className="text-sm font-bold text-cyan-600">{selectedDateAnalysis.achievementRates.protein}%</span>
                                                 </div>
                                                 <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -2857,7 +2857,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                         style={{ width: `${Math.min(selectedDateAnalysis.achievementRates.protein, 100)}%` }}
                                                     ></div>
                                                 </div>
-                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                <div className="flex justify-between text-xs text-gray-600 mt-1">
                                                     <span>実績: {selectedDateAnalysis.actual.protein}g</span>
                                                     <span>目標: {selectedDateAnalysis.target.protein}g</span>
                                                 </div>
@@ -2866,7 +2866,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                             {/* 脂質 */}
                                             <div>
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-sm font-medium text-gray-700">脂質</span>
+                                                    <span className="text-sm font-medium text-gray-600">脂質</span>
                                                     <span className="text-sm font-bold text-yellow-600">{selectedDateAnalysis.achievementRates.fat}%</span>
                                                 </div>
                                                 <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -2875,7 +2875,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                         style={{ width: `${Math.min(selectedDateAnalysis.achievementRates.fat, 100)}%` }}
                                                     ></div>
                                                 </div>
-                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                <div className="flex justify-between text-xs text-gray-600 mt-1">
                                                     <span>実績: {selectedDateAnalysis.actual.fat}g</span>
                                                     <span>目標: {selectedDateAnalysis.target.fat}g</span>
                                                 </div>
@@ -2884,7 +2884,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                             {/* 炭水化物 */}
                                             <div>
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-sm font-medium text-gray-700">炭水化物</span>
+                                                    <span className="text-sm font-medium text-gray-600">炭水化物</span>
                                                     <span className="text-sm font-bold text-green-600">{selectedDateAnalysis.achievementRates.carbs}%</span>
                                                 </div>
                                                 <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -2893,7 +2893,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                                         style={{ width: `${Math.min(selectedDateAnalysis.achievementRates.carbs, 100)}%` }}
                                                     ></div>
                                                 </div>
-                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                <div className="flex justify-between text-xs text-gray-600 mt-1">
                                                     <span>実績: {selectedDateAnalysis.actual.carbs}g</span>
                                                     <span>目標: {selectedDateAnalysis.target.carbs}g</span>
                                                 </div>
@@ -2907,7 +2907,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                             <Icon name="Lightbulb" size={18} className="text-amber-600" />
                                             改善アドバイス
                                         </h4>
-                                        <p className="text-gray-700 leading-relaxed">{selectedDateAnalysis.improvement}</p>
+                                        <p className="text-gray-600 leading-relaxed">{selectedDateAnalysis.improvement}</p>
                                     </div>
 
                                     {/* 生成日時 */}

@@ -63,7 +63,7 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
             'open_community': 'text-sky-600',
             'open_settings': 'text-gray-600'
         };
-        return colorMap[action] || 'text-gray-700';
+        return colorMap[action] || 'text-gray-600';
     };
 
     // 位置に応じたスタイルを取得
@@ -109,7 +109,7 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
                     <Icon
                         name="ChevronRight"
                         size={leftSize.iconSize}
-                        className={`text-gray-700 transition-transform duration-300 ${expandedSide === 'left' ? 'rotate-180' : ''} pointer-events-none`}
+                        className={`text-gray-600 transition-transform duration-300 ${expandedSide === 'left' ? 'rotate-180' : ''} pointer-events-none`}
                     />
                 </button>
 
@@ -133,7 +133,7 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
                                     }}
                                 >
                                     <Icon name={shortcut.icon} size={leftSize.iconSize + 4} className={getIconColor(shortcut.action)} />
-                                    <span className="text-sm font-medium text-gray-700 whitespace-nowrap">{shortcut.label}</span>
+                                    <span className="text-sm font-medium text-gray-600 whitespace-nowrap">{shortcut.label}</span>
                                 </button>
                             );
                         })}
@@ -156,7 +156,7 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
                     <Icon
                         name="ChevronLeft"
                         size={rightSize.iconSize}
-                        className={`text-gray-700 transition-transform duration-300 ${expandedSide === 'right' ? 'rotate-180' : ''} pointer-events-none`}
+                        className={`text-gray-600 transition-transform duration-300 ${expandedSide === 'right' ? 'rotate-180' : ''} pointer-events-none`}
                     />
                 </button>
 
@@ -180,7 +180,7 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
                                     }}
                                 >
                                     <Icon name={shortcut.icon} size={rightSize.iconSize + 4} className={getIconColor(shortcut.action)} />
-                                    <span className="text-sm font-medium text-gray-700 whitespace-nowrap">{shortcut.label}</span>
+                                    <span className="text-sm font-medium text-gray-600 whitespace-nowrap">{shortcut.label}</span>
                                 </button>
                             );
                         })}

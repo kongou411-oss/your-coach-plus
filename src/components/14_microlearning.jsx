@@ -57,7 +57,7 @@ const MicroLearningPopup = ({ content, onClose, onComplete }) => {
                         {currentStep > 0 && (
                             <button
                                 onClick={() => setCurrentStep(currentStep - 1)}
-                                className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
+                                className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
                             >
                                 戻る
                             </button>
@@ -73,7 +73,7 @@ const MicroLearningPopup = ({ content, onClose, onComplete }) => {
                     {/* スキップボタン */}
                     <button
                         onClick={onClose}
-                        className="w-full text-sm text-gray-500 hover:text-gray-700"
+                        className="w-full text-sm text-gray-600 hover:text-gray-600"
                     >
                         後で学習する
                     </button>
@@ -93,7 +93,7 @@ const MicroLearningStep = ({ step }) => {
             {/* コンテンツタイプに応じた表示 */}
             {step.type === 'text' && (
                 <div className="prose prose-sm max-w-none">
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{step.content}</p>
+                    <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{step.content}</p>
                 </div>
             )}
 
@@ -107,7 +107,7 @@ const MicroLearningStep = ({ step }) => {
                             allowFullScreen
                         ></iframe>
                     ) : (
-                        <div className="text-center text-gray-500">
+                        <div className="text-center text-gray-600">
                             <Icon name="Play" size={48} className="mx-auto mb-2" />
                             <p>動画コンテンツ</p>
                             {step.youtubeLink && (
@@ -151,7 +151,7 @@ const MicroLearningStep = ({ step }) => {
                         {step.listItems.map((item, index) => (
                             <li key={index} className="flex items-start gap-2">
                                 <Icon name="CheckCircle" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
-                                <span className="text-gray-700">{item}</span>
+                                <span className="text-gray-600">{item}</span>
                             </li>
                         ))}
                     </ul>
@@ -186,7 +186,7 @@ const QuizStep = ({ quiz }) => {
 
     return (
         <div className="space-y-4">
-            <p className="font-medium text-gray-700">{quiz.question}</p>
+            <p className="font-medium text-gray-600">{quiz.question}</p>
 
             <div className="space-y-2">
                 {quiz.options.map((option, index) => (
@@ -231,7 +231,7 @@ const QuizStep = ({ quiz }) => {
                     }`}>
                         {selectedAnswer === quiz.correctAnswer ? '正解！' : '不正解'}
                     </p>
-                    <p className="text-sm text-gray-700">{quiz.explanation}</p>
+                    <p className="text-sm text-gray-600">{quiz.explanation}</p>
                 </div>
             )}
         </div>

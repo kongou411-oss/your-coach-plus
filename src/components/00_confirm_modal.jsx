@@ -5,10 +5,10 @@ const ConfirmModal = ({ show, title, message, onConfirm, onCancel }) => {
     if (!show) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[9950] flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl">
                 <h3 className="text-lg font-bold mb-4 dark:text-white">{title}</h3>
-                <p className="text-gray-700 dark:text-gray-300 mb-6 whitespace-pre-line">{message}</p>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 whitespace-pre-line">{message}</p>
                 <div className="flex gap-3 justify-end">
                     <button
                         onClick={onCancel}

@@ -1536,8 +1536,8 @@ JSON形式のみ出力、説明文不要`;
                                 className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
                             />
                             <div className="flex-1">
-                                <p className="text-sm font-semibold text-gray-700">選択した写真</p>
-                                <p className="text-xs text-gray-500">認識結果と照らし合わせてご確認ください</p>
+                                <p className="text-sm font-semibold text-gray-600">選択した写真</p>
+                                <p className="text-xs text-gray-600">認識結果と照らし合わせてご確認ください</p>
                             </div>
                         </div>
                     </div>
@@ -1546,7 +1546,7 @@ JSON形式のみ出力、説明文不要`;
                 {/* 食事名編集セクション */}
                 {recognizedFoods.length > 0 && (
                     <div className="border-b border-gray-200 bg-white p-4">
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">
                             食事名
                         </label>
                         <input
@@ -1594,8 +1594,8 @@ JSON形式のみ出力、説明文不要`;
                                     id="food-image-gallery"
                                 />
                                 <label htmlFor="food-image-gallery" className="cursor-pointer block bg-gray-50 hover:bg-gray-100 transition p-6 text-center">
-                                    <Icon name="Image" size={48} className="mx-auto mb-3 text-gray-500" />
-                                    <p className="text-base font-bold text-gray-700 mb-1">
+                                    <Icon name="Image" size={48} className="mx-auto mb-3 text-gray-600" />
+                                    <p className="text-base font-bold text-gray-600 mb-1">
                                         🖼️ ギャラリーから選択
                                     </p>
                                     <p className="text-xs text-gray-600">
@@ -1781,7 +1781,7 @@ JSON形式のみ出力、説明文不要`;
                             {showManualAdd && (
                                 <div className="space-y-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-gray-600 mb-2">
                                             食材を検索して追加
                                         </label>
                                         <input
@@ -1805,7 +1805,7 @@ JSON形式のみ出力、説明文不要`;
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
                                                             <p className="font-medium text-gray-800">{food.name}</p>
-                                                            <p className="text-xs text-gray-500">{food.category}</p>
+                                                            <p className="text-xs text-gray-600">{food.category}</p>
                                                         </div>
                                                         <div className="text-xs text-gray-600 flex gap-2">
                                                             <span>{food.calories}kcal</span>
@@ -1818,7 +1818,7 @@ JSON形式のみ出力、説明文不要`;
                                     )}
 
                                     {searchQuery && searchResults.length === 0 && (
-                                        <div className="text-center py-4 text-gray-500 text-sm">
+                                        <div className="text-center py-4 text-gray-600 text-sm">
                                             <p>「{searchQuery}」に一致する食材が見つかりませんでした</p>
                                             <p className="text-xs mt-1">別のキーワードで検索してください</p>
                                         </div>
@@ -1848,7 +1848,7 @@ JSON形式のみ出力、説明文不要`;
                                 return (
                                     <div className="fixed left-0 right-0 bg-white border-t-2 border-gray-300 shadow-2xl p-4 z-[9998]" style={{bottom: '200px'}}>
                                         <div className="max-w-md mx-auto">
-                                            <div className="text-sm text-gray-900 font-semibold mb-3 text-center">
+                                            <div className="text-sm text-gray-800 font-semibold mb-3 text-center">
                                                 {selectedFood.name} の量を調整
                                             </div>
 
@@ -1862,7 +1862,7 @@ JSON形式のみ出力、説明文不要`;
                                                     min="0"
                                                     step={adjustmentStep}
                                                 />
-                                                <span className="text-lg text-gray-700 font-bold">{unit}</span>
+                                                <span className="text-lg text-gray-600 font-bold">{unit}</span>
                                             </div>
 
                                             {/* ステップ選択 */}
@@ -1874,7 +1874,7 @@ JSON形式のみ出力、説明文不要`;
                                                         className={`flex-1 py-2 text-sm rounded transition ${
                                                             adjustmentStep === step
                                                                 ? 'bg-blue-600 text-white font-semibold'
-                                                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+                                                                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
                                                         }`}
                                                     >
                                                         {step}
@@ -1930,7 +1930,7 @@ JSON形式のみ出力、説明文不要`;
                                                         setEditingFoodIndex(null);
                                                         setOriginalFood(null);
                                                     }}
-                                                    className="py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                                                    className="py-3 bg-gray-200 text-gray-600 rounded-lg font-semibold hover:bg-gray-300 transition"
                                                 >
                                                     キャンセル
                                                 </button>
@@ -1956,7 +1956,7 @@ JSON形式のみ出力、説明文不要`;
                                         setImagePreview(null);
                                         setSelectedImage(null);
                                     }}
-                                    className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
+                                    className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
                                 >
                                     やり直す
                                 </button>
@@ -2163,7 +2163,7 @@ JSON形式のみ出力、説明文不要`;
                                         <p className="text-sm text-blue-800 mb-2">
                                             加工食品の場合、パッケージに記載されている「栄養成分表示」から、カロリーとPFC（たんぱく質・脂質・炭水化物）の値をそのまま入力します。
                                         </p>
-                                        <div className="bg-white rounded p-2 text-xs text-gray-700 border border-blue-300">
+                                        <div className="bg-white rounded p-2 text-xs text-gray-600 border border-blue-300">
                                             <p className="font-semibold mb-1">例: 栄養成分表示（100gあたり）</p>
                                             <p>エネルギー: 250kcal</p>
                                             <p>たんぱく質: 10.5g</p>
@@ -2392,11 +2392,11 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                         )}
                     </div>
                     {food.category && (
-                        <p className="text-xs text-gray-500">{food.category}</p>
+                        <p className="text-xs text-gray-600">{food.category}</p>
                     )}
                     {/* 量表示 */}
                     <div className="flex items-center gap-2 mt-2">
-                        <span className="text-sm font-semibold text-gray-700">
+                        <span className="text-sm font-semibold text-gray-600">
                             量: {food.amount} {base.unit === '1個' ? '個' : base.unit === '本' ? '本' : 'g'}
                         </span>
                     </div>
@@ -2423,7 +2423,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                             e.stopPropagation();
                             if (onEdit) onEdit(foodIndex);
                         }}
-                        className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
                         title="編集"
                     >
                         <Icon name="Edit" size={18} />
@@ -2433,7 +2433,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                             e.stopPropagation();
                             onRemove();
                         }}
-                        className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                         title="削除"
                     >
                         <Icon name="Trash2" size={18} />
@@ -2481,7 +2481,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                         <div className="grid grid-cols-4 gap-3 text-center">
                             <div>
                                 <p className="text-xs text-gray-600">カロリー</p>
-                                <p className="text-sm font-bold" style={{color: '#60a5fa'}}>{baseNutrients.calories}kcal</p>
+                                <p className="text-sm font-bold text-blue-600">{baseNutrients.calories}kcal</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-600">P</p>
@@ -2496,7 +2496,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                 <p className="text-sm font-bold text-green-500">{baseNutrients.carbs.toFixed(1)}g</p>
                             </div>
                         </div>
-                        <p className="text-xs text-gray-500 text-center mt-1">{perServingLabel}</p>
+                        <p className="text-xs text-gray-600 text-center mt-1">{perServingLabel}</p>
                     </div>
                 );
             })()}
@@ -2508,7 +2508,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                     <div className="grid grid-cols-4 gap-3 text-center">
                         <div className="bg-sky-50 rounded-lg p-2">
                             <p className="text-xs text-gray-600">カロリー</p>
-                            <p className="text-base font-bold" style={{color: '#60a5fa'}}>{nutrients.calories}kcal</p>
+                            <p className="text-base font-bold text-blue-600">{nutrients.calories}kcal</p>
                         </div>
                         <div className="bg-red-50 rounded-lg p-2">
                             <p className="text-xs text-gray-600">P</p>
@@ -2667,14 +2667,14 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                             onClick={() => setIsNutritionEditExpanded(!isNutritionEditExpanded)}
                             className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition"
                         >
-                            <p className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <p className="text-sm font-semibold text-gray-600 flex items-center gap-2">
                                 <Icon name="Edit" size={16} className="text-blue-600" />
                                 栄養素を編集（100gあたり）
                             </p>
                             <Icon
                                 name={isNutritionEditExpanded ? "ChevronUp" : "ChevronDown"}
                                 size={20}
-                                className="text-gray-500"
+                                className="text-gray-600"
                             />
                         </button>
 
@@ -2773,7 +2773,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                         />
                                     </div>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2">
+                                <p className="text-xs text-gray-600 mt-2">
                                     ※ 編集した内容は確定時にカスタム食材として自動保存されます
                                 </p>
                             </div>

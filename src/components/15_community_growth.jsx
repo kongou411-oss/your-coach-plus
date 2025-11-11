@@ -219,7 +219,7 @@ const ThemeSpaceSelector = ({ userId, onClose }) => {
                         <p className="text-gray-600">
                             共通の目標を持つ仲間と交流しましょう
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-600">
                             複数のスペースに参加できます
                         </p>
                     </div>
@@ -250,7 +250,7 @@ const ThemeSpaceSelector = ({ userId, onClose }) => {
                                                     )}
                                                 </h4>
                                                 <p className="text-sm text-gray-600 mt-1">{space.description}</p>
-                                                <p className="text-xs text-gray-500 mt-2">
+                                                <p className="text-xs text-gray-600 mt-2">
                                                     <Icon name="Users" size={12} className="inline mr-1" />
                                                     {space.memberCount}人が参加中
                                                 </p>

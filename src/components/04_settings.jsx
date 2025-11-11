@@ -6,10 +6,10 @@ const ConfirmModal = ({ show, title, message, onConfirm, onCancel }) => {
     if (!show) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[9950] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-[95vw] sm:max-w-md p-6 shadow-xl">
                 <h3 className="text-lg font-bold mb-4 dark:text-white">{title}</h3>
-                <p className="text-gray-700 dark:text-gray-300 mb-6 whitespace-pre-line">{message}</p>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 whitespace-pre-line">{message}</p>
                 <div className="flex gap-3 justify-end">
                     <button
                         onClick={onCancel}
@@ -380,7 +380,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     return (
         <>
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden slide-up">
+            <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden slide-up">
                 {/* ヘッダー（固定） */}
                 <div className="flex-shrink-0 bg-white border-b p-4 flex justify-between items-center">
                     <h3 className="text-lg font-bold">設定</h3>
@@ -402,7 +402,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </summary>
                         <div className="p-4 pt-0 border-t">
                             <div className="space-y-4">
-                                <p className="text-sm text-gray-700 font-semibold">YourCoachの基本フロー</p>
+                                <p className="text-sm text-gray-600 font-semibold">YourCoachの基本フロー</p>
 
                                 {/* フローチャート */}
                                 <div className="bg-white p-4 rounded-lg border-2 border-gray-200 space-y-3">
@@ -492,13 +492,13 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
 
                                                 <div className="bg-[#FFF59A]/10 p-4 rounded-lg border border-amber-200 mb-3">
-                                                    <p className="text-sm font-medium text-gray-700 mb-1">月額料金</p>
+                                                    <p className="text-sm font-medium text-gray-600 mb-1">月額料金</p>
                                                     <p className="text-3xl font-bold text-amber-600">¥740</p>
-                                                    <p className="text-xs text-gray-500 mt-1">税込</p>
+                                                    <p className="text-xs text-gray-600 mt-1">税込</p>
                                                 </div>
 
                                                 <button
-                                                    className="w-full bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300"
+                                                    className="w-full bg-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-300"
                                                     onClick={() => showConfirm('サブスクリプション解約の確認', 'サブスクリプションを解約しますか？', () => toast('解約処理は実装予定！'))}
                                                 >
                                                     サブスクリプション解約
@@ -527,9 +527,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
 
                                                 <div className="bg-blue-50 p-3 rounded-lg mb-3">
-                                                    <p className="text-sm font-medium text-gray-700 mb-1">現在の利用日数</p>
+                                                    <p className="text-sm font-medium text-gray-600 mb-1">現在の利用日数</p>
                                                     <p className="text-2xl font-bold text-blue-600">{usageDays} 日目</p>
-                                                    <p className="text-xs text-gray-500 mt-1">8日目以降はPremium登録が必要です</p>
+                                                    <p className="text-xs text-gray-600 mt-1">8日目以降はPremium登録が必要です</p>
                                                 </div>
 
                                                 <button
@@ -554,7 +554,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
 
                                                 <div className="bg-white p-3 rounded-lg mb-3">
-                                                    <p className="text-sm font-medium text-gray-700 mb-1">現在の利用日数</p>
+                                                    <p className="text-sm font-medium text-gray-600 mb-1">現在の利用日数</p>
                                                     <p className="text-2xl font-bold text-red-600">{usageDays} 日目</p>
                                                 </div>
 
@@ -661,7 +661,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 <span className="text-xs text-gray-600">合計</span>
                                                 <span className="text-2xl font-bold text-blue-600">{expData.totalCredits}</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-blue-200">
                                                 <div className="bg-white p-2 rounded">
                                                     <p className="text-xs text-gray-600 mb-0.5">無料付与</p>
                                                     <p className="font-bold text-green-600">{expData.freeCredits}</p>
@@ -671,7 +671,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <p className="font-bold text-amber-600">{expData.paidCredits}</p>
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-gray-500 pt-2">
+                                            <p className="text-xs text-gray-600 pt-2">
                                                 ※ Gemini API利用1回につきクレジット消費
                                             </p>
                                         </div>
@@ -703,7 +703,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             Level {milestone.level}
                                                         </span>
                                                     </div>
-                                                    <span className={`text-xs font-bold ${milestone.achieved ? 'text-green-700' : 'text-gray-500'}`}>
+                                                    <span className={`text-xs font-bold ${milestone.achieved ? 'text-green-700' : 'text-gray-600'}`}>
                                                         +{milestone.reward} クレジット
                                                     </span>
                                                 </div>
@@ -912,7 +912,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <span className="text-sm">計算ロジック解説（全フロー）</span>
                                             <Icon name="ChevronDown" size={16} className="ml-auto text-blue-400" />
                                         </summary>
-                                        <div className="p-4 pt-2 border-t border-blue-200 text-sm text-gray-700 space-y-4">
+                                        <div className="p-4 pt-2 border-t border-blue-200 text-sm text-gray-600 space-y-4">
                                             {/* BMR計算 */}
                                             <div>
                                                 <h5 className="font-bold text-blue-700 mb-2 flex items-center gap-1">
@@ -922,7 +922,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 <div className="pl-6 space-y-1 text-xs">
                                                     <p className="font-medium text-gray-800">【計算式】Katch-McArdle式 + 脂肪組織代謝</p>
                                                     <p className="text-gray-600">BMR = (370 + 21.6 × 除脂肪体重) + (脂肪量 × 4.5)</p>
-                                                    <p className="text-gray-500 mt-1">
+                                                    <p className="text-gray-600 mt-1">
                                                         • 除脂肪体重（LBM）= 体重 × (1 - 体脂肪率 ÷ 100)<br/>
                                                         • 脂肪量 = 体重 - 除脂肪体重<br/>
                                                         • 脂肪組織も1日4.5kcal/kgのエネルギーを消費します
@@ -938,7 +938,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </h5>
                                                 <div className="pl-6 space-y-1 text-xs">
                                                     <p className="font-medium text-gray-800">【計算式】TDEE = BMR × 活動レベル係数</p>
-                                                    <p className="text-gray-500 mt-1">
+                                                    <p className="text-gray-600 mt-1">
                                                         • レベル1（1.05）: ほぼ運動なし<br/>
                                                         • レベル2（1.225）: 週1-2回の軽い運動<br/>
                                                         • レベル3（1.4）: 週3-4回の運動<br/>
@@ -957,7 +957,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </h5>
                                                 <div className="pl-6 space-y-1 text-xs">
                                                     <p className="font-medium text-gray-800">【計算式】目標摂取カロリー = TDEE + カロリー調整値</p>
-                                                    <p className="text-gray-500 mt-1">
+                                                    <p className="text-gray-600 mt-1">
                                                         • メンテナンス: +0kcal（現状維持）<br/>
                                                         • ダイエット: -300kcal（減量）<br/>
                                                         • バルクアップ: +300kcal（増量）<br/>
@@ -977,7 +977,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <div>
                                                         <p className="font-medium text-gray-800">【目的別モード】</p>
                                                         <p className="text-gray-600">スタイル・目的・食事スタイルに応じて自動計算</p>
-                                                        <p className="text-gray-500 mt-1">
+                                                        <p className="text-gray-600 mt-1">
                                                             • タンパク質 = 除脂肪体重 × 係数（一般:1.2、ボディメイカー:2.2 ※目的に関わらず固定）<br/>
                                                             • 脂質 = 目標カロリー × 0.25（バランス）or × 0.35（低糖質）<br/>
                                                             • 炭水化物 = 残りのカロリーを炭水化物で充当
@@ -986,7 +986,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <div>
                                                         <p className="font-medium text-gray-800">【カスタムモード】</p>
                                                         <p className="text-gray-600">カロリー比率を直接指定（例: P30% F25% C45%）</p>
-                                                        <p className="text-gray-500 mt-1">
+                                                        <p className="text-gray-600 mt-1">
                                                             • タンパク質 = 目標カロリー × P% ÷ 4kcal/g<br/>
                                                             • 脂質 = 目標カロリー × F% ÷ 9kcal/g<br/>
                                                             • 炭水化物 = 目標カロリー × C% ÷ 4kcal/g
@@ -1015,7 +1015,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     className="w-full px-3 py-2 border rounded-lg"
                                                 />
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div>
                                                     <label className="block text-sm font-medium mb-1.5">年齢</label>
                                                     <input
@@ -1055,14 +1055,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             className={`flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 ${
                                                                 item.value === (profile.idealSleepHours || 4)
                                                                     ? 'bg-blue-500 text-white'
-                                                                    : 'text-gray-500 hover:text-gray-800'
+                                                                    : 'text-gray-600 hover:text-gray-800'
                                                             }`}
                                                         >
                                                             {item.label}
                                                         </button>
                                                     ))}
                                                 </div>
-                                                <p className="text-xs text-gray-500 mt-1">※成人の推奨睡眠時間は7-8時間です</p>
+                                                <p className="text-xs text-gray-600 mt-1">※成人の推奨睡眠時間は7-8時間です</p>
                                             </div>
 
                                             <div>
@@ -1301,7 +1301,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <div className={`text-xs font-bold px-2 py-0.5 rounded ${
                                                         adjust > 0 ? 'bg-green-100 text-green-700' :
                                                         adjust < 0 ? 'bg-red-100 text-red-700' :
-                                                        'bg-gray-100 text-gray-700'
+                                                        'bg-gray-100 text-gray-600'
                                                     }`}>
                                                         {adjust > 0 ? '+' : ''}{adjust}kcal
                                                     </div>
@@ -1314,7 +1314,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
                                                 <div className="flex flex-col">
                                                     <span>カロリー調整値kcal/日</span>
-                                                    <span className="text-xs text-gray-500 font-normal mt-0.5">メンテナンスから±調整</span>
+                                                    <span className="text-xs text-gray-600 font-normal mt-0.5">メンテナンスから±調整</span>
                                                 </div>
                                             </label>
                                             <input
@@ -1340,7 +1340,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <label className="block text-sm font-medium mb-1.5">
                                                 トレーニングスタイル
                                             </label>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <button
                                                     type="button"
                                                     onClick={() => setProfile({...profile, style: '一般'})}
@@ -1366,7 +1366,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <div className="text-xs text-gray-600">本格的な筋トレ・競技力向上</div>
                                                 </button>
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-2">
+                                            <p className="text-xs text-gray-600 mt-2">
                                                 ※ボディメイカーはタンパク質の推奨量が一般の約1.8倍<br/>
                                                 （一般 LBM×1.2、ボディメイカー LBM×2.2）、<br/>
                                                 ビタミン・ミネラルの推奨量が2倍になります
@@ -1391,7 +1391,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition ${
                                                         advancedSettings.usePurposeBased === true
                                                             ? 'bg-blue-600 text-white'
-                                                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                                            : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
                                                     }`}
                                                 >
                                                     デフォルト比率
@@ -1407,7 +1407,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition ${
                                                         advancedSettings.usePurposeBased === false
                                                             ? 'bg-indigo-600 text-white'
-                                                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                                            : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
                                                     }`}
                                                 >
                                                     カスタム比率
@@ -1594,9 +1594,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     <Icon name="ChevronRight" size={16} className="text-blue-600" />
                                     左側
                                 </h4>
-                                <div className="grid grid-cols-2 gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">位置</label>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">位置</label>
                                         <select
                                             value={shortcuts.find(s => s.side === 'left')?.position || 'middle'}
                                             onChange={(e) => {
@@ -1613,7 +1613,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">サイズ</label>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">サイズ</label>
                                         <select
                                             value={shortcuts.find(s => s.side === 'left')?.size || 'small'}
                                             onChange={(e) => {
@@ -1772,9 +1772,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     <Icon name="ChevronLeft" size={16} className="text-blue-600" />
                                     右側
                                 </h4>
-                                <div className="grid grid-cols-2 gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">位置</label>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">位置</label>
                                         <select
                                             value={shortcuts.find(s => s.side === 'right')?.position || 'middle'}
                                             onChange={(e) => {
@@ -1791,7 +1791,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">サイズ</label>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">サイズ</label>
                                         <select
                                             value={shortcuts.find(s => s.side === 'right')?.size || 'small'}
                                             onChange={(e) => {
@@ -1963,7 +1963,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 <div className="mb-3">
                                     <h3 className="font-semibold text-green-800 mb-2">食事テンプレート</h3>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-500">{mealTemplates.length}件</span>
+                                        <span className="text-sm text-gray-600">{mealTemplates.length}件</span>
                                         <button
                                             onClick={() => onOpenAddView && onOpenAddView('meal')}
                                             className="px-3 py-1 bg-[#4A9EFF] text-white text-xs rounded-lg hover:bg-[#3b8fef] transition flex items-center gap-1"
@@ -1974,7 +1974,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     </div>
                                 </div>
                                 {mealTemplates.length === 0 ? (
-                                    <p className="text-sm text-gray-500">保存されたテンプレートはありません</p>
+                                    <p className="text-sm text-gray-600">保存されたテンプレートはありません</p>
                                 ) : (
                                     <div className="space-y-2 mt-3">
                                         {mealTemplates.map(template => {
@@ -1999,7 +1999,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     setTemplateEditType('meal');
                                                                     setShowTemplateEditModal(true);
                                                                 }}
-                                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                                className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
                                                             >
                                                                 <Icon name="Edit" size={18} />
                                                             </button>
@@ -2011,28 +2011,28 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                         await loadTemplates();
                                                                     });
                                                                 }}
-                                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                                className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                             >
                                                                 <Icon name="Trash2" size={18} />
                                                             </button>
                                                         </div>
                                                     </summary>
                                                     <div className="mt-3 space-y-2 border-t pt-3">
-                                                        <div className="grid grid-cols-4 gap-2 text-xs bg-white p-2 rounded">
+                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-white p-2 rounded">
                                                             <div className="text-center">
-                                                                <div className="font-medium text-gray-500">カロリー</div>
+                                                                <div className="font-medium text-gray-600">カロリー</div>
                                                                 <div className="font-bold">{Math.round(totalCals)}</div>
                                                             </div>
                                                             <div className="text-center">
-                                                                <div className="font-medium text-gray-500">P</div>
+                                                                <div className="font-medium text-gray-600">P</div>
                                                                 <div className="font-bold">{totalProtein.toFixed(1)}g</div>
                                                             </div>
                                                             <div className="text-center">
-                                                                <div className="font-medium text-gray-500">F</div>
+                                                                <div className="font-medium text-gray-600">F</div>
                                                                 <div className="font-bold">{totalFat.toFixed(1)}g</div>
                                                             </div>
                                                             <div className="text-center">
-                                                                <div className="font-medium text-gray-500">C</div>
+                                                                <div className="font-medium text-gray-600">C</div>
                                                                 <div className="font-bold">{totalCarbs.toFixed(1)}g</div>
                                                             </div>
                                                         </div>
@@ -2057,7 +2057,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 <div className="mb-3">
                                     <h3 className="font-semibold text-orange-800 mb-2">運動テンプレート</h3>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-500">{workoutTemplates.length}件</span>
+                                        <span className="text-sm text-gray-600">{workoutTemplates.length}件</span>
                                         <button
                                             onClick={() => onOpenAddView && onOpenAddView('workout')}
                                             className="px-3 py-1 bg-[#4A9EFF] text-white text-xs font-bold rounded-lg hover:bg-[#3b8fef] shadow-md transition flex items-center gap-1"
@@ -2068,7 +2068,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     </div>
                                 </div>
                                 {workoutTemplates.length === 0 ? (
-                                    <p className="text-sm text-gray-500">保存されたテンプレートはありません</p>
+                                    <p className="text-sm text-gray-600">保存されたテンプレートはありません</p>
                                 ) : (
                                     <div className="space-y-2 mt-3">
                                         {workoutTemplates.map(template => {
@@ -2094,7 +2094,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     setTemplateEditType('workout');
                                                                     setShowTemplateEditModal(true);
                                                                 }}
-                                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                                className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
                                                             >
                                                                 <Icon name="Edit" size={18} />
                                                             </button>
@@ -2106,7 +2106,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                         await loadTemplates();
                                                                     });
                                                                 }}
-                                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                                className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                             >
                                                                 <Icon name="Trash2" size={18} />
                                                             </button>
@@ -2195,7 +2195,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     className={`px-4 py-2 font-medium transition ${
                                                         customItemTab === 'food'
                                                             ? 'border-b-2 border-green-600 text-green-600'
-                                                            : 'text-gray-500 hover:text-gray-700'
+                                                            : 'text-gray-600 hover:text-gray-600'
                                                     }`}
                                                 >
                                                     食材 ({foodItems.length})
@@ -2205,7 +2205,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     className={`px-4 py-2 font-medium transition ${
                                                         customItemTab === 'recipe'
                                                             ? 'border-b-2 border-green-600 text-green-600'
-                                                            : 'text-gray-500 hover:text-gray-700'
+                                                            : 'text-gray-600 hover:text-gray-600'
                                                     }`}
                                                 >
                                                     料理 ({recipeItems.length})
@@ -2215,7 +2215,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     className={`px-4 py-2 font-medium transition ${
                                                         customItemTab === 'supplement'
                                                             ? 'border-b-2 border-blue-600 text-blue-600'
-                                                            : 'text-gray-500 hover:text-gray-700'
+                                                            : 'text-gray-600 hover:text-gray-600'
                                                     }`}
                                                 >
                                                     サプリ ({supplementItems.length})
@@ -2227,7 +2227,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 {customItemTab === 'food' && (
                                                     <>
                                                         {foodItems.length === 0 ? (
-                                                            <p className="text-sm text-gray-500 py-4 text-center">カスタム食材はありません</p>
+                                                            <p className="text-sm text-gray-600 py-4 text-center">カスタム食材はありません</p>
                                                         ) : (
                                                             <>
                                                                 <div className="flex justify-end mb-2">
@@ -2273,7 +2273,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 {customItemTab === 'recipe' && (
                                                     <>
                                                         {recipeItems.length === 0 ? (
-                                                            <p className="text-sm text-gray-500 py-4 text-center">カスタム料理はありません</p>
+                                                            <p className="text-sm text-gray-600 py-4 text-center">カスタム料理はありません</p>
                                                         ) : (
                                                             <>
                                                                 <div className="flex justify-end mb-2">
@@ -2319,7 +2319,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 {customItemTab === 'supplement' && (
                                                     <>
                                                         {supplementItems.length === 0 ? (
-                                                            <p className="text-sm text-gray-500 py-4 text-center">カスタムサプリはありません</p>
+                                                            <p className="text-sm text-gray-600 py-4 text-center">カスタムサプリはありません</p>
                                                         ) : (
                                                             <>
                                                                 <div className="flex justify-end mb-2">
@@ -2502,7 +2502,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     <div className="space-y-3 mt-3">
                                                                         {/* 食事テンプレート（複数選択）*/}
                                                                         <div>
-                                                                            <label className="text-xs font-medium text-gray-700">食事テンプレート</label>
+                                                                            <label className="text-xs font-medium text-gray-600">食事テンプレート</label>
                                                                             <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
                                                                                 {mealTemplates.length > 0 ? mealTemplates.map(t => (
                                                                                     <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
@@ -2521,14 +2521,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                                         <span className="text-sm">{t.name}</span>
                                                                                     </label>
                                                                                 )) : (
-                                                                                    <p className="text-xs text-gray-500">食事テンプレートがありません</p>
+                                                                                    <p className="text-xs text-gray-600">食事テンプレートがありません</p>
                                                                                 )}
                                                                             </div>
                                                                         </div>
 
                                                                         {/* トレーニングテンプレート（複数選択）*/}
                                                                         <div>
-                                                                            <label className="text-xs font-medium text-gray-700">トレーニングテンプレート</label>
+                                                                            <label className="text-xs font-medium text-gray-600">トレーニングテンプレート</label>
                                                                             <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
                                                                                 {workoutTemplates.length > 0 ? workoutTemplates.map(t => (
                                                                                     <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
@@ -2547,7 +2547,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                                         <span className="text-sm">{t.name}</span>
                                                                                     </label>
                                                                                 )) : (
-                                                                                    <p className="text-xs text-gray-500">トレーニングテンプレートがありません</p>
+                                                                                    <p className="text-xs text-gray-600">トレーニングテンプレートがありません</p>
                                                                                 )}
                                                                             </div>
                                                                         </div>
@@ -2648,7 +2648,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                         <div className="space-y-3 mt-3">
                                                                             {/* 食事テンプレート（複数選択）*/}
                                                                             <div>
-                                                                                <label className="text-xs font-medium text-gray-700">食事テンプレート</label>
+                                                                                <label className="text-xs font-medium text-gray-600">食事テンプレート</label>
                                                                                 <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
                                                                                     {mealTemplates.length > 0 ? mealTemplates.map(t => (
                                                                                         <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
@@ -2667,14 +2667,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                                             <span className="text-sm">{t.name}</span>
                                                                                         </label>
                                                                                     )) : (
-                                                                                        <p className="text-xs text-gray-500">食事テンプレートがありません</p>
+                                                                                        <p className="text-xs text-gray-600">食事テンプレートがありません</p>
                                                                                     )}
                                                                                 </div>
                                                                             </div>
 
                                                                             {/* トレーニングテンプレート（複数選択）*/}
                                                                             <div>
-                                                                                <label className="text-xs font-medium text-gray-700">トレーニングテンプレート</label>
+                                                                                <label className="text-xs font-medium text-gray-600">トレーニングテンプレート</label>
                                                                                 <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
                                                                                     {workoutTemplates.length > 0 ? workoutTemplates.map(t => (
                                                                                         <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
@@ -2693,7 +2693,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                                             <span className="text-sm">{t.name}</span>
                                                                                         </label>
                                                                                     )) : (
-                                                                                        <p className="text-xs text-gray-500">トレーニングテンプレートがありません</p>
+                                                                                        <p className="text-xs text-gray-600">トレーニングテンプレートがありません</p>
                                                                                     )}
                                                                                 </div>
                                                                             </div>
@@ -2724,7 +2724,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                         {localRoutines.length === 0 && (
                                             <div className="text-center py-8">
-                                                <p className="text-gray-500 mb-4">ルーティンが設定されていません</p>
+                                                <p className="text-gray-600 mb-4">ルーティンが設定されていません</p>
                                                 <button
                                                     onClick={() => {
                                                         const defaultRoutines = [
@@ -2845,7 +2845,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <Icon name="RefreshCw" size={16} />
                                         クリア
                                     </button>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-gray-600">
                                         ※ 通知設定、記録、プロフィールなどのユーザーデータは削除されません
                                     </p>
                                 </div>
@@ -3018,7 +3018,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 className={`px-4 py-2 font-medium transition text-sm ${
                                                     customItemTab === 'food'
                                                         ? 'border-b-2 border-green-600 text-green-600'
-                                                        : 'text-gray-500 hover:text-gray-700'
+                                                        : 'text-gray-600 hover:text-gray-600'
                                                 }`}
                                             >
                                                 食材 ({foodItems.length})
@@ -3028,7 +3028,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 className={`px-4 py-2 font-medium transition text-sm ${
                                                     customItemTab === 'recipe'
                                                         ? 'border-b-2 border-green-600 text-green-600'
-                                                        : 'text-gray-500 hover:text-gray-700'
+                                                        : 'text-gray-600 hover:text-gray-600'
                                                 }`}
                                             >
                                                 料理 ({recipeItems.length})
@@ -3038,7 +3038,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 className={`px-4 py-2 font-medium transition text-sm ${
                                                     customItemTab === 'supplement'
                                                         ? 'border-b-2 border-blue-600 text-blue-600'
-                                                        : 'text-gray-500 hover:text-gray-700'
+                                                        : 'text-gray-600 hover:text-gray-600'
                                                 }`}
                                             >
                                                 サプリ ({supplementItems.length})
@@ -3050,7 +3050,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             {customItemTab === 'food' && (
                                                 <>
                                                     {foodItems.length === 0 ? (
-                                                        <p className="text-sm text-gray-500 py-4 text-center">カスタム食材はありません</p>
+                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタム食材はありません</p>
                                                     ) : (
                                                         <>
                                                             <div className="flex justify-end mb-2">
@@ -3105,7 +3105,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             {customItemTab === 'recipe' && (
                                                 <>
                                                     {recipeItems.length === 0 ? (
-                                                        <p className="text-sm text-gray-500 py-4 text-center">カスタム料理はありません</p>
+                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタム料理はありません</p>
                                                     ) : (
                                                         <>
                                                             <div className="flex justify-end mb-2">
@@ -3160,7 +3160,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             {customItemTab === 'supplement' && (
                                                 <>
                                                     {supplementItems.length === 0 ? (
-                                                        <p className="text-sm text-gray-500 py-4 text-center">カスタムサプリはありません</p>
+                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタムサプリはありません</p>
                                                     ) : (
                                                         <>
                                                             <div className="flex justify-end mb-2">
@@ -3216,7 +3216,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         {/* 編集モーダル */}
                                         {showEditModal && editingItem && (
                                             <div className="fixed inset-0 bg-black bg-opacity-60 z-[10000] flex items-center justify-center p-4">
-                                                <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+                                                <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-lg max-h-[80vh] overflow-y-auto">
                                                     {/* ヘッダー */}
                                                     <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
                                                         <h3 className="text-lg font-bold flex items-center gap-2">
@@ -3237,7 +3237,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <div className="p-6 space-y-4">
                                                         {/* 名前 */}
                                                         <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">名前</label>
+                                                            <label className="block text-sm font-medium text-gray-600 mb-1">名前</label>
                                                             <input
                                                                 type="text"
                                                                 value={editingItem.name}
@@ -3248,7 +3248,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                         {/* カテゴリ */}
                                                         <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">カテゴリ</label>
+                                                            <label className="block text-sm font-medium text-gray-600 mb-1">カテゴリ</label>
                                                             <select
                                                                 value={editingItem.itemType}
                                                                 onChange={(e) => setEditingItem({...editingItem, itemType: e.target.value})}
@@ -3295,10 +3295,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                         {/* 基本栄養素 */}
                                                         <div className="border-t pt-4">
-                                                            <p className="text-sm font-medium text-gray-700 mb-2">
+                                                            <p className="text-sm font-medium text-gray-600 mb-2">
                                                                 基本栄養素（{editingItem.servingSize}{editingItem.servingUnit}あたり）
                                                             </p>
-                                                            <div className="grid grid-cols-2 gap-2">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">カロリー (kcal)</label>
                                                                     <input
@@ -3344,11 +3344,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                         {/* ビタミン */}
                                                         <div className="border-t pt-4">
-                                                            <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                                            <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
                                                                 <Icon name="Droplet" size={16} className="text-orange-500" />
                                                                 ビタミン
                                                             </p>
-                                                            <div className="grid grid-cols-3 gap-2">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">A (μg)</label>
                                                                     <input type="number" step="0.1" value={editingItem.vitaminA || ''} onChange={(e) => setEditingItem({...editingItem, vitaminA: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
@@ -3406,11 +3406,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                         {/* ミネラル */}
                                                         <div className="border-t pt-4">
-                                                            <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                                            <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
                                                                 <Icon name="Gem" size={16} className="text-blue-500" />
                                                                 ミネラル
                                                             </p>
-                                                            <div className="grid grid-cols-3 gap-2">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">ナトリウム (mg)</label>
                                                                     <input type="number" step="0.1" value={editingItem.sodium || ''} onChange={(e) => setEditingItem({...editingItem, sodium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
@@ -3468,7 +3468,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                         {/* その他の栄養素 */}
                                                         <div className="border-t pt-4">
-                                                            <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                                            <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
                                                                 <Icon name="Plus" size={16} className="text-purple-500" />
                                                                 その他の栄養素
                                                             </p>
@@ -3694,7 +3694,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
                                                     dbTab === 'food'
                                                         ? 'bg-green-600 text-white'
-                                                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                                                        : 'bg-white text-gray-600 hover:bg-gray-100'
                                                 }`}
                                             >
                                                 食品 ({totalFoodItems})
@@ -3704,7 +3704,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
                                                     dbTab === 'training'
                                                         ? 'bg-green-600 text-white'
-                                                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                                                        : 'bg-white text-gray-600 hover:bg-gray-100'
                                                 }`}
                                             >
                                                 運動 ({totalTrainingItems})
@@ -3724,7 +3724,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         {dbTab === 'food' && (
                                             <div className="space-y-2 max-h-96 overflow-y-auto">
                                                 {Object.keys(organizedFoodDB).length === 0 ? (
-                                                    <p className="text-sm text-gray-500 text-center py-4">該当するアイテムがありません</p>
+                                                    <p className="text-sm text-gray-600 text-center py-4">該当するアイテムがありません</p>
                                                 ) : (
                                                     Object.keys(organizedFoodDB).map(category => (
                                                         <div key={category} className="bg-white rounded-lg border border-gray-200">
@@ -3747,7 +3747,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                             className="w-full text-sm py-1.5 px-2 bg-gray-50 rounded flex justify-between items-center hover:bg-gray-100 transition cursor-pointer"
                                                                         >
                                                                             <span className="text-left">{item.name}</span>
-                                                                            <span className="text-xs text-gray-500">
+                                                                            <span className="text-xs text-gray-600">
                                                                                 {item.calories}kcal • P:{item.protein}g • F:{item.fat}g • C:{item.carbs}g
                                                                             </span>
                                                                         </button>
@@ -3764,7 +3764,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         {dbTab === 'training' && (
                                             <div className="space-y-2 max-h-96 overflow-y-auto">
                                                 {Object.keys(organizedTrainingDB).length === 0 ? (
-                                                    <p className="text-sm text-gray-500 text-center py-4">該当するアイテムがありません</p>
+                                                    <p className="text-sm text-gray-600 text-center py-4">該当するアイテムがありません</p>
                                                 ) : (
                                                     Object.keys(organizedTrainingDB).map(category => (
                                                         <div key={category} className="bg-white rounded-lg border border-gray-200">
@@ -3783,7 +3783,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                             className="w-full text-sm py-1.5 px-2 bg-gray-50 rounded flex justify-between items-center"
                                                                         >
                                                                             <span className="text-left">{item.name}</span>
-                                                                            <span className="text-xs text-gray-500">
+                                                                            <span className="text-xs text-gray-600">
                                                                                 {item.met && `MET: ${item.met}`}
                                                                                 {item.category && ` • ${item.category}`}
                                                                             </span>
@@ -3800,7 +3800,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         {/* アイテム詳細モーダル */}
                                         {showDetailModal && selectedItemDetail && (
                                             <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
-                                                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                                                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[80vh] overflow-y-auto">
                                                     <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
                                                         <h3 className="text-lg font-bold">{selectedItemDetail.name}</h3>
                                                         <button onClick={() => setShowDetailModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -3811,10 +3811,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         {/* 基本栄養素 */}
                                                         <div className="bg-gray-50 p-4 rounded-lg">
                                                             <h4 className="font-bold mb-3 text-gray-800">基本栄養素（{selectedItemDetail.servingSize || 100}{selectedItemDetail.servingUnit || 'g'}あたり）</h4>
-                                                            <div className="grid grid-cols-2 gap-3">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                                 <div>
                                                                     <p className="text-xs text-gray-600">カロリー</p>
-                                                                    <p className="font-bold text-lg" style={{color: '#7686BA'}}>{selectedItemDetail.calories || 0}kcal</p>
+                                                                    <p className="font-bold text-lg text-blue-600">{selectedItemDetail.calories || 0}kcal</p>
                                                                 </div>
                                                                 <div>
                                                                     <p className="text-xs text-gray-600">たんぱく質</p>
@@ -3835,7 +3835,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         {(selectedItemDetail.fiber || selectedItemDetail.sugar) && (
                                                             <div className="bg-blue-50 p-4 rounded-lg">
                                                                 <h4 className="font-bold mb-3 text-blue-800">食物繊維・糖質</h4>
-                                                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                                                     {selectedItemDetail.sugar !== undefined && (
                                                                         <div>
                                                                             <p className="text-xs text-gray-600">糖質</p>
@@ -3868,7 +3868,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         {(selectedItemDetail.gi || selectedItemDetail.diaas) && (
                                                             <div className="bg-blue-50 p-4 rounded-lg">
                                                                 <h4 className="font-bold mb-3 text-blue-800">栄養指標</h4>
-                                                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                                                     {selectedItemDetail.gi && (
                                                                         <div>
                                                                             <p className="text-xs text-gray-600">GI値</p>
@@ -3907,7 +3907,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             return vitamins.length > 0 && (
                                                                 <div className="bg-yellow-50 p-4 rounded-lg">
                                                                     <h4 className="font-bold mb-3 text-yellow-800">ビタミン</h4>
-                                                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                                                         {vitamins.map(key => (
                                                                             <div key={key}>
                                                                                 <p className="text-xs text-gray-600">{vitaminMap[key].label}</p>
@@ -3941,7 +3941,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             return minerals.length > 0 && (
                                                                 <div className="bg-orange-50 p-4 rounded-lg">
                                                                     <h4 className="font-bold mb-3 text-orange-800">ミネラル</h4>
-                                                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                                                         {minerals.map(key => (
                                                                             <div key={key}>
                                                                                 <p className="text-xs text-gray-600">{mineralMap[key].label}</p>
@@ -3960,7 +3960,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 <div className="text-sm">
                                                                     <p className="text-xs text-gray-600">MET値</p>
                                                                     <p className="font-bold text-lg">{selectedItemDetail.met}</p>
-                                                                    <p className="text-xs text-gray-500 mt-2">※運動強度の指標。安静時を1としたエネルギー消費量の比率</p>
+                                                                    <p className="text-xs text-gray-600 mt-2">※運動強度の指標。安静時を1としたエネルギー消費量の比率</p>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -4053,7 +4053,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 disabled={feedbackSending || !feedbackText.trim()}
                                                 className={`w-full mt-3 px-4 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
                                                     feedbackSending || !feedbackText.trim()
-                                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                        ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
                                                         : 'bg-green-600 text-white hover:bg-green-700'
                                                 }`}
                                             >
@@ -4069,7 +4069,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     </>
                                                 )}
                                             </button>
-                                            <p className="text-xs text-gray-500 mt-2 text-center">
+                                            <p className="text-xs text-gray-600 mt-2 text-center">
                                                 送信先: kongou411@gmail.com
                                             </p>
                                         </>
@@ -4104,9 +4104,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 <div className="space-y-3">
                                     <div className="bg-white p-4 rounded-lg border border-yellow-200">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium text-gray-700">現在の状態</span>
+                                            <span className="text-sm font-medium text-gray-600">現在の状態</span>
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                                DEV_PREMIUM_MODE ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'
+                                                DEV_PREMIUM_MODE ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'
                                             }`}>
                                                 {DEV_PREMIUM_MODE ? '👑 Premium会員' : '無料会員'}
                                             </span>
@@ -4117,7 +4117,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 : '1-7日目は全機能無料、8日目以降は機能制限'}
                                         </p>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <button
                                             onClick={async () => {
                                                 localStorage.setItem('DEV_PREMIUM_MODE', 'false');
@@ -4126,7 +4126,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             className={`px-4 py-3 rounded-lg font-medium transition ${
                                                 !DEV_PREMIUM_MODE
                                                     ? 'bg-gray-600 text-white'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                             }`}
                                         >
                                             無料会員
@@ -4188,7 +4188,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         return (
                                             <>
                                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                                                    <p className="text-xs text-gray-700">
+                                                    <p className="text-xs text-gray-600">
                                                         <Icon name="Info" size={14} className="inline text-blue-600 mr-1" />
                                                         現在: {currentDay}日目 ({isTrial ? `無料期間：残り${8-currentDay}日` : (isPremium ? 'Premium会員' : '無料会員・機能制限中')})
                                                     </p>
@@ -4228,7 +4228,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 })()}
                                             </span>
                                         </div>
-                                        <div className="text-xs text-gray-500">
+                                        <div className="text-xs text-gray-600">
                                             {(() => {
                                                 const daysSinceReg = calculateDaysSinceRegistration(userId);
                                                 const currentDay = daysSinceReg; // calculateDaysSinceRegistrationが既に+1済み
@@ -4268,7 +4268,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     localStorage.removeItem(STORAGE_KEYS.FEATURES_COMPLETED);
                                                     window.location.reload();
                                                 }}
-                                                className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+                                                className="px-4 py-3 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium"
                                             >
                                                 <Icon name="RotateCcw" size={18} className="inline mr-1" />
                                                 1日目へ戻る（登録日）
@@ -4336,7 +4336,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 const keys = Object.keys(localStorage);
                                                 if (keys.length === 0) {
                                                     return (
-                                                        <p className="text-sm text-gray-500 text-center py-4">
+                                                        <p className="text-sm text-gray-600 text-center py-4">
                                                             LocalStorageは空です
                                                         </p>
                                                     );
@@ -4352,7 +4352,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     }
                                                     return (
                                                         <details key={key} className="border rounded p-2 bg-gray-50">
-                                                            <summary className="cursor-pointer font-mono text-xs font-semibold text-gray-700 hover:text-gray-900 flex items-center justify-between">
+                                                            <summary className="cursor-pointer font-mono text-xs font-semibold text-gray-600 hover:text-gray-800 flex items-center justify-between">
                                                                 <span className="truncate">{key}</span>
                                                                 <button
                                                                     onClick={(e) => {
@@ -4368,7 +4368,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 </button>
                                                             </summary>
                                                             <div className="mt-2 p-2 bg-white rounded border">
-                                                                <pre className="text-xs text-gray-700 whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
+                                                                <pre className="text-xs text-gray-600 whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
                                                                     {displayValue}
                                                                 </pre>
                                                             </div>
@@ -4438,7 +4438,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         {/* テンプレート編集  択モーダル */}
         {showTemplateEditModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[80vh] overflow-y-auto">
                     {/* ヘッダー */}
                     <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center rounded-t-2xl">
                         <h3 className="text-lg font-bold">
@@ -4469,14 +4469,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             <Icon name="Plus" size={32} />
                             <div className="text-left flex-1">
                                 <div className="font-bold text-base">新しいテンプレートを作成</div>
-                                <div className="text-xs text-gray-500 mt-0.5">新規作成画面を開く</div>
+                                <div className="text-xs text-gray-600 mt-0.5">新規作成画面を開く</div>
                             </div>
                         </button>
 
                         {/* テンプレート一覧 */}
                         {templateEditType === 'meal' && mealTemplates.length > 0 && (
                             <div className="mt-4 pt-4 border-t">
-                                <h4 className="font-medium text-sm text-gray-700 mb-2">保存済みテンプレート</h4>
+                                <h4 className="font-medium text-sm text-gray-600 mb-2">保存済みテンプレート</h4>
                                 <div className="space-y-2">
                                     {mealTemplates.map(template => {
                                         const totalCals = (template.items || []).reduce((sum, i) => sum + (i.calories || 0), 0);
@@ -4501,7 +4501,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 setShowTemplateEditModal(false);
                                                                 onOpenAddView && onOpenAddView('meal', true, template);
                                                             }}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
                                                         >
                                                             <Icon name="Edit" size={18} />
                                                         </button>
@@ -4513,7 +4513,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     await loadTemplates();
                                                                 });
                                                             }}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                         >
                                                             <Icon name="Trash2" size={18} />
                                                         </button>
@@ -4522,19 +4522,19 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 <div className="mt-3 space-y-2 border-t pt-3">
                                                     <div className="grid grid-cols-4 gap-2 text-xs bg-white p-2 rounded">
                                                         <div className="text-center">
-                                                            <div className="font-medium text-gray-500">カロリー</div>
+                                                            <div className="font-medium text-gray-600">カロリー</div>
                                                             <div className="font-bold">{Math.round(totalCals)}</div>
                                                         </div>
                                                         <div className="text-center">
-                                                            <div className="font-medium text-gray-500">P</div>
+                                                            <div className="font-medium text-gray-600">P</div>
                                                             <div className="font-bold">{totalProtein.toFixed(1)}g</div>
                                                         </div>
                                                         <div className="text-center">
-                                                            <div className="font-medium text-gray-500">F</div>
+                                                            <div className="font-medium text-gray-600">F</div>
                                                             <div className="font-bold">{totalFat.toFixed(1)}g</div>
                                                         </div>
                                                         <div className="text-center">
-                                                            <div className="font-medium text-gray-500">C</div>
+                                                            <div className="font-medium text-gray-600">C</div>
                                                             <div className="font-bold">{totalCarbs.toFixed(1)}g</div>
                                                         </div>
                                                     </div>
@@ -4556,7 +4556,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                         {templateEditType === 'workout' && workoutTemplates.length > 0 && (
                             <div className="mt-4 pt-4 border-t">
-                                <h4 className="font-medium text-sm text-gray-700 mb-2">保存済みテンプレート</h4>
+                                <h4 className="font-medium text-sm text-gray-600 mb-2">保存済みテンプレート</h4>
                                 <div className="space-y-2">
                                     {workoutTemplates.map(template => {
                                         // 新形式（複数種目）と旧形式（単一種目）の両方に対応
@@ -4580,7 +4580,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 setShowTemplateEditModal(false);
                                                                 onOpenAddView && onOpenAddView('workout', true, template);
                                                             }}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
                                                         >
                                                             <Icon name="Edit" size={18} />
                                                         </button>
@@ -4592,7 +4592,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     await loadTemplates();
                                                                 });
                                                             }}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                                         >
                                                             <Icon name="Trash2" size={18} />
                                                         </button>
@@ -4601,7 +4601,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 <div className="mt-3 space-y-3 border-t pt-3">
                                                     {exercises.map((ex, exIdx) => (
                                                         <div key={exIdx} className="bg-white p-2 rounded">
-                                                            <p className="font-medium text-xs text-gray-700 mb-2">{ex.exercise?.name || '種目不明'}</p>
+                                                            <p className="font-medium text-xs text-gray-600 mb-2">{ex.exercise?.name || '種目不明'}</p>
                                                             <div className="space-y-1">
                                                                 {(ex.sets || []).map((set, idx) => (
                                                                     <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
@@ -4644,7 +4644,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </button>
                     </div>
                     <div className="p-6">
-                        <p className="text-gray-700 whitespace-pre-line leading-relaxed">{infoModal.content}</p>
+                        <p className="text-gray-600 whitespace-pre-line leading-relaxed">{infoModal.content}</p>
                     </div>
                 </div>
             </div>
@@ -4709,15 +4709,15 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="font-bold text-gray-900">{guide.title}</span>
+                                                        <span className="font-bold text-gray-800">{guide.title}</span>
                                                         <span className="text-sm text-gray-600">({guide.range})</span>
                                                     </div>
-                                                    <ul className="text-sm text-gray-700 space-y-1">
+                                                    <ul className="text-sm text-gray-600 space-y-1">
                                                         {guide.features.map((feature, idx) => (
                                                             <li key={idx}>• {feature}</li>
                                                         ))}
                                                     </ul>
-                                                    <p className="text-xs text-gray-500 mt-2">健康: {guide.health}</p>
+                                                    <p className="text-xs text-gray-600 mt-2">健康: {guide.health}</p>
                                                 </div>
                                             </div>
                                         </button>
@@ -4727,7 +4727,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
 
                         <div className="bg-gradient-to-r from-orange-50 to-pink-50 p-4 rounded-lg border border-orange-200">
-                            <p className="text-sm font-medium text-gray-700 mb-2">推定結果</p>
+                            <p className="text-sm font-medium text-gray-600 mb-2">推定結果</p>
                             <p className="text-3xl font-bold text-orange-600">
                                 {LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel).bodyFatPercentage}%
                             </p>
@@ -4769,7 +4769,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         // ステップ1: 電話番号入力
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-gray-600 mb-2">
                                     電話番号（国際形式）
                                 </label>
                                 <input
@@ -4779,7 +4779,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     placeholder="+8190XXXXXXXX"
                                     className="w-full px-4 py-2 border rounded-lg"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-gray-600 mt-1">
                                     例: +819012345678
                                 </p>
                             </div>
@@ -4816,7 +4816,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             </p>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-gray-600 mb-2">
                                     認証コード（6桁）
                                 </label>
                                 <input

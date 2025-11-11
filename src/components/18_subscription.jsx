@@ -101,7 +101,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                         className={`flex-1 py-3 font-bold transition ${
                             selectedPlan === 'premium'
                                 ? 'text-amber-600 border-b-2 border-amber-600'
-                                : 'text-gray-500 hover:text-gray-700'
+                                : 'text-gray-600 hover:text-gray-600'
                         }`}
                     >
                         月額プラン
@@ -111,7 +111,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                         className={`flex-1 py-3 font-bold transition ${
                             selectedPlan === 'credit_pack'
                                 ? 'text-amber-600 border-b-2 border-amber-600'
-                                : 'text-gray-500 hover:text-gray-700'
+                                : 'text-gray-600 hover:text-gray-600'
                         }`}
                     >
                         クレジット追加購入
@@ -159,7 +159,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                     ].map((feature, idx) => (
                                         <div key={idx} className="flex items-center gap-3 bg-white rounded-lg p-3">
                                             <Icon name={feature.icon} size={20} className={feature.color} />
-                                            <span className="text-sm text-gray-700">{feature.text}</span>
+                                            <span className="text-sm text-gray-600">{feature.text}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -184,7 +184,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                     )}
                                 </button>
 
-                                <p className="text-xs text-gray-500 text-center mt-3">
+                                <p className="text-xs text-gray-600 text-center mt-3">
                                     いつでもキャンセル可能です
                                 </p>
                             </div>
@@ -209,7 +209,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                         <Icon name="Info" size={18} className="text-blue-600" />
                                         <h4 className="font-bold text-gray-800">クレジット追加購入について</h4>
                                     </div>
-                                    <p className="text-sm text-gray-700">
+                                    <p className="text-sm text-gray-600">
                                         100回を超える分析が必要な場合、追加でクレジットを購入できます。<br/>
                                         購入したクレジットに有効期限はありません。
                                     </p>
@@ -279,7 +279,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                         <Icon name="Lightbulb" size={18} className="text-amber-600" />
                                         Premium会員がお得！
                                     </h4>
-                                    <p className="text-sm text-gray-700">
+                                    <p className="text-sm text-gray-600">
                                         月額¥740のPremium会員なら、毎月100回分のクレジットに加えて、<br/>
                                         すべてのPremium機能が使い放題です。
                                     </p>

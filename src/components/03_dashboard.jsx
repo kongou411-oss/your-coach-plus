@@ -65,12 +65,12 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC }) => {
                 <canvas ref={canvasRef}></canvas>
                 <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                        <div className="text-3xl font-bold text-gray-900">{averageScore}</div>
-                        <div className="text-xs text-gray-500">平均</div>
+                        <div className="text-3xl font-bold text-gray-800">{averageScore}</div>
+                        <div className="text-xs text-gray-600">平均</div>
                     </div>
                 </div>
             </div>
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
                 <div>
                     <div className="text-xs text-gray-600 mb-1">食事</div>
                     <div className="text-2xl font-bold text-green-600">{scores.food.score}</div>
@@ -84,7 +84,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC }) => {
                     <div className="text-2xl font-bold text-red-600">{scores.condition.score}</div>
                 </div>
             </div>
-            <p className="text-sm text-gray-500 mt-4 text-center">AIによる詳細な栄養分析を確認できます</p>
+            <p className="text-sm text-gray-600 mt-4 text-center">AIによる詳細な栄養分析を確認できます</p>
         </div>
     );
 };
@@ -495,7 +495,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             case 'meal': return { bg: 'bg-green-50', border: 'border-green-600', text: 'text-green-700', icon: 'text-green-600' };
             case 'exercise': return { bg: 'bg-orange-50', border: 'border-orange-600', text: 'text-orange-700', icon: 'text-orange-600' };
             case 'condition': return { bg: 'bg-red-50', border: 'border-red-600', text: 'text-red-700', icon: 'text-red-600' };
-            default: return { bg: 'bg-gray-50', border: 'border-gray-600', text: 'text-gray-700', icon: 'text-gray-600' };
+            default: return { bg: 'bg-gray-50', border: 'border-gray-600', text: 'text-gray-600', icon: 'text-gray-600' };
         }
     };
 
@@ -643,7 +643,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 <div className="flex border-b mb-4">
                     <button
                         onClick={() => setActiveTab('nutrition')}
-                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'nutrition' ? 'border-b-2' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'nutrition' ? 'border-b-2' : 'text-gray-600 hover:text-gray-600 hover:bg-gray-50'}`}
                         style={activeTab === 'nutrition' ? {color: '#4A9EFF', borderColor: '#4A9EFF', backgroundColor: '#EFF6FF'} : {}}
                     >
                         <div className="flex items-center justify-center gap-1">
@@ -653,7 +653,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     </button>
                     <button
                         onClick={() => setActiveTab('directive')}
-                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'directive' ? 'border-b-2' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                        className={`flex-1 py-3 px-2 text-sm font-bold ${activeTab === 'directive' ? 'border-b-2' : 'text-gray-600 hover:text-gray-600 hover:bg-gray-50'}`}
                         style={activeTab === 'directive' ? {color: '#4A9EFF', borderColor: '#4A9EFF', backgroundColor: '#EFF6FF'} : {}}
                     >
                         <div className="flex items-center justify-center gap-1">
@@ -669,50 +669,50 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 <div className="space-y-4">
                     {/* カロリー */}
                     <div className="mb-6">
-                        <div className="text-sm text-gray-500 mb-2">カロリー</div>
+                        <div className="text-sm text-gray-600 mb-2">カロリー</div>
                         <div className="flex items-end gap-2 mb-2 justify-end">
-                            <span className="text-3xl font-bold" style={{color: '#60a5fa'}}>{Math.round(currentIntake.calories)}</span>
-                            <span className="text-lg text-gray-500">/</span>
-                            <span className="text-lg text-gray-500">{targetPFC.calories} kcal</span>
+                            <span className="text-3xl font-bold text-blue-600">{Math.round(currentIntake.calories)}</span>
+                            <span className="text-lg text-gray-600">/</span>
+                            <span className="text-lg text-gray-600">{targetPFC.calories} kcal</span>
                         </div>
                         <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden shadow-md">
                             <div
                                 className="h-full rounded-full transition-all duration-500"
-                                style={{ width: `${Math.min(caloriesPercent, 100)}%`, background: 'linear-gradient(to right, #60a5fa, #3b82f6)' }}
+                                style={{ width: `${Math.min(caloriesPercent, 100)}%`, background: 'linear-gradient(to right, #4A9EFF, #3b82f6)' }}
                             ></div>
                         </div>
                     </div>
 
                     {/* PFC */}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                            <div className="text-sm text-gray-500 mb-2">タンパク質</div>
+                            <div className="text-sm text-gray-600 mb-2">タンパク質</div>
                             <div className="flex items-end gap-1 mb-2 justify-end">
                                 <span className="text-3xl font-bold text-red-500">{Math.round(currentIntake.protein)}</span>
-                                <span className="text-lg text-gray-500">/</span>
-                                <span className="text-lg text-gray-500">{targetPFC.protein}g</span>
+                                <span className="text-lg text-gray-600">/</span>
+                                <span className="text-lg text-gray-600">{targetPFC.protein}g</span>
                             </div>
                             <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden shadow-md">
                                 <div className="h-full bg-red-500" style={{ width: `${Math.min(proteinPercent, 100)}%` }}></div>
                             </div>
                         </div>
                         <div>
-                            <div className="text-sm text-gray-500 mb-2">脂質</div>
+                            <div className="text-sm text-gray-600 mb-2">脂質</div>
                             <div className="flex items-end gap-1 mb-2 justify-end">
                                 <span className="text-3xl font-bold text-yellow-500">{Math.round(currentIntake.fat)}</span>
-                                <span className="text-lg text-gray-500">/</span>
-                                <span className="text-lg text-gray-500">{targetPFC.fat}g</span>
+                                <span className="text-lg text-gray-600">/</span>
+                                <span className="text-lg text-gray-600">{targetPFC.fat}g</span>
                             </div>
                             <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden shadow-md">
                                 <div className="h-full bg-yellow-500" style={{ width: `${Math.min((currentIntake.fat / targetPFC.fat) * 100, 100)}%` }}></div>
                             </div>
                         </div>
                         <div>
-                            <div className="text-sm text-gray-500 mb-2">炭水化物</div>
+                            <div className="text-sm text-gray-600 mb-2">炭水化物</div>
                             <div className="flex items-end gap-1 mb-2 justify-end">
                                 <span className="text-3xl font-bold text-green-500">{Math.round(currentIntake.carbs)}</span>
-                                <span className="text-lg text-gray-500">/</span>
-                                <span className="text-lg text-gray-500">{targetPFC.carbs}g</span>
+                                <span className="text-lg text-gray-600">/</span>
+                                <span className="text-lg text-gray-600">{targetPFC.carbs}g</span>
                             </div>
                             <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden shadow-md">
                                 <div className="h-full bg-green-500" style={{ width: `${Math.min((currentIntake.carbs / targetPFC.carbs) * 100, 100)}%` }}></div>
@@ -734,7 +734,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 <Icon name="Droplets" size={16} className="text-orange-500" />
                                 ビタミン
                             </h4>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {(() => {
                                     // 完全個別化基準値を取得
                                     const targets = LBMUtils.calculatePersonalizedMicronutrients(profile || {});
@@ -772,7 +772,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 <Icon name="Gem" size={16} className="text-purple-500" />
                                 ミネラル
                             </h4>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {(() => {
                                     // 完全個別化基準値を取得
                                     const targets = LBMUtils.calculatePersonalizedMicronutrients(profile || {});
@@ -818,7 +818,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <Icon name="Sparkles" size={16} className="text-cyan-500" />
                                     その他の栄養素
                                 </h4>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {(() => {
                                         // 完全個別化基準値を取得
                                         const targets = LBMUtils.calculatePersonalizedMicronutrients(profile || {});
@@ -868,10 +868,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <>
                                 <div className="flex items-center gap-3 mb-3">
                                     <Icon name="Target" size={20} className="text-green-600" />
-                                    <span className="text-xs text-gray-500">今日の目標</span>
+                                    <span className="text-xs text-gray-600">今日の目標</span>
                                 </div>
                                 <div className="bg-white rounded-2xl border-2 border-green-600 p-4 mb-4 shadow-sm">
-                                    <div className="text-base font-bold text-gray-900 mb-2">
+                                    <div className="text-base font-bold text-gray-800 mb-2">
                                         {todayDirective.message}
                                     </div>
                                 </div>
@@ -892,7 +892,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     )}
                                     <button
                                         onClick={() => setShowDirectiveEdit(true)}
-                                        className="flex-1 bg-[#4A9EFF] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#3A8EEF] transition flex items-center justify-center gap-2"
+                                        className="flex-1 bg-[#4A9EFF] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#3b8fef] transition flex items-center justify-center gap-2"
                                     >
                                         <Icon name="Edit3" size={18} />
                                         編集
@@ -1014,7 +1014,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     <div className="px-6 py-4 bg-gradient-to-r from-teal-50 to-cyan-50 flex items-center justify-between border-b-2 border-gray-200">
                         <div className="flex items-center gap-3">
                             <Icon name="Activity" size={32} className="text-teal-600" />
-                            <h4 className="font-bold text-gray-900">体組成</h4>
+                            <h4 className="font-bold text-gray-800">体組成</h4>
                         </div>
                         <span className="text-lg font-bold text-teal-600">
                             LBM {(bodyComposition.weight * (1 - bodyComposition.bodyFatPercentage / 100)).toFixed(1)}kg
@@ -1026,7 +1026,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     <div className="mb-4">
                         <div className="flex items-center gap-2 mb-2">
                             <Icon name="Weight" size={16} className="text-teal-600" />
-                            <span className="text-sm font-bold text-gray-700">体重</span>
+                            <span className="text-sm font-bold text-gray-600">体重</span>
                         </div>
                         <div className="flex items-center justify-center gap-2">
                             <button
@@ -1036,7 +1036,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
                                     setWeightInput(newWeight > 0 ? newWeight.toString() : '');
                                 }}
-                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                                className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
                                 -1
                             </button>
@@ -1047,7 +1047,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
                                     setWeightInput(newWeight > 0 ? newWeight.toString() : '');
                                 }}
-                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                                className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
                                 -0.1
                             </button>
@@ -1081,7 +1081,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         // 全選択して入力しやすくする（空欄にしない）
                                         e.target.select();
                                     }}
-                                    className="w-full px-4 py-2 text-lg font-bold text-gray-900 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200 focus:outline-none hover:border-gray-400 transition"
+                                    className="w-full px-4 py-2 text-lg font-bold text-gray-800 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200 focus:outline-none hover:border-gray-400 transition"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600 pointer-events-none">kg</span>
                             </div>
@@ -1092,7 +1092,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
                                     setWeightInput(newWeight.toString());
                                 }}
-                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                                className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
                                 +0.1
                             </button>
@@ -1103,7 +1103,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     updateBodyComposition(newWeight, bodyComposition.bodyFatPercentage);
                                     setWeightInput(newWeight.toString());
                                 }}
-                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                                className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
                                 +1
                             </button>
@@ -1114,7 +1114,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <Icon name="Percent" size={16} className="text-teal-600" />
-                            <span className="text-sm font-bold text-gray-700">体脂肪率</span>
+                            <span className="text-sm font-bold text-gray-600">体脂肪率</span>
                             <button
                                 onClick={() => setVisualGuideModal({ ...visualGuideModal, show: true })}
                                 className="text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-full p-0.5 transition"
@@ -1131,7 +1131,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     updateBodyComposition(bodyComposition.weight, newBodyFat);
                                     setBodyFatInput(newBodyFat > 0 ? newBodyFat.toString() : '');
                                 }}
-                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                                className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
                                 -1
                             </button>
@@ -1142,7 +1142,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     updateBodyComposition(bodyComposition.weight, newBodyFat);
                                     setBodyFatInput(newBodyFat > 0 ? newBodyFat.toString() : '');
                                 }}
-                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                                className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
                                 -0.1
                             </button>
@@ -1176,7 +1176,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         // 全選択して入力しやすくする（空欄にしない）
                                         e.target.select();
                                     }}
-                                    className="w-full px-4 py-2 text-lg font-bold text-gray-900 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200 focus:outline-none hover:border-gray-400 transition"
+                                    className="w-full px-4 py-2 text-lg font-bold text-gray-800 text-center bg-white border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200 focus:outline-none hover:border-gray-400 transition"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600 pointer-events-none">%</span>
                             </div>
@@ -1187,7 +1187,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     updateBodyComposition(bodyComposition.weight, newBodyFat);
                                     setBodyFatInput(newBodyFat.toString());
                                 }}
-                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                                className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
                                 +0.1
                             </button>
@@ -1198,7 +1198,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     updateBodyComposition(bodyComposition.weight, newBodyFat);
                                     setBodyFatInput(newBodyFat.toString());
                                 }}
-                                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+                                className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
                             >
                                 +1
                             </button>
@@ -1212,7 +1212,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 flex items-center justify-between border-b-2 border-gray-200">
                         <div className="flex items-center gap-3">
                             <Icon name="Utensils" size={32} className="text-green-600" />
-                            <h4 className="font-bold text-gray-900">食事</h4>
+                            <h4 className="font-bold text-gray-800">食事</h4>
                             <span className="px-2 py-0.5 bg-green-500 text-white rounded-full text-xs font-bold">
                                 {dailyRecord.meals?.length || 0}
                             </span>
@@ -1237,7 +1237,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-xs text-gray-500">{meal.time}</span>
+                                                <span className="text-xs text-gray-600">{meal.time}</span>
                                                 {meal.isPredicted && (
                                                     <span className="text-xs bg-sky-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                         <Icon name="Sparkles" size={10} />
@@ -1257,11 +1257,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="text-base font-bold text-gray-900 mb-1">
+                                            <div className="text-base font-bold text-gray-800 mb-1">
                                                 {meal.name}
                                             </div>
                                             {meal.items?.map((item, i) => (
-                                                <div key={i} className="text-xs text-gray-500">
+                                                <div key={i} className="text-xs text-gray-600">
                                                     {item.name} {item.amount}{item.unit || 'g'}
                                                 </div>
                                             ))}
@@ -1269,7 +1269,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                                         <div className="text-right ml-4">
                                             <div className="text-xl font-bold text-blue-600">{Math.floor(meal.totalCalories || meal.calories || 0)}</div>
-                                            <div className="text-xs text-gray-500">kcal</div>
+                                            <div className="text-xs text-gray-600">kcal</div>
                                         </div>
                                     </div>
 
@@ -1288,7 +1288,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     toast.success('テンプレートを保存しました');
                                                 }
                                             }}
-                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-500"
+                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-500"
                                         >
                                             <Icon name="BookTemplate" size={18} />
                                         </button>
@@ -1299,13 +1299,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     window.handleEditMeal(meal);
                                                 }
                                             }}
-                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
                                         >
                                             <Icon name="Edit" size={18} />
                                         </button>
                                         <button
                                             onClick={() => onDeleteItem('meal', meal.id)}
-                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                         >
                                             <Icon name="Trash2" size={18} />
                                         </button>
@@ -1336,7 +1336,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-red-50 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
                                 <Icon name="Dumbbell" size={32} className="text-orange-600" />
-                                <h4 className="font-bold text-gray-900">運動</h4>
+                                <h4 className="font-bold text-gray-800">運動</h4>
                                 <span className="px-2 py-0.5 bg-orange-500 text-white rounded-full text-xs font-bold">
                                     {dailyRecord.workouts?.length || 0}
                                 </span>
@@ -1361,7 +1361,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <span className="text-xs text-gray-500">{workout.time}</span>
+                                                    <span className="text-xs text-gray-600">{workout.time}</span>
                                                     {workout.isPredicted && (
                                                         <span className="text-xs bg-sky-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                                                             <Icon name="Sparkles" size={10} />
@@ -1384,7 +1384,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 {/* 運動名と右上のサマリー */}
                                                 <div className="flex items-start justify-between mb-2">
                                                     <div className="flex flex-col">
-                                                        <div className="text-base font-bold text-gray-900">
+                                                        <div className="text-base font-bold text-gray-800">
                                                             {workout.name}
                                                         </div>
                                                         {/* 種目名の直下: シェブロン */}
@@ -1515,7 +1515,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                         toast.success('テンプレートを保存しました');
                                                     }
                                                 }}
-                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-500"
+                                                className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-purple-600 hover:bg-purple-50 transition border-2 border-purple-500"
                                             >
                                                 <Icon name="BookTemplate" size={18} />
                                             </button>
@@ -1526,13 +1526,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                         window.handleEditWorkout(workout);
                                                     }
                                                 }}
-                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
                                             >
                                                 <Icon name="Edit" size={18} />
                                             </button>
                                             <button
                                                 onClick={() => onDeleteItem('workout', workout.id)}
-                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
                                             >
                                                 <Icon name="Trash2" size={18} />
                                             </button>
@@ -1563,14 +1563,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     <div className="px-6 py-4 bg-gradient-to-r from-red-50 to-pink-50 flex items-center justify-between border-b-2 border-gray-200">
                         <div className="flex items-center gap-3">
                             <Icon name="HeartPulse" size={32} className="text-red-600" />
-                            <h4 className="font-bold text-gray-900">コンディション</h4>
+                            <h4 className="font-bold text-gray-800">コンディション</h4>
                         </div>
                     </div>
                     <div className="p-6 space-y-2">
                         {/* 睡眠時間 */}
                         <div className="py-2 px-3 bg-gray-50 rounded-lg">
                             <div className="mb-2">
-                                <span className="text-sm text-gray-700 font-bold">睡眠時間</span>
+                                <span className="text-sm text-gray-600 font-bold">睡眠時間</span>
                             </div>
                             <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
                                 {/* スライド背景 */}
@@ -1619,7 +1619,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.sleepHours) || 0)
                                                 ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1631,7 +1631,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {/* 睡眠の質 */}
                         <div className="py-2 px-3 bg-gray-50 rounded-lg">
                             <div className="mb-2">
-                                <span className="text-sm text-gray-700 font-bold">睡眠の質</span>
+                                <span className="text-sm text-gray-600 font-bold">睡眠の質</span>
                             </div>
                             <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
                                 {/* スライド背景 */}
@@ -1680,7 +1680,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.sleepQuality) || 0)
                                                 ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1692,7 +1692,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {/* 食欲 */}
                         <div className="py-2 px-3 bg-gray-50 rounded-lg">
                             <div className="mb-2">
-                                <span className="text-sm text-gray-700 font-bold">食欲</span>
+                                <span className="text-sm text-gray-600 font-bold">食欲</span>
                             </div>
                             <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
                                 {/* スライド背景 */}
@@ -1741,7 +1741,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.appetite) || 0)
                                                 ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1753,7 +1753,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {/* 腸内環境 */}
                         <div className="py-2 px-3 bg-gray-50 rounded-lg">
                             <div className="mb-2">
-                                <span className="text-sm text-gray-700 font-bold">腸内環境</span>
+                                <span className="text-sm text-gray-600 font-bold">腸内環境</span>
                             </div>
                             <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
                                 {/* スライド背景 */}
@@ -1802,7 +1802,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.digestion) || 0)
                                                 ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1814,7 +1814,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {/* 集中力 */}
                         <div className="py-2 px-3 bg-gray-50 rounded-lg">
                             <div className="mb-2">
-                                <span className="text-sm text-gray-700 font-bold">集中力</span>
+                                <span className="text-sm text-gray-600 font-bold">集中力</span>
                             </div>
                             <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
                                 {/* スライド背景 */}
@@ -1863,7 +1863,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.focus) || 0)
                                                 ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1875,7 +1875,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {/* ストレス */}
                         <div className="py-2 px-3 bg-gray-50 rounded-lg">
                             <div className="mb-2">
-                                <span className="text-sm text-gray-700 font-bold">ストレス</span>
+                                <span className="text-sm text-gray-600 font-bold">ストレス</span>
                             </div>
                             <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
                                 {/* スライド背景 */}
@@ -1924,7 +1924,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.stress) || 0)
                                                 ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
                                     >
                                         {item.label}
@@ -1942,7 +1942,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div className="px-6 py-4 bg-[#FFF59A]/10 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
                                 <Icon name="Lightbulb" size={32} className="text-yellow-500" />
-                                <h4 className="font-bold text-gray-900">閃き</h4>
+                                <h4 className="font-bold text-gray-800">閃き</h4>
                             </div>
                         </div>
                         <div className="p-6">
@@ -1971,7 +1971,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
                                 <Icon name="PieChart" size={32} className="text-indigo-600" />
-                                <h4 className="font-bold text-gray-900">分析</h4>
+                                <h4 className="font-bold text-gray-800">分析</h4>
                                 <button
                                     onClick={() => setShowScoringGuideModal(true)}
                                     className="p-1 hover:bg-gray-100 rounded-full transition"
@@ -2034,7 +2034,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             {/* 採点基準説明モーダル */}
             {showScoringGuideModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-xl w-full max-w-[95vw] sm:max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
                         <div className="p-6 space-y-4">
                             {/* ヘッダー */}
                             <div className="flex justify-between items-center">
@@ -2046,7 +2046,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     onClick={() => setShowScoringGuideModal(false)}
                                     className="p-1 hover:bg-gray-100 rounded-full transition"
                                 >
-                                    <Icon name="X" size={20} className="text-gray-500" />
+                                    <Icon name="X" size={20} className="text-gray-600" />
                                 </button>
                             </div>
 
@@ -2056,7 +2056,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <Icon name="Utensils" size={18} className="text-green-600" />
                                     <h4 className="font-bold text-green-800">食事スコア（100点満点）</h4>
                                 </div>
-                                <div className="text-sm text-gray-700 space-y-1">
+                                <div className="text-sm text-gray-600 space-y-1">
                                     <p><strong>PFCバランス</strong>（70%）</p>
                                     <ul className="list-disc list-inside ml-2 space-y-1">
                                         <li>タンパク質：目標値に対する達成率</li>
@@ -2077,7 +2077,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <Icon name="Dumbbell" size={18} className="text-orange-600" />
                                     <h4 className="font-bold text-orange-800">運動スコア（100点満点）</h4>
                                 </div>
-                                <div className="text-sm text-gray-700 space-y-1">
+                                <div className="text-sm text-gray-600 space-y-1">
                                     <p><strong>種目数</strong>（50%）</p>
                                     <ul className="list-disc list-inside ml-2 space-y-1">
                                         <li>ボディメイカー：5種目以上で満点</li>
@@ -2100,7 +2100,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <Icon name="HeartPulse" size={18} className="text-blue-600" />
                                     <h4 className="font-bold text-blue-800">コンディションスコア（100点満点）</h4>
                                 </div>
-                                <div className="text-sm text-gray-700 space-y-1">
+                                <div className="text-sm text-gray-600 space-y-1">
                                     <p><strong>6項目の平均で評価</strong></p>
                                     <ul className="list-disc list-inside ml-2 space-y-1">
                                         <li>睡眠時間（1-5段階、5=9h以上）</li>
@@ -2134,7 +2134,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             {/* 機能開放モーダル（1つのモーダルで3ページ構成） */}
             {showFeatureUnlockModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-md w-full shadow-xl">
+                    <div className="bg-white rounded-xl w-full max-w-[95vw] sm:max-w-md shadow-xl">
                         <div className="p-6 space-y-4">
                             {/* アイコン */}
                             <div className="flex justify-center">
@@ -2236,7 +2236,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 </div>
                                             </div>
                                         </div>
-                                        <p className="text-center text-xs text-gray-500">
+                                        <p className="text-center text-xs text-gray-600">
                                             7日間はすべての機能が無料で使えます
                                         </p>
                                     </div>
@@ -2260,7 +2260,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 {currentModalPage > 1 && (
                                     <button
                                         onClick={() => setCurrentModalPage(currentModalPage - 1)}
-                                        className="w-1/3 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors"
+                                        className="w-1/3 bg-gray-200 text-gray-600 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors"
                                     >
                                         戻る
                                     </button>
@@ -2303,7 +2303,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             {/* 初回分析完了＋Premium誘導モーダル */}
             {showUpgradeModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
+                    <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden animate-slide-up">
                         {/* ヘッダー（プレミアムグラデーション） */}
                         <div className="bg-[#FFF59A] p-6 text-gray-800 text-center relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
@@ -2316,8 +2316,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mb-3 relative z-10">
                                 <Icon name="Crown" size={48} className="mx-auto mb-2 text-yellow-600" />
                             </div>
-                            <h2 className="text-2xl font-bold mb-2 text-gray-900 relative z-10">🎉 初回分析完了！</h2>
-                            <p className="text-sm opacity-90 text-gray-700 relative z-10">AIがあなた専用の分析レポートを作成しました</p>
+                            <h2 className="text-2xl font-bold mb-2 text-gray-800 relative z-10">🎉 初回分析完了！</h2>
+                            <p className="text-sm opacity-90 text-gray-600 relative z-10">AIがあなた専用の分析レポートを作成しました</p>
                         </div>
 
                         {/* コンテンツ */}
@@ -2339,7 +2339,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     ].map((feature, idx) => (
                                         <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
                                             <Icon name={feature.icon} size={18} className={feature.color} />
-                                            <span className="text-sm text-gray-700">{feature.text}</span>
+                                            <span className="text-sm text-gray-600">{feature.text}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -2380,15 +2380,15 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             {/* レベルアップモーダル */}
             {showLevelUpModal && levelUpData && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl animate-bounce-in">
+                    <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md overflow-hidden shadow-2xl animate-bounce-in">
                         {/* ヘッダー */}
                         <div className="bg-[#FFF59A] p-6 text-center relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                             <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
                             <div className="relative z-10">
                                 <Icon name="Trophy" size={48} className="text-yellow-600 mx-auto mb-3" />
-                                <h2 className="text-2xl font-bold text-gray-900 mb-1">レベルアップ！</h2>
-                                <p className="text-gray-700 text-sm">おめでとうございます</p>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-1">レベルアップ！</h2>
+                                <p className="text-gray-600 text-sm">おめでとうございます</p>
                             </div>
                         </div>
 
@@ -2408,7 +2408,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             {/* 獲得クレジット */}
                             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-semibold text-gray-700">獲得クレジット</span>
+                                    <span className="text-sm font-semibold text-gray-600">獲得クレジット</span>
                                     <Icon name="Award" size={20} className="text-yellow-600" />
                                 </div>
                                 <div className="text-3xl font-bold text-yellow-600 text-center">
@@ -2424,7 +2424,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 <div className="bg-[#FFF59A]/10 border-2 border-amber-300 rounded-xl p-4">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Icon name="Star" size={18} className="text-amber-600" />
-                                        <span className="text-sm font-bold text-gray-700">マイルストーン達成！</span>
+                                        <span className="text-sm font-bold text-gray-600">マイルストーン達成！</span>
                                     </div>
                                     <p className="text-xs text-gray-600">
                                         Level {levelUpData.milestoneReached.join(', ')} 到達ボーナス獲得
@@ -2451,7 +2451,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             {/* 体脂肪率推定モーダル */}
             {visualGuideModal.show && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                         <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-pink-600 text-white p-4 flex justify-between items-center z-10">
                             <h3 className="font-bold text-lg">外見から体脂肪率を推定</h3>
                             <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
@@ -2508,15 +2508,15 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     </div>
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <span className="font-bold text-gray-900">{guide.title}</span>
+                                                            <span className="font-bold text-gray-800">{guide.title}</span>
                                                             <span className="text-sm text-gray-600">({guide.range})</span>
                                                         </div>
-                                                        <ul className="text-sm text-gray-700 space-y-1">
+                                                        <ul className="text-sm text-gray-600 space-y-1">
                                                             {guide.features.map((feature, idx) => (
                                                                 <li key={idx}>• {feature}</li>
                                                             ))}
                                                         </ul>
-                                                        <p className="text-xs text-gray-500 mt-2">健康: {guide.health}</p>
+                                                        <p className="text-xs text-gray-600 mt-2">健康: {guide.health}</p>
                                                     </div>
                                                 </div>
                                             </button>
@@ -2526,7 +2526,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </div>
 
                             <div className="bg-gradient-to-r from-orange-50 to-pink-50 p-4 rounded-lg border border-orange-200">
-                                <p className="text-sm font-medium text-gray-700 mb-2">推定結果</p>
+                                <p className="text-sm font-medium text-gray-600 mb-2">推定結果</p>
                                 <p className="text-3xl font-bold text-orange-600">
                                     {LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel).bodyFatPercentage}%
                                 </p>
@@ -2697,7 +2697,7 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+            <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl">
                 {/* ヘッダー */}
                 <div className="p-4 border-b-2 border-gray-200 flex items-center justify-between">
                     <h3 className="text-lg font-bold text-gray-800">
@@ -2712,8 +2712,8 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
                 <div className="p-6 space-y-4">
                     {/* カテゴリー選択 */}
                     <div>
-                        <label className="text-sm font-bold text-gray-700 block mb-2">カテゴリー</label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <label className="text-sm font-bold text-gray-600 block mb-2">カテゴリー</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             {['meal', 'exercise', 'condition'].map((type) => (
                                 <button
                                     key={type}
@@ -2733,7 +2733,7 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
 
                     {/* 指示内容 */}
                     <div>
-                        <label className="text-sm font-bold text-gray-700 block mb-2">指示内容</label>
+                        <label className="text-sm font-bold text-gray-600 block mb-2">指示内容</label>
                         <textarea
                             value={editedMessage}
                             onChange={(e) => setEditedMessage(e.target.value)}
@@ -2748,14 +2748,14 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
                 <div className="p-4 border-t-2 border-gray-200 flex gap-2">
                     <button
                         onClick={handleSave}
-                        className="flex-1 bg-[#4A9EFF] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#3A8EEF] transition flex items-center justify-center gap-2"
+                        className="flex-1 bg-[#4A9EFF] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#3b8fef] transition flex items-center justify-center gap-2"
                     >
                         <Icon name="Save" size={18} />
                         保存
                     </button>
                     <button
                         onClick={onClose}
-                        className="flex-1 bg-white border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-50 transition"
+                        className="flex-1 bg-white border-2 border-gray-300 text-gray-600 font-semibold py-3 px-6 rounded-lg hover:bg-gray-50 transition"
                     >
                         キャンセル
                     </button>

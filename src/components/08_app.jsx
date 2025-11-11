@@ -24,18 +24,18 @@ const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
         title: 'Your Coach+へようこそ！',
         content: (
             <div className="space-y-4">
-                <p className="text-center text-gray-700 text-sm">
+                <p className="text-center text-gray-600 text-sm">
                     LBMベースの科学的アプローチで、あなたの体づくりをサポートします。
                 </p>
                 <div className="bg-gradient-to-r from-blue-50 to-sky-50 p-4 rounded-lg border border-blue-200">
                     <h4 className="font-bold text-blue-900 mb-2 text-center">まずは記録を始めましょう</h4>
-                    <p className="text-sm text-gray-700 text-center">
+                    <p className="text-sm text-gray-600 text-center">
                         食事・運動・コンディションを記録して、AI分析を受けてみましょう。<br />
                         初日に分析まで完了すれば、すべての機能がすぐに使えます！
                     </p>
                 </div>
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
-                    <p className="text-xs text-gray-700 text-center">
+                    <p className="text-xs text-gray-600 text-center">
                         💡 記録を続けることで、AIがあなたを学習し、より精度の高い提案を提供します
                     </p>
                 </div>
@@ -45,7 +45,7 @@ const WelcomeGuideModal = ({ show, onClose, onFinish }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 slide-up">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-[95vw] sm:max-w-md mx-4 slide-up">
                 {/* ヘッダー */}
                 <div className="flex flex-col items-center gap-3 mb-4">
                     <div className={`w-16 h-16 ${pageData.iconColor} rounded-full flex items-center justify-center`}>
@@ -106,7 +106,7 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
                 </div>
 
                 {/* メッセージ */}
-                <p className="text-gray-700 mb-6 whitespace-pre-line">
+                <p className="text-gray-600 mb-6 whitespace-pre-line">
                     {message}
                 </p>
 
@@ -129,7 +129,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
+            <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden animate-slide-up">
                 {/* ヘッダー（紫グラデーション） */}
                 <div className="bg-[#FFF59A] p-6 text-gray-800 text-center relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
@@ -165,7 +165,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             ].map((feature, idx) => (
                                 <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
                                     <Icon name={feature.icon} size={18} className={feature.color} />
-                                    <span className="text-sm text-gray-700">{feature.text}</span>
+                                    <span className="text-sm text-gray-600">{feature.text}</span>
                                 </div>
                             ))}
                         </div>
@@ -1195,7 +1195,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                 return (
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
-                        <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden slide-up" onClick={(e) => e.stopPropagation()}>
+                        <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-hidden slide-up" onClick={(e) => e.stopPropagation()}>
                             {/* ヘッダー */}
                             <div className="sticky top-0 bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 flex justify-between items-center z-10">
                                 <h3 className="font-bold text-lg">{infoModal.title}</h3>
@@ -1322,7 +1322,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition flex items-center gap-2"
                                 >
                                     <Icon name="Calendar" size={20} className="text-sky-600" />
-                                    <span className="text-xl font-bold text-gray-900">
+                                    <span className="text-xl font-bold text-gray-800">
                                         {(() => {
                                             const [year, month, day] = currentDate.split('-').map(Number);
                                             const date = new Date(year, month - 1, day);
@@ -1374,7 +1374,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <Icon name="Repeat" size={20} className="text-blue-600" />
-                                        <span className="text-xs text-gray-500">
+                                        <span className="text-xs text-gray-600">
                                             Day {(() => {
                                                 const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
                                                 const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
@@ -1460,7 +1460,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                                             ? 'bg-indigo-600 text-white shadow-md'
                                                             : isToday
                                                             ? 'bg-indigo-100 text-indigo-700 font-bold'
-                                                            : 'hover:bg-gray-100 text-gray-700'
+                                                            : 'hover:bg-gray-100 text-gray-600'
                                                         }
                                                     `}
                                                 >
@@ -2081,7 +2081,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     {/* AI自然言語入力モーダル */}
                     {showAIInput && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                            <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl">
+                            <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl">
                                 <div className="sticky top-0 bg-[#FFF59A] text-gray-800 p-4 rounded-t-2xl flex items-center justify-between relative overflow-hidden">
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                                     <div className="flex items-center gap-2 relative z-10">
@@ -2115,7 +2115,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                             </div>
 
                                             <div className="mb-4">
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                <label className="block text-sm font-medium text-gray-600 mb-2">
                                                     記録内容を入力
                                                 </label>
                                                 <textarea
@@ -2308,7 +2308,7 @@ ${aiInputText}
                                                                     className="w-full mb-2 px-2 py-1 text-sm border border-orange-300 rounded focus:ring-2 focus:ring-orange-500"
                                                                     placeholder="食材名"
                                                                 />
-                                                                <div className="grid grid-cols-4 gap-2">
+                                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                                                     <div>
                                                                         <label className="text-xs text-orange-700">量(g)</label>
                                                                         <input
@@ -2387,7 +2387,7 @@ ${aiInputText}
                                                                     className="w-full mb-2 px-2 py-1 text-sm border border-red-300 rounded focus:ring-2 focus:ring-red-500"
                                                                     placeholder="種目名"
                                                                 />
-                                                                <div className="grid grid-cols-5 gap-2">
+                                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                                                                     <div>
                                                                         <label className="text-xs text-red-700">重量(kg)</label>
                                                                         <input
@@ -2468,7 +2468,7 @@ ${aiInputText}
                                                         setAiParsedData(null);
                                                         setAiInputText('');
                                                     }}
-                                                    className="flex-1 py-3 px-6 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                                                    className="flex-1 py-3 px-6 bg-gray-200 text-gray-600 rounded-lg font-semibold hover:bg-gray-300 transition"
                                                 >
                                                     戻る
                                                 </button>
@@ -2550,7 +2550,7 @@ ${aiInputText}
                     {/* 機能開放状態モーダル */}
                     {showStageInfo && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowStageInfo(false)}>
-                            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                                 <div className="sticky top-0 bg-gradient-to-r from-sky-500 to-blue-600 text-white p-6 rounded-t-2xl">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
@@ -2604,7 +2604,7 @@ AIコーチなどの高度な機能が解放されます。
                                                         </span>
                                                         {feature.icon && <Icon key={`icon-${feature.id}`} name={feature.icon} size={18} className="text-gray-600" />}
                                                         <span className="font-medium">{feature.name}</span>
-                                                        <span className="text-xs text-gray-500">({feature.requiredDays}日〜)</span>
+                                                        <span className="text-xs text-gray-600">({feature.requiredDays}日〜)</span>
                                                     </div>
                                                     <div>
                                                         {isUnlocked ? (
@@ -2673,7 +2673,7 @@ AIコーチなどの高度な機能が解放されます。
                     {/* サブメニュー（ボトムバーの上に展開） */}
                     {bottomBarExpanded && bottomBarMenu === 'daily' && (
                         <div className="fixed bottom-16 left-0 right-0 z-[9998] bg-blue-50 border-t shadow-lg px-4 py-3">
-                            <div className="grid grid-cols-6 gap-2">
+                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                                 <button
                                     onClick={() => {
                                         setShowAIInput(true);
@@ -2696,7 +2696,7 @@ AIコーチなどの高度な機能が解放されます。
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-green-100 transition"
                                 >
                                     <Icon name="Utensils" size={18} className="text-green-600" />
-                                    <span className="text-xs text-gray-700">食事</span>
+                                    <span className="text-xs text-gray-600">食事</span>
                                 </button>
                                 <button
                                     onClick={() => {
@@ -2708,7 +2708,7 @@ AIコーチなどの高度な機能が解放されます。
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-orange-100 transition"
                                 >
                                     <Icon name="Dumbbell" size={18} className="text-orange-600" />
-                                    <span className="text-xs text-gray-700">運動</span>
+                                    <span className="text-xs text-gray-600">運動</span>
                                 </button>
                                 <button
                                     onClick={() => {
@@ -2720,7 +2720,7 @@ AIコーチなどの高度な機能が解放されます。
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-red-100 transition"
                                 >
                                     <Icon name="Activity" size={18} className="text-red-600" />
-                                    <span className="text-xs text-gray-700">体調</span>
+                                    <span className="text-xs text-gray-600">体調</span>
                                 </button>
                                 <button
                                     onClick={() => {
@@ -2731,7 +2731,7 @@ AIコーチなどの高度な機能が解放されます。
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-sky-100 transition"
                                 >
                                     <Icon name="PieChart" size={18} className="text-sky-600" />
-                                    <span className="text-xs text-gray-700">分析</span>
+                                    <span className="text-xs text-gray-600">分析</span>
                                 </button>
                             </div>
                         </div>
@@ -2739,7 +2739,7 @@ AIコーチなどの高度な機能が解放されます。
 
                     {bottomBarExpanded && bottomBarMenu === 'pgbase' && (
                         <div className="fixed bottom-16 left-0 right-0 z-[9998] bg-blue-50 border-t shadow-lg px-4 py-3">
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 <button
                                     onClick={() => {
                                         if (!unlockedFeatures.includes('history_graph')) {
@@ -2763,7 +2763,7 @@ AIコーチなどの高度な機能が解放されます。
                                     }`}
                                 >
                                     <Icon name="Calendar" size={18} className="text-blue-600" />
-                                    <span className="text-xs text-gray-700">履歴</span>
+                                    <span className="text-xs text-gray-600">履歴</span>
                                     {!unlockedFeatures.includes('history_graph') && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
                                     )}
@@ -2791,7 +2791,7 @@ AIコーチなどの高度な機能が解放されます。
                                     }`}
                                 >
                                     <Icon name="BookOpen" size={18} className="text-blue-600" />
-                                    <span className="text-xs text-gray-700">教科書</span>
+                                    <span className="text-xs text-gray-600">教科書</span>
                                     {!unlockedFeatures.includes('pg_base') && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
                                     )}
@@ -2819,7 +2819,7 @@ AIコーチなどの高度な機能が解放されます。
                                     }`}
                                 >
                                     <Icon name="Users" size={18} className="text-blue-600" />
-                                    <span className="text-xs text-gray-700">COMY</span>
+                                    <span className="text-xs text-gray-600">COMY</span>
                                     {!unlockedFeatures.includes('community') && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
                                     )}
@@ -2830,7 +2830,7 @@ AIコーチなどの高度な機能が解放されます。
 
                     {bottomBarExpanded && bottomBarMenu === 'settings' && (
                         <div className="fixed bottom-16 left-0 right-0 z-[9998] bg-orange-50 border-t shadow-lg px-4 py-3">
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 <button
                                     onClick={() => {
                                         setShowSettings(true);
@@ -2840,7 +2840,7 @@ AIコーチなどの高度な機能が解放されます。
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-orange-100 transition"
                                 >
                                     <Icon name="Settings" size={18} className="text-orange-600" />
-                                    <span className="text-xs text-gray-700">設定</span>
+                                    <span className="text-xs text-gray-600">設定</span>
                                 </button>
                                 <button
                                     onClick={() => {
@@ -2851,7 +2851,7 @@ AIコーチなどの高度な機能が解放されます。
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-orange-100 transition"
                                 >
                                     <Icon name="Award" size={18} className="text-orange-600" />
-                                    <span className="text-xs text-gray-700">バッジ</span>
+                                    <span className="text-xs text-gray-600">バッジ</span>
                                 </button>
                                 <button
                                     onClick={() => {
@@ -2861,7 +2861,7 @@ AIコーチなどの高度な機能が解放されます。
                                     className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-blue-100 transition"
                                 >
                                     <Icon name="HelpCircle" size={18} style={{color: '#4A9EFF'}} />
-                                    <span className="text-xs text-gray-700">使い方</span>
+                                    <span className="text-xs text-gray-600">使い方</span>
                                 </button>
                             </div>
                         </div>
@@ -2886,7 +2886,7 @@ AIコーチなどの高度な機能が解放されます。
 
                         {/* 展開時のみ表示されるメインボタン（5ボタン） */}
                         {bottomBarExpanded && (
-                            <div className="grid grid-cols-5 gap-0 py-2">
+                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-0 py-2">
                                 {/* ①ホーム */}
                                 <button
                                     onClick={() => {
@@ -3075,10 +3075,10 @@ AIコーチなどの高度な機能が解放されます。
                                 </div>
                                 <div className="p-6 space-y-4">
                                     <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
-                                        <p className="text-sm text-gray-700 mb-3">
+                                        <p className="text-sm text-gray-600 mb-3">
                                             <strong className="text-yellow-700">クレジットの獲得方法：</strong>
                                         </p>
-                                        <ul className="space-y-2 text-sm text-gray-700">
+                                        <ul className="space-y-2 text-sm text-gray-600">
                                             <li className="flex items-start gap-2">
                                                 <Icon name="Award" size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
                                                 <span><strong>レベルアップ</strong>：3クレジット/回</span>

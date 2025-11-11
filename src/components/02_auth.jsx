@@ -320,7 +320,7 @@ const LoginScreen = () => {
     if (showForgotPassword) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 p-4">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
+                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[95vw] sm:max-w-md slide-up">
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-bold text-gray-800 mb-2">パスワードリセット</h1>
                         <p className="text-gray-600">登録したメールアドレスを入力してください</p>
@@ -328,7 +328,7 @@ const LoginScreen = () => {
 
                     <form onSubmit={handlePasswordReset} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">メールアドレス</label>
                             <input
                                 type="email"
                                 value={resetEmail}
@@ -368,7 +368,7 @@ const LoginScreen = () => {
     if (showMfaInput) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 p-4">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
+                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[95vw] sm:max-w-md slide-up">
                     <div className="text-center mb-8">
                         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Icon name="Shield" size={32} className="text-blue-600" />
@@ -381,7 +381,7 @@ const LoginScreen = () => {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">認証コード（6桁）</label>
+                            <label className="block text-sm font-medium text-gray-600 mb-2">認証コード（6桁）</label>
                             <input
                                 type="text"
                                 value={mfaVerificationCode}
@@ -432,7 +432,7 @@ const LoginScreen = () => {
 
                 <form onSubmit={handleAuth} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">メールアドレス</label>
                         <input
                             type="email"
                             value={email}
@@ -443,7 +443,7 @@ const LoginScreen = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">パスワード</label>
                         <div className="relative">
                             <input
                                 type={showPassword ? 'text' : 'password'}
@@ -457,7 +457,7 @@ const LoginScreen = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-600"
                             >
                                 <Icon name={showPassword ? 'EyeOff' : 'Eye'} size={20} />
                             </button>
@@ -480,7 +480,7 @@ const LoginScreen = () => {
                                         {passwordStrength.message}
                                     </span>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-gray-600 mt-1">
                                     8文字以上、大小英字・数字・記号を含めると強固になります
                                 </p>
                             </div>
@@ -488,7 +488,7 @@ const LoginScreen = () => {
                     </div>
                     {isSignUp && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">パスワード（確認）</label>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">パスワード（確認）</label>
                             <input
                                 type={showPassword ? 'text' : 'password'}
                                 value={confirmPassword}
@@ -514,7 +514,7 @@ const LoginScreen = () => {
                                     onChange={(e) => setAgreedToTerms(e.target.checked)}
                                     className="mt-1 w-4 h-4 flex-shrink-0"
                                 />
-                                <label htmlFor="agreeToTerms" className="text-sm text-gray-700">
+                                <label htmlFor="agreeToTerms" className="text-sm text-gray-600">
                                     <button
                                         type="button"
                                         onClick={() => setShowTermsModal(true)}
@@ -577,7 +577,7 @@ const LoginScreen = () => {
                     <button
                         type="button"
                         onClick={isSignUp ? handleGoogleSignUp : handleGoogleLogin}
-                        className="w-full bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2"
+                        className="w-full bg-white border border-gray-300 text-gray-600 font-bold py-3 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2"
                     >
                         <Icon name="Chrome" size={20} />
                         {isSignUp ? 'Googleで登録' : 'Googleでログイン'}
@@ -615,7 +615,7 @@ const LoginScreen = () => {
                             // ステップ1: 電話番号入力
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">
                                         電話番号（国際形式）
                                     </label>
                                     <input
@@ -625,7 +625,7 @@ const LoginScreen = () => {
                                         placeholder="+8190XXXXXXXX"
                                         className="w-full px-4 py-2 border rounded-lg"
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className="text-xs text-gray-600 mt-1">
                                         例: +819012345678
                                     </p>
                                 </div>
@@ -654,7 +654,7 @@ const LoginScreen = () => {
                                 </p>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">
                                         認証コード（6桁）
                                     </label>
                                     <input
@@ -663,7 +663,7 @@ const LoginScreen = () => {
                                         onChange={(e) => setSignupVerificationCode(e.target.value)}
                                         placeholder="123456"
                                         maxLength={6}
-                                        className="w-full px-4 py-2 border rounded-lg text-center text-2xl tracking-widest"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </div>
 
@@ -692,7 +692,7 @@ const LoginScreen = () => {
                     <div className="bg-white rounded-lg w-[98vw] h-[98vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                         <div className="flex-shrink-0 bg-white border-b p-4 flex justify-between items-center">
                             <h2 className="text-xl md:text-2xl font-bold">プライバシーポリシー</h2>
-                            <button onClick={() => setShowPrivacyModal(false)} className="text-gray-500 hover:text-gray-700">
+                            <button onClick={() => setShowPrivacyModal(false)} className="text-gray-600 hover:text-gray-600">
                                 <Icon name="X" size={24} />
                             </button>
                         </div>
@@ -709,7 +709,7 @@ const LoginScreen = () => {
                     <div className="bg-white rounded-lg w-[98vw] h-[98vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                         <div className="flex-shrink-0 bg-white border-b p-4 flex justify-between items-center">
                             <h2 className="text-xl md:text-2xl font-bold">利用規約</h2>
-                            <button onClick={() => setShowTermsModal(false)} className="text-gray-500 hover:text-gray-700">
+                            <button onClick={() => setShowTermsModal(false)} className="text-gray-600 hover:text-gray-600">
                                 <Icon name="X" size={24} />
                             </button>
                         </div>
@@ -726,7 +726,7 @@ const LoginScreen = () => {
                     <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-bold">認証方法について</h3>
-                            <button onClick={() => setShowAuthInfoModal(false)} className="text-gray-500 hover:text-gray-700">
+                            <button onClick={() => setShowAuthInfoModal(false)} className="text-gray-600 hover:text-gray-600">
                                 <Icon name="X" size={20} />
                             </button>
                         </div>
@@ -735,7 +735,7 @@ const LoginScreen = () => {
                             {/* Google認証 */}
                             <div className="border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <Icon name="Chrome" size={20} className="text-gray-700" />
+                                    <Icon name="Chrome" size={20} className="text-gray-600" />
                                     <h4 className="font-semibold">Google認証</h4>
                                 </div>
                                 <div className="text-sm text-gray-600 space-y-2">
@@ -746,7 +746,7 @@ const LoginScreen = () => {
                                     <p className="ml-5">
                                         テストユーザーとして登録されたGoogleアカウントのみログインできます。
                                     </p>
-                                    <p className="ml-5 text-xs text-gray-500">
+                                    <p className="ml-5 text-xs text-gray-600">
                                         ※ 近日中に全ユーザーがログインできるよう設定予定
                                     </p>
                                 </div>
@@ -755,7 +755,7 @@ const LoginScreen = () => {
                             {/* メールアドレス認証 */}
                             <div className="border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <Icon name="Mail" size={20} className="text-gray-700" />
+                                    <Icon name="Mail" size={20} className="text-gray-600" />
                                     <h4 className="font-semibold">メールアドレス認証</h4>
                                 </div>
                                 <div className="text-sm text-gray-600 space-y-2">
@@ -779,7 +779,7 @@ const LoginScreen = () => {
 
                         <button
                             onClick={() => setShowAuthInfoModal(false)}
-                            className="mt-6 w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition"
+                            className="mt-6 w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2 px-4 rounded-lg transition"
                         >
                             閉じる
                         </button>
@@ -924,7 +924,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl slide-up max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[95vw] sm:max-w-2xl slide-up max-h-[90vh] overflow-y-auto">
                 <h2 className="text-2xl font-bold mb-2">
                     {step === 0 && '基本情報'}
                     {step === 1 && 'あなたの目的は？'}
@@ -933,7 +933,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     {step === 4 && '達成方法を理解する'}
                     {step === 5 && '実際に記録してみる'}
                 </h2>
-                <p className="text-sm text-gray-500 mb-6">ステップ {step + 1}/6</p>
+                <p className="text-sm text-gray-600 mb-6">ステップ {step + 1}/6</p>
 
                 {step === 0 && (
                     <div className="space-y-6">
@@ -943,11 +943,11 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 type="text"
                                 value={profile.displayName}
                                 onChange={(e) => setProfile({...profile, displayName: e.target.value})}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 placeholder="例: 山田 太郎"
                                 required
                             />
-                            <p className="text-xs text-gray-500 mt-1">※本名をご入力ください</p>
+                            <p className="text-xs text-gray-600 mt-1">※本名をご入力ください</p>
                         </div>
                         <div className="border-l-4 border-blue-500 pl-4">
                             <label className="block text-sm font-medium mb-2">ニックネーム（任意）</label>
@@ -955,17 +955,17 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 type="text"
                                 value={profile.nickname}
                                 onChange={(e) => setProfile({...profile, nickname: e.target.value})}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 placeholder="例: トレーニー太郎"
                             />
-                            <p className="text-xs text-gray-500 mt-1">※アプリ内で表示される名前</p>
+                            <p className="text-xs text-gray-600 mt-1">※アプリ内で表示される名前</p>
                         </div>
                         <div className="border-l-4 border-blue-500 pl-4">
                             <label className="block text-sm font-medium mb-2">性別</label>
                             <select
                                 value={profile.gender}
                                 onChange={(e) => setProfile({...profile, gender: e.target.value})}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             >
                                 <option value="男性">男性</option>
                                 <option value="女性">女性</option>
@@ -978,7 +978,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 type="number"
                                 value={profile.age}
                                 onChange={(e) => setProfile({...profile, age: e.target.value === '' ? '' : Number(e.target.value)})}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             />
                         </div>
                         <div className="border-l-4 border-blue-500 pl-4">
@@ -998,19 +998,19 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         className={`flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 ${
                                             item.value === (profile.idealSleepHours || 4)
                                                 ? 'bg-blue-500 text-white'
-                                                : 'text-gray-500 hover:text-gray-800'
+                                                : 'text-gray-600 hover:text-gray-800'
                                         }`}
                                     >
                                         {item.label}
                                     </button>
                                 ))}
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">※成人の推奨睡眠時間は7-8時間です</p>
+                            <p className="text-xs text-gray-600 mt-1">※成人の推奨睡眠時間は7-8時間です</p>
                         </div>
 
                         <div className="border-l-4 border-blue-500 pl-4">
                             <label className="block text-sm font-medium mb-2">トレーニングスタイル</label>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <button
                                     type="button"
                                     onClick={() => setProfile({...profile, style: '一般'})}
@@ -1036,7 +1036,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     <div className="text-xs text-gray-600">本格的な筋トレ・競技力向上</div>
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">※ボディメイカーはタンパク質の推奨量が一般の約1.8倍（一般 LBM×1.2、ボディメイカー LBM×2.2）、ビタミン・ミネラルの推奨量が2倍になります</p>
+                            <p className="text-xs text-gray-600 mt-2">※ボディメイカーはタンパク質の推奨量が一般の約1.8倍（一般 LBM×1.2、ボディメイカー LBM×2.2）、ビタミン・ミネラルの推奨量が2倍になります</p>
                         </div>
                     </div>
                 )}
@@ -1045,7 +1045,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     <div className="space-y-6">
                         {/* 教育セクション */}
                         <div className="bg-gradient-to-r from-blue-50 to-sky-50 p-4 rounded-lg border border-blue-200">
-                            <p className="text-sm text-gray-700">
+                            <p className="text-sm text-gray-600">
                                 まずは、あなたがこのアプリを使う目的を明確にしましょう。<br />
                                 目的に応じて、最適なカロリーとPFCバランスを自動計算します。
                             </p>
@@ -1102,7 +1102,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <Icon name="Lightbulb" size={18} className="text-sky-600 flex-shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-sky-900 mb-1">LBMとは？</p>
-                                    <p className="text-sm text-gray-700">
+                                    <p className="text-sm text-gray-600">
                                         筋肉や骨など、脂肪以外の体重です。健康的な体づくりの鍵は、このLBMを増やすこと（または維持すること）です。
                                     </p>
                                 </div>
@@ -1174,7 +1174,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <Icon name="Lightbulb" size={18} className="text-cyan-600 flex-shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-cyan-900 mb-1">体脂肪率の測り方</p>
-                                    <p className="text-sm text-gray-700">
+                                    <p className="text-sm text-gray-600">
                                         体組成計での測定を推奨します。不明な場合は「外見から推定」ボタンでおおよその値を確認できます。
                                     </p>
                                 </div>
@@ -1188,7 +1188,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     type="number"
                                     value={profile.height}
                                     onChange={(e) => setProfile({...profile, height: e.target.value === '' ? '' : Number(e.target.value)})}
-                                    className="w-full px-3 py-2 border rounded-lg"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 />
                             </div>
                             <div className="border-l-4 border-teal-500 pl-4">
@@ -1197,7 +1197,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     type="number"
                                     value={profile.weight}
                                     onChange={(e) => setProfile({...profile, weight: e.target.value === '' ? '' : Number(e.target.value)})}
-                                    className="w-full px-3 py-2 border rounded-lg"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 />
                             </div>
                             <div className="border-l-4 border-teal-500 pl-4">
@@ -1216,9 +1216,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     step="0.1"
                                     value={profile.bodyFatPercentage}
                                     onChange={(e) => setProfile({...profile, bodyFatPercentage: e.target.value === '' ? '' : Number(e.target.value)})}
-                                    className="w-full px-3 py-2 border rounded-lg"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 />
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className="text-sm text-gray-600 mt-1">
                                     不明な場合は<button type="button" onClick={() => setVisualGuideModal({ ...visualGuideModal, show: true, gender: profile.gender })} className="text-orange-600 hover:underline">「外見から推定」</button>をお試しください
                                 </p>
                             </div>
@@ -1241,7 +1241,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 </h3>
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-700">LBM:</span>
+                                        <span className="text-sm text-gray-600">LBM:</span>
                                         <span className={`text-lg font-bold ${
                                             (profile.idealLBM - LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage)) >= 0
                                                 ? 'text-blue-600'
@@ -1252,7 +1252,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-700">体脂肪率:</span>
+                                        <span className="text-sm text-gray-600">体脂肪率:</span>
                                         <span className={`text-lg font-bold ${
                                             (profile.idealBodyFatPercentage - profile.bodyFatPercentage) <= 0
                                                 ? 'text-blue-600'
@@ -1276,7 +1276,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <Icon name="Lightbulb" size={18} className="text-sky-600 flex-shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-sky-900 mb-1">PFCバランスとは？</p>
-                                    <p className="text-sm text-gray-700 mb-2">
+                                    <p className="text-sm text-gray-600 mb-2">
                                         P: Protein（タンパク質）、F: Fat（脂質）、C: Carbohydrate（炭水化物）の3大栄養素のバランスです。
                                     </p>
                                     <p className="text-xs text-gray-600">
@@ -1295,7 +1295,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <select
                                     value={profile.activityLevel}
                                     onChange={(e) => setProfile({...profile, activityLevel: e.target.value === '' ? '' : Number(e.target.value)})}
-                                    className="w-full px-3 py-2 border rounded-lg"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     disabled={profile.customActivityMultiplier}
                                 >
                                     <option value={1}>デスクワーク中心 - 1.05x</option>
@@ -1322,7 +1322,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         max="2.5"
                                         value={customMultiplierInputValue}
                                         onChange={(e) => setCustomMultiplierInputValue(e.target.value)}
-                                        className="w-full px-3 py-2 border rounded-lg"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                         placeholder="例: 1.4"
                                     />
                                     <div className="flex gap-2">
@@ -1348,7 +1348,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                                 setShowCustomMultiplierInput(false);
                                                 setCustomMultiplierInputValue('');
                                             }}
-                                            className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                                            className="flex-1 px-3 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300"
                                         >
                                             キャンセル
                                         </button>
@@ -1378,7 +1378,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <label className="block text-sm font-medium mb-2 flex items-center justify-between">
                                 <div className="flex flex-col">
                                     <span>カロリー調整値（kcal/日）</span>
-                                    <span className="text-xs text-gray-500 font-normal mt-0.5">メンテナンスから±調整</span>
+                                    <span className="text-xs text-gray-600 font-normal mt-0.5">メンテナンスから±調整</span>
                                 </div>
                                 <button
                                     type="button"
@@ -1398,7 +1398,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     const value = e.target.value === '' ? null : Number(e.target.value);
                                     setProfile({...profile, calorieAdjustment: value});
                                 }}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 placeholder={(() => {
                                     const defaults = {
                                         '減量': '-300 (減量のデフォルト)',
@@ -1409,7 +1409,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     return defaults[profile.purpose] || '0';
                                 })()}
                             />
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-gray-600 mt-1">
                                 目的に応じて自動入力されます（変更する場合のみ入力してください）
                             </p>
                         </div>
@@ -1419,7 +1419,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <label className="block text-sm font-medium mb-2 flex items-center justify-between">
                                 <div className="flex flex-col">
                                     <span>PFCバランスのカスタマイズ（任意）</span>
-                                    <span className="text-xs text-gray-500 font-normal mt-0.5">スライダーで調整できます</span>
+                                    <span className="text-xs text-gray-600 font-normal mt-0.5">スライダーで調整できます</span>
                                 </div>
                             </label>
 
@@ -1579,7 +1579,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     })()} kcal/日
                                 </p>
                             </div>
-                            <div className="grid grid-cols-3 gap-2 mb-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
                                 <div className="bg-white p-2 rounded-lg border border-sky-200">
                                     <p className="text-xs text-gray-600">タンパク質</p>
                                     <p className="text-lg font-bold text-red-600">
@@ -1592,7 +1592,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                             return Math.round(lbm * proteinRatio);
                                         })()} g
                                     </p>
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className="text-xs text-gray-600 mt-1">
                                         {(() => {
                                             const proteinRatio = profile.customProteinRatio !== null && profile.customProteinRatio !== undefined
                                                 ? profile.customProteinRatio
@@ -1623,7 +1623,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                             return Math.round(fat);
                                         })()} g
                                     </p>
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className="text-xs text-gray-600 mt-1">
                                         {(() => {
                                             const fatRatio = profile.customFatRatio !== null && profile.customFatRatio !== undefined
                                                 ? profile.customFatRatio
@@ -1658,7 +1658,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                             return Math.round(carbs);
                                         })()} g
                                     </p>
-                                    <p className="text-xs text-gray-500 mt-1">残りから計算</p>
+                                    <p className="text-xs text-gray-600 mt-1">残りから計算</p>
                                 </div>
                             </div>
                             <div className="text-xs text-gray-600 space-y-1">
@@ -1690,7 +1690,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <Icon name="Lightbulb" size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-green-900 mb-1">記録の継続がカギ</p>
-                                    <p className="text-sm text-gray-700">
+                                    <p className="text-sm text-gray-600">
                                         記録を続けることで、あなたの体質や習慣をAIが学習し、最適なアドバイスを提供します。
                                         まずは初日に食事・運動・コンディションを記録して、分析機能を試してみましょう！
                                     </p>
@@ -1752,7 +1752,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <Icon name="Zap" size={16} />
                                 記録を楽にするコツ
                             </h3>
-                            <ul className="text-sm text-gray-700 space-y-1">
+                            <ul className="text-sm text-gray-600 space-y-1">
                                 <li>• よく食べる食事は「テンプレート」として保存</li>
                                 <li>• 写真から食事を記録できる「AI食事認識」機能を活用</li>
                                 <li>• 画面左右のショートカットから素早くアクセス</li>
@@ -1771,7 +1771,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     {step > 0 && (
                         <button
                             onClick={() => setStep(step - 1)}
-                            className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300"
+                            className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-lg hover:bg-gray-300"
                         >
                             戻る
                         </button>
@@ -1863,15 +1863,15 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                                     </div>
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <span className="font-bold text-gray-900">{guide.title}</span>
+                                                            <span className="font-bold text-gray-800">{guide.title}</span>
                                                             <span className="text-sm text-gray-600">({guide.range})</span>
                                                         </div>
-                                                        <ul className="text-sm text-gray-700 space-y-1">
+                                                        <ul className="text-sm text-gray-600 space-y-1">
                                                             {guide.features.map((feature, idx) => (
                                                                 <li key={idx}>• {feature}</li>
                                                             ))}
                                                         </ul>
-                                                        <p className="text-xs text-gray-500 mt-2">健康: {guide.health}</p>
+                                                        <p className="text-xs text-gray-600 mt-2">健康: {guide.health}</p>
                                                     </div>
                                                 </div>
                                             </button>
@@ -1881,7 +1881,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             </div>
 
                             <div className="bg-gradient-to-r from-orange-50 to-pink-50 p-4 rounded-lg border border-orange-200">
-                                <p className="text-sm font-medium text-gray-700 mb-2">推定結果</p>
+                                <p className="text-sm font-medium text-gray-600 mb-2">推定結果</p>
                                 <p className="text-3xl font-bold text-orange-600">
                                     {LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel).bodyFatPercentage}%
                                 </p>
