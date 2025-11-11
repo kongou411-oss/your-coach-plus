@@ -2889,7 +2889,7 @@ AIコーチなどの高度な機能が解放されます。
 
                         {/* 展開時のみ表示されるメインボタン（5ボタン） */}
                         {bottomBarExpanded && (
-                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-0 py-2">
+                            <div className="grid grid-cols-5 gap-0 py-2">
                                 {/* ①ホーム */}
                                 <button
                                     onClick={() => {
