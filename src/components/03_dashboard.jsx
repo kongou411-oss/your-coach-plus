@@ -726,7 +726,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                 {/* ビタミン・ミネラル詳細 */}
                 <details className="mt-4">
-                        <summary className="cursor-pointer text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-2">
+                        <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{color: '#4A9EFF'}}>
                             <Icon name="ChevronDown" size={16} />
                             ビタミン・ミネラル+
                         </summary>

@@ -12,7 +12,6 @@ const trainingDatabase = {
             primaryMuscles: ["大胸筋"],
             secondaryMuscles: ["三角筋前部", "上腕三頭筋"],
             equipment: "バーベル",
-            difficulty: "中級",
             movement: "プッシュ",
             description: "胸トレーニングの王道。上半身のプッシュ力を総合的に鍛える多関節種目"
         },
@@ -26,7 +25,6 @@ const trainingDatabase = {
             primaryMuscles: ["大胸筋"],
             secondaryMuscles: ["三角筋前部", "上腕三頭筋"],
             equipment: "ダンベル",
-            difficulty: "中級",
             movement: "プッシュ",
             description: "可動域が広く、左右独立して鍛えられるベンチプレス"
         },
@@ -40,7 +38,6 @@ const trainingDatabase = {
             primaryMuscles: ["大胸筋上部"],
             secondaryMuscles: ["三角筋前部", "上腕三頭筋"],
             equipment: "バーベル/ダンベル",
-            difficulty: "中級",
             movement: "プッシュ",
             description: "30-45度の角度で大胸筋上部を重点的に刺激"
         },
@@ -54,7 +51,6 @@ const trainingDatabase = {
             primaryMuscles: ["大胸筋"],
             secondaryMuscles: ["三角筋前部"],
             equipment: "ダンベル",
-            difficulty: "中級",
             movement: "フライ",
             description: "大胸筋のストレッチと収縮を重視した単関節種目"
         },
@@ -68,7 +64,6 @@ const trainingDatabase = {
             primaryMuscles: ["大胸筋"],
             secondaryMuscles: ["三角筋前部"],
             equipment: "ケーブルマシン",
-            difficulty: "初級",
             movement: "フライ",
             description: "ケーブルによる一定の張力で大胸筋を収縮させる"
         },
@@ -82,7 +77,6 @@ const trainingDatabase = {
             primaryMuscles: ["大胸筋下部", "上腕三頭筋"],
             secondaryMuscles: ["三角筋前部"],
             equipment: "ディップスバー",
-            difficulty: "中級",
             movement: "プッシュ",
             description: "自重による高強度プッシュ種目。前傾で胸、直立で三頭筋を強調"
         },
@@ -96,7 +90,6 @@ const trainingDatabase = {
             primaryMuscles: ["大胸筋"],
             secondaryMuscles: ["三角筋前部", "上腕三頭筋", "体幹"],
             equipment: "自重",
-            difficulty: "初級",
             movement: "プッシュ",
             description: "基本的な自重プッシュ種目。様々なバリエーションが可能"
         },
@@ -110,7 +103,6 @@ const trainingDatabase = {
             primaryMuscles: ["大胸筋"],
             secondaryMuscles: ["三角筋前部", "上腕三頭筋"],
             equipment: "マシン",
-            difficulty: "初級",
             movement: "プッシュ",
             description: "マシンガイドによる安定した軌道で大胸筋を鍛える"
         }
@@ -126,7 +118,6 @@ const trainingDatabase = {
             primaryMuscles: ["脊柱起立筋", "広背筋", "僧帽筋", "大臀筋", "ハムストリングス"],
             secondaryMuscles: ["前腕", "大腿四頭筋", "体幹"],
             equipment: "バーベル",
-            difficulty: "上級",
             movement: "ヒンジ",
             description: "全身を使う最高強度の種目。背面チェーン全体を強化"
         },
@@ -140,7 +131,6 @@ const trainingDatabase = {
             primaryMuscles: ["広背筋"],
             secondaryMuscles: ["僧帽筋", "上腕二頭筋", "三角筋後部"],
             equipment: "懸垂バー",
-            difficulty: "上級",
             movement: "プル",
             description: "自重で行う高強度プル種目。背中の幅と厚みを同時に鍛える"
         },
@@ -154,7 +144,6 @@ const trainingDatabase = {
             primaryMuscles: ["広背筋"],
             secondaryMuscles: ["僧帽筋", "上腕二頭筋", "三角筋後部"],
             equipment: "ケーブルマシン",
-            difficulty: "初級",
             movement: "プル",
             description: "懸垂の代替種目。重量調整が容易で初心者にも安全"
         },
@@ -168,7 +157,6 @@ const trainingDatabase = {
             primaryMuscles: ["広背筋", "僧帽筋"],
             secondaryMuscles: ["脊柱起立筋", "上腕二頭筋", "三角筋後部"],
             equipment: "バーベル",
-            difficulty: "中級",
             movement: "プル",
             description: "前傾姿勢で背中の厚みを作る基本ロウ種目"
         },
@@ -182,7 +170,6 @@ const trainingDatabase = {
             primaryMuscles: ["広背筋"],
             secondaryMuscles: ["僧帽筋", "上腕二頭筋", "三角筋後部"],
             equipment: "ダンベル",
-            difficulty: "中級",
             movement: "プル",
             description: "片側ずつ行うロウ種目。可動域が広く左右独立して鍛えられる"
         },
@@ -196,7 +183,6 @@ const trainingDatabase = {
             primaryMuscles: ["広背筋", "僧帽筋"],
             secondaryMuscles: ["上腕二頭筋", "三角筋後部"],
             equipment: "ケーブルマシン",
-            difficulty: "初級",
             movement: "プル",
             description: "座位で行うロウ種目。安定した姿勢で背中の厚みを鍛える"
         },
@@ -210,7 +196,6 @@ const trainingDatabase = {
             primaryMuscles: ["広背筋", "僧帽筋"],
             secondaryMuscles: ["脊柱起立筋", "上腕二頭筋"],
             equipment: "Tバー",
-            difficulty: "中級",
             movement: "プル",
             description: "バーベルの一端を固定して行うロウ種目。高重量を扱いやすい"
         }
@@ -226,7 +211,6 @@ const trainingDatabase = {
             primaryMuscles: ["大腿四頭筋", "大臀筋", "ハムストリングス"],
             secondaryMuscles: ["体幹", "脊柱起立筋", "カーフ"],
             equipment: "バーベル",
-            difficulty: "中級",
             movement: "スクワット",
             description: "下半身トレーニングの王道。脚全体と体幹を総合的に鍛える"
         },
@@ -240,7 +224,6 @@ const trainingDatabase = {
             primaryMuscles: ["大腿四頭筋"],
             secondaryMuscles: ["大臀筋", "体幹", "脊柱起立筋"],
             equipment: "バーベル",
-            difficulty: "上級",
             movement: "スクワット",
             description: "バーを前に担ぐスクワット。大腿四頭筋と体幹を強化"
         },
@@ -254,7 +237,6 @@ const trainingDatabase = {
             primaryMuscles: ["大腿四頭筋", "大臀筋"],
             secondaryMuscles: ["ハムストリングス", "体幹"],
             equipment: "ダンベル",
-            difficulty: "中級",
             movement: "スクワット",
             description: "片脚を後ろに上げて行うスクワット。高強度で片側ずつ鍛える"
         },
@@ -268,7 +250,6 @@ const trainingDatabase = {
             primaryMuscles: ["大腿四頭筋", "大臀筋", "ハムストリングス"],
             secondaryMuscles: ["カーフ"],
             equipment: "マシン",
-            difficulty: "初級",
             movement: "プレス",
             description: "マシンで安全に高重量を扱える脚全体の種目"
         },
@@ -282,7 +263,6 @@ const trainingDatabase = {
             primaryMuscles: ["大腿四頭筋"],
             secondaryMuscles: [],
             equipment: "マシン",
-            difficulty: "初級",
             movement: "エクステンション",
             description: "大腿四頭筋を単独で鍛える単関節種目"
         },
@@ -296,7 +276,6 @@ const trainingDatabase = {
             primaryMuscles: ["ハムストリングス"],
             secondaryMuscles: ["カーフ"],
             equipment: "マシン",
-            difficulty: "初級",
             movement: "カール",
             description: "ハムストリングスを単独で鍛える単関節種目"
         },
@@ -310,7 +289,6 @@ const trainingDatabase = {
             primaryMuscles: ["ハムストリングス", "大臀筋"],
             secondaryMuscles: ["脊柱起立筋", "前腕"],
             equipment: "バーベル",
-            difficulty: "中級",
             movement: "ヒンジ",
             description: "膝を少し曲げてハムストリングスと臀筋を強調したデッドリフト"
         },
@@ -324,7 +302,6 @@ const trainingDatabase = {
             primaryMuscles: ["カーフ（腓腹筋・ヒラメ筋）"],
             secondaryMuscles: [],
             equipment: "マシン/ダンベル",
-            difficulty: "初級",
             movement: "レイズ",
             description: "ふくらはぎを鍛える単関節種目。立位または座位で実施"
         }
@@ -340,7 +317,6 @@ const trainingDatabase = {
             primaryMuscles: ["三角筋"],
             secondaryMuscles: ["上腕三頭筋", "僧帽筋"],
             equipment: "バーベル/ダンベル",
-            difficulty: "中級",
             movement: "プレス",
             description: "肩トレーニングの基本種目。三角筋全体を鍛える"
         },
@@ -354,7 +330,6 @@ const trainingDatabase = {
             primaryMuscles: ["三角筋"],
             secondaryMuscles: ["上腕三頭筋", "僧帽筋"],
             equipment: "ダンベル",
-            difficulty: "中級",
             movement: "プレス",
             description: "ダンベルで可動域を広く取れるショルダープレス"
         },
@@ -368,7 +343,6 @@ const trainingDatabase = {
             primaryMuscles: ["三角筋中部"],
             secondaryMuscles: ["僧帽筋"],
             equipment: "ダンベル",
-            difficulty: "初級",
             movement: "レイズ",
             description: "三角筋中部を集中的に鍛える単関節種目。肩幅を作る"
         },
@@ -382,7 +356,6 @@ const trainingDatabase = {
             primaryMuscles: ["三角筋前部"],
             secondaryMuscles: ["大胸筋上部"],
             equipment: "ダンベル/バーベル",
-            difficulty: "初級",
             movement: "レイズ",
             description: "三角筋前部を集中的に鍛える単関節種目"
         },
@@ -396,7 +369,6 @@ const trainingDatabase = {
             primaryMuscles: ["三角筋後部"],
             secondaryMuscles: ["僧帽筋", "広背筋"],
             equipment: "ダンベル",
-            difficulty: "中級",
             movement: "フライ",
             description: "三角筋後部を集中的に鍛える単関節種目。姿勢改善にも効果的"
         },
@@ -410,7 +382,6 @@ const trainingDatabase = {
             primaryMuscles: ["三角筋", "僧帽筋"],
             secondaryMuscles: ["上腕二頭筋"],
             equipment: "バーベル/ダンベル",
-            difficulty: "中級",
             movement: "プル",
             description: "肘を高く上げて三角筋と僧帽筋を鍛える多関節種目"
         },
@@ -424,7 +395,6 @@ const trainingDatabase = {
             primaryMuscles: ["三角筋後部", "僧帽筋"],
             secondaryMuscles: ["ローテーターカフ"],
             equipment: "ケーブルマシン",
-            difficulty: "中級",
             movement: "プル",
             description: "顔に向かって引く動作で肩の健康と姿勢を改善"
         }
@@ -440,7 +410,6 @@ const trainingDatabase = {
             primaryMuscles: ["上腕二頭筋"],
             secondaryMuscles: ["前腕"],
             equipment: "バーベル",
-            difficulty: "初級",
             movement: "カール",
             description: "上腕二頭筋を鍛える基本種目。高重量を扱える"
         },
@@ -454,7 +423,6 @@ const trainingDatabase = {
             primaryMuscles: ["上腕二頭筋"],
             secondaryMuscles: ["前腕"],
             equipment: "ダンベル",
-            difficulty: "初級",
             movement: "カール",
             description: "ダンベルで可動域を広く取れる二頭筋種目"
         },
@@ -468,7 +436,6 @@ const trainingDatabase = {
             primaryMuscles: ["上腕二頭筋", "上腕筋"],
             secondaryMuscles: ["前腕"],
             equipment: "ダンベル",
-            difficulty: "初級",
             movement: "カール",
             description: "手のひらを向かい合わせて行うカール。上腕筋と前腕を強化"
         },
@@ -482,7 +449,6 @@ const trainingDatabase = {
             primaryMuscles: ["上腕三頭筋"],
             secondaryMuscles: [],
             equipment: "ケーブルマシン",
-            difficulty: "初級",
             movement: "エクステンション",
             description: "ケーブルで上腕三頭筋を集中的に鍛える単関節種目"
         },
@@ -496,7 +462,6 @@ const trainingDatabase = {
             primaryMuscles: ["上腕三頭筋"],
             secondaryMuscles: [],
             equipment: "バーベル/EZバー",
-            difficulty: "中級",
             movement: "エクステンション",
             description: "ライイング状態で額に向かって下ろす三頭筋種目"
         },
@@ -510,7 +475,6 @@ const trainingDatabase = {
             primaryMuscles: ["上腕三頭筋"],
             secondaryMuscles: [],
             equipment: "ダンベル/ケーブル",
-            difficulty: "中級",
             movement: "エクステンション",
             description: "頭上でダンベルを下ろして三頭筋の長頭を強調"
         },
@@ -524,7 +488,6 @@ const trainingDatabase = {
             primaryMuscles: ["前腕屈筋群"],
             secondaryMuscles: [],
             equipment: "バーベル/ダンベル",
-            difficulty: "初級",
             movement: "カール",
             description: "前腕の屈筋群を鍛える単関節種目"
         },
@@ -538,7 +501,6 @@ const trainingDatabase = {
             primaryMuscles: ["前腕伸筋群"],
             secondaryMuscles: [],
             equipment: "バーベル/ダンベル",
-            difficulty: "初級",
             movement: "エクステンション",
             description: "前腕の伸筋群を鍛える単関節種目"
         }
@@ -554,7 +516,6 @@ const trainingDatabase = {
             primaryMuscles: ["腹直筋", "腹横筋", "体幹全体"],
             secondaryMuscles: ["大臀筋", "三角筋"],
             equipment: "自重",
-            difficulty: "初級",
             movement: "アイソメトリック",
             description: "体幹の安定性を高める基本アイソメトリック種目"
         },
@@ -568,7 +529,6 @@ const trainingDatabase = {
             primaryMuscles: ["腹直筋"],
             secondaryMuscles: [],
             equipment: "自重",
-            difficulty: "初級",
             movement: "屈曲",
             description: "腹直筋を集中的に鍛える基本腹筋種目"
         },
@@ -582,7 +542,6 @@ const trainingDatabase = {
             primaryMuscles: ["腹直筋下部", "腸腰筋"],
             secondaryMuscles: [],
             equipment: "自重",
-            difficulty: "中級",
             movement: "屈曲",
             description: "仰向けで脚を上げて腹直筋下部を強調"
         },
@@ -596,7 +555,6 @@ const trainingDatabase = {
             primaryMuscles: ["腹直筋下部", "腸腰筋"],
             secondaryMuscles: ["前腕", "広背筋"],
             equipment: "懸垂バー",
-            difficulty: "上級",
             movement: "屈曲",
             description: "ぶら下がった状態で脚を上げる高強度腹筋種目"
         },
@@ -610,7 +568,6 @@ const trainingDatabase = {
             primaryMuscles: ["腹斜筋", "腹直筋"],
             secondaryMuscles: ["体幹"],
             equipment: "ダンベル/メディシンボール",
-            difficulty: "中級",
             movement: "回旋",
             description: "回旋動作で腹斜筋を鍛える種目"
         },
@@ -624,7 +581,6 @@ const trainingDatabase = {
             primaryMuscles: ["腹直筋", "腹斜筋"],
             secondaryMuscles: [],
             equipment: "自重",
-            difficulty: "中級",
             movement: "屈曲・回旋",
             description: "自転車を漕ぐような動きで腹筋全体を刺激"
         },
@@ -638,7 +594,6 @@ const trainingDatabase = {
             primaryMuscles: ["腹直筋", "体幹全体"],
             secondaryMuscles: ["広背筋", "三角筋", "上腕三頭筋"],
             equipment: "アブローラー",
-            difficulty: "上級",
             movement: "伸展・屈曲",
             description: "ローラーを前後に転がす高強度体幹種目"
         },
@@ -652,7 +607,6 @@ const trainingDatabase = {
             primaryMuscles: ["腹斜筋", "腹横筋"],
             secondaryMuscles: ["中臀筋", "肩"],
             equipment: "自重",
-            difficulty: "中級",
             movement: "アイソメトリック",
             description: "横向きプランクで腹斜筋と体幹側面を強化"
         },
@@ -666,7 +620,6 @@ const trainingDatabase = {
             primaryMuscles: ["腹横筋", "体幹"],
             secondaryMuscles: ["腹直筋", "腸腰筋"],
             equipment: "自重",
-            difficulty: "初級",
             movement: "交互動作",
             description: "仰向けで対側の腕と脚を伸ばす体幹安定性種目"
         }
@@ -682,7 +635,6 @@ const trainingDatabase = {
             primaryMuscles: ["大臀筋"],
             secondaryMuscles: ["ハムストリングス", "体幹"],
             equipment: "バーベル",
-            difficulty: "中級",
             movement: "伸展",
             description: "臀筋を最も効果的に鍛える種目。背中をベンチに乗せて実施"
         },
@@ -696,7 +648,6 @@ const trainingDatabase = {
             primaryMuscles: ["大臀筋"],
             secondaryMuscles: ["ハムストリングス", "体幹"],
             equipment: "自重",
-            difficulty: "初級",
             movement: "伸展",
             description: "仰向けで腰を上げる基本的な臀筋種目"
         },
@@ -710,7 +661,6 @@ const trainingDatabase = {
             primaryMuscles: ["大臀筋"],
             secondaryMuscles: ["ハムストリングス"],
             equipment: "ケーブルマシン",
-            difficulty: "初級",
             movement: "伸展",
             description: "ケーブルで脚を後ろに蹴り上げて臀筋を集中的に刺激"
         },
@@ -724,7 +674,6 @@ const trainingDatabase = {
             primaryMuscles: ["中臀筋", "小臀筋"],
             secondaryMuscles: ["大臀筋"],
             equipment: "レジスタンスバンド",
-            difficulty: "初級",
             movement: "外転",
             description: "バンドを膝上に巻いて横歩きで中臀筋を強化"
         },
@@ -738,7 +687,6 @@ const trainingDatabase = {
             primaryMuscles: ["中臀筋", "小臀筋"],
             secondaryMuscles: [],
             equipment: "レジスタンスバンド",
-            difficulty: "初級",
             movement: "外旋",
             description: "横向きで膝を開く動作で中臀筋を活性化"
         },
@@ -752,7 +700,6 @@ const trainingDatabase = {
             primaryMuscles: ["大臀筋"],
             secondaryMuscles: ["ハムストリングス", "体幹"],
             equipment: "自重",
-            difficulty: "中級",
             movement: "伸展",
             description: "片脚で行うグルートブリッジ。高強度で片側ずつ鍛える"
         },
@@ -766,7 +713,6 @@ const trainingDatabase = {
             primaryMuscles: ["大臀筋", "内転筋群", "ハムストリングス"],
             secondaryMuscles: ["脊柱起立筋", "広背筋", "前腕"],
             equipment: "バーベル",
-            difficulty: "上級",
             movement: "ヒンジ",
             description: "ワイドスタンスで大臀筋と内転筋を強調したデッドリフト"
         },
@@ -780,7 +726,6 @@ const trainingDatabase = {
             primaryMuscles: ["大臀筋"],
             secondaryMuscles: [],
             equipment: "自重",
-            difficulty: "初級",
             movement: "伸展",
             description: "足裏を合わせた状態で腰を上げて臀筋を収縮させる"
         }
@@ -796,7 +741,6 @@ const trainingDatabase = {
             primaryMuscles: ["全身"],
             secondaryMuscles: ["体幹", "肩", "脚", "背中"],
             equipment: "バーベル",
-            difficulty: "上級",
             movement: "爆発的伸展",
             description: "バーベルを一気に頭上まで引き上げる最高難度の全身種目。パワー・スピード・技術が必要"
         },
@@ -810,7 +754,6 @@ const trainingDatabase = {
             primaryMuscles: ["全身"],
             secondaryMuscles: ["脚", "背中", "肩", "体幹"],
             equipment: "バーベル",
-            difficulty: "上級",
             movement: "爆発的伸展",
             description: "バーベルを肩まで引き上げ、さらに頭上に押し上げる2段階の全身種目"
         },
@@ -824,7 +767,6 @@ const trainingDatabase = {
             primaryMuscles: ["脚", "背中", "肩"],
             secondaryMuscles: ["僧帽筋", "体幹", "前腕"],
             equipment: "バーベル",
-            difficulty: "上級",
             movement: "爆発的伸展",
             description: "床からバーベルを肩まで爆発的に引き上げる。パワーとスピードを養成"
         },
@@ -838,7 +780,6 @@ const trainingDatabase = {
             primaryMuscles: ["脚", "背中", "肩"],
             secondaryMuscles: ["僧帽筋", "体幹"],
             equipment: "バーベル",
-            difficulty: "上級",
             movement: "爆発的伸展",
             description: "膝上からバーベルを肩まで引き上げる。パワークリーンより短い可動域"
         },
@@ -852,7 +793,6 @@ const trainingDatabase = {
             primaryMuscles: ["肩", "脚"],
             secondaryMuscles: ["上腕三頭筋", "体幹"],
             equipment: "バーベル",
-            difficulty: "中級",
             movement: "爆発的プレス",
             description: "脚の反動を使ってバーベルを頭上に押し上げる爆発的種目"
         }
@@ -868,7 +808,6 @@ const trainingDatabase = {
             primaryMuscles: ["下半身全体", "心肺機能"],
             secondaryMuscles: ["体幹"],
             equipment: "なし",
-            difficulty: "初級",
             movement: "有酸素",
             description: "基本的な有酸素運動。心肺機能と持久力を向上"
         },
@@ -882,7 +821,6 @@ const trainingDatabase = {
             primaryMuscles: ["下半身全体", "心肺機能"],
             secondaryMuscles: ["体幹"],
             equipment: "なし",
-            difficulty: "初級",
             movement: "有酸素",
             description: "関節への負担が少ない基本的な有酸素運動。初心者や高齢者にも適している"
         },
@@ -896,7 +834,6 @@ const trainingDatabase = {
             primaryMuscles: ["大腿四頭筋", "ハムストリングス", "カーフ"],
             secondaryMuscles: ["大臀筋", "体幹"],
             equipment: "自転車",
-            difficulty: "初級",
             movement: "有酸素",
             description: "関節への負担が少ない有酸素運動。長時間続けやすい"
         },
@@ -910,7 +847,6 @@ const trainingDatabase = {
             primaryMuscles: ["全身", "心肺機能"],
             secondaryMuscles: [],
             equipment: "プール",
-            difficulty: "中級",
             movement: "有酸素",
             description: "全身を使う低負荷有酸素運動。関節への負担が最小"
         },
@@ -924,7 +860,6 @@ const trainingDatabase = {
             primaryMuscles: ["背中", "脚", "心肺機能"],
             secondaryMuscles: ["腕", "体幹"],
             equipment: "ローイングマシン",
-            difficulty: "中級",
             movement: "有酸素",
             description: "全身を使う有酸素運動"
         },
@@ -938,7 +873,6 @@ const trainingDatabase = {
             primaryMuscles: ["下半身全体", "心肺機能"],
             secondaryMuscles: ["体幹"],
             equipment: "エリプティカルマシン",
-            difficulty: "初級",
             movement: "有酸素",
             description: "関節への負担が少ない楕円運動の有酸素運動"
         },
@@ -952,7 +886,6 @@ const trainingDatabase = {
             primaryMuscles: ["大臀筋", "大腿四頭筋", "ハムストリングス"],
             secondaryMuscles: ["カーフ", "体幹"],
             equipment: "ステアクライマー",
-            difficulty: "中級",
             movement: "有酸素",
             description: "階段昇降運動。臀筋と脚に高負荷の有酸素運動"
         },
@@ -966,7 +899,6 @@ const trainingDatabase = {
             primaryMuscles: ["肩", "背中", "腕"],
             secondaryMuscles: ["体幹", "脚"],
             equipment: "バトルロープ",
-            difficulty: "中級",
             movement: "HIIT",
             description: "ロープを激しく波打たせる高強度有酸素運動"
         },
@@ -980,7 +912,6 @@ const trainingDatabase = {
             primaryMuscles: ["大腿四頭筋", "大臀筋", "ハムストリングス"],
             secondaryMuscles: ["カーフ", "体幹"],
             equipment: "プライオボックス",
-            difficulty: "中級",
             movement: "プライオメトリック",
             description: "ボックスに飛び乗る爆発的な動作。パワーと瞬発力を養成"
         }
@@ -996,7 +927,6 @@ const trainingDatabase = {
             primaryMuscles: ["ハムストリングス"],
             secondaryMuscles: [],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "脚の裏側の筋肉を伸ばすストレッチ。柔軟性向上と怪我予防"
         },
@@ -1010,7 +940,6 @@ const trainingDatabase = {
             primaryMuscles: ["大腿四頭筋"],
             secondaryMuscles: [],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "太ももの前側の筋肉を伸ばすストレッチ"
         },
@@ -1024,7 +953,6 @@ const trainingDatabase = {
             primaryMuscles: ["腸腰筋"],
             secondaryMuscles: [],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "股関節屈筋群を伸ばし、姿勢改善に効果的"
         },
@@ -1038,7 +966,6 @@ const trainingDatabase = {
             primaryMuscles: ["カーフ"],
             secondaryMuscles: [],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "ふくらはぎの筋肉を伸ばすストレッチ"
         },
@@ -1052,7 +979,6 @@ const trainingDatabase = {
             primaryMuscles: ["大胸筋"],
             secondaryMuscles: ["三角筋前部"],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "胸の筋肉を開き、姿勢改善と肩こり予防"
         },
@@ -1066,7 +992,6 @@ const trainingDatabase = {
             primaryMuscles: ["菱形筋"],
             secondaryMuscles: ["僧帽筋"],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "肩甲骨周りの筋肉をほぐし、肩こり改善"
         },
@@ -1080,7 +1005,6 @@ const trainingDatabase = {
             primaryMuscles: ["広背筋"],
             secondaryMuscles: ["脊柱起立筋"],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "背中全体の筋肉を伸ばし、姿勢改善"
         },
@@ -1094,7 +1018,6 @@ const trainingDatabase = {
             primaryMuscles: ["頸部筋群"],
             secondaryMuscles: [],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "首の筋肉をほぐし、首こり・頭痛予防"
         },
@@ -1108,7 +1031,6 @@ const trainingDatabase = {
             primaryMuscles: ["全身"],
             secondaryMuscles: [],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "全身の筋肉を総合的に伸ばす"
         },
@@ -1122,7 +1044,6 @@ const trainingDatabase = {
             primaryMuscles: ["ハムストリングス"],
             secondaryMuscles: [],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "静止姿勢で脚裏の筋肉を深く伸ばす"
         },
@@ -1136,7 +1057,6 @@ const trainingDatabase = {
             primaryMuscles: ["大腿四頭筋"],
             secondaryMuscles: [],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "静止姿勢で太もも前側を深く伸ばす"
         },
@@ -1150,7 +1070,6 @@ const trainingDatabase = {
             primaryMuscles: ["腸腰筋", "内転筋"],
             secondaryMuscles: [],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "股関節の可動域を広げるストレッチ"
         },
@@ -1164,7 +1083,6 @@ const trainingDatabase = {
             primaryMuscles: ["大胸筋"],
             secondaryMuscles: ["三角筋前部"],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "静止姿勢で胸の筋肉を深く開く"
         },
@@ -1178,7 +1096,6 @@ const trainingDatabase = {
             primaryMuscles: ["広背筋", "菱形筋"],
             secondaryMuscles: ["僧帽筋"],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "静止姿勢で肩と背中を深く伸ばす"
         },
@@ -1192,7 +1109,6 @@ const trainingDatabase = {
             primaryMuscles: ["脊柱起立筋"],
             secondaryMuscles: [],
             equipment: "なし",
-            difficulty: "初級",
             movement: "ストレッチ",
             description: "腰の筋肉を静止姿勢で深く伸ばす"
         }

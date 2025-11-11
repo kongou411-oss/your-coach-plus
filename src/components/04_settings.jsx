@@ -2855,6 +2855,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             {(() => {
                                 const [customItemTab, setCustomItemTab] = React.useState('food');
                                 const [customFoods, setCustomFoods] = React.useState([]);
+                                const [customExercises, setCustomExercises] = React.useState([]);
                                 const [loading, setLoading] = React.useState(false);
                                 const [showEditModal, setShowEditModal] = React.useState(false);
                                 const [editingItem, setEditingItem] = React.useState(null);
@@ -2890,9 +2891,23 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     }
                                 };
 
+                                // LocalStorageからカスタム運動を読み込み
+                                const loadCustomExercises = () => {
+                                    try {
+                                        const saved = localStorage.getItem('customExercises');
+                                        const exercises = saved ? JSON.parse(saved) : [];
+                                        setCustomExercises(exercises);
+                                        console.log(`[Settings] customExercises読み込み完了: ${exercises.length}件`);
+                                    } catch (error) {
+                                        console.error('[Settings] customExercises読み込みエラー:', error);
+                                        setCustomExercises([]);
+                                    }
+                                };
+
                                 // 初回読み込み
                                 React.useEffect(() => {
                                     loadCustomFoods();
+                                    loadCustomExercises();
                                 }, [userId]);
 
                                 // itemTypeが未設定の古いデータはデフォルトで'food'として扱う
@@ -2942,6 +2957,39 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             console.log(`[Settings] ${typeName}を全削除: ${itemsToDelete.length}件`);
                                             toast.success(`${typeName}を全削除しました`);
                                             loadCustomFoods(); // 再読み込み
+                                        } catch (error) {
+                                            console.error('[Settings] 全削除エラー:', error);
+                                            toast.error('削除に失敗しました');
+                                        }
+                                    });
+                                };
+
+                                // カスタム運動の削除
+                                const deleteExercise = (exercise) => {
+                                    showConfirm('種目削除の確認', `「${exercise.name}」を削除しますか？`, () => {
+                                        try {
+                                            const saved = localStorage.getItem('customExercises');
+                                            const exercises = saved ? JSON.parse(saved) : [];
+                                            const filtered = exercises.filter(ex => ex.id !== exercise.id);
+                                            localStorage.setItem('customExercises', JSON.stringify(filtered));
+                                            console.log(`[Settings] カスタム種目を削除: ${exercise.name}`);
+                                            toast.success('削除しました');
+                                            loadCustomExercises(); // 再読み込み
+                                        } catch (error) {
+                                            console.error('[Settings] 削除エラー:', error);
+                                            toast.error('削除に失敗しました');
+                                        }
+                                    });
+                                };
+
+                                // カスタム運動の全削除
+                                const deleteAllExercises = () => {
+                                    showConfirm('全削除の確認', `すべての運動（${customExercises.length}件）を削除しますか？`, () => {
+                                        try {
+                                            localStorage.setItem('customExercises', JSON.stringify([]));
+                                            console.log(`[Settings] 運動を全削除: ${customExercises.length}件`);
+                                            toast.success('運動を全削除しました');
+                                            loadCustomExercises(); // 再読み込み
                                         } catch (error) {
                                             console.error('[Settings] 全削除エラー:', error);
                                             toast.error('削除に失敗しました');
@@ -3001,7 +3049,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <div className="flex items-center justify-between mb-2">
                                             <h4 className="font-bold text-blue-800">カスタムアイテム管理</h4>
                                             <button
-                                                onClick={loadCustomFoods}
+                                                onClick={() => {
+                                                    loadCustomFoods();
+                                                    loadCustomExercises();
+                                                }}
                                                 disabled={loading}
                                                 className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition flex items-center gap-1 disabled:opacity-50"
                                             >
@@ -3009,41 +3060,108 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 更新
                                             </button>
                                         </div>
-                                        <p className="text-sm text-gray-600 mb-3">AI解析や手動で作成した食材・料理・サプリを管理できます。</p>
+                                        <p className="text-sm text-gray-600 mb-3">AI解析や手動で作成した食材・料理・サプリ・運動を管理できます。</p>
 
-                                        {/* タブ切り替え */}
-                                        <div className="flex gap-2 border-b mb-3">
+                                        {/* 食事/運動 切り替え */}
+                                        <div className="flex gap-2 mb-3">
                                             <button
-                                                onClick={() => setCustomItemTab('food')}
-                                                className={`px-4 py-2 font-medium transition text-sm ${
-                                                    customItemTab === 'food'
-                                                        ? 'border-b-2 border-green-600 text-green-600'
-                                                        : 'text-gray-600 hover:text-gray-600'
+                                                onClick={() => {
+                                                    const isFoodTab = ['food', 'recipe', 'supplement'].includes(customItemTab);
+                                                    if (!isFoodTab) setCustomItemTab('food');
+                                                }}
+                                                className={`flex-1 py-2 px-4 rounded-lg font-medium transition text-sm ${
+                                                    ['food', 'recipe', 'supplement'].includes(customItemTab)
+                                                        ? 'bg-green-600 text-white'
+                                                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                                                 }`}
                                             >
-                                                食材 ({foodItems.length})
+                                                食事
                                             </button>
                                             <button
-                                                onClick={() => setCustomItemTab('recipe')}
-                                                className={`px-4 py-2 font-medium transition text-sm ${
-                                                    customItemTab === 'recipe'
-                                                        ? 'border-b-2 border-green-600 text-green-600'
-                                                        : 'text-gray-600 hover:text-gray-600'
+                                                onClick={() => {
+                                                    const isExerciseTab = ['exercise_strength', 'exercise_cardio', 'exercise_stretch'].includes(customItemTab);
+                                                    if (!isExerciseTab) setCustomItemTab('exercise_strength');
+                                                }}
+                                                className={`flex-1 py-2 px-4 rounded-lg font-medium transition text-sm ${
+                                                    ['exercise_strength', 'exercise_cardio', 'exercise_stretch'].includes(customItemTab)
+                                                        ? 'bg-orange-600 text-white'
+                                                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                                                 }`}
                                             >
-                                                料理 ({recipeItems.length})
-                                            </button>
-                                            <button
-                                                onClick={() => setCustomItemTab('supplement')}
-                                                className={`px-4 py-2 font-medium transition text-sm ${
-                                                    customItemTab === 'supplement'
-                                                        ? 'border-b-2 border-blue-600 text-blue-600'
-                                                        : 'text-gray-600 hover:text-gray-600'
-                                                }`}
-                                            >
-                                                サプリ ({supplementItems.length})
+                                                運動
                                             </button>
                                         </div>
+
+                                        {/* タブ切り替え */}
+                                        {['food', 'recipe', 'supplement'].includes(customItemTab) && (
+                                            <div className="flex gap-2 border-b mb-3">
+                                                <button
+                                                    onClick={() => setCustomItemTab('food')}
+                                                    className={`px-4 py-2 font-medium transition text-sm ${
+                                                        customItemTab === 'food'
+                                                            ? 'border-b-2 border-green-600 text-green-600'
+                                                            : 'text-gray-600 hover:text-gray-600'
+                                                    }`}
+                                                >
+                                                    食材 ({foodItems.length})
+                                                </button>
+                                                <button
+                                                    onClick={() => setCustomItemTab('recipe')}
+                                                    className={`px-4 py-2 font-medium transition text-sm ${
+                                                        customItemTab === 'recipe'
+                                                            ? 'border-b-2 border-green-600 text-green-600'
+                                                            : 'text-gray-600 hover:text-gray-600'
+                                                    }`}
+                                                >
+                                                    料理 ({recipeItems.length})
+                                                </button>
+                                                <button
+                                                    onClick={() => setCustomItemTab('supplement')}
+                                                    className={`px-4 py-2 font-medium transition text-sm ${
+                                                        customItemTab === 'supplement'
+                                                            ? 'border-b-2 border-blue-600 text-blue-600'
+                                                            : 'text-gray-600 hover:text-gray-600'
+                                                    }`}
+                                                >
+                                                    サプリ ({supplementItems.length})
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {['exercise_strength', 'exercise_cardio', 'exercise_stretch'].includes(customItemTab) && (
+                                            <div className="flex gap-2 border-b mb-3">
+                                                <button
+                                                    onClick={() => setCustomItemTab('exercise_strength')}
+                                                    className={`px-4 py-2 font-medium transition text-sm ${
+                                                        customItemTab === 'exercise_strength'
+                                                            ? 'border-b-2 border-orange-600 text-orange-600'
+                                                            : 'text-gray-600 hover:text-gray-600'
+                                                    }`}
+                                                >
+                                                    筋トレ ({customExercises.filter(ex => !ex.exerciseTab || ex.exerciseTab === 'strength').length})
+                                                </button>
+                                                <button
+                                                    onClick={() => setCustomItemTab('exercise_cardio')}
+                                                    className={`px-4 py-2 font-medium transition text-sm ${
+                                                        customItemTab === 'exercise_cardio'
+                                                            ? 'border-b-2 border-blue-600 text-blue-600'
+                                                            : 'text-gray-600 hover:text-gray-600'
+                                                    }`}
+                                                >
+                                                    有酸素 ({customExercises.filter(ex => ex.exerciseTab === 'cardio').length})
+                                                </button>
+                                                <button
+                                                    onClick={() => setCustomItemTab('exercise_stretch')}
+                                                    className={`px-4 py-2 font-medium transition text-sm ${
+                                                        customItemTab === 'exercise_stretch'
+                                                            ? 'border-b-2 border-green-600 text-green-600'
+                                                            : 'text-gray-600 hover:text-gray-600'
+                                                    }`}
+                                                >
+                                                    ストレッチ ({customExercises.filter(ex => ex.exerciseTab === 'stretch').length})
+                                                </button>
+                                            </div>
+                                        )}
 
                                         {/* アイテム一覧 */}
                                         <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -3317,6 +3435,147 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                         </button>
                                                                         <button
                                                                             onClick={() => deleteItem(item)}
+                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
+                                                                        >
+                                                                            <Icon name="Trash2" size={18} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            {customItemTab === 'exercise_strength' && (
+                                                <>
+                                                    {customExercises.filter(ex => !ex.exerciseTab || ex.exerciseTab === 'strength').length === 0 ? (
+                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタム運動（筋トレ）はありません</p>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex justify-end mb-2">
+                                                                <button
+                                                                    onClick={deleteAllExercises}
+                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
+                                                                >
+                                                                    すべて削除
+                                                                </button>
+                                                            </div>
+                                                            {customExercises.filter(ex => !ex.exerciseTab || ex.exerciseTab === 'strength').map((exercise, idx) => (
+                                                                <div key={exercise.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
+                                                                    {/* 1行目: 種目名 */}
+                                                                    <p className="font-bold text-sm">{exercise.name}</p>
+
+                                                                    {/* 2行目: タグ */}
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                                                                            カスタム
+                                                                        </span>
+                                                                        {exercise.subcategory && (
+                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                                                                {exercise.subcategory}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* 3行目: 削除ボタン */}
+                                                                    <div className="flex gap-2 justify-end">
+                                                                        <button
+                                                                            onClick={() => deleteExercise(exercise)}
+                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
+                                                                        >
+                                                                            <Icon name="Trash2" size={18} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            {customItemTab === 'exercise_cardio' && (
+                                                <>
+                                                    {customExercises.filter(ex => ex.exerciseTab === 'cardio').length === 0 ? (
+                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタム運動（有酸素）はありません</p>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex justify-end mb-2">
+                                                                <button
+                                                                    onClick={deleteAllExercises}
+                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
+                                                                >
+                                                                    すべて削除
+                                                                </button>
+                                                            </div>
+                                                            {customExercises.filter(ex => ex.exerciseTab === 'cardio').map((exercise, idx) => (
+                                                                <div key={exercise.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
+                                                                    {/* 1行目: 種目名 */}
+                                                                    <p className="font-bold text-sm">{exercise.name}</p>
+
+                                                                    {/* 2行目: タグ */}
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                                                                            カスタム
+                                                                        </span>
+                                                                        {exercise.subcategory && (
+                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                                                                {exercise.subcategory}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* 3行目: 削除ボタン */}
+                                                                    <div className="flex gap-2 justify-end">
+                                                                        <button
+                                                                            onClick={() => deleteExercise(exercise)}
+                                                                            className="p-1 text-red-600 hover:text-red-800 transition"
+                                                                        >
+                                                                            <Icon name="Trash2" size={18} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            {customItemTab === 'exercise_stretch' && (
+                                                <>
+                                                    {customExercises.filter(ex => ex.exerciseTab === 'stretch').length === 0 ? (
+                                                        <p className="text-sm text-gray-600 py-4 text-center">カスタム運動（ストレッチ）はありません</p>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex justify-end mb-2">
+                                                                <button
+                                                                    onClick={deleteAllExercises}
+                                                                    className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
+                                                                >
+                                                                    すべて削除
+                                                                </button>
+                                                            </div>
+                                                            {customExercises.filter(ex => ex.exerciseTab === 'stretch').map((exercise, idx) => (
+                                                                <div key={exercise.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
+                                                                    {/* 1行目: 種目名 */}
+                                                                    <p className="font-bold text-sm">{exercise.name}</p>
+
+                                                                    {/* 2行目: タグ */}
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                                                                            カスタム
+                                                                        </span>
+                                                                        {exercise.subcategory && (
+                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                                                                {exercise.subcategory}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* 3行目: 削除ボタン */}
+                                                                    <div className="flex gap-2 justify-end">
+                                                                        <button
+                                                                            onClick={() => deleteExercise(exercise)}
                                                                             className="p-1 text-red-600 hover:text-red-800 transition"
                                                                         >
                                                                             <Icon name="Trash2" size={18} />
