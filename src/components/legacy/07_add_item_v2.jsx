@@ -4229,6 +4229,11 @@ RM回数と重量を別々に入力してください。`
                     return {
                         vitamins,
                         minerals,
+                        sugar: food.sugar || 0,
+                        fiber: food.fiber || 0,
+                        solubleFiber: food.solubleFiber || 0,
+                        insolubleFiber: food.insolubleFiber || 0,
+                        gi: food.gi || 0,
                         caffeine: food.caffeine || 0,
                         catechin: food.catechin || 0,
                         tannin: food.tannin || 0,
@@ -5279,6 +5284,11 @@ RM回数と重量を別々に入力してください。`
                                                                     protein: item.protein || 0,
                                                                     fat: item.fat || 0,
                                                                     carbs: item.carbs || 0,
+                                                                    sugar: item.sugar || 0,
+                                                                    fiber: item.fiber || 0,
+                                                                    solubleFiber: item.solubleFiber || 0,
+                                                                    insolubleFiber: item.insolubleFiber || 0,
+                                                                    gi: item.gi || 0,
                                                                     vitamins: item.vitamins || {},
                                                                     minerals: item.minerals || {}
                                                                 }))

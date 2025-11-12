@@ -89,7 +89,11 @@
       "Bash(for file in 03_dashboard.jsx 04_settings.jsx 05_analysis.jsx 08_app.jsx 11_ai_food_recognition.jsx 19_add_meal_modal.jsx)",
       "Bash(clip)",
       "Bash(start C:Usersyourcyourcoach_newapp_flow_visualization.html)",
-      "Bash(start \"\" \"C:\\Users\\yourc\\yourcoach_new\\app_flow_visualization.html\")"
+      "Bash(start \"\" \"C:\\Users\\yourc\\yourcoach_new\\app_flow_visualization.html\")",
+      "Bash(cmd /c taskkill /F /IM node.exe)",
+      "Bash(cmd /c \"if exist nul del /F nul\")",
+      "Bash(git rm:*)",
+      "Bash(.gitignore)"
     ],
     "deny": [],
     "ask": []

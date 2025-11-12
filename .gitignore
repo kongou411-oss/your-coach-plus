@@ -39,3 +39,4 @@ config.js
 # Cloud Functions
 functions/node_modules/
 functions/.env
+nul

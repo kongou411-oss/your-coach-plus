@@ -1440,6 +1440,9 @@
             carbs: { name: '炭水化物', unit: 'g', category: 'nutrition' },
             sugar: { name: '糖質', unit: 'g', category: 'nutrition' },
             fiber: { name: '食物繊維', unit: 'g', category: 'nutrition' },
+            solubleFiber: { name: '水溶性食物繊維', unit: 'g', category: 'nutrition' },
+            insolubleFiber: { name: '不溶性食物繊維', unit: 'g', category: 'nutrition' },
+            gi: { name: '平均GI値', unit: '', category: 'nutrition' },
             vitamin_score: { name: 'ビタミン達成率', unit: '%', category: 'nutrition' },
             mineral_score: { name: 'ミネラル達成率', unit: '%', category: 'nutrition' },
 
@@ -1609,6 +1612,7 @@
                     // 食事データ - mealsから集計
                     const meals = record.meals || [];
                     let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalFiber = 0;
+                    let totalSolubleFiber = 0, totalInsolubleFiber = 0, totalGI = 0, totalCarbsForGI = 0;
                     meals.forEach(meal => {
                         totalCalories += meal.calories || 0;
                         // meal.itemsから詳細な栄養素を集計（ratioを考慮）
@@ -1622,6 +1626,14 @@
                             totalCarbs += (item.carbs || 0) * ratio;
                             totalSugar += (item.sugar || 0) * ratio;
                             totalFiber += (item.fiber || 0) * ratio;
+                            totalSolubleFiber += (item.solubleFiber || 0) * ratio;
+                            totalInsolubleFiber += (item.insolubleFiber || 0) * ratio;
+
+                            // GI値の加重平均計算
+                            if (item.gi && item.carbs) {
+                                totalGI += (item.gi || 0) * (item.carbs || 0) * ratio;
+                                totalCarbsForGI += (item.carbs || 0) * ratio;
+                            }
                         });
                     });
                     allData.calories.push(totalCalories);
@@ -1630,6 +1642,9 @@
                     allData.carbs.push(totalCarbs);
                     allData.sugar.push(totalSugar);
                     allData.fiber.push(totalFiber);
+                    allData.solubleFiber.push(totalSolubleFiber);
+                    allData.insolubleFiber.push(totalInsolubleFiber);
+                    allData.gi.push(totalCarbsForGI > 0 ? totalGI / totalCarbsForGI : 0);
 
                     // ビタミン・ミネラル達成率を計算
                     let vitaminScore = 0;

@@ -308,7 +308,15 @@ const DataService = {
             return true;
         }
         try {
-            await db.collection('users').doc(userId).set(profile, { merge: true });
+            // Firestoreはundefinedを許可しないため、undefinedフィールドを削除
+            const cleanProfile = { ...profile };
+            Object.keys(cleanProfile).forEach(key => {
+                if (cleanProfile[key] === undefined) {
+                    delete cleanProfile[key];
+                }
+            });
+
+            await db.collection('users').doc(userId).set(cleanProfile, { merge: true });
             return true;
         } catch (error) {
             console.error('Error saving user profile:', error);

@@ -1981,6 +1981,7 @@ JSON形式のみ出力、説明文不要`;
                                         }}
                                         manualFetchHachitei={manualFetchHachitei}
                                         selectHachiteiCandidate={selectHachiteiCandidate}
+                                        selectFoodDatabaseCandidate={selectFoodDatabaseCandidate}
                                         isEditing={editingFoodIndex === index}
                                     />
                                 ))}
@@ -2666,7 +2667,7 @@ const findTopMatches = (inputName, topN = 3) => {
 };
 
 // 食品タグコンポーネント（通常の食事記録と同じ入力方式）
-const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onReplace, onOpenCustomCreator, manualFetchHachitei, selectHachiteiCandidate, isEditing }) => {
+const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onReplace, onOpenCustomCreator, manualFetchHachitei, selectHachiteiCandidate, selectFoodDatabaseCandidate, isEditing }) => {
     const [isNutritionEditExpanded, setIsNutritionEditExpanded] = useState(false); // 栄養素編集の展開状態
 
     // すべての食品に対して候補を検索（上位3つ）

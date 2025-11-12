@@ -543,6 +543,25 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         const totalCarbs = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
         const totalCalories = (todayRecord.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
 
+        // 糖質・食物繊維・GI値の計算
+        const totalSugar = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.sugar || 0), 0), 0);
+        const totalFiber = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fiber || 0), 0), 0);
+        const totalSolubleFiber = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.solubleFiber || 0), 0), 0);
+        const totalInsolubleFiber = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.insolubleFiber || 0), 0), 0);
+
+        // GI値の加重平均計算
+        let totalGI = 0;
+        let totalCarbsForGI = 0;
+        (todayRecord.meals || []).forEach(meal => {
+            (meal.items || []).forEach(item => {
+                if (item.gi && item.carbs) {
+                    totalGI += (item.gi || 0) * (item.carbs || 0);
+                    totalCarbsForGI += (item.carbs || 0);
+                }
+            });
+        });
+        const averageGI = totalCarbsForGI > 0 ? Math.round(totalGI / totalCarbsForGI) : 0;
+
         // 当日データのみを構造化
         const todayData = {
             date: today,
@@ -668,6 +687,13 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 - 脂質: ${Math.round(totalFat)}g / 目標: ${Math.round(targetPFC.fat)}g (${Math.round((totalFat/targetPFC.fat)*100)}%)
 - 炭水化物: ${Math.round(totalCarbs)}g / 目標: ${Math.round(targetPFC.carbs)}g (${Math.round((totalCarbs/targetPFC.carbs)*100)}%)
 - カロリー: ${Math.round(totalCalories)}kcal / 目標: ${Math.round(targetPFC.calories)}kcal
+
+### 炭水化物の質
+- 糖質: ${Math.round(totalSugar)}g（炭水化物の ${Math.round((totalSugar/totalCarbs)*100)}%）
+- 食物繊維: ${Math.round(totalFiber)}g（推奨量20gの ${Math.round((totalFiber/20)*100)}%）
+  - 水溶性: ${Math.round(totalSolubleFiber)}g（推奨量7gの ${Math.round((totalSolubleFiber/7)*100)}%）
+  - 不溶性: ${Math.round(totalInsolubleFiber)}g（推奨量13gの ${Math.round((totalInsolubleFiber/13)*100)}%）
+- 平均GI値: ${averageGI}（低GI: <55、中GI: 56-69、高GI: ≥70）
 
 ### 運動
 - ルーティン: ${todayRecord.routine?.is_rest_day ? '休養日（計画的な休息）' : (todayRecord.routine?.type || 'なし')}
