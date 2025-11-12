@@ -1453,10 +1453,12 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 {expandedWorkouts[workout.id || index] && workout.exercises?.map((exercise, i) => {
                                                     const isCardioOrStretch = exercise.exerciseType === 'aerobic' || exercise.exerciseType === 'stretch';
 
+                                                    // 種目名を取得（優先順位：name > exercise.name > workout.name）
+                                                    const exerciseName = exercise.name || exercise.exercise?.name || workout.name || '運動';
+
                                                     return (
                                                         <div key={i} className="text-sm text-gray-600 mb-2 pb-2 border-b border-gray-200 last:border-b-0">
-                                                            <p className="font-bold text-base">{exercise.exercise?.category || exercise.category || '運動'}</p>
-                                                            <p className="text-sm">{exercise.exercise?.subcategory || exercise.subcategory || 'その他'}</p>
+                                                            <p className="font-bold text-base">{exerciseName}</p>
                                                             {isCardioOrStretch ? (
                                                                 // 有酸素・ストレッチ: 時間のみ表示
                                                                 <p className="text-xs text-gray-600 mt-1">

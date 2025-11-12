@@ -2803,25 +2803,26 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                         category: exercises[0].exercise?.category || exercises[0].category,
                         isTemplate: isFromTemplate, // テンプレートから読み込んだ場合はtrueを付与
                         exercises: exercises.map(ex => {
-                            // 有酸素・ストレッチの場合（exercise プロパティがない）
+                            // 有酸素・ストレッチの場合
                             if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
                                 return {
                                     exercise: {
-                                        name: ex.name,
-                                        category: ex.category,
+                                        name: ex.name || ex.exercise?.name,
+                                        category: ex.category || ex.exercise?.category,
                                         exerciseType: ex.exerciseType
                                     },
+                                    name: ex.name || ex.exercise?.name,  // ダッシュボード表示用
                                     exerciseType: ex.exerciseType,
                                     duration: ex.duration,
                                     totalDuration: ex.totalDuration || ex.duration
                                 };
                             }
 
-                            // 筋トレの場合（exercise プロパティがある）
+                            // 筋トレの場合
                             return {
                                 exercise: ex.exercise,
                                 exerciseType: ex.exercise?.exerciseType || 'anaerobic',
-                                name: ex.exercise.name,
+                                name: ex.name || ex.exercise?.name,  // ダッシュボード表示用
                                 sets: ex.sets
                             };
                         })
@@ -3196,6 +3197,16 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                             key={exercise.id}
                                                             onClick={() => {
                                                                 setCurrentExercise(exercise);
+                                                                // 種目切り替え時にcurrentSetを初期値にリセット
+                                                                setCurrentSet({
+                                                                    weight: 50,
+                                                                    reps: 10,
+                                                                    distance: 0.5,
+                                                                    tut: 30,
+                                                                    restInterval: 90,
+                                                                    duration: 5
+                                                                });
+                                                                setSets([]);  // セットリストもクリア
                                                                 setShowSearchModal(false);
                                                             }}
                                                             className="w-full text-left p-3 bg-white hover:bg-orange-50 transition border border-gray-200 hover:border-orange-300 rounded-lg"
@@ -3381,6 +3392,16 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                 if (exerciseSaveMethod === 'addToList') {
                                                     // リストに追加: 種目を選択状態にする
                                                     setCurrentExercise(customExercise);
+                                                    // 種目切り替え時にcurrentSetを初期値にリセット
+                                                    setCurrentSet({
+                                                        weight: 50,
+                                                        reps: 10,
+                                                        distance: 0.5,
+                                                        tut: 30,
+                                                        restInterval: 90,
+                                                        duration: 5
+                                                    });
+                                                    setSets([]);  // セットリストもクリア
                                                     toast.success('カスタム種目を作成し、選択しました！');
                                                 } else {
                                                     // データベースに保存のみ
@@ -3575,8 +3596,14 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             </div>
                                             <input
                                                 type="number"
-                                                value={currentSet.weight || 0}
-                                                onChange={(e) => setCurrentSet({...currentSet, weight: e.target.value === '' ? 0 : Number(e.target.value)})}
+                                                value={currentSet.weight === '' ? '' : (currentSet.weight || 0)}
+                                                onChange={(e) => setCurrentSet({...currentSet, weight: e.target.value})}
+                                                onBlur={(e) => {
+                                                    // フォーカスが外れた際に空文字列なら0にする
+                                                    if (e.target.value === '') {
+                                                        setCurrentSet({...currentSet, weight: 0});
+                                                    }
+                                                }}
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                                             />
                                             {/* 増減ボタン */}
@@ -3656,8 +3683,15 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                             </div>
                                             <input
                                                 type="number"
-                                                value={currentSet.reps || 1}
-                                                onChange={(e) => setCurrentSet({...currentSet, reps: e.target.value === '' ? 1 : Number(e.target.value)})}
+                                                value={currentSet.reps === '' ? '' : (currentSet.reps || 1)}
+                                                onChange={(e) => setCurrentSet({...currentSet, reps: e.target.value})}
+                                                onBlur={(e) => {
+                                                    // フォーカスが外れた際に空文字列または0以下なら1にする
+                                                    const val = Number(e.target.value);
+                                                    if (e.target.value === '' || val < 1) {
+                                                        setCurrentSet({...currentSet, reps: 1});
+                                                    }
+                                                }}
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                                             />
                                             {/* 増減ボタン */}
@@ -3903,7 +3937,11 @@ RM回数と重量を別々に入力してください。`
                                             // 総時間を計算
                                             const totalDuration = sets.reduce((sum, set) => sum + (set.duration || 0), 0);
                                             newExercise = {
-                                                exercise: currentExercise,
+                                                exercise: {
+                                                    ...currentExercise,
+                                                    name: currentExercise.name || currentExercise.exercise?.name
+                                                },
+                                                name: currentExercise.name || currentExercise.exercise?.name,  // 種目名を直接保存
                                                 duration: totalDuration, // 総時間のみ
                                                 totalDuration: totalDuration,
                                                 exerciseType: currentExercise.exerciseType
@@ -3911,7 +3949,11 @@ RM回数と重量を別々に入力してください。`
                                         } else {
                                             // 筋トレの場合は従来通り（セット詳細を含む）
                                             newExercise = {
-                                                exercise: currentExercise,
+                                                exercise: {
+                                                    ...currentExercise,
+                                                    name: currentExercise.name || currentExercise.exercise?.name
+                                                },
+                                                name: currentExercise.name || currentExercise.exercise?.name,  // 種目名を直接保存
                                                 sets: sets,
                                                 exerciseType: currentExercise.exerciseType
                                             };
