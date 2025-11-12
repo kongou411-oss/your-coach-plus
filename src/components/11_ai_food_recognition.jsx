@@ -625,10 +625,31 @@ JSONのみ出力、説明文不要`;
                         setRecognizingMessage(`栄養素を検索中... (${i + 1}/${autoFetchCount}): ${food.name}`);
                         console.log(`[recognizeFood] 八訂検索中 (${i + 1}/${autoFetchCount}): ${food.name}`);
                         const result = await fetchNutritionFromHachitei(food.name);
-                        hachiteiResults.push({ food, result });
+
+                        // foodDatabaseからも候補を検索
+                        const foodDbCandidates = searchFoodDatabaseCandidates(food.name, 5);
+
+                        hachiteiResults.push({
+                            food,
+                            result: {
+                                ...result,
+                                foodDatabaseCandidates: foodDbCandidates
+                            }
+                        });
                     } catch (error) {
                         console.error(`[recognizeFood] 八訂取得失敗 (${food.name}):`, error);
-                        hachiteiResults.push({ food, result: { success: false, error: error.message } });
+
+                        // エラー時もfoodDatabase候補は取得
+                        const foodDbCandidates = searchFoodDatabaseCandidates(food.name, 5);
+
+                        hachiteiResults.push({
+                            food,
+                            result: {
+                                success: false,
+                                error: error.message,
+                                foodDatabaseCandidates: foodDbCandidates
+                            }
+                        });
                     }
                 }
 
@@ -697,6 +718,7 @@ JSONのみ出力、説明文不要`;
                         isHachitei: true,
                         hachiteiMatchScore: bestMatch.matchScore || 0,
                         hachiteiCandidates: hachiteiData.result.candidates || [],
+                        foodDatabaseCandidates: hachiteiData.result.foodDatabaseCandidates || [],
                         _base: {  // 100gあたりの基準値
                             calories: bestMatch.calories || 0,
                             protein: bestMatch.protein || 0,
@@ -742,6 +764,9 @@ JSONのみ出力、説明文不要`;
                         try {
                             const result = await fetchNutritionFromHachitei(targetFood.name);
 
+                            // foodDatabaseからも候補を検索
+                            const foodDbCandidates = searchFoodDatabaseCandidates(targetFood.name, 5);
+
                             if (result.success && result.bestMatch) {
                                 const bestMatch = result.bestMatch;
                                 console.log(`[recognizeFood] 連鎖検索成功: ${targetFood.name} → ${bestMatch.name}`);
@@ -773,6 +798,7 @@ JSONのみ出力、説明文不要`;
                                             isHachitei: true,
                                             hachiteiMatchScore: bestMatch.matchScore || 0,
                                             hachiteiCandidates: result.candidates || [],
+                                            foodDatabaseCandidates: foodDbCandidates,
                                             _base: {
                                                 calories: bestMatch.calories || 0,
                                                 protein: bestMatch.protein || 0,
@@ -789,10 +815,16 @@ JSONのみ出力、説明文不要`;
                                 console.warn(`[recognizeFood] 連鎖検索失敗: ${targetFood.name}`);
 
                                 // 取得失敗時の更新（最新のstateを参照）
+                                // エラー時もfoodDatabase候補は保存
                                 setRecognizedFoods(prevFoods => {
                                     return prevFoods.map((food) =>
                                         food.name === targetFood.name
-                                            ? { ...food, isFetchingHachitei: false, hachiteiFailed: true }
+                                            ? {
+                                                ...food,
+                                                isFetchingHachitei: false,
+                                                hachiteiFailed: true,
+                                                foodDatabaseCandidates: foodDbCandidates
+                                            }
                                             : food
                                     );
                                 });
@@ -856,13 +888,17 @@ JSONのみ出力、説明文不要`;
         try {
             const result = await fetchNutritionFromHachitei(food.name);
 
+            // foodDatabaseからも候補を検索
+            const foodDbCandidates = searchFoodDatabaseCandidates(food.name, 5);
+
             if (!result.success) {
                 console.error(`[manualFetchHachitei] 八訂取得失敗: ${food.name}`, result.error);
                 updatedFoods[foodIndex] = {
                     ...food,
                     isFetchingHachitei: false,
                     hachiteiFailed: true,
-                    needsManualHachiteiFetch: false
+                    needsManualHachiteiFetch: false,
+                    foodDatabaseCandidates: foodDbCandidates
                 };
                 setRecognizedFoods(updatedFoods);
                 return;
@@ -888,6 +924,7 @@ JSONのみ出力、説明文不要`;
                 isHachitei: true,
                 hachiteiMatchScore: bestMatch.matchScore || 0,
                 hachiteiCandidates: result.candidates || [],
+                foodDatabaseCandidates: foodDbCandidates,
                 _base: {
                     calories: bestMatch.calories || 0,
                     protein: bestMatch.protein || 0,
@@ -947,6 +984,9 @@ JSONのみ出力、説明文不要`;
             // 選択された候補の栄養素を取得
             const hachiteiData = await fetchNutritionFromHachitei(candidateName);
 
+            // foodDatabaseからも候補を再検索（候補名で）
+            const foodDbCandidates = searchFoodDatabaseCandidates(candidateName, 5);
+
             if (!hachiteiData.success || !hachiteiData.bestMatch) {
                 console.error('[selectHachiteiCandidate] 栄養素取得失敗');
                 // ローディング解除
@@ -978,6 +1018,7 @@ JSONのみ出力、説明文不要`;
                 isHachitei: true,
                 hachiteiMatchScore: bestMatch.matchScore || 0,
                 hachiteiCandidates: hachiteiData.candidates || [],
+                foodDatabaseCandidates: foodDbCandidates,
                 isSelectingCandidate: false,  // ローディング解除
                 _base: {
                     calories: bestMatch.calories || 0,
@@ -1009,6 +1050,92 @@ JSONのみ出力、説明文不要`;
             };
             setRecognizedFoods(errorFoods);
         }
+    };
+
+    // ===== foodDatabase候補から選択して差し替え =====
+    const selectFoodDatabaseCandidate = (foodIndex, candidate) => {
+        const food = recognizedFoods[foodIndex];
+        if (!food) return;
+
+        console.log(`[selectFoodDatabaseCandidate] 候補選択: ${candidate.name}`);
+
+        const amount = food.amount || 100;
+        const dbItem = candidate.dbItem;
+
+        // DBアイテムが特殊単位（1個あたり）の場合、100gあたりに換算
+        let caloriesPer100g, proteinPer100g, fatPer100g, carbsPer100g;
+
+        if (dbItem.servingSize && dbItem.servingSize !== 100) {
+            const conversionRatio = 100 / dbItem.servingSize;
+            caloriesPer100g = (dbItem.calories || 0) * conversionRatio;
+            proteinPer100g = (dbItem.protein || 0) * conversionRatio;
+            fatPer100g = (dbItem.fat || 0) * conversionRatio;
+            carbsPer100g = (dbItem.carbs || 0) * conversionRatio;
+        } else {
+            caloriesPer100g = dbItem.calories || 0;
+            proteinPer100g = dbItem.protein || 0;
+            fatPer100g = dbItem.fat || 0;
+            carbsPer100g = dbItem.carbs || 0;
+        }
+
+        // 実量に換算
+        const ratio = amount / 100;
+
+        const updatedFoods = [...recognizedFoods];
+        updatedFoods[foodIndex] = {
+            ...food,
+            name: candidate.name,
+            category: candidate.category,
+            itemType: food.itemType || 'food',
+            calories: Math.round(caloriesPer100g * ratio),
+            protein: parseFloat((proteinPer100g * ratio).toFixed(1)),
+            fat: parseFloat((fatPer100g * ratio).toFixed(1)),
+            carbs: parseFloat((carbsPer100g * ratio).toFixed(1)),
+            vitamins: {
+                A: dbItem.vitaminA || 0,
+                B1: dbItem.vitaminB1 || 0,
+                B2: dbItem.vitaminB2 || 0,
+                B6: dbItem.vitaminB6 || 0,
+                B12: dbItem.vitaminB12 || 0,
+                C: dbItem.vitaminC || 0,
+                D: dbItem.vitaminD || 0,
+                E: dbItem.vitaminE || 0,
+                K: dbItem.vitaminK || 0,
+                niacin: dbItem.niacin || 0,
+                pantothenicAcid: dbItem.pantothenicAcid || 0,
+                biotin: dbItem.biotin || 0,
+                folicAcid: dbItem.folicAcid || 0
+            },
+            minerals: {
+                sodium: dbItem.sodium || 0,
+                potassium: dbItem.potassium || 0,
+                calcium: dbItem.calcium || 0,
+                magnesium: dbItem.magnesium || 0,
+                phosphorus: dbItem.phosphorus || 0,
+                iron: dbItem.iron || 0,
+                zinc: dbItem.zinc || 0,
+                copper: dbItem.copper || 0,
+                manganese: dbItem.manganese || 0,
+                iodine: dbItem.iodine || 0,
+                selenium: dbItem.selenium || 0,
+                chromium: dbItem.chromium || 0,
+                molybdenum: dbItem.molybdenum || 0
+            },
+            confidence: 0.9,
+            isUnknown: false,
+            _base: {
+                calories: caloriesPer100g,
+                protein: proteinPer100g,
+                fat: fatPer100g,
+                carbs: carbsPer100g,
+                servingSize: 100,
+                servingUnit: 'g',
+                unit: '100g'
+            }
+        };
+
+        setRecognizedFoods(updatedFoods);
+        console.log(`[selectFoodDatabaseCandidate] 候補選択完了: ${candidate.name}`);
     };
 
     // ===== 八訂から栄養素を自動取得（ニュアンスヒット対応） =====
@@ -1121,6 +1248,171 @@ JSON形式のみ出力、説明文不要`;
                 error: errorMessage
             };
         }
+    };
+
+    // ===== foodDatabaseから候補を検索 =====
+    const searchFoodDatabaseCandidates = (foodName, maxResults = 5) => {
+        console.log(`[searchFoodDatabaseCandidates] 検索開始: ${foodName}`);
+
+        // window.foodDBが存在するか確認
+        const foodDB = window.foodDB;
+        if (!foodDB) {
+            console.warn('[searchFoodDatabaseCandidates] window.foodDBが未定義です');
+            return [];
+        }
+
+        const candidates = [];
+
+        // 類義語を考慮した検索名リストを生成
+        let searchNames = [foodName];
+        if (synonymMap[foodName]) {
+            searchNames = searchNames.concat(synonymMap[foodName]);
+        }
+
+        // 🆕 キーワード抽出: 複合語を分解して検索範囲を広げる
+        // 例: "鶏の唐揚げ" → ["鶏の唐揚げ", "鶏", "唐揚げ"]
+        const extractedKeywords = [];
+        searchNames.forEach(name => {
+            // "の"で分割
+            const parts = name.split('の');
+            parts.forEach(part => {
+                if (part.length >= 2 && !extractedKeywords.includes(part)) {
+                    extractedKeywords.push(part);
+                }
+            });
+
+            // "、"や"と"で分割
+            const parts2 = name.split(/[、と]/);
+            parts2.forEach(part => {
+                if (part.length >= 2 && !extractedKeywords.includes(part)) {
+                    extractedKeywords.push(part);
+                }
+            });
+
+            // カッコを除去
+            const cleaned = name.replace(/[（）\(\)]/g, '');
+            if (cleaned !== name && cleaned.length >= 2 && !extractedKeywords.includes(cleaned)) {
+                extractedKeywords.push(cleaned);
+            }
+        });
+
+        searchNames = searchNames.concat(extractedKeywords);
+
+        console.log(`[searchFoodDatabaseCandidates] 検索名リスト:`, searchNames);
+
+        // 部分一致でスコアリング
+        Object.keys(foodDB).forEach(category => {
+            Object.keys(foodDB[category]).forEach(itemName => {
+                const dbItem = foodDB[category][itemName];
+
+                let matchScore = 0;
+                let matchReason = '';
+
+                // 完全一致
+                if (searchNames.some(name => name === itemName)) {
+                    matchScore = 100;
+                    matchReason = '完全一致';
+                }
+                // 部分一致（含む）
+                else if (searchNames.some(name => itemName.includes(name) || name.includes(itemName))) {
+                    // マッチした文字列の長さに応じてスコアを調整
+                    const matchingName = searchNames.find(name => itemName.includes(name) || name.includes(itemName));
+                    const matchLength = matchingName.length;
+                    if (matchLength >= 3) {
+                        matchScore = 90;
+                    } else if (matchLength === 2) {
+                        matchScore = 70;
+                    } else {
+                        matchScore = 50;
+                    }
+                    matchReason = '部分一致';
+                }
+                // 文字列の類似度（簡易的に先頭一致・後方一致をチェック）
+                else {
+                    searchNames.forEach(name => {
+                        if (itemName.startsWith(name) || name.startsWith(itemName)) {
+                            matchScore = Math.max(matchScore, 80);
+                            matchReason = '前方一致';
+                        } else if (itemName.endsWith(name) || name.endsWith(itemName)) {
+                            matchScore = Math.max(matchScore, 75);
+                            matchReason = '後方一致';
+                        }
+                    });
+                }
+
+                if (matchScore > 0) {
+                    candidates.push({
+                        name: itemName,
+                        category: category,
+                        matchScore: matchScore,
+                        matchReason: matchReason,
+                        calories: dbItem.calories || 0,
+                        protein: dbItem.protein || 0,
+                        fat: dbItem.fat || 0,
+                        carbs: dbItem.carbs || 0,
+                        dbItem: dbItem  // 元のDBアイテムを保持
+                    });
+                }
+            });
+        });
+
+        // 🆕 一致が少ない場合、カテゴリベースで関連アイテムを追加
+        if (candidates.length < maxResults) {
+            // 食材名から推測できるカテゴリキーワード
+            const categoryKeywords = {
+                '肉類': ['肉', '鶏', '豚', '牛', '鹿', 'ラム', 'ひき肉', 'ロース', 'バラ', 'もも', 'むね', 'ささみ', 'ヒレ', '唐揚げ', 'ステーキ', 'ハンバーグ'],
+                '魚介類': ['魚', 'サーモン', 'サバ', 'マグロ', 'カツオ', '鮭', '刺身', '寿司', 'エビ', 'イカ', 'タコ', 'カキ', '貝', '缶詰'],
+                '卵類': ['卵', 'たまご', 'エッグ', '目玉焼き', 'ゆで卵', '温泉卵', '卵焼き'],
+                '主食': ['米', 'ご飯', 'パン', '麺', 'そば', 'うどん', 'ラーメン', 'パスタ', 'スパゲッティ'],
+                '野菜': ['野菜', 'レタス', 'キャベツ', 'トマト', 'きゅうり', 'ほうれん草', 'ブロッコリー'],
+                '調味料': ['ソース', '醤油', 'マヨネーズ', 'ドレッシング', '味噌', '塩', '砂糖']
+            };
+
+            const matchedCategory = Object.keys(categoryKeywords).find(cat =>
+                categoryKeywords[cat].some(keyword =>
+                    searchNames.some(name => name.includes(keyword))
+                )
+            );
+
+            if (matchedCategory && foodDB[matchedCategory]) {
+                console.log(`[searchFoodDatabaseCandidates] カテゴリベース検索: ${matchedCategory}`);
+
+                const categoryItems = Object.keys(foodDB[matchedCategory]).slice(0, maxResults * 2).map(itemName => {
+                    const dbItem = foodDB[matchedCategory][itemName];
+                    return {
+                        name: itemName,
+                        category: matchedCategory,
+                        matchScore: 40, // カテゴリ一致のスコア
+                        matchReason: 'カテゴリ関連',
+                        calories: dbItem.calories || 0,
+                        protein: dbItem.protein || 0,
+                        fat: dbItem.fat || 0,
+                        carbs: dbItem.carbs || 0,
+                        dbItem: dbItem
+                    };
+                });
+
+                // 既存候補と重複しないものだけ追加
+                categoryItems.forEach(item => {
+                    if (!candidates.some(c => c.name === item.name)) {
+                        candidates.push(item);
+                    }
+                });
+            }
+        }
+
+        // スコア順にソート（降順）
+        candidates.sort((a, b) => b.matchScore - a.matchScore);
+
+        // 上位N件を返す
+        const topCandidates = candidates.slice(0, maxResults);
+
+        console.log(`[searchFoodDatabaseCandidates] 検索完了: ${foodName}`, {
+            totalMatches: candidates.length,
+            topCandidates: topCandidates.map(c => ({ name: c.name, score: c.matchScore, reason: c.matchReason }))
+        });
+
+        return topCandidates;
     };
 
     // 食品の量を調整（常にg単位で処理）
@@ -1506,10 +1798,10 @@ JSON形式のみ出力、説明文不要`;
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 {/* ヘッダー */}
-                <div className="sticky top-0 bg-gradient-to-r from-sky-600 to-cyan-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                <div className="sticky top-0 text-white p-4 rounded-t-2xl flex justify-between items-center z-10" style={{ backgroundColor: '#4A9EFF' }}>
                     <h3 className="text-lg font-bold flex items-center gap-2">
                         <Icon name="Camera" size={20} />
-                        AI食事認識
+                        写真解析
                     </h3>
                     <div className="flex items-center gap-2">
                         <button
@@ -1984,7 +2276,7 @@ JSON形式のみ出力、説明文不要`;
                                     onClick={confirmFoods}
                                     className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition"
                                 >
-                                    確定して追加
+                                    確定して記録
                                 </button>
                             </div>
                         </div>
@@ -2012,10 +2304,10 @@ JSON形式のみ出力、説明文不要`;
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                         {/* ヘッダー */}
-                        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                        <div className="sticky top-0 text-white p-4 rounded-t-2xl flex justify-between items-center z-10" style={{ backgroundColor: '#4A9EFF' }}>
                             <h3 className="text-lg font-bold flex items-center gap-2">
-                                <Icon name="Info" size={20} />
-                                AI食事認識の使い方
+                                <Icon name="Camera" size={20} />
+                                写真解析の使い方
                             </h3>
                             <button
                                 onClick={() => setShowInfoModal(false)}
@@ -2026,48 +2318,113 @@ JSON形式のみ出力、説明文不要`;
                         </div>
 
                         <div className="p-6 space-y-6">
+                            {/* 写真解析機能の説明 */}
+                            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl p-4">
+                                <h4 className="font-bold text-blue-900 text-base flex items-center gap-2 mb-3">
+                                    <Icon name="Sparkles" size={18} style={{ color: '#4A9EFF' }} />
+                                    写真解析でできること
+                                </h4>
+                                <ul className="space-y-2 text-sm text-blue-800">
+                                    <li className="flex items-start gap-2">
+                                        <Icon name="Check" size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#4A9EFF' }} />
+                                        <span>食事の写真から<strong>AIが自動で食材を認識</strong></span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <Icon name="Check" size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#4A9EFF' }} />
+                                        <span>食材ごとの<strong>量・カロリー・PFC（たんぱく質・脂質・炭水化物）を自動推定</strong></span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <Icon name="Check" size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#4A9EFF' }} />
+                                        <span>データベースと照合して<strong>ビタミン・ミネラルも自動取得</strong></span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <Icon name="Check" size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#4A9EFF' }} />
+                                        <span>複数の候補から<strong>最適な食材を選択可能</strong></span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <Icon name="Check" size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#4A9EFF' }} />
+                                        <span>認識結果を<strong>自由に編集・調整</strong>できる</span>
+                                    </li>
+                                </ul>
+                            </div>
+
                             {/* 全フローの説明 */}
                             <div className="space-y-4">
                                 <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                                    <Icon name="Zap" size={20} className="text-amber-600" />
+                                    <Icon name="Zap" size={20} style={{ color: '#4A9EFF' }} />
                                     解析から記録までの流れ
                                 </h4>
                                 <div className="space-y-3">
-                                    <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                                    <div className="flex items-start gap-3 bg-blue-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 text-white rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: '#4A9EFF' }}>1</div>
                                         <div>
                                             <p className="font-semibold text-gray-800">写真を撮影または選択</p>
                                             <p className="text-sm text-gray-600 mt-1">食事の写真をカメラで撮影、またはギャラリーから選択します。</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
+                                    <div className="flex items-start gap-3 bg-blue-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 text-white rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: '#4A9EFF' }}>2</div>
                                         <div>
                                             <p className="font-semibold text-gray-800">AIが自動で食材を認識・解析</p>
                                             <p className="text-sm text-gray-600 mt-1">「AIで食品を認識」ボタンを押すと、AIが写真から食材を自動で検出し、量とカロリー・PFCを推定します。</p>
-                                            <p className="text-xs text-purple-700 mt-2 font-medium">✨ データベースにマッチした食材はビタミン・ミネラルも自動取得されます</p>
+                                            <div className="mt-2 bg-blue-100 border border-blue-300 rounded p-2">
+                                                <p className="text-xs text-blue-900 font-semibold mb-1 flex items-center gap-1">
+                                                    <Icon name="Loader" size={12} className="animate-spin" />
+                                                    解析中の表示について
+                                                </p>
+                                                <p className="text-xs text-blue-800">
+                                                    解析中は各食材カードに「🔄 データベースから栄養情報を取得中...」と表示されます。この間、より詳細な栄養情報（ビタミン・ミネラル含む）を検索しています。通常10秒程度で完了します。
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
+                                    <div className="flex items-start gap-3 bg-blue-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 text-white rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: '#4A9EFF' }}>3</div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800">候補から最適な食材を選択（必要に応じて）</p>
+                                            <p className="text-sm text-gray-600 mt-1">データベース検索が完了すると、各食材に「八訂候補」「データベース候補」が表示される場合があります。</p>
+                                            <div className="mt-2 space-y-2">
+                                                <div className="bg-blue-100 border border-blue-300 rounded p-2">
+                                                    <p className="text-xs text-blue-900 font-semibold mb-1 flex items-center gap-1">
+                                                        <Icon name="Info" size={12} />
+                                                        八訂候補（日本食品標準成分表）
+                                                    </p>
+                                                    <p className="text-xs text-blue-800">
+                                                        公式の食品成分表から最大5件の候補を表示。マッチ度（%）が高いほど類似しています。「この候補を選択」ボタンで詳細な栄養情報に置き換えられます。
+                                                    </p>
+                                                </div>
+                                                <div className="bg-green-100 border border-green-300 rounded p-2">
+                                                    <p className="text-xs text-green-900 font-semibold mb-1 flex items-center gap-1">
+                                                        <Icon name="Database" size={12} />
+                                                        データベース候補（内蔵データベース）
+                                                    </p>
+                                                    <p className="text-xs text-green-800">
+                                                        アプリ内蔵のデータベースから最大5件の候補を表示。カテゴリ、栄養素、マッチ度を確認して選択できます。カテゴリ関連の候補も表示されるので、より柔軟に選択できます。
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 bg-blue-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 text-white rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: '#4A9EFF' }}>4</div>
                                         <div>
                                             <p className="font-semibold text-gray-800">認識結果を確認・調整</p>
                                             <p className="text-sm text-gray-600 mt-1">認識された食材の名前、量、栄養素を確認します。数量を調整したり、不要な食材を削除できます。</p>
                                             <p className="text-xs text-gray-600 mt-2">💡 認識された食材は自動的にカスタムアイテムとして保存され、次回から「食材を検索」の「カスタム」タブで簡単に使用できます。</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold text-sm">4</div>
+                                    <div className="flex items-start gap-3 bg-blue-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 text-white rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: '#4A9EFF' }}>5</div>
                                         <div>
                                             <p className="font-semibold text-gray-800">必要に応じて食材を追加</p>
                                             <p className="text-sm text-gray-600 mt-1">AIが見逃した食材は「食材を手動で追加」ボタンから追加できます。</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold text-sm">5</div>
+                                    <div className="flex items-start gap-3 bg-blue-50 p-3 rounded-lg">
+                                        <div className="flex-shrink-0 w-8 h-8 text-white rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: '#4A9EFF' }}>6</div>
                                         <div>
-                                            <p className="font-semibold text-gray-800">「確定して追加」で記録完了</p>
-                                            <p className="text-sm text-gray-600 mt-1">内容を確認したら「確定して追加」ボタンを押して、食事に追加します。</p>
+                                            <p className="font-semibold text-gray-800">「確定して記録」で記録完了</p>
+                                            <p className="text-sm text-gray-600 mt-1">内容を確認したら「確定して記録」ボタンを押して、食事に追加します。</p>
                                         </div>
                                     </div>
                                 </div>
@@ -2093,34 +2450,34 @@ JSON形式のみ出力、説明文不要`;
                             {/* 未登録食材の対処法 */}
                             <div className="space-y-3">
                                 <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                                    <Icon name="Wrench" size={20} className="text-orange-600" />
+                                    <Icon name="Wrench" size={20} style={{ color: '#4A9EFF' }} />
                                     未登録食材の対処法
                                 </h4>
                                 <div className="space-y-2">
-                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                                        <p className="font-semibold text-orange-900 mb-1 flex items-center gap-2">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                        <p className="font-semibold text-blue-900 mb-1 flex items-center gap-2">
                                             <Icon name="Search" size={16} />
                                             方法1: 「もしかして」候補から選択
                                         </p>
-                                        <p className="text-sm text-orange-800">
+                                        <p className="text-sm text-blue-800">
                                             AIが認識した名前に似た食材を最大3つ提案します。類似度が表示されるので、正しい食材をタップして置き換えできます。
                                         </p>
                                     </div>
-                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                                        <p className="font-semibold text-orange-900 mb-1 flex items-center gap-2">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                        <p className="font-semibold text-blue-900 mb-1 flex items-center gap-2">
                                             <Icon name="Plus" size={16} />
                                             方法2: カスタム食材として登録
                                         </p>
-                                        <p className="text-sm text-orange-800">
+                                        <p className="text-sm text-blue-800">
                                             「カスタム食材として登録」ボタンを押して、栄養素を手動で入力します。一度登録すると、次回から簡単に使用できます。
                                         </p>
                                     </div>
-                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                                        <p className="font-semibold text-orange-900 mb-1 flex items-center gap-2">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                        <p className="font-semibold text-blue-900 mb-1 flex items-center gap-2">
                                             <Icon name="Trash2" size={16} />
                                             方法3: 削除する
                                         </p>
-                                        <p className="text-sm text-orange-800">
+                                        <p className="text-sm text-blue-800">
                                             不要な食材や誤認識の場合は、×ボタンで削除できます。
                                         </p>
                                     </div>
@@ -2130,11 +2487,11 @@ JSON形式のみ出力、説明文不要`;
                             {/* カスタム登録の方法 */}
                             <div className="space-y-3">
                                 <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                                    <Icon name="Edit" size={20} className="text-green-600" />
+                                    <Icon name="Edit" size={20} style={{ color: '#4A9EFF' }} />
                                     カスタム食材の登録方法
                                 </h4>
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
-                                    <ol className="text-sm text-green-800 space-y-2 list-decimal list-inside">
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                                    <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
                                         <li><strong>「カスタム食材として登録」ボタンをタップ</strong></li>
                                         <li><strong>食材名を確認・編集</strong>（必要に応じて修正）</li>
                                         <li><strong>基本栄養素を入力</strong>:
@@ -2155,12 +2512,12 @@ JSON形式のみ出力、説明文不要`;
                                         <li><strong>数量を設定</strong>（グラム数や個数）</li>
                                         <li><strong>「登録」ボタンで完了</strong></li>
                                     </ol>
-                                    <div className="mt-3 bg-purple-100 border border-purple-300 rounded p-3">
-                                        <p className="text-xs text-purple-900 font-semibold flex items-center gap-1 mb-1">
+                                    <div className="mt-3 bg-blue-100 border border-blue-300 rounded p-3">
+                                        <p className="text-xs text-blue-900 font-semibold flex items-center gap-1 mb-1">
                                             <Icon name="Sparkles" size={14} />
                                             カスタムアイテムの管理
                                         </p>
-                                        <p className="text-xs text-purple-800">
+                                        <p className="text-xs text-blue-800">
                                             登録したカスタム食材は「設定」→「データ管理」→「カスタムアイテム管理」から編集・削除できます。
                                             また、「食材を検索」の「カスタム」タブからすべてのカスタムアイテムを確認できます。
                                         </p>
@@ -2219,7 +2576,7 @@ JSON形式のみ出力、説明文不要`;
                             <div className="pt-4 border-t">
                                 <button
                                     onClick={() => setShowInfoModal(false)}
-                                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold py-3 rounded-lg hover:from-blue-700 hover:to-cyan-700 transition"
+                                    className="w-full bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
                                 >
                                     閉じる
                                 </button>
@@ -2431,7 +2788,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                         {food.isHachitei && food.hachiteiMatchScore && (
                             <span className="flex items-center gap-1">
                                 <Icon name="Star" size={12} />
-                                類似度: {food.hachiteiMatchScore}点
+                                マッチ度: {food.hachiteiMatchScore}%
                             </span>
                         )}
                     </div>
@@ -2596,7 +2953,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                 <div key={idx} className="bg-white rounded-lg p-2 text-xs border border-gray-200">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="font-medium text-gray-800">{candidate.name}</span>
-                                        <span className="text-blue-600 font-semibold">{candidate.matchScore}点</span>
+                                        <span className="text-blue-600 font-semibold">マッチ度: {candidate.matchScore}%</span>
                                     </div>
                                     <p className="text-gray-600 text-xs mb-2">{candidate.matchReason}</p>
                                     <button
@@ -2619,6 +2976,60 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                                 この候補を選択
                                             </>
                                         )}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </details>
+                </div>
+            )}
+
+            {/* foodDatabase候補の展開可能表示 */}
+            {food.foodDatabaseCandidates && food.foodDatabaseCandidates.length > 0 && (
+                <div className="mt-3">
+                    <details className="bg-green-50 border border-green-200 rounded-lg overflow-hidden">
+                        <summary className="px-3 py-2 cursor-pointer hover:bg-green-100 transition flex items-center justify-between text-sm font-medium text-green-800">
+                            <span className="flex items-center gap-2">
+                                <Icon name="Database" size={14} />
+                                データベース候補を見る（{food.foodDatabaseCandidates.length}件）
+                            </span>
+                            <Icon name="ChevronDown" size={14} />
+                        </summary>
+                        <div className="px-3 py-2 space-y-1.5">
+                            {food.foodDatabaseCandidates.map((candidate, idx) => (
+                                <div key={idx} className="bg-white rounded-lg p-2 text-xs border border-gray-200">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="font-medium text-gray-800">{candidate.name}</span>
+                                        <span className="text-green-600 font-semibold">マッチ度: {candidate.matchScore}%</span>
+                                    </div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-gray-500 text-xs">{candidate.category}</span>
+                                        <span className="text-gray-600 text-xs">{candidate.matchReason}</span>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-1 mb-2 text-xs text-gray-600">
+                                        <div className="text-center">
+                                            <p className="text-gray-500">Cal</p>
+                                            <p className="font-semibold">{candidate.calories}</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-gray-500">P</p>
+                                            <p className="font-semibold">{candidate.protein.toFixed(1)}g</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-gray-500">F</p>
+                                            <p className="font-semibold">{candidate.fat.toFixed(1)}g</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-gray-500">C</p>
+                                            <p className="font-semibold">{candidate.carbs.toFixed(1)}g</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => selectFoodDatabaseCandidate(foodIndex, candidate)}
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 rounded transition flex items-center justify-center gap-1"
+                                    >
+                                        <Icon name="Check" size={12} />
+                                        この候補を選択
                                     </button>
                                 </div>
                             ))}

@@ -770,7 +770,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             <div className="flex justify-between text-xs mb-1">
                                                 <span className="font-medium">ビタミン{key}</span>
                                                 <span className="text-gray-600">
-                                                    {current.toFixed(1)} / {target}{vitaminUnits[key]}
+                                                    {typeof current === 'number' ? current.toFixed(1) : 0} / {target}{vitaminUnits[key]}
                                                 </span>
                                             </div>
                                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -815,7 +815,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             <div className="flex justify-between text-xs mb-1">
                                                 <span className="font-medium">{mineralNames[key]}</span>
                                                 <span className="text-gray-600">
-                                                    {current.toFixed(1)} / {target}{mineralUnits[key]}
+                                                    {typeof current === 'number' ? current.toFixed(1) : 0} / {target}{mineralUnits[key]}
                                                 </span>
                                             </div>
                                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
