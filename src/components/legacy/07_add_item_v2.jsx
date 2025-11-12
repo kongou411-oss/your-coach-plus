@@ -17,6 +17,10 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
         }, 0) || 5
     );
 
+    // 運動名の編集
+    const [workoutName, setWorkoutName] = useState(workout.name || 'トレーニング');
+    const [isEditingWorkoutName, setIsEditingWorkoutName] = useState(false);
+
     const currentExercise = exercises[selectedExerciseIndex];
 
     // セット編集用のstate
@@ -73,6 +77,7 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
     const handleSave = () => {
         const updatedWorkout = {
             ...workout,
+            name: workoutName,
             exercises: exercises,
             totalDuration: totalDurationInput
         };
@@ -85,10 +90,50 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
-                    <h2 className="text-xl font-bold">運動を編集</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                        <Icon name="X" size={24} />
-                    </button>
+                    {/* 運動名（編集可能） */}
+                    <div className="flex-1 min-w-0 mr-2">
+                        {isEditingWorkoutName ? (
+                            <input
+                                type="text"
+                                value={workoutName}
+                                onChange={(e) => setWorkoutName(e.target.value)}
+                                onBlur={() => {
+                                    if (!workoutName.trim()) {
+                                        setWorkoutName('トレーニング');
+                                    }
+                                    setIsEditingWorkoutName(false);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        if (!workoutName.trim()) {
+                                            setWorkoutName('トレーニング');
+                                        }
+                                        setIsEditingWorkoutName(false);
+                                    }
+                                }}
+                                className="text-xl font-bold border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 w-full"
+                                autoFocus
+                            />
+                        ) : (
+                            <h2 className="text-xl font-bold truncate">{workoutName}</h2>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                        {/* 編集ボタン */}
+                        {!isEditingWorkoutName && (
+                            <button
+                                onClick={() => setIsEditingWorkoutName(true)}
+                                className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
+                                title="編集"
+                            >
+                                <Icon name="Edit" size={18} />
+                            </button>
+                        )}
+                        {/* 閉じるボタン */}
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                            <Icon name="X" size={24} />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -1588,6 +1633,8 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
             });
 
             // Workout用のstate
+            const [workoutName, setWorkoutName] = useState('トレーニング'); // 運動名
+            const [isEditingWorkoutName, setIsEditingWorkoutName] = useState(false); // 運動名編集モード
             const [exercises, setExercises] = useState([]);
             const [currentExercise, setCurrentExercise] = useState(null);
             const [sets, setSets] = useState([]);
@@ -2797,9 +2844,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                     const workoutData = {
                         id: Date.now(),
                         time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-                        name: exercises.length === 1
-                            ? (exercises[0].exercise?.name || exercises[0].name)
-                            : `${exercises[0].exercise?.category || exercises[0].category}トレーニング`, // 複数種目の場合はカテゴリ名
+                        name: workoutName, // ユーザーが編集可能な運動名を使用
                         category: exercises[0].exercise?.category || exercises[0].category,
                         isTemplate: isFromTemplate, // テンプレートから読み込んだ場合はtrueを付与
                         exercises: exercises.map(ex => {
@@ -6499,12 +6544,52 @@ RM回数と重量を別々に入力してください。`
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden slide-up flex flex-col">
                         <div className="bg-white border-b p-4 flex justify-between items-center flex-shrink-0">
-                            <h3 className="text-lg font-bold">
-                                {type === 'meal' && '食事を記録'}
-                                {type === 'workout' && '運動を記録'}
-                                {type === 'condition' && 'コンディションを記録'}
-                            </h3>
+                            {/* 運動名（編集可能） */}
+                            {type === 'workout' ? (
+                                <div className="flex-1 min-w-0 mr-2">
+                                    {isEditingWorkoutName ? (
+                                        <input
+                                            type="text"
+                                            value={workoutName}
+                                            onChange={(e) => setWorkoutName(e.target.value)}
+                                            onBlur={() => {
+                                                if (!workoutName.trim()) {
+                                                    setWorkoutName('トレーニング');
+                                                }
+                                                setIsEditingWorkoutName(false);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    if (!workoutName.trim()) {
+                                                        setWorkoutName('トレーニング');
+                                                    }
+                                                    setIsEditingWorkoutName(false);
+                                                }
+                                            }}
+                                            className="text-lg font-bold border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 w-full"
+                                            autoFocus
+                                        />
+                                    ) : (
+                                        <h3 className="text-lg font-bold truncate">{workoutName}</h3>
+                                    )}
+                                </div>
+                            ) : (
+                                <h3 className="text-lg font-bold">
+                                    {type === 'meal' && '食事を記録'}
+                                    {type === 'condition' && 'コンディションを記録'}
+                                </h3>
+                            )}
                             <div className="flex items-center gap-2">
+                                {/* 運動名編集ボタン */}
+                                {type === 'workout' && !isEditingWorkoutName && (
+                                    <button
+                                        onClick={() => setIsEditingWorkoutName(true)}
+                                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
+                                        title="編集"
+                                    >
+                                        <Icon name="Edit" size={18} />
+                                    </button>
+                                )}
                                 {type === 'meal' && (
                                     <button
                                         onClick={() => setShowMealInfoModal(true)}
