@@ -712,6 +712,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         carbs: 0,
         sugar: 0,
         fiber: 0,
+        solubleFiber: 0,
+        insolubleFiber: 0,
         vitamins: {
             A: 0, D: 0, E: 0, K: 0, B1: 0, B2: 0, B3: 0, B5: 0, B6: 0, B7: 0, B9: 0, B12: 0, C: 0
         },
@@ -735,6 +737,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             currentIntake.carbs += (item.carbs || 0) * ratio;
             currentIntake.sugar += (item.sugar || 0) * ratio;
             currentIntake.fiber += (item.fiber || 0) * ratio;
+            currentIntake.solubleFiber += (item.solubleFiber || 0) * ratio;
+            currentIntake.insolubleFiber += (item.insolubleFiber || 0) * ratio;
 
             // ビタミン・ミネラル（オブジェクト形式）
             if (item.vitamins) {
@@ -887,11 +891,89 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     </div>
                 </div>
 
+                {/* 糖質・食物繊維詳細 */}
+                <details className="mt-4">
+                    <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{color: '#4A9EFF'}}>
+                        <Icon name="ChevronDown" size={16} />
+                        糖質・食物繊維＋
+                    </summary>
+                    <div className="mt-4 space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {(() => {
+                                const targets = LBMUtils.calculatePersonalizedMicronutrients(profile || {});
+                                const fiberTargets = targets.carbohydrateQuality || { fiber: 20, solubleFiber: 7, insolubleFiber: 13 };
+
+                                return [
+                                    {
+                                        name: '糖質',
+                                        icon: 'Cookie',
+                                        color: 'amber',
+                                        current: currentIntake.sugar,
+                                        target: null, // 糖質は目標値なし（参考表示のみ）
+                                        unit: 'g',
+                                        note: `炭水化物の ${Math.round((currentIntake.sugar / (currentIntake.carbs || 1)) * 100)}%`
+                                    },
+                                    {
+                                        name: '食物繊維',
+                                        icon: 'Wheat',
+                                        color: 'green',
+                                        current: currentIntake.fiber,
+                                        target: fiberTargets.fiber,
+                                        unit: 'g'
+                                    },
+                                    {
+                                        name: '水溶性食物繊維',
+                                        icon: 'Droplet',
+                                        color: 'blue',
+                                        current: currentIntake.solubleFiber,
+                                        target: fiberTargets.solubleFiber,
+                                        unit: 'g'
+                                    },
+                                    {
+                                        name: '不溶性食物繊維',
+                                        icon: 'Layers',
+                                        color: 'teal',
+                                        current: currentIntake.insolubleFiber,
+                                        target: fiberTargets.insolubleFiber,
+                                        unit: 'g'
+                                    }
+                                ].map((item, idx) => {
+                                    const percent = item.target ? (item.current / item.target) * 100 : 0;
+                                    return (
+                                        <div key={idx} className="bg-gray-50 p-2 rounded">
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="font-medium flex items-center gap-1">
+                                                    <Icon name={item.icon} size={14} className={`text-${item.color}-500`} />
+                                                    {item.name}
+                                                </span>
+                                                <span className="text-gray-600">
+                                                    {Math.round(item.current * 10) / 10}{item.target ? ` / ${item.target}` : ''}{item.unit}
+                                                </span>
+                                            </div>
+                                            {item.target && (
+                                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full bg-gradient-to-r from-${item.color}-400 to-${item.color === 'amber' ? 'orange' : item.color === 'teal' ? 'emerald' : item.color}-500 transition-all`}
+                                                        style={{ width: `${Math.min(percent, 100)}%` }}
+                                                    />
+                                                </div>
+                                            )}
+                                            {item.note && (
+                                                <div className="text-xs text-gray-500 mt-1">{item.note}</div>
+                                            )}
+                                        </div>
+                                    );
+                                });
+                            })()}
+                        </div>
+                    </div>
+                </details>
+
                 {/* ビタミン・ミネラル詳細 */}
                 <details className="mt-4">
                         <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{color: '#4A9EFF'}}>
                             <Icon name="ChevronDown" size={16} />
-                            ビタミン・ミネラル+
+                            ビタミン・ミネラル＋
                         </summary>
                         <div className="mt-4 space-y-4">
                         {/* ビタミン */}
@@ -919,12 +1001,17 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             current = Number(rawValue) || 0;
                                         }
                                         const percent = (current / target) * 100;
+
+                                        // 基準上限値を超えているかチェック（ボディメイカーの場合）
+                                        const baseLimit = targets.upperLimits?.base?.[key];
+                                        const exceedsBaseLimit = baseLimit !== null && baseLimit !== undefined && current > baseLimit;
                                     return (
                                         <div key={key} className="bg-gray-50 p-2 rounded">
                                             <div className="flex justify-between text-xs mb-1">
                                                 <span className="font-medium">ビタミン{key}</span>
-                                                <span className="text-gray-600">
+                                                <span className={exceedsBaseLimit ? "text-red-600 font-bold" : "text-gray-600"}>
                                                     {typeof current === 'number' ? current.toFixed(1) : 0} / {target}{vitaminUnits[key]}
+                                                    {exceedsBaseLimit && <span className="ml-1" title="基準上限値を超えています">⚠️</span>}
                                                 </span>
                                             </div>
                                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -971,12 +1058,17 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             current = Number(rawValue) || 0;
                                         }
                                         const percent = (current / target) * 100;
+
+                                        // 基準上限値を超えているかチェック（ボディメイカーの場合）
+                                        const baseLimit = targets.upperLimits?.base?.[key];
+                                        const exceedsBaseLimit = baseLimit !== null && baseLimit !== undefined && current > baseLimit;
                                     return (
                                         <div key={key} className="bg-gray-50 p-2 rounded">
                                             <div className="flex justify-between text-xs mb-1">
                                                 <span className="font-medium">{mineralNames[key]}</span>
-                                                <span className="text-gray-600">
+                                                <span className={exceedsBaseLimit ? "text-red-600 font-bold" : "text-gray-600"}>
                                                     {typeof current === 'number' ? current.toFixed(1) : 0} / {target}{mineralUnits[key]}
+                                                    {exceedsBaseLimit && <span className="ml-1" title="基準上限値を超えています">⚠️</span>}
                                                 </span>
                                             </div>
                                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -1060,6 +1152,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         )}
                     </div>
                 </details>
+
                     </div>
                 )}
 
