@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import ReactDOM from 'react-dom';
+import { MicroLearningPopup, MicroLearningLibrary } from './14_microlearning.jsx';
 // ===== Analysis Components =====
 const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, setLastUpdate, onUpgradeClick, onFeatureUnlocked }) => {
     const [loading, setLoading] = useState(true);
@@ -10,6 +11,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     const [aiLoading, setAiLoading] = useState(false);
     const [suggestedDirective, setSuggestedDirective] = useState(null);
     const [microLearningContent, setMicroLearningContent] = useState(null);
+    const [showMicroLearningSelector, setShowMicroLearningSelector] = useState(false);
     const [showCollaborativePlanning, setShowCollaborativePlanning] = useState(false);
     const [userQuestion, setUserQuestion] = useState('');
     const [conversationHistory, setConversationHistory] = useState([]);
@@ -75,9 +77,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
     // タブ管理state
     const [activeTab, setActiveTab] = useState('analysis'); // 'analysis' or 'history'
-
-    // ローディング画面のマイクロラーニングTIP用state
-    const [tipIndex, setTipIndex] = useState(0);
 
     const getTodayDate = () => {
         const today = new Date();
@@ -211,17 +210,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         const intervalId = setInterval(updateBabHeight, 500);
         return () => clearInterval(intervalId);
     }, []);
-
-    // ローディング画面のTIP自動切り替え（5秒ごと）
-    useEffect(() => {
-        if (!loading) return; // ローディング中のみ動作
-
-        const learningTipsCount = 8; // TIPの総数
-        const interval = setInterval(() => {
-            setTipIndex((prev) => (prev + 1) % learningTipsCount);
-        }, 5000);
-        return () => clearInterval(interval);
-    }, [loading]);
 
     // 新機能開放モーダル完了後、Premium誘導モーダルを表示
     useEffect(() => {
@@ -389,8 +377,8 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     };
 
     const performAnalysis = async () => {
-        // ローディング表示は不要（基本分析のみでAI分析は実行しない）
-        setLoading(false);
+        // ローディング表示を維持（データ取得が完了するまで）
+        // setLoading(true); // 既にtrueなので不要
 
         // クレジットチェック（新システム） - 最優先で実行
         try {
@@ -474,15 +462,8 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         setHistoricalInsights(insights);
         setLoading(false);
 
-        // マイクロラーニングトリガー
-        const microLearningTriggered = triggerMicroLearning({
-            dailyRecord,
-            analysis: analysisData,
-            userProfile
-        });
-        if (microLearningTriggered) {
-            setMicroLearningContent(microLearningTriggered);
-        }
+        // マイクロラーニングは手動で「学習」ボタンを押したときのみ表示
+        // 自動トリガーは無効化
 
         // AI分析は自動実行しない（ユーザーが「生成」ボタンを押したときのみ実行）
         // generateAIAnalysis(analysisData, insights, firstAnalysisFlag, scores);
@@ -814,14 +795,17 @@ ${currentPurpose === '増量' ? `
 ③ 明日の指示書
 
 **結論**
-【カテゴリー】具体的な内容（食材名/運動種目名 + 数値）
+- [具体的な行動1（食材名/運動種目名 + 数値）]
+- [具体的な行動2（食材名/運動種目名 + 数値）]
+- [具体的な行動3（食材名/運動種目名 + 数値）]
 
 **根拠**
 [上記指示書の理由を1-2文で簡潔に説明。${currentPurpose}の目的達成のために必要な理由を記載]
 
 例:
 **結論**
-【睡眠】22時30分就寝で8時間確保
+- 22時30分に就寝する
+- 8時間の睡眠を確保する
 
 **根拠**
 本日の睡眠時間は6時間で理想8時間に対して75%でした。${currentPurpose}のために筋肉回復を最大化する必要があり、明日は8時間睡眠を確保してください。
@@ -830,9 +814,10 @@ ${currentPurpose === '増量' ? `
 - 必ず「---」の区切り線の後に「③ 明日の指示書」見出しを表示
 - ${currentPurpose}の目的達成に最も重要な改善点を1つ選択
 - 結論と根拠の両方を記載
-- 【カテゴリー】必須
+- **結論は箇条書き形式（「-」で始まる）で記載**: 「1日で鶏胸肉300gを摂取する」「白米500gを摂取する」など、シンプルな箇条書きで記載
+- 【カテゴリー】は使用しない（箇条書き形式に変更したため）
 - 数値必須（g、kg、回数、時間）
-- 結論は1行完結
+- 各項目は簡潔に1文で完結
 - LBMの言及は不要（結果指標のため）
 - **重要**: 「本日」のデータを基に「明日」の指示を出す（「昨日」は絶対に使わない）
 - **書式統一**: リスト表記は必ず「-」を使用（他の記号は使わない）
@@ -888,45 +873,50 @@ ${section2Prompt}
 
                 // 指示書プランを翌日の指示書として保存（fullAnalysisから抽出）
                 const directiveText = fullAnalysis;
-                // 「- 【カテゴリー】内容」の形式から抽出
-                const directiveMatch = directiveText.match(/【(.+?)】(.+)/);
-                if (directiveMatch) {
-                    const category = directiveMatch[1]; // 食事/運動/睡眠など
-                    const message = directiveMatch[2].trim();
+                // 「③ 明日の指示書」セクションから箇条書きを抽出
+                const directiveSection = directiveText.match(/③ 明日の指示書[\s\S]*?\*\*結論\*\*([\s\S]*?)\*\*根拠\*\*/);
+                if (directiveSection) {
+                    // 箇条書き（「- 」で始まる行）を抽出
+                    const bulletPoints = directiveSection[1].match(/^- (.+)$/gm);
+                    if (bulletPoints && bulletPoints.length > 0) {
+                        // 箇条書きをそのまま改行区切りで表示（箇条書き形式を維持）
+                        const message = bulletPoints.map(point => point.trim()).join('\n');
 
-                    // カテゴリーをtypeに変換
-                    let type = 'meal';
-                    if (category.includes('運動') || category.includes('トレーニング')) {
-                        type = 'exercise';
-                    } else if (category.includes('睡眠') || category.includes('コンディション')) {
-                        type = 'condition';
+                        // カテゴリーを内容から推測
+                        const fullText = message.toLowerCase();
+                        let type = 'meal';
+                        if (fullText.includes('運動') || fullText.includes('トレーニング') || fullText.includes('筋トレ') || fullText.includes('有酸素')) {
+                            type = 'exercise';
+                        } else if (fullText.includes('睡眠') || fullText.includes('就寝') || fullText.includes('起床') || fullText.includes('コンディション')) {
+                            type = 'condition';
+                        }
+
+                        // 翌日の日付を計算
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+                        // 翌日の23:59を期限として設定
+                        const deadline = new Date(tomorrow);
+                        deadline.setHours(23, 59, 59, 999);
+
+                        // 指示書を保存
+                        const directives = JSON.parse(localStorage.getItem(STORAGE_KEYS.DIRECTIVES) || '[]');
+                        // 翌日の既存指示書を削除
+                        const filteredDirectives = directives.filter(d => d.date !== tomorrowStr);
+                        filteredDirectives.push({
+                            date: tomorrowStr,
+                            message: message,
+                            type: type,
+                            completed: false,
+                            deadline: deadline.toISOString(),
+                            createdAt: new Date().toISOString()
+                        });
+                        localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(filteredDirectives));
+
+                        // directiveUpdatedイベントを発火してダッシュボードを更新
+                        window.dispatchEvent(new Event('directiveUpdated'));
                     }
-
-                    // 翌日の日付を計算
-                    const tomorrow = new Date();
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-
-                    // 翌日の23:59を期限として設定
-                    const deadline = new Date(tomorrow);
-                    deadline.setHours(23, 59, 59, 999);
-
-                    // 指示書を保存
-                    const directives = JSON.parse(localStorage.getItem(STORAGE_KEYS.DIRECTIVES) || '[]');
-                    // 翌日の既存指示書を削除
-                    const filteredDirectives = directives.filter(d => d.date !== tomorrowStr);
-                    filteredDirectives.push({
-                        date: tomorrowStr,
-                        message: message,
-                        type: type,
-                        completed: false,
-                        deadline: deadline.toISOString(),
-                        createdAt: new Date().toISOString()
-                    });
-                    localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(filteredDirectives));
-
-                    // directiveUpdatedイベントを発火してダッシュボードを更新
-                    window.dispatchEvent(new Event('directiveUpdated'));
                 }
             } else {
                 throw new Error(response.error || 'AI分析の生成に失敗');
@@ -1252,94 +1242,15 @@ ${conversationContext}
         return { recordCount: recordCount, insights: insights, recommendations: recommendations.length > 0 ? recommendations : ['現在の食事・トレーニング習慣を継続しましょう！'] };
     };
 
+    // ローディング中、またはデータ取得中
     if (loading) {
-        // マイクロラーニングコンテンツ（一般的な知識、不足を指摘しない）
-        const learningTips = [
-            {
-                title: 'タンパク質の役割',
-                content: 'タンパク質は筋肉を作る材料です。トレーニングで筋繊維を破壊し、タンパク質で修復することで筋肉が成長します。',
-                icon: 'Beef'
-            },
-            {
-                title: '炭水化物はエネルギー源',
-                content: '炭水化物は筋肉のエネルギー源（グリコーゲン）として貯蔵されます。トレーニング前後の摂取が効果的です。',
-                icon: 'Wheat'
-            },
-            {
-                title: '睡眠と筋肉の関係',
-                content: '筋肉の成長は睡眠中に起こります。成長ホルモンは深い睡眠時に最も多く分泌されます。7-9時間の睡眠が理想です。',
-                icon: 'Moon'
-            },
-            {
-                title: 'PFCバランスとは',
-                content: 'P（タンパク質）F（脂質）C（炭水化物）のバランスのこと。目的に応じた適切なバランスが体づくりの鍵です。',
-                icon: 'PieChart'
-            },
-            {
-                title: 'LBM（除脂肪体重）',
-                content: 'LBMは体重から体脂肪を除いた重量。LBMベースで栄養計算することで、より精確な体づくりが可能です。',
-                icon: 'Activity'
-            },
-            {
-                title: '水分補給の重要性',
-                content: '体の60%は水分です。筋肉にも水分が必要で、脱水状態ではパフォーマンスが低下します。1日2-3Lを目安に。',
-                icon: 'Droplet'
-            },
-            {
-                title: 'プログレッシブオーバーロード',
-                content: '筋肉を成長させるには、徐々に負荷を増やしていくことが重要です。重量、回数、セット数を少しずつ増やしましょう。',
-                icon: 'TrendingUp'
-            },
-            {
-                title: '食事のタイミング',
-                content: 'トレーニング前後2時間の栄養摂取が特に重要です。この「ゴールデンタイム」を意識しましょう。',
-                icon: 'Clock'
-            }
-        ];
-
-        const currentTip = learningTips[tipIndex];
-
         return (
             <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-cyan-50 z-50 flex items-center justify-center p-6">
-                <div className="max-w-md w-full">
+                <div className="text-center">
                     {/* ローディングスピナー */}
-                    <div className="text-center mb-8">
-                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
-                        <p className="text-lg font-semibold text-gray-700">AI分析中...</p>
-                        <p className="text-sm text-gray-500 mt-1">少々お待ちください</p>
-                    </div>
-
-                    {/* マイクロラーニングカード */}
-                    <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-100 slide-up">
-                        <div className="flex items-start gap-4 mb-4">
-                            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
-                                <Icon name={currentTip.icon} size={24} className="text-white" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-lg font-bold text-gray-800 mb-2">{currentTip.title}</h3>
-                                <p className="text-sm text-gray-600 leading-relaxed">{currentTip.content}</p>
-                            </div>
-                        </div>
-
-                        {/* プログレスインジケーター */}
-                        <div className="flex gap-1 mt-4">
-                            {learningTips.map((_, index) => (
-                                <div
-                                    key={index}
-                                    className={`flex-1 h-1 rounded-full transition-all duration-300 ${
-                                        index === tipIndex ? 'bg-blue-600' : 'bg-gray-200'
-                                    }`}
-                                />
-                            ))}
-                        </div>
-
-                        <div className="mt-4 text-center">
-                            <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
-                                <Icon name="Lightbulb" size={12} />
-                                待ち時間に学習しよう
-                            </p>
-                        </div>
-                    </div>
+                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
+                    <p className="text-lg font-semibold text-gray-700">データを読み込んでいます...</p>
+                    <p className="text-sm text-gray-500 mt-1">少々お待ちください</p>
                 </div>
             </div>
         );
@@ -1374,13 +1285,6 @@ ${conversationContext}
                     <h1 className="text-xl font-bold text-white">AIコーチ</h1>
                     <p className="text-xs text-white opacity-80">デイリー分析</p>
                 </div>
-                <button onClick={() => {
-                    // スコアを再計算して渡す
-                    const freshScores = calculateScores(userProfile, dailyRecord, targetPFC);
-                    generateAIAnalysis(analysis, historicalInsights, false, freshScores);
-                }} className="absolute right-4 text-sm px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-lg hover:shadow-xl transition">
-                    生成
-                </button>
             </header>
 
             {/* クレジット表示バー */}
@@ -1389,26 +1293,13 @@ ${conversationContext}
                     creditInfo.tier === 'premium' ? 'bg-[#FFF59A]/10' : 'bg-blue-50'
                 }`}>
                     <div className="flex items-center gap-2">
-                        {creditInfo.tier === 'premium' ? (
-                            <Icon name="Crown" size={16} className="text-purple-600" />
-                        ) : (
-                            <Icon name="Gift" size={16} className="text-blue-600" />
-                        )}
-                        <span className="text-sm font-medium text-gray-600">
-                            {creditInfo.tier === 'premium' ? 'Premium会員' : '無料プラン'}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-600">分析クレジット:</span>
+                        <span className="text-xs text-gray-600">クレジット:</span>
                         <span className={`text-sm font-bold ${
                             creditInfo.totalCredits <= 3 ? 'text-red-600' :
                             creditInfo.totalCredits <= 10 ? 'text-orange-600' :
                             'text-green-600'
                         }`}>
                             {creditInfo.totalCredits}
-                        </span>
-                        <span className="text-xs text-gray-600">
-                            (無料:{creditInfo.freeCredits} / 有料:{creditInfo.paidCredits})
                         </span>
                         <button
                             onClick={() => setShowCreditInfoModal(true)}
@@ -1417,7 +1308,21 @@ ${conversationContext}
                         >
                             <Icon name="Info" size={16} />
                         </button>
+                        <button
+                            onClick={() => setShowMicroLearningSelector(true)}
+                            className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-xs font-medium"
+                        >
+                            <Icon name="BookOpen" size={14} />
+                            学習
+                        </button>
                     </div>
+                    <button onClick={() => {
+                        // スコアを再計算して渡す
+                        const freshScores = calculateScores(userProfile, dailyRecord, targetPFC);
+                        generateAIAnalysis(analysis, historicalInsights, false, freshScores);
+                    }} className="text-sm px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md hover:shadow-lg transition">
+                        生成
+                    </button>
                 </div>
             )}
 
@@ -1865,6 +1770,96 @@ ${conversationContext}
                                     </li>
                                 </ul>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* マイクロラーニング選択モーダル */}
+            {showMicroLearningSelector && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[90] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+                        {/* ヘッダー */}
+                        <div className="sticky top-0 text-white p-4 rounded-t-2xl flex justify-between items-center z-10" style={{background: '#4A9EFF'}}>
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <Icon name="BookOpen" size={20} />
+                                学習コンテンツを選択
+                            </h3>
+                            <button
+                                onClick={() => setShowMicroLearningSelector(false)}
+                                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                            >
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+
+                        {/* コンテンツリスト */}
+                        <div className="p-6 space-y-3">
+                            {/* タンパク質 */}
+                            <button
+                                onClick={() => {
+                                    setMicroLearningContent(MicroLearningLibrary.proteinDeficiency);
+                                    setShowMicroLearningSelector(false);
+                                }}
+                                className="w-full p-4 bg-gradient-to-r from-red-50 to-red-50 border-2 border-red-200 rounded-xl hover:border-red-400 hover:shadow-md transition text-left"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className="bg-red-500 text-white rounded-full p-2 flex-shrink-0 w-11 h-11 flex items-center justify-center">
+                                        <Icon name="Beef" size={20} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-gray-800 mb-1">タンパク質の基礎</h4>
+                                        <p className="text-sm text-gray-600">
+                                            筋肉を作る材料として重要なタンパク質について学びます
+                                        </p>
+                                    </div>
+                                    <Icon name="ChevronRight" size={20} className="text-gray-400 flex-shrink-0 mt-1" />
+                                </div>
+                            </button>
+
+                            {/* 炭水化物 */}
+                            <button
+                                onClick={() => {
+                                    setMicroLearningContent(MicroLearningLibrary.carbDeficiency);
+                                    setShowMicroLearningSelector(false);
+                                }}
+                                className="w-full p-4 bg-gradient-to-r from-green-50 to-green-50 border-2 border-green-200 rounded-xl hover:border-green-400 hover:shadow-md transition text-left"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className="bg-green-500 text-white rounded-full p-2 flex-shrink-0 w-11 h-11 flex items-center justify-center">
+                                        <Icon name="Wheat" size={20} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-gray-800 mb-1">炭水化物の基礎</h4>
+                                        <p className="text-sm text-gray-600">
+                                            トレーニングのエネルギー源となる炭水化物について学びます
+                                        </p>
+                                    </div>
+                                    <Icon name="ChevronRight" size={20} className="text-gray-400 flex-shrink-0 mt-1" />
+                                </div>
+                            </button>
+
+                            {/* 睡眠 */}
+                            <button
+                                onClick={() => {
+                                    setMicroLearningContent(MicroLearningLibrary.sleepDeficiency);
+                                    setShowMicroLearningSelector(false);
+                                }}
+                                className="w-full p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl hover:border-purple-400 hover:shadow-md transition text-left"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className="bg-purple-500 text-white rounded-full p-2 flex-shrink-0 w-11 h-11 flex items-center justify-center">
+                                        <Icon name="Moon" size={20} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-gray-800 mb-1">睡眠の基礎</h4>
+                                        <p className="text-sm text-gray-600">
+                                            筋肉の回復と成長に不可欠な睡眠について学びます
+                                        </p>
+                                    </div>
+                                    <Icon name="ChevronRight" size={20} className="text-gray-400 flex-shrink-0 mt-1" />
+                                </div>
+                            </button>
                         </div>
                     </div>
                 </div>

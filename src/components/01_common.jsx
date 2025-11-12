@@ -56,6 +56,9 @@ const MarkdownRenderer = ({ text }) => {
 };
 
 
-// グローバルに公開
+// ES Modulesとしてエクスポート
+export { Icon, MarkdownRenderer };
+
+// グローバルに公開（後方互換性のため）
 window.Icon = Icon;
 window.MarkdownRenderer = MarkdownRenderer;

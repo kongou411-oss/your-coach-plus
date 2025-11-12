@@ -926,7 +926,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <span className="text-xs text-gray-600">今日の目標</span>
                                 </div>
                                 <div className="bg-white rounded-2xl border-2 border-green-600 p-4 mb-4 shadow-sm">
-                                    <div className="text-base font-bold text-gray-800 mb-2">
+                                    <div className="text-base font-bold text-gray-800 mb-2 whitespace-pre-line">
                                         {todayDirective.message}
                                     </div>
                                 </div>

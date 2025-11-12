@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Icon } from './01_common.jsx';
 // ===== Contextual Micro-Learning System =====
 // 文脈的マイクロラーニング（ユーザーの課題に応じた学習コンテンツを提案）
 
-const MicroLearningPopup = ({ content, onClose, onComplete }) => {
+export const MicroLearningPopup = ({ content, onClose, onComplete }) => {
     const [currentStep, setCurrentStep] = useState(0);
 
     const completeStep = () => {
@@ -16,11 +17,25 @@ const MicroLearningPopup = ({ content, onClose, onComplete }) => {
 
     const step = content.steps[currentStep];
 
+    // コンテンツのタイトルに基づいて色を決定
+    const getColor = () => {
+        if (content.title.includes('タンパク質')) {
+            return { bg: 'rgb(239, 68, 68)', progress: 'bg-red-500' }; // red-500
+        } else if (content.title.includes('炭水化物')) {
+            return { bg: 'rgb(34, 197, 94)', progress: 'bg-green-500' }; // green-500
+        } else if (content.title.includes('睡眠')) {
+            return { bg: 'rgb(168, 85, 247)', progress: 'bg-purple-500' }; // purple-500
+        }
+        return { bg: '#4A9EFF', progress: 'bg-[#4A9EFF]' }; // default
+    };
+
+    const colors = getColor();
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[90] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto slide-up">
                 {/* ヘッダー */}
-                <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                <div className="sticky top-0 text-white p-4 rounded-t-2xl flex justify-between items-center z-10" style={{background: colors.bg}}>
                     <div>
                         <h3 className="text-lg font-bold flex items-center gap-2">
                             <Icon name="BookOpen" size={20} />
@@ -46,7 +61,7 @@ const MicroLearningPopup = ({ content, onClose, onComplete }) => {
                             <div
                                 key={index}
                                 className={`flex-1 h-2 rounded-full transition ${
-                                    index <= currentStep ? 'bg-blue-600' : 'bg-gray-200'
+                                    index <= currentStep ? colors.progress : 'bg-gray-200'
                                 }`}
                             />
                         ))}
@@ -64,7 +79,10 @@ const MicroLearningPopup = ({ content, onClose, onComplete }) => {
                         )}
                         <button
                             onClick={completeStep}
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold py-3 rounded-lg hover:from-blue-700 hover:to-cyan-700 transition"
+                            className="flex-1 text-white font-bold py-3 rounded-lg transition"
+                            style={{background: '#4A9EFF'}}
+                            onMouseEnter={(e) => e.target.style.background = '#3b8fef'}
+                            onMouseLeave={(e) => e.target.style.background = '#4A9EFF'}
                         >
                             {currentStep < content.steps.length - 1 ? '次へ' : '完了'}
                         </button>
@@ -239,10 +257,10 @@ const QuizStep = ({ quiz }) => {
 };
 
 // マイクロラーニングコンテンツライブラリ
-const MicroLearningLibrary = {
+export const MicroLearningLibrary = {
     // タンパク質不足時
     proteinDeficiency: {
-        title: 'タンパク質が不足しています',
+        title: 'タンパク質について',
         trigger: (analysis) => analysis.achievementRates.protein < 80,
         steps: [
             {
@@ -289,7 +307,7 @@ const MicroLearningLibrary = {
 
     // 炭水化物不足時
     carbDeficiency: {
-        title: '炭水化物が不足しています',
+        title: '炭水化物について',
         trigger: (analysis) => analysis.achievementRates.carbs < 70,
         steps: [
             {
@@ -332,7 +350,7 @@ const MicroLearningLibrary = {
 
     // 睡眠不足時
     sleepDeficiency: {
-        title: '睡眠時間が不足しています',
+        title: '睡眠について',
         trigger: (dailyRecord) => dailyRecord?.conditions?.sleepHours < 7,
         steps: [
             {
