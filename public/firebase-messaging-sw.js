@@ -90,14 +90,23 @@ self.addEventListener('notificationclick', (event) => {
 
 // Service Workerのインストール
 self.addEventListener('install', (event) => {
-  console.log('[firebase-messaging-sw.js] Service Workerインストール');
+  console.log('[firebase-messaging-sw.js] Service Workerインストール v20251112-1');
   self.skipWaiting();
 });
 
 // Service Workerのアクティベーション
 self.addEventListener('activate', (event) => {
-  console.log('[firebase-messaging-sw.js] Service Workerアクティベート');
-  event.waitUntil(clients.claim());
+  console.log('[firebase-messaging-sw.js] Service Workerアクティベート v20251112-1');
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          console.log('[firebase-messaging-sw.js] キャッシュ削除:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(() => clients.claim())
+  );
 });
 
 // バックグラウンド通知チェッカー（30秒ごと）
