@@ -763,7 +763,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         B6: 'mg', B7: 'μg', B9: 'μg', B12: 'μg', C: 'mg'
                                     };
                                     return Object.entries(targets.vitamins).map(([key, target]) => {
-                                        const current = Number(currentIntake.vitamins[key]) || 0;
+                                        // カスタム栄養素がオブジェクト形式の場合の処理
+                                        const rawValue = currentIntake.vitamins[key];
+                                        let current = 0;
+                                        if (typeof rawValue === 'object' && rawValue !== null && rawValue.amount !== undefined) {
+                                            current = Number(rawValue.amount) || 0;
+                                        } else {
+                                            current = Number(rawValue) || 0;
+                                        }
                                         const percent = (current / target) * 100;
                                     return (
                                         <div key={key} className="bg-gray-50 p-2 rounded">
@@ -808,7 +815,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         selenium: 'μg', iodine: 'μg', chromium: 'μg', molybdenum: 'μg'
                                     };
                                     return Object.entries(targets.minerals).map(([key, target]) => {
-                                        const current = Number(currentIntake.minerals[key]) || 0;
+                                        // カスタム栄養素がオブジェクト形式の場合の処理
+                                        const rawValue = currentIntake.minerals[key];
+                                        let current = 0;
+                                        if (typeof rawValue === 'object' && rawValue !== null && rawValue.amount !== undefined) {
+                                            current = Number(rawValue.amount) || 0;
+                                        } else {
+                                            current = Number(rawValue) || 0;
+                                        }
                                         const percent = (current / target) * 100;
                                     return (
                                         <div key={key} className="bg-gray-50 p-2 rounded">
@@ -866,6 +880,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             }
 
                                             // 既存の栄養素の場合（数値形式）
+                                            // valueが数値でない場合はスキップ
+                                            if (typeof value !== 'number' && typeof value !== 'string') {
+                                                return null;
+                                            }
                                             const target = targets.otherNutrients[key] || 100;
                                             const isGrams = key === 'creatine';
                                             const unit = isGrams ? 'g' : 'mg';
@@ -913,12 +931,19 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-center gap-2">
+                                    <button
+                                        onClick={() => setShowDirectiveEdit(true)}
+                                        className="flex-1 bg-[#4A9EFF] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#3b8fef] transition flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="Edit" size={18} />
+                                        編集
+                                    </button>
                                     {!todayDirective.completed ? (
                                         <button
                                             onClick={handleCompleteDirective}
                                             className="flex-1 bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
                                         >
-                                            <Icon name="Check" size={18} />
+                                            <Icon name="CheckCircle" size={18} />
                                             完了
                                         </button>
                                     ) : (
@@ -927,13 +952,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             完了済み
                                         </div>
                                     )}
-                                    <button
-                                        onClick={() => setShowDirectiveEdit(true)}
-                                        className="flex-1 bg-[#4A9EFF] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#3b8fef] transition flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="Edit3" size={18} />
-                                        編集
-                                    </button>
                                 </div>
                             </>
                         ) : (
