@@ -391,7 +391,10 @@
             <!-- 小カテゴリタブ（食事） -->
             <div id="nutrition-subtabs" class="sub-tabs border-b bg-green-50 hidden">
                 <div class="flex overflow-x-auto px-2 py-1 gap-1">
-                <button type="button" class="sub-tab-button active px-2 py-1 bg-white text-green-700 rounded text-xs font-semibold border border-green-500" onclick="selectSubCategory('nutrition', 'calories')">
+                <button type="button" class="sub-tab-button active px-2 py-1 bg-white text-green-700 rounded text-xs font-semibold border border-green-500" onclick="selectSubCategory('nutrition', 'nutrition_score')">
+                    食事スコア
+                </button>
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'calories')">
                     摂取カロリー
                 </button>
                 <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'protein')">
@@ -421,7 +424,10 @@
             <!-- 小カテゴリタブ（運動） -->
             <div id="training-subtabs" class="sub-tabs border-b bg-orange-50 hidden">
                 <div class="flex overflow-x-auto px-2 py-1 gap-1">
-                <button type="button" class="sub-tab-button active px-2 py-1 bg-white text-orange-700 rounded text-xs font-semibold border border-orange-500" onclick="selectSubCategory('training', 'total_time')">
+                <button type="button" class="sub-tab-button active px-2 py-1 bg-white text-orange-700 rounded text-xs font-semibold border border-orange-500" onclick="selectSubCategory('training', 'training_score')">
+                    運動スコア
+                </button>
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'total_time')">
                     総時間
                 </button>
                 <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'total_exercises')">
@@ -439,7 +445,10 @@
             <!-- 小カテゴリタブ（コンディション） -->
             <div id="condition-subtabs" class="sub-tabs border-b bg-red-50 hidden">
                 <div class="flex overflow-x-auto px-2 py-1 gap-1">
-                <button type="button" class="sub-tab-button active px-2 py-1 bg-white text-red-700 rounded text-xs font-semibold border border-red-500" onclick="selectSubCategory('condition', 'sleep_duration')">
+                <button type="button" class="sub-tab-button active px-2 py-1 bg-white text-red-700 rounded text-xs font-semibold border border-red-500" onclick="selectSubCategory('condition', 'condition_score')">
+                    コンディションスコア
+                </button>
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'sleep_duration')">
                     睡眠時間
                 </button>
                 <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'sleep_quality')">
@@ -469,19 +478,27 @@
                 <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('performance', 'directive')">
                     指示書達成率
                 </button>
-                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('performance', 'overall')">
-                    総合分析
-                </button>
                 </div>
             </div>
 
             <!-- 閃きコンテンツ -->
             <div id="insights-content" class="p-6 hidden">
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <i data-lucide="lightbulb" class="w-7 h-7 text-yellow-500"></i>
-                        閃きメモ一覧
-                    </h2>
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                            <i data-lucide="lightbulb" class="w-7 h-7 text-yellow-500"></i>
+                            閃きメモ一覧
+                        </h2>
+                        <button
+                            type="button"
+                            onclick="refreshInsightsList()"
+                            class="p-2 hover:bg-gray-100 rounded-full transition"
+                            title="最新のデータに更新"
+                            id="insights-refresh-button"
+                        >
+                            <i data-lucide="refresh-cw" class="w-5 h-5 text-gray-600"></i>
+                        </button>
+                    </div>
                     <p class="text-sm text-gray-600 mt-2">全期間の閃きメモを表示します</p>
                 </div>
                 <div id="insights-list" class="space-y-3">
@@ -495,9 +512,20 @@
                 <div id="chart-1" class="chart-section mb-6">
                     <!-- コンパクトヘッダー -->
                     <div class="mb-3">
-                        <div>
-                            <h3 id="chart-title-1" class="text-2xl font-bold text-gray-800">💪 LBM - 除脂肪体重</h3>
-                            <p id="chart-period-1" class="text-sm text-gray-500 mt-1">過去7日間の推移</p>
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 id="chart-title-1" class="text-2xl font-bold text-gray-800">LBM - 除脂肪体重</h3>
+                                <p id="chart-period-1" class="text-sm text-gray-500 mt-1">過去7日間の推移</p>
+                            </div>
+                            <button
+                                type="button"
+                                onclick="refreshChart(1)"
+                                id="chart-refresh-button-1"
+                                class="p-2 hover:bg-gray-100 rounded-full transition"
+                                title="最新のデータに更新"
+                            >
+                                <i data-lucide="refresh-cw" class="w-5 h-5 text-gray-600"></i>
+                            </button>
                         </div>
                         <div class="flex gap-2 mt-2">
                             <button type="button" onclick="performHistoryAnalysis()" class="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg flex items-center gap-2 text-sm font-semibold shadow-sm transition">
@@ -637,7 +665,7 @@
                         <!-- コンパクトヘッダー -->
                         <div class="compact-header">
                             <div>
-                                <h3 id="chart-title-2" class="text-2xl font-bold text-gray-800">💪 LBM - 除脂肪体重 - 比較</h3>
+                                <h3 id="chart-title-2" class="text-2xl font-bold text-gray-800">LBM - 除脂肪体重 - 比較</h3>
                                 <p id="chart-period-2" class="text-sm text-gray-500 mt-1">過去30日間の推移</p>
                             </div>
                         </div>
@@ -1117,7 +1145,7 @@
                     </h4>
                     <div class="space-y-2">
                         <select id="chart2-category-panel" onchange="changeChart2Category(this.value)" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="lbm" selected>💪 LBM - 除脂肪体重</option>
+                            <option value="lbm" selected>LBM - 除脂肪体重</option>
                             <option value="directive">📋 指示書達成状況</option>
                             <option value="overall">🎯 総合分析スコア</option>
                         </select>
@@ -1147,7 +1175,7 @@
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">目標を設定する指標</label>
                             <select id="goal-metric" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                                <option value="lbm">💪 LBM - 除脂肪体重</option>
+                                <option value="lbm">LBM - 除脂肪体重</option>
                                 <option value="overall">🎯 総合分析スコア</option>
                             </select>
                         </div>
@@ -1403,9 +1431,9 @@
             // パフォーマンス
             lbm: { name: 'LBM - 除脂肪体重', unit: 'kg', category: 'performance' },
             directive: { name: '指示書達成状況', unit: '', isBinary: true, category: 'performance' },
-            overall: { name: '総合分析スコア', unit: '点', category: 'performance' },
 
             // 食事
+            nutrition_score: { name: '食事スコア', unit: '点', category: 'nutrition' },
             calories: { name: '摂取カロリー', unit: 'kcal', category: 'nutrition' },
             protein: { name: 'タンパク質', unit: 'g', category: 'nutrition' },
             fat: { name: '脂質', unit: 'g', category: 'nutrition' },
@@ -1416,9 +1444,13 @@
             mineral_score: { name: 'ミネラル達成率', unit: '%', category: 'nutrition' },
 
             // 運動
-            total_time: { name: '総時間', unit: '分', category: 'training', icon: '⏱️' },
-            total_exercises: { name: '総種目数', unit: '種目', category: 'training', icon: '🏋️' },
-            total_weight: { name: '総重量', unit: 'kg', category: 'training', icon: '💪' },
+            training_score: { name: '運動スコア', unit: '点', category: 'training' },
+            total_time: { name: '総時間', unit: '分', category: 'training' },
+            total_exercises: { name: '総種目数', unit: '種目', category: 'training' },
+            total_weight: { name: '総重量', unit: 'kg', category: 'training' },
+
+            // コンディション
+            condition_score: { name: 'コンディションスコア', unit: '点', category: 'condition' },
 
             // コンディション
             sleep_duration: {
@@ -1484,8 +1516,8 @@
                 // パフォーマンス
                 lbm: [],
                 directive: [],
-                overall: [],
                 // 食事
+                nutrition_score: [],
                 calories: [],
                 protein: [],
                 fat: [],
@@ -1495,11 +1527,13 @@
                 vitamin_score: [],
                 mineral_score: [],
                 // 運動
+                training_score: [],
                 total_time: [],
                 total_exercises: [],
                 total_weight: [],
                 rm: {}, // 回数×種目別のRM記録
                 // コンディション
+                condition_score: [],
                 sleep_duration: [],
                 sleep_quality: [],
                 appetite: [],
@@ -1516,9 +1550,30 @@
                 return `${year}-${month}-${day}`;
             };
 
-            // 全期間のデータを取得（過去90日分）
+            // 全期間のデータを取得（登録日から現在まで）
             const today = getLocalDateString(new Date());
             console.log('[履歴データ取得] 開始 - userId:', userId, 'today:', today);
+
+            // ユーザープロフィールから登録日を取得
+            const userProfileKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.USER_PROFILE : 'yourCoachBeta_userProfile';
+            const userProfile = JSON.parse(localStorage.getItem(userProfileKey) || '{}');
+            const registrationDate = userProfile.registrationDate || userProfile.createdAt || userProfile.joinDate;
+
+            let startDate;
+            if (registrationDate) {
+                startDate = new Date(registrationDate);
+                console.log('[履歴データ取得] 登録日から取得:', registrationDate);
+            } else {
+                // 登録日が取得できない場合は90日前をデフォルトとする
+                startDate = new Date();
+                startDate.setDate(startDate.getDate() - 89);
+                console.log('[履歴データ取得] 登録日不明のため90日前から取得');
+            }
+
+            // 登録日から今日までの日数を計算
+            const todayDate = new Date();
+            const daysDiff = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24));
+            console.log('[履歴データ取得] 取得期間:', daysDiff + 1, '日間');
 
             // LocalStorageの内容を確認（DEV_MODE用）
             if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
@@ -1533,7 +1588,7 @@
                 }
             }
 
-            for (let i = 89; i >= 0; i--) {
+            for (let i = daysDiff; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(date.getDate() - i);
                 const dateStr = getLocalDateString(date);
@@ -1556,13 +1611,17 @@
                     let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalFiber = 0;
                     meals.forEach(meal => {
                         totalCalories += meal.calories || 0;
-                        // meal.itemsから詳細な栄養素を集計
+                        // meal.itemsから詳細な栄養素を集計（ratioを考慮）
                         (meal.items || []).forEach(item => {
-                            totalProtein += item.protein || 0;
-                            totalFat += item.fat || 0;
-                            totalCarbs += item.carbs || 0;
-                            totalSugar += item.sugar || 0;
-                            totalFiber += item.fiber || 0;
+                            // 個数単位と重量単位でratio計算を分岐（ダッシュボードと同じロジック）
+                            const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
+                            const ratio = isCountUnit ? (item.amount || 0) : (item.amount || 0) / 100;
+
+                            totalProtein += (item.protein || 0) * ratio;
+                            totalFat += (item.fat || 0) * ratio;
+                            totalCarbs += (item.carbs || 0) * ratio;
+                            totalSugar += (item.sugar || 0) * ratio;
+                            totalFiber += (item.fiber || 0) * ratio;
                         });
                     });
                     allData.calories.push(totalCalories);
@@ -1593,11 +1652,11 @@
                         vitaminScore = vitaminCount > 0 ? vitaminSum / vitaminCount : 0;
 
                         // ミネラル達成率（13種類のミネラルの平均）
-                        const minerals = ['Na', 'K', 'Ca', 'Mg', 'P', 'Fe', 'Zn', 'Cu', 'Mn', 'I', 'Se', 'Cr', 'Mo'];
+                        // ダッシュボードではフルネーム（sodium, potassium等）で保存されている
+                        const minerals = ['sodium', 'potassium', 'calcium', 'magnesium', 'phosphorus', 'iron', 'zinc', 'copper', 'manganese', 'iodine', 'selenium', 'chromium', 'molybdenum'];
                         let mineralCount = 0;
                         let mineralSum = 0;
-                        minerals.forEach(m => {
-                            const key = m.toLowerCase();
+                        minerals.forEach(key => {
                             if (record.micronutrients[key] !== undefined) {
                                 const target = record.micronutrients[`${key}Target`] || 1;
                                 const achievement = (record.micronutrients[key] / target) * 100;
@@ -1698,18 +1757,25 @@
                     if (record.bodyComposition) {
                         weight = record.bodyComposition.weight || 0;
                         bodyFat = record.bodyComposition.bodyFatPercentage || 0;
+                        console.log(`[履歴グラフ] ${dateStr} 体組成: weight=${weight}, bodyFat=${bodyFat}`, record.bodyComposition);
                     } else if (window.currentUser) {
                         // userProfileから取得（フォールバック）
                         const userProfileKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.USER_PROFILE : 'yourCoachBeta_userProfile';
                         const userProfile = JSON.parse(localStorage.getItem(userProfileKey) || '{}');
                         weight = userProfile.weight || 0;
                         bodyFat = userProfile.bodyFatPercentage || 0;
+                        console.log(`[履歴グラフ] ${dateStr} フォールバック体組成: weight=${weight}, bodyFat=${bodyFat}`);
                     }
                     const lbm = weight > 0 && bodyFat > 0 ? weight * (1 - bodyFat / 100) : 0;
+                    console.log(`[履歴グラフ] ${dateStr} LBM計算: ${lbm.toFixed(2)}kg (weight=${weight}, bodyFat=${bodyFat}%)`);
                     allData.lbm.push(lbm);
 
                     allData.directive.push(record.directiveCompleted ? 1 : 0);
-                    allData.overall.push(record.overallScore || 0);
+
+                    // スコアデータ（record.scoresから取得）
+                    allData.nutrition_score.push(record.scores?.food || 0);
+                    allData.training_score.push(record.scores?.exercise || 0);
+                    allData.condition_score.push(record.scores?.condition || 0);
 
                     // 閃きメモを保存
                     if (record.notes && record.notes.trim()) {
@@ -1743,8 +1809,8 @@
             // パフォーマンス
             lbm: [],
             directive: [],
-            overall: [],
             // 食事
+            nutrition_score: [],
             calories: [],
             protein: [],
             fat: [],
@@ -1754,11 +1820,13 @@
             vitamin_score: [],
             mineral_score: [],
             // 運動
+            training_score: [],
             total_time: [],
             total_exercises: [],
             total_weight: [],
             rm: {}, // 回数×種目別のRM記録（動的に追加）
             // コンディション
+            condition_score: [],
             sleep_duration: [],
             sleep_quality: [],
             appetite: [],
@@ -2271,9 +2339,9 @@
 
                 // 各カテゴリの最初の指標を選択
                 const firstMetrics = {
-                    nutrition: 'calories',
-                    training: 'total_time',
-                    condition: 'sleep_duration',
+                    nutrition: 'nutrition_score',
+                    training: 'training_score',
+                    condition: 'condition_score',
                     performance: 'lbm'
                 };
 
@@ -2330,6 +2398,70 @@
             });
 
             lucide.createIcons();
+        }
+
+        // データを再読み込みする汎用関数
+        async function refreshData(buttonId, callback) {
+            const refreshButton = document.getElementById(buttonId);
+            if (!refreshButton) {
+                console.error(`[データ更新] ボタン ${buttonId} が見つかりません`);
+                return;
+            }
+
+            // ボタンを無効化
+            refreshButton.disabled = true;
+            refreshButton.style.opacity = '0.5';
+
+            try {
+                console.log('[データ更新] データを再読み込み中...');
+
+                // データを再読み込み
+                if (typeof loadRealData === 'function') {
+                    const data = await loadRealData();
+                    allData = data;
+                    console.log('[データ更新] データ再読み込み完了');
+
+                    // コールバック実行
+                    if (callback) {
+                        callback();
+                    }
+                } else {
+                    console.error('[データ更新] loadRealData関数が見つかりません');
+                }
+            } catch (error) {
+                console.error('[データ更新] データ再読み込みエラー:', error);
+            } finally {
+                // ボタンを再度有効化
+                setTimeout(() => {
+                    if (refreshButton) {
+                        refreshButton.disabled = false;
+                        refreshButton.style.opacity = '1';
+                    }
+                    lucide.createIcons(); // アイコンを再描画
+                }, 300);
+            }
+        }
+
+        // 閃きメモリストを再読み込みする関数
+        async function refreshInsightsList() {
+            await refreshData('insights-refresh-button', () => {
+                renderInsightsList();
+            });
+        }
+
+        // グラフを再読み込みする関数
+        async function refreshChart(chartNum) {
+            await refreshData(`chart-refresh-button-${chartNum}`, () => {
+                if (currentSubCategory) {
+                    globalMinMax = calculateGlobalMinMax(currentSubCategory);
+                } else {
+                    globalMinMax = calculateGlobalMinMax('lbm');
+                }
+                updateChart(chartNum);
+                if (chartNum === 1 && comparisonMode) {
+                    updateChart(2);
+                }
+            });
         }
 
         // 期間選択
@@ -3108,6 +3240,24 @@
             };
 
             charts[chartNum] = new Chart(document.getElementById(`main-chart-${chartNum}`), chartConfig);
+
+            // グラフ作成後、自動的に最新のデータポイント（今日）を選択してツールチップを表示
+            if (data.length > 0) {
+                const latestIndex = data.length - 1;
+                lastClickedIndex[chartNum] = latestIndex;
+
+                // ツールチップを自動的に有効化
+                if (!tooltipEnabled[chartNum]) {
+                    tooltipEnabled[chartNum] = true;
+                    console.log(`[updateChart] チャート${chartNum}のツールチップを自動有効化 (index: ${latestIndex})`);
+                }
+
+                // 選択パネルも更新
+                selectDataPoint(chartNum, latestIndex);
+
+                // グラフを更新してツールチッププラグインを描画
+                charts[chartNum].update();
+            }
         }
 
         // RM用の変数
@@ -3165,6 +3315,38 @@
             updateChart(1);
             if (comparisonMode) {
                 updateChart(2);
+            }
+
+            // ツールチップが有効な場合、最新のデータポイントを自動選択
+            console.log('[selectSubCategory] ツールチップ状態:', {
+                tooltipEnabled: tooltipEnabled[1],
+                hasChart: !!charts[1],
+                hasDataset: !!(charts[1] && charts[1].data.datasets[0]),
+                currentSubCategory: currentSubCategory
+            });
+
+            if (tooltipEnabled[1] && charts[1] && charts[1].data.datasets[0]) {
+                const dataLength = charts[1].data.datasets[0].data.length;
+                console.log('[selectSubCategory] 最新データポイントを自動選択:', {
+                    dataLength,
+                    newIndex: dataLength - 1,
+                    oldIndex: lastClickedIndex[1]
+                });
+                if (dataLength > 0) {
+                    lastClickedIndex[1] = dataLength - 1;
+                    // 選択パネルも更新
+                    selectDataPoint(1, dataLength - 1);
+                    charts[1].update();
+                }
+            }
+            if (comparisonMode && tooltipEnabled[2] && charts[2] && charts[2].data.datasets[0]) {
+                const dataLength = charts[2].data.datasets[0].data.length;
+                if (dataLength > 0) {
+                    lastClickedIndex[2] = dataLength - 1;
+                    // 選択パネルも更新
+                    selectDataPoint(2, dataLength - 1);
+                    charts[2].update();
+                }
             }
         }
 
@@ -3263,7 +3445,6 @@
                 metricInfo[currentSubCategory] = {
                     name: `${currentRMExercise} ${currentRMReps}RM`,
                     unit: 'kg',
-                    icon: '💪',
                     isBinary: false
                 };
             }
@@ -3972,6 +4153,36 @@
                         console.log('[履歴グラフ] ユーザーデータ再読み込み完了');
                         globalMinMax = calculateGlobalMinMax('lbm');
                         updateChart(1);
+                    });
+                }
+            } else if (event.data && event.data.type === 'RELOAD_DATA') {
+                // データ再読み込みメッセージを受信
+                console.log('[履歴グラフ] データ再読み込み要求を受信');
+                if (typeof loadRealData === 'function') {
+                    loadRealData().then(data => {
+                        allData = data;
+                        console.log('[履歴グラフ] データ再読み込み完了');
+
+                        // 現在のカテゴリに応じて適切に更新
+                        if (currentMainCategory === 'insights') {
+                            // 閃きタブの場合はリストを更新
+                            renderInsightsList();
+                        } else {
+                            // グラフタブの場合は現在のサブカテゴリのグラフを更新
+                            if (currentSubCategory) {
+                                globalMinMax = calculateGlobalMinMax(currentSubCategory);
+                            } else {
+                                globalMinMax = calculateGlobalMinMax('lbm');
+                            }
+
+                            // グラフ1を更新
+                            updateChart(1);
+
+                            // 比較モードの場合はグラフ2も更新
+                            if (comparisonMode) {
+                                updateChart(2);
+                            }
+                        }
                     });
                 }
             }

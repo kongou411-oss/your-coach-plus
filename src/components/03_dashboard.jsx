@@ -2,11 +2,39 @@ import React from 'react';
 import toast from 'react-hot-toast';
 
 // ===== Score Doughnut Chart Component =====
-const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC }) => {
+const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate, setDailyRecord }) => {
     const canvasRef = React.useRef(null);
     const chartRef = React.useRef(null);
 
     const scores = DataService.calculateScores(profile, dailyRecord, targetPFC);
+
+    // スコアをdailyRecordに保存
+    React.useEffect(() => {
+        const saveScores = async () => {
+            if (!user || !currentDate || !dailyRecord) return;
+
+            // 既に保存されているスコアと同じなら保存しない
+            if (dailyRecord.scores?.food === scores.food.score &&
+                dailyRecord.scores?.exercise === scores.exercise.score &&
+                dailyRecord.scores?.condition === scores.condition.score) {
+                return;
+            }
+
+            const updatedRecord = {
+                ...dailyRecord,
+                scores: {
+                    food: scores.food.score,
+                    exercise: scores.exercise.score,
+                    condition: scores.condition.score
+                }
+            };
+
+            await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
+            setDailyRecord(updatedRecord);
+        };
+
+        saveScores();
+    }, [scores.food.score, scores.exercise.score, scores.condition.score, user, currentDate]);
 
     React.useEffect(() => {
         const canvas = canvasRef.current;
@@ -173,13 +201,24 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 }
 
                 if (isMounted && (weight > 0 || bodyFat > 0)) {
-                    setBodyComposition({
+                    const bodyComp = {
                         weight: weight,
                         bodyFatPercentage: bodyFat
-                    });
+                    };
+                    setBodyComposition(bodyComp);
                     // 入力フィールドの初期値も設定
                     setWeightInput(weight > 0 ? weight.toString() : '');
                     setBodyFatInput(bodyFat > 0 ? bodyFat.toString() : '');
+
+                    // 前日またはプロフィールからフォールバックした場合、今日のdailyRecordにも保存
+                    if (!todayRecord?.bodyComposition?.weight || !todayRecord?.bodyComposition?.bodyFatPercentage) {
+                        const updatedRecord = {
+                            ...todayRecord,
+                            bodyComposition: bodyComp
+                        };
+                        await DataService.saveDailyRecord(user.uid, todayDate, updatedRecord);
+                        console.log('[Dashboard] 体組成を今日のレコードに保存:', bodyComp);
+                    }
                 }
             } catch (error) {
                 console.error('[Dashboard] Failed to load body composition:', error);
@@ -193,6 +232,97 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             isMounted = false;
         };
     }, [user?.uid, profile]);
+
+    // micronutrientsを自動計算・保存
+    useEffect(() => {
+        const saveMicronutrients = async () => {
+            if (!user?.uid || !currentDate || !dailyRecord || !profile) return;
+
+            // meals が存在しない、または空の場合はスキップ
+            if (!dailyRecord.meals || dailyRecord.meals.length === 0) return;
+
+            try {
+                // currentIntakeを計算（上記のcurrentIntakeと同じロジック）
+                const intake = {
+                    vitamins: {},
+                    minerals: {}
+                };
+
+                dailyRecord.meals?.forEach(meal => {
+                    meal.items?.forEach(item => {
+                        const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
+                        const ratio = isCountUnit ? item.amount : item.amount / 100;
+
+                        // ビタミン・ミネラルを集計
+                        if (item.vitamins) {
+                            Object.keys(item.vitamins).forEach(v => {
+                                intake.vitamins[v] = (intake.vitamins[v] || 0) + ((item.vitamins[v] || 0) * ratio);
+                            });
+                        }
+                        if (item.minerals) {
+                            Object.keys(item.minerals).forEach(m => {
+                                intake.minerals[m] = (intake.minerals[m] || 0) + ((item.minerals[m] || 0) * ratio);
+                            });
+                        }
+
+                        // 個別キー形式のビタミン
+                        const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'niacin', 'pantothenicAcid', 'biotin', 'folicAcid'];
+                        vitaminKeys.forEach(key => {
+                            if (item[key] !== undefined && item[key] !== 0) {
+                                intake.vitamins[key] = (intake.vitamins[key] || 0) + ((item[key] || 0) * ratio);
+                            }
+                        });
+
+                        // 個別キー形式のミネラル
+                        const mineralKeys = ['sodium', 'potassium', 'calcium', 'magnesium', 'phosphorus', 'iron', 'zinc', 'copper', 'manganese', 'iodine', 'selenium', 'chromium', 'molybdenum'];
+                        mineralKeys.forEach(key => {
+                            if (item[key] !== undefined && item[key] !== 0) {
+                                intake.minerals[key] = (intake.minerals[key] || 0) + ((item[key] || 0) * ratio);
+                            }
+                        });
+                    });
+                });
+
+                // 目標値を取得
+                const targets = LBMUtils.calculatePersonalizedMicronutrients(profile);
+
+                // micronutrientsオブジェクトを作成
+                const micronutrients = {};
+
+                // ビタミンの集計値と目標値を保存
+                Object.keys(intake.vitamins).forEach(v => {
+                    const key = v.startsWith('vitamin') ? v : `vitamin${v}`;
+                    micronutrients[key] = intake.vitamins[v];
+                    micronutrients[`${key}Target`] = targets[key] || 0;
+                });
+
+                // ミネラルの集計値と目標値を保存
+                Object.keys(intake.minerals).forEach(m => {
+                    micronutrients[m] = intake.minerals[m];
+                    micronutrients[`${m}Target`] = targets[m] || 0;
+                });
+
+                // 既存のmicronutrientsと変更がない場合は保存しない
+                const existingMicro = JSON.stringify(dailyRecord.micronutrients || {});
+                const newMicro = JSON.stringify(micronutrients);
+                if (existingMicro === newMicro) return;
+
+                // dailyRecordに保存
+                const updatedRecord = {
+                    ...dailyRecord,
+                    micronutrients: micronutrients
+                };
+
+                await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
+                setDailyRecord(updatedRecord);
+                console.log('[Dashboard] micronutrientsを保存:', Object.keys(micronutrients).length, 'keys');
+            } catch (error) {
+                console.error('[Dashboard] micronutrients保存エラー:', error);
+            }
+        };
+
+        saveMicronutrients();
+    }, [dailyRecord?.meals, user?.uid, currentDate, profile]);
 
     // recordUpdatedイベントを監視して自動リロード
     useEffect(() => {
@@ -425,6 +555,19 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updated));
         setTodayDirective({ ...todayDirective, completed: true });
 
+        // dailyRecordにも保存
+        try {
+            const updatedRecord = {
+                ...dailyRecord,
+                directiveCompleted: true
+            };
+            await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
+            setDailyRecord(updatedRecord);
+            console.log('[Dashboard] 指示書完了をdailyRecordに保存');
+        } catch (error) {
+            console.error('[Dashboard] 指示書完了の保存エラー:', error);
+        }
+
         // 経験値付与（1日1回のみ10XP）
         if (user) {
             try {
@@ -567,6 +710,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         protein: 0,
         fat: 0,
         carbs: 0,
+        sugar: 0,
+        fiber: 0,
         vitamins: {
             A: 0, D: 0, E: 0, K: 0, B1: 0, B2: 0, B3: 0, B5: 0, B6: 0, B7: 0, B9: 0, B12: 0, C: 0
         },
@@ -588,6 +733,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             currentIntake.protein += (item.protein || 0) * ratio;
             currentIntake.fat += (item.fat || 0) * ratio;
             currentIntake.carbs += (item.carbs || 0) * ratio;
+            currentIntake.sugar += (item.sugar || 0) * ratio;
+            currentIntake.fiber += (item.fiber || 0) * ratio;
 
             // ビタミン・ミネラル（オブジェクト形式）
             if (item.vitamins) {
@@ -2018,6 +2165,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     setDailyRecord(updated);
                                     const userId = user?.uid || DEV_USER_ID;
                                     await DataService.saveDailyRecord(userId, currentDate, updated);
+
+                                    // 履歴グラフiframeにデータ再読み込みメッセージを送信
+                                    const historyIframe = document.querySelector('iframe[title*="履歴グラフ"]');
+                                    if (historyIframe && historyIframe.contentWindow) {
+                                        historyIframe.contentWindow.postMessage({
+                                            type: 'RELOAD_DATA'
+                                        }, '*');
+                                    }
                                 }}
                                 placeholder="今日の気づき、メモなど..."
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none text-sm"
@@ -2056,6 +2211,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 profile={profile}
                                 dailyRecord={dailyRecord}
                                 targetPFC={targetPFC}
+                                user={user}
+                                currentDate={currentDate}
+                                setDailyRecord={setDailyRecord}
                             />
                         </div>
                     </div>

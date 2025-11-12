@@ -2,6 +2,8 @@ import React from 'react';
 // ===== History V10 Component (Direct iframe to v10.html) =====
 const HistoryV10View = ({ onClose, userId, userProfile }) => {
     const iframeRef = React.useRef(null);
+    // キャッシュを完全に回避するため、マウント時のタイムスタンプを使用
+    const [cacheKey] = React.useState(() => Date.now());
 
     React.useEffect(() => {
         // iframeが読み込まれたら、親ウィンドウからユーザー情報と閉じる関数を渡す
@@ -38,8 +40,9 @@ const HistoryV10View = ({ onClose, userId, userProfile }) => {
         <div className="fixed inset-0 bg-gray-50 z-50">
             {/* Full v10.html in iframe (no header - use iframe's own header) */}
             <iframe
+                key={cacheKey}
                 ref={iframeRef}
-                src="/history_v10_standalone.html?v=20251026v1"
+                src={`/history_v10_standalone.html?v=20251113v10&t=${cacheKey}`}
                 className="w-full h-full border-0"
                 title="履歴グラフ V10（完全版）"
                 sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
