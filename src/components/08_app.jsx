@@ -2249,10 +2249,22 @@ ${aiInputText}
                                                                         <label className="text-xs text-orange-700">量(g)</label>
                                                                         <input
                                                                             type="number"
-                                                                            value={meal.amount}
+                                                                            step="0.1"
+                                                                            value={meal.amount === 0 ? '0' : (meal.amount || '')}
                                                                             onChange={(e) => {
                                                                                 const updated = {...aiParsedData};
-                                                                                updated.meals[idx].amount = Number(e.target.value);
+                                                                                updated.meals[idx].amount = e.target.value;
+                                                                                setAiParsedData(updated);
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                const val = e.target.value.trim();
+                                                                                const updated = {...aiParsedData};
+                                                                                if (val === '' || val === '.') {
+                                                                                    updated.meals[idx].amount = 0;
+                                                                                } else {
+                                                                                    const num = parseFloat(val);
+                                                                                    updated.meals[idx].amount = isNaN(num) ? 0 : num;
+                                                                                }
                                                                                 setAiParsedData(updated);
                                                                             }}
                                                                             className="w-full px-2 py-1 text-sm border border-orange-300 rounded focus:ring-2 focus:ring-orange-500"
@@ -2262,10 +2274,22 @@ ${aiInputText}
                                                                         <label className="text-xs text-orange-700">P(g)</label>
                                                                         <input
                                                                             type="number"
-                                                                            value={meal.protein}
+                                                                            step="0.1"
+                                                                            value={meal.protein === 0 ? '0' : (meal.protein || '')}
                                                                             onChange={(e) => {
                                                                                 const updated = {...aiParsedData};
-                                                                                updated.meals[idx].protein = Number(e.target.value);
+                                                                                updated.meals[idx].protein = e.target.value;
+                                                                                setAiParsedData(updated);
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                const val = e.target.value.trim();
+                                                                                const updated = {...aiParsedData};
+                                                                                if (val === '' || val === '.') {
+                                                                                    updated.meals[idx].protein = 0;
+                                                                                } else {
+                                                                                    const num = parseFloat(val);
+                                                                                    updated.meals[idx].protein = isNaN(num) ? 0 : num;
+                                                                                }
                                                                                 setAiParsedData(updated);
                                                                             }}
                                                                             className="w-full px-2 py-1 text-sm border border-orange-300 rounded focus:ring-2 focus:ring-orange-500"
@@ -2275,10 +2299,22 @@ ${aiInputText}
                                                                         <label className="text-xs text-orange-700">F(g)</label>
                                                                         <input
                                                                             type="number"
-                                                                            value={meal.fat}
+                                                                            step="0.1"
+                                                                            value={meal.fat === 0 ? '0' : (meal.fat || '')}
                                                                             onChange={(e) => {
                                                                                 const updated = {...aiParsedData};
-                                                                                updated.meals[idx].fat = Number(e.target.value);
+                                                                                updated.meals[idx].fat = e.target.value;
+                                                                                setAiParsedData(updated);
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                const val = e.target.value.trim();
+                                                                                const updated = {...aiParsedData};
+                                                                                if (val === '' || val === '.') {
+                                                                                    updated.meals[idx].fat = 0;
+                                                                                } else {
+                                                                                    const num = parseFloat(val);
+                                                                                    updated.meals[idx].fat = isNaN(num) ? 0 : num;
+                                                                                }
                                                                                 setAiParsedData(updated);
                                                                             }}
                                                                             className="w-full px-2 py-1 text-sm border border-orange-300 rounded focus:ring-2 focus:ring-orange-500"
@@ -2288,10 +2324,22 @@ ${aiInputText}
                                                                         <label className="text-xs text-orange-700">C(g)</label>
                                                                         <input
                                                                             type="number"
-                                                                            value={meal.carbs}
+                                                                            step="0.1"
+                                                                            value={meal.carbs === 0 ? '0' : (meal.carbs || '')}
                                                                             onChange={(e) => {
                                                                                 const updated = {...aiParsedData};
-                                                                                updated.meals[idx].carbs = Number(e.target.value);
+                                                                                updated.meals[idx].carbs = e.target.value;
+                                                                                setAiParsedData(updated);
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                const val = e.target.value.trim();
+                                                                                const updated = {...aiParsedData};
+                                                                                if (val === '' || val === '.') {
+                                                                                    updated.meals[idx].carbs = 0;
+                                                                                } else {
+                                                                                    const num = parseFloat(val);
+                                                                                    updated.meals[idx].carbs = isNaN(num) ? 0 : num;
+                                                                                }
                                                                                 setAiParsedData(updated);
                                                                             }}
                                                                             className="w-full px-2 py-1 text-sm border border-orange-300 rounded focus:ring-2 focus:ring-orange-500"
@@ -2328,10 +2376,22 @@ ${aiInputText}
                                                                         <label className="text-xs text-red-700">重量(kg)</label>
                                                                         <input
                                                                             type="number"
-                                                                            value={ex.weight}
+                                                                            step="0.1"
+                                                                            value={ex.weight === 0 ? '0' : (ex.weight || '')}
                                                                             onChange={(e) => {
                                                                                 const updated = {...aiParsedData};
-                                                                                updated.exercises[idx].weight = Number(e.target.value);
+                                                                                updated.exercises[idx].weight = e.target.value;
+                                                                                setAiParsedData(updated);
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                const val = e.target.value.trim();
+                                                                                const updated = {...aiParsedData};
+                                                                                if (val === '' || val === '.') {
+                                                                                    updated.exercises[idx].weight = 0;
+                                                                                } else {
+                                                                                    const num = parseFloat(val);
+                                                                                    updated.exercises[idx].weight = isNaN(num) ? 0 : num;
+                                                                                }
                                                                                 setAiParsedData(updated);
                                                                             }}
                                                                             className="w-full px-2 py-1 text-sm border border-red-300 rounded focus:ring-2 focus:ring-red-500"
@@ -2341,10 +2401,22 @@ ${aiInputText}
                                                                         <label className="text-xs text-red-700">回数</label>
                                                                         <input
                                                                             type="number"
-                                                                            value={ex.reps}
+                                                                            step="0.1"
+                                                                            value={ex.reps === 0 ? '0' : (ex.reps || '')}
                                                                             onChange={(e) => {
                                                                                 const updated = {...aiParsedData};
-                                                                                updated.exercises[idx].reps = Number(e.target.value);
+                                                                                updated.exercises[idx].reps = e.target.value;
+                                                                                setAiParsedData(updated);
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                const val = e.target.value.trim();
+                                                                                const updated = {...aiParsedData};
+                                                                                if (val === '' || val === '.') {
+                                                                                    updated.exercises[idx].reps = 0;
+                                                                                } else {
+                                                                                    const num = parseFloat(val);
+                                                                                    updated.exercises[idx].reps = isNaN(num) ? 0 : num;
+                                                                                }
                                                                                 setAiParsedData(updated);
                                                                             }}
                                                                             className="w-full px-2 py-1 text-sm border border-red-300 rounded focus:ring-2 focus:ring-red-500"
@@ -2354,10 +2426,22 @@ ${aiInputText}
                                                                         <label className="text-xs text-red-700">セット</label>
                                                                         <input
                                                                             type="number"
-                                                                            value={ex.sets}
+                                                                            step="0.1"
+                                                                            value={ex.sets === 0 ? '0' : (ex.sets || '')}
                                                                             onChange={(e) => {
                                                                                 const updated = {...aiParsedData};
-                                                                                updated.exercises[idx].sets = Number(e.target.value);
+                                                                                updated.exercises[idx].sets = e.target.value;
+                                                                                setAiParsedData(updated);
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                const val = e.target.value.trim();
+                                                                                const updated = {...aiParsedData};
+                                                                                if (val === '' || val === '.') {
+                                                                                    updated.exercises[idx].sets = 0;
+                                                                                } else {
+                                                                                    const num = parseFloat(val);
+                                                                                    updated.exercises[idx].sets = isNaN(num) ? 0 : num;
+                                                                                }
                                                                                 setAiParsedData(updated);
                                                                             }}
                                                                             className="w-full px-2 py-1 text-sm border border-red-300 rounded focus:ring-2 focus:ring-red-500"
@@ -2367,10 +2451,22 @@ ${aiInputText}
                                                                         <label className="text-xs text-red-700">ROM(cm)</label>
                                                                         <input
                                                                             type="number"
-                                                                            value={ex.rom || 30}
+                                                                            step="0.1"
+                                                                            value={(ex.rom === 0 ? '0' : (ex.rom || 30))}
                                                                             onChange={(e) => {
                                                                                 const updated = {...aiParsedData};
-                                                                                updated.exercises[idx].rom = Number(e.target.value);
+                                                                                updated.exercises[idx].rom = e.target.value;
+                                                                                setAiParsedData(updated);
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                const val = e.target.value.trim();
+                                                                                const updated = {...aiParsedData};
+                                                                                if (val === '' || val === '.') {
+                                                                                    updated.exercises[idx].rom = 30;
+                                                                                } else {
+                                                                                    const num = parseFloat(val);
+                                                                                    updated.exercises[idx].rom = isNaN(num) ? 30 : num;
+                                                                                }
                                                                                 setAiParsedData(updated);
                                                                             }}
                                                                             className="w-full px-2 py-1 text-sm border border-red-300 rounded focus:ring-2 focus:ring-red-500"
@@ -2380,10 +2476,22 @@ ${aiInputText}
                                                                         <label className="text-xs text-red-700">TUT(秒)</label>
                                                                         <input
                                                                             type="number"
-                                                                            value={ex.tut || 60}
+                                                                            step="0.1"
+                                                                            value={(ex.tut === 0 ? '0' : (ex.tut || 60))}
                                                                             onChange={(e) => {
                                                                                 const updated = {...aiParsedData};
-                                                                                updated.exercises[idx].tut = Number(e.target.value);
+                                                                                updated.exercises[idx].tut = e.target.value;
+                                                                                setAiParsedData(updated);
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                const val = e.target.value.trim();
+                                                                                const updated = {...aiParsedData};
+                                                                                if (val === '' || val === '.') {
+                                                                                    updated.exercises[idx].tut = 60;
+                                                                                } else {
+                                                                                    const num = parseFloat(val);
+                                                                                    updated.exercises[idx].tut = isNaN(num) ? 60 : num;
+                                                                                }
                                                                                 setAiParsedData(updated);
                                                                             }}
                                                                             className="w-full px-2 py-1 text-sm border border-red-300 rounded focus:ring-2 focus:ring-red-500"

@@ -1233,8 +1233,17 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <input
                                     type="number"
                                     step="0.1"
-                                    value={profile.weight}
-                                    onChange={(e) => setProfile({...profile, weight: e.target.value === '' ? '' : Number(e.target.value)})}
+                                    value={profile.weight === 0 ? '0' : (profile.weight || '')}
+                                    onChange={(e) => setProfile({...profile, weight: e.target.value})}
+                                    onBlur={(e) => {
+                                        const val = e.target.value.trim();
+                                        if (val === '' || val === '.') {
+                                            setProfile({...profile, weight: 0});
+                                        } else {
+                                            const num = parseFloat(val);
+                                            setProfile({...profile, weight: isNaN(num) ? 0 : num});
+                                        }
+                                    }}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:outline-none"
                                     placeholder="例: 70.0"
                                 />
@@ -1253,8 +1262,17 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <input
                                     type="number"
                                     step="0.1"
-                                    value={profile.bodyFatPercentage}
-                                    onChange={(e) => setProfile({...profile, bodyFatPercentage: e.target.value === '' ? '' : Number(e.target.value)})}
+                                    value={profile.bodyFatPercentage === 0 ? '0' : (profile.bodyFatPercentage || '')}
+                                    onChange={(e) => setProfile({...profile, bodyFatPercentage: e.target.value})}
+                                    onBlur={(e) => {
+                                        const val = e.target.value.trim();
+                                        if (val === '' || val === '.') {
+                                            setProfile({...profile, bodyFatPercentage: 0});
+                                        } else {
+                                            const num = parseFloat(val);
+                                            setProfile({...profile, bodyFatPercentage: isNaN(num) ? 0 : num});
+                                        }
+                                    }}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:outline-none"
                                     placeholder="例: 15.0"
                                 />

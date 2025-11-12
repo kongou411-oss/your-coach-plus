@@ -3911,7 +3911,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         {/* ビタミン */}
                                                         <div className="border-t pt-4">
                                                             <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
-                                                                <Icon name="Droplet" size={16} className="text-orange-500" />
+                                                                <Icon name="Droplets" size={16} className="text-orange-500" />
                                                                 ビタミン
                                                             </p>
                                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -4168,7 +4168,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         {/* ミネラル */}
                                                         <div className="border-t pt-4">
                                                             <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
-                                                                <Icon name="Gem" size={16} className="text-blue-500" />
+                                                                <Icon name="Gem" size={16} className="text-purple-500" />
                                                                 ミネラル
                                                             </p>
                                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -4440,31 +4440,45 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                                 setEditingItem({...editingItem, otherNutrients: updated});
                                                                             }}
                                                                             placeholder="栄養素名 (例: クレアチン)"
-                                                                            className="flex-1 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-purple-400 focus:outline-none"
+                                                                            className="w-28 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-purple-400 focus:outline-none"
                                                                         />
                                                                         <input
                                                                             type="number"
                                                                             step="0.1"
-                                                                            value={nutrient.value || ''}
+                                                                            value={(nutrient.value === 0 || nutrient.amount === 0) ? '0' : (nutrient.value || nutrient.amount || '')}
                                                                             onChange={(e) => {
                                                                                 const updated = [...(editingItem.otherNutrients || [])];
-                                                                                updated[idx] = {...updated[idx], value: parseFloat(e.target.value) || 0};
+                                                                                updated[idx] = {...updated[idx], value: e.target.value, amount: e.target.value};
+                                                                                setEditingItem({...editingItem, otherNutrients: updated});
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                const val = e.target.value.trim();
+                                                                                const updated = [...(editingItem.otherNutrients || [])];
+                                                                                if (val === '' || val === '.') {
+                                                                                    updated[idx] = {...updated[idx], value: 0, amount: 0};
+                                                                                } else {
+                                                                                    const num = parseFloat(val);
+                                                                                    const finalValue = isNaN(num) ? 0 : num;
+                                                                                    updated[idx] = {...updated[idx], value: finalValue, amount: finalValue};
+                                                                                }
                                                                                 setEditingItem({...editingItem, otherNutrients: updated});
                                                                             }}
                                                                             placeholder="量"
                                                                             className="w-20 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-purple-400 focus:outline-none"
                                                                         />
-                                                                        <input
-                                                                            type="text"
-                                                                            value={nutrient.unit || ''}
+                                                                        <select
+                                                                            value={nutrient.unit || 'mg'}
                                                                             onChange={(e) => {
                                                                                 const updated = [...(editingItem.otherNutrients || [])];
                                                                                 updated[idx] = {...updated[idx], unit: e.target.value};
                                                                                 setEditingItem({...editingItem, otherNutrients: updated});
                                                                             }}
-                                                                            placeholder="単位"
-                                                                            className="w-16 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-purple-400 focus:outline-none"
-                                                                        />
+                                                                            className="w-14 px-1 py-1 text-sm border rounded focus:ring-1 focus:ring-purple-400 focus:outline-none"
+                                                                        >
+                                                                            <option value="g">g</option>
+                                                                            <option value="mg">mg</option>
+                                                                            <option value="μg">μg</option>
+                                                                        </select>
                                                                         <button
                                                                             onClick={() => {
                                                                                 const updated = (editingItem.otherNutrients || []).filter((_, i) => i !== idx);

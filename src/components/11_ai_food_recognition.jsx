@@ -1858,8 +1858,26 @@ JSON形式のみ出力、説明文不要`;
                                             <div className="flex items-center justify-center gap-2 mb-3">
                                                 <input
                                                     type="number"
-                                                    value={selectedFood.amount}
-                                                    onChange={(e) => updateFoodAmount(editingFoodIndex, Number(e.target.value))}
+                                                    value={selectedFood.amount === 0 ? '0' : (selectedFood.amount || '')}
+                                                    onChange={(e) => {
+                                                        // onChange: 文字列として保存（入力中は変換しない）
+                                                        const updatedFoods = [...recognizedFoods];
+                                                        updatedFoods[editingFoodIndex] = {
+                                                            ...updatedFoods[editingFoodIndex],
+                                                            amount: e.target.value
+                                                        };
+                                                        setRecognizedFoods(updatedFoods);
+                                                    }}
+                                                    onBlur={(e) => {
+                                                        // onBlur: 数値に変換して栄養素を再計算
+                                                        const val = e.target.value.trim();
+                                                        let newAmount = 0;
+                                                        if (val !== '' && val !== '.') {
+                                                            const num = parseFloat(val);
+                                                            newAmount = isNaN(num) ? 0 : num;
+                                                        }
+                                                        updateFoodAmount(editingFoodIndex, newAmount);
+                                                    }}
                                                     className="w-32 h-12 px-3 py-2 border-2 border-gray-300 rounded-lg text-center font-bold text-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                     min="0"
                                                     step={adjustmentStep}
@@ -2687,9 +2705,24 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                         <label className="text-xs text-gray-600 block mb-1">カロリー (kcal)</label>
                                         <input
                                             type="number"
-                                            value={Math.round((food.calories || 0) / (food.amount || 100) * 100)}
+                                            value={food._tempCalories !== undefined ? food._tempCalories : Math.round((food.calories || 0) / (food.amount || 100) * 100)}
                                             onChange={(e) => {
-                                                const newCaloriesPer100g = Number(e.target.value) || 0;
+                                                // onChange: 文字列として一時保存
+                                                const updatedFoods = [...recognizedFoods];
+                                                updatedFoods[foodIndex] = {
+                                                    ...food,
+                                                    _tempCalories: e.target.value
+                                                };
+                                                setRecognizedFoods(updatedFoods);
+                                            }}
+                                            onBlur={(e) => {
+                                                // onBlur: 数値に変換して実際の値を計算
+                                                const val = e.target.value.trim();
+                                                let newCaloriesPer100g = 0;
+                                                if (val !== '' && val !== '.') {
+                                                    const num = parseFloat(val);
+                                                    newCaloriesPer100g = isNaN(num) ? 0 : num;
+                                                }
                                                 const ratio = (food.amount || 100) / 100;
                                                 const updatedFoods = [...recognizedFoods];
                                                 updatedFoods[foodIndex] = {
@@ -2698,7 +2731,8 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                                     _base: {
                                                         ...food._base,
                                                         calories: newCaloriesPer100g
-                                                    }
+                                                    },
+                                                    _tempCalories: undefined
                                                 };
                                                 setRecognizedFoods(updatedFoods);
                                             }}
@@ -2710,9 +2744,24 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                         <input
                                             type="number"
                                             step="0.1"
-                                            value={parseFloat(((food.protein || 0) / (food.amount || 100) * 100).toFixed(1))}
+                                            value={food._tempProtein !== undefined ? food._tempProtein : parseFloat(((food.protein || 0) / (food.amount || 100) * 100).toFixed(1))}
                                             onChange={(e) => {
-                                                const newProteinPer100g = Number(e.target.value) || 0;
+                                                // onChange: 文字列として一時保存
+                                                const updatedFoods = [...recognizedFoods];
+                                                updatedFoods[foodIndex] = {
+                                                    ...food,
+                                                    _tempProtein: e.target.value
+                                                };
+                                                setRecognizedFoods(updatedFoods);
+                                            }}
+                                            onBlur={(e) => {
+                                                // onBlur: 数値に変換して実際の値を計算
+                                                const val = e.target.value.trim();
+                                                let newProteinPer100g = 0;
+                                                if (val !== '' && val !== '.') {
+                                                    const num = parseFloat(val);
+                                                    newProteinPer100g = isNaN(num) ? 0 : num;
+                                                }
                                                 const ratio = (food.amount || 100) / 100;
                                                 const updatedFoods = [...recognizedFoods];
                                                 updatedFoods[foodIndex] = {
@@ -2721,7 +2770,8 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                                     _base: {
                                                         ...food._base,
                                                         protein: newProteinPer100g
-                                                    }
+                                                    },
+                                                    _tempProtein: undefined
                                                 };
                                                 setRecognizedFoods(updatedFoods);
                                             }}
@@ -2733,9 +2783,24 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                         <input
                                             type="number"
                                             step="0.1"
-                                            value={parseFloat(((food.fat || 0) / (food.amount || 100) * 100).toFixed(1))}
+                                            value={food._tempFat !== undefined ? food._tempFat : parseFloat(((food.fat || 0) / (food.amount || 100) * 100).toFixed(1))}
                                             onChange={(e) => {
-                                                const newFatPer100g = Number(e.target.value) || 0;
+                                                // onChange: 文字列として一時保存
+                                                const updatedFoods = [...recognizedFoods];
+                                                updatedFoods[foodIndex] = {
+                                                    ...food,
+                                                    _tempFat: e.target.value
+                                                };
+                                                setRecognizedFoods(updatedFoods);
+                                            }}
+                                            onBlur={(e) => {
+                                                // onBlur: 数値に変換して実際の値を計算
+                                                const val = e.target.value.trim();
+                                                let newFatPer100g = 0;
+                                                if (val !== '' && val !== '.') {
+                                                    const num = parseFloat(val);
+                                                    newFatPer100g = isNaN(num) ? 0 : num;
+                                                }
                                                 const ratio = (food.amount || 100) / 100;
                                                 const updatedFoods = [...recognizedFoods];
                                                 updatedFoods[foodIndex] = {
@@ -2744,7 +2809,8 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                                     _base: {
                                                         ...food._base,
                                                         fat: newFatPer100g
-                                                    }
+                                                    },
+                                                    _tempFat: undefined
                                                 };
                                                 setRecognizedFoods(updatedFoods);
                                             }}
@@ -2756,9 +2822,24 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                         <input
                                             type="number"
                                             step="0.1"
-                                            value={parseFloat(((food.carbs || 0) / (food.amount || 100) * 100).toFixed(1))}
+                                            value={food._tempCarbs !== undefined ? food._tempCarbs : parseFloat(((food.carbs || 0) / (food.amount || 100) * 100).toFixed(1))}
                                             onChange={(e) => {
-                                                const newCarbsPer100g = Number(e.target.value) || 0;
+                                                // onChange: 文字列として一時保存
+                                                const updatedFoods = [...recognizedFoods];
+                                                updatedFoods[foodIndex] = {
+                                                    ...food,
+                                                    _tempCarbs: e.target.value
+                                                };
+                                                setRecognizedFoods(updatedFoods);
+                                            }}
+                                            onBlur={(e) => {
+                                                // onBlur: 数値に変換して実際の値を計算
+                                                const val = e.target.value.trim();
+                                                let newCarbsPer100g = 0;
+                                                if (val !== '' && val !== '.') {
+                                                    const num = parseFloat(val);
+                                                    newCarbsPer100g = isNaN(num) ? 0 : num;
+                                                }
                                                 const ratio = (food.amount || 100) / 100;
                                                 const updatedFoods = [...recognizedFoods];
                                                 updatedFoods[foodIndex] = {
@@ -2767,7 +2848,8 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                                     _base: {
                                                         ...food._base,
                                                         carbs: newCarbsPer100g
-                                                    }
+                                                    },
+                                                    _tempCarbs: undefined
                                                 };
                                                 setRecognizedFoods(updatedFoods);
                                             }}

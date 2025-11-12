@@ -1712,7 +1712,7 @@ const AddMealModal = ({
                                 </summary>
                                 <div className="mt-2 space-y-2">
                                     {customData.otherNutrients.map((nutrient, idx) => (
-                                        <div key={idx} className="flex gap-1">
+                                        <div key={idx} className="flex gap-1 items-center">
                                             <input
                                                 type="text"
                                                 value={nutrient.name}
@@ -1722,30 +1722,44 @@ const AddMealModal = ({
                                                     setCustomData({...customData, otherNutrients: updated});
                                                 }}
                                                 placeholder="名前"
-                                                className="flex-1 px-2 py-1 text-xs border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                                className="w-24 px-2 py-1 text-xs border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                             />
                                             <input
                                                 type="number"
-                                                value={nutrient.amount}
+                                                step="0.1"
+                                                value={nutrient.amount === 0 ? '0' : (nutrient.amount || '')}
                                                 onChange={(e) => {
                                                     const updated = [...customData.otherNutrients];
                                                     updated[idx].amount = e.target.value;
                                                     setCustomData({...customData, otherNutrients: updated});
                                                 }}
+                                                onBlur={(e) => {
+                                                    const val = e.target.value.trim();
+                                                    const updated = [...customData.otherNutrients];
+                                                    if (val === '' || val === '.') {
+                                                        updated[idx].amount = 0;
+                                                    } else {
+                                                        const num = parseFloat(val);
+                                                        updated[idx].amount = isNaN(num) ? 0 : num;
+                                                    }
+                                                    setCustomData({...customData, otherNutrients: updated});
+                                                }}
                                                 placeholder="量"
                                                 className="w-16 px-2 py-1 text-xs border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                             />
-                                            <input
-                                                type="text"
-                                                value={nutrient.unit}
+                                            <select
+                                                value={nutrient.unit || 'mg'}
                                                 onChange={(e) => {
                                                     const updated = [...customData.otherNutrients];
                                                     updated[idx].unit = e.target.value;
                                                     setCustomData({...customData, otherNutrients: updated});
                                                 }}
-                                                placeholder="単位"
                                                 className="w-12 px-1 py-1 text-xs border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                            />
+                                            >
+                                                <option value="g">g</option>
+                                                <option value="mg">mg</option>
+                                                <option value="μg">μg</option>
+                                            </select>
                                             <button
                                                 onClick={() => {
                                                     const updated = customData.otherNutrients.filter((_, i) => i !== idx);

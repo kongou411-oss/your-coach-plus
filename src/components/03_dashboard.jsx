@@ -617,9 +617,25 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             });
 
             if (item.otherNutrients) {
-                Object.keys(item.otherNutrients).forEach(o => {
-                    currentIntake.otherNutrients[o] = (currentIntake.otherNutrients[o] || 0) + (item.otherNutrients[o] || 0);
-                });
+                // 配列形式の場合
+                if (Array.isArray(item.otherNutrients)) {
+                    item.otherNutrients.forEach(nutrient => {
+                        if (nutrient.name && nutrient.amount !== undefined) {
+                            if (!currentIntake.otherNutrients[nutrient.name]) {
+                                currentIntake.otherNutrients[nutrient.name] = {
+                                    amount: 0,
+                                    unit: nutrient.unit || 'mg'
+                                };
+                            }
+                            currentIntake.otherNutrients[nutrient.name].amount += Number(nutrient.amount) || 0;
+                        }
+                    });
+                } else {
+                    // オブジェクト形式の場合（既存データとの互換性）
+                    Object.keys(item.otherNutrients).forEach(o => {
+                        currentIntake.otherNutrients[o] = (currentIntake.otherNutrients[o] || 0) + (item.otherNutrients[o] || 0);
+                    });
+                }
             }
         });
     });
@@ -747,7 +763,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         B6: 'mg', B7: 'μg', B9: 'μg', B12: 'μg', C: 'mg'
                                     };
                                     return Object.entries(targets.vitamins).map(([key, target]) => {
-                                        const current = currentIntake.vitamins[key] || 0;
+                                        const current = Number(currentIntake.vitamins[key]) || 0;
                                         const percent = (current / target) * 100;
                                     return (
                                         <div key={key} className="bg-gray-50 p-2 rounded">
@@ -792,7 +808,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         selenium: 'μg', iodine: 'μg', chromium: 'μg', molybdenum: 'μg'
                                     };
                                     return Object.entries(targets.minerals).map(([key, target]) => {
-                                        const current = currentIntake.minerals[key] || 0;
+                                        const current = Number(currentIntake.minerals[key]) || 0;
                                         const percent = (current / target) * 100;
                                     return (
                                         <div key={key} className="bg-gray-50 p-2 rounded">
@@ -833,28 +849,46 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             lutein: 'ルテイン', astaxanthin: 'アスタキサンチン'
                                         };
                                         return Object.entries(currentIntake.otherNutrients).map(([key, value]) => {
+                                            // カスタム栄養素の場合（オブジェクト形式）
+                                            if (typeof value === 'object' && value.amount !== undefined) {
+                                                const numValue = Number(value.amount) || 0;
+                                                const displayValue = numValue.toFixed(numValue < 1 ? 3 : 1);
+                                                return (
+                                                    <div key={key} className="bg-gray-50 p-2 rounded">
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="font-medium">{key}</span>
+                                                            <span className="text-gray-600">
+                                                                {displayValue}{value.unit || 'mg'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // 既存の栄養素の場合（数値形式）
                                             const target = targets.otherNutrients[key] || 100;
                                             const isGrams = key === 'creatine';
                                             const unit = isGrams ? 'g' : 'mg';
-                                            const displayValue = isGrams ? (value / 1000).toFixed(2) : value.toFixed(1);
+                                            const numValue = Number(value) || 0;
+                                            const displayValue = isGrams ? (numValue / 1000).toFixed(2) : numValue.toFixed(1);
                                             const displayTarget = isGrams ? (target / 1000).toFixed(1) : target;
-                                            const percent = (value / target) * 100;
-                                        return (
-                                            <div key={key} className="bg-gray-50 p-2 rounded">
-                                                <div className="flex justify-between text-xs mb-1">
-                                                    <span className="font-medium">{nutrientNames[key] || key}</span>
-                                                    <span className="text-gray-600">
-                                                        {displayValue} / {displayTarget}{unit}
-                                                    </span>
+                                            const percent = (numValue / target) * 100;
+                                            return (
+                                                <div key={key} className="bg-gray-50 p-2 rounded">
+                                                    <div className="flex justify-between text-xs mb-1">
+                                                        <span className="font-medium">{nutrientNames[key] || key}</span>
+                                                        <span className="text-gray-600">
+                                                            {displayValue} / {displayTarget}{unit}
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-gradient-to-r from-cyan-400 to-teal-500 transition-all"
+                                                            style={{ width: `${Math.min(percent, 100)}%` }}
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-gradient-to-r from-cyan-400 to-teal-500 transition-all"
-                                                        style={{ width: `${Math.min(percent, 100)}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        );
+                                            );
                                     })})()}
                                 </div>
                             </div>
@@ -1020,7 +1054,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <h4 className="font-bold text-gray-800">体組成</h4>
                         </div>
                         <span className="text-lg font-bold text-teal-600">
-                            LBM {(bodyComposition.weight * (1 - bodyComposition.bodyFatPercentage / 100)).toFixed(1)}kg
+                            LBM {((Number(bodyComposition.weight) || 0) * (1 - (Number(bodyComposition.bodyFatPercentage) || 0) / 100)).toFixed(1)}kg
                         </span>
                     </div>
                     <div className="p-6">
