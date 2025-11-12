@@ -3796,8 +3796,18 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 <div className="flex gap-1">
                                                                     <input
                                                                         type="number"
-                                                                        value={editingItem.servingSize}
-                                                                        onChange={(e) => setEditingItem({...editingItem, servingSize: parseFloat(e.target.value) || 0})}
+                                                                        step="0.1"
+                                                                        value={editingItem.servingSize === 0 ? '0' : (editingItem.servingSize || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, servingSize: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, servingSize: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, servingSize: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
                                                                         className="w-20 px-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none text-center"
                                                                     />
                                                                     <select
@@ -3824,8 +3834,17 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     <input
                                                                         type="number"
                                                                         step="0.1"
-                                                                        value={editingItem.calories || ''}
-                                                                        onChange={(e) => setEditingItem({...editingItem, calories: parseFloat(e.target.value) || 0})}
+                                                                        value={editingItem.calories === 0 ? '0' : (editingItem.calories || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, calories: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, calories: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, calories: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
                                                                         className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                                                     />
                                                                 </div>
@@ -3834,8 +3853,17 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     <input
                                                                         type="number"
                                                                         step="0.1"
-                                                                        value={editingItem.protein || ''}
-                                                                        onChange={(e) => setEditingItem({...editingItem, protein: parseFloat(e.target.value) || 0})}
+                                                                        value={editingItem.protein === 0 ? '0' : (editingItem.protein || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, protein: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, protein: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, protein: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
                                                                         className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                                                     />
                                                                 </div>
@@ -3844,8 +3872,17 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     <input
                                                                         type="number"
                                                                         step="0.1"
-                                                                        value={editingItem.fat || ''}
-                                                                        onChange={(e) => setEditingItem({...editingItem, fat: parseFloat(e.target.value) || 0})}
+                                                                        value={editingItem.fat === 0 ? '0' : (editingItem.fat || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, fat: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, fat: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, fat: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
                                                                         className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                                                     />
                                                                 </div>
@@ -3854,8 +3891,17 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                     <input
                                                                         type="number"
                                                                         step="0.1"
-                                                                        value={editingItem.carbs || ''}
-                                                                        onChange={(e) => setEditingItem({...editingItem, carbs: parseFloat(e.target.value) || 0})}
+                                                                        value={editingItem.carbs === 0 ? '0' : (editingItem.carbs || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, carbs: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, carbs: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, carbs: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
                                                                         className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                                                     />
                                                                 </div>
@@ -3871,55 +3917,250 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">A (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.vitaminA || ''} onChange={(e) => setEditingItem({...editingItem, vitaminA: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.001"
+                                                                        value={editingItem.vitaminA === 0 ? '0' : (editingItem.vitaminA || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, vitaminA: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, vitaminA: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, vitaminA: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">B1 (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.vitaminB1 || ''} onChange={(e) => setEditingItem({...editingItem, vitaminB1: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.vitaminB1 === 0 ? '0' : (editingItem.vitaminB1 || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, vitaminB1: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, vitaminB1: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, vitaminB1: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">B2 (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.vitaminB2 || ''} onChange={(e) => setEditingItem({...editingItem, vitaminB2: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.vitaminB2 === 0 ? '0' : (editingItem.vitaminB2 || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, vitaminB2: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, vitaminB2: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, vitaminB2: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">B6 (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.vitaminB6 || ''} onChange={(e) => setEditingItem({...editingItem, vitaminB6: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.vitaminB6 === 0 ? '0' : (editingItem.vitaminB6 || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, vitaminB6: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, vitaminB6: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, vitaminB6: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">B12 (μg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.vitaminB12 || ''} onChange={(e) => setEditingItem({...editingItem, vitaminB12: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.001"
+                                                                        value={editingItem.vitaminB12 === 0 ? '0' : (editingItem.vitaminB12 || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, vitaminB12: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, vitaminB12: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, vitaminB12: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">C (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.vitaminC || ''} onChange={(e) => setEditingItem({...editingItem, vitaminC: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.vitaminC === 0 ? '0' : (editingItem.vitaminC || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, vitaminC: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, vitaminC: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, vitaminC: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">D (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.vitaminD || ''} onChange={(e) => setEditingItem({...editingItem, vitaminD: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.001"
+                                                                        value={editingItem.vitaminD === 0 ? '0' : (editingItem.vitaminD || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, vitaminD: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, vitaminD: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, vitaminD: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">E (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.vitaminE || ''} onChange={(e) => setEditingItem({...editingItem, vitaminE: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.vitaminE === 0 ? '0' : (editingItem.vitaminE || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, vitaminE: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, vitaminE: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, vitaminE: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">K (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.vitaminK || ''} onChange={(e) => setEditingItem({...editingItem, vitaminK: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.001"
+                                                                        value={editingItem.vitaminK === 0 ? '0' : (editingItem.vitaminK || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, vitaminK: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, vitaminK: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, vitaminK: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">ナイアシン (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.niacin || ''} onChange={(e) => setEditingItem({...editingItem, niacin: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.niacin === 0 ? '0' : (editingItem.niacin || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, niacin: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, niacin: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, niacin: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">パントテン酸 (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.pantothenicAcid || ''} onChange={(e) => setEditingItem({...editingItem, pantothenicAcid: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.pantothenicAcid === 0 ? '0' : (editingItem.pantothenicAcid || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, pantothenicAcid: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, pantothenicAcid: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, pantothenicAcid: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">ビオチン (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.biotin || ''} onChange={(e) => setEditingItem({...editingItem, biotin: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.001"
+                                                                        value={editingItem.biotin === 0 ? '0' : (editingItem.biotin || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, biotin: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, biotin: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, biotin: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">葉酸 (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.folicAcid || ''} onChange={(e) => setEditingItem({...editingItem, folicAcid: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.001"
+                                                                        value={editingItem.folicAcid === 0 ? '0' : (editingItem.folicAcid || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, folicAcid: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, folicAcid: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, folicAcid: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -3933,55 +4174,250 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">ナトリウム (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.sodium || ''} onChange={(e) => setEditingItem({...editingItem, sodium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.sodium === 0 ? '0' : (editingItem.sodium || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, sodium: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, sodium: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, sodium: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">カリウム (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.potassium || ''} onChange={(e) => setEditingItem({...editingItem, potassium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.potassium === 0 ? '0' : (editingItem.potassium || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, potassium: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, potassium: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, potassium: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">カルシウム (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.calcium || ''} onChange={(e) => setEditingItem({...editingItem, calcium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.calcium === 0 ? '0' : (editingItem.calcium || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, calcium: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, calcium: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, calcium: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">マグネシウム (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.magnesium || ''} onChange={(e) => setEditingItem({...editingItem, magnesium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.magnesium === 0 ? '0' : (editingItem.magnesium || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, magnesium: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, magnesium: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, magnesium: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">リン (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.phosphorus || ''} onChange={(e) => setEditingItem({...editingItem, phosphorus: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.phosphorus === 0 ? '0' : (editingItem.phosphorus || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, phosphorus: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, phosphorus: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, phosphorus: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">鉄 (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.iron || ''} onChange={(e) => setEditingItem({...editingItem, iron: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.iron === 0 ? '0' : (editingItem.iron || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, iron: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, iron: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, iron: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">亜鉛 (mg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.zinc || ''} onChange={(e) => setEditingItem({...editingItem, zinc: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.zinc === 0 ? '0' : (editingItem.zinc || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, zinc: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, zinc: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, zinc: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">銅 (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.copper || ''} onChange={(e) => setEditingItem({...editingItem, copper: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.copper === 0 ? '0' : (editingItem.copper || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, copper: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, copper: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, copper: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">マンガン (mg)</label>
-                                                                    <input type="number" step="0.01" value={editingItem.manganese || ''} onChange={(e) => setEditingItem({...editingItem, manganese: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={editingItem.manganese === 0 ? '0' : (editingItem.manganese || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, manganese: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, manganese: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, manganese: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">ヨウ素 (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.iodine || ''} onChange={(e) => setEditingItem({...editingItem, iodine: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.001"
+                                                                        value={editingItem.iodine === 0 ? '0' : (editingItem.iodine || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, iodine: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, iodine: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, iodine: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">セレン (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.selenium || ''} onChange={(e) => setEditingItem({...editingItem, selenium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.001"
+                                                                        value={editingItem.selenium === 0 ? '0' : (editingItem.selenium || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, selenium: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, selenium: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, selenium: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">クロム (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.chromium || ''} onChange={(e) => setEditingItem({...editingItem, chromium: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.001"
+                                                                        value={editingItem.chromium === 0 ? '0' : (editingItem.chromium || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, chromium: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, chromium: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, chromium: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-xs text-gray-600">モリブデン (μg)</label>
-                                                                    <input type="number" step="0.1" value={editingItem.molybdenum || ''} onChange={(e) => setEditingItem({...editingItem, molybdenum: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none" />
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.001"
+                                                                        value={editingItem.molybdenum === 0 ? '0' : (editingItem.molybdenum || '')}
+                                                                        onChange={(e) => setEditingItem({...editingItem, molybdenum: e.target.value})}
+                                                                        onBlur={(e) => {
+                                                                            const val = e.target.value.trim();
+                                                                            if (val === '' || val === '.') {
+                                                                                setEditingItem({...editingItem, molybdenum: 0});
+                                                                            } else {
+                                                                                const num = parseFloat(val);
+                                                                                setEditingItem({...editingItem, molybdenum: isNaN(num) ? 0 : num});
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-400 focus:outline-none"
+                                                                    />
                                                                 </div>
                                                             </div>
                                                         </div>

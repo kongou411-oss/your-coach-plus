@@ -1503,8 +1503,18 @@ const AddMealModal = ({
                                 )}
                                 <input
                                     type="number"
-                                    value={customData.servingSize}
-                                    onChange={(e) => setCustomData({...customData, servingSize: parseFloat(e.target.value) || 0})}
+                                    step="0.1"
+                                    value={customData.servingSize === 0 ? '0' : (customData.servingSize || '')}
+                                    onChange={(e) => setCustomData({...customData, servingSize: e.target.value})}
+                                    onBlur={(e) => {
+                                        const val = e.target.value.trim();
+                                        if (val === '' || val === '.') {
+                                            setCustomData({...customData, servingSize: 0});
+                                        } else {
+                                            const num = parseFloat(val);
+                                            setCustomData({...customData, servingSize: isNaN(num) ? 0 : num});
+                                        }
+                                    }}
                                     placeholder="100"
                                     className="w-20 px-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none text-center"
                                 />
@@ -1529,8 +1539,18 @@ const AddMealModal = ({
                                         <label className="text-xs text-gray-600">カロリー (kcal)</label>
                                         <input
                                             type="number"
-                                            value={customData.calories || ''}
-                                            onChange={(e) => setCustomData({...customData, calories: parseFloat(e.target.value) || 0})}
+                                            step="0.1"
+                                            value={customData.calories === 0 ? '0' : (customData.calories || '')}
+                                            onChange={(e) => setCustomData({...customData, calories: e.target.value})}
+                                            onBlur={(e) => {
+                                                const val = e.target.value.trim();
+                                                if (val === '' || val === '.') {
+                                                    setCustomData({...customData, calories: 0});
+                                                } else {
+                                                    const num = parseFloat(val);
+                                                    setCustomData({...customData, calories: isNaN(num) ? 0 : num});
+                                                }
+                                            }}
                                             className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                         />
                                     </div>
@@ -1538,8 +1558,18 @@ const AddMealModal = ({
                                         <label className="text-xs text-gray-600">タンパク質 (g)</label>
                                         <input
                                             type="number"
-                                            value={customData.protein || ''}
-                                            onChange={(e) => setCustomData({...customData, protein: parseFloat(e.target.value) || 0})}
+                                            step="0.1"
+                                            value={customData.protein === 0 ? '0' : (customData.protein || '')}
+                                            onChange={(e) => setCustomData({...customData, protein: e.target.value})}
+                                            onBlur={(e) => {
+                                                const val = e.target.value.trim();
+                                                if (val === '' || val === '.') {
+                                                    setCustomData({...customData, protein: 0});
+                                                } else {
+                                                    const num = parseFloat(val);
+                                                    setCustomData({...customData, protein: isNaN(num) ? 0 : num});
+                                                }
+                                            }}
                                             className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                         />
                                     </div>
@@ -1547,8 +1577,18 @@ const AddMealModal = ({
                                         <label className="text-xs text-gray-600">脂質 (g)</label>
                                         <input
                                             type="number"
-                                            value={customData.fat || ''}
-                                            onChange={(e) => setCustomData({...customData, fat: parseFloat(e.target.value) || 0})}
+                                            step="0.1"
+                                            value={customData.fat === 0 ? '0' : (customData.fat || '')}
+                                            onChange={(e) => setCustomData({...customData, fat: e.target.value})}
+                                            onBlur={(e) => {
+                                                const val = e.target.value.trim();
+                                                if (val === '' || val === '.') {
+                                                    setCustomData({...customData, fat: 0});
+                                                } else {
+                                                    const num = parseFloat(val);
+                                                    setCustomData({...customData, fat: isNaN(num) ? 0 : num});
+                                                }
+                                            }}
                                             className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                         />
                                     </div>
@@ -1556,8 +1596,18 @@ const AddMealModal = ({
                                         <label className="text-xs text-gray-600">炭水化物 (g)</label>
                                         <input
                                             type="number"
-                                            value={customData.carbs || ''}
-                                            onChange={(e) => setCustomData({...customData, carbs: parseFloat(e.target.value) || 0})}
+                                            step="0.1"
+                                            value={customData.carbs === 0 ? '0' : (customData.carbs || '')}
+                                            onChange={(e) => setCustomData({...customData, carbs: e.target.value})}
+                                            onBlur={(e) => {
+                                                const val = e.target.value.trim();
+                                                if (val === '' || val === '.') {
+                                                    setCustomData({...customData, carbs: 0});
+                                                } else {
+                                                    const num = parseFloat(val);
+                                                    setCustomData({...customData, carbs: isNaN(num) ? 0 : num});
+                                                }
+                                            }}
                                             className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                         />
                                     </div>
@@ -1590,8 +1640,18 @@ const AddMealModal = ({
                                             <label className="text-xs text-gray-600">{label} ({unit})</label>
                                             <input
                                                 type="number"
-                                                value={customData[key] || ''}
-                                                onChange={(e) => setCustomData({...customData, [key]: parseFloat(e.target.value) || 0})}
+                                                step={unit === 'μg' ? '0.001' : '0.01'}
+                                                value={customData[key] === 0 ? '0' : (customData[key] || '')}
+                                                onChange={(e) => setCustomData({...customData, [key]: e.target.value})}
+                                                onBlur={(e) => {
+                                                    const val = e.target.value.trim();
+                                                    if (val === '' || val === '.') {
+                                                        setCustomData({...customData, [key]: 0});
+                                                    } else {
+                                                        const num = parseFloat(val);
+                                                        setCustomData({...customData, [key]: isNaN(num) ? 0 : num});
+                                                    }
+                                                }}
                                                 className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                             />
                                         </div>
@@ -1625,8 +1685,18 @@ const AddMealModal = ({
                                             <label className="text-xs text-gray-600">{label} ({unit})</label>
                                             <input
                                                 type="number"
-                                                value={customData[key] || ''}
-                                                onChange={(e) => setCustomData({...customData, [key]: parseFloat(e.target.value) || 0})}
+                                                step={unit === 'μg' ? '0.001' : '0.1'}
+                                                value={customData[key] === 0 ? '0' : (customData[key] || '')}
+                                                onChange={(e) => setCustomData({...customData, [key]: e.target.value})}
+                                                onBlur={(e) => {
+                                                    const val = e.target.value.trim();
+                                                    if (val === '' || val === '.') {
+                                                        setCustomData({...customData, [key]: 0});
+                                                    } else {
+                                                        const num = parseFloat(val);
+                                                        setCustomData({...customData, [key]: isNaN(num) ? 0 : num});
+                                                    }
+                                                }}
                                                 className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                             />
                                         </div>
