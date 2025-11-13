@@ -1376,7 +1376,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <p className="text-xs text-gray-600 mt-2">
                                                 ※ボディメイカーはタンパク質の推奨量が一般の約1.8倍<br/>
                                                 （一般 LBM×1.2、ボディメイカー LBM×2.2）、<br/>
-                                                ビタミン・ミネラル・食物繊維の推奨量が1.5倍になります
+                                                ビタミン・ミネラルの推奨量が2倍、食物繊維の推奨量が1.2倍になります
                                             </p>
                                         </div>
 

@@ -127,6 +127,26 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     const [expandedWorkouts, setExpandedWorkouts] = useState({});
     const [expandedMeals, setExpandedMeals] = useState({});
 
+    // 食事と運動をデフォルトで展開
+    useEffect(() => {
+        if (dailyRecord?.meals) {
+            const newExpandedMeals = {};
+            dailyRecord.meals.forEach((meal, index) => {
+                const key = meal.id || index;
+                newExpandedMeals[key] = true;
+            });
+            setExpandedMeals(newExpandedMeals);
+        }
+        if (dailyRecord?.workouts) {
+            const newExpandedWorkouts = {};
+            dailyRecord.workouts.forEach((workout, index) => {
+                const key = workout.id || index;
+                newExpandedWorkouts[key] = true;
+            });
+            setExpandedWorkouts(newExpandedWorkouts);
+        }
+    }, [dailyRecord?.meals, dailyRecord?.workouts]);
+
     // 機能開放モーダル（1つのモーダルで3ページ）
     const [showFeatureUnlockModal, setShowFeatureUnlockModal] = useState(false);
     const [currentModalPage, setCurrentModalPage] = useState(1); // 1, 2, 3
@@ -136,6 +156,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // 採点基準説明モーダル
     const [showScoringGuideModal, setShowScoringGuideModal] = useState(false);
+
+    // 詳細栄養素の使い方モーダル
+    const [showDetailedNutrientsGuide, setShowDetailedNutrientsGuide] = useState(false);
 
     // 体脂肪率推定モーダル
     const [visualGuideModal, setVisualGuideModal] = useState({
@@ -715,6 +738,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         solubleFiber: 0,
         insolubleFiber: 0,
         saturatedFat: 0,
+        mediumChainFat: 0,
         monounsaturatedFat: 0,
         polyunsaturatedFat: 0,
         vitamins: {
@@ -728,25 +752,92 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     // その他の栄養素を初期化
     currentIntake.otherNutrients = {};
 
+    // DIAAS計算用（タンパク質量で重み付け平均を計算）
+    let totalProteinWeightedDiaas = 0;
+    let totalProteinAmount = 0;
+
+    // GL値・GI値計算用
+    let totalGL = 0;
+    let totalCarbsFromHighGI = 0;  // GI値60以上の炭水化物
+    let totalCarbsFromLowGI = 0;   // GI値60未満の炭水化物
+
+    // 各食事ごとのGL値を保存
+    const mealGLValues = [];
+
     dailyRecord.meals?.forEach(meal => {
+        let mealGL = 0;
+        let mealCarbs = 0;
+        let mealProtein = 0;
+        let mealFat = 0;
+        let mealFiber = 0;
         currentIntake.calories += meal.calories || 0;
         meal.items?.forEach(item => {
             // 個数単位（本、個、杯、枚、錠）と重量単位（g、ml）でratio計算を分岐
             const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
             const ratio = isCountUnit ? item.amount : item.amount / 100;
 
-            currentIntake.protein += (item.protein || 0) * ratio;
+            const proteinAmount = (item.protein || 0) * ratio;
+            currentIntake.protein += proteinAmount;
+
+            // DIAASの重み付け平均を計算
+            if (item.diaas && proteinAmount > 0) {
+                totalProteinWeightedDiaas += item.diaas * proteinAmount;
+                totalProteinAmount += proteinAmount;
+            }
+
+            // GL値とGI値内訳を計算
+            const carbsAmount = (item.carbs || 0) * ratio;
+            if (item.gi && carbsAmount > 0) {
+                // GL値 = (GI値 × 炭水化物量) / 100
+                const itemGL = (item.gi * carbsAmount) / 100;
+                totalGL += itemGL;
+                mealGL += itemGL; // 1食ごとのGL値に加算
+
+                // GI値60以上と60未満で分類
+                if (item.gi >= 60) {
+                    totalCarbsFromHighGI += carbsAmount;
+                } else {
+                    totalCarbsFromLowGI += carbsAmount;
+                }
+            } else if (carbsAmount > 0) {
+                // GI値がない場合は低GI扱い（炭水化物は存在）
+                totalCarbsFromLowGI += carbsAmount;
+            }
+
             currentIntake.fat += (item.fat || 0) * ratio;
             currentIntake.carbs += (item.carbs || 0) * ratio;
 
-            // 糖質・食物繊維・脂肪酸（100g base values - ratioで実量換算）
+            // 1食ごとのPFC・食物繊維を集計
+            mealCarbs += carbsAmount;
+            mealProtein += proteinAmount;
+            mealFat += (item.fat || 0) * ratio;
+            mealFiber += (item.fiber || 0) * ratio;
+
+            // 糖質・食物繊維・脂肪酸（SCALED to actual amount - ビタミン・ミネラルと同じ）
             currentIntake.sugar += (item.sugar || 0) * ratio;
             currentIntake.fiber += (item.fiber || 0) * ratio;
             currentIntake.solubleFiber += (item.solubleFiber || 0) * ratio;
             currentIntake.insolubleFiber += (item.insolubleFiber || 0) * ratio;
             currentIntake.saturatedFat += (item.saturatedFat || 0) * ratio;
+            currentIntake.mediumChainFat += (item.mediumChainFat || 0) * ratio;
             currentIntake.monounsaturatedFat += (item.monounsaturatedFat || 0) * ratio;
             currentIntake.polyunsaturatedFat += (item.polyunsaturatedFat || 0) * ratio;
+
+            // デバッグログ
+            if (item.saturatedFat || item.fiber || item.sugar) {
+                console.log('[Dashboard] 脂肪酸・食物繊維データ:', {
+                    name: item.name,
+                    amount: item.amount,
+                    unit: item.unit,
+                    saturatedFat: item.saturatedFat,
+                    monounsaturatedFat: item.monounsaturatedFat,
+                    polyunsaturatedFat: item.polyunsaturatedFat,
+                    sugar: item.sugar,
+                    fiber: item.fiber,
+                    solubleFiber: item.solubleFiber,
+                    insolubleFiber: item.insolubleFiber
+                });
+            }
 
             // ビタミン・ミネラル（オブジェクト形式）
             if (item.vitamins) {
@@ -797,7 +888,221 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 }
             }
         });
+
+        // 1食ごとのGL値評価（PFC・食物繊維による段階的補正）
+        let mealGLReductionPercent = 0;
+
+        // タンパク質補正（段階的：0g→0%, 10g→5%, 20g以上→10%）
+        const mealProteinReduction = Math.floor(Math.min(10, (mealProtein / 20) * 10) * 10) / 10;
+        if (mealProteinReduction > 0) {
+            mealGLReductionPercent += mealProteinReduction;
+        }
+
+        // 脂質補正（段階的：0g→0%, 5g→5%, 10g以上→10%）
+        const mealFatReduction = Math.floor(Math.min(10, (mealFat / 10) * 10) * 10) / 10;
+        if (mealFatReduction > 0) {
+            mealGLReductionPercent += mealFatReduction;
+        }
+
+        // 食物繊維補正（段階的：0g→0%, 2.5g→7.5%, 5g以上→15%）
+        const mealFiberReduction = Math.floor(Math.min(15, (mealFiber / 5) * 15) * 10) / 10;
+        if (mealFiberReduction > 0) {
+            mealGLReductionPercent += mealFiberReduction;
+        }
+
+        // 補正後のGL値
+        const adjustedMealGL = Math.max(0, mealGL * (1 - mealGLReductionPercent / 100));
+
+        // 1食ごとのGL評価（低GL: ≤10, 中GL: 11-19, 高GL: ≥20）
+        let mealGLRating = '低GL';
+        let mealGLBadgeColor = 'bg-green-600';
+        if (adjustedMealGL >= 20) {
+            mealGLRating = '高GL';
+            mealGLBadgeColor = meal.isPostWorkout ? 'bg-orange-600' : 'bg-red-600';
+        } else if (adjustedMealGL >= 11) {
+            mealGLRating = '中GL';
+            mealGLBadgeColor = 'bg-yellow-600';
+        }
+
+        // 運動後の場合は「推奨」表示
+        if (meal.isPostWorkout && adjustedMealGL >= 20) {
+            mealGLRating = '高GL（推奨）';
+        }
+
+        // 1食ごとのGL値を保存
+        mealGLValues.push({
+            mealId: meal.id || meal.timestamp,
+            rawGL: mealGL,
+            adjustedGL: adjustedMealGL,
+            rating: mealGLRating,
+            badgeColor: mealGLBadgeColor,
+            reductionPercent: mealGLReductionPercent,
+            isPostWorkout: meal.isPostWorkout || false
+        });
     });
+
+    // 平均DIAASを計算
+    const averageDiaas = totalProteinAmount > 0 ? totalProteinWeightedDiaas / totalProteinAmount : 0;
+    currentIntake.averageDiaas = averageDiaas;
+
+    // GL値とGI値内訳を保存
+    currentIntake.totalGL = totalGL;
+    currentIntake.highGICarbs = totalCarbsFromHighGI;
+    currentIntake.lowGICarbs = totalCarbsFromLowGI;
+    const totalCarbs = totalCarbsFromHighGI + totalCarbsFromLowGI;
+    currentIntake.highGIPercent = totalCarbs > 0 ? (totalCarbsFromHighGI / totalCarbs) * 100 : 0;
+    currentIntake.lowGIPercent = totalCarbs > 0 ? (totalCarbsFromLowGI / totalCarbs) * 100 : 0;
+
+    // 【デバッグ】炭水化物・糖質・食物繊維の合計チェック
+    console.log('[Dashboard] 炭水化物チェック:', {
+        carbs: Math.round(currentIntake.carbs * 10) / 10,
+        sugar: Math.round(currentIntake.sugar * 10) / 10,
+        fiber: Math.round(currentIntake.fiber * 10) / 10,
+        sugarPlusFiber: Math.round((currentIntake.sugar + currentIntake.fiber) * 10) / 10,
+        difference: Math.round((currentIntake.carbs - currentIntake.sugar - currentIntake.fiber) * 10) / 10
+    });
+
+    // 1日合計の補正後GL値を計算（各食事の補正後GL値を合計）
+    const adjustedDailyGL = mealGLValues.reduce((sum, meal) => sum + meal.adjustedGL, 0);
+    currentIntake.adjustedDailyGL = adjustedDailyGL;
+
+    // 血糖管理スコアの計算（PFC・食物繊維による段階的補正）
+    let glReductionPercent = 0;
+    const glModifiers = [];
+
+    // タンパク質補正（段階的：0g→0%, 10g→5%, 20g以上→10%）
+    const proteinReduction = Math.floor(Math.min(10, (currentIntake.protein / 20) * 10) * 10) / 10;
+    if (proteinReduction > 0) {
+        glReductionPercent += proteinReduction;
+        glModifiers.push({ label: 'タンパク質', value: -proteinReduction });
+    }
+
+    // 脂質補正（段階的：0g→0%, 5g→5%, 10g以上→10%）
+    const fatReduction = Math.floor(Math.min(10, (currentIntake.fat / 10) * 10) * 10) / 10;
+    if (fatReduction > 0) {
+        glReductionPercent += fatReduction;
+        glModifiers.push({ label: '脂質', value: -fatReduction });
+    }
+
+    // 食物繊維補正（段階的：0g→0%, 2.5g→7.5%, 5g以上→15%）
+    const fiberReduction = Math.floor(Math.min(15, (currentIntake.fiber / 5) * 15) * 10) / 10;
+    if (fiberReduction > 0) {
+        glReductionPercent += fiberReduction;
+        glModifiers.push({ label: '食物繊維', value: -fiberReduction });
+    }
+
+    // 実質GL値を計算
+    const adjustedGL = totalGL * (1 - glReductionPercent / 100);
+    currentIntake.adjustedGL = adjustedGL;
+    currentIntake.glReductionPercent = glReductionPercent;
+    currentIntake.glModifiers = glModifiers;
+
+    // デバッグログ：集計結果
+    console.log('[Dashboard] 集計結果:', {
+        averageDiaas: currentIntake.averageDiaas,
+        totalGL: currentIntake.totalGL,
+        highGIPercent: currentIntake.highGIPercent,
+        lowGIPercent: currentIntake.lowGIPercent,
+        saturatedFat: currentIntake.saturatedFat,
+        monounsaturatedFat: currentIntake.monounsaturatedFat,
+        polyunsaturatedFat: currentIntake.polyunsaturatedFat,
+        sugar: currentIntake.sugar,
+        fiber: currentIntake.fiber,
+        solubleFiber: currentIntake.solubleFiber,
+        insolubleFiber: currentIntake.insolubleFiber
+    });
+
+    // 1日合計GL値の評価（優秀: <80, 良好: 80-100, 普通: 101-120, 要改善: 121+）
+    let bloodSugarScore = 5; // 最高評価から開始
+    let bloodSugarRating = '★★★★★';
+    let bloodSugarLabel = '優秀';
+
+    if (adjustedGL >= 121) {
+        bloodSugarScore = 2;
+        bloodSugarRating = '★★☆☆☆';
+        bloodSugarLabel = '要改善';
+    } else if (adjustedGL >= 101) {
+        bloodSugarScore = 3;
+        bloodSugarRating = '★★★☆☆';
+        bloodSugarLabel = '普通';
+    } else if (adjustedGL >= 80) {
+        bloodSugarScore = 4;
+        bloodSugarRating = '★★★★☆';
+        bloodSugarLabel = '良好';
+    } else {
+        bloodSugarScore = 5;
+        bloodSugarRating = '★★★★★';
+        bloodSugarLabel = '優秀';
+    }
+
+    currentIntake.bloodSugarScore = bloodSugarScore;
+    currentIntake.bloodSugarRating = bloodSugarRating;
+    currentIntake.bloodSugarLabel = bloodSugarLabel;
+
+    // 脂肪酸バランススコア（理想: 飽和3:中鎖0.5:一価4:多価3）
+    const totalFat = currentIntake.saturatedFat + currentIntake.mediumChainFat + currentIntake.monounsaturatedFat + currentIntake.polyunsaturatedFat;
+    let fattyAcidScore = 5;
+    let fattyAcidRating = '★★★★★';
+    let fattyAcidLabel = '優秀';
+
+    if (totalFat > 0) {
+        const saturatedPercent = (currentIntake.saturatedFat / totalFat) * 100;
+        const mediumChainPercent = (currentIntake.mediumChainFat / totalFat) * 100;
+        const monounsaturatedPercent = (currentIntake.monounsaturatedFat / totalFat) * 100;
+        const polyunsaturatedPercent = (currentIntake.polyunsaturatedFat / totalFat) * 100;
+
+        // 理想: 飽和30%, 中鎖5%, 一価40%, 多価25%
+        // 飽和脂肪酸が40%以上または20%未満は要改善
+        // 一価不飽和が50%以上または30%未満は要改善
+        if (saturatedPercent >= 40 || saturatedPercent < 20 || monounsaturatedPercent >= 50 || monounsaturatedPercent < 30) {
+            fattyAcidScore = 2;
+            fattyAcidRating = '★★☆☆☆';
+            fattyAcidLabel = '要改善';
+        } else if (saturatedPercent >= 35 || saturatedPercent < 25 || monounsaturatedPercent >= 45 || monounsaturatedPercent < 35) {
+            fattyAcidScore = 4;
+            fattyAcidRating = '★★★★☆';
+            fattyAcidLabel = '良好';
+        } else {
+            fattyAcidScore = 5;
+            fattyAcidRating = '★★★★★';
+            fattyAcidLabel = '優秀';
+        }
+    }
+
+    currentIntake.fattyAcidScore = fattyAcidScore;
+    currentIntake.fattyAcidRating = fattyAcidRating;
+    currentIntake.fattyAcidLabel = fattyAcidLabel;
+
+    // 糖質・食物繊維バランススコア
+    const totalCarbAndFiber = currentIntake.carbs + currentIntake.fiber;
+    let carbFiberScore = 5;
+    let carbFiberRating = '★★★★★';
+    let carbFiberLabel = '優秀';
+
+    if (totalCarbAndFiber > 0) {
+        const carbsPercent = (currentIntake.carbs / totalCarbAndFiber) * 100;
+        const fiberPercent = (currentIntake.fiber / totalCarbAndFiber) * 100;
+
+        // 理想: 糖質と食物繊維の比率が近いほど良好
+        // 食物繊維が5%未満は要改善、5-10%は良好、10%以上は優秀
+        if (fiberPercent < 5) {
+            carbFiberScore = 2;
+            carbFiberRating = '★★☆☆☆';
+            carbFiberLabel = '要改善';
+        } else if (fiberPercent < 10) {
+            carbFiberScore = 4;
+            carbFiberRating = '★★★★☆';
+            carbFiberLabel = '良好';
+        } else {
+            carbFiberScore = 5;
+            carbFiberRating = '★★★★★';
+            carbFiberLabel = '優秀';
+        }
+    }
+
+    currentIntake.carbFiberScore = carbFiberScore;
+    currentIntake.carbFiberRating = carbFiberRating;
+    currentIntake.carbFiberLabel = carbFiberLabel;
 
     // サプリメントは食事に統合されたため、この処理は不要
 
@@ -899,153 +1204,525 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     </div>
                 </div>
 
-                {/* 脂肪酸詳細 */}
+                {/* 詳細栄養素 */}
                 <details className="mt-4">
                     <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{color: '#4A9EFF'}}>
                         <Icon name="ChevronDown" size={16} />
-                        脂肪酸＋
+                        詳細栄養素＋
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowDetailedNutrientsGuide(true);
+                            }}
+                            className="ml-auto flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                        >
+                            <Icon name="HelpCircle" size={18} />
+                            <span className="text-sm">使い方</span>
+                        </button>
                     </summary>
-                    <div className="mt-4 space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            {[
-                                {
-                                    name: '飽和脂肪酸',
-                                    icon: 'Activity',
-                                    color: 'red',
-                                    current: currentIntake.saturatedFat,
-                                    target: null, // 目標値なし（参考表示のみ）
-                                    unit: 'g',
-                                    note: `脂質の ${Math.round((currentIntake.saturatedFat / (currentIntake.fat || 1)) * 100)}%`
-                                },
-                                {
-                                    name: '一価不飽和脂肪酸',
-                                    icon: 'TrendingUp',
-                                    color: 'yellow',
-                                    current: currentIntake.monounsaturatedFat,
-                                    target: null,
-                                    unit: 'g',
-                                    note: `脂質の ${Math.round((currentIntake.monounsaturatedFat / (currentIntake.fat || 1)) * 100)}%`
-                                },
-                                {
-                                    name: '多価不飽和脂肪酸',
-                                    icon: 'Zap',
-                                    color: 'blue',
-                                    current: currentIntake.polyunsaturatedFat,
-                                    target: null,
-                                    unit: 'g',
-                                    note: `脂質の ${Math.round((currentIntake.polyunsaturatedFat / (currentIntake.fat || 1)) * 100)}%`
-                                }
-                            ].map((item, idx) => {
-                                return (
-                                    <div key={idx} className="bg-gray-50 p-2 rounded">
-                                        <div className="flex justify-between text-xs mb-1">
-                                            <span className="font-medium flex items-center gap-1">
-                                                <Icon name={item.icon} size={14} className={`text-${item.color}-500`} />
-                                                {item.name}
-                                            </span>
-                                            <span className="text-gray-600">
-                                                {Math.round(item.current * 10) / 10}{item.unit}
-                                            </span>
-                                        </div>
-                                        {item.note && (
-                                            <div className="text-xs text-gray-500 mt-1">{item.note}</div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </details>
+                    <div className="mt-4 space-y-6">
 
-                {/* 糖質・食物繊維詳細 */}
-                <details className="mt-4">
-                    <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{color: '#4A9EFF'}}>
-                        <Icon name="ChevronDown" size={16} />
-                        糖質・食物繊維＋
-                    </summary>
-                    <div className="mt-4 space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {(() => {
-                                const targets = LBMUtils.calculatePersonalizedMicronutrients(profile || {});
-                                const fiberTargets = targets.carbohydrateQuality || { fiber: 20, solubleFiber: 7, insolubleFiber: 13 };
+                        {/* 三大栄養素の質 */}
+                        <div>
+                            <h4 className="text-sm font-bold mb-3 text-gray-800">
+                                三大栄養素の質
+                            </h4>
 
-                                return [
-                                    {
-                                        name: '糖質',
-                                        icon: 'Cookie',
-                                        color: 'amber',
-                                        current: currentIntake.sugar,
-                                        target: null, // 糖質は目標値なし（参考表示のみ）
-                                        unit: 'g',
-                                        note: `炭水化物の ${Math.round((currentIntake.sugar / (currentIntake.carbs || 1)) * 100)}%`
-                                    },
-                                    {
-                                        name: '食物繊維',
-                                        icon: 'Wheat',
-                                        color: 'green',
-                                        current: currentIntake.fiber,
-                                        target: fiberTargets.fiber,
-                                        unit: 'g'
-                                    },
-                                    {
-                                        name: '水溶性食物繊維',
-                                        icon: 'Droplet',
-                                        color: 'blue',
-                                        current: currentIntake.solubleFiber,
-                                        target: fiberTargets.solubleFiber,
-                                        unit: 'g'
-                                    },
-                                    {
-                                        name: '不溶性食物繊維',
-                                        icon: 'Layers',
-                                        color: 'teal',
-                                        current: currentIntake.insolubleFiber,
-                                        target: fiberTargets.insolubleFiber,
-                                        unit: 'g'
-                                    }
-                                ].map((item, idx) => {
-                                    const percent = item.target ? (item.current / item.target) * 100 : 0;
-                                    return (
-                                        <div key={idx} className="bg-gray-50 p-2 rounded">
-                                            <div className="flex justify-between text-xs mb-1">
-                                                <span className="font-medium flex items-center gap-1">
-                                                    <Icon name={item.icon} size={14} className={`text-${item.color}-500`} />
-                                                    {item.name}
+                            {/* タンパク質の質（DIAAS） */}
+                            <div className="mb-4">
+                                    <h5 className="text-xs font-semibold mb-2 text-gray-700">
+                                        タンパク質の質
+                                    </h5>
+                                    <div className="bg-gray-50 p-3 rounded">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm font-medium text-gray-700">平均DIAAS</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-lg font-bold text-gray-900">
+                                                    {currentIntake.averageDiaas.toFixed(2)}
                                                 </span>
-                                                <span className="text-gray-600">
-                                                    {Math.round(item.current * 10) / 10}{item.target ? ` / ${item.target}` : ''}{item.unit}
+                                                <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                                                    currentIntake.averageDiaas >= 1.0
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : currentIntake.averageDiaas >= 0.75
+                                                        ? 'bg-blue-100 text-blue-700'
+                                                        : 'bg-red-100 text-red-700'
+                                                }`}>
+                                                    {currentIntake.averageDiaas >= 1.0
+                                                        ? '優秀'
+                                                        : currentIntake.averageDiaas >= 0.75
+                                                        ? '良好'
+                                                        : '要改善'}
                                                 </span>
                                             </div>
-                                            {item.target && (
-                                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full bg-gradient-to-r from-${item.color}-400 to-${item.color === 'amber' ? 'orange' : item.color === 'teal' ? 'emerald' : item.color}-500 transition-all`}
-                                                        style={{ width: `${Math.min(percent, 100)}%` }}
-                                                    />
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-2">
+                                            1.0以上で優秀なタンパク質源
+                                        </div>
+                                    </div>
+                                </div>
+
+                            {/* 炭水化物の質（GL値） */}
+                            <div className="mb-4">
+                                    <h5 className="text-xs font-semibold mb-2 text-gray-700">
+                                        炭水化物の質
+                                    </h5>
+                                    <div className="bg-gray-50 p-3 rounded space-y-3">
+                                        {/* 1日合計GL値 */}
+                                        <div>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-sm font-medium text-gray-700">1日合計GL値</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-lg font-bold text-gray-900">
+                                                        {Math.round(currentIntake.adjustedDailyGL)} / 100
+                                                    </span>
+                                                    <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                                                        currentIntake.adjustedDailyGL >= 121
+                                                            ? 'bg-red-100 text-red-700'
+                                                            : currentIntake.adjustedDailyGL >= 101
+                                                            ? 'bg-yellow-100 text-yellow-700'
+                                                            : currentIntake.adjustedDailyGL >= 80
+                                                            ? 'bg-blue-100 text-blue-700'
+                                                            : 'bg-green-100 text-green-700'
+                                                    }`}>
+                                                        {currentIntake.adjustedDailyGL >= 121
+                                                            ? '要改善'
+                                                            : currentIntake.adjustedDailyGL >= 101
+                                                            ? '普通'
+                                                            : currentIntake.adjustedDailyGL >= 80
+                                                            ? '良好'
+                                                            : '優秀'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                目標: 100以下
+                                            </div>
+                                            {currentIntake.adjustedDailyGL < 100 && (
+                                                <div className="text-xs text-green-600 font-medium mt-1">
+                                                    ✓ あと{100 - Math.round(currentIntake.adjustedDailyGL)}余裕があります
                                                 </div>
                                             )}
-                                            {item.note && (
-                                                <div className="text-xs text-gray-500 mt-1">{item.note}</div>
+
+                                            {/* カロリー不足時のGL余裕アドバイス */}
+                                            {currentIntake.calories < targetPFC.calories * 0.8 && currentIntake.adjustedDailyGL < 100 && (
+                                                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                                                    <div className="flex items-start gap-1">
+                                                        <Icon name="Info" size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                                                        <div className="text-blue-800">
+                                                            <div className="font-semibold mb-1">カロリーが不足しています</div>
+                                                            <div className="text-blue-700">
+                                                                目標まで <span className="font-bold">{Math.round(targetPFC.calories - currentIntake.calories)}kcal</span> 不足しています。
+                                                                GL値にはまだ余裕があるので、中GL以下の食事を追加しましょう。
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
-                                    );
-                                });
-                            })()}
-                        </div>
-                    </div>
-                </details>
 
-                {/* ビタミン・ミネラル詳細 */}
-                <details className="mt-4">
-                        <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{color: '#4A9EFF'}}>
-                            <Icon name="ChevronDown" size={16} />
-                            ビタミン・ミネラル＋
-                        </summary>
-                        <div className="mt-4 space-y-4">
+                                        {/* 血糖管理スコア */}
+                                        <div className="border-t pt-3">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-sm font-medium text-gray-700">血糖管理</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-base font-bold text-gray-900">
+                                                        {currentIntake.bloodSugarRating}
+                                                    </span>
+                                                    <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                                                        currentIntake.bloodSugarScore >= 5
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : currentIntake.bloodSugarScore >= 4
+                                                            ? 'bg-blue-100 text-blue-700'
+                                                            : currentIntake.bloodSugarScore >= 3
+                                                            ? 'bg-yellow-100 text-yellow-700'
+                                                            : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                        {currentIntake.bloodSugarLabel}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* 補正要因 */}
+                                            {currentIntake.glModifiers.length > 0 && (
+                                                <div className="space-y-1 mb-2">
+                                                    {currentIntake.glModifiers.map((modifier, idx) => (
+                                                        <div key={idx} className="flex justify-between text-xs text-gray-600">
+                                                            <span>✓ {modifier.label}</span>
+                                                            <span className="text-green-600 font-medium">{modifier.value}%</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* 実質GL値 */}
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-gray-600">実質GL値</span>
+                                                <span className="font-bold text-green-700">
+                                                    {Math.round(currentIntake.adjustedGL)}
+                                                    <span className="text-gray-500 ml-1">
+                                                        ({currentIntake.adjustedGL >= 20 ? '高' : currentIntake.adjustedGL >= 11 ? '中' : '低'}GL相当)
+                                                    </span>
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* GI値内訳 */}
+                                        <div className="border-t pt-3">
+                                            <div className="text-xs font-medium text-gray-700 mb-2">GI値内訳</div>
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="text-gray-600">GI 60以上</span>
+                                                    <span className="font-medium text-red-600">
+                                                        {Math.round(currentIntake.highGIPercent)}%
+                                                    </span>
+                                                </div>
+                                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-red-400 to-red-500 transition-all"
+                                                        style={{ width: `${currentIntake.highGIPercent}%` }}
+                                                    />
+                                                </div>
+                                                <div className="flex justify-between text-xs mt-2">
+                                                    <span className="text-gray-600">GI 60未満</span>
+                                                    <span className="font-medium text-green-600">
+                                                        {Math.round(currentIntake.lowGIPercent)}%
+                                                    </span>
+                                                </div>
+                                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all"
+                                                        style={{ width: `${currentIntake.lowGIPercent}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            {/* 脂肪酸 */}
+                            <div className="mb-4">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h5 className="text-xs font-semibold text-gray-700">
+                                        脂肪酸バランス
+                                    </h5>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-base font-bold text-gray-900">
+                                            {currentIntake.fattyAcidRating}
+                                        </span>
+                                        <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                                            currentIntake.fattyAcidScore >= 5
+                                                ? 'bg-green-100 text-green-700'
+                                                : currentIntake.fattyAcidScore >= 4
+                                                ? 'bg-blue-100 text-blue-700'
+                                                : 'bg-red-100 text-red-700'
+                                        }`}>
+                                            {currentIntake.fattyAcidLabel}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* 全体のバランスプログレスバー */}
+                                <div className="bg-gray-50 p-3 rounded mb-3">
+                                    <div className="text-xs font-medium text-gray-700 mb-2">バランス</div>
+                                    <div className="h-4 bg-gray-200 rounded-full overflow-hidden flex">
+                                        {(() => {
+                                            const totalFat = currentIntake.saturatedFat + currentIntake.mediumChainFat + currentIntake.monounsaturatedFat + currentIntake.polyunsaturatedFat;
+                                            if (totalFat === 0) return null;
+
+                                            const saturatedPercent = (currentIntake.saturatedFat / totalFat) * 100;
+                                            const mediumChainPercent = (currentIntake.mediumChainFat / totalFat) * 100;
+                                            const monounsaturatedPercent = (currentIntake.monounsaturatedFat / totalFat) * 100;
+                                            const polyunsaturatedPercent = (currentIntake.polyunsaturatedFat / totalFat) * 100;
+
+                                            return (
+                                                <>
+                                                    {saturatedPercent > 0 && (
+                                                        <div
+                                                            className="bg-red-500 flex items-center justify-center text-white text-xs font-medium"
+                                                            style={{ width: `${saturatedPercent}%` }}
+                                                        >
+                                                            {saturatedPercent >= 10 && `${Math.round(saturatedPercent)}%`}
+                                                        </div>
+                                                    )}
+                                                    {mediumChainPercent > 0 && (
+                                                        <div
+                                                            className="bg-cyan-500 flex items-center justify-center text-white text-xs font-medium"
+                                                            style={{ width: `${mediumChainPercent}%` }}
+                                                        >
+                                                            {mediumChainPercent >= 10 && `${Math.round(mediumChainPercent)}%`}
+                                                        </div>
+                                                    )}
+                                                    {monounsaturatedPercent > 0 && (
+                                                        <div
+                                                            className="bg-yellow-500 flex items-center justify-center text-white text-xs font-medium"
+                                                            style={{ width: `${monounsaturatedPercent}%` }}
+                                                        >
+                                                            {monounsaturatedPercent >= 10 && `${Math.round(monounsaturatedPercent)}%`}
+                                                        </div>
+                                                    )}
+                                                    {polyunsaturatedPercent > 0 && (
+                                                        <div
+                                                            className="bg-blue-500 flex items-center justify-center text-white text-xs font-medium"
+                                                            style={{ width: `${polyunsaturatedPercent}%` }}
+                                                        >
+                                                            {polyunsaturatedPercent >= 10 && `${Math.round(polyunsaturatedPercent)}%`}
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                    <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-600">
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-3 h-3 bg-red-500 rounded"></div>
+                                            <span>飽和</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-3 h-3 bg-cyan-500 rounded"></div>
+                                            <span>中鎖</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                                            <span>一価</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                                            <span>多価</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                                        目標: 飽和30% / 中鎖5% / 一価40% / 多価25%
+                                    </div>
+                                </div>
+
+                                {/* 詳細数値 */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {(() => {
+                                        // 理想の脂肪酸比率: 飽和30% / 中鎖5% / 一価40% / 多価25%
+                                        const totalFat = targetPFC.fat; // 推奨脂質量
+                                        const idealRatios = {
+                                            saturated: 0.30,
+                                            mediumChain: 0.05,
+                                            monounsaturated: 0.40,
+                                            polyunsaturated: 0.25
+                                        };
+
+                                        const colorClasses = {
+                                            'red': 'bg-gradient-to-r from-red-400 to-red-500',
+                                            'cyan': 'bg-gradient-to-r from-cyan-400 to-cyan-500',
+                                            'yellow': 'bg-gradient-to-r from-yellow-400 to-yellow-500',
+                                            'blue': 'bg-gradient-to-r from-blue-400 to-blue-500'
+                                        };
+
+                                        return [
+                                            {
+                                                name: '飽和脂肪酸',
+                                                color: 'red',
+                                                current: currentIntake.saturatedFat,
+                                                target: Math.round(totalFat * idealRatios.saturated * 10) / 10
+                                            },
+                                            {
+                                                name: '中鎖脂肪酸（MCT）',
+                                                color: 'cyan',
+                                                current: currentIntake.mediumChainFat,
+                                                target: Math.round(totalFat * idealRatios.mediumChain * 10) / 10
+                                            },
+                                            {
+                                                name: '一価不飽和脂肪酸',
+                                                color: 'yellow',
+                                                current: currentIntake.monounsaturatedFat,
+                                                target: Math.round(totalFat * idealRatios.monounsaturated * 10) / 10
+                                            },
+                                            {
+                                                name: '多価不飽和脂肪酸',
+                                                color: 'blue',
+                                                current: currentIntake.polyunsaturatedFat,
+                                                target: Math.round(totalFat * idealRatios.polyunsaturated * 10) / 10
+                                            }
+                                        ].map((item, idx) => {
+                                            const percent = item.target ? (item.current / item.target) * 100 : 0;
+
+                                            return (
+                                                <div key={idx} className="bg-gray-50 p-2 rounded">
+                                                    <div className="flex justify-between text-xs mb-1">
+                                                        <span className="font-medium">
+                                                            {item.name}
+                                                        </span>
+                                                        <span className="text-gray-600">
+                                                            {Math.round(item.current * 10) / 10} / {item.target}g
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div
+                                                            className={`h-full ${colorClasses[item.color]} transition-all`}
+                                                            style={{ width: `${Math.min(percent, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        });
+                                    })()}
+                                </div>
+                            </div>
+
+                            {/* 糖質・食物繊維 */}
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <h5 className="text-xs font-semibold text-gray-700">
+                                        糖質・食物繊維バランス
+                                    </h5>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-base font-bold text-gray-900">
+                                            {currentIntake.carbFiberRating}
+                                        </span>
+                                        <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                                            currentIntake.carbFiberScore >= 5
+                                                ? 'bg-green-100 text-green-700'
+                                                : currentIntake.carbFiberScore >= 4
+                                                ? 'bg-blue-100 text-blue-700'
+                                                : 'bg-red-100 text-red-700'
+                                        }`}>
+                                            {currentIntake.carbFiberLabel}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* 糖質/食物繊維バランスプログレスバー */}
+                                {(currentIntake.carbs > 0 || currentIntake.fiber > 0) && (
+                                    <div className="bg-gray-50 p-3 rounded mb-3">
+                                        <div className="text-xs font-medium text-gray-700 mb-2">バランス</div>
+                                        <div className="h-4 bg-gray-200 rounded-full overflow-hidden flex">
+                                            {(() => {
+                                                const totalCarbAndFiber = currentIntake.carbs + currentIntake.fiber;
+                                                if (totalCarbAndFiber === 0) return null;
+
+                                                const carbsPercent = (currentIntake.carbs / totalCarbAndFiber) * 100;
+                                                const fiberPercent = (currentIntake.fiber / totalCarbAndFiber) * 100;
+
+                                                return (
+                                                    <>
+                                                        {carbsPercent > 0 && (
+                                                            <div
+                                                                className="bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-medium"
+                                                                style={{ width: `${carbsPercent}%` }}
+                                                            >
+                                                                {carbsPercent >= 10 && `${Math.round(carbsPercent)}%`}
+                                                            </div>
+                                                        )}
+                                                        {fiberPercent > 0 && (
+                                                            <div
+                                                                className="bg-gradient-to-r from-green-400 to-green-500 flex items-center justify-center text-white text-xs font-medium"
+                                                                style={{ width: `${fiberPercent}%` }}
+                                                            >
+                                                                {fiberPercent >= 10 && `${Math.round(fiberPercent)}%`}
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+                                        <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-600">
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 bg-gradient-to-r from-amber-400 to-orange-500 rounded"></div>
+                                                <span>炭水化物</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-green-500 rounded"></div>
+                                                <span>食物繊維</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                                            目標: 炭水化物{Math.round(currentIntake.carbs)}g / 食物繊維{Math.round(currentIntake.fiber)}g
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 詳細数値 */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {(() => {
+                                        const targets = LBMUtils.calculatePersonalizedMicronutrients(profile || {});
+                                        const fiberTargets = targets.carbohydrateQuality || { fiber: 20, solubleFiber: 7, insolubleFiber: 13 };
+
+                                        // 糖質の推奨量 = 炭水化物の推奨量 - 食物繊維の推奨量
+                                        const sugarTarget = targetPFC.carbs - fiberTargets.fiber;
+
+                                        return [
+                                            {
+                                                name: '糖質',
+                                                icon: 'Cookie',
+                                                color: 'amber',
+                                                current: currentIntake.sugar,
+                                                target: sugarTarget,
+                                                unit: 'g'
+                                            },
+                                            {
+                                                name: '食物繊維',
+                                                icon: 'Wheat',
+                                                color: 'green',
+                                                current: currentIntake.fiber,
+                                                target: fiberTargets.fiber,
+                                                unit: 'g'
+                                            },
+                                            {
+                                                name: '水溶性食物繊維',
+                                                icon: 'Droplet',
+                                                color: 'blue',
+                                                current: currentIntake.solubleFiber,
+                                                target: fiberTargets.solubleFiber,
+                                                unit: 'g'
+                                            },
+                                            {
+                                                name: '不溶性食物繊維',
+                                                icon: 'Layers',
+                                                color: 'teal',
+                                                current: currentIntake.insolubleFiber,
+                                                target: fiberTargets.insolubleFiber,
+                                                unit: 'g'
+                                            }
+                                        ].map((item, idx) => {
+                                            const percent = item.target ? (item.current / item.target) * 100 : 0;
+
+                                            // 色のマッピング（Tailwindの動的クラス名問題を回避）
+                                            const colorClasses = {
+                                                'amber': 'bg-gradient-to-r from-amber-400 to-orange-500',
+                                                'green': 'bg-gradient-to-r from-green-400 to-green-500',
+                                                'blue': 'bg-gradient-to-r from-blue-400 to-blue-500',
+                                                'teal': 'bg-gradient-to-r from-teal-400 to-emerald-500'
+                                            };
+
+                                            return (
+                                                <div key={idx} className="bg-gray-50 p-2 rounded">
+                                                    <div className="flex justify-between text-xs mb-1">
+                                                        <span className="font-medium">
+                                                            {item.name}
+                                                        </span>
+                                                        <span className="text-gray-600">
+                                                            {Math.round(item.current * 10) / 10}{item.target ? ` / ${item.target}` : ''}{item.unit}
+                                                        </span>
+                                                    </div>
+                                                    {item.target && (
+                                                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`h-full ${colorClasses[item.color]} transition-all`}
+                                                                style={{ width: `${Math.min(percent, 100)}%` }}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    {item.note && (
+                                                        <div className="text-xs text-gray-500 mt-1">{item.note}</div>
+                                                    )}
+                                                </div>
+                                            );
+                                        });
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+
                         {/* ビタミン */}
                         <div>
-                            <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
-                                <Icon name="Droplets" size={16} className="text-orange-500" />
+                            <h4 className="text-sm font-bold mb-3 text-gray-800">
                                 ビタミン
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1088,14 +1765,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             </div>
                                         </div>
                                     );
-                                })})()}
+                                    });
+                                })()}
                             </div>
                         </div>
 
                         {/* ミネラル */}
                         <div>
-                            <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
-                                <Icon name="Gem" size={16} className="text-purple-500" />
+                            <h4 className="text-sm font-bold mb-3 text-gray-800">
                                 ミネラル
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1145,15 +1822,15 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             </div>
                                         </div>
                                     );
-                                })})()}
+                                    });
+                                })()}
                             </div>
                         </div>
 
                         {/* その他の栄養素 */}
                         {Object.keys(currentIntake.otherNutrients || {}).length > 0 && (
                             <div>
-                                <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
-                                    <Icon name="Sparkles" size={16} className="text-cyan-500" />
+                                <h4 className="text-sm font-bold mb-3 text-gray-800">
                                     その他の栄養素
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1212,7 +1889,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     </div>
                                                 </div>
                                             );
-                                    })})()}
+                                        });
+                                    })()}
                                 </div>
                             </div>
                         )}
@@ -1617,6 +2295,35 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                         テンプレート
                                                     </span>
                                                 )}
+                                                {meal.isPostWorkout && (
+                                                    <span className="text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        <Icon name="Zap" size={10} />
+                                                        運動後
+                                                    </span>
+                                                )}
+                                                {(() => {
+                                                    const mealGLData = mealGLValues.find(m => m.mealId === (meal.id || meal.timestamp));
+                                                    if (mealGLData) {
+                                                        // GL値の表示テキストを決定
+                                                        let displayText = `GL ${Math.round(mealGLData.adjustedGL)}`;
+                                                        if (mealGLData.rating === '高GL（推奨）') {
+                                                            displayText += ' (推奨)';
+                                                        } else if (mealGLData.rating === '高GL' && !meal.isPostWorkout) {
+                                                            displayText += ' (分割推奨)';
+                                                        } else if (mealGLData.rating === '中GL') {
+                                                            displayText += ' (良好)';
+                                                        } else if (mealGLData.rating === '低GL') {
+                                                            displayText += ' (優秀)';
+                                                        }
+
+                                                        return (
+                                                            <span className={`text-xs ${mealGLData.badgeColor} text-white px-2 py-0.5 rounded-full flex items-center gap-1`}>
+                                                                {displayText}
+                                                            </span>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()}
                                             </div>
                                             <div
                                                 onClick={() => setExpandedMeals(prev => ({...prev, [meal.id || index]: !prev[meal.id || index]}))}
@@ -2497,6 +3204,227 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <button
                                 onClick={() => setShowScoringGuideModal(false)}
                                 className="w-full py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition font-medium"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 詳細栄養素の使い方モーダル */}
+            {showDetailedNutrientsGuide && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl w-full max-w-[95vw] sm:max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 space-y-4">
+                            {/* ヘッダー */}
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                    <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+                                    詳細栄養素の使い方
+                                </h3>
+                                <button
+                                    onClick={() => setShowDetailedNutrientsGuide(false)}
+                                    className="p-1 hover:bg-gray-100 rounded-full transition"
+                                >
+                                    <Icon name="X" size={20} className="text-gray-600" />
+                                </button>
+                            </div>
+
+                            {/* タンパク質の質（DIAAS） */}
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Beef" size={18} className="text-red-600" />
+                                    <h4 className="font-bold text-red-800">タンパク質の質（DIAAS）</h4>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-2">
+                                    <p className="font-medium">DIAASとは？</p>
+                                    <p>消化・吸収・利用効率を評価する最新の指標です。</p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1">
+                                        <li><strong>1.0以上</strong>：優秀なタンパク質源（動物性、大豆など）</li>
+                                        <li><strong>0.75-1.0</strong>：良好（豆類など）</li>
+                                        <li><strong>0.75未満</strong>：要改善（穀類単体など）</li>
+                                    </ul>
+                                    <div className="mt-3 bg-blue-50 border border-blue-300 rounded p-3">
+                                        <p className="font-semibold text-blue-800 mb-2 flex items-center gap-1">
+                                            <Icon name="Clock" size={16} />
+                                            最適な摂取タイミング
+                                        </p>
+                                        <div className="text-xs text-gray-700 space-y-2">
+                                            <p><strong>⚡ 運動直後（30分以内）：</strong> 筋肉が最もアミノ酸を必要とするゴールデンタイム。高DIASS食品（ホエイプロテイン、卵、乳製品）を優先。</p>
+                                            <p><strong>🌅 朝食：</strong> 睡眠中の筋分解状態から合成状態へ切り替えるため、必ず高DIASS食品を摂取。</p>
+                                            <p><strong>🍽️ 毎食：</strong> 体は一度に大量のタンパク質を処理できません。毎食コンスタントに良質なタンパク質（DIASS 1.0以上）を補給。</p>
+                                            <p className="mt-2 text-blue-700 font-medium">💡 組み合わせのコツ： 白米＋納豆、パン＋卵など、低DIAASと高DIAASを組み合わせてアミノ酸バランスを改善。</p>
+                                        </div>
+                                    </div>
+                                    <p className="mt-2 bg-white p-2 rounded border-l-4 border-red-400">
+                                        <strong>目指すべき目標：</strong> 毎食1.0以上を目指しましょう。動物性タンパク質と植物性タンパク質を組み合わせると効率的です。
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 炭水化物の質（GL値） */}
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Wheat" size={18} className="text-green-600" />
+                                    <h4 className="font-bold text-green-800">炭水化物の質（GL値・血糖管理）</h4>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-2">
+                                    <p className="font-medium">GL値（Glycemic Load）とは？</p>
+                                    <p>血糖値の上昇度を示す指標で、「1食ごと」と「1日合計」の2つの評価があります。</p>
+
+                                    <div className="mt-3 bg-white border border-gray-300 rounded p-3">
+                                        <p className="font-semibold text-gray-800 mb-2">📊 1食ごとのGL評価（血糖スパイク管理）</p>
+                                        <ul className="list-disc list-inside ml-2 space-y-1 text-xs">
+                                            <li><strong>低GL（≤10）</strong>：血糖値が緩やかに上昇 → 優秀</li>
+                                            <li><strong>中GL（11-19）</strong>：適度な上昇 → 良好</li>
+                                            <li><strong>高GL（≥20）</strong>：急激に上昇 → 分割推奨</li>
+                                        </ul>
+                                        <p className="text-xs text-orange-600 mt-2 font-medium">
+                                            ⚡ 運動後の食事は高GLが推奨されます（筋グリコーゲン補充）
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-3 bg-white border border-gray-300 rounded p-3">
+                                        <p className="font-semibold text-gray-800 mb-2">📈 1日合計GL評価（総負荷管理）</p>
+                                        <ul className="list-disc list-inside ml-2 space-y-1 text-xs">
+                                            <li><strong>優秀（&lt;80）</strong>：理想的な血糖管理</li>
+                                            <li><strong>良好（80-100）</strong>：目標範囲内</li>
+                                            <li><strong>普通（101-120）</strong>：許容範囲</li>
+                                            <li><strong>要改善（121+）</strong>：改善が必要</li>
+                                        </ul>
+                                        <p className="text-xs text-blue-600 mt-2 font-medium">
+                                            🎯 目標: 100以下
+                                        </p>
+                                    </div>
+
+                                    <p className="font-medium mt-3">補正の仕組み</p>
+                                    <p className="text-xs">PFC・食物繊維を一緒に摂取すると、血糖値の上昇が緩やかになります。各食事ごとに補正が適用されます。</p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1 text-xs">
+                                        <li><strong>タンパク質</strong>：0g→0% / 10g→5% / 20g以上→最大10%</li>
+                                        <li><strong>脂質</strong>：0g→0% / 5g→5% / 10g以上→最大10%</li>
+                                        <li><strong>食物繊維</strong>：0g→0% / 2.5g→7.5% / 5g以上→最大15%</li>
+                                    </ul>
+                                    <p className="text-xs text-gray-600 mt-1">※補正は段階的に適用されます（例：タンパク質15gの場合は-7.5%補正）</p>
+                                    <p className="text-xs text-gray-600 mt-1">※表示されるGL値はすべて補正後の値です</p>
+                                    <p className="font-medium mt-3">GI値内訳とは？</p>
+                                    <p>GI値60以上と60未満の炭水化物の摂取割合を示します。</p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1 text-xs">
+                                        <li><strong>GI 60未満</strong>：血糖値が緩やかに上昇</li>
+                                        <li><strong>GI 60以上</strong>：血糖値が急激に上昇</li>
+                                    </ul>
+                                    <p className="text-xs text-gray-600 mt-1">※60を境界に「低GI食品」と「高GI食品」を分類</p>
+
+                                    <div className="mt-3 bg-orange-50 border border-orange-300 rounded p-3">
+                                        <p className="font-semibold text-orange-800 mb-2 flex items-center gap-1">
+                                            <Icon name="AlertCircle" size={16} />
+                                            重要：調理法でGI値は大きく変動します
+                                        </p>
+                                        <div className="text-xs text-gray-700 space-y-2">
+                                            <p><strong>加熱で上昇：</strong> デンプンが「糊化（α化）」し、消化吸収が速くなります。</p>
+                                            <ul className="list-disc list-inside ml-2 space-y-1">
+                                                <li>白米（炊きたて）：GI 88 → 高GI</li>
+                                                <li>ジャガイモ（焼き）：GI 93 → 高GI</li>
+                                                <li>パスタ（よく茹でる）：GI 60台 → 中GI</li>
+                                            </ul>
+                                            <p className="mt-2"><strong>冷却で低下：</strong> 「レジスタントスターチ（難消化性でんぷん）」が増加し、消化が緩やかになります。</p>
+                                            <ul className="list-disc list-inside ml-2 space-y-1">
+                                                <li>白米（冷やご飯・おにぎり）：GI 70台 → 中GI</li>
+                                                <li>ジャガイモ（ポテトサラダ）：GI 50-60台 → 低~中GI</li>
+                                                <li>パスタ（アルデンテ）：GI 40-50台 → 低GI</li>
+                                            </ul>
+                                            <p className="mt-2"><strong>再加熱後も維持：</strong> 一度冷ましてレンジで温め直しても、レジスタントスターチは残り、GI値は炊きたてより低いままです。</p>
+                                            <p className="mt-2 text-orange-700 font-medium">※アプリのGI値は基本的な調理法（白米=炊飯後、パスタ=茹で、など）を前提としています。</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 bg-blue-50 border border-blue-300 rounded p-3">
+                                        <p className="font-semibold text-blue-800 mb-2 flex items-center gap-1">
+                                            <Icon name="Clock" size={16} />
+                                            最適な摂取タイミング
+                                        </p>
+                                        <div className="text-xs text-gray-700 space-y-2">
+                                            <p><strong>⚡ 運動直後（30分以内）：</strong> 高GI食品＋高DIASS食品で素早くエネルギー補給と筋肉回復。（例：白米＋卵、果物＋プロテイン）</p>
+                                            <p><strong>🏃 運動前（1-2時間前）：</strong> 低GI食品でエネルギーを持続的に供給。高GI食品は避ける（低血糖リスク）。</p>
+                                            <p><strong>🍽️ 日常の食事：</strong> 低GI食品＋高DIASS食品で血糖値を安定させ、眠気・倦怠感・体脂肪蓄積を防止。（例：玄米＋鶏肉、全粒粉パン＋卵）</p>
+                                            <p><strong>💤 就寝前：</strong> 低GI食品を選び、血糖値スパイクを避ける。睡眠の質向上につながります。</p>
+                                            <p className="mt-2 text-blue-700 font-medium">💡 ベストな組み合わせ： 運動後は高GI＋高DIASS、日常は低GI＋高DIASSが基本です。</p>
+                                        </div>
+                                    </div>
+
+                                    <p className="mt-3 bg-white p-2 rounded border-l-4 border-green-400 text-xs">
+                                        <strong>目指すべき目標：</strong> 1日合計GL値100以下（理想80以下）、1食あたりGL値20以下、低GI食品60%以上を目指しましょう。白米より玄米、うどんより蕎麦、温かいご飯より冷やご飯がおすすめです。
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 脂肪酸 */}
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Droplets" size={18} className="text-yellow-600" />
+                                    <h4 className="font-bold text-yellow-800">脂肪酸バランス</h4>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-2">
+                                    <p className="font-medium">脂肪酸の種類と役割</p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1">
+                                        <li><strong>飽和脂肪酸</strong>：バター、肉の脂など。摂りすぎに注意</li>
+                                        <li><strong>中鎖脂肪酸（MCT）</strong>：ココナッツオイル、MCTオイルなど。素早くエネルギーになる</li>
+                                        <li><strong>一価不飽和脂肪酸</strong>：オリーブオイル、アボカドなど。心臓に優しい</li>
+                                        <li><strong>多価不飽和脂肪酸</strong>：魚油、ナッツなど。DHA・EPAを含む</li>
+                                    </ul>
+                                    <p className="font-medium mt-3">理想的なバランスと評価基準</p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1">
+                                        <li><strong>優秀</strong>：飽和25-35%、中鎖0-10%、一価35-45%、多価20-30%</li>
+                                        <li><strong>良好</strong>：飽和20-40%、一価30-50%の範囲</li>
+                                        <li><strong>要改善</strong>：飽和40%以上または一価30%未満</li>
+                                    </ul>
+                                    <div className="mt-3 bg-cyan-50 border border-cyan-300 rounded p-2">
+                                        <p className="text-xs text-cyan-900 font-medium mb-1">💡 中鎖脂肪酸（MCT）の特徴</p>
+                                        <p className="text-xs text-gray-700">長鎖脂肪酸より消化吸収が速く、すぐにエネルギーとして利用されます。運動前の摂取やケトジェニックダイエットに効果的です。</p>
+                                    </div>
+                                    <p className="mt-2 bg-white p-2 rounded border-l-4 border-yellow-400">
+                                        <strong>目指すべき目標：</strong> 理想バランスは飽和3:中鎖0.5:一価4:多価2.5です。魚・ナッツ・オリーブオイル・MCTオイルを組み合わせ、バランスの良い脂質摂取を心がけましょう。
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 糖質・食物繊維 */}
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Cookie" size={18} className="text-amber-600" />
+                                    <h4 className="font-bold text-amber-800">糖質・食物繊維</h4>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-2">
+                                    <ul className="list-disc list-inside ml-2 space-y-1">
+                                        <li><strong>糖質</strong>：エネルギー源。炭水化物から食物繊維を除いたもの</li>
+                                        <li><strong>食物繊維</strong>：腸内環境改善、血糖値上昇抑制</li>
+                                        <li><strong>水溶性食物繊維</strong>：血糖値・コレステロール低下（海藻、果物など）</li>
+                                        <li><strong>不溶性食物繊維</strong>：便通改善（野菜、穀類など）</li>
+                                    </ul>
+                                    <p className="mt-2 bg-white p-2 rounded border-l-4 border-amber-400">
+                                        <strong>目指すべき目標：</strong> 食物繊維20g/日以上（水溶性7g、不溶性13g）を目指しましょう。野菜・きのこ・海藻・果物を毎食摂取。
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* ビタミン・ミネラル */}
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Sparkles" size={18} className="text-purple-600" />
+                                    <h4 className="font-bold text-purple-800">ビタミン・ミネラル</h4>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-2">
+                                    <p>体の調子を整える微量栄養素です。目標値に対する達成率をプログレスバーで表示しています。</p>
+                                    <p className="mt-2 bg-white p-2 rounded border-l-4 border-purple-400">
+                                        <strong>目指すべき目標：</strong> 全項目80%以上を目指しましょう。色とりどりの野菜・果物・魚・ナッツをバランスよく摂取。
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 閉じるボタン */}
+                            <button
+                                onClick={() => setShowDetailedNutrientsGuide(false)}
+                                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
                             >
                                 閉じる
                             </button>

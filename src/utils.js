@@ -340,10 +340,10 @@ const LBMUtils = {
         };
         const gFactor = goalFactors[goal] || goalFactors['メンテナンス'];
 
-        // ライフスタイル係数: ボディメイカーはビタミン・ミネラル2倍、食物繊維1.5倍
+        // ライフスタイル係数: ボディメイカーはビタミン・ミネラル2倍、食物繊維1.2倍
         const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス', 'ボディメイカー'];
         const vitaminsMinerlasBase = bodymakerStyles.includes(lifestyle) ? 2.0 : 1.0; // ビタミン・ミネラル用
-        const fiberBase = bodymakerStyles.includes(lifestyle) ? 1.5 : 1.0; // 食物繊維用
+        const fiberBase = bodymakerStyles.includes(lifestyle) ? 1.2 : 1.0; // 食物繊維用
 
         // 耐容上限値（成人）- ボディメイカーは3倍に拡大
         const baseTolerableUpperLimits = {

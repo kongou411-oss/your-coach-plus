@@ -30,6 +30,7 @@ const AddMealModal = ({
     // ===== State管理 =====
     const [mealName, setMealName] = useState(isEditMode ? editingMeal.name : '食事');
     const [isEditingMealName, setIsEditingMealName] = useState(false); // 食事名編集モード
+    const [isPostWorkout, setIsPostWorkout] = useState(isEditMode ? editingMeal.isPostWorkout || false : false); // 運動後チェック
     const [mealTemplates, setMealTemplates] = useState([]);
     const [addedItems, setAddedItems] = useState(isEditMode ? editingMeal.items || [] : []);
     const [showSearchModal, setShowSearchModal] = useState(false);
@@ -371,6 +372,7 @@ const AddMealModal = ({
             fat: parseFloat(totalPFC.fat.toFixed(1)),
             carbs: parseFloat(totalPFC.carbs.toFixed(1)),
             totalCalories: Math.round(totalPFC.calories),
+            isPostWorkout: isPostWorkout, // 運動後フラグを保存
         };
 
         // 編集モードの場合はonUpdate、新規追加の場合はonAddを呼ぶ
@@ -463,7 +465,7 @@ const AddMealModal = ({
                                 <h3 className="text-lg font-bold truncate">{mealName}</h3>
                             )}
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                             {/* 編集ボタン */}
                             {!isEditingMealName && (
                                 <button
@@ -474,6 +476,16 @@ const AddMealModal = ({
                                     <Icon name="Edit" size={18} />
                                 </button>
                             )}
+                            {/* 運動後チェックボックス */}
+                            <label className="flex items-center gap-1.5 cursor-pointer px-2 py-1 hover:bg-gray-50 rounded-lg transition">
+                                <input
+                                    type="checkbox"
+                                    checked={isPostWorkout}
+                                    onChange={(e) => setIsPostWorkout(e.target.checked)}
+                                    className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
+                                />
+                                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">運動後</span>
+                            </label>
                             {/* ヘルプボタン */}
                             <button
                                 onClick={() => setShowHelpModal(true)}
@@ -994,14 +1006,19 @@ const AddMealModal = ({
                         servingSize: itemWithNutrients.servingSize || null,
                         servingUnit: itemWithNutrients.servingUnit || null,
 
-                        // 糖質・食物繊維・脂肪酸（100g base values - データベースから直接）
-                        sugar: itemWithNutrients.sugar || 0,
-                        fiber: itemWithNutrients.fiber || 0,
-                        solubleFiber: itemWithNutrients.solubleFiber || 0,
-                        insolubleFiber: itemWithNutrients.insolubleFiber || 0,
-                        saturatedFat: itemWithNutrients.saturatedFat || 0,
-                        monounsaturatedFat: itemWithNutrients.monounsaturatedFat || 0,
-                        polyunsaturatedFat: itemWithNutrients.polyunsaturatedFat || 0,
+                        // 糖質・食物繊維・脂肪酸（SCALED to actual amount - ビタミン・ミネラルと同じ）
+                        sugar: parseFloat(((itemWithNutrients.sugar || 0) * ratio).toFixed(2)),
+                        fiber: parseFloat(((itemWithNutrients.fiber || 0) * ratio).toFixed(2)),
+                        solubleFiber: parseFloat(((itemWithNutrients.solubleFiber || 0) * ratio).toFixed(2)),
+                        insolubleFiber: parseFloat(((itemWithNutrients.insolubleFiber || 0) * ratio).toFixed(2)),
+                        saturatedFat: parseFloat(((itemWithNutrients.saturatedFat || 0) * ratio).toFixed(2)),
+                        mediumChainFat: parseFloat(((itemWithNutrients.mediumChainFat || 0) * ratio).toFixed(2)),
+                        monounsaturatedFat: parseFloat(((itemWithNutrients.monounsaturatedFat || 0) * ratio).toFixed(2)),
+                        polyunsaturatedFat: parseFloat(((itemWithNutrients.polyunsaturatedFat || 0) * ratio).toFixed(2)),
+
+                        // 品質指標（100g基準値 - ratio不要）
+                        diaas: itemWithNutrients.diaas || null,
+                        gi: itemWithNutrients.gi || null,
 
                         vitamins: vitamins,  // ← SCALED to actual amount
                         minerals: minerals,  // ← SCALED to actual amount
@@ -1015,6 +1032,11 @@ const AddMealModal = ({
                     console.log('[AddMealModal] 追加されたアイテム:', {
                         name: newItem.name,
                         amount: newItem.amount,
+                        diaas: newItem.diaas,
+                        gi: newItem.gi,
+                        saturatedFat: newItem.saturatedFat,
+                        fiber: newItem.fiber,
+                        sugar: newItem.sugar,
                         vitamins: newItem.vitamins,
                         minerals: newItem.minerals,
                         _base: newItem._base
