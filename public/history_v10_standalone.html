@@ -30,8 +30,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
 
     <!-- App Services -->
-    <script src="config.js"></script>
-    <script src="services.js"></script>
+    <script src="/config.js"></script>
+    <script src="/utils.js"></script>
+    <script src="/services.js"></script>
     <!-- 目標ライン・メモ機能 -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1"></script>
     <!-- カスタム期間選択 -->
@@ -527,12 +528,19 @@
                                 <i data-lucide="refresh-cw" class="w-5 h-5 text-gray-600"></i>
                             </button>
                         </div>
-                        <div class="flex gap-2 mt-2">
-                            <button type="button" onclick="performHistoryAnalysis()" class="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg flex items-center gap-2 text-sm font-semibold shadow-sm transition">
-                                <i data-lucide="sparkles" class="w-4 h-4"></i>
-                                <span>AI分析</span>
+                        <div class="flex gap-2 mt-2 justify-end">
+                            <!-- 個別分析ボタン（タブごとに変化） -->
+                            <button type="button" id="tab-specific-analysis-btn" onclick="performTabSpecificAnalysis()" class="px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold shadow-sm transition">
+                                <i id="tab-analysis-icon" data-lucide="utensils" class="w-4 h-4"></i>
+                                <span id="tab-analysis-label">個別分析</span>
                             </button>
-                            <button type="button" onclick="toggleSettingsPanel(1)" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center gap-2 text-sm font-semibold transition">
+                            <!-- 全体分析ボタン（全タブ共通） -->
+                            <button type="button" onclick="performHistoryAnalysis()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center gap-2 text-sm font-semibold shadow-sm transition">
+                                <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                                <span>全体分析</span>
+                            </button>
+                            <!-- 設定ボタン（全タブ共通） -->
+                            <button type="button" onclick="toggleSettingsPanel(1)" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg flex items-center gap-2 text-sm font-semibold transition">
                                 <i data-lucide="settings" class="w-4 h-4"></i>
                                 <span>設定</span>
                             </button>
@@ -2371,6 +2379,9 @@
                     selectSubCategory(category, firstMetrics[category]);
                 }
             }
+
+            // 個別分析ボタンを更新
+            updateTabSpecificAnalysisButton(category);
 
             // アイコンを再描画
             lucide.createIcons();
@@ -4389,6 +4400,623 @@
 
         // ========== 履歴分析機能 ==========
 
+        // 個別分析ボタンの更新
+        function updateTabSpecificAnalysisButton(category) {
+            const btn = document.getElementById('tab-specific-analysis-btn');
+            const icon = document.getElementById('tab-analysis-icon');
+            const label = document.getElementById('tab-analysis-label');
+
+            const tabConfig = {
+                nutrition: {
+                    icon: 'utensils',
+                    label: '個別分析',
+                    bgColor: 'bg-green-500 hover:bg-green-600',
+                    textColor: 'text-white'
+                },
+                training: {
+                    icon: 'dumbbell',
+                    label: '個別分析',
+                    bgColor: 'bg-orange-500 hover:bg-orange-600',
+                    textColor: 'text-white'
+                },
+                condition: {
+                    icon: 'heart-pulse',
+                    label: '個別分析',
+                    bgColor: 'bg-red-500 hover:bg-red-600',
+                    textColor: 'text-white'
+                },
+                performance: {
+                    icon: 'trending-up',
+                    label: '個別分析',
+                    bgColor: 'bg-purple-500 hover:bg-purple-600',
+                    textColor: 'text-white'
+                }
+            };
+
+            const config = tabConfig[category] || tabConfig.nutrition;
+
+            // アイコンとラベルを更新
+            icon.setAttribute('data-lucide', config.icon);
+            label.textContent = config.label;
+
+            // 色を更新
+            btn.className = `px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold shadow-sm transition ${config.bgColor} ${config.textColor}`;
+
+            // アイコンを再描画
+            lucide.createIcons();
+        }
+
+        // 個別分析の実行
+        async function performTabSpecificAnalysis() {
+            const category = currentMainCategory;
+
+            // 各タブ専用の分析を実行
+            const analysisMap = {
+                nutrition: generateNutritionAnalysis,
+                training: generateTrainingAnalysis,
+                condition: generateConditionAnalysis,
+                performance: generatePerformanceAnalysis
+            };
+
+            const analysisFn = analysisMap[category];
+            if (analysisFn) {
+                await analysisFn();
+            } else {
+                alert('このタブの個別分析は未実装です');
+            }
+        }
+
+        // 食事タブの個別分析
+        async function generateNutritionAnalysis() {
+            // ローディングモーダルを表示
+            document.getElementById('history-analysis-loading-modal').classList.remove('hidden');
+
+            try {
+                // 現在表示中の期間データを取得
+                const days = currentPeriods[1];
+                const periodData = generateData(days);
+
+                // 栄養データの統計計算
+                const nutritionStats = {};
+                const nutritionKeys = ['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium', 'sugar'];
+
+                for (const key of nutritionKeys) {
+                    if (Array.isArray(periodData[key]) && periodData[key].length > 0) {
+                        const validData = periodData[key].filter(v => typeof v === 'number' && !isNaN(v) && v > 0);
+                        if (validData.length > 0) {
+                            const sum = validData.reduce((a, b) => a + b, 0);
+                            const avg = sum / validData.length;
+                            const max = Math.max(...validData);
+                            const min = Math.min(...validData);
+
+                            nutritionStats[key] = {
+                                avg: avg.toFixed(1),
+                                max: max.toFixed(1),
+                                min: min.toFixed(1),
+                                count: validData.length
+                            };
+                        }
+                    }
+                }
+
+                // ユーザー情報の取得
+                const userProfileKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.USER_PROFILE : 'yourCoachBeta_userProfile';
+                const userProfile = JSON.parse(localStorage.getItem(userProfileKey) || '{}');
+                const currentPurpose = userProfile.purpose || 'メンテナンス';
+                const userStyle = userProfile.style || '一般';
+                const targetCalories = userProfile.targetCalories || 2000;
+                const targetProtein = userProfile.targetProtein || 100;
+                const targetFat = userProfile.targetFat || 50;
+                const targetCarbs = userProfile.targetCarbs || 250;
+
+                // プロンプト生成
+                const prompt = `## 役割
+
+トップアスリート指導のエリートパーソナルコーチとして、ユーザーの過去${days}日間の栄養摂取データを分析し、簡潔で実践的なフィードバックを提供します。
+
+## 評価の基本原則
+
+**最重要**: ユーザーの目的（${currentPurpose}）とスタイル（${userStyle}）の達成に必要な栄養摂取を評価してください。
+
+**目的: ${currentPurpose}**
+- 期間: 過去${days}日間
+- 目標カロリー: ${targetCalories}kcal/日
+- 目標PFC: P${targetProtein}g / F${targetFat}g / C${targetCarbs}g
+
+## 栄養データ（過去${days}日間）
+
+### カロリー・PFC
+${nutritionStats.calories ? `- カロリー平均: ${nutritionStats.calories.avg}kcal（目標: ${targetCalories}kcal）\n  最低${nutritionStats.calories.min}～最高${nutritionStats.calories.max}kcal、記録日数: ${nutritionStats.calories.count}日` : '- カロリーデータなし'}
+${nutritionStats.protein ? `- タンパク質平均: ${nutritionStats.protein.avg}g（目標: ${targetProtein}g）\n  最低${nutritionStats.protein.min}～最高${nutritionStats.protein.max}g` : '- タンパク質データなし'}
+${nutritionStats.fat ? `- 脂質平均: ${nutritionStats.fat.avg}g（目標: ${targetFat}g）\n  最低${nutritionStats.fat.min}～最高${nutritionStats.fat.max}g` : '- 脂質データなし'}
+${nutritionStats.carbs ? `- 炭水化物平均: ${nutritionStats.carbs.avg}g（目標: ${targetCarbs}g）\n  最低${nutritionStats.carbs.min}～最高${nutritionStats.carbs.max}g` : '- 炭水化物データなし'}
+
+### 微量栄養素
+${nutritionStats.fiber ? `- 食物繊維平均: ${nutritionStats.fiber.avg}g（最低${nutritionStats.fiber.min}～最高${nutritionStats.fiber.max}g）` : '- 食物繊維データなし'}
+${nutritionStats.sodium ? `- 塩分平均: ${nutritionStats.sodium.avg}g（最低${nutritionStats.sodium.min}～最高${nutritionStats.sodium.max}g）` : '- 塩分データなし'}
+${nutritionStats.sugar ? `- 糖質平均: ${nutritionStats.sugar.avg}g（最低${nutritionStats.sugar.min}～最高${nutritionStats.sugar.max}g）` : '- 糖質データなし'}
+
+## 出力形式（厳守）
+
+過去${days}日間の栄養データ、お疲れ様でした！
+
+---
+
+① 評価
+
+[過去${days}日間の栄養摂取全体を2-3文で評価]
+
+---
+
+② 傾向と特徴
+
+**カロリー**: [カロリー摂取の傾向を1文で]
+**PFC**: [タンパク質・脂質・炭水化物の傾向を1-2文で]
+**微量栄養素**: [食物繊維・塩分・糖質の傾向を1文で]
+
+---
+
+③ 全体の相関関係
+
+[栄養摂取と体組成変化やパフォーマンスとの相関を2-3文で分析]
+
+---
+
+④ 改善点
+
+[${currentPurpose}の目的達成のための具体的な改善アクションを2-3文で提示]
+
+ナイストライ！
+
+ルール:
+- 冒頭は必ず「過去${days}日間の栄養データ、お疲れ様でした！」から開始
+- 最後は必ず「ナイストライ！」で終了
+- ${currentPurpose}の目的を意識した評価を行う
+- 数値は具体的に示す`;
+
+                // Cloud Functions経由でAI分析を実行
+                const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
+
+                // レスポンスの検証
+                if (!response || !response.message) {
+                    throw new Error('AI分析からの応答が不正です');
+                }
+
+                const report = response.message.replace(/\n/g, '<br>');
+
+                // ローディングモーダルを非表示
+                document.getElementById('history-analysis-loading-modal').classList.add('hidden');
+
+                // レポートモーダルを表示
+                document.getElementById('history-analysis-period').textContent = `食事タブ 個別分析（過去${days}日間）`;
+                document.getElementById('history-analysis-report-content').innerHTML = report;
+                document.getElementById('history-analysis-report-modal').classList.remove('hidden');
+
+                // アイコンを再描画
+                lucide.createIcons();
+            } catch (error) {
+                console.error('[食事個別分析] エラー:', error);
+                document.getElementById('history-analysis-loading-modal').classList.add('hidden');
+                alert('分析中にエラーが発生しました。もう一度お試しください。');
+            }
+        }
+
+        // 運動タブの個別分析
+        async function generateTrainingAnalysis() {
+            // ローディングモーダルを表示
+            document.getElementById('history-analysis-loading-modal').classList.remove('hidden');
+
+            try {
+                // 現在表示中の期間データを取得
+                const days = currentPeriods[1];
+                const periodData = generateData(days);
+
+                // 運動データの統計計算
+                const trainingStats = {};
+                const trainingKeys = ['training_time', 'calorie_consumption', 'rm_max', 'cardio_duration'];
+
+                for (const key of trainingKeys) {
+                    if (Array.isArray(periodData[key]) && periodData[key].length > 0) {
+                        const validData = periodData[key].filter(v => typeof v === 'number' && !isNaN(v) && v > 0);
+                        if (validData.length > 0) {
+                            const sum = validData.reduce((a, b) => a + b, 0);
+                            const avg = sum / validData.length;
+                            const max = Math.max(...validData);
+                            const min = Math.min(...validData);
+
+                            trainingStats[key] = {
+                                avg: avg.toFixed(1),
+                                max: max.toFixed(1),
+                                min: min.toFixed(1),
+                                count: validData.length
+                            };
+                        }
+                    }
+                }
+
+                // ユーザー情報の取得
+                const userProfileKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.USER_PROFILE : 'yourCoachBeta_userProfile';
+                const userProfile = JSON.parse(localStorage.getItem(userProfileKey) || '{}');
+                const currentPurpose = userProfile.purpose || 'メンテナンス';
+                const userStyle = userProfile.style || '一般';
+
+                // プロンプト生成
+                const prompt = `## 役割
+
+トップアスリート指導のエリートパーソナルコーチとして、ユーザーの過去${days}日間の運動データを分析し、簡潔で実践的なフィードバックを提供します。
+
+## 評価の基本原則
+
+**最重要**: ユーザーの目的（${currentPurpose}）とスタイル（${userStyle}）の達成に必要なトレーニングを評価してください。
+
+**目的: ${currentPurpose}**
+- 期間: 過去${days}日間
+- 重点: 継続性、強度、バリエーション
+
+**スタイル: ${userStyle}**
+- 評価指針: ${userStyle === '筋肥大' ? '高重量・高ボリューム・筋肥大種目を重視' : userStyle === '筋力' ? '最大筋力・パワー向上・低レップ高重量を重視' : userStyle === '持久力' ? '有酸素運動・持久系種目・軽重量高レップを重視' : userStyle === 'バランス' ? '全面的な身体能力向上・多様な種目を重視' : '健康維持・日常フィットネスを重視'}
+
+## 運動データ（過去${days}日間）
+
+### トレーニング時間・消費カロリー
+${trainingStats.training_time ? `- トレーニング時間平均: ${trainingStats.training_time.avg}分（最低${trainingStats.training_time.min}～最高${trainingStats.training_time.max}分、記録日数: ${trainingStats.training_time.count}日）` : '- トレーニング時間データなし'}
+${trainingStats.calorie_consumption ? `- 消費カロリー平均: ${trainingStats.calorie_consumption.avg}kcal（最低${trainingStats.calorie_consumption.min}～最高${trainingStats.calorie_consumption.max}kcal）` : '- 消費カロリーデータなし'}
+
+### RM・有酸素運動
+${trainingStats.rm_max ? `- RM最大値平均: ${trainingStats.rm_max.avg}kg（最低${trainingStats.rm_max.min}～最高${trainingStats.rm_max.max}kg）` : '- RMデータなし'}
+${trainingStats.cardio_duration ? `- 有酸素運動時間平均: ${trainingStats.cardio_duration.avg}分（最低${trainingStats.cardio_duration.min}～最高${trainingStats.cardio_duration.max}分）` : '- 有酸素運動データなし'}
+
+## 出力形式（厳守）
+
+過去${days}日間の運動データ、お疲れ様でした！
+
+---
+
+① 評価
+
+[過去${days}日間の運動実施全体を2-3文で評価]
+
+---
+
+② 傾向と特徴
+
+**トレーニング時間**: [トレーニング時間の傾向を1文で]
+**消費カロリー**: [消費カロリーの傾向を1文で]
+**RM・有酸素**: [RM・有酸素運動の傾向を1-2文で]
+
+---
+
+③ 全体の相関関係
+
+[運動実施と体組成変化やパフォーマンスとの相関を2-3文で分析]
+
+---
+
+④ 改善点
+
+[${currentPurpose}の目的達成のための具体的な改善アクションを2-3文で提示]
+
+ナイストライ！
+
+ルール:
+- 冒頭は必ず「過去${days}日間の運動データ、お疲れ様でした！」から開始
+- 最後は必ず「ナイストライ！」で終了
+- ${currentPurpose}の目的を意識した評価を行う
+- 数値は具体的に示す`;
+
+                // Cloud Functions経由でAI分析を実行
+                const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
+
+                // レスポンスの検証
+                if (!response || !response.message) {
+                    throw new Error('AI分析からの応答が不正です');
+                }
+
+                const report = response.message.replace(/\n/g, '<br>');
+
+                // ローディングモーダルを非表示
+                document.getElementById('history-analysis-loading-modal').classList.add('hidden');
+
+                // レポートモーダルを表示
+                document.getElementById('history-analysis-period').textContent = `運動タブ 個別分析（過去${days}日間）`;
+                document.getElementById('history-analysis-report-content').innerHTML = report;
+                document.getElementById('history-analysis-report-modal').classList.remove('hidden');
+
+                // アイコンを再描画
+                lucide.createIcons();
+            } catch (error) {
+                console.error('[運動個別分析] エラー:', error);
+                document.getElementById('history-analysis-loading-modal').classList.add('hidden');
+                alert('分析中にエラーが発生しました。もう一度お試しください。');
+            }
+        }
+
+        // コンディションタブの個別分析
+        async function generateConditionAnalysis() {
+            // ローディングモーダルを表示
+            document.getElementById('history-analysis-loading-modal').classList.remove('hidden');
+
+            try {
+                // 現在表示中の期間データを取得
+                const days = currentPeriods[1];
+                const periodData = generateData(days);
+
+                // コンディションデータの統計計算
+                const conditionStats = {};
+                const conditionKeys = ['sleep_duration', 'sleep_quality', 'appetite', 'gut_health', 'focus', 'stress'];
+                const conditionLabels = {
+                    sleep_duration: ['', '5h以下', '6h', '7h', '8h', '9h以上'],
+                    sleep_quality: ['', '最悪', '悪', '普通', '良', '最高'],
+                    appetite: ['', 'なし', '少', '普通', '良好', '最高'],
+                    gut_health: ['', '不調', 'やや悪', '普通', '良好', '最高'],
+                    focus: ['', '最低', '低', '普通', '高', '最高'],
+                    stress: ['', '極大', '高', '普通', '低', 'なし']
+                };
+
+                for (const key of conditionKeys) {
+                    if (Array.isArray(periodData[key]) && periodData[key].length > 0) {
+                        const validData = periodData[key].filter(v => typeof v === 'number' && !isNaN(v) && v > 0);
+                        if (validData.length > 0) {
+                            const sum = validData.reduce((a, b) => a + b, 0);
+                            const avg = sum / validData.length;
+                            const max = Math.max(...validData);
+                            const min = Math.min(...validData);
+
+                            conditionStats[key] = {
+                                avg: avg.toFixed(1),
+                                max: max.toFixed(1),
+                                min: min.toFixed(1),
+                                count: validData.length,
+                                avgLabel: conditionLabels[key][Math.round(avg)]
+                            };
+                        }
+                    }
+                }
+
+                // ユーザー情報の取得
+                const userProfileKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.USER_PROFILE : 'yourCoachBeta_userProfile';
+                const userProfile = JSON.parse(localStorage.getItem(userProfileKey) || '{}');
+                const currentPurpose = userProfile.purpose || 'メンテナンス';
+                const userStyle = userProfile.style || '一般';
+
+                // プロンプト生成
+                const prompt = `## 役割
+
+トップアスリート指導のエリートパーソナルコーチとして、ユーザーの過去${days}日間のコンディションデータを分析し、簡潔で実践的なフィードバックを提供します。
+
+## 評価の基本原則
+
+**最重要**: ユーザーの目的（${currentPurpose}）とスタイル（${userStyle}）の達成に必要なコンディション管理を評価してください。
+
+**目的: ${currentPurpose}**
+- 期間: 過去${days}日間
+- 重点: 睡眠・メンタル・消化の安定性
+
+## コンディションデータ（過去${days}日間）
+
+### 睡眠
+${conditionStats.sleep_duration ? `- 睡眠時間平均: ${conditionStats.sleep_duration.avgLabel}（最低${conditionStats.sleep_duration.min}～最高${conditionStats.sleep_duration.max}、記録日数: ${conditionStats.sleep_duration.count}日）` : '- 睡眠時間データなし'}
+${conditionStats.sleep_quality ? `- 睡眠の質平均: ${conditionStats.sleep_quality.avgLabel}（最低${conditionStats.sleep_quality.min}～最高${conditionStats.sleep_quality.max}）` : '- 睡眠の質データなし'}
+
+### 消化・食欲
+${conditionStats.appetite ? `- 食欲平均: ${conditionStats.appetite.avgLabel}（最低${conditionStats.appetite.min}～最高${conditionStats.appetite.max}）` : '- 食欲データなし'}
+${conditionStats.gut_health ? `- 腸内環境平均: ${conditionStats.gut_health.avgLabel}（最低${conditionStats.gut_health.min}～最高${conditionStats.gut_health.max}）` : '- 腸内環境データなし'}
+
+### メンタル
+${conditionStats.focus ? `- 集中力平均: ${conditionStats.focus.avgLabel}（最低${conditionStats.focus.min}～最高${conditionStats.focus.max}）` : '- 集中力データなし'}
+${conditionStats.stress ? `- ストレス平均: ${conditionStats.stress.avgLabel}（最低${conditionStats.stress.min}～最高${conditionStats.stress.max}）` : '- ストレスデータなし'}
+
+## 出力形式（厳守）
+
+過去${days}日間のコンディションデータ、お疲れ様でした！
+
+---
+
+① 評価
+
+[過去${days}日間のコンディション全体を2-3文で評価]
+
+---
+
+② 傾向と特徴
+
+**睡眠**: [睡眠時間・質の傾向を1文で]
+**消化・食欲**: [食欲・腸内環境の傾向を1文で]
+**メンタル**: [集中力・ストレスの傾向を1文で]
+
+---
+
+③ 全体の相関関係
+
+[コンディションと栄養・運動・パフォーマンスとの相関を2-3文で分析]
+
+---
+
+④ 改善点
+
+[${currentPurpose}の目的達成のための具体的な改善アクションを2-3文で提示]
+
+ナイストライ！
+
+ルール:
+- 冒頭は必ず「過去${days}日間のコンディションデータ、お疲れ様でした！」から開始
+- 最後は必ず「ナイストライ！」で終了
+- ${currentPurpose}の目的を意識した評価を行う
+- 数値は具体的に示す（ラベル表示を活用）`;
+
+                // Cloud Functions経由でAI分析を実行
+                const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
+
+                // レスポンスの検証
+                if (!response || !response.message) {
+                    throw new Error('AI分析からの応答が不正です');
+                }
+
+                const report = response.message.replace(/\n/g, '<br>');
+
+                // ローディングモーダルを非表示
+                document.getElementById('history-analysis-loading-modal').classList.add('hidden');
+
+                // レポートモーダルを表示
+                document.getElementById('history-analysis-period').textContent = `コンディションタブ 個別分析（過去${days}日間）`;
+                document.getElementById('history-analysis-report-content').innerHTML = report;
+                document.getElementById('history-analysis-report-modal').classList.remove('hidden');
+
+                // アイコンを再描画
+                lucide.createIcons();
+            } catch (error) {
+                console.error('[コンディション個別分析] エラー:', error);
+                document.getElementById('history-analysis-loading-modal').classList.add('hidden');
+                alert('分析中にエラーが発生しました。もう一度お試しください。');
+            }
+        }
+
+        // パフォーマンスタブの個別分析
+        async function generatePerformanceAnalysis() {
+            // ローディングモーダルを表示
+            document.getElementById('history-analysis-loading-modal').classList.remove('hidden');
+
+            try {
+                // 現在表示中の期間データを取得
+                const days = currentPeriods[1];
+                const periodData = generateData(days);
+
+                // パフォーマンスデータの統計計算
+                const performanceStats = {};
+                const performanceKeys = ['weight', 'body_fat_percentage', 'lbm'];
+
+                for (const key of performanceKeys) {
+                    if (Array.isArray(periodData[key]) && periodData[key].length > 0) {
+                        const validData = periodData[key].filter(v => typeof v === 'number' && !isNaN(v) && v > 0);
+                        if (validData.length > 0) {
+                            const sum = validData.reduce((a, b) => a + b, 0);
+                            const avg = sum / validData.length;
+                            const max = Math.max(...validData);
+                            const min = Math.min(...validData);
+                            const change = validData[validData.length - 1] - validData[0];
+
+                            performanceStats[key] = {
+                                avg: avg.toFixed(1),
+                                max: max.toFixed(1),
+                                min: min.toFixed(1),
+                                count: validData.length,
+                                change: change.toFixed(1),
+                                first: validData[0].toFixed(1),
+                                last: validData[validData.length - 1].toFixed(1)
+                            };
+                        }
+                    }
+                }
+
+                // ユーザー情報の取得
+                const userProfileKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.USER_PROFILE : 'yourCoachBeta_userProfile';
+                const userProfile = JSON.parse(localStorage.getItem(userProfileKey) || '{}');
+                const currentPurpose = userProfile.purpose || 'メンテナンス';
+                const userStyle = userProfile.style || '一般';
+
+                // 指示書データの取得（達成率計算用）
+                const directivesKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.DIRECTIVES : 'yourCoachBeta_directives';
+                const directives = JSON.parse(localStorage.getItem(directivesKey) || '{}');
+                const recentDirectives = Object.entries(directives)
+                    .filter(([date]) => {
+                        const directiveDate = new Date(date);
+                        const cutoffDate = new Date();
+                        cutoffDate.setDate(cutoffDate.getDate() - days);
+                        return directiveDate >= cutoffDate;
+                    })
+                    .map(([date, data]) => ({ date, ...data }));
+
+                const directiveSummary = recentDirectives.length > 0
+                    ? `過去${days}日間の指示書: ${recentDirectives.length}件生成`
+                    : '指示書データなし';
+
+                // プロンプト生成
+                const prompt = `## 役割
+
+トップアスリート指導のエリートパーソナルコーチとして、ユーザーの過去${days}日間のパフォーマンスデータを分析し、簡潔で実践的なフィードバックを提供します。
+
+## 評価の基本原則
+
+**最重要**: ユーザーの目的（${currentPurpose}）とスタイル（${userStyle}）の達成度を評価してください。
+
+**目的: ${currentPurpose}**
+- 期間: 過去${days}日間
+- 重点: LBM・体重・体脂肪率の変化と指示書達成状況
+
+## パフォーマンスデータ（過去${days}日間）
+
+### 体組成の変化
+${performanceStats.lbm ? `- LBM: ${performanceStats.lbm.first}kg → ${performanceStats.lbm.last}kg（変化: ${performanceStats.lbm.change > 0 ? '+' : ''}${performanceStats.lbm.change}kg）\n  平均${performanceStats.lbm.avg}kg、最低${performanceStats.lbm.min}～最高${performanceStats.lbm.max}kg、記録日数: ${performanceStats.lbm.count}日` : '- LBMデータなし'}
+${performanceStats.weight ? `- 体重: ${performanceStats.weight.first}kg → ${performanceStats.weight.last}kg（変化: ${performanceStats.weight.change > 0 ? '+' : ''}${performanceStats.weight.change}kg）\n  平均${performanceStats.weight.avg}kg、最低${performanceStats.weight.min}～最高${performanceStats.weight.max}kg` : '- 体重データなし'}
+${performanceStats.body_fat_percentage ? `- 体脂肪率: ${performanceStats.body_fat_percentage.first}% → ${performanceStats.body_fat_percentage.last}%（変化: ${performanceStats.body_fat_percentage.change > 0 ? '+' : ''}${performanceStats.body_fat_percentage.change}%）\n  平均${performanceStats.body_fat_percentage.avg}%、最低${performanceStats.body_fat_percentage.min}～最高${performanceStats.body_fat_percentage.max}%` : '- 体脂肪率データなし'}
+
+### 指示書データ
+${directiveSummary}
+
+## 出力形式（厳守）
+
+過去${days}日間のパフォーマンスデータ、お疲れ様でした！
+
+---
+
+① 評価
+
+[過去${days}日間のパフォーマンス全体を2-3文で評価]
+
+---
+
+② 傾向と特徴
+
+**LBM**: [LBMの変化傾向を1-2文で分析]
+**体重・体脂肪率**: [体重・体脂肪率の変化傾向を1-2文で分析]
+
+---
+
+③ 指示書達成率
+
+[指示書の実施状況と達成度を2-3文で評価]
+
+---
+
+④ 改善点
+
+[${currentPurpose}の目的達成のための具体的な改善アクションを2-3文で提示]
+
+ナイストライ！
+
+ルール:
+- 冒頭は必ず「過去${days}日間のパフォーマンスデータ、お疲れ様でした！」から開始
+- 最後は必ず「ナイストライ！」で終了
+- ${currentPurpose}の目的を意識した評価を行う
+- 数値は具体的に示す（変化量を明示）`;
+
+                // Cloud Functions経由でAI分析を実行
+                const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
+
+                // レスポンスの検証
+                if (!response || !response.message) {
+                    throw new Error('AI分析からの応答が不正です');
+                }
+
+                const report = response.message.replace(/\n/g, '<br>');
+
+                // ローディングモーダルを非表示
+                document.getElementById('history-analysis-loading-modal').classList.add('hidden');
+
+                // レポートモーダルを表示
+                document.getElementById('history-analysis-period').textContent = `パフォーマンスタブ 個別分析（過去${days}日間）`;
+                document.getElementById('history-analysis-report-content').innerHTML = report;
+                document.getElementById('history-analysis-report-modal').classList.remove('hidden');
+
+                // アイコンを再描画
+                lucide.createIcons();
+            } catch (error) {
+                console.error('[パフォーマンス個別分析] エラー:', error);
+                document.getElementById('history-analysis-loading-modal').classList.add('hidden');
+                alert('分析中にエラーが発生しました。もう一度お試しください。');
+            }
+        }
+
         // 履歴分析の実行
         async function performHistoryAnalysis() {
             // ローディングモーダルを表示
@@ -4458,110 +5086,95 @@
             const currentPurpose = userProfile.purpose || 'メンテナンス';
             const userStyle = userProfile.style || '一般';
 
-            // プロンプト生成
+            // プロンプト生成（デイリー分析と同じ形式に統一）
             const prompt = `## 役割
 
-トップアスリート指導のエリートパーソナルコーチとして、ユーザーの過去${days}日間のデータから傾向・相関・特徴を分析し、新たな気づきを提供します。
+トップアスリート指導のエリートパーソナルコーチとして、ユーザーの過去${days}日間のデータを分析し、簡潔で実践的なフィードバックを提供します。
 
-## 分析の基本原則
+## 評価の基本原則
 
-- **目的**: ${currentPurpose}
-- **スタイル**: ${userStyle}
-- **期間**: 過去${days}日間
-- **重点**: 各項目の相関関係、ユーザー固有の傾向、特徴的なパターンを発見
+**最重要**: ユーザーの目的（${currentPurpose}）とスタイル（${userStyle}）の達成に必要な「食事・運動・睡眠」の3要素の推移を評価してください。
+
+**目的: ${currentPurpose}**
+- 期間: 過去${days}日間
+- 重点: 継続性、安定性、目標達成度
+
+**スタイル: ${userStyle}**
+- 評価指針: ${userStyle === '筋肥大' ? '高重量・高ボリューム・筋肥大種目を重視' : userStyle === '筋力' ? '最大筋力・パワー向上・低レップ高重量を重視' : userStyle === '持久力' ? '有酸素運動・持久系種目・軽重量高レップを重視' : userStyle === 'バランス' ? '全面的な身体能力向上・多様な種目を重視' : '健康維持・日常フィットネスを重視'}
 
 ## 期間データ（過去${days}日間）
 
 ### 栄養の推移
-${stats.calories ? `- カロリー平均: ${stats.calories.avg}kcal（最低${stats.calories.min}～最高${stats.calories.max}kcal）` : ''}
-${stats.protein ? `- タンパク質平均: ${stats.protein.avg}g（最低${stats.protein.min}～最高${stats.protein.max}g）` : ''}
-${stats.fat ? `- 脂質平均: ${stats.fat.avg}g（最低${stats.fat.min}～最高${stats.fat.max}g）` : ''}
-${stats.carbs ? `- 炭水化物平均: ${stats.carbs.avg}g（最低${stats.carbs.min}～最高${stats.carbs.max}g）` : ''}
+${stats.calories ? `- カロリー平均: ${stats.calories.avg}kcal（最低${stats.calories.min}～最高${stats.calories.max}kcal、記録日数: ${stats.calories.count}日）` : '- データなし'}
+${stats.protein ? `- タンパク質平均: ${stats.protein.avg}g（最低${stats.protein.min}～最高${stats.protein.max}g、記録日数: ${stats.protein.count}日）` : '- データなし'}
+${stats.fat ? `- 脂質平均: ${stats.fat.avg}g（最低${stats.fat.min}～最高${stats.fat.max}g、記録日数: ${stats.fat.count}日）` : '- データなし'}
+${stats.carbs ? `- 炭水化物平均: ${stats.carbs.avg}g（最低${stats.carbs.min}～最高${stats.carbs.max}g、記録日数: ${stats.carbs.count}日）` : '- データなし'}
 
 ### 運動の推移
-${stats.total_time ? `- 総時間平均: ${stats.total_time.avg}分（最低${stats.total_time.min}～最高${stats.total_time.max}分）` : ''}
-${stats.total_exercises ? `- 実施種目数平均: ${stats.total_exercises.avg}種目` : ''}
-${stats.total_weight ? `- 総重量平均: ${stats.total_weight.avg}kg` : ''}
+${stats.total_time ? `- 総時間平均: ${stats.total_time.avg}分（最低${stats.total_time.min}～最高${stats.total_time.max}分、記録日数: ${stats.total_time.count}日）` : '- データなし'}
+${stats.total_exercises ? `- 実施種目数平均: ${stats.total_exercises.avg}種目（記録日数: ${stats.total_exercises.count}日）` : '- データなし'}
+${stats.total_weight ? `- 総重量平均: ${stats.total_weight.avg}kg（記録日数: ${stats.total_weight.count}日）` : '- データなし'}
 
 ### コンディションの推移
-${stats.sleep_duration ? `- 睡眠時間平均: ${stats.sleep_duration.avgLabel || stats.sleep_duration.avg}` : ''}
-${stats.sleep_quality ? `- 睡眠の質平均: ${stats.sleep_quality.avgLabel || stats.sleep_quality.avg}` : ''}
-${stats.appetite ? `- 食欲平均: ${stats.appetite.avgLabel || stats.appetite.avg}` : ''}
-${stats.gut_health ? `- 腸内環境平均: ${stats.gut_health.avgLabel || stats.gut_health.avg}` : ''}
-${stats.focus ? `- 集中力平均: ${stats.focus.avgLabel || stats.focus.avg}` : ''}
-${stats.stress ? `- ストレス平均: ${stats.stress.avgLabel || stats.stress.avg}` : ''}
+${stats.sleep_duration ? `- 睡眠時間平均: ${stats.sleep_duration.avgLabel || stats.sleep_duration.avg}（記録日数: ${stats.sleep_duration.count}日）` : '- データなし'}
+${stats.sleep_quality ? `- 睡眠の質平均: ${stats.sleep_quality.avgLabel || stats.sleep_quality.avg}（記録日数: ${stats.sleep_quality.count}日）` : '- データなし'}
+${stats.appetite ? `- 食欲平均: ${stats.appetite.avgLabel || stats.appetite.avg}（記録日数: ${stats.appetite.count}日）` : '- データなし'}
+${stats.gut_health ? `- 腸内環境平均: ${stats.gut_health.avgLabel || stats.gut_health.avg}（記録日数: ${stats.gut_health.count}日）` : '- データなし'}
+${stats.focus ? `- 集中力平均: ${stats.focus.avgLabel || stats.focus.avg}（記録日数: ${stats.focus.count}日）` : '- データなし'}
+${stats.stress ? `- ストレス平均: ${stats.stress.avgLabel || stats.stress.avg}（記録日数: ${stats.stress.count}日）` : '- データなし'}
 
 ## 出力形式（厳守）
 
-過去${days}日間の分析レポートをお届けします。
+過去${days}日間の記録、お疲れ様でした！
 
 ---
 
-① 相関関係の発見
+① 結論
 
-**栄養 × 運動**
-[データから見つかった相関を1-2文で具体的な数値を示して説明]
+**栄養**
+[過去${days}日間の栄養摂取の評価を1-2文で]
 
-**栄養 × コンディション**
-[データから見つかった相関を1-2文で具体的な数値を示して説明]
+**運動**
+[過去${days}日間の運動実施の評価を1-2文で]
 
-**運動 × コンディション**
-[データから見つかった相関を1-2文で具体的な数値を示して説明]
-
----
-
-② あなたの傾向
-
-**栄養の傾向**
-[期間全体での栄養摂取の特徴を1-2文で具体的な数値を示して説明]
-
-**運動の傾向**
-[期間全体での運動実施の特徴を1-2文で具体的な数値を示して説明]
-
-**コンディションの傾向**
-[期間全体でのコンディションの特徴を1-2文で具体的な数値を示して説明]
+**コンディション**
+[過去${days}日間のコンディションの評価を1-2文で]
 
 ---
 
-③ 特徴的なパターン
+② 根拠
 
-[ユーザー固有の特徴を箇条書きで2-3個]
-- [パターン1：データに基づいた発見]
-- [パターン2：データに基づいた発見]
+[上記3項目の評価理由を具体的な数値を示して2-3文で説明]
 
 ---
 
-④ 新たな気づき
+③ 気づき
 
-[上記の分析から、ユーザーが気づいていなかった可能性のある発見を2-3文で提示]
-
----
+[${currentPurpose}の目的達成のために重要な発見や傾向を1-2文で提示]
 
 ルール:
-- 数値は必ず具体的に示す
+- 冒頭は必ず「過去${days}日間の記録、お疲れ様でした！」から開始
+- 栄養・運動・コンディションの3項目を必ず評価
+- 数値必須（g、kg、回数、時間、記録日数）
+- 各項目1-2文で完結
 - 「良い」「悪い」等の抽象表現禁止
 - データに基づいた事実のみ記載
 - 改善指示は不要（気づきの提供のみ）
-- リスト表記は「-」を使用
-- 参考文献・注釈禁止
-- **太字**は見出しや強調で使用可能`;
+- **書式統一**: リスト表記は必ず「-」を使用（他の記号は使わない）
+- **参考文献禁止**: 参考文献、注釈、アスタリスク（*）による補足説明は一切記載しない
+- **太字**: **太字**は継続使用可能（見出しや強調のため）
+- ${currentPurpose}の目的を意識した評価を行う`;
 
-            // Gemini APIにリクエスト
-            const apiKey = typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '';
-            const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+            // GeminiAPI（Cloud Functions経由）にリクエスト
+            const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
 
-            const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: prompt }]
-                    }]
-                })
-            });
+            // レスポンスの検証
+            if (!response.success) {
+                console.error('[履歴分析] APIエラー:', response);
+                throw new Error(response.error || 'AI分析の生成中にエラーが発生しました。');
+            }
 
-            const data = await response.json();
-            const reportText = data.candidates[0].content.parts[0].text;
+            const reportText = response.text;
 
             // Markdownを簡易HTML変換
             let html = reportText
@@ -4618,32 +5231,51 @@ ${stats.stress ? `- ストレス平均: ${stats.stress.avgLabel || stats.stress.
                     }
                 }
 
-                const prompt = `あなたは過去${days}日間のデータを分析したコーチです。
+                // ユーザー情報の取得
+                const userProfileKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.USER_PROFILE : 'yourCoachBeta_userProfile';
+                const userProfile = JSON.parse(localStorage.getItem(userProfileKey) || '{}');
 
-ユーザーの質問: ${question}
+                // 分析レポートを取得（モーダルに表示されている内容）
+                const reportContent = document.getElementById('history-analysis-report-content')?.innerHTML || '';
+                const reportText = reportContent.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 
-以下のデータを参考に、具体的な数値を示して回答してください。
+                const prompt = `## 役割
+あなたは、ユーザーの質問に答える、親身で優秀なAIパフォーマンスコーチです。
 
-期間データ（平均値）:
+## 重要な前提
+あなたは既に以下の履歴分析レポートを生成しています。このレポートの内容を**絶対的な前提**として、ユーザーの質問に回答してください。
+レポートに書かれている情報と矛盾する回答や、独自に再計算・再評価した回答は絶対にしないでください。
+
+### あなたが生成した履歴分析レポート全文
+${reportText || '（レポート生成中または未生成）'}
+
+### 期間データ（平均値）
 ${JSON.stringify(summaryStats, null, 2)}
 
-回答は簡潔に1-2文で。データに基づいた事実のみ記載してください。`;
+## ユーザーからの質問
+「${question}」
 
-                const apiKey = typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '';
-                const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+## タスク
+**必ず上記のレポート内容を前提として**、ユーザーの質問に回答してください。
 
-                const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: prompt }]
-                        }]
-                    })
-                });
+- ✅ レポートに書かれている評価や数値をそのまま引用する
+- ✅ レポートの分析結果を基に、質問に対する補足説明や深堀りをする
+- ✅ レポートで言及されていない内容は「レポートには記載がありませんが...」と前置きする
+- ❌ レポートと異なる評価や数値を提示しない
+- ❌ レポートを無視して独自に分析しない
 
-                const data = await response.json();
-                const answer = data.candidates[0].content.parts[0].text;
+専門用語を避け、高校生にも理解できるような言葉で、簡潔かつ丁寧に回答してください（1-3文程度）。`;
+
+                // GeminiAPI（Cloud Functions経由）にリクエスト
+                const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
+
+                // レスポンスの検証
+                if (!response.success) {
+                    console.error('[履歴分析質問] APIエラー:', response);
+                    throw new Error(response.error || 'AI回答の生成中にエラーが発生しました。');
+                }
+
+                const answer = response.text;
 
                 answerText.textContent = answer;
                 questionInput.value = '';
