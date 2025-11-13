@@ -373,6 +373,12 @@ const AddMealModal = ({
             carbs: parseFloat(totalPFC.carbs.toFixed(1)),
             totalCalories: Math.round(totalPFC.calories),
             isPostWorkout: isPostWorkout, // 運動後フラグを保存
+            // 編集モード時、元のタグ情報を引き継ぐ
+            ...(isEditMode && {
+                isPredicted: editingMeal.isPredicted,
+                isTemplate: editingMeal.isTemplate,
+                isRoutine: editingMeal.isRoutine,
+            })
         };
 
         // 編集モードの場合はonUpdate、新規追加の場合はonAddを呼ぶ

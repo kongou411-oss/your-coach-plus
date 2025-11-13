@@ -52,17 +52,49 @@
 
     <script type="module" src="/src/main.jsx"></script>
 
-    <!-- Service Worker Registration -->
+    <!-- Service Worker Registration + Update Detection -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
                     .then((registration) => {
                         console.log('[SW] Service Worker registered successfully:', registration.scope);
+
+                        // 更新を検出
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('[SW] New service worker found, installing...');
+
+                            newWorker.addEventListener('statechange', () => {
+                                console.log('[SW] Service worker state changed:', newWorker.state);
+
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // 新バージョンあり - ユーザーに通知
+                                    console.log('[SW] New version available!');
+
+                                    // 即座に新バージョンに切り替え（ユーザーの承認なし）
+                                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                }
+                            });
+                        });
+
+                        // 定期的に更新をチェック（1時間ごと）
+                        setInterval(() => {
+                            registration.update();
+                        }, 60 * 60 * 1000); // 1時間
                     })
                     .catch((error) => {
                         console.error('[SW] Service Worker registration failed:', error);
                     });
+
+                // Service Workerが更新されたら自動リロード
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (refreshing) return;
+                    console.log('[SW] Controller changed, reloading page...');
+                    refreshing = true;
+                    window.location.reload();
+                });
             });
         }
     </script>

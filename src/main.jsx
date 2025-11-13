@@ -6,6 +6,9 @@ import './index.css'
 // グローバルセットアップ（config, utils, services, databases）
 import './globalSetup.js'
 
+// グローバルエラーハンドラ（iOS Safari対応、エラー自動送信）
+import './errorHandler.js'
+
 // グローバルにReact/ReactDOMを公開（既存コンポーネントとの互換性のため）
 window.React = React
 window.ReactDOM = ReactDOM

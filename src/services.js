@@ -264,15 +264,27 @@ const DataService = {
             profile = saved ? JSON.parse(saved) : null;
         } else {
             try {
-                const doc = await db.collection('users').doc(userId).get();
+                // サーバー優先で取得（キャッシュを使わない）
+                const doc = await db.collection('users').doc(userId).get({ source: 'server' });
                 profile = doc.exists ? doc.data() : null;
             } catch (error) {
-                // 権限エラー（新規ユーザー）の場合は静かに null を返す
-                if (error.code === 'permission-denied') {
+                // ネットワークエラーの場合はキャッシュから取得を試みる
+                if (error.code === 'unavailable') {
+                    console.warn('[DataService] Network unavailable, trying cache for user profile');
+                    try {
+                        const doc = await db.collection('users').doc(userId).get({ source: 'cache' });
+                        profile = doc.exists ? doc.data() : null;
+                    } catch (cacheError) {
+                        console.error('[DataService] Cache fetch failed for user profile:', cacheError);
+                        return null;
+                    }
+                } else if (error.code === 'permission-denied') {
+                    // 権限エラー（新規ユーザー）の場合は静かに null を返す
+                    return null;
+                } else {
+                    console.error('Error fetching user profile:', error);
                     return null;
                 }
-                console.error('Error fetching user profile:', error);
-                return null;
             }
         }
 
@@ -332,14 +344,31 @@ const DataService = {
             return records[date] || null;
         }
         try {
+            // サーバー優先で取得（キャッシュを使わない）
             const doc = await db
                 .collection('dailyRecords')
                 .doc(userId)
                 .collection('records')
                 .doc(date)
-                .get();
+                .get({ source: 'server' });
             return doc.exists ? doc.data() : null;
         } catch (error) {
+            // ネットワークエラーの場合はキャッシュから取得を試みる
+            if (error.code === 'unavailable') {
+                console.warn('[DataService] Network unavailable, trying cache');
+                try {
+                    const doc = await db
+                        .collection('dailyRecords')
+                        .doc(userId)
+                        .collection('records')
+                        .doc(date)
+                        .get({ source: 'cache' });
+                    return doc.exists ? doc.data() : null;
+                } catch (cacheError) {
+                    console.error('[DataService] Cache fetch failed:', cacheError);
+                    return null;
+                }
+            }
             // 権限エラー（新規ユーザー）の場合は静かに null を返す
             if (error.code === 'permission-denied') {
                 return null;

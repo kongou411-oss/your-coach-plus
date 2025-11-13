@@ -1542,8 +1542,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             onUpdate={async (updatedMeal) => {
                                 const userId = user?.uid || DEV_USER_ID;
                                 try {
-                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
-                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+                                    // React stateを直接使用（キャッシュを読まない）
+                                    let updatedRecord = { ...dailyRecord };
 
                                     // 既存の食事を更新
                                     const mealIndex = updatedRecord.meals.findIndex(m => m.id === updatedMeal.id);
@@ -1632,9 +1632,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             onAdd={async (meal) => {
                                 const userId = user?.uid || DEV_USER_ID;
                                 try {
-                                    // 表示中の日付（currentDate）に記録を保存
-                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
-                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+                                    // React stateを直接使用（キャッシュを読まない）
+                                    let updatedRecord = { ...dailyRecord };
 
                                     updatedRecord.meals = [...(updatedRecord.meals || []), meal];
 
@@ -1677,9 +1676,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             onAdd={async (workout) => {
                                 const userId = user?.uid || DEV_USER_ID;
                                 try {
-                                    // 表示中の日付（currentDate）に記録を保存
-                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
-                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+                                    // React stateを直接使用（キャッシュを読まない）
+                                    let updatedRecord = { ...dailyRecord };
 
                                     updatedRecord.workouts = [...(updatedRecord.workouts || []), workout];
 

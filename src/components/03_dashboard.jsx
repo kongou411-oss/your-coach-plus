@@ -1215,10 +1215,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 e.stopPropagation();
                                 setShowDetailedNutrientsGuide(true);
                             }}
-                            className="ml-auto flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                            className="ml-auto flex items-center"
+                            style={{ color: '#4A9EFF' }}
                         >
                             <Icon name="HelpCircle" size={18} />
-                            <span className="text-sm">使い方</span>
                         </button>
                     </summary>
                     <div className="mt-4 space-y-6">
@@ -1298,11 +1298,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             <div className="text-xs text-gray-500">
                                                 目標: 100以下
                                             </div>
-                                            {currentIntake.adjustedDailyGL < 100 && (
-                                                <div className="text-xs text-green-600 font-medium mt-1">
-                                                    ✓ あと{100 - Math.round(currentIntake.adjustedDailyGL)}余裕があります
-                                                </div>
-                                            )}
 
                                             {/* カロリー不足時のGL余裕アドバイス */}
                                             {currentIntake.calories < targetPFC.calories * 0.8 && currentIntake.adjustedDailyGL < 100 && (
