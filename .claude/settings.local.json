@@ -93,7 +93,15 @@
       "Bash(cmd /c taskkill /F /IM node.exe)",
       "Bash(cmd /c \"if exist nul del /F nul\")",
       "Bash(git rm:*)",
-      "Bash(.gitignore)"
+      "Bash(.gitignore)",
+      "Bash(python3:*)",
+      "WebSearch",
+      "WebFetch(domain:fooddb.mext.go.jp)",
+      "WebFetch(domain:s-hyoji.com)",
+      "WebFetch(domain:www.mext.go.jp)",
+      "WebFetch(domain:fdc.nal.usda.gov)",
+      "WebFetch(domain:tools.myfooddata.com)",
+      "WebFetch(domain:eiyo21.com)"
     ],
     "deny": [],
     "ask": []

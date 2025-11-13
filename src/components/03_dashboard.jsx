@@ -714,6 +714,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         fiber: 0,
         solubleFiber: 0,
         insolubleFiber: 0,
+        saturatedFat: 0,
+        monounsaturatedFat: 0,
+        polyunsaturatedFat: 0,
         vitamins: {
             A: 0, D: 0, E: 0, K: 0, B1: 0, B2: 0, B3: 0, B5: 0, B6: 0, B7: 0, B9: 0, B12: 0, C: 0
         },
@@ -735,10 +738,15 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             currentIntake.protein += (item.protein || 0) * ratio;
             currentIntake.fat += (item.fat || 0) * ratio;
             currentIntake.carbs += (item.carbs || 0) * ratio;
+
+            // 糖質・食物繊維・脂肪酸（100g base values - ratioで実量換算）
             currentIntake.sugar += (item.sugar || 0) * ratio;
             currentIntake.fiber += (item.fiber || 0) * ratio;
             currentIntake.solubleFiber += (item.solubleFiber || 0) * ratio;
             currentIntake.insolubleFiber += (item.insolubleFiber || 0) * ratio;
+            currentIntake.saturatedFat += (item.saturatedFat || 0) * ratio;
+            currentIntake.monounsaturatedFat += (item.monounsaturatedFat || 0) * ratio;
+            currentIntake.polyunsaturatedFat += (item.polyunsaturatedFat || 0) * ratio;
 
             // ビタミン・ミネラル（オブジェクト形式）
             if (item.vitamins) {
@@ -890,6 +898,64 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         </div>
                     </div>
                 </div>
+
+                {/* 脂肪酸詳細 */}
+                <details className="mt-4">
+                    <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{color: '#4A9EFF'}}>
+                        <Icon name="ChevronDown" size={16} />
+                        脂肪酸＋
+                    </summary>
+                    <div className="mt-4 space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {[
+                                {
+                                    name: '飽和脂肪酸',
+                                    icon: 'Activity',
+                                    color: 'red',
+                                    current: currentIntake.saturatedFat,
+                                    target: null, // 目標値なし（参考表示のみ）
+                                    unit: 'g',
+                                    note: `脂質の ${Math.round((currentIntake.saturatedFat / (currentIntake.fat || 1)) * 100)}%`
+                                },
+                                {
+                                    name: '一価不飽和脂肪酸',
+                                    icon: 'TrendingUp',
+                                    color: 'yellow',
+                                    current: currentIntake.monounsaturatedFat,
+                                    target: null,
+                                    unit: 'g',
+                                    note: `脂質の ${Math.round((currentIntake.monounsaturatedFat / (currentIntake.fat || 1)) * 100)}%`
+                                },
+                                {
+                                    name: '多価不飽和脂肪酸',
+                                    icon: 'Zap',
+                                    color: 'blue',
+                                    current: currentIntake.polyunsaturatedFat,
+                                    target: null,
+                                    unit: 'g',
+                                    note: `脂質の ${Math.round((currentIntake.polyunsaturatedFat / (currentIntake.fat || 1)) * 100)}%`
+                                }
+                            ].map((item, idx) => {
+                                return (
+                                    <div key={idx} className="bg-gray-50 p-2 rounded">
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="font-medium flex items-center gap-1">
+                                                <Icon name={item.icon} size={14} className={`text-${item.color}-500`} />
+                                                {item.name}
+                                            </span>
+                                            <span className="text-gray-600">
+                                                {Math.round(item.current * 10) / 10}{item.unit}
+                                            </span>
+                                        </div>
+                                        {item.note && (
+                                            <div className="text-xs text-gray-500 mt-1">{item.note}</div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </details>
 
                 {/* 糖質・食物繊維詳細 */}
                 <details className="mt-4">

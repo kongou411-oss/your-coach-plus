@@ -993,6 +993,16 @@ const AddMealModal = ({
                         carbs: itemWithNutrients.carbs || 0,         // 100g base (ratio applied during display)
                         servingSize: itemWithNutrients.servingSize || null,
                         servingUnit: itemWithNutrients.servingUnit || null,
+
+                        // 糖質・食物繊維・脂肪酸（100g base values - データベースから直接）
+                        sugar: itemWithNutrients.sugar || 0,
+                        fiber: itemWithNutrients.fiber || 0,
+                        solubleFiber: itemWithNutrients.solubleFiber || 0,
+                        insolubleFiber: itemWithNutrients.insolubleFiber || 0,
+                        saturatedFat: itemWithNutrients.saturatedFat || 0,
+                        monounsaturatedFat: itemWithNutrients.monounsaturatedFat || 0,
+                        polyunsaturatedFat: itemWithNutrients.polyunsaturatedFat || 0,
+
                         vitamins: vitamins,  // ← SCALED to actual amount
                         minerals: minerals,  // ← SCALED to actual amount
                         isCustom: itemWithNutrients.isCustom || false,

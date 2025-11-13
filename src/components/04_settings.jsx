@@ -4955,13 +4955,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                 // 食品データベースのアイテムをカテゴリごとに整理
                                 const organizedFoodDB = React.useMemo(() => {
                                     const organized = {};
-                                    Object.keys(foodDatabase).forEach(category => {
+                                    const foodDB = window.foodDB || {};
+                                    Object.keys(foodDB).forEach(category => {
                                         const items = [];
-                                        Object.keys(foodDatabase[category]).forEach(itemName => {
+                                        Object.keys(foodDB[category] || {}).forEach(itemName => {
                                             if (itemName.includes(dbSearchTerm)) {
                                                 items.push({
                                                     name: itemName,
-                                                    ...foodDatabase[category][itemName]
+                                                    ...foodDB[category][itemName]
                                                 });
                                             }
                                         });
@@ -5234,38 +5235,80 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             </div>
                                                         </div>
 
-                                                        {/* 食物繊維・糖質 */}
-                                                        {(selectedItemDetail.fiber || selectedItemDetail.sugar) && (
-                                                            <div className="bg-blue-50 p-4 rounded-lg">
-                                                                <h4 className="font-bold mb-3 text-blue-800">食物繊維・糖質</h4>
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                                                                    {selectedItemDetail.sugar !== undefined && (
-                                                                        <div>
-                                                                            <p className="text-xs text-gray-600">糖質</p>
-                                                                            <p className="font-bold">{selectedItemDetail.sugar}g</p>
-                                                                        </div>
-                                                                    )}
-                                                                    {selectedItemDetail.fiber !== undefined && (
-                                                                        <div>
-                                                                            <p className="text-xs text-gray-600">食物繊維</p>
-                                                                            <p className="font-bold">{selectedItemDetail.fiber}g</p>
-                                                                        </div>
-                                                                    )}
-                                                                    {selectedItemDetail.solubleFiber !== undefined && (
-                                                                        <div>
-                                                                            <p className="text-xs text-gray-600">水溶性食物繊維</p>
-                                                                            <p className="font-bold">{selectedItemDetail.solubleFiber}g</p>
-                                                                        </div>
-                                                                    )}
-                                                                    {selectedItemDetail.insolubleFiber !== undefined && (
-                                                                        <div>
-                                                                            <p className="text-xs text-gray-600">不溶性食物繊維</p>
-                                                                            <p className="font-bold">{selectedItemDetail.insolubleFiber}g</p>
-                                                                        </div>
-                                                                    )}
+                                                        {/* 脂肪酸 */}
+                                                        {(() => {
+                                                            const hasFattyAcids = selectedItemDetail.saturatedFat !== undefined ||
+                                                                                   selectedItemDetail.monounsaturatedFat !== undefined ||
+                                                                                   selectedItemDetail.polyunsaturatedFat !== undefined;
+                                                            if (!hasFattyAcids) return null;
+
+                                                            return (
+                                                                <div className="bg-yellow-50 p-4 rounded-lg">
+                                                                    <h4 className="font-bold mb-3 text-yellow-800">脂肪酸</h4>
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                                                        {selectedItemDetail.saturatedFat !== undefined && (
+                                                                            <div>
+                                                                                <p className="text-xs text-gray-600">飽和脂肪酸</p>
+                                                                                <p className="font-bold">{selectedItemDetail.saturatedFat}g</p>
+                                                                            </div>
+                                                                        )}
+                                                                        {selectedItemDetail.monounsaturatedFat !== undefined && (
+                                                                            <div>
+                                                                                <p className="text-xs text-gray-600">一価不飽和脂肪酸</p>
+                                                                                <p className="font-bold">{selectedItemDetail.monounsaturatedFat}g</p>
+                                                                            </div>
+                                                                        )}
+                                                                        {selectedItemDetail.polyunsaturatedFat !== undefined && (
+                                                                            <div>
+                                                                                <p className="text-xs text-gray-600">多価不飽和脂肪酸</p>
+                                                                                <p className="font-bold">{selectedItemDetail.polyunsaturatedFat}g</p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        )}
+                                                            );
+                                                        })()}
+
+                                                        {/* 食物繊維・糖質 */}
+                                                        {(() => {
+                                                            const hasFiberOrSugar = selectedItemDetail.fiber !== undefined ||
+                                                                                     selectedItemDetail.sugar !== undefined ||
+                                                                                     selectedItemDetail.solubleFiber !== undefined ||
+                                                                                     selectedItemDetail.insolubleFiber !== undefined;
+                                                            if (!hasFiberOrSugar) return null;
+
+                                                            return (
+                                                                <div className="bg-blue-50 p-4 rounded-lg">
+                                                                    <h4 className="font-bold mb-3 text-blue-800">食物繊維・糖質</h4>
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                                                        {selectedItemDetail.sugar !== undefined && (
+                                                                            <div>
+                                                                                <p className="text-xs text-gray-600">糖質</p>
+                                                                                <p className="font-bold">{selectedItemDetail.sugar}g</p>
+                                                                            </div>
+                                                                        )}
+                                                                        {selectedItemDetail.fiber !== undefined && (
+                                                                            <div>
+                                                                                <p className="text-xs text-gray-600">食物繊維</p>
+                                                                                <p className="font-bold">{selectedItemDetail.fiber}g</p>
+                                                                            </div>
+                                                                        )}
+                                                                        {selectedItemDetail.solubleFiber !== undefined && (
+                                                                            <div>
+                                                                                <p className="text-xs text-gray-600">水溶性食物繊維</p>
+                                                                                <p className="font-bold">{selectedItemDetail.solubleFiber}g</p>
+                                                                            </div>
+                                                                        )}
+                                                                        {selectedItemDetail.insolubleFiber !== undefined && (
+                                                                            <div>
+                                                                                <p className="text-xs text-gray-600">不溶性食物繊維</p>
+                                                                                <p className="font-bold">{selectedItemDetail.insolubleFiber}g</p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
 
                                                         {/* GI値・DIAAS */}
                                                         {(selectedItemDetail.gi || selectedItemDetail.diaas) && (
