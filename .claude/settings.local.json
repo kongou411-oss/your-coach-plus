@@ -101,7 +101,8 @@
       "WebFetch(domain:www.mext.go.jp)",
       "WebFetch(domain:fdc.nal.usda.gov)",
       "WebFetch(domain:tools.myfooddata.com)",
-      "WebFetch(domain:eiyo21.com)"
+      "WebFetch(domain:eiyo21.com)",
+      "Bash(firebase login:ci:*)"
     ],
     "deny": [],
     "ask": []
