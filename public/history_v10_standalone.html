@@ -4577,12 +4577,12 @@ ${nutritionStats.sugar ? `- 糖質平均: ${nutritionStats.sugar.avg}g（最低$
                 // Cloud Functions経由でAI分析を実行
                 const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
 
-                // レスポンスの検証
-                if (!response || !response.message) {
+                // レスポンスの検証（デイリー分析と同じ形式）
+                if (!response || !response.success) {
                     throw new Error('AI分析からの応答が不正です');
                 }
 
-                const report = response.message.replace(/\n/g, '<br>');
+                const report = response.text.replace(/\n/g, '<br>');
 
                 // ローディングモーダルを非表示
                 document.getElementById('history-analysis-loading-modal').classList.add('hidden');
@@ -4707,12 +4707,12 @@ ${trainingStats.cardio_duration ? `- 有酸素運動時間平均: ${trainingStat
                 // Cloud Functions経由でAI分析を実行
                 const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
 
-                // レスポンスの検証
-                if (!response || !response.message) {
+                // レスポンスの検証（デイリー分析と同じ形式）
+                if (!response || !response.success) {
                     throw new Error('AI分析からの応答が不正です');
                 }
 
-                const report = response.message.replace(/\n/g, '<br>');
+                const report = response.text.replace(/\n/g, '<br>');
 
                 // ローディングモーダルを非表示
                 document.getElementById('history-analysis-loading-modal').classList.add('hidden');
@@ -4847,12 +4847,12 @@ ${conditionStats.stress ? `- ストレス平均: ${conditionStats.stress.avgLabe
                 // Cloud Functions経由でAI分析を実行
                 const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
 
-                // レスポンスの検証
-                if (!response || !response.message) {
+                // レスポンスの検証（デイリー分析と同じ形式）
+                if (!response || !response.success) {
                     throw new Error('AI分析からの応答が不正です');
                 }
 
-                const report = response.message.replace(/\n/g, '<br>');
+                const report = response.text.replace(/\n/g, '<br>');
 
                 // ローディングモーダルを非表示
                 document.getElementById('history-analysis-loading-modal').classList.add('hidden');
@@ -4993,12 +4993,12 @@ ${directiveSummary}
                 // Cloud Functions経由でAI分析を実行
                 const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
 
-                // レスポンスの検証
-                if (!response || !response.message) {
+                // レスポンスの検証（デイリー分析と同じ形式）
+                if (!response || !response.success) {
                     throw new Error('AI分析からの応答が不正です');
                 }
 
-                const report = response.message.replace(/\n/g, '<br>');
+                const report = response.text.replace(/\n/g, '<br>');
 
                 // ローディングモーダルを非表示
                 document.getElementById('history-analysis-loading-modal').classList.add('hidden');
