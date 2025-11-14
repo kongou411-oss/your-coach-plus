@@ -426,14 +426,32 @@ const LBMUtils = {
             },
             // その他の栄養素: LBM × 目的 × ライフスタイル
             otherNutrients: {
+                // ポリフェノール・カフェイン類
                 caffeine: Math.round(400 * Math.min(lbmFactor, 1.2) * fiberBase), // 上限重視
                 catechin: Math.round(500 * lbmFactor * btFactor.antioxidant * fiberBase),
                 tannin: Math.round(1000 * lbmFactor * fiberBase),
                 polyphenol: Math.round(1000 * lbmFactor * btFactor.antioxidant * fiberBase),
                 chlorogenicAcid: Math.round(300 * lbmFactor * btFactor.antioxidant * fiberBase),
+
+                // パフォーマンス系
                 creatine: Math.round((goal === 'バルクアップ' ? 5 : goal === 'ダイエット' ? 3 : 3) * lbmFactor * fiberBase * 1000),
+                betaAlanine: Math.round((goal === 'バルクアップ' ? 3200 : 2000) * lbmFactor * gFactor.protein * fiberBase),
+                citrulline: Math.round((goal === 'バルクアップ' ? 6000 : 4000) * lbmFactor * gFactor.energy * fiberBase),
                 lArginine: Math.round((goal === 'バルクアップ' ? 6000 : 3000) * lbmFactor * gFactor.protein * fiberBase),
                 lCarnitine: Math.round((goal === 'ダイエット' ? 2000 : 1000) * lbmFactor * gFactor.energy * fiberBase),
+
+                // アミノ酸（EAA）
+                leucine: Math.round(2500 * lbmFactor * gFactor.protein * fiberBase),
+                isoleucine: Math.round(1250 * lbmFactor * gFactor.protein * fiberBase),
+                valine: Math.round(1250 * lbmFactor * gFactor.protein * fiberBase),
+                lysine: Math.round(2000 * lbmFactor * gFactor.protein * fiberBase),
+                methionine: Math.round(800 * lbmFactor * gFactor.protein * fiberBase),
+                phenylalanine: Math.round(1500 * lbmFactor * gFactor.protein * fiberBase),
+                threonine: Math.round(1200 * lbmFactor * gFactor.protein * fiberBase),
+                tryptophan: Math.round(400 * lbmFactor * gFactor.protein * fiberBase),
+                histidine: Math.round(800 * lbmFactor * gFactor.protein * fiberBase),
+
+                // オメガ3・抗酸化物質
                 EPA: Math.round(1000 * lbmFactor * btFactor.antioxidant * gFactor.recovery * fiberBase),
                 DHA: Math.round(1000 * lbmFactor * btFactor.antioxidant * gFactor.recovery * fiberBase),
                 coQ10: Math.round(100 * lbmFactor * gFactor.energy * fiberBase),

@@ -446,17 +446,35 @@ JSONのみ出力、説明文不要`;
                                 protein: parseFloat((proteinPer100g * ratio).toFixed(1)),
                                 fat: parseFloat((fatPer100g * ratio).toFixed(1)),
                                 carbs: parseFloat((carbsPer100g * ratio).toFixed(1)),
+
+                                // 品質指標（100g基準 - ratio不要）
+                                diaas: dbItem.diaas || null,
+                                gi: dbItem.gi || null,
+
+                                // 脂肪酸（実量にスケーリング）
+                                saturatedFat: dbItem.saturatedFat ? parseFloat((dbItem.saturatedFat * ratio).toFixed(2)) : 0,
+                                monounsaturatedFat: dbItem.monounsaturatedFat ? parseFloat((dbItem.monounsaturatedFat * ratio).toFixed(2)) : 0,
+                                polyunsaturatedFat: dbItem.polyunsaturatedFat ? parseFloat((dbItem.polyunsaturatedFat * ratio).toFixed(2)) : 0,
+                                mediumChainFat: dbItem.mediumChainFat ? parseFloat((dbItem.mediumChainFat * ratio).toFixed(2)) : 0,
+
+                                // 糖質・食物繊維（実量にスケーリング）
+                                sugar: dbItem.sugar ? parseFloat((dbItem.sugar * ratio).toFixed(2)) : 0,
+                                fiber: dbItem.fiber ? parseFloat((dbItem.fiber * ratio).toFixed(2)) : 0,
+                                solubleFiber: dbItem.solubleFiber ? parseFloat((dbItem.solubleFiber * ratio).toFixed(2)) : 0,
+                                insolubleFiber: dbItem.insolubleFiber ? parseFloat((dbItem.insolubleFiber * ratio).toFixed(2)) : 0,
+
                                 // ビタミン・ミネラル（データベースから取得）
+                                // キー名は既存アイテムと統一（vitaminA, vitaminB1, ...形式）
                                 vitamins: {
-                                    A: dbItem.vitaminA || 0,
-                                    B1: dbItem.vitaminB1 || 0,
-                                    B2: dbItem.vitaminB2 || 0,
-                                    B6: dbItem.vitaminB6 || 0,
-                                    B12: dbItem.vitaminB12 || 0,
-                                    C: dbItem.vitaminC || 0,
-                                    D: dbItem.vitaminD || 0,
-                                    E: dbItem.vitaminE || 0,
-                                    K: dbItem.vitaminK || 0,
+                                    vitaminA: dbItem.vitaminA || 0,
+                                    vitaminB1: dbItem.vitaminB1 || 0,
+                                    vitaminB2: dbItem.vitaminB2 || 0,
+                                    vitaminB6: dbItem.vitaminB6 || 0,
+                                    vitaminB12: dbItem.vitaminB12 || 0,
+                                    vitaminC: dbItem.vitaminC || 0,
+                                    vitaminD: dbItem.vitaminD || 0,
+                                    vitaminE: dbItem.vitaminE || 0,
+                                    vitaminK: dbItem.vitaminK || 0,
                                     niacin: dbItem.niacin || 0,
                                     pantothenicAcid: dbItem.pantothenicAcid || 0,
                                     biotin: dbItem.biotin || 0,
@@ -1094,15 +1112,15 @@ JSONのみ出力、説明文不要`;
             fat: parseFloat((fatPer100g * ratio).toFixed(1)),
             carbs: parseFloat((carbsPer100g * ratio).toFixed(1)),
             vitamins: {
-                A: dbItem.vitaminA || 0,
-                B1: dbItem.vitaminB1 || 0,
-                B2: dbItem.vitaminB2 || 0,
-                B6: dbItem.vitaminB6 || 0,
-                B12: dbItem.vitaminB12 || 0,
-                C: dbItem.vitaminC || 0,
-                D: dbItem.vitaminD || 0,
-                E: dbItem.vitaminE || 0,
-                K: dbItem.vitaminK || 0,
+                vitaminA: dbItem.vitaminA || 0,
+                vitaminB1: dbItem.vitaminB1 || 0,
+                vitaminB2: dbItem.vitaminB2 || 0,
+                vitaminB6: dbItem.vitaminB6 || 0,
+                vitaminB12: dbItem.vitaminB12 || 0,
+                vitaminC: dbItem.vitaminC || 0,
+                vitaminD: dbItem.vitaminD || 0,
+                vitaminE: dbItem.vitaminE || 0,
+                vitaminK: dbItem.vitaminK || 0,
                 niacin: dbItem.niacin || 0,
                 pantothenicAcid: dbItem.pantothenicAcid || 0,
                 biotin: dbItem.biotin || 0,
@@ -1722,9 +1740,11 @@ JSON形式のみ出力、説明文不要`;
                     // 未知のものはデフォルトで'その他'
                     let actualCategory = food.category || 'その他';
 
-                    // サプリメントの場合は特殊処理
+                    // サプリメントの場合は特殊処理（既存のカスタム食材と同じロジック）
                     if (itemType === 'supplement') {
-                        actualCategory = food.category || 'サプリメント';
+                        // categoryにはサブカテゴリ名を保存（プロテイン、アミノ酸など）
+                        // food.categoryが存在しない場合はデフォルトで'プロテイン'
+                        actualCategory = food.category || 'プロテイン';
                     }
 
                     // 100gあたりの値を保存（実量換算前の基準値）
@@ -1740,6 +1760,23 @@ JSON形式のみ出力、説明文不要`;
                         carbs: base.carbs || 0,
                         servingSize: 100,
                         servingUnit: 'g',
+
+                        // 品質指標（100g基準）
+                        diaas: food.diaas || null,
+                        gi: food.gi || null,
+
+                        // 脂肪酸（100g基準）
+                        saturatedFat: food.saturatedFat || 0,
+                        monounsaturatedFat: food.monounsaturatedFat || 0,
+                        polyunsaturatedFat: food.polyunsaturatedFat || 0,
+                        mediumChainFat: food.mediumChainFat || 0,
+
+                        // 糖質・食物繊維（100g基準）
+                        sugar: food.sugar || 0,
+                        fiber: food.fiber || 0,
+                        solubleFiber: food.solubleFiber || 0,
+                        insolubleFiber: food.insolubleFiber || 0,
+
                         // ビタミン・ミネラル（foodオブジェクトから取得）
                         vitamins: food.vitamins || {},
                         minerals: food.minerals || {},

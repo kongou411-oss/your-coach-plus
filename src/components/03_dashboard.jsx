@@ -1840,6 +1840,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             caffeine: 'カフェイン', catechin: 'カテキン', tannin: 'タンニン',
                                             polyphenol: 'ポリフェノール', chlorogenicAcid: 'クロロゲン酸',
                                             creatine: 'クレアチン', lArginine: 'L-アルギニン', lCarnitine: 'L-カルニチン',
+                                            betaAlanine: 'βアラニン', citrulline: 'シトルリン',
+                                            leucine: 'ロイシン', isoleucine: 'イソロイシン', valine: 'バリン',
+                                            lysine: 'リジン', methionine: 'メチオニン', phenylalanine: 'フェニルアラニン',
+                                            threonine: 'スレオニン', tryptophan: 'トリプトファン', histidine: 'ヒスチジン',
                                             EPA: 'EPA', DHA: 'DHA', coQ10: 'コエンザイムQ10',
                                             lutein: 'ルテイン', astaxanthin: 'アスタキサンチン'
                                         };
@@ -2274,64 +2278,82 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 }`}>
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
+                                            {/* ①時間 */}
+                                            <div className="mb-1">
                                                 <span className="text-xs text-gray-600">{meal.time}</span>
-                                                {meal.isPredicted && (
-                                                    <span className="text-xs bg-sky-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                        <Icon name="Sparkles" size={10} />
-                                                        予測
-                                                    </span>
-                                                )}
-                                                {meal.isRoutine && (
-                                                    <span className="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                        <Icon name="Repeat" size={10} />
-                                                        ルーティン
-                                                    </span>
-                                                )}
-                                                {meal.isTemplate && (
-                                                    <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                        <Icon name="BookTemplate" size={10} />
-                                                        テンプレート
-                                                    </span>
-                                                )}
-                                                {meal.isPostWorkout && (
-                                                    <span className="text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                        <Icon name="Zap" size={10} />
-                                                        運動後
-                                                    </span>
-                                                )}
-                                                {(() => {
-                                                    const mealGLData = mealGLValues.find(m => m.mealId === (meal.id || meal.timestamp));
-                                                    if (mealGLData) {
-                                                        // GL値の表示テキストを決定
-                                                        let displayText = `GL ${Math.round(mealGLData.adjustedGL)}`;
-
-                                                        // 運動後の高GL: 推奨
-                                                        if (mealGLData.rating === '高GL（推奨）') {
-                                                            displayText += ' (推奨)';
-                                                        }
-                                                        // 運動後以外の高GL: 分割推奨
-                                                        else if (mealGLData.rating === '高GL' && !meal.isPostWorkout) {
-                                                            displayText += ' (分割推奨)';
-                                                        }
-                                                        // 中GL: 適正
-                                                        else if (mealGLData.rating === '中GL') {
-                                                            displayText += ' (適正)';
-                                                        }
-                                                        // 低GL: 優秀
-                                                        else if (mealGLData.rating === '低GL') {
-                                                            displayText += ' (優秀)';
-                                                        }
-
-                                                        return (
-                                                            <span className={`text-xs ${mealGLData.badgeColor} text-white px-2 py-0.5 rounded-full flex items-center gap-1`}>
-                                                                {displayText}
-                                                            </span>
-                                                        );
-                                                    }
-                                                    return null;
-                                                })()}
                                             </div>
+
+                                            {/* ②入力元タグ（予測、ルーティン、テンプレート）*/}
+                                            {(meal.isPredicted || meal.isRoutine || meal.isTemplate) && (
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    {meal.isPredicted && (
+                                                        <span className="text-xs bg-sky-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            <Icon name="Sparkles" size={10} />
+                                                            予測
+                                                        </span>
+                                                    )}
+                                                    {meal.isRoutine && (
+                                                        <span className="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            <Icon name="Repeat" size={10} />
+                                                            ルーティン
+                                                        </span>
+                                                    )}
+                                                    {meal.isTemplate && (
+                                                        <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            <Icon name="BookTemplate" size={10} />
+                                                            テンプレート
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* ③GLタグ + 運動後タグ */}
+                                            {(() => {
+                                                const mealGLData = mealGLValues.find(m => m.mealId === (meal.id || meal.timestamp));
+                                                const hasGLorWorkout = mealGLData || meal.isPostWorkout;
+
+                                                if (!hasGLorWorkout) return null;
+
+                                                return (
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        {meal.isPostWorkout && (
+                                                            <span className="text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                                <Icon name="Zap" size={10} />
+                                                                運動後
+                                                            </span>
+                                                        )}
+                                                        {mealGLData && (() => {
+                                                            // GL値の表示テキストを決定
+                                                            let displayText = `GL ${Math.round(mealGLData.adjustedGL)}`;
+
+                                                            // 運動後の高GL: 推奨
+                                                            if (mealGLData.rating === '高GL（推奨）') {
+                                                                displayText += ' (推奨)';
+                                                            }
+                                                            // 運動後以外の高GL: 分割推奨
+                                                            else if (mealGLData.rating === '高GL' && !meal.isPostWorkout) {
+                                                                displayText += ' (分割推奨)';
+                                                            }
+                                                            // 中GL: 適正
+                                                            else if (mealGLData.rating === '中GL') {
+                                                                displayText += ' (適正)';
+                                                            }
+                                                            // 低GL: 優秀
+                                                            else if (mealGLData.rating === '低GL') {
+                                                                displayText += ' (優秀)';
+                                                            }
+
+                                                            return (
+                                                                <span className={`text-xs ${mealGLData.badgeColor} text-white px-2 py-0.5 rounded-full flex items-center gap-1`}>
+                                                                    {displayText}
+                                                                </span>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            {/* ④食事名 */}
                                             <div
                                                 onClick={() => setExpandedMeals(prev => ({...prev, [meal.id || index]: !prev[meal.id || index]}))}
                                                 className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded p-1 -ml-1"

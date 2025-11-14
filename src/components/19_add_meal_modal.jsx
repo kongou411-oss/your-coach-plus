@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
+// 個数単位の定義（全箇所で統一使用）
+const COUNT_UNITS = ['本', '個', '杯', '枚', '錠', '包', '粒'];
+
 // ===== AddMealModal: ゴールベースの食事記録モーダル =====
 // フロー: 食事名入力 → アイテム選択・追加 → 記録
 //
@@ -42,6 +45,9 @@ const AddMealModal = ({
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
     const [showCustomForm, setShowCustomForm] = useState(false);
     const [showHelpModal, setShowHelpModal] = useState(false); // ヘルプモーダル
+    const [showCustomGuide, setShowCustomGuide] = useState(false); // カスタム作成ガイドモーダル（包括的）
+    const [showCustomHelp, setShowCustomHelp] = useState(false); // 保存方法ヘルプモーダル（簡易）
+    const [customSaveMethod, setCustomSaveMethod] = useState('database'); // 'database' or 'list'
 
     // 検索モーダル用のstate
     const [searchTerm, setSearchTerm] = useState('');
@@ -60,20 +66,33 @@ const AddMealModal = ({
     const [customData, setCustomData] = useState({
         name: '',
         itemType: 'food', // 'food', 'recipe', 'supplement'
-        category: '穀類',
-        servingSize: 100,
+        category: 'カスタム', // 全てカスタムカテゴリに統一
+        servingSize: '',
         servingUnit: 'g',
-        calories: 0,
-        protein: 0,
-        fat: 0,
-        carbs: 0,
+        calories: '',
+        protein: '',
+        fat: '',
+        carbs: '',
+        // 品質指標
+        diaas: '',
+        gi: '',
+        // 脂肪酸
+        saturatedFat: '',
+        monounsaturatedFat: '',
+        polyunsaturatedFat: '',
+        mediumChainFat: '',
+        // 糖質・食物繊維
+        sugar: '',
+        fiber: '',
+        solubleFiber: '',
+        insolubleFiber: '',
         // ビタミン
-        vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
-        vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
-        niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0,
+        vitaminA: '', vitaminB1: '', vitaminB2: '', vitaminB6: '', vitaminB12: '',
+        vitaminC: '', vitaminD: '', vitaminE: '', vitaminK: '',
+        niacin: '', pantothenicAcid: '', biotin: '', folicAcid: '',
         // ミネラル
-        sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0,
-        iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0,
+        sodium: '', potassium: '', calcium: '', magnesium: '', phosphorus: '',
+        iron: '', zinc: '', copper: '', manganese: '', iodine: '', selenium: '', chromium: '', molybdenum: '',
         // その他
         otherNutrients: []
     });
@@ -214,7 +233,7 @@ const AddMealModal = ({
 
                 if (!dbItem) {
                     // DBに見つからない場合は現在の値から逆算して100gベースを推定
-                    const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
+                    const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
                     const currentRatio = isCountUnit ? item.amount : item.amount / 100;
 
                     const baseVitamins = {};
@@ -299,8 +318,8 @@ const AddMealModal = ({
     // ===== 追加済みアイテムの合計PFCを計算 =====
     const calculateTotalPFC = () => {
         return addedItems.reduce((total, item) => {
-            // 個数単位（本、個、杯、枚）の場合はそのまま、g/ml単位の場合は100で割る
-            const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
+            // 個数単位（本、個、杯、枚、錠）の場合はそのまま、g/ml単位の場合は100で割る
+            const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
             const ratio = isCountUnit ? item.amount : item.amount / 100;
 
             return {
@@ -349,7 +368,7 @@ const AddMealModal = ({
 
         // 合計カロリー・PFCを計算
         const totalPFC = items.reduce((total, item) => {
-            const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
+            const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
             const ratio = isCountUnit ? item.amount : item.amount / 100;
             return {
                 calories: total.calories + (item.calories || 0) * ratio,
@@ -415,7 +434,7 @@ const AddMealModal = ({
         const item = updatedItems[index];
 
         // 個数単位判定
-        const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
+        const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
         const newRatio = isCountUnit ? newAmount : newAmount / 100;
 
         console.log(`[updateItemAmount] ${item.name}: amount ${item.amount} → ${newAmount}`);
@@ -651,7 +670,7 @@ const AddMealModal = ({
                         <div className="space-y-2">
                             {addedItems.map((item, index) => {
                                 // 個数単位（本、個、杯、枚）の場合はそのまま、g/ml単位の場合は100で割る
-                                const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
+                                const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
                                 const ratio = isCountUnit ? item.amount : item.amount / 100;
                                 const displayCalories = Math.round((item.calories || 0) * ratio);
                                 const displayProtein = Math.round((item.protein || 0) * ratio * 10) / 10;
@@ -728,7 +747,7 @@ const AddMealModal = ({
                 {selectedItemIndex !== null && addedItems[selectedItemIndex] && (() => {
                     const selectedItem = addedItems[selectedItemIndex];
                     const unit = selectedItem.unit || 'g';
-                    const isCountUnit = ['個', '本', '杯', '枚'].some(u => unit.includes(u));
+                    const isCountUnit = COUNT_UNITS.some(u => unit.includes(u));
                     const stepOptions = isCountUnit ? [1, 2, 3, 5, 10] : [1, 5, 10, 50, 100];
 
                     return (
@@ -937,7 +956,10 @@ const AddMealModal = ({
                     // タブに応じてカテゴリを決定（food, supplementのみ）
                     let targetCategory = selectedCategory;
                     if (foodTab === 'supplement') {
-                        targetCategory = 'サプリメント';
+                        // サプリタブで「カスタム」が選択されている場合はそのまま使用
+                        if (selectedCategory !== 'カスタム') {
+                            targetCategory = 'サプリメント';
+                        }
                     } else if (!targetCategory || targetCategory === '') {
                         // デフォルトカテゴリ（foodタブで未選択の場合）
                         targetCategory = Object.keys(db).filter(cat => cat !== 'サプリメント')[0] || '肉類';
@@ -1234,14 +1256,17 @@ const AddMealModal = ({
 
                             {/* サプリメントのサブカテゴリフィルタ */}
                             {foodTab === 'supplement' && (() => {
-                                // サプリメントのサブカテゴリ一覧を取得
+                                // サプリメントのサブカテゴリ一覧を取得 + カスタムカテゴリを追加（食材タブと同じロジック）
                                 const supplementItems = foodDB['サプリメント'] || {};
                                 const subcategories = [...new Set(Object.values(supplementItems).map(item => item.subcategory).filter(Boolean))];
+
+                                // 「カスタム」カテゴリを最後に追加（食材タブと同じ）
+                                const allSubcategories = [...subcategories, 'カスタム'];
 
                                 return (
                                     <div className="px-4 py-3 border-b bg-gray-50">
                                         <div className="flex flex-wrap gap-2">
-                                            {subcategories.map(subcat => (
+                                            {allSubcategories.map(subcat => (
                                                 <button
                                                     key={subcat}
                                                     onClick={() => setSelectedCategory(subcat)}
@@ -1297,7 +1322,7 @@ const AddMealModal = ({
                                                                     // servingSizeとservingUnitがあればそれを使用
                                                                     if (item.servingSize && item.servingUnit) {
                                                                         // unitベースの表記（個、本、杯、錠、枚など）
-                                                                        const isCountUnit = ['個', '本', '杯', '枚', '錠', '包', '粒'].some(u => (item.unit || '').includes(u));
+                                                                        const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
 
                                                                         // 錠やg/ml単位で、servingSizeが100未満の場合は「※{servingSize}{servingUnit}あたり」
                                                                         if ((item.servingUnit === '錠' || item.servingUnit === 'g' || item.servingUnit === 'ml') && item.servingSize < 100) {
@@ -1392,7 +1417,7 @@ const AddMealModal = ({
                                 <div className="space-y-2">
                                     {mealTemplates.map((template) => {
                                     const totalPFC = template.items.reduce((sum, item) => {
-                                        const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
+                                        const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
                                         const ratio = isCountUnit ? item.amount : item.amount / 100;
                                         return {
                                             calories: sum.calories + (item.calories || 0) * ratio,
@@ -1466,7 +1491,7 @@ const AddMealModal = ({
                                                 <div className="text-xs font-medium text-gray-600 mt-2 mb-2">内訳を表示</div>
                                                 <div className="space-y-2">
                                                     {template.items.map((item, idx) => {
-                                                        const isCountUnit = ['本', '個', '杯', '枚'].some(u => (item.unit || '').includes(u));
+                                                        const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
                                                         const ratio = isCountUnit ? item.amount : item.amount / 100;
                                                         return (
                                                             <div key={idx} className="bg-white p-2 rounded text-xs border border-gray-200">
@@ -1513,6 +1538,12 @@ const AddMealModal = ({
                             <h3 className="text-lg font-bold flex items-center gap-2">
                                 <Icon name="Edit" size={20} />
                                 カスタムアイテムを作成
+                                <button
+                                    onClick={() => setShowCustomGuide(true)}
+                                    className="p-1 hover:bg-white hover:bg-opacity-20 rounded-full transition text-white"
+                                >
+                                    <Icon name="HelpCircle" size={18} />
+                                </button>
                             </h3>
                             <button
                                 onClick={() => setShowCustomForm(false)}
@@ -1539,118 +1570,101 @@ const AddMealModal = ({
                                 />
                             </div>
 
-                            {/* カテゴリタブ */}
+                            {/* カテゴリタブ（大カテゴリのみ：食材・料理・サプリ） */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-600 mb-2">カテゴリ</label>
-                                <div className="grid grid-cols-3 border-b border-gray-200">
+                                <div className="grid grid-cols-3 gap-2">
                                     <button
                                         type="button"
-                                        onClick={() => setCustomData({...customData, itemType: 'food', category: '穀類'})}
-                                        className={`py-2 px-3 font-medium transition flex items-center justify-center gap-1 border-b-2 text-xs ${
+                                        onClick={() => setCustomData({...customData, itemType: 'food', category: 'カスタム'})}
+                                        className={`py-3 px-4 font-medium transition flex flex-col items-center justify-center gap-1 rounded-lg border-2 ${
                                             customData.itemType === 'food'
-                                                ? 'border-green-600 text-green-600'
-                                                : 'border-transparent text-gray-600 hover:text-green-600'
+                                                ? 'border-green-600 bg-green-50 text-green-600'
+                                                : 'border-gray-300 text-gray-600 hover:border-green-600 hover:text-green-600'
                                         }`}
                                     >
-                                        <Icon name="Apple" size={14} />
-                                        <span>食材</span>
+                                        <Icon name="Apple" size={20} />
+                                        <span className="text-sm">食材</span>
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setCustomData({...customData, itemType: 'recipe', category: '料理'})}
-                                        className={`py-2 px-3 font-medium transition flex items-center justify-center gap-1 border-b-2 text-xs ${
+                                        onClick={() => setCustomData({...customData, itemType: 'recipe', category: 'カスタム'})}
+                                        className={`py-3 px-4 font-medium transition flex flex-col items-center justify-center gap-1 rounded-lg border-2 ${
                                             customData.itemType === 'recipe'
-                                                ? 'border-orange-600 text-orange-600'
-                                                : 'border-transparent text-gray-600 hover:text-orange-600'
+                                                ? 'border-orange-600 bg-orange-50 text-orange-600'
+                                                : 'border-gray-300 text-gray-600 hover:border-orange-600 hover:text-orange-600'
                                         }`}
                                     >
-                                        <Icon name="ChefHat" size={14} />
-                                        <span>料理</span>
+                                        <Icon name="ChefHat" size={20} />
+                                        <span className="text-sm">料理</span>
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setCustomData({...customData, itemType: 'supplement', category: 'プロテイン'})}
-                                        className={`py-2 px-3 font-medium transition flex items-center justify-center gap-1 border-b-2 text-xs ${
+                                        onClick={() => setCustomData({...customData, itemType: 'supplement', category: 'カスタム'})}
+                                        className={`py-3 px-4 font-medium transition flex flex-col items-center justify-center gap-1 rounded-lg border-2 ${
                                             customData.itemType === 'supplement'
-                                                ? 'border-blue-600 text-blue-600'
-                                                : 'border-transparent text-gray-600 hover:text-blue-600'
+                                                ? 'border-blue-600 bg-blue-50 text-blue-600'
+                                                : 'border-gray-300 text-gray-600 hover:border-blue-600 hover:text-blue-600'
                                         }`}
                                     >
-                                        <Icon name="Pill" size={14} />
-                                        <span>サプリ</span>
+                                        <Icon name="Pill" size={20} />
+                                        <span className="text-sm">サプリ</span>
                                     </button>
                                 </div>
                             </div>
 
-                            {/* サブカテゴリ & 1回分の量 */}
+                            {/* 1回分の量 */}
                             <div className="flex gap-2">
-                                {customData.itemType === 'recipe' ? (
+                                <div className="flex-1">
+                                    <label className="block text-xs text-gray-600 mb-1">1回分の量</label>
                                     <input
-                                        type="text"
-                                        value="料理"
-                                        disabled
-                                        className="flex-1 px-3 py-2 text-sm border rounded-lg bg-gray-100"
+                                        type="number"
+                                        step="0.1"
+                                        value={customData.servingSize}
+                                        onChange={(e) => setCustomData({...customData, servingSize: e.target.value})}
+                                        onBlur={(e) => {
+                                            const val = e.target.value.trim();
+                                            if (val === '' || val === '.') {
+                                                setCustomData({...customData, servingSize: ''});
+                                            } else {
+                                                const num = parseFloat(val);
+                                                setCustomData({...customData, servingSize: isNaN(num) ? '' : num});
+                                            }
+                                        }}
+                                        placeholder="100"
+                                        className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                                     />
-                                ) : (
+                                </div>
+                                <div className="w-24">
+                                    <label className="block text-xs text-gray-600 mb-1">単位</label>
                                     <select
-                                        value={customData.category}
-                                        onChange={(e) => setCustomData({...customData, category: e.target.value})}
-                                        className="flex-1 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        value={customData.servingUnit}
+                                        onChange={(e) => setCustomData({...customData, servingUnit: e.target.value})}
+                                        className="w-full px-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                                     >
-                                        {customData.itemType === 'supplement' ? (
-                                            <>
-                                                <option value="ビタミン・ミネラル">ビタミン・ミネラル</option>
-                                                <option value="プロテイン">プロテイン</option>
-                                                <option value="アミノ酸">アミノ酸</option>
-                                                <option value="ドリンク">ドリンク</option>
-                                                <option value="その他">その他</option>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <option value="穀類">穀類</option>
-                                                <option value="肉類">肉類</option>
-                                                <option value="魚介類">魚介類</option>
-                                                <option value="野菜類">野菜類</option>
-                                                <option value="果物類">果物類</option>
-                                                <option value="乳製品">乳製品</option>
-                                                <option value="調味料">調味料</option>
-                                                <option value="その他">その他</option>
-                                            </>
-                                        )}
+                                        <option value="g">g</option>
+                                        <option value="ml">ml</option>
+                                        <option value="本">本</option>
+                                        <option value="個">個</option>
+                                        <option value="杯">杯</option>
+                                        <option value="枚">枚</option>
+                                        <option value="錠">錠</option>
+                                        <option value="包">包</option>
+                                        <option value="粒">粒</option>
                                     </select>
-                                )}
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    value={customData.servingSize === 0 ? '0' : (customData.servingSize || '')}
-                                    onChange={(e) => setCustomData({...customData, servingSize: e.target.value})}
-                                    onBlur={(e) => {
-                                        const val = e.target.value.trim();
-                                        if (val === '' || val === '.') {
-                                            setCustomData({...customData, servingSize: 0});
-                                        } else {
-                                            const num = parseFloat(val);
-                                            setCustomData({...customData, servingSize: isNaN(num) ? 0 : num});
-                                        }
-                                    }}
-                                    placeholder="100"
-                                    className="w-20 px-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none text-center"
-                                />
-                                <select
-                                    value={customData.servingUnit}
-                                    onChange={(e) => setCustomData({...customData, servingUnit: e.target.value})}
-                                    className="w-16 px-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                >
-                                    <option value="g">g</option>
-                                    <option value="mg">mg</option>
-                                    <option value="ml">ml</option>
-                                </select>
+                                </div>
                             </div>
+                            {/* 重量単位の場合の注釈 */}
+                            {!COUNT_UNITS.some(u => customData.servingUnit.includes(u)) && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    ※ 保存時に100gあたりの値に自動換算されます
+                                </p>
+                            )}
 
                             {/* 基本栄養素 */}
                             <div className="border-t pt-4">
                                 <p className="text-sm font-medium text-gray-600 mb-2">
-                                    基本栄養素（{customData.servingSize}{customData.servingUnit}あたり）
+                                    基本栄養素（{customData.servingSize || 100}{customData.servingUnit}あたり）
                                 </p>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
@@ -1658,17 +1672,9 @@ const AddMealModal = ({
                                         <input
                                             type="number"
                                             step="0.1"
-                                            value={customData.calories === 0 ? '0' : (customData.calories || '')}
+                                            value={customData.calories}
                                             onChange={(e) => setCustomData({...customData, calories: e.target.value})}
-                                            onBlur={(e) => {
-                                                const val = e.target.value.trim();
-                                                if (val === '' || val === '.') {
-                                                    setCustomData({...customData, calories: 0});
-                                                } else {
-                                                    const num = parseFloat(val);
-                                                    setCustomData({...customData, calories: isNaN(num) ? 0 : num});
-                                                }
-                                            }}
+                                            placeholder="0"
                                             className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                         />
                                     </div>
@@ -1677,17 +1683,9 @@ const AddMealModal = ({
                                         <input
                                             type="number"
                                             step="0.1"
-                                            value={customData.protein === 0 ? '0' : (customData.protein || '')}
+                                            value={customData.protein}
                                             onChange={(e) => setCustomData({...customData, protein: e.target.value})}
-                                            onBlur={(e) => {
-                                                const val = e.target.value.trim();
-                                                if (val === '' || val === '.') {
-                                                    setCustomData({...customData, protein: 0});
-                                                } else {
-                                                    const num = parseFloat(val);
-                                                    setCustomData({...customData, protein: isNaN(num) ? 0 : num});
-                                                }
-                                            }}
+                                            placeholder="0"
                                             className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                         />
                                     </div>
@@ -1696,17 +1694,9 @@ const AddMealModal = ({
                                         <input
                                             type="number"
                                             step="0.1"
-                                            value={customData.fat === 0 ? '0' : (customData.fat || '')}
+                                            value={customData.fat}
                                             onChange={(e) => setCustomData({...customData, fat: e.target.value})}
-                                            onBlur={(e) => {
-                                                const val = e.target.value.trim();
-                                                if (val === '' || val === '.') {
-                                                    setCustomData({...customData, fat: 0});
-                                                } else {
-                                                    const num = parseFloat(val);
-                                                    setCustomData({...customData, fat: isNaN(num) ? 0 : num});
-                                                }
-                                            }}
+                                            placeholder="0"
                                             className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                         />
                                     </div>
@@ -1715,28 +1705,145 @@ const AddMealModal = ({
                                         <input
                                             type="number"
                                             step="0.1"
-                                            value={customData.carbs === 0 ? '0' : (customData.carbs || '')}
+                                            value={customData.carbs}
                                             onChange={(e) => setCustomData({...customData, carbs: e.target.value})}
-                                            onBlur={(e) => {
-                                                const val = e.target.value.trim();
-                                                if (val === '' || val === '.') {
-                                                    setCustomData({...customData, carbs: 0});
-                                                } else {
-                                                    const num = parseFloat(val);
-                                                    setCustomData({...customData, carbs: isNaN(num) ? 0 : num});
-                                                }
-                                            }}
+                                            placeholder="0"
                                             className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
                                         />
                                     </div>
                                 </div>
                             </div>
 
+                            {/* 品質指標（折りたたみ） */}
+                            <details className="border-t pt-4">
+                                <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-green-600 flex items-center gap-2">
+                                    <Icon name="ChevronDown" size={14} />
+                                    品質指標
+                                </summary>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                    {/* 品質指標 */}
+                                    <div>
+                                        <label className="text-xs text-gray-600">DIAAS</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={customData.diaas}
+                                            onChange={(e) => setCustomData({...customData, diaas: e.target.value})}
+                                            placeholder="0"
+                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600">GI値</label>
+                                        <input
+                                            type="number"
+                                            step="1"
+                                            value={customData.gi}
+                                            onChange={(e) => setCustomData({...customData, gi: e.target.value})}
+                                            placeholder="0"
+                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        />
+                                    </div>
+
+                                    {/* 糖質・食物繊維 */}
+                                    <div>
+                                        <label className="text-xs text-gray-600">糖質 (g)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={customData.sugar}
+                                            onChange={(e) => setCustomData({...customData, sugar: e.target.value})}
+                                            placeholder="0"
+                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600">食物繊維 (g)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={customData.fiber}
+                                            onChange={(e) => setCustomData({...customData, fiber: e.target.value})}
+                                            placeholder="0"
+                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600">水溶性食物繊維 (g)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={customData.solubleFiber}
+                                            onChange={(e) => setCustomData({...customData, solubleFiber: e.target.value})}
+                                            placeholder="0"
+                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600">不溶性食物繊維 (g)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={customData.insolubleFiber}
+                                            onChange={(e) => setCustomData({...customData, insolubleFiber: e.target.value})}
+                                            placeholder="0"
+                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        />
+                                    </div>
+
+                                    {/* 脂肪酸 */}
+                                    <div>
+                                        <label className="text-xs text-gray-600">飽和脂肪酸 (g)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={customData.saturatedFat}
+                                            onChange={(e) => setCustomData({...customData, saturatedFat: e.target.value})}
+                                            placeholder="0"
+                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600">一価不飽和脂肪酸 (g)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={customData.monounsaturatedFat}
+                                            onChange={(e) => setCustomData({...customData, monounsaturatedFat: e.target.value})}
+                                            placeholder="0"
+                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600">多価不飽和脂肪酸 (g)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={customData.polyunsaturatedFat}
+                                            onChange={(e) => setCustomData({...customData, polyunsaturatedFat: e.target.value})}
+                                            placeholder="0"
+                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600">中鎖脂肪酸 (g)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={customData.mediumChainFat}
+                                            onChange={(e) => setCustomData({...customData, mediumChainFat: e.target.value})}
+                                            placeholder="0"
+                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        />
+                                    </div>
+                                </div>
+                            </details>
+
                             {/* ビタミン（折りたたみ） */}
                             <details className="border-t pt-4">
                                 <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-green-600 flex items-center gap-2">
                                     <Icon name="ChevronDown" size={14} />
-                                    ビタミン（{customData.servingSize}{customData.servingUnit}あたり）
+                                    ビタミン
                                 </summary>
                                 <div className="grid grid-cols-2 gap-2 mt-2">
                                     {[
@@ -1781,7 +1888,7 @@ const AddMealModal = ({
                             <details className="border-t pt-4">
                                 <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-green-600 flex items-center gap-2">
                                     <Icon name="ChevronDown" size={14} />
-                                    ミネラル（{customData.servingSize}{customData.servingUnit}あたり）
+                                    ミネラル
                                 </summary>
                                 <div className="grid grid-cols-2 gap-2 mt-2">
                                     {[
@@ -1826,73 +1933,86 @@ const AddMealModal = ({
                             <details className="border-t pt-4">
                                 <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-green-600 flex items-center gap-2">
                                     <Icon name="ChevronDown" size={14} />
-                                    その他栄養素（クレアチン、食物繊維など）
+                                    その他栄養素（クレアチン、カフェインなど）
                                 </summary>
                                 <div className="mt-2 space-y-2">
-                                    {customData.otherNutrients.map((nutrient, idx) => (
-                                        <div key={idx} className="flex gap-1 items-center">
-                                            <input
-                                                type="text"
-                                                value={nutrient.name}
-                                                onChange={(e) => {
-                                                    const updated = [...customData.otherNutrients];
-                                                    updated[idx].name = e.target.value;
-                                                    setCustomData({...customData, otherNutrients: updated});
-                                                }}
-                                                placeholder="名前"
-                                                className="w-24 px-2 py-1 text-xs border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                            />
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                value={nutrient.amount === 0 ? '0' : (nutrient.amount || '')}
-                                                onChange={(e) => {
-                                                    const updated = [...customData.otherNutrients];
-                                                    updated[idx].amount = e.target.value;
-                                                    setCustomData({...customData, otherNutrients: updated});
-                                                }}
-                                                onBlur={(e) => {
-                                                    const val = e.target.value.trim();
-                                                    const updated = [...customData.otherNutrients];
-                                                    if (val === '' || val === '.') {
-                                                        updated[idx].amount = 0;
-                                                    } else {
-                                                        const num = parseFloat(val);
-                                                        updated[idx].amount = isNaN(num) ? 0 : num;
-                                                    }
-                                                    setCustomData({...customData, otherNutrients: updated});
-                                                }}
-                                                placeholder="量"
-                                                className="w-16 px-2 py-1 text-xs border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                            />
-                                            <select
-                                                value={nutrient.unit || 'mg'}
-                                                onChange={(e) => {
-                                                    const updated = [...customData.otherNutrients];
-                                                    updated[idx].unit = e.target.value;
-                                                    setCustomData({...customData, otherNutrients: updated});
-                                                }}
-                                                className="w-12 px-1 py-1 text-xs border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                            >
-                                                <option value="g">g</option>
-                                                <option value="mg">mg</option>
-                                                <option value="μg">μg</option>
-                                            </select>
-                                            <button
-                                                onClick={() => {
-                                                    const updated = customData.otherNutrients.filter((_, i) => i !== idx);
-                                                    setCustomData({...customData, otherNutrients: updated});
-                                                }}
-                                                className="text-red-500 px-1 hover:bg-red-50 rounded"
-                                            >
-                                                <Icon name="X" size={14} />
-                                            </button>
+                                    {customData.otherNutrients.length === 0 ? (
+                                        <div className="text-xs text-gray-400 text-center py-2">
+                                            追加ボタンをクリックして栄養素を入力
                                         </div>
-                                    ))}
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {customData.otherNutrients.map((nutrient, idx) => (
+                                                <div key={idx} className="space-y-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <input
+                                                            type="text"
+                                                            value={nutrient.name}
+                                                            onChange={(e) => {
+                                                                const updated = [...customData.otherNutrients];
+                                                                updated[idx].name = e.target.value;
+                                                                setCustomData({...customData, otherNutrients: updated});
+                                                            }}
+                                                            placeholder="栄養素名"
+                                                            className="flex-1 px-2 py-1 text-xs text-gray-600 border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                const updated = customData.otherNutrients.filter((_, i) => i !== idx);
+                                                                setCustomData({...customData, otherNutrients: updated});
+                                                            }}
+                                                            className="ml-1 text-red-500 hover:bg-red-50 rounded p-1"
+                                                        >
+                                                            <Icon name="X" size={14} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex gap-1">
+                                                        <input
+                                                            type="number"
+                                                            step="0.1"
+                                                            value={nutrient.amount === 0 ? '0' : (nutrient.amount || '')}
+                                                            onChange={(e) => {
+                                                                const updated = [...customData.otherNutrients];
+                                                                updated[idx].amount = e.target.value;
+                                                                setCustomData({...customData, otherNutrients: updated});
+                                                            }}
+                                                            onBlur={(e) => {
+                                                                const val = e.target.value.trim();
+                                                                const updated = [...customData.otherNutrients];
+                                                                if (val === '' || val === '.') {
+                                                                    updated[idx].amount = 0;
+                                                                } else {
+                                                                    const num = parseFloat(val);
+                                                                    updated[idx].amount = isNaN(num) ? 0 : num;
+                                                                }
+                                                                setCustomData({...customData, otherNutrients: updated});
+                                                            }}
+                                                            placeholder="量"
+                                                            className="flex-1 px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                                        />
+                                                        <select
+                                                            value={nutrient.unit || 'mg'}
+                                                            onChange={(e) => {
+                                                                const updated = [...customData.otherNutrients];
+                                                                updated[idx].unit = e.target.value;
+                                                                setCustomData({...customData, otherNutrients: updated});
+                                                            }}
+                                                            className="px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                                        >
+                                                            <option value="g">g</option>
+                                                            <option value="mg">mg</option>
+                                                            <option value="μg">μg</option>
+                                                            <option value="IU">IU</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                     <button
                                         onClick={() => setCustomData({
                                             ...customData,
-                                            otherNutrients: [...customData.otherNutrients, {name: '', amount: '', unit: ''}]
+                                            otherNutrients: [...customData.otherNutrients, {name: '', amount: '', unit: 'mg'}]
                                         })}
                                         className="w-full px-2 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 text-xs font-medium flex items-center justify-center gap-1"
                                     >
@@ -1901,6 +2021,57 @@ const AddMealModal = ({
                                     </button>
                                 </div>
                             </details>
+
+                            {/* 保存方法選択 */}
+                            <div className="border-t pt-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <label className="text-sm font-medium text-gray-600">保存方法</label>
+                                    <button
+                                        onClick={() => setShowCustomHelp(true)}
+                                        className="p-1 hover:bg-gray-100 rounded-full transition"
+                                    >
+                                        <Icon name="HelpCircle" size={14} className="text-[#4A9EFF]" />
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition ${
+                                        customSaveMethod === 'database'
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-gray-300 hover:border-gray-400'
+                                    }`}>
+                                        <input
+                                            type="radio"
+                                            name="saveMethod"
+                                            value="database"
+                                            checked={customSaveMethod === 'database'}
+                                            onChange={(e) => setCustomSaveMethod(e.target.value)}
+                                            className="mt-0.5"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="font-semibold text-sm text-gray-800">データベースに保存</div>
+                                            <div className="text-xs text-gray-600 mt-0.5">後で検索して使用できます</div>
+                                        </div>
+                                    </label>
+                                    <label className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition ${
+                                        customSaveMethod === 'list'
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-gray-300 hover:border-gray-400'
+                                    }`}>
+                                        <input
+                                            type="radio"
+                                            name="saveMethod"
+                                            value="list"
+                                            checked={customSaveMethod === 'list'}
+                                            onChange={(e) => setCustomSaveMethod(e.target.value)}
+                                            className="mt-0.5"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="font-semibold text-sm text-gray-800">リストに追加</div>
+                                            <div className="text-xs text-gray-600 mt-0.5">今すぐ食事に追加されます</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
 
                             {/* 保存ボタン */}
                             <div className="flex gap-2 pt-4">
@@ -1917,173 +2088,282 @@ const AddMealModal = ({
                                             return;
                                         }
 
-                                        // Firestoreに保存（AI解析経由と同じ形式）
+                                        // Firestoreに保存（既存アイテムと同じ形式）
                                         const currentUser = firebase.auth().currentUser;
                                         if (currentUser) {
                                             try {
+                                                // 個数単位判定
+                                                const isCountUnit = COUNT_UNITS.some(u => customData.servingUnit.includes(u));
+                                                const servingSize = parseFloat(customData.servingSize) || (isCountUnit ? 1 : 100);
+
+                                                // 重量単位の場合は100g基準に換算、個数単位はそのまま
+                                                let finalServingSize, conversionRatio;
+                                                if (isCountUnit) {
+                                                    // 個数単位：1個あたりで保存
+                                                    finalServingSize = servingSize;
+                                                    conversionRatio = 1;
+                                                } else {
+                                                    // 重量単位：100gあたりに換算
+                                                    finalServingSize = 100;
+                                                    conversionRatio = 100 / servingSize;
+                                                }
+
                                                 const customFood = {
                                                     name: customData.name,
                                                     category: customData.category,
                                                     itemType: customData.itemType,
-                                                    calories: customData.calories || 0,
-                                                    protein: customData.protein || 0,
-                                                    fat: customData.fat || 0,
-                                                    carbs: customData.carbs || 0,
-                                                    servingSize: customData.servingSize || 100,
+                                                    // 栄養値を換算（個数単位はそのまま、重量単位は100g基準に）
+                                                    calories: parseFloat(((parseFloat(customData.calories) || 0) * conversionRatio).toFixed(1)),
+                                                    protein: parseFloat(((parseFloat(customData.protein) || 0) * conversionRatio).toFixed(1)),
+                                                    fat: parseFloat(((parseFloat(customData.fat) || 0) * conversionRatio).toFixed(1)),
+                                                    carbs: parseFloat(((parseFloat(customData.carbs) || 0) * conversionRatio).toFixed(1)),
+                                                    servingSize: finalServingSize,
                                                     servingUnit: customData.servingUnit || 'g',
-                                                    // ビタミン・ミネラルをvitamins/mineralsオブジェクトに格納
+                                                    unit: customData.servingUnit || 'g',  // unitフィールドも追加
+
+                                                    // 品質指標（換算不要）
+                                                    diaas: parseFloat(customData.diaas) || null,
+                                                    gi: parseFloat(customData.gi) || null,
+
+                                                    // 脂肪酸（換算）
+                                                    saturatedFat: parseFloat(((parseFloat(customData.saturatedFat) || 0) * conversionRatio).toFixed(2)),
+                                                    monounsaturatedFat: parseFloat(((parseFloat(customData.monounsaturatedFat) || 0) * conversionRatio).toFixed(2)),
+                                                    polyunsaturatedFat: parseFloat(((parseFloat(customData.polyunsaturatedFat) || 0) * conversionRatio).toFixed(2)),
+                                                    mediumChainFat: parseFloat(((parseFloat(customData.mediumChainFat) || 0) * conversionRatio).toFixed(2)),
+
+                                                    // 糖質・食物繊維（換算）
+                                                    sugar: parseFloat(((parseFloat(customData.sugar) || 0) * conversionRatio).toFixed(1)),
+                                                    fiber: parseFloat(((parseFloat(customData.fiber) || 0) * conversionRatio).toFixed(1)),
+                                                    solubleFiber: parseFloat(((parseFloat(customData.solubleFiber) || 0) * conversionRatio).toFixed(1)),
+                                                    insolubleFiber: parseFloat(((parseFloat(customData.insolubleFiber) || 0) * conversionRatio).toFixed(1)),
+
+                                                    // ビタミン・ミネラルをvitamins/mineralsオブジェクトに格納（換算）
+                                                    // キー名は既存アイテムと統一（vitaminA, vitaminB1, ...形式）
                                                     vitamins: {
-                                                        A: customData.vitaminA || 0,
-                                                        B1: customData.vitaminB1 || 0,
-                                                        B2: customData.vitaminB2 || 0,
-                                                        B6: customData.vitaminB6 || 0,
-                                                        B12: customData.vitaminB12 || 0,
-                                                        C: customData.vitaminC || 0,
-                                                        D: customData.vitaminD || 0,
-                                                        E: customData.vitaminE || 0,
-                                                        K: customData.vitaminK || 0,
-                                                        niacin: customData.niacin || 0,
-                                                        pantothenicAcid: customData.pantothenicAcid || 0,
-                                                        biotin: customData.biotin || 0,
-                                                        folicAcid: customData.folicAcid || 0
+                                                        vitaminA: parseFloat(((parseFloat(customData.vitaminA) || 0) * conversionRatio).toFixed(1)),
+                                                        vitaminB1: parseFloat(((parseFloat(customData.vitaminB1) || 0) * conversionRatio).toFixed(2)),
+                                                        vitaminB2: parseFloat(((parseFloat(customData.vitaminB2) || 0) * conversionRatio).toFixed(2)),
+                                                        vitaminB6: parseFloat(((parseFloat(customData.vitaminB6) || 0) * conversionRatio).toFixed(2)),
+                                                        vitaminB12: parseFloat(((parseFloat(customData.vitaminB12) || 0) * conversionRatio).toFixed(1)),
+                                                        vitaminC: parseFloat(((parseFloat(customData.vitaminC) || 0) * conversionRatio).toFixed(1)),
+                                                        vitaminD: parseFloat(((parseFloat(customData.vitaminD) || 0) * conversionRatio).toFixed(1)),
+                                                        vitaminE: parseFloat(((parseFloat(customData.vitaminE) || 0) * conversionRatio).toFixed(1)),
+                                                        vitaminK: parseFloat(((parseFloat(customData.vitaminK) || 0) * conversionRatio).toFixed(1)),
+                                                        niacin: parseFloat(((parseFloat(customData.niacin) || 0) * conversionRatio).toFixed(1)),
+                                                        pantothenicAcid: parseFloat(((parseFloat(customData.pantothenicAcid) || 0) * conversionRatio).toFixed(2)),
+                                                        biotin: parseFloat(((parseFloat(customData.biotin) || 0) * conversionRatio).toFixed(1)),
+                                                        folicAcid: parseFloat(((parseFloat(customData.folicAcid) || 0) * conversionRatio).toFixed(1))
                                                     },
                                                     minerals: {
-                                                        sodium: customData.sodium || 0,
-                                                        potassium: customData.potassium || 0,
-                                                        calcium: customData.calcium || 0,
-                                                        magnesium: customData.magnesium || 0,
-                                                        phosphorus: customData.phosphorus || 0,
-                                                        iron: customData.iron || 0,
-                                                        zinc: customData.zinc || 0,
-                                                        copper: customData.copper || 0,
-                                                        manganese: customData.manganese || 0,
-                                                        iodine: customData.iodine || 0,
-                                                        selenium: customData.selenium || 0,
-                                                        chromium: customData.chromium || 0,
-                                                        molybdenum: customData.molybdenum || 0
+                                                        sodium: parseFloat(((parseFloat(customData.sodium) || 0) * conversionRatio).toFixed(1)),
+                                                        potassium: parseFloat(((parseFloat(customData.potassium) || 0) * conversionRatio).toFixed(1)),
+                                                        calcium: parseFloat(((parseFloat(customData.calcium) || 0) * conversionRatio).toFixed(1)),
+                                                        magnesium: parseFloat(((parseFloat(customData.magnesium) || 0) * conversionRatio).toFixed(1)),
+                                                        phosphorus: parseFloat(((parseFloat(customData.phosphorus) || 0) * conversionRatio).toFixed(1)),
+                                                        iron: parseFloat(((parseFloat(customData.iron) || 0) * conversionRatio).toFixed(1)),
+                                                        zinc: parseFloat(((parseFloat(customData.zinc) || 0) * conversionRatio).toFixed(1)),
+                                                        copper: parseFloat(((parseFloat(customData.copper) || 0) * conversionRatio).toFixed(2)),
+                                                        manganese: parseFloat(((parseFloat(customData.manganese) || 0) * conversionRatio).toFixed(2)),
+                                                        iodine: parseFloat(((parseFloat(customData.iodine) || 0) * conversionRatio).toFixed(1)),
+                                                        selenium: parseFloat(((parseFloat(customData.selenium) || 0) * conversionRatio).toFixed(1)),
+                                                        chromium: parseFloat(((parseFloat(customData.chromium) || 0) * conversionRatio).toFixed(1)),
+                                                        molybdenum: parseFloat(((parseFloat(customData.molybdenum) || 0) * conversionRatio).toFixed(1))
                                                     },
-                                                    otherNutrients: customData.otherNutrients || [],
+                                                    // その他栄養素は絶対量（換算不要）- mg, g, IUなどの単位で保存
+                                                    otherNutrients: (customData.otherNutrients || []).map(nutrient => ({
+                                                        name: nutrient.name,
+                                                        amount: parseFloat(parseFloat(nutrient.amount) || 0),
+                                                        unit: nutrient.unit
+                                                    })),
                                                     createdAt: new Date().toISOString()
                                                 };
 
-                                                await firebase.firestore()
-                                                    .collection('users')
-                                                    .doc(currentUser.uid)
-                                                    .collection('customFoods')
-                                                    .doc(customFood.name)
-                                                    .set(customFood, { merge: true });
+                                                // データベースに保存が選択されている場合のみFirestoreに保存
+                                                if (customSaveMethod === 'database') {
+                                                    await firebase.firestore()
+                                                        .collection('users')
+                                                        .doc(currentUser.uid)
+                                                        .collection('customFoods')
+                                                        .doc(customFood.name)
+                                                        .set(customFood, { merge: true });
 
-                                                console.log(`[AddMealModal] カスタムアイテムを保存: ${customFood.name} (${customFood.itemType})`);
+                                                    console.log(`[AddMealModal] カスタムアイテムをデータベースに保存: ${customFood.name} (${customFood.itemType})`);
 
-                                                // stateも更新（即座に反映）
-                                                setCustomFoods(prev => {
-                                                    const existing = prev.find(f => f.name === customFood.name);
-                                                    if (existing) {
-                                                        return prev.map(f => f.name === customFood.name ? customFood : f);
-                                                    } else {
-                                                        return [...prev, customFood];
-                                                    }
-                                                });
+                                                    // stateも更新（即座に反映）
+                                                    setCustomFoods(prev => {
+                                                        const existing = prev.find(f => f.name === customFood.name);
+                                                        if (existing) {
+                                                            return prev.map(f => f.name === customFood.name ? customFood : f);
+                                                        } else {
+                                                            return [...prev, customFood];
+                                                        }
+                                                    });
 
-                                                toast.success('カスタムアイテムを保存しました');
+                                                    toast.success('カスタムアイテムをデータベースに保存しました');
+                                                } else {
+                                                    // リストに追加の場合もFirestoreに保存
+                                                    await firebase.firestore()
+                                                        .collection('users')
+                                                        .doc(currentUser.uid)
+                                                        .collection('customFoods')
+                                                        .doc(customFood.name)
+                                                        .set(customFood, { merge: true });
+
+                                                    console.log(`[AddMealModal] カスタムアイテムをリストに追加: ${customFood.name} (${customFood.itemType})`);
+
+                                                    // stateも更新
+                                                    setCustomFoods(prev => {
+                                                        const existing = prev.find(f => f.name === customFood.name);
+                                                        if (existing) {
+                                                            return prev.map(f => f.name === customFood.name ? customFood : f);
+                                                        } else {
+                                                            return [...prev, customFood];
+                                                        }
+                                                    });
+                                                }
                                             } catch (error) {
                                                 console.error('[AddMealModal] カスタムアイテム保存エラー:', error);
                                                 toast.error('保存に失敗しました');
                                             }
                                         }
 
-                                        // カスタムアイテムをaddedItemsに追加
-                                        // 個数単位判定
-                                        const unitStr = String(customData.servingUnit || '');
-                                        const isCountUnit = unitStr.includes('個') || unitStr.includes('本') || unitStr.includes('杯') || unitStr.includes('枚') || unitStr.includes('錠');
-                                        const ratio = isCountUnit ? customData.servingSize : customData.servingSize / 100;
+                                        // リストに追加が選択されている場合のみaddedItemsに追加
+                                        if (customSaveMethod === 'list') {
+                                            // カスタムアイテムをaddedItemsに追加
+                                        // Firestoreに保存したデータを使用（既に100g基準に換算済み）
+                                        const isCountUnitItem = COUNT_UNITS.some(u => customData.servingUnit.includes(u));
+                                        const userInputSize = parseFloat(customData.servingSize) || (isCountUnitItem ? 1 : 100);
 
-                                        // ビタミン・ミネラルオブジェクトを作成（100g基準）
-                                        const vitamins = {
-                                            A: customData.vitaminA || 0,
-                                            B1: customData.vitaminB1 || 0,
-                                            B2: customData.vitaminB2 || 0,
-                                            B6: customData.vitaminB6 || 0,
-                                            B12: customData.vitaminB12 || 0,
-                                            C: customData.vitaminC || 0,
-                                            D: customData.vitaminD || 0,
-                                            E: customData.vitaminE || 0,
-                                            K: customData.vitaminK || 0,
-                                            niacin: customData.niacin || 0,
-                                            pantothenicAcid: customData.pantothenicAcid || 0,
-                                            biotin: customData.biotin || 0,
-                                            folicAcid: customData.folicAcid || 0
+                                        // デフォルトのamount（既存アイテムと同じロジック）
+                                        let defaultAmount;
+                                        if (isCountUnitItem) {
+                                            defaultAmount = 1;  // 個数単位は1個がデフォルト
+                                        } else {
+                                            defaultAmount = userInputSize;  // 重量単位はユーザー入力値がデフォルト
+                                        }
+
+                                        // ビタミン・ミネラルの計算用ratio
+                                        const vitaminMineralRatio = isCountUnitItem ? defaultAmount : defaultAmount / 100;
+
+                                        // Firestoreに保存した100g基準の値を使用してビタミン・ミネラルをスケーリング
+                                        // 個数単位の場合は入力値をそのまま使用、重量単位の場合は100g基準に換算
+                                        // キー名は既存アイテムと統一（vitaminA, vitaminB1, ...形式）
+                                        const savedVitamins = {
+                                            vitaminA: parseFloat(((parseFloat(customData.vitaminA) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            vitaminB1: parseFloat(((parseFloat(customData.vitaminB1) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                            vitaminB2: parseFloat(((parseFloat(customData.vitaminB2) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                            vitaminB6: parseFloat(((parseFloat(customData.vitaminB6) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                            vitaminB12: parseFloat(((parseFloat(customData.vitaminB12) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            vitaminC: parseFloat(((parseFloat(customData.vitaminC) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            vitaminD: parseFloat(((parseFloat(customData.vitaminD) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            vitaminE: parseFloat(((parseFloat(customData.vitaminE) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            vitaminK: parseFloat(((parseFloat(customData.vitaminK) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            niacin: parseFloat(((parseFloat(customData.niacin) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            pantothenicAcid: parseFloat(((parseFloat(customData.pantothenicAcid) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                            biotin: parseFloat(((parseFloat(customData.biotin) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            folicAcid: parseFloat(((parseFloat(customData.folicAcid) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1))
                                         };
 
-                                        const minerals = {
-                                            sodium: customData.sodium || 0,
-                                            potassium: customData.potassium || 0,
-                                            calcium: customData.calcium || 0,
-                                            magnesium: customData.magnesium || 0,
-                                            phosphorus: customData.phosphorus || 0,
-                                            iron: customData.iron || 0,
-                                            zinc: customData.zinc || 0,
-                                            copper: customData.copper || 0,
-                                            manganese: customData.manganese || 0,
-                                            iodine: customData.iodine || 0,
-                                            selenium: customData.selenium || 0,
-                                            chromium: customData.chromium || 0,
-                                            molybdenum: customData.molybdenum || 0
+                                        const savedMinerals = {
+                                            sodium: parseFloat(((parseFloat(customData.sodium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            potassium: parseFloat(((parseFloat(customData.potassium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            calcium: parseFloat(((parseFloat(customData.calcium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            magnesium: parseFloat(((parseFloat(customData.magnesium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            phosphorus: parseFloat(((parseFloat(customData.phosphorus) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            iron: parseFloat(((parseFloat(customData.iron) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            zinc: parseFloat(((parseFloat(customData.zinc) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            copper: parseFloat(((parseFloat(customData.copper) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                            manganese: parseFloat(((parseFloat(customData.manganese) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                            iodine: parseFloat(((parseFloat(customData.iodine) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            selenium: parseFloat(((parseFloat(customData.selenium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            chromium: parseFloat(((parseFloat(customData.chromium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            molybdenum: parseFloat(((parseFloat(customData.molybdenum) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1))
                                         };
 
-                                        // 実際の量に応じてスケーリング
+                                        // 実際のamountに応じてスケーリング
                                         const scaledVitamins = {};
                                         const scaledMinerals = {};
 
-                                        Object.keys(vitamins).forEach(key => {
-                                            scaledVitamins[key] = parseFloat(((vitamins[key] || 0) * ratio).toFixed(2));
+                                        Object.keys(savedVitamins).forEach(key => {
+                                            scaledVitamins[key] = parseFloat((savedVitamins[key] * vitaminMineralRatio).toFixed(2));
                                         });
 
-                                        Object.keys(minerals).forEach(key => {
-                                            scaledMinerals[key] = parseFloat(((minerals[key] || 0) * ratio).toFixed(2));
+                                        Object.keys(savedMinerals).forEach(key => {
+                                            scaledMinerals[key] = parseFloat((savedMinerals[key] * vitaminMineralRatio).toFixed(2));
                                         });
 
                                         const newItem = {
                                             id: Date.now(),
                                             name: customData.name,
-                                            amount: customData.servingSize,
+                                            amount: defaultAmount,
                                             unit: customData.servingUnit,
-                                            calories: customData.calories || 0,
-                                            protein: customData.protein || 0,
-                                            fat: customData.fat || 0,
-                                            carbs: customData.carbs || 0,
+                                            // 栄養値は100g基準（既存アイテムと同じ）
+                                            calories: parseFloat(((parseFloat(customData.calories) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            protein: parseFloat(((parseFloat(customData.protein) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            fat: parseFloat(((parseFloat(customData.fat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            carbs: parseFloat(((parseFloat(customData.carbs) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+
+                                            // 品質指標（換算不要）
+                                            diaas: parseFloat(customData.diaas) || null,
+                                            gi: parseFloat(customData.gi) || null,
+
+                                            // 脂肪酸（100g基準）
+                                            saturatedFat: parseFloat(((parseFloat(customData.saturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                            monounsaturatedFat: parseFloat(((parseFloat(customData.monounsaturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                            polyunsaturatedFat: parseFloat(((parseFloat(customData.polyunsaturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                            mediumChainFat: parseFloat(((parseFloat(customData.mediumChainFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+
+                                            // 糖質・食物繊維（100g基準）
+                                            sugar: parseFloat(((parseFloat(customData.sugar) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            fiber: parseFloat(((parseFloat(customData.fiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            solubleFiber: parseFloat(((parseFloat(customData.solubleFiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            insolubleFiber: parseFloat(((parseFloat(customData.insolubleFiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+
                                             category: customData.category,
                                             itemType: customData.itemType,
-                                            servingSize: customData.servingSize,
+                                            servingSize: isCountUnitItem ? userInputSize : 100,  // 個数単位は実重量、重量単位は100
                                             servingUnit: customData.servingUnit,
                                             vitamins: scaledVitamins,  // ← SCALED to actual amount
                                             minerals: scaledMinerals,  // ← SCALED to actual amount
+                                            // その他栄養素は絶対量（換算不要）- ユーザー入力値をそのまま使用
                                             otherNutrients: customData.otherNutrients || [],
-                                            isCustom: true,
-                                            _base: {  // 100g base values for recalculation
-                                                vitamins: vitamins,
-                                                minerals: minerals
-                                            }
+                                            isCustom: true
                                         };
 
                                         setAddedItems([...addedItems, newItem]);
+                                        }
 
                                         // フォームをリセット
                                         setCustomData({
                                             name: '',
                                             itemType: 'food',
-                                            category: '穀類',
-                                            servingSize: 100,
+                                            category: 'カスタム',
+                                            servingSize: '',
                                             servingUnit: 'g',
-                                            calories: 0,
-                                            protein: 0,
-                                            fat: 0,
-                                            carbs: 0,
-                                            vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
-                                            vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
-                                            niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0,
-                                            sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0,
-                                            iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0,
+                                            calories: '',
+                                            protein: '',
+                                            fat: '',
+                                            carbs: '',
+                                            // 品質指標
+                                            diaas: '',
+                                            gi: '',
+                                            // 脂肪酸
+                                            saturatedFat: '',
+                                            monounsaturatedFat: '',
+                                            polyunsaturatedFat: '',
+                                            mediumChainFat: '',
+                                            // 糖質・食物繊維
+                                            sugar: '',
+                                            fiber: '',
+                                            solubleFiber: '',
+                                            insolubleFiber: '',
+                                            // ビタミン
+                                            vitaminA: '', vitaminB1: '', vitaminB2: '', vitaminB6: '', vitaminB12: '',
+                                            vitaminC: '', vitaminD: '', vitaminE: '', vitaminK: '',
+                                            niacin: '', pantothenicAcid: '', biotin: '', folicAcid: '',
+                                            // ミネラル
+                                            sodium: '', potassium: '', calcium: '', magnesium: '', phosphorus: '',
+                                            iron: '', zinc: '', copper: '', manganese: '', iodine: '', selenium: '', chromium: '', molybdenum: '',
                                             otherNutrients: []
                                         });
 
@@ -2222,6 +2502,273 @@ const AddMealModal = ({
                         <div className="sticky bottom-0 bg-white border-t p-4 rounded-b-2xl">
                             <button
                                 onClick={() => setShowHelpModal(false)}
+                                className="w-full bg-[#4A9EFF] text-white py-3 rounded-xl font-bold hover:bg-[#3b8fef] transition"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* カスタム作成ガイドモーダル（包括的） */}
+            {showCustomGuide && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10001] p-4">
+                    <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl">
+                        {/* ヘッダー */}
+                        <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 flex items-center justify-between rounded-t-2xl z-10">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <Icon name="BookOpen" size={24} />
+                                カスタムアイテム作成ガイド
+                            </h3>
+                            <button
+                                onClick={() => setShowCustomGuide(false)}
+                                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                            >
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+
+                        {/* コンテンツ */}
+                        <div className="p-6 space-y-6">
+                            {/* 作成フロー */}
+                            <div>
+                                <div className="font-bold text-base text-gray-800 mb-3 flex items-center gap-2">
+                                    <Icon name="GitBranch" size={20} className="text-[#4A9EFF]" />
+                                    作成フロー（5ステップ）
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="flex gap-3">
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center font-bold">1</div>
+                                        <div>
+                                            <div className="font-semibold text-sm text-gray-800">基本情報を入力</div>
+                                            <div className="text-xs text-gray-600">アイテム名、カテゴリ、種類を選択</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center font-bold">2</div>
+                                        <div>
+                                            <div className="font-semibold text-sm text-gray-800">1食分の量と単位を設定</div>
+                                            <div className="text-xs text-gray-600">デフォルトの提供量を設定（後で調整可能）</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center font-bold">3</div>
+                                        <div>
+                                            <div className="font-semibold text-sm text-gray-800">栄養成分を入力</div>
+                                            <div className="text-xs text-gray-600">カロリー、PFC、ビタミン・ミネラル、品質指標など</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center font-bold">4</div>
+                                        <div>
+                                            <div className="font-semibold text-sm text-gray-800">その他栄養素を追加（任意）</div>
+                                            <div className="text-xs text-gray-600">クレアチン、カフェイン、アミノ酸など</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center font-bold">5</div>
+                                        <div>
+                                            <div className="font-semibold text-sm text-gray-800">保存方法を選択して保存</div>
+                                            <div className="text-xs text-gray-600">データベースのみ or リストに追加</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 100g換算ルール */}
+                            <div className="border-t pt-6">
+                                <div className="font-bold text-base text-gray-800 mb-3 flex items-center gap-2">
+                                    <Icon name="Calculator" size={20} className="text-green-600" />
+                                    自動換算ルール
+                                </div>
+                                <div className="space-y-2 text-sm">
+                                    <div className="bg-blue-50 p-3 rounded-lg">
+                                        <div className="font-semibold text-blue-800 mb-1 flex items-center gap-2">
+                                            <Icon name="Scale" size={16} />
+                                            重量単位（g、ml）
+                                        </div>
+                                        <div className="text-gray-700 text-xs">
+                                            入力した栄養素は<span className="font-bold">100gあたりの値に自動換算</span>されて保存されます。
+                                            例：1食150gで300kcalの場合 → 100gあたり200kcalとして保存
+                                        </div>
+                                    </div>
+                                    <div className="bg-purple-50 p-3 rounded-lg">
+                                        <div className="font-semibold text-purple-800 mb-1 flex items-center gap-2">
+                                            <Icon name="Package" size={16} />
+                                            個数単位（個、本、杯、枚、錠、包、粒）
+                                        </div>
+                                        <div className="text-gray-700 text-xs">
+                                            入力した栄養素は<span className="font-bold">1個あたりの値として</span>保存されます（換算なし）。
+                                            例：1錠5mgで入力 → 1錠5mgとして保存
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 換算例 */}
+                            <div className="border-t pt-6">
+                                <div className="font-bold text-base text-gray-800 mb-3 flex items-center gap-2">
+                                    <Icon name="ListChecks" size={20} className="text-orange-600" />
+                                    換算例
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs border">
+                                        <thead className="bg-gray-100">
+                                            <tr>
+                                                <th className="border p-2 text-left">入力内容</th>
+                                                <th className="border p-2 text-left">保存される値</th>
+                                                <th className="border p-2 text-left">使用時の計算</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td className="border p-2">1食150gで450kcal</td>
+                                                <td className="border p-2 font-semibold">100gあたり300kcal</td>
+                                                <td className="border p-2">200g摂取 → 600kcal</td>
+                                            </tr>
+                                            <tr className="bg-gray-50">
+                                                <td className="border p-2">1個80gで160kcal</td>
+                                                <td className="border p-2 font-semibold">1個あたり160kcal</td>
+                                                <td className="border p-2">2個摂取 → 320kcal</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="border p-2">1錠でクレアチン5g</td>
+                                                <td className="border p-2 font-semibold">1錠あたり5g</td>
+                                                <td className="border p-2">3錠摂取 → 15g</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* DIAAS目安 */}
+                            <div className="border-t pt-6">
+                                <div className="font-bold text-base text-gray-800 mb-3 flex items-center gap-2">
+                                    <Icon name="Award" size={20} className="text-yellow-600" />
+                                    DIAAS値の目安（タンパク質源）
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-green-50 p-3 rounded-lg">
+                                            <div className="font-semibold text-green-800 text-sm">最優秀（1.2以上）</div>
+                                            <div className="text-gray-700 text-xs mt-1">ホエイプロテイン、卵白、牛乳</div>
+                                        </div>
+                                        <div className="bg-blue-50 p-3 rounded-lg">
+                                            <div className="font-semibold text-blue-800 text-sm">優秀（1.0 - 1.19）</div>
+                                            <div className="text-gray-700 text-xs mt-1">全卵、牛肉、鶏肉、カゼインプロテイン</div>
+                                        </div>
+                                        <div className="bg-yellow-50 p-3 rounded-lg">
+                                            <div className="font-semibold text-yellow-800 text-sm">良質（0.75 - 0.99）</div>
+                                            <div className="text-gray-700 text-xs mt-1">魚類、豚肉、大豆、ソイプロテイン</div>
+                                        </div>
+                                        <div className="bg-orange-50 p-3 rounded-lg">
+                                            <div className="font-semibold text-orange-800 text-sm">普通（0.40 - 0.74）</div>
+                                            <div className="text-gray-700 text-xs mt-1">玄米、全粒粉、レンズ豆、ピープロテイン</div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-amber-50 p-3 rounded-lg">
+                                        <div className="flex items-start gap-2">
+                                            <Icon name="Info" size={16} className="text-amber-700 flex-shrink-0 mt-0.5" />
+                                            <p className="text-gray-700 text-xs">
+                                                <span className="font-semibold">DIAASとアミノ酸スコアの違い：</span>
+                                                DIAASは1.0を超える値もあります（アミノ酸スコアは最大1.0）。製品情報がない場合は上記を参考にしてください。
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 重要な概念 */}
+                            <div className="border-t pt-6">
+                                <div className="font-bold text-base text-gray-800 mb-3 flex items-center gap-2">
+                                    <Icon name="Lightbulb" size={20} className="text-purple-600" />
+                                    重要な概念
+                                </div>
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex items-start gap-2 p-2 bg-gray-50 rounded">
+                                        <Icon name="Check" size={14} className="text-green-600 flex-shrink-0 mt-0.5" />
+                                        <div className="text-gray-700">
+                                            <span className="font-semibold">その他栄養素は絶対量：</span>
+                                            クレアチン、カフェイン、アミノ酸などは入力した値がそのまま保存されます（換算されません）。
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2 p-2 bg-gray-50 rounded">
+                                        <Icon name="Check" size={14} className="text-green-600 flex-shrink-0 mt-0.5" />
+                                        <div className="text-gray-700">
+                                            <span className="font-semibold">後から編集可能：</span>
+                                            作成後も設定画面からいつでも編集・削除できます。
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2 p-2 bg-gray-50 rounded">
+                                        <Icon name="Check" size={14} className="text-green-600 flex-shrink-0 mt-0.5" />
+                                        <div className="text-gray-700">
+                                            <span className="font-semibold">製品パッケージを参考に：</span>
+                                            サプリメントや加工食品の栄養成分表示を見ながら入力すると正確です。
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 閉じるボタン */}
+                            <div className="border-t pt-6">
+                                <button
+                                    onClick={() => setShowCustomGuide(false)}
+                                    className="w-full bg-[#4A9EFF] text-white py-3 rounded-xl font-bold hover:bg-[#3b8fef] transition"
+                                >
+                                    閉じる
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 保存方法ヘルプモーダル（簡易） */}
+            {showCustomHelp && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10001] p-4">
+                    <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+                        {/* ヘッダー */}
+                        <div className="bg-white border-b p-4 flex items-center justify-between rounded-t-2xl">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <Icon name="HelpCircle" size={24} className="text-[#4A9EFF]" />
+                                保存方法について
+                            </h3>
+                            <button
+                                onClick={() => setShowCustomHelp(false)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition"
+                            >
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+
+                        {/* コンテンツ */}
+                        <div className="p-6 space-y-4">
+                            {/* データベースに保存 */}
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <div className="font-bold text-sm text-gray-800 mb-2 flex items-center gap-2">
+                                    <Icon name="Database" size={18} className="text-[#4A9EFF]" />
+                                    データベースに保存
+                                </div>
+                                <p className="text-sm text-gray-700">
+                                    カスタムアイテムをデータベースに登録します。次回以降、検索モーダルから選択して使用できます。
+                                </p>
+                            </div>
+
+                            {/* リストに追加 */}
+                            <div className="bg-green-50 p-4 rounded-lg">
+                                <div className="font-bold text-sm text-gray-800 mb-2 flex items-center gap-2">
+                                    <Icon name="List" size={18} className="text-green-600" />
+                                    リストに追加
+                                </div>
+                                <p className="text-sm text-gray-700">
+                                    カスタムアイテムをデータベースに保存し、今日の食事記録にも追加します。作成後すぐに使いたい場合に便利です。
+                                </p>
+                            </div>
+
+                            {/* 閉じるボタン */}
+                            <button
+                                onClick={() => setShowCustomHelp(false)}
                                 className="w-full bg-[#4A9EFF] text-white py-3 rounded-xl font-bold hover:bg-[#3b8fef] transition"
                             >
                                 閉じる
