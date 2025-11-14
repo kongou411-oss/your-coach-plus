@@ -390,38 +390,34 @@ const LBMUtils = {
         };
 
         return {
-            // ビタミン: LBM × 血液型 × 目的 × ライフスタイル (上限チェック)
-            vitamins: {
-                A: capValue(Math.round(900 * lbmFactor * btFactor.antioxidant * vitaminsMinerlasBase), tolerableUpperLimits.A),
-                D: capValue(Math.round(20 * lbmFactor * btFactor.vitamin * gFactor.recovery * vitaminsMinerlasBase), tolerableUpperLimits.D),
-                E: capValue(Math.round(6.5 * lbmFactor * btFactor.antioxidant * gFactor.recovery * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.E),
-                K: Math.round(150 * lbmFactor * btFactor.vitamin * vitaminsMinerlasBase),
-                B1: Math.round(1.4 * lbmFactor * btFactor.vitamin * gFactor.energy * vitaminsMinerlasBase * 10) / 10,
-                B2: Math.round(1.6 * lbmFactor * btFactor.vitamin * gFactor.energy * vitaminsMinerlasBase * 10) / 10,
-                B3: capValue(Math.round(15 * lbmFactor * btFactor.vitamin * gFactor.energy * vitaminsMinerlasBase), tolerableUpperLimits.B3),
-                B5: Math.round(5 * lbmFactor * btFactor.vitamin * gFactor.energy * vitaminsMinerlasBase * 10) / 10,
-                B6: capValue(Math.round(1.4 * lbmFactor * btFactor.vitamin * gFactor.protein * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.B6),
-                B7: Math.round(50 * lbmFactor * btFactor.vitamin * vitaminsMinerlasBase),
-                B9: capValue(Math.round(240 * lbmFactor * btFactor.vitamin * gFactor.recovery * vitaminsMinerlasBase), tolerableUpperLimits.B9),
-                B12: Math.round(2.4 * lbmFactor * btFactor.vitamin * gFactor.recovery * vitaminsMinerlasBase * 10) / 10,
-                C: capValue(Math.round(100 * lbmFactor * btFactor.antioxidant * gFactor.recovery * vitaminsMinerlasBase), tolerableUpperLimits.C)
-            },
+            // ビタミン: LBM × 血液型 × 目的 × ライフスタイル (上限チェック) - フルネーム表記
+            vitaminA: capValue(Math.round(900 * lbmFactor * btFactor.antioxidant * vitaminsMinerlasBase), tolerableUpperLimits.A),
+            vitaminD: capValue(Math.round(20 * lbmFactor * btFactor.vitamin * gFactor.recovery * vitaminsMinerlasBase), tolerableUpperLimits.D),
+            vitaminE: capValue(Math.round(6.5 * lbmFactor * btFactor.antioxidant * gFactor.recovery * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.E),
+            vitaminK: Math.round(150 * lbmFactor * btFactor.vitamin * vitaminsMinerlasBase),
+            vitaminB1: Math.round(1.4 * lbmFactor * btFactor.vitamin * gFactor.energy * vitaminsMinerlasBase * 10) / 10,
+            vitaminB2: Math.round(1.6 * lbmFactor * btFactor.vitamin * gFactor.energy * vitaminsMinerlasBase * 10) / 10,
+            niacin: capValue(Math.round(15 * lbmFactor * btFactor.vitamin * gFactor.energy * vitaminsMinerlasBase), tolerableUpperLimits.B3),
+            pantothenicAcid: Math.round(5 * lbmFactor * btFactor.vitamin * gFactor.energy * vitaminsMinerlasBase * 10) / 10,
+            vitaminB6: capValue(Math.round(1.4 * lbmFactor * btFactor.vitamin * gFactor.protein * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.B6),
+            biotin: Math.round(50 * lbmFactor * btFactor.vitamin * vitaminsMinerlasBase),
+            folicAcid: capValue(Math.round(240 * lbmFactor * btFactor.vitamin * gFactor.recovery * vitaminsMinerlasBase), tolerableUpperLimits.B9),
+            vitaminB12: Math.round(2.4 * lbmFactor * btFactor.vitamin * gFactor.recovery * vitaminsMinerlasBase * 10) / 10,
+            vitaminC: capValue(Math.round(100 * lbmFactor * btFactor.antioxidant * gFactor.recovery * vitaminsMinerlasBase), tolerableUpperLimits.C),
             // ミネラル: LBM × 血液型 × 目的 × ライフスタイル (上限チェック)
-            minerals: {
-                calcium: capValue(Math.round(800 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase), tolerableUpperLimits.calcium),
-                iron: capValue(Math.round(7.5 * lbmFactor * btFactor.mineral * gFactor.recovery * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.iron),
-                magnesium: capValue(Math.round(370 * lbmFactor * btFactor.mineral * gFactor.energy * vitaminsMinerlasBase), tolerableUpperLimits.magnesium),
-                phosphorus: capValue(Math.round(1000 * lbmFactor * btFactor.mineral * gFactor.protein * vitaminsMinerlasBase), tolerableUpperLimits.phosphorus),
-                potassium: Math.round(3000 * lbmFactor * btFactor.mineral * gFactor.energy * vitaminsMinerlasBase),
-                sodium: capValue(Math.round(2000 * lbmFactor * vitaminsMinerlasBase), tolerableUpperLimits.sodium),
-                zinc: capValue(Math.round(11 * lbmFactor * btFactor.mineral * gFactor.protein * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.zinc),
-                copper: capValue(Math.round(0.9 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.copper),
-                manganese: capValue(Math.round(4.0 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.manganese),
-                selenium: capValue(Math.round(30 * lbmFactor * btFactor.antioxidant * vitaminsMinerlasBase), tolerableUpperLimits.selenium),
-                iodine: capValue(Math.round(130 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase), tolerableUpperLimits.iodine),
-                chromium: Math.round(35 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase),
-                molybdenum: capValue(Math.round(30 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase), tolerableUpperLimits.molybdenum)
-            },
+            calcium: capValue(Math.round(800 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase), tolerableUpperLimits.calcium),
+            iron: capValue(Math.round(7.5 * lbmFactor * btFactor.mineral * gFactor.recovery * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.iron),
+            magnesium: capValue(Math.round(370 * lbmFactor * btFactor.mineral * gFactor.energy * vitaminsMinerlasBase), tolerableUpperLimits.magnesium),
+            phosphorus: capValue(Math.round(1000 * lbmFactor * btFactor.mineral * gFactor.protein * vitaminsMinerlasBase), tolerableUpperLimits.phosphorus),
+            potassium: Math.round(3000 * lbmFactor * btFactor.mineral * gFactor.energy * vitaminsMinerlasBase),
+            sodium: capValue(Math.round(2000 * lbmFactor * vitaminsMinerlasBase), tolerableUpperLimits.sodium),
+            zinc: capValue(Math.round(11 * lbmFactor * btFactor.mineral * gFactor.protein * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.zinc),
+            copper: capValue(Math.round(0.9 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.copper),
+            manganese: capValue(Math.round(4.0 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase * 10) / 10, tolerableUpperLimits.manganese),
+            selenium: capValue(Math.round(30 * lbmFactor * btFactor.antioxidant * vitaminsMinerlasBase), tolerableUpperLimits.selenium),
+            iodine: capValue(Math.round(130 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase), tolerableUpperLimits.iodine),
+            chromium: Math.round(35 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase),
+            molybdenum: capValue(Math.round(30 * lbmFactor * btFactor.mineral * vitaminsMinerlasBase), tolerableUpperLimits.molybdenum),
             // 糖質・食物繊維: LBM × 目的 × ライフスタイル
             carbohydrateQuality: {
                 fiber: Math.round(20 * lbmFactor * fiberBase), // 総食物繊維（g）

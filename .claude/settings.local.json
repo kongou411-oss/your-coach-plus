@@ -102,7 +102,13 @@
       "WebFetch(domain:fdc.nal.usda.gov)",
       "WebFetch(domain:tools.myfooddata.com)",
       "WebFetch(domain:eiyo21.com)",
-      "Bash(firebase login:ci:*)"
+      "Bash(firebase login:ci:*)",
+      "Bash(vitamin_analysis_output.txt)",
+      "Bash(food_analysis.txt)",
+      "Bash(food_details.txt)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.yasainavi.com)"
     ],
     "deny": [],
     "ask": []

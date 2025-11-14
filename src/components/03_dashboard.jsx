@@ -742,7 +742,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         monounsaturatedFat: 0,
         polyunsaturatedFat: 0,
         vitamins: {
-            A: 0, D: 0, E: 0, K: 0, B1: 0, B2: 0, B3: 0, B5: 0, B6: 0, B7: 0, B9: 0, B12: 0, C: 0
+            vitaminA: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, vitaminB1: 0, vitaminB2: 0, niacin: 0, pantothenicAcid: 0, vitaminB6: 0, biotin: 0, folicAcid: 0, vitaminB12: 0, vitaminC: 0
         },
         minerals: {
             calcium: 0, iron: 0, magnesium: 0, phosphorus: 0, potassium: 0, sodium: 0, zinc: 0, copper: 0, manganese: 0, selenium: 0, iodine: 0, chromium: 0, molybdenum: 0
@@ -824,7 +824,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             currentIntake.polyunsaturatedFat += (item.polyunsaturatedFat || 0) * ratio;
 
 
-            // ビタミン・ミネラル（オブジェクト形式）
+            // ビタミン・ミネラル（オブジェクト形式 - 既に実量換算済み）
             if (item.vitamins) {
                 Object.keys(item.vitamins).forEach(v => {
                     currentIntake.vitamins[v] = (currentIntake.vitamins[v] || 0) + (item.vitamins[v] || 0);
@@ -840,14 +840,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'niacin', 'pantothenicAcid', 'biotin', 'folicAcid'];
             vitaminKeys.forEach(key => {
                 if (item[key] !== undefined && item[key] !== 0) {
-                    currentIntake.vitamins[key] = (currentIntake.vitamins[key] || 0) + (item[key] || 0);
+                    currentIntake.vitamins[key] = (currentIntake.vitamins[key] || 0) + ((item[key] || 0) * ratio);
                 }
             });
 
             const mineralKeys = ['sodium', 'potassium', 'calcium', 'magnesium', 'phosphorus', 'iron', 'zinc', 'copper', 'manganese', 'iodine', 'selenium', 'chromium', 'molybdenum'];
             mineralKeys.forEach(key => {
                 if (item[key] !== undefined && item[key] !== 0) {
-                    currentIntake.minerals[key] = (currentIntake.minerals[key] || 0) + (item[key] || 0);
+                    currentIntake.minerals[key] = (currentIntake.minerals[key] || 0) + ((item[key] || 0) * ratio);
                 }
             });
 
@@ -1687,12 +1687,19 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 {(() => {
                                     // 完全個別化基準値を取得
                                     const targets = LBMUtils.calculatePersonalizedMicronutrients(profile || {});
-                                    const vitaminUnits = {
-                                        A: 'μg', D: 'μg', E: 'mg', K: 'μg',
-                                        B1: 'mg', B2: 'mg', B3: 'mg', B5: 'mg',
-                                        B6: 'mg', B7: 'μg', B9: 'μg', B12: 'μg', C: 'mg'
+                                    const vitaminKeys = ['vitaminA', 'vitaminD', 'vitaminE', 'vitaminK', 'vitaminB1', 'vitaminB2', 'niacin', 'pantothenicAcid', 'vitaminB6', 'biotin', 'folicAcid', 'vitaminB12', 'vitaminC'];
+                                    const vitaminLabels = {
+                                        vitaminA: 'A', vitaminD: 'D', vitaminE: 'E', vitaminK: 'K',
+                                        vitaminB1: 'B1', vitaminB2: 'B2', niacin: 'B3', pantothenicAcid: 'B5',
+                                        vitaminB6: 'B6', biotin: 'B7', folicAcid: 'B9', vitaminB12: 'B12', vitaminC: 'C'
                                     };
-                                    return Object.entries(targets.vitamins).map(([key, target]) => {
+                                    const vitaminUnits = {
+                                        vitaminA: 'μg', vitaminD: 'μg', vitaminE: 'mg', vitaminK: 'μg',
+                                        vitaminB1: 'mg', vitaminB2: 'mg', niacin: 'mg', pantothenicAcid: 'mg',
+                                        vitaminB6: 'mg', biotin: 'μg', folicAcid: 'μg', vitaminB12: 'μg', vitaminC: 'mg'
+                                    };
+                                    return vitaminKeys.map((key) => {
+                                        const target = targets[key] || 0;
                                         // カスタム栄養素がオブジェクト形式の場合の処理
                                         const rawValue = currentIntake.vitamins[key];
                                         let current = 0;
@@ -1701,18 +1708,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         } else {
                                             current = Number(rawValue) || 0;
                                         }
-                                        const percent = (current / target) * 100;
+                                        const percent = target > 0 ? (current / target) * 100 : 0;
 
-                                        // 基準上限値を超えているかチェック（ボディメイカーの場合）
-                                        const baseLimit = targets.upperLimits?.base?.[key];
-                                        const exceedsBaseLimit = baseLimit !== null && baseLimit !== undefined && current > baseLimit;
                                     return (
                                         <div key={key} className="bg-gray-50 p-2 rounded">
                                             <div className="flex justify-between text-xs mb-1">
-                                                <span className="font-medium">ビタミン{key}</span>
-                                                <span className={exceedsBaseLimit ? "text-red-600 font-bold" : "text-gray-600"}>
+                                                <span className="font-medium">ビタミン{vitaminLabels[key]}</span>
+                                                <span className="text-gray-600">
                                                     {typeof current === 'number' ? current.toFixed(1) : 0} / {target}{vitaminUnits[key]}
-                                                    {exceedsBaseLimit && <span className="ml-1" title="基準上限値を超えています">⚠️</span>}
                                                 </span>
                                             </div>
                                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -1737,6 +1740,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 {(() => {
                                     // 完全個別化基準値を取得
                                     const targets = LBMUtils.calculatePersonalizedMicronutrients(profile || {});
+                                    const mineralKeys = ['calcium', 'iron', 'magnesium', 'phosphorus', 'potassium', 'sodium', 'zinc', 'copper', 'manganese', 'selenium', 'iodine', 'chromium', 'molybdenum'];
                                     const mineralNames = {
                                         calcium: 'カルシウム', iron: '鉄', magnesium: 'マグネシウム',
                                         phosphorus: 'リン', potassium: 'カリウム', sodium: 'ナトリウム',
@@ -1749,7 +1753,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         zinc: 'mg', copper: 'mg', manganese: 'mg',
                                         selenium: 'μg', iodine: 'μg', chromium: 'μg', molybdenum: 'μg'
                                     };
-                                    return Object.entries(targets.minerals).map(([key, target]) => {
+                                    return mineralKeys.map((key) => {
+                                        const target = targets[key] || 0;
                                         // カスタム栄養素がオブジェクト形式の場合の処理
                                         const rawValue = currentIntake.minerals[key];
                                         let current = 0;

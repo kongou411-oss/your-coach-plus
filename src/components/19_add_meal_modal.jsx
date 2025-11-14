@@ -26,9 +26,7 @@ const AddMealModal = ({
     unlockedFeatures = [],
     usageDays = 0
 }) => {
-    // ===== デバッグ: Props確認 =====
-    console.log('[AddMealModal] コンポーネント初期化');
-    console.log('[AddMealModal] Props:', { selectedDate, onClose: !!onClose, onAdd: !!onAdd, onUpdate: !!onUpdate });
+    // Props確認（デバッグ用）
 
     // ===== 編集モード判定 =====
     const isEditMode = !!editingMeal;
@@ -101,7 +99,6 @@ const AddMealModal = ({
             if (!currentUser || !currentUser.uid) return;
 
             try {
-                // 非表示アイテムを読み込み
                 const itemsDoc = await firebase.firestore()
                     .collection('users')
                     .doc(currentUser.uid)
@@ -113,7 +110,6 @@ const AddMealModal = ({
                     setHiddenStandardItems(itemsDoc.data().items || []);
                 }
 
-                // 非表示カテゴリを読み込み
                 const categoriesDoc = await firebase.firestore()
                     .collection('users')
                     .doc(currentUser.uid)
@@ -134,17 +130,11 @@ const AddMealModal = ({
 
     // ===== customFoodsをFirestoreから読み込み =====
     useEffect(() => {
-        console.log('[AddMealModal] customFoods useEffect開始');
         const loadCustomFoods = async () => {
             const currentUser = firebase.auth().currentUser;
-            console.log('[AddMealModal] loadCustomFoods実行、currentUser:', currentUser);
-            if (!currentUser || !currentUser.uid) {
-                console.log('[AddMealModal] ユーザー未ログインのためスキップ');
-                return;
-            }
+            if (!currentUser || !currentUser.uid) return;
 
             try {
-                console.log('[AddMealModal] customFoods読み込み開始...');
                 const customFoodsSnapshot = await firebase.firestore()
                     .collection('users')
                     .doc(currentUser.uid)
@@ -157,7 +147,6 @@ const AddMealModal = ({
                 }));
 
                 setCustomFoods(foods);
-                console.log(`[AddMealModal] customFoods読み込み完了: ${foods.length}件`, foods.map(f => f.name));
             } catch (error) {
                 console.error('[AddMealModal] customFoods読み込みエラー:', error);
             }
@@ -165,16 +154,13 @@ const AddMealModal = ({
 
         const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                console.log('[AddMealModal] 認証状態変化: ログイン済み');
                 loadCustomFoods();
             } else {
-                console.log('[AddMealModal] 認証状態変化: 未ログイン');
                 setCustomFoods([]);
             }
         });
 
         return () => {
-            console.log('[AddMealModal] customFoods useEffectクリーンアップ');
             unsubscribe();
         };
     }, []);
@@ -201,6 +187,105 @@ const AddMealModal = ({
             loadTemplates();
         }
     }, [user]);
+
+    // ===== 編集モード時：_baseデータを再構築 =====
+    useEffect(() => {
+        if (isEditMode && editingMeal && editingMeal.items) {
+            const foodDB = window.foodDB || {};
+            const reconstructedItems = editingMeal.items.map((item) => {
+                // _baseがない場合、またはvitaminCが0の場合（ratio適用済みの可能性）はfoodDBから再取得
+                const needsReconstruction = !item._base ||
+                                          !item._base.vitamins ||
+                                          !item._base.minerals ||
+                                          (item._base.vitamins.vitaminC === 0 && item.vitamins?.vitaminC > 0);
+
+                if (!needsReconstruction) {
+                    return item;
+                }
+
+                // foodDBから再取得（カテゴリをまたいで検索）
+                let dbItem = null;
+                for (const category of Object.keys(foodDB)) {
+                    if (foodDB[category][item.name]) {
+                        dbItem = foodDB[category][item.name];
+                        break;
+                    }
+                }
+
+                if (!dbItem) {
+                    // DBに見つからない場合は現在の値から逆算して100gベースを推定
+                    const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
+                    const currentRatio = isCountUnit ? item.amount : item.amount / 100;
+
+                    const baseVitamins = {};
+                    const baseMinerals = {};
+
+                    if (item.vitamins && currentRatio > 0) {
+                        Object.keys(item.vitamins).forEach(key => {
+                            baseVitamins[key] = (item.vitamins[key] || 0) / currentRatio;
+                        });
+                    }
+
+                    if (item.minerals && currentRatio > 0) {
+                        Object.keys(item.minerals).forEach(key => {
+                            baseMinerals[key] = (item.minerals[key] || 0) / currentRatio;
+                        });
+                    }
+
+                    return {
+                        ...item,
+                        _base: {
+                            vitamins: baseVitamins,
+                            minerals: baseMinerals
+                        }
+                    };
+                }
+
+                // DBから100gあたりのデータを取得
+                const vitaminsFromDB = {
+                    vitaminA: dbItem.vitaminA || 0,
+                    vitaminB1: dbItem.vitaminB1 || 0,
+                    vitaminB2: dbItem.vitaminB2 || 0,
+                    vitaminB6: dbItem.vitaminB6 || 0,
+                    vitaminB12: dbItem.vitaminB12 || 0,
+                    vitaminC: dbItem.vitaminC || 0,
+                    vitaminD: dbItem.vitaminD || 0,
+                    vitaminE: dbItem.vitaminE || 0,
+                    vitaminK: dbItem.vitaminK || 0,
+                    niacin: dbItem.niacin || 0,
+                    pantothenicAcid: dbItem.pantothenicAcid || 0,
+                    biotin: dbItem.biotin || 0,
+                    folicAcid: dbItem.folicAcid || 0
+                };
+
+                const mineralsFromDB = {
+                    sodium: dbItem.sodium || 0,
+                    potassium: dbItem.potassium || 0,
+                    calcium: dbItem.calcium || 0,
+                    magnesium: dbItem.magnesium || 0,
+                    phosphorus: dbItem.phosphorus || 0,
+                    iron: dbItem.iron || 0,
+                    zinc: dbItem.zinc || 0,
+                    copper: dbItem.copper || 0,
+                    manganese: dbItem.manganese || 0,
+                    iodine: dbItem.iodine || 0,
+                    selenium: dbItem.selenium || 0,
+                    chromium: dbItem.chromium || 0,
+                    molybdenum: dbItem.molybdenum || 0
+                };
+
+                return {
+                    ...item,
+                    _base: {
+                        vitamins: vitaminsFromDB,
+                        minerals: mineralsFromDB
+                    }
+                };
+            });
+
+            setAddedItems(reconstructedItems);
+        }
+    }, [isEditMode, editingMeal]);
 
     // ===== 現在時刻から食事名を推測 =====
     const getDefaultMealName = () => {
@@ -333,6 +418,11 @@ const AddMealModal = ({
         const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
         const newRatio = isCountUnit ? newAmount : newAmount / 100;
 
+        console.log(`[updateItemAmount] ${item.name}: amount ${item.amount} → ${newAmount}`);
+        console.log(`[updateItemAmount] _base存在:`, !!item._base);
+        console.log(`[updateItemAmount] _base.vitamins.vitaminC:`, item._base?.vitamins?.vitaminC);
+        console.log(`[updateItemAmount] newRatio:`, newRatio);
+
         // ビタミン・ミネラルを再計算（_baseから）
         const vitamins = {};
         const minerals = {};
@@ -349,6 +439,8 @@ const AddMealModal = ({
             });
         }
 
+        console.log(`[updateItemAmount] 計算後 vitaminC:`, vitamins.vitaminC);
+
         updatedItems[index] = {
             ...item,
             amount: Math.max(0, newAmount), // 0未満にならないように
@@ -360,9 +452,6 @@ const AddMealModal = ({
 
     // ===== 食事を記録 =====
     const handleRecord = () => {
-        console.log('[AddMealModal handleRecord] 記録ボタンがクリックされました');
-        console.log('[AddMealModal handleRecord] selectedDate:', selectedDate);
-
         if (addedItems.length === 0) {
             toast('食材を追加してください');
             return;
@@ -392,14 +481,9 @@ const AddMealModal = ({
         };
 
         // 編集モードの場合はonUpdate、新規追加の場合はonAddを呼ぶ
-        console.log('[AddMealModal handleRecord] 食事データ:', meal);
-        console.log('[AddMealModal handleRecord] isEditMode:', isEditMode, 'onAdd:', !!onAdd, 'onUpdate:', !!onUpdate);
-
         if (isEditMode && onUpdate) {
-            console.log('[AddMealModal handleRecord] onUpdateを呼び出します');
             onUpdate(meal);
         } else if (onAdd) {
-            console.log('[AddMealModal handleRecord] onAddを呼び出します');
             onAdd(meal);
         }
     };
@@ -930,17 +1014,17 @@ const AddMealModal = ({
 
                 // アイテムを選択して追加
                 const handleSelectItem = (item) => {
-                    // データベースの個別キーをvitamins/mineralsオブジェクトに変換
+                    // データベースの個別キーをvitamins/mineralsオブジェクトに変換（完全形キー名を使用）
                     const vitaminsFromDB = {
-                        A: item.vitaminA || 0,
-                        B1: item.vitaminB1 || 0,
-                        B2: item.vitaminB2 || 0,
-                        B6: item.vitaminB6 || 0,
-                        B12: item.vitaminB12 || 0,
-                        C: item.vitaminC || 0,
-                        D: item.vitaminD || 0,
-                        E: item.vitaminE || 0,
-                        K: item.vitaminK || 0,
+                        vitaminA: item.vitaminA || 0,
+                        vitaminB1: item.vitaminB1 || 0,
+                        vitaminB2: item.vitaminB2 || 0,
+                        vitaminB6: item.vitaminB6 || 0,
+                        vitaminB12: item.vitaminB12 || 0,
+                        vitaminC: item.vitaminC || 0,
+                        vitaminD: item.vitaminD || 0,
+                        vitaminE: item.vitaminE || 0,
+                        vitaminK: item.vitaminK || 0,
                         niacin: item.niacin || 0,
                         pantothenicAcid: item.pantothenicAcid || 0,
                         biotin: item.biotin || 0,
@@ -970,13 +1054,6 @@ const AddMealModal = ({
                         minerals: item.minerals || mineralsFromDB
                     };
 
-                    console.log('[AddMealModal] アイテム選択:', {
-                        name: itemWithNutrients.name,
-                        vitamins: itemWithNutrients.vitamins,
-                        minerals: itemWithNutrients.minerals,
-                        hasVitamins: !!itemWithNutrients.vitamins,
-                        hasMinerals: !!itemWithNutrients.minerals
-                    });
 
                     // デフォルトの量と単位を決定
                     let defaultAmount = 100;
@@ -1049,19 +1126,6 @@ const AddMealModal = ({
                             minerals: itemWithNutrients.minerals || {}
                         }
                     };
-
-                    console.log('[AddMealModal] 追加されたアイテム:', {
-                        name: newItem.name,
-                        amount: newItem.amount,
-                        diaas: newItem.diaas,
-                        gi: newItem.gi,
-                        saturatedFat: newItem.saturatedFat,
-                        fiber: newItem.fiber,
-                        sugar: newItem.sugar,
-                        vitamins: newItem.vitamins,
-                        minerals: newItem.minerals,
-                        _base: newItem._base
-                    });
 
                     setAddedItems([...addedItems, newItem]);
                     setSearchTerm(''); // 検索語クリア
