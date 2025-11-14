@@ -1044,6 +1044,27 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                         <option value="その他">その他</option>
                                                     </select>
                                                 </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-1.5">想定食事回数 / 日</label>
+                                                    <select
+                                                        value={profile.mealsPerDay || 4}
+                                                        onChange={(e) => setProfile({...profile, mealsPerDay: Number(e.target.value)})}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                    >
+                                                        <option value={2}>2回</option>
+                                                        <option value={3}>3回</option>
+                                                        <option value={4}>4回（推奨）</option>
+                                                        <option value={5}>5回</option>
+                                                        <option value={6}>6回</option>
+                                                        <option value={7}>7回</option>
+                                                        <option value={8}>8回</option>
+                                                        <option value={9}>9回</option>
+                                                        <option value={10}>10回</option>
+                                                    </select>
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        1食あたりのGL上限に影響します（間食・補食を含む）
+                                                    </p>
+                                                </div>
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium mb-1.5">理想の睡眠時間</label>

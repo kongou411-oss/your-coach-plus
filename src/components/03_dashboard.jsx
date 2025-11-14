@@ -898,29 +898,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         // 補正後のGL値
         const adjustedMealGL = Math.max(0, mealGL * (1 - mealGLReductionPercent / 100));
 
-        // 1食ごとのGL評価（低GL: ≤10, 中GL: 11-19, 高GL: ≥20）
-        let mealGLRating = '低GL';
-        let mealGLBadgeColor = 'bg-green-600';
-        if (adjustedMealGL >= 20) {
-            mealGLRating = '高GL';
-            mealGLBadgeColor = meal.isPostWorkout ? 'bg-orange-600' : 'bg-red-600';
-        } else if (adjustedMealGL >= 11) {
-            mealGLRating = '中GL';
-            mealGLBadgeColor = 'bg-yellow-600';
-        }
-
-        // 運動後の場合は「推奨」表示
-        if (meal.isPostWorkout && adjustedMealGL >= 20) {
-            mealGLRating = '高GL（推奨）';
-        }
-
-        // 1食ごとのGL値を保存
+        // 1食ごとのGL値を保存（評価は後で動的上限計算後に実施）
         mealGLValues.push({
             mealId: meal.id || meal.timestamp,
             rawGL: mealGL,
             adjustedGL: adjustedMealGL,
-            rating: mealGLRating,
-            badgeColor: mealGLBadgeColor,
+            rating: '', // 後で設定
+            badgeColor: '', // 後で設定
             reductionPercent: mealGLReductionPercent,
             isPostWorkout: meal.isPostWorkout || false
         });
@@ -974,28 +958,86 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     currentIntake.glReductionPercent = glReductionPercent;
     currentIntake.glModifiers = glModifiers;
 
+    // 動的GL上限の計算（目標炭水化物量 × 0.60）
+    // GI 60を基準とした平均GI値を維持する目標
+    const dynamicGLLimit = Math.round(targetPFC.carbs * 0.60);
+    currentIntake.dynamicGLLimit = dynamicGLLimit;
 
-    // 1日合計GL値の評価（優秀: <80, 良好: 80-100, 普通: 101-120, 要改善: 121+）
-    let bloodSugarScore = 5; // 最高評価から開始
-    let bloodSugarRating = '★★★★★';
-    let bloodSugarLabel = '優秀';
+    // 1食あたりの動的GL上限と絶対GL上限
+    // 想定食事回数（プロフィールから取得、デフォルト4回）
+    const mealsPerDay = profile?.mealsPerDay || 4;
 
-    if (adjustedGL >= 121) {
-        bloodSugarScore = 2;
-        bloodSugarRating = '★★☆☆☆';
-        bloodSugarLabel = '要改善';
-    } else if (adjustedGL >= 101) {
-        bloodSugarScore = 3;
-        bloodSugarRating = '★★★☆☆';
-        bloodSugarLabel = '普通';
-    } else if (adjustedGL >= 80) {
-        bloodSugarScore = 4;
-        bloodSugarRating = '★★★★☆';
-        bloodSugarLabel = '良好';
-    } else {
-        bloodSugarScore = 5;
-        bloodSugarRating = '★★★★★';
-        bloodSugarLabel = '優秀';
+    // 1食あたりの動的GL上限（目標達成のための理想値）
+    const mealDynamicGLLimit = Math.round(dynamicGLLimit / mealsPerDay);
+
+    // 1食あたりの絶対GL上限（体脂肪蓄積リスクの警告値）
+    // ライフスタイルに応じて設定
+    const lifestyle = profile?.lifestyle || '一般';
+    const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス', 'ボディメイカー'];
+    const isBodymaker = bodymakerStyles.includes(lifestyle);
+    const mealAbsoluteGLLimit = isBodymaker ? 70 : 40;
+
+    currentIntake.mealDynamicGLLimit = mealDynamicGLLimit;
+    currentIntake.mealAbsoluteGLLimit = mealAbsoluteGLLimit;
+    currentIntake.mealsPerDay = mealsPerDay;
+
+    // 各食事のGL評価を設定（3段階評価：動的上限 + 絶対上限）
+    mealGLValues.forEach(mealGLData => {
+        const adjustedMealGL = mealGLData.adjustedGL;
+        let mealGLRating = '';
+        let mealGLBadgeColor = '';
+
+        // 3段階評価
+        if (adjustedMealGL <= mealDynamicGLLimit) {
+            // 優秀: 動的上限以下
+            mealGLRating = '低GL';
+            mealGLBadgeColor = 'bg-green-600';
+        } else if (adjustedMealGL <= mealAbsoluteGLLimit) {
+            // 良好: 動的上限超過、絶対上限以下
+            mealGLRating = '中GL';
+            mealGLBadgeColor = 'bg-yellow-600';
+        } else {
+            // 要改善: 絶対上限超過（体脂肪蓄積リスク）
+            mealGLRating = '高GL';
+            mealGLBadgeColor = 'bg-red-600';
+        }
+
+        // 運動後の高GL: 推奨表示
+        if (mealGLData.isPostWorkout && adjustedMealGL > mealAbsoluteGLLimit) {
+            mealGLRating = '高GL（推奨）';
+            mealGLBadgeColor = 'bg-orange-600';
+        }
+
+        mealGLData.rating = mealGLRating;
+        mealGLData.badgeColor = mealGLBadgeColor;
+    });
+
+    // 1日合計GL値の評価（動的上限ベース）
+    // 優秀: <80%, 良好: 80-100%, 普通: 100-120%, 要改善: 120%+ または未記録
+    let bloodSugarScore = 2; // デフォルトは要改善
+    let bloodSugarRating = '★★☆☆☆';
+    let bloodSugarLabel = '要改善';
+
+    if (adjustedGL > 0) {
+        const glRatio = adjustedGL / dynamicGLLimit;
+
+        if (glRatio >= 1.20) {
+            bloodSugarScore = 2;
+            bloodSugarRating = '★★☆☆☆';
+            bloodSugarLabel = '要改善';
+        } else if (glRatio >= 1.00) {
+            bloodSugarScore = 3;
+            bloodSugarRating = '★★★☆☆';
+            bloodSugarLabel = '普通';
+        } else if (glRatio >= 0.80) {
+            bloodSugarScore = 4;
+            bloodSugarRating = '★★★★☆';
+            bloodSugarLabel = '良好';
+        } else {
+            bloodSugarScore = 5;
+            bloodSugarRating = '★★★★★';
+            bloodSugarLabel = '優秀';
+        }
     }
 
     currentIntake.bloodSugarScore = bloodSugarScore;
@@ -1004,9 +1046,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // 脂肪酸バランススコア（理想: 飽和3:中鎖0.5:一価4:多価3）
     const totalFat = currentIntake.saturatedFat + currentIntake.mediumChainFat + currentIntake.monounsaturatedFat + currentIntake.polyunsaturatedFat;
-    let fattyAcidScore = 5;
-    let fattyAcidRating = '★★★★★';
-    let fattyAcidLabel = '優秀';
+    let fattyAcidScore = 2; // デフォルトは要改善
+    let fattyAcidRating = '★★☆☆☆';
+    let fattyAcidLabel = '要改善';
 
     if (totalFat > 0) {
         const saturatedPercent = (currentIntake.saturatedFat / totalFat) * 100;
@@ -1038,9 +1080,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // 糖質・食物繊維バランススコア
     const totalCarbAndFiber = currentIntake.carbs + currentIntake.fiber;
-    let carbFiberScore = 5;
-    let carbFiberRating = '★★★★★';
-    let carbFiberLabel = '優秀';
+    let carbFiberScore = 2; // デフォルトは要改善
+    let carbFiberRating = '★★☆☆☆';
+    let carbFiberLabel = '要改善';
 
     if (totalCarbAndFiber > 0) {
         const carbsPercent = (currentIntake.carbs / totalCarbAndFiber) * 100;
@@ -1225,140 +1267,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     </div>
                                 </div>
 
-                            {/* 炭水化物の質（GL値） */}
-                            <div className="mb-4">
-                                    <h5 className="text-xs font-semibold mb-2 text-gray-700">
-                                        炭水化物の質
-                                    </h5>
-                                    <div className="bg-gray-50 p-3 rounded space-y-3">
-                                        {/* 1日合計GL値 */}
-                                        <div>
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="text-sm font-medium text-gray-700">1日合計GL値</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-lg font-bold text-gray-900">
-                                                        {Math.round(currentIntake.adjustedDailyGL)} / 100
-                                                    </span>
-                                                    <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                                                        currentIntake.adjustedDailyGL >= 121
-                                                            ? 'bg-red-100 text-red-700'
-                                                            : currentIntake.adjustedDailyGL >= 101
-                                                            ? 'bg-yellow-100 text-yellow-700'
-                                                            : currentIntake.adjustedDailyGL >= 80
-                                                            ? 'bg-blue-100 text-blue-700'
-                                                            : 'bg-green-100 text-green-700'
-                                                    }`}>
-                                                        {currentIntake.adjustedDailyGL >= 121
-                                                            ? '要改善'
-                                                            : currentIntake.adjustedDailyGL >= 101
-                                                            ? '普通'
-                                                            : currentIntake.adjustedDailyGL >= 80
-                                                            ? '良好'
-                                                            : '優秀'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="text-xs text-gray-500">
-                                                目標: 100以下
-                                            </div>
-
-                                            {/* カロリー不足時のGL余裕アドバイス */}
-                                            {currentIntake.calories < targetPFC.calories * 0.8 && currentIntake.adjustedDailyGL < 100 && (
-                                                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-                                                    <div className="flex items-start gap-1">
-                                                        <Icon name="Info" size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                                                        <div className="text-blue-800">
-                                                            <div className="font-semibold mb-1">カロリーが不足しています</div>
-                                                            <div className="text-blue-700">
-                                                                目標まで <span className="font-bold">{Math.round(targetPFC.calories - currentIntake.calories)}kcal</span> 不足しています。
-                                                                GL値にはまだ余裕があるので、中GL以下の食事を追加しましょう。
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 血糖管理スコア */}
-                                        <div className="border-t pt-3">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <span className="text-sm font-medium text-gray-700">血糖管理</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-base font-bold text-gray-900">
-                                                        {currentIntake.bloodSugarRating}
-                                                    </span>
-                                                    <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                                                        currentIntake.bloodSugarScore >= 5
-                                                            ? 'bg-green-100 text-green-700'
-                                                            : currentIntake.bloodSugarScore >= 4
-                                                            ? 'bg-blue-100 text-blue-700'
-                                                            : currentIntake.bloodSugarScore >= 3
-                                                            ? 'bg-yellow-100 text-yellow-700'
-                                                            : 'bg-red-100 text-red-700'
-                                                    }`}>
-                                                        {currentIntake.bloodSugarLabel}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* 補正要因 */}
-                                            {currentIntake.glModifiers.length > 0 && (
-                                                <div className="space-y-1 mb-2">
-                                                    {currentIntake.glModifiers.map((modifier, idx) => (
-                                                        <div key={idx} className="flex justify-between text-xs text-gray-600">
-                                                            <span>✓ {modifier.label}</span>
-                                                            <span className="text-green-600 font-medium">{modifier.value}%</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            {/* 実質GL値 */}
-                                            <div className="flex justify-between items-center text-xs">
-                                                <span className="text-gray-600">実質GL値</span>
-                                                <span className="font-bold text-green-700">
-                                                    {Math.round(currentIntake.adjustedGL)}
-                                                    <span className="text-gray-500 ml-1">
-                                                        ({currentIntake.adjustedGL >= 20 ? '高' : currentIntake.adjustedGL >= 11 ? '中' : '低'}GL相当)
-                                                    </span>
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* GI値内訳 */}
-                                        <div className="border-t pt-3">
-                                            <div className="text-xs font-medium text-gray-700 mb-2">GI値内訳</div>
-                                            <div className="space-y-1">
-                                                <div className="flex justify-between text-xs">
-                                                    <span className="text-gray-600">GI 60以上</span>
-                                                    <span className="font-medium text-red-600">
-                                                        {Math.round(currentIntake.highGIPercent)}%
-                                                    </span>
-                                                </div>
-                                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-gradient-to-r from-red-400 to-red-500 transition-all"
-                                                        style={{ width: `${currentIntake.highGIPercent}%` }}
-                                                    />
-                                                </div>
-                                                <div className="flex justify-between text-xs mt-2">
-                                                    <span className="text-gray-600">GI 60未満</span>
-                                                    <span className="font-medium text-green-600">
-                                                        {Math.round(currentIntake.lowGIPercent)}%
-                                                    </span>
-                                                </div>
-                                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all"
-                                                        style={{ width: `${currentIntake.lowGIPercent}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            {/* 脂肪酸 */}
+                            {/* 脂肪酸バランス */}
                             <div className="mb-4">
                                 <div className="flex justify-between items-center mb-2">
                                     <h5 className="text-xs font-semibold text-gray-700">
@@ -1524,6 +1433,133 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 </div>
                             </div>
 
+                            {/* 炭水化物の質（GL値） */}
+                            <div className="mb-4">
+                                    <h5 className="text-xs font-semibold mb-2 text-gray-700">
+                                        炭水化物の質
+                                    </h5>
+                                    <div className="bg-gray-50 p-3 rounded space-y-3">
+                                        {/* 1日合計GL値 */}
+                                        <div>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-sm font-medium text-gray-700">1日合計GL値</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-lg font-bold text-gray-900">
+                                                        {Math.round(currentIntake.adjustedDailyGL)} / {currentIntake.dynamicGLLimit}
+                                                    </span>
+                                                    <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                                                        currentIntake.bloodSugarScore >= 5
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : currentIntake.bloodSugarScore >= 4
+                                                            ? 'bg-blue-100 text-blue-700'
+                                                            : currentIntake.bloodSugarScore >= 3
+                                                            ? 'bg-yellow-100 text-yellow-700'
+                                                            : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                        {currentIntake.bloodSugarLabel}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                目標: {currentIntake.dynamicGLLimit}以下（目標炭水化物{Math.round(targetPFC.carbs)}g × GI 60基準）
+                                            </div>
+
+                                            {/* カロリー不足時のGL余裕アドバイス */}
+                                            {currentIntake.calories < targetPFC.calories * 0.8 && currentIntake.adjustedDailyGL < currentIntake.dynamicGLLimit && (
+                                                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                                                    <div className="flex items-start gap-1">
+                                                        <Icon name="Info" size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                                                        <div className="text-blue-800">
+                                                            <div className="font-semibold mb-1">カロリーが不足しています</div>
+                                                            <div className="text-blue-700">
+                                                                目標まで <span className="font-bold">{Math.round(targetPFC.calories - currentIntake.calories)}kcal</span> 不足しています。
+                                                                GL値にはまだ余裕があるので、中GL以下の食事を追加しましょう。
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* 血糖管理スコア */}
+                                        <div className="border-t pt-3">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-sm font-medium text-gray-700">血糖管理</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-base font-bold text-gray-900">
+                                                        {currentIntake.bloodSugarRating}
+                                                    </span>
+                                                    <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                                                        currentIntake.bloodSugarScore >= 5
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : currentIntake.bloodSugarScore >= 4
+                                                            ? 'bg-blue-100 text-blue-700'
+                                                            : currentIntake.bloodSugarScore >= 3
+                                                            ? 'bg-yellow-100 text-yellow-700'
+                                                            : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                        {currentIntake.bloodSugarLabel}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* 補正要因 */}
+                                            {currentIntake.glModifiers.length > 0 && (
+                                                <div className="space-y-1 mb-2">
+                                                    {currentIntake.glModifiers.map((modifier, idx) => (
+                                                        <div key={idx} className="flex justify-between text-xs text-gray-600">
+                                                            <span>✓ {modifier.label}</span>
+                                                            <span className="text-green-600 font-medium">{modifier.value}%</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* 実質GL値 */}
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-gray-600">実質GL値</span>
+                                                <span className="font-bold text-green-700">
+                                                    {Math.round(currentIntake.adjustedGL)}
+                                                    <span className="text-gray-500 ml-1">
+                                                        ({currentIntake.adjustedGL >= 20 ? '高' : currentIntake.adjustedGL >= 11 ? '中' : '低'}GL相当)
+                                                    </span>
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* GI値内訳 */}
+                                        <div className="border-t pt-3">
+                                            <div className="text-xs font-medium text-gray-700 mb-2">GI値内訳</div>
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="text-gray-600">GI 60以上</span>
+                                                    <span className="font-medium text-red-600">
+                                                        {Math.round(currentIntake.highGIPercent)}%
+                                                    </span>
+                                                </div>
+                                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-red-400 to-red-500 transition-all"
+                                                        style={{ width: `${currentIntake.highGIPercent}%` }}
+                                                    />
+                                                </div>
+                                                <div className="flex justify-between text-xs mt-2">
+                                                    <span className="text-gray-600">GI 60未満</span>
+                                                    <span className="font-medium text-green-600">
+                                                        {Math.round(currentIntake.lowGIPercent)}%
+                                                    </span>
+                                                </div>
+                                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all"
+                                                        style={{ width: `${currentIntake.lowGIPercent}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                             {/* 糖質・食物繊維 */}
                             <div>
                                 <div className="flex justify-between items-center mb-2">
@@ -1583,7 +1619,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-600">
                                             <div className="flex items-center gap-1">
                                                 <div className="w-3 h-3 bg-gradient-to-r from-amber-400 to-orange-500 rounded"></div>
-                                                <span>炭水化物</span>
+                                                <span>糖質</span>
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-green-500 rounded"></div>
@@ -1591,7 +1627,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             </div>
                                         </div>
                                         <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
-                                            目標: 炭水化物{Math.round(currentIntake.carbs)}g / 食物繊維{Math.round(currentIntake.fiber)}g
+                                            目標: 糖質{Math.round(currentIntake.sugar)}g / 食物繊維{Math.round(currentIntake.fiber)}g
                                         </div>
                                     </div>
                                 )}
@@ -2269,13 +2305,21 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     if (mealGLData) {
                                                         // GL値の表示テキストを決定
                                                         let displayText = `GL ${Math.round(mealGLData.adjustedGL)}`;
+
+                                                        // 運動後の高GL: 推奨
                                                         if (mealGLData.rating === '高GL（推奨）') {
                                                             displayText += ' (推奨)';
-                                                        } else if (mealGLData.rating === '高GL' && !meal.isPostWorkout) {
+                                                        }
+                                                        // 運動後以外の高GL: 分割推奨
+                                                        else if (mealGLData.rating === '高GL' && !meal.isPostWorkout) {
                                                             displayText += ' (分割推奨)';
-                                                        } else if (mealGLData.rating === '中GL') {
-                                                            displayText += ' (良好)';
-                                                        } else if (mealGLData.rating === '低GL') {
+                                                        }
+                                                        // 中GL: 適正
+                                                        else if (mealGLData.rating === '中GL') {
+                                                            displayText += ' (適正)';
+                                                        }
+                                                        // 低GL: 優秀
+                                                        else if (mealGLData.rating === '低GL') {
                                                             displayText += ' (優秀)';
                                                         }
 
@@ -3250,14 +3294,18 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                                     <div className="mt-3 bg-white border border-gray-300 rounded p-3">
                                         <p className="font-semibold text-gray-800 mb-2">📈 1日合計GL評価（総負荷管理）</p>
+                                        <p className="text-xs text-gray-700 mb-2">
+                                            GL上限は、目標炭水化物量に応じて自動計算されます（目標炭水化物 × 0.60）。
+                                            これにより、平均GI値 60以下を維持することを目指します。
+                                        </p>
                                         <ul className="list-disc list-inside ml-2 space-y-1 text-xs">
-                                            <li><strong>優秀（&lt;80）</strong>：理想的な血糖管理</li>
-                                            <li><strong>良好（80-100）</strong>：目標範囲内</li>
-                                            <li><strong>普通（101-120）</strong>：許容範囲</li>
-                                            <li><strong>要改善（121+）</strong>：改善が必要</li>
+                                            <li><strong>優秀（上限の80%未満）</strong>：理想的な血糖管理</li>
+                                            <li><strong>良好（上限の80-100%）</strong>：目標範囲内</li>
+                                            <li><strong>普通（上限の100-120%）</strong>：許容範囲</li>
+                                            <li><strong>要改善（上限の120%以上）</strong>：改善が必要</li>
                                         </ul>
                                         <p className="text-xs text-blue-600 mt-2 font-medium">
-                                            🎯 目標: 100以下
+                                            💡 例：目標炭水化物218gの場合、GL上限は131（218 × 0.60）
                                         </p>
                                     </div>
 

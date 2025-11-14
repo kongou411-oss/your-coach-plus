@@ -939,6 +939,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
             age: profile.age || 25,
             gender: profile.gender || '男性',
             height: profile.height || 170,
+            mealsPerDay: profile.mealsPerDay || 4, // 想定食事回数（デフォルト4回）
 
             // 活動レベル
             activityLevel: profile.activityLevel || 3,
