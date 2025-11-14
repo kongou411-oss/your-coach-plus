@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 // - onAdd: (meal) => void - 食事を記録
 // - onUpdate: (meal) => void - 食事を更新（編集モード時）
 // - editingMeal: Object | null - 編集対象の食事データ
+// - selectedDate: String - 選択中の日付 (YYYY-MM-DD)
 // - user: Object - ユーザー情報
 // - userProfile: Object - ユーザープロフィール
 // - unlockedFeatures: Array - 解放済み機能
@@ -19,11 +20,16 @@ const AddMealModal = ({
     onAdd,
     onUpdate,
     editingMeal = null,
+    selectedDate,
     user,
     userProfile,
     unlockedFeatures = [],
     usageDays = 0
 }) => {
+    // ===== デバッグ: Props確認 =====
+    console.log('[AddMealModal] コンポーネント初期化');
+    console.log('[AddMealModal] Props:', { selectedDate, onClose: !!onClose, onAdd: !!onAdd, onUpdate: !!onUpdate });
+
     // ===== 編集モード判定 =====
     const isEditMode = !!editingMeal;
 
@@ -354,6 +360,9 @@ const AddMealModal = ({
 
     // ===== 食事を記録 =====
     const handleRecord = () => {
+        console.log('[AddMealModal handleRecord] 記録ボタンがクリックされました');
+        console.log('[AddMealModal handleRecord] selectedDate:', selectedDate);
+
         if (addedItems.length === 0) {
             toast('食材を追加してください');
             return;
@@ -373,6 +382,7 @@ const AddMealModal = ({
             carbs: parseFloat(totalPFC.carbs.toFixed(1)),
             totalCalories: Math.round(totalPFC.calories),
             isPostWorkout: isPostWorkout, // 運動後フラグを保存
+            date: selectedDate, // 記録対象の日付を明示的に保存
             // 編集モード時、元のタグ情報を引き継ぐ
             ...(isEditMode && {
                 isPredicted: editingMeal.isPredicted,
@@ -382,9 +392,14 @@ const AddMealModal = ({
         };
 
         // 編集モードの場合はonUpdate、新規追加の場合はonAddを呼ぶ
+        console.log('[AddMealModal handleRecord] 食事データ:', meal);
+        console.log('[AddMealModal handleRecord] isEditMode:', isEditMode, 'onAdd:', !!onAdd, 'onUpdate:', !!onUpdate);
+
         if (isEditMode && onUpdate) {
+            console.log('[AddMealModal handleRecord] onUpdateを呼び出します');
             onUpdate(meal);
         } else if (onAdd) {
+            console.log('[AddMealModal handleRecord] onAddを呼び出します');
             onAdd(meal);
         }
     };
@@ -1277,6 +1292,7 @@ const AddMealModal = ({
                         onClose();
                     }}
                     onFoodsRecognized={handleFoodsRecognized}
+                    selectedDate={selectedDate}
                     userId={user?.uid}
                     userProfile={userProfile}
                 />

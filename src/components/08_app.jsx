@@ -322,6 +322,36 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 };
             }, []);
 
+            // currentDate監視デバッグ
+            useEffect(() => {
+                console.log('[App useEffect] currentDate変更:', currentDate);
+            }, [currentDate]);
+
+            // 日付自動更新（0時になったら自動的に今日の日付に戻す）
+            useEffect(() => {
+                const checkAndUpdateDate = () => {
+                    const today = new Date().toISOString().split('T')[0];
+                    const now = new Date();
+                    const lastCheckDate = sessionStorage.getItem('lastDateCheck');
+                    const currentHour = now.getHours();
+
+                    // 0時台で、前回チェックが別の日付の場合のみ更新
+                    if (currentHour === 0 && lastCheckDate !== today) {
+                        console.log('[App] 日付が変わりました。自動更新:', currentDate, '→', today);
+                        setCurrentDate(today);
+                        sessionStorage.setItem('lastDateCheck', today);
+                    } else if (currentHour !== 0) {
+                        // 0時以外の時間はチェック日付をリセット
+                        sessionStorage.setItem('lastDateCheck', '');
+                    }
+                };
+
+                // 1分ごとにチェック
+                const interval = setInterval(checkAndUpdateDate, 60000);
+
+                return () => clearInterval(interval);
+            }, [currentDate]);
+
             // URLパラメータチェック（投稿リンク対応）
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -689,6 +719,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
             // 日付変更ハンドラ
             const handleDateChange = async (newDate) => {
+                console.log('[App] 日付変更:', newDate);
                 setCurrentDate(newDate);
                 // 新しい日付のデータを読み込む
                 const userId = user?.uid || DEV_USER_ID;
@@ -772,7 +803,19 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     console.log('[App] データ読み込み中:', { userId, currentDate });
                     const record = await DataService.getDailyRecord(userId, currentDate);
                     console.log('[App] getDailyRecord結果:', record);
-                    setDailyRecord(record || { meals: [], workouts: [], supplements: [], conditions: null });
+
+                    // 表示用にフィルタリング（元のデータは変更しない）
+                    let displayRecord = record || { meals: [], workouts: [], supplements: [], conditions: null };
+
+                    // dateフィールドがない、または現在の日付と一致するもののみ表示
+                    displayRecord = {
+                        ...displayRecord,
+                        meals: (displayRecord.meals || []).filter(meal => !meal.date || meal.date === currentDate),
+                        workouts: (displayRecord.workouts || []).filter(workout => !workout.date || workout.date === currentDate),
+                        supplements: (displayRecord.supplements || []).filter(supplement => !supplement.date || supplement.date === currentDate)
+                    };
+
+                    setDailyRecord(displayRecord);
 
                     // 前日のデータも読み込む（予測用）
                     const prevRecord = await DataService.getPreviousDayRecord(userId, currentDate);
@@ -1531,7 +1574,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     {editingMeal && addViewType === 'meal' && !showAddView && (
                         <AddMealModal
                             editingMeal={editingMeal}
+                            selectedDate={currentDate}
                             onClose={() => {
+                                console.log('[App] 食事編集モーダルを閉じる');
                                 setEditingMeal(null);
                                 setShowAddView(false);
                             }}
@@ -1541,17 +1586,23 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             usageDays={usageDays}
                             onUpdate={async (updatedMeal) => {
                                 const userId = user?.uid || DEV_USER_ID;
+                                const targetDate = updatedMeal.date || currentDate;
                                 try {
-                                    // React stateを直接使用（キャッシュを読まない）
-                                    let updatedRecord = { ...dailyRecord };
+                                    // 対象日付のレコードを取得
+                                    const targetRecord = await DataService.getDailyRecord(userId, targetDate);
+                                    let updatedRecord = targetRecord || { meals: [], workouts: [], supplements: [], conditions: null };
 
                                     // 既存の食事を更新
                                     const mealIndex = updatedRecord.meals.findIndex(m => m.id === updatedMeal.id);
                                     if (mealIndex !== -1) {
                                         updatedRecord.meals[mealIndex] = updatedMeal;
-                                        await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
-                                        setDailyRecord(updatedRecord);
-                                        setLastUpdate(Date.now());
+                                        await DataService.saveDailyRecord(userId, targetDate, updatedRecord);
+
+                                        // 表示中の日付の場合のみUIを更新
+                                        if (targetDate === currentDate) {
+                                            setDailyRecord(updatedRecord);
+                                            setLastUpdate(Date.now());
+                                        }
                                     }
 
                                     setEditingMeal(null);
@@ -1628,18 +1679,41 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     {/* 新しいゴールベースの食事記録モーダル */}
                     {showNewMealModal && AddMealModal && (
                         <AddMealModal
-                            onClose={() => setShowNewMealModal(false)}
+                            onClose={() => {
+                                console.log('[App] 新しいゴールベースモーダルを閉じる');
+                                setShowNewMealModal(false);
+                            }}
+                            selectedDate={currentDate}
                             onAdd={async (meal) => {
+                                console.log('[App] 新しいゴールベースモーダルのonAddが呼ばれました');
                                 const userId = user?.uid || DEV_USER_ID;
+                                const targetDate = meal.date || currentDate; // mealに日付が含まれていればそれを使用
                                 try {
-                                    // React stateを直接使用（キャッシュを読まない）
-                                    let updatedRecord = { ...dailyRecord };
+                                    console.log('[AddMealModal onAdd] 保存時の日付:', targetDate);
+                                    console.log('[AddMealModal onAdd] 記録する食事:', meal.name);
+                                    console.log('[AddMealModal onAdd] meal.date:', meal.date, 'currentDate:', currentDate);
+
+                                    // 対象日付のレコードを取得（currentDateと異なる可能性がある）
+                                    const targetRecord = await DataService.getDailyRecord(userId, targetDate);
+                                    let updatedRecord = targetRecord || { meals: [], workouts: [], supplements: [], conditions: null };
 
                                     updatedRecord.meals = [...(updatedRecord.meals || []), meal];
 
-                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
-                                    setDailyRecord(updatedRecord);
-                                    setLastUpdate(Date.now());
+                                    await DataService.saveDailyRecord(userId, targetDate, updatedRecord);
+                                    console.log('[AddMealModal onAdd] 保存完了:', targetDate);
+
+                                    // 表示中の日付に保存した場合のみUIを更新
+                                    if (targetDate === currentDate) {
+                                        // フィルタリング処理を適用してから表示
+                                        const displayRecord = {
+                                            ...updatedRecord,
+                                            meals: (updatedRecord.meals || []).filter(meal => !meal.date || meal.date === currentDate),
+                                            workouts: (updatedRecord.workouts || []).filter(workout => !workout.date || workout.date === currentDate),
+                                            supplements: (updatedRecord.supplements || []).filter(supplement => !supplement.date || supplement.date === currentDate)
+                                        };
+                                        setDailyRecord(displayRecord);
+                                        setLastUpdate(Date.now());
+                                    }
 
                                     // 新しい機能開放システム
                                     const oldUnlocked = [...unlockedFeatures];
@@ -1702,7 +1776,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     {showAddView && !editingWorkout && addViewType === 'meal' && (
                         <AddMealModal
                             editingMeal={editingMeal}
+                            selectedDate={currentDate}
                             onClose={() => {
+                                console.log('[App] 追加ビューモーダルを閉じる');
                                 setShowAddView(false);
                                 setEditingTemplate(null); // 編集テンプレートをクリア
                                 setEditingMeal(null); // 編集食事をクリア
@@ -1723,14 +1799,19 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             usageDays={usageDays}
                             onAdd={async (item) => {
                                 const userId = user?.uid || DEV_USER_ID;
+                                const targetDate = item.date || currentDate;
 
                                 try {
-                                    // 表示中の日付（currentDate）に記録を保存
-                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
-                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+                                    console.log('[DEBUG] 保存開始:', { targetDate, itemDate: item.date, currentDate });
+                                    // 対象日付のレコードを取得
+                                    const targetRecord = await DataService.getDailyRecord(userId, targetDate);
+                                    console.log('[DEBUG] 取得したレコード:', { mealsCount: targetRecord?.meals?.length });
+                                    let updatedRecord = targetRecord || { meals: [], workouts: [], supplements: [], conditions: null };
 
                                     if (addViewType === 'meal') {
+                                        console.log('[DEBUG] 食事追加前:', updatedRecord.meals.length);
                                         updatedRecord.meals = [...(updatedRecord.meals || []), item];
+                                        console.log('[DEBUG] 食事追加後:', updatedRecord.meals.length);
                                     } else if (addViewType === 'workout') {
                                         updatedRecord.workouts = [...(updatedRecord.workouts || []), item];
                                     } else if (addViewType === 'supplement') {
@@ -1739,9 +1820,22 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                         updatedRecord.conditions = item;
                                     }
 
-                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
-                                    setDailyRecord(updatedRecord);
-                                    setLastUpdate(Date.now());
+                                    console.log('[DEBUG] 保存実行:', { targetDate, mealsCount: updatedRecord.meals?.length });
+                                    await DataService.saveDailyRecord(userId, targetDate, updatedRecord);
+                                    console.log('[DEBUG] 保存完了');
+
+                                    // 表示中の日付に保存した場合のみUIを更新
+                                    if (targetDate === currentDate) {
+                                        // フィルタリング処理を適用してから表示
+                                        const displayRecord = {
+                                            ...updatedRecord,
+                                            meals: (updatedRecord.meals || []).filter(meal => !meal.date || meal.date === currentDate),
+                                            workouts: (updatedRecord.workouts || []).filter(workout => !workout.date || workout.date === currentDate),
+                                            supplements: (updatedRecord.supplements || []).filter(supplement => !supplement.date || supplement.date === currentDate)
+                                        };
+                                        setDailyRecord(displayRecord);
+                                        setLastUpdate(Date.now());
+                                    }
 
                                     // 新しい機能開放システム：記録追加後に完了チェックと機能開放状態を再計算
                                     const oldUnlocked = [...unlockedFeatures];
@@ -1782,7 +1876,15 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     if (mealIndex !== -1) {
                                         updatedRecord.meals[mealIndex] = updatedMeal;
                                         await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
-                                        setDailyRecord(updatedRecord);
+
+                                        // フィルタリング処理を適用してから表示
+                                        const displayRecord = {
+                                            ...updatedRecord,
+                                            meals: (updatedRecord.meals || []).filter(meal => !meal.date || meal.date === currentDate),
+                                            workouts: (updatedRecord.workouts || []).filter(workout => !workout.date || workout.date === currentDate),
+                                            supplements: (updatedRecord.supplements || []).filter(supplement => !supplement.date || supplement.date === currentDate)
+                                        };
+                                        setDailyRecord(displayRecord);
                                         setLastUpdate(Date.now());
                                     }
 

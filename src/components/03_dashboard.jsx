@@ -330,14 +330,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 const newMicro = JSON.stringify(micronutrients);
                 if (existingMicro === newMicro) return;
 
-                // dailyRecordに保存
+                // Firestoreから最新データを取得してmicronutrientsのみ更新
+                const latestRecord = await DataService.getDailyRecord(user.uid, currentDate);
                 const updatedRecord = {
-                    ...dailyRecord,
+                    ...latestRecord,
                     micronutrients: micronutrients
                 };
 
                 await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
-                setDailyRecord(updatedRecord);
                 console.log('[Dashboard] micronutrientsを保存:', Object.keys(micronutrients).length, 'keys');
             } catch (error) {
                 console.error('[Dashboard] micronutrients保存エラー:', error);
@@ -823,21 +823,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             currentIntake.monounsaturatedFat += (item.monounsaturatedFat || 0) * ratio;
             currentIntake.polyunsaturatedFat += (item.polyunsaturatedFat || 0) * ratio;
 
-            // デバッグログ
-            if (item.saturatedFat || item.fiber || item.sugar) {
-                console.log('[Dashboard] 脂肪酸・食物繊維データ:', {
-                    name: item.name,
-                    amount: item.amount,
-                    unit: item.unit,
-                    saturatedFat: item.saturatedFat,
-                    monounsaturatedFat: item.monounsaturatedFat,
-                    polyunsaturatedFat: item.polyunsaturatedFat,
-                    sugar: item.sugar,
-                    fiber: item.fiber,
-                    solubleFiber: item.solubleFiber,
-                    insolubleFiber: item.insolubleFiber
-                });
-            }
 
             // ビタミン・ミネラル（オブジェクト形式）
             if (item.vitamins) {
@@ -953,14 +938,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     currentIntake.highGIPercent = totalCarbs > 0 ? (totalCarbsFromHighGI / totalCarbs) * 100 : 0;
     currentIntake.lowGIPercent = totalCarbs > 0 ? (totalCarbsFromLowGI / totalCarbs) * 100 : 0;
 
-    // 【デバッグ】炭水化物・糖質・食物繊維の合計チェック
-    console.log('[Dashboard] 炭水化物チェック:', {
-        carbs: Math.round(currentIntake.carbs * 10) / 10,
-        sugar: Math.round(currentIntake.sugar * 10) / 10,
-        fiber: Math.round(currentIntake.fiber * 10) / 10,
-        sugarPlusFiber: Math.round((currentIntake.sugar + currentIntake.fiber) * 10) / 10,
-        difference: Math.round((currentIntake.carbs - currentIntake.sugar - currentIntake.fiber) * 10) / 10
-    });
 
     // 1日合計の補正後GL値を計算（各食事の補正後GL値を合計）
     const adjustedDailyGL = mealGLValues.reduce((sum, meal) => sum + meal.adjustedGL, 0);
@@ -997,20 +974,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     currentIntake.glReductionPercent = glReductionPercent;
     currentIntake.glModifiers = glModifiers;
 
-    // デバッグログ：集計結果
-    console.log('[Dashboard] 集計結果:', {
-        averageDiaas: currentIntake.averageDiaas,
-        totalGL: currentIntake.totalGL,
-        highGIPercent: currentIntake.highGIPercent,
-        lowGIPercent: currentIntake.lowGIPercent,
-        saturatedFat: currentIntake.saturatedFat,
-        monounsaturatedFat: currentIntake.monounsaturatedFat,
-        polyunsaturatedFat: currentIntake.polyunsaturatedFat,
-        sugar: currentIntake.sugar,
-        fiber: currentIntake.fiber,
-        solubleFiber: currentIntake.solubleFiber,
-        insolubleFiber: currentIntake.insolubleFiber
-    });
 
     // 1日合計GL値の評価（優秀: <80, 良好: 80-100, 普通: 101-120, 要改善: 121+）
     let bloodSugarScore = 5; // 最高評価から開始
