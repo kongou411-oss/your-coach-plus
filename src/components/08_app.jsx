@@ -1905,6 +1905,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     {showAddView && !editingWorkout && addViewType !== 'meal' && (
                         <AddItemView
                             type={addViewType}
+                            selectedDate={currentDate}
                             editingTemplate={editingTemplate}
                             editingMeal={editingMeal}
                             isTemplateMode={openedFromTemplateEditModal}
@@ -1931,11 +1932,12 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             dailyRecord={dailyRecord}
                             onAdd={async (item) => {
                                 const userId = user?.uid || DEV_USER_ID;
+                                const targetDate = item.date || currentDate; // itemに日付が含まれていればそれを使用
 
                                 try {
-                                    // 表示中の日付（currentDate）に記録を保存
-                                    const currentRecord = await DataService.getDailyRecord(userId, currentDate);
-                                    let updatedRecord = currentRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+                                    // 対象日付のレコードを取得
+                                    const targetRecord = await DataService.getDailyRecord(userId, targetDate);
+                                    let updatedRecord = targetRecord || { meals: [], workouts: [], supplements: [], conditions: null };
 
                                     if (addViewType === 'workout') {
                                         updatedRecord.workouts = [...(updatedRecord.workouts || []), item];
@@ -1945,9 +1947,20 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                         updatedRecord.conditions = item;
                                     }
 
-                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
-                                    setDailyRecord(updatedRecord);
-                                    setLastUpdate(Date.now());
+                                    await DataService.saveDailyRecord(userId, targetDate, updatedRecord);
+
+                                    // 表示中の日付に保存した場合のみUIを更新
+                                    if (targetDate === currentDate) {
+                                        // フィルタリング処理を適用してから表示
+                                        const displayRecord = {
+                                            ...updatedRecord,
+                                            meals: (updatedRecord.meals || []).filter(meal => !meal.date || meal.date === currentDate),
+                                            workouts: (updatedRecord.workouts || []).filter(workout => !workout.date || workout.date === currentDate),
+                                            supplements: (updatedRecord.supplements || []).filter(supplement => !supplement.date || supplement.date === currentDate)
+                                        };
+                                        setDailyRecord(displayRecord);
+                                        setLastUpdate(Date.now());
+                                    }
 
                                     // 新しい機能開放システム：記録追加後に完了チェックと機能開放状態を再計算
                                     const oldUnlocked = [...unlockedFeatures];

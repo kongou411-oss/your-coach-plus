@@ -1564,7 +1564,7 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
 };
 
 // ===== Add Item Component =====
-const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate, editingMeal, isTemplateMode = false }) => {
+const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate, editingMeal, isTemplateMode = false }) => {
             // 食事とサプリを統合する場合、itemTypeで管理
             const isMealOrSupplement = type === 'meal' || type === 'supplement';
 
@@ -1996,6 +1996,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                 const newCondition = {
                                     id: Date.now(),
                                     time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                                    date: selectedDate, // 記録対象の日付を明示的に保存
                                     ...condition
                                 };
 
@@ -2847,6 +2848,7 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                         name: workoutName, // ユーザーが編集可能な運動名を使用
                         category: exercises[0].exercise?.category || exercises[0].category,
                         isTemplate: isFromTemplate, // テンプレートから読み込んだ場合はtrueを付与
+                        date: selectedDate, // 記録対象の日付を明示的に保存
                         exercises: exercises.map(ex => {
                             // 有酸素・ストレッチの場合
                             if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
@@ -3049,7 +3051,8 @@ const AddItemView = ({ type, onClose, onAdd, userProfile, predictedData, unlocke
                                                                             timestamp: new Date().toISOString(),
                                                                             time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
                                                                             exercises: template.exercises,
-                                                                            isTemplate: true
+                                                                            isTemplate: true,
+                                                                            date: selectedDate // 記録対象の日付を明示的に保存
                                                                         };
                                                                         onAdd(workoutData);
                                                                         setShowTemplates(false);
