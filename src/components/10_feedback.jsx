@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Icon } from './01_common.jsx';
+
 // ===== Immediate Feedback System =====
 // 即時フィードバックポップアップコンポーネント
 
@@ -205,5 +207,9 @@ const FeedbackTriggers = {
 };
 
 
-// グローバルに公開
+// ES Modulesとしてエクスポート
+export { FeedbackManager, FeedbackTriggers, showFeedback };
+
+// グローバルに公開（後方互換性のため）
 window.FeedbackManager = FeedbackManager;
+window.showFeedback = showFeedback;

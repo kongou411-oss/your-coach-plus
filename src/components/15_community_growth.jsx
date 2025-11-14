@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Icon } from './01_common.jsx';
+import { showFeedback } from './10_feedback.jsx';
+
 // ===== Community Growth Features =====
 // コミュニティ育成システム（メンター制度、ベストアンサー、テーマスペース）
 
@@ -48,13 +51,13 @@ const BestAnswerSystem = {
     // ベストアンサーを選択
     markAsBestAnswer: async (postId, answerId, questionAuthorId) => {
         // 投稿のデータを取得
-        const posts = JSON.parse(localStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS) || '[]');
+        const posts = JSON.parse(localStorage.getItem('community_posts') || '[]');
         const post = posts.find(p => p.id === postId);
 
         if (post && post.userId === questionAuthorId) {
             // ベストアンサーをマーク
             post.bestAnswerId = answerId;
-            localStorage.setItem(STORAGE_KEYS.COMMUNITY_POSTS, JSON.stringify(posts));
+            localStorage.setItem('community_posts', JSON.stringify(posts));
 
             // 回答者にポイントを付与
             BestAnswerSystem.awardPoints(answerId, 10);
