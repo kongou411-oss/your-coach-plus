@@ -108,7 +108,9 @@
       "Bash(food_details.txt)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:www.yasainavi.com)"
+      "WebFetch(domain:www.yasainavi.com)",
+      "Bash(staples_analysis.txt)",
+      "Bash(staples_list.txt)"
     ],
     "deny": [],
     "ask": []
