@@ -84,15 +84,6 @@ const NotificationSoundService = {
     // 設定を読み込み
     loadSettings: (userId) => {
         try {
-            if (DEV_MODE) {
-                const settings = localStorage.getItem('notificationSoundSettings_' + userId);
-                if (settings) {
-                    const parsed = JSON.parse(settings);
-                    NotificationSoundService.soundEnabled = parsed.enabled !== false;
-                    NotificationSoundService.volume = parsed.volume || 0.5;
-                    NotificationSoundService.customSoundUrl = parsed.customSoundUrl || null;
-                }
-            }
         } catch (error) {
             console.error('[NotificationSound] Failed to load settings:', error);
         }
@@ -107,9 +98,6 @@ const NotificationSoundService = {
                 customSoundUrl: settings.customSoundUrl || null
             };
 
-            if (DEV_MODE) {
-                localStorage.setItem('notificationSoundSettings_' + userId, JSON.stringify(settingsToSave));
-            }
 
             // 現在の設定に反映
             NotificationSoundService.soundEnabled = settingsToSave.enabled;
