@@ -2235,16 +2235,49 @@ const NotificationService = {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open('YourCoachNotifications', 1);
 
-            request.onerror = () => reject(request.error);
+            request.onerror = () => {
+                console.error('[IndexedDB] Open error:', request.error);
+                reject(request.error);
+            };
 
             request.onsuccess = () => {
                 const db = request.result;
-                const transaction = db.transaction(['schedules'], 'readwrite');
-                const store = transaction.objectStore('schedules');
-                const saveRequest = store.put(schedules, userId);
+                let transaction;
 
-                saveRequest.onsuccess = () => resolve();
-                saveRequest.onerror = () => reject(saveRequest.error);
+                try {
+                    transaction = db.transaction(['schedules'], 'readwrite');
+                    const store = transaction.objectStore('schedules');
+                    const saveRequest = store.put(schedules, userId);
+
+                    // トランザクション完了時の処理
+                    transaction.oncomplete = () => {
+                        db.close();
+                        resolve();
+                    };
+
+                    // トランザクションエラー時の処理
+                    transaction.onerror = () => {
+                        console.error('[IndexedDB] Transaction error:', transaction.error);
+                        db.close();
+                        reject(transaction.error);
+                    };
+
+                    // トランザクション中断時の処理
+                    transaction.onabort = () => {
+                        console.error('[IndexedDB] Transaction aborted');
+                        db.close();
+                        reject(new Error('Transaction aborted'));
+                    };
+
+                    // 個別リクエストのエラーハンドリング
+                    saveRequest.onerror = () => {
+                        console.error('[IndexedDB] Save request error:', saveRequest.error);
+                    };
+                } catch (error) {
+                    console.error('[IndexedDB] Transaction creation error:', error);
+                    db.close();
+                    reject(error);
+                }
             };
 
             request.onupgradeneeded = (event) => {
