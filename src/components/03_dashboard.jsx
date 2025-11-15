@@ -3574,17 +3574,26 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <h4 className="font-bold text-green-800">食事スコア（100点満点）</h4>
                                 </div>
                                 <div className="text-sm text-gray-600 space-y-1">
-                                    <p><strong>PFCバランス</strong>（70%）</p>
-                                    <ul className="list-disc list-inside ml-2 space-y-1">
-                                        <li>タンパク質：目標値に対する達成率</li>
-                                        <li>脂質：目標値に対する達成率</li>
-                                        <li>炭水化物：目標値に対する達成率</li>
-                                        <li>3項目の平均が高いほど高得点</li>
-                                    </ul>
-                                    <p className="mt-2"><strong>カロリー達成度</strong>（30%）</p>
+                                    <p><strong>主要栄養素</strong>(60%)</p>
                                     <ul className="list-disc list-inside ml-2">
-                                        <li>目標カロリーとのズレが少ないほど高得点</li>
+                                        <li>タンパク質(20%): 目標値の達成率</li>
+                                        <li>脂質(20%): 目標値の達成率</li>
+                                        <li>炭水化物(20%): 目標値の達成率</li>
                                     </ul>
+                                    <p className="mt-2"><strong>エネルギー</strong>(10%)</p>
+                                    <ul className="list-disc list-inside ml-2">
+                                        <li>カロリー(10%): 目標値の達成率</li>
+                                    </ul>
+                                    <p className="mt-2"><strong>栄養品質</strong>(30%)</p>
+                                    <ul className="list-disc list-inside ml-2">
+                                        <li>DIAAS(5%): タンパク質の質</li>
+                                        <li>脂肪酸バランス(5%): 飽和・不飽和脂肪酸比率</li>
+                                        <li>血糖管理(5%): GL値による評価</li>
+                                        <li>食物繊維(5%): 推奨量の達成率</li>
+                                        <li>ビタミン(5%): 主要ビタミンの充足率</li>
+                                        <li>ミネラル(5%): 主要ミネラルの充足率</li>
+                                    </ul>
+                                    <p className="mt-2 text-xs text-green-700">※詳細は「食事スコア8軸評価」の?アイコンをタップ</p>
                                 </div>
                             </div>
 
@@ -3595,12 +3604,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <h4 className="font-bold text-orange-800">運動スコア（100点満点）</h4>
                                 </div>
                                 <div className="text-sm text-gray-600 space-y-1">
-                                    <p><strong>種目数</strong>（50%）</p>
+                                    <p><strong>総時間</strong>（30%）</p>
                                     <ul className="list-disc list-inside ml-2 space-y-1">
-                                        <li>ボディメイカー：5種目以上で満点</li>
-                                        <li>一般：3種目以上で満点</li>
+                                        <li>ボディメイカー：90分以上で満点</li>
+                                        <li>一般：60分以上で満点</li>
+                                        <li>筋トレ：1セット = 3分で換算</li>
+                                        <li>有酸素・ストレッチ：実時間で計算</li>
                                     </ul>
-                                    <p className="mt-2"><strong>総セット数</strong>（50%）</p>
+                                    <p className="mt-2"><strong>総セット数</strong>（70%）</p>
                                     <ul className="list-disc list-inside ml-2 space-y-1">
                                         <li>ボディメイカー：20セット以上で満点</li>
                                         <li>一般：12セット以上で満点</li>
