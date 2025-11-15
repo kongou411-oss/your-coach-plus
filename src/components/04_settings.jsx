@@ -2402,6 +2402,28 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             </div>
 
                             {(() => {
+                                const [showRestartModal, setShowRestartModal] = React.useState(false);
+                                const [selectedRestartDay, setSelectedRestartDay] = React.useState(1);
+
+                                // 初回アクセス時にデフォルトルーティンを自動作成
+                                React.useEffect(() => {
+                                    if (localRoutines.length === 0) {
+                                        const defaultRoutines = [
+                                            { id: 1, name: '①月曜日', splitType: '胸', isRestDay: false },
+                                            { id: 2, name: '②火曜日', splitType: '背中', isRestDay: false },
+                                            { id: 3, name: '③水曜日', splitType: '脚', isRestDay: false },
+                                            { id: 4, name: '④木曜日', splitType: '休み', isRestDay: true },
+                                            { id: 5, name: '⑤金曜日', splitType: '肩・腕', isRestDay: false },
+                                            { id: 6, name: '⑥土曜日', splitType: '全身', isRestDay: false },
+                                            { id: 7, name: '⑦日曜日', splitType: '休み', isRestDay: true }
+                                        ];
+                                        localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(defaultRoutines));
+                                        localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, new Date().toISOString());
+                                        localStorage.setItem(STORAGE_KEYS.ROUTINE_ACTIVE, 'true');
+                                        setLocalRoutines(defaultRoutines);
+                                    }
+                                }, []);
+
                                 const saveRoutines = (updated) => {
                                     setLocalRoutines(updated);
                                     localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(updated));
@@ -2471,104 +2493,181 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                             <div className="space-y-3">
                                                                 <div>
                                                                     <label className="font-medium text-sm">分類</label>
-                                                                    <select
-                                                                        value={routine.splitType}
-                                                                        onChange={(e) => {
-                                                                            if (e.target.value === '__custom__') {
-                                                                                const custom = prompt('分割法を入力してください（例：胸・三頭・肩）', routine.splitType);
-                                                                                if (custom !== null) {
-                                                                                    updateRoutine(routine.id, { splitType: custom });
-                                                                                }
-                                                                            } else {
-                                                                                updateRoutine(routine.id, { splitType: e.target.value });
-                                                                            }
-                                                                        }}
-                                                                        className="w-full mt-1 p-2 border rounded-lg"
-                                                                    >
-                                                                        <option value="">選択してください</option>
-                                                                        <option value="胸">胸</option>
-                                                                        <option value="背中">背中</option>
-                                                                        <option value="胸">胸</option>
-                                                                        <option value="肩">肩</option>
-                                                                        <option value="背">背</option>
-                                                                        <option value="尻">尻</option>
-                                                                        <option value="腹筋・体幹">腹筋・体幹</option>
-                                                                        <option value="上半身">上半身</option>
-                                                                        <option value="下半身">下半身</option>
-                                                                        <option value="全身">全身</option>
-                                                                        <option value="プッシュ（押す）">プッシュ（押す）</option>
-                                                                        <option value="プル（引く）">プル（引く）</option>
-                                                                        <option value="有酸素">有酸素</option>
-                                                                        <option value="胸・三頭">胸・三頭</option>
-                                                                        <option value="背中・二頭">背中・二頭</option>
-                                                                        <option value="肩・腕">肩・腕</option>
-                                                                        <option value="__custom__">✏️ カスタム入力..</option>
-                                                                    </select>
+                                                                    {(() => {
+                                                                        const presetOptions = ["胸", "背中", "肩", "腕", "脚", "背", "尻", "腹筋・体幹", "上半身", "下半身", "全身", "プッシュ（押す）", "プル（引く）", "有酸素", "胸・三頭", "背中・二頭", "肩・腕"];
+                                                                        const isCustomValue = routine.splitType && !presetOptions.includes(routine.splitType);
+
+                                                                        return (
+                                                                            <select
+                                                                                value={isCustomValue ? '__custom_display__' : routine.splitType}
+                                                                                onChange={(e) => {
+                                                                                    if (e.target.value === '__custom__') {
+                                                                                        const custom = prompt('分割法を入力してください（例：胸・三頭・肩）', routine.splitType);
+                                                                                        if (custom !== null && custom.trim() !== '') {
+                                                                                            updateRoutine(routine.id, { splitType: custom.trim() });
+                                                                                        }
+                                                                                    } else {
+                                                                                        updateRoutine(routine.id, { splitType: e.target.value });
+                                                                                    }
+                                                                                }}
+                                                                                className="w-full mt-1 p-2 border rounded-lg"
+                                                                            >
+                                                                                <option value="">選択してください</option>
+                                                                                <option value="胸">胸</option>
+                                                                                <option value="背中">背中</option>
+                                                                                <option value="肩">肩</option>
+                                                                                <option value="腕">腕</option>
+                                                                                <option value="脚">脚</option>
+                                                                                <option value="背">背</option>
+                                                                                <option value="尻">尻</option>
+                                                                                <option value="腹筋・体幹">腹筋・体幹</option>
+                                                                                <option value="上半身">上半身</option>
+                                                                                <option value="下半身">下半身</option>
+                                                                                <option value="全身">全身</option>
+                                                                                <option value="プッシュ（押す）">プッシュ（押す）</option>
+                                                                                <option value="プル（引く）">プル（引く）</option>
+                                                                                <option value="有酸素">有酸素</option>
+                                                                                <option value="胸・三頭">胸・三頭</option>
+                                                                                <option value="背中・二頭">背中・二頭</option>
+                                                                                <option value="肩・腕">肩・腕</option>
+                                                                                {isCustomValue && (
+                                                                                    <option value="__custom_display__">{routine.splitType}</option>
+                                                                                )}
+                                                                                <option value="__custom__">カスタム入力..</option>
+                                                                            </select>
+                                                                        );
+                                                                    })()}
                                                                 </div>
 
                                                                 {/* テンプレート紐づけ*/}
                                                                 <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                                                     <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
                                                                         <Icon name="BookTemplate" size={14} />
-                                                                        テンプレート紐づけ（複数選択可）
+                                                                        テンプレート紐づけ
                                                                         <Icon name="ChevronDown" size={14} className="ml-auto" />
                                                                     </summary>
                                                                     <div className="space-y-3 mt-3">
-                                                                        {/* 食事テンプレート（複数選択）*/}
+                                                                        {/* 食事テンプレート */}
                                                                         <div>
                                                                             <label className="text-xs font-medium text-gray-600">食事テンプレート</label>
-                                                                            <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
-                                                                                {mealTemplates.length > 0 ? mealTemplates.map(t => (
-                                                                                    <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
-                                                                                        <input
-                                                                                            type="checkbox"
-                                                                                            checked={(routine.mealTemplates || []).includes(t.id)}
-                                                                                            onChange={(e) => {
-                                                                                                const current = routine.mealTemplates || [];
-                                                                                                const updated = e.target.checked
-                                                                                                    ? [...current, t.id]
-                                                                                                    : current.filter(id => id !== t.id);
-                                                                                                updateRoutine(routine.id, { mealTemplates: updated });
-                                                                                            }}
-                                                                                            className="rounded"
-                                                                                        />
-                                                                                        <span className="text-sm">{t.name}</span>
-                                                                                    </label>
-                                                                                )) : (
-                                                                                    <p className="text-xs text-gray-600">食事テンプレートがありません</p>
-                                                                                )}
-                                                                            </div>
+                                                                            {mealTemplates.length > 0 ? (
+                                                                                <>
+                                                                                    <div className="mt-2 space-y-2">
+                                                                                        {(routine.mealTemplates || []).map((templateId, index) => {
+                                                                                            const template = mealTemplates.find(t => t.id === templateId);
+                                                                                            return (
+                                                                                                <div key={index} className="flex gap-2 items-center">
+                                                                                                    <span className="text-xs text-gray-500 w-6">[{index + 1}]</span>
+                                                                                                    <select
+                                                                                                        value={templateId}
+                                                                                                        onChange={(e) => {
+                                                                                                            const current = routine.mealTemplates || [];
+                                                                                                            const updated = [...current];
+                                                                                                            updated[index] = parseInt(e.target.value) || e.target.value;
+                                                                                                            updateRoutine(routine.id, { mealTemplates: updated });
+                                                                                                        }}
+                                                                                                        className="flex-1 p-2 border rounded text-sm"
+                                                                                                    >
+                                                                                                        {mealTemplates.map(t => (
+                                                                                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                                                                                        ))}
+                                                                                                    </select>
+                                                                                                    <button
+                                                                                                        onClick={() => {
+                                                                                                            const current = routine.mealTemplates || [];
+                                                                                                            const updated = [...current];
+                                                                                                            updated.splice(index, 1);
+                                                                                                            updateRoutine(routine.id, { mealTemplates: updated });
+                                                                                                        }}
+                                                                                                        className="px-2 py-2 text-red-600 hover:text-red-800"
+                                                                                                    >
+                                                                                                        <Icon name="X" size={16} />
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                    <button
+                                                                                        onClick={() => {
+                                                                                            const current = routine.mealTemplates || [];
+                                                                                            const firstTemplateId = mealTemplates[0]?.id;
+                                                                                            if (firstTemplateId !== undefined) {
+                                                                                                updateRoutine(routine.id, { mealTemplates: [...current, firstTemplateId] });
+                                                                                            }
+                                                                                        }}
+                                                                                        className="w-full mt-2 py-2 border border-dashed border-blue-400 rounded text-blue-600 hover:bg-blue-50 transition text-sm"
+                                                                                    >
+                                                                                        <Icon name="Plus" size={14} className="inline mr-1" />
+                                                                                        枠を追加
+                                                                                    </button>
+                                                                                </>
+                                                                            ) : (
+                                                                                <p className="text-xs text-gray-600 mt-2">食事テンプレートがありません</p>
+                                                                            )}
                                                                         </div>
 
-                                                                        {/* トレーニングテンプレート（複数選択）*/}
+                                                                        {/* 運動テンプレート */}
                                                                         <div>
-                                                                            <label className="text-xs font-medium text-gray-600">トレーニングテンプレート</label>
-                                                                            <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
-                                                                                {workoutTemplates.length > 0 ? workoutTemplates.map(t => (
-                                                                                    <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
-                                                                                        <input
-                                                                                            type="checkbox"
-                                                                                            checked={(routine.workoutTemplates || []).includes(t.id)}
-                                                                                            onChange={(e) => {
-                                                                                                const current = routine.workoutTemplates || [];
-                                                                                                const updated = e.target.checked
-                                                                                                    ? [...current, t.id]
-                                                                                                    : current.filter(id => id !== t.id);
-                                                                                                updateRoutine(routine.id, { workoutTemplates: updated });
-                                                                                            }}
-                                                                                            className="rounded"
-                                                                                        />
-                                                                                        <span className="text-sm">{t.name}</span>
-                                                                                    </label>
-                                                                                )) : (
-                                                                                    <p className="text-xs text-gray-600">トレーニングテンプレートがありません</p>
-                                                                                )}
-                                                                            </div>
+                                                                            <label className="text-xs font-medium text-gray-600">運動テンプレート</label>
+                                                                            {workoutTemplates.length > 0 ? (
+                                                                                <>
+                                                                                    <div className="mt-2 space-y-2">
+                                                                                        {(routine.workoutTemplates || []).map((templateId, index) => {
+                                                                                            const template = workoutTemplates.find(t => t.id === templateId);
+                                                                                            return (
+                                                                                                <div key={index} className="flex gap-2 items-center">
+                                                                                                    <span className="text-xs text-gray-500 w-6">[{index + 1}]</span>
+                                                                                                    <select
+                                                                                                        value={templateId}
+                                                                                                        onChange={(e) => {
+                                                                                                            const current = routine.workoutTemplates || [];
+                                                                                                            const updated = [...current];
+                                                                                                            updated[index] = parseInt(e.target.value) || e.target.value;
+                                                                                                            updateRoutine(routine.id, { workoutTemplates: updated });
+                                                                                                        }}
+                                                                                                        className="flex-1 p-2 border rounded text-sm"
+                                                                                                    >
+                                                                                                        {workoutTemplates.map(t => (
+                                                                                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                                                                                        ))}
+                                                                                                    </select>
+                                                                                                    <button
+                                                                                                        onClick={() => {
+                                                                                                            const current = routine.workoutTemplates || [];
+                                                                                                            const updated = [...current];
+                                                                                                            updated.splice(index, 1);
+                                                                                                            updateRoutine(routine.id, { workoutTemplates: updated });
+                                                                                                        }}
+                                                                                                        className="px-2 py-2 text-red-600 hover:text-red-800"
+                                                                                                    >
+                                                                                                        <Icon name="X" size={16} />
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                    <button
+                                                                                        onClick={() => {
+                                                                                            const current = routine.workoutTemplates || [];
+                                                                                            const firstTemplateId = workoutTemplates[0]?.id;
+                                                                                            if (firstTemplateId !== undefined) {
+                                                                                                updateRoutine(routine.id, { workoutTemplates: [...current, firstTemplateId] });
+                                                                                            }
+                                                                                        }}
+                                                                                        className="w-full mt-2 py-2 border border-dashed border-blue-400 rounded text-blue-600 hover:bg-blue-50 transition text-sm"
+                                                                                    >
+                                                                                        <Icon name="Plus" size={14} className="inline mr-1" />
+                                                                                        枠を追加
+                                                                                    </button>
+                                                                                </>
+                                                                            ) : (
+                                                                                <p className="text-xs text-gray-600 mt-2">運動テンプレートがありません</p>
+                                                                            )}
                                                                         </div>
 
                                                                     </div>
                                                                     <p className="text-xs text-yellow-700 mt-2">
-                                                                        ✨ 選択した複数のテンプレートが「ルーティン入力」ボタンで一括追加されます
+                                                                        ✨ 同じテンプレートを何回でも追加できます
                                                                     </p>
                                                                 </details>
                                                             </div>
@@ -2617,104 +2716,181 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                                 <div className="space-y-3">
                                                                     <div>
                                                                         <label className="font-medium text-sm">分類</label>
-                                                                        <select
-                                                                            value={routine.splitType}
-                                                                            onChange={(e) => {
-                                                                                if (e.target.value === '__custom__') {
-                                                                                    const custom = prompt('分割法を入力してください（例：胸・三頭・肩）', routine.splitType);
-                                                                                    if (custom !== null) {
-                                                                                        updateRoutine(routine.id, { splitType: custom });
-                                                                                    }
-                                                                                } else {
-                                                                                    updateRoutine(routine.id, { splitType: e.target.value });
-                                                                                }
-                                                                            }}
-                                                                            className="w-full mt-1 p-2 border rounded-lg"
-                                                                        >
-                                                                            <option value="">選択してください</option>
-                                                                            <option value="胸">胸</option>
-                                                                            <option value="背中">背中</option>
-                                                                            <option value="胸">胸</option>
-                                                                            <option value="肩">肩</option>
-                                                                            <option value="背">背</option>
-                                                                            <option value="尻">尻</option>
-                                                                            <option value="腹筋・体幹">腹筋・体幹</option>
-                                                                            <option value="上半身">上半身</option>
-                                                                            <option value="下半身">下半身</option>
-                                                                            <option value="全身">全身</option>
-                                                                            <option value="プッシュ（押す）">プッシュ（押す）</option>
-                                                                            <option value="プル（引く）">プル（引く）</option>
-                                                                            <option value="有酸素">有酸素</option>
-                                                                            <option value="胸・三頭">胸・三頭</option>
-                                                                            <option value="背中・二頭">背中・二頭</option>
-                                                                            <option value="肩・腕">肩・腕</option>
-                                                                            <option value="__custom__">✏️ カスタム入力..</option>
-                                                                        </select>
+                                                                        {(() => {
+                                                                            const presetOptions = ["胸", "背中", "肩", "腕", "脚", "背", "尻", "腹筋・体幹", "上半身", "下半身", "全身", "プッシュ（押す）", "プル（引く）", "有酸素", "胸・三頭", "背中・二頭", "肩・腕"];
+                                                                            const isCustomValue = routine.splitType && !presetOptions.includes(routine.splitType);
+
+                                                                            return (
+                                                                                <select
+                                                                                    value={isCustomValue ? '__custom_display__' : routine.splitType}
+                                                                                    onChange={(e) => {
+                                                                                        if (e.target.value === '__custom__') {
+                                                                                            const custom = prompt('分割法を入力してください（例：胸・三頭・肩）', routine.splitType);
+                                                                                            if (custom !== null && custom.trim() !== '') {
+                                                                                                updateRoutine(routine.id, { splitType: custom.trim() });
+                                                                                            }
+                                                                                        } else {
+                                                                                            updateRoutine(routine.id, { splitType: e.target.value });
+                                                                                        }
+                                                                                    }}
+                                                                                    className="w-full mt-1 p-2 border rounded-lg"
+                                                                                >
+                                                                                    <option value="">選択してください</option>
+                                                                                    <option value="胸">胸</option>
+                                                                                    <option value="背中">背中</option>
+                                                                                    <option value="肩">肩</option>
+                                                                                    <option value="腕">腕</option>
+                                                                                    <option value="脚">脚</option>
+                                                                                    <option value="背">背</option>
+                                                                                    <option value="尻">尻</option>
+                                                                                    <option value="腹筋・体幹">腹筋・体幹</option>
+                                                                                    <option value="上半身">上半身</option>
+                                                                                    <option value="下半身">下半身</option>
+                                                                                    <option value="全身">全身</option>
+                                                                                    <option value="プッシュ（押す）">プッシュ（押す）</option>
+                                                                                    <option value="プル（引く）">プル（引く）</option>
+                                                                                    <option value="有酸素">有酸素</option>
+                                                                                    <option value="胸・三頭">胸・三頭</option>
+                                                                                    <option value="背中・二頭">背中・二頭</option>
+                                                                                    <option value="肩・腕">肩・腕</option>
+                                                                                    {isCustomValue && (
+                                                                                        <option value="__custom_display__">{routine.splitType}</option>
+                                                                                    )}
+                                                                                    <option value="__custom__">カスタム入力..</option>
+                                                                                </select>
+                                                                            );
+                                                                        })()}
                                                                     </div>
 
-                                                                    {/* テンプレート紐づけ（複数選択）*/}
+                                                                    {/* テンプレート紐づけ */}
                                                                     <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                                                         <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
                                                                             <Icon name="BookTemplate" size={14} />
-                                                                            テンプレート紐づけ（複数選択可）
+                                                                            テンプレート紐づけ
                                                                             <Icon name="ChevronDown" size={14} className="ml-auto" />
                                                                         </summary>
                                                                         <div className="space-y-3 mt-3">
-                                                                            {/* 食事テンプレート（複数選択）*/}
+                                                                            {/* 食事テンプレート */}
                                                                             <div>
                                                                                 <label className="text-xs font-medium text-gray-600">食事テンプレート</label>
-                                                                                <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
-                                                                                    {mealTemplates.length > 0 ? mealTemplates.map(t => (
-                                                                                        <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
-                                                                                            <input
-                                                                                                type="checkbox"
-                                                                                                checked={(routine.mealTemplates || []).includes(t.id)}
-                                                                                                onChange={(e) => {
-                                                                                                    const current = routine.mealTemplates || [];
-                                                                                                    const updated = e.target.checked
-                                                                                                        ? [...current, t.id]
-                                                                                                        : current.filter(id => id !== t.id);
-                                                                                                    updateRoutine(routine.id, { mealTemplates: updated });
-                                                                                                }}
-                                                                                                className="rounded"
-                                                                                            />
-                                                                                            <span className="text-sm">{t.name}</span>
-                                                                                        </label>
-                                                                                    )) : (
-                                                                                        <p className="text-xs text-gray-600">食事テンプレートがありません</p>
-                                                                                    )}
-                                                                                </div>
+                                                                                {mealTemplates.length > 0 ? (
+                                                                                    <>
+                                                                                        <div className="mt-2 space-y-2">
+                                                                                            {(routine.mealTemplates || []).map((templateId, index) => {
+                                                                                                const template = mealTemplates.find(t => t.id === templateId);
+                                                                                                return (
+                                                                                                    <div key={index} className="flex gap-2 items-center">
+                                                                                                        <span className="text-xs text-gray-500 w-6">[{index + 1}]</span>
+                                                                                                        <select
+                                                                                                            value={templateId}
+                                                                                                            onChange={(e) => {
+                                                                                                                const current = routine.mealTemplates || [];
+                                                                                                                const updated = [...current];
+                                                                                                                updated[index] = parseInt(e.target.value) || e.target.value;
+                                                                                                                updateRoutine(routine.id, { mealTemplates: updated });
+                                                                                                            }}
+                                                                                                            className="flex-1 p-2 border rounded text-sm"
+                                                                                                        >
+                                                                                                            {mealTemplates.map(t => (
+                                                                                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                                                                                            ))}
+                                                                                                        </select>
+                                                                                                        <button
+                                                                                                            onClick={() => {
+                                                                                                                const current = routine.mealTemplates || [];
+                                                                                                                const updated = [...current];
+                                                                                                                updated.splice(index, 1);
+                                                                                                                updateRoutine(routine.id, { mealTemplates: updated });
+                                                                                                            }}
+                                                                                                            className="px-2 py-2 text-red-600 hover:text-red-800"
+                                                                                                        >
+                                                                                                            <Icon name="X" size={16} />
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                );
+                                                                                            })}
+                                                                                        </div>
+                                                                                        <button
+                                                                                            onClick={() => {
+                                                                                                const current = routine.mealTemplates || [];
+                                                                                                const firstTemplateId = mealTemplates[0]?.id;
+                                                                                                if (firstTemplateId !== undefined) {
+                                                                                                    updateRoutine(routine.id, { mealTemplates: [...current, firstTemplateId] });
+                                                                                                }
+                                                                                            }}
+                                                                                            className="w-full mt-2 py-2 border border-dashed border-blue-400 rounded text-blue-600 hover:bg-blue-50 transition text-sm"
+                                                                                        >
+                                                                                            <Icon name="Plus" size={14} className="inline mr-1" />
+                                                                                            枠を追加
+                                                                                        </button>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <p className="text-xs text-gray-600 mt-2">食事テンプレートがありません</p>
+                                                                                )}
                                                                             </div>
 
-                                                                            {/* トレーニングテンプレート（複数選択）*/}
+                                                                            {/* 運動テンプレート */}
                                                                             <div>
-                                                                                <label className="text-xs font-medium text-gray-600">トレーニングテンプレート</label>
-                                                                                <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
-                                                                                    {workoutTemplates.length > 0 ? workoutTemplates.map(t => (
-                                                                                        <label key={t.id} className="flex items-center gap-2 p-2 hover:bg-yellow-100 rounded cursor-pointer">
-                                                                                            <input
-                                                                                                type="checkbox"
-                                                                                                checked={(routine.workoutTemplates || []).includes(t.id)}
-                                                                                                onChange={(e) => {
-                                                                                                    const current = routine.workoutTemplates || [];
-                                                                                                    const updated = e.target.checked
-                                                                                                        ? [...current, t.id]
-                                                                                                        : current.filter(id => id !== t.id);
-                                                                                                    updateRoutine(routine.id, { workoutTemplates: updated });
-                                                                                                }}
-                                                                                                className="rounded"
-                                                                                            />
-                                                                                            <span className="text-sm">{t.name}</span>
-                                                                                        </label>
-                                                                                    )) : (
-                                                                                        <p className="text-xs text-gray-600">トレーニングテンプレートがありません</p>
-                                                                                    )}
-                                                                                </div>
+                                                                                <label className="text-xs font-medium text-gray-600">運動テンプレート</label>
+                                                                                {workoutTemplates.length > 0 ? (
+                                                                                    <>
+                                                                                        <div className="mt-2 space-y-2">
+                                                                                            {(routine.workoutTemplates || []).map((templateId, index) => {
+                                                                                                const template = workoutTemplates.find(t => t.id === templateId);
+                                                                                                return (
+                                                                                                    <div key={index} className="flex gap-2 items-center">
+                                                                                                        <span className="text-xs text-gray-500 w-6">[{index + 1}]</span>
+                                                                                                        <select
+                                                                                                            value={templateId}
+                                                                                                            onChange={(e) => {
+                                                                                                                const current = routine.workoutTemplates || [];
+                                                                                                                const updated = [...current];
+                                                                                                                updated[index] = parseInt(e.target.value) || e.target.value;
+                                                                                                                updateRoutine(routine.id, { workoutTemplates: updated });
+                                                                                                            }}
+                                                                                                            className="flex-1 p-2 border rounded text-sm"
+                                                                                                        >
+                                                                                                            {workoutTemplates.map(t => (
+                                                                                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                                                                                            ))}
+                                                                                                        </select>
+                                                                                                        <button
+                                                                                                            onClick={() => {
+                                                                                                                const current = routine.workoutTemplates || [];
+                                                                                                                const updated = [...current];
+                                                                                                                updated.splice(index, 1);
+                                                                                                                updateRoutine(routine.id, { workoutTemplates: updated });
+                                                                                                            }}
+                                                                                                            className="px-2 py-2 text-red-600 hover:text-red-800"
+                                                                                                        >
+                                                                                                            <Icon name="X" size={16} />
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                );
+                                                                                            })}
+                                                                                        </div>
+                                                                                        <button
+                                                                                            onClick={() => {
+                                                                                                const current = routine.workoutTemplates || [];
+                                                                                                const firstTemplateId = workoutTemplates[0]?.id;
+                                                                                                if (firstTemplateId !== undefined) {
+                                                                                                    updateRoutine(routine.id, { workoutTemplates: [...current, firstTemplateId] });
+                                                                                                }
+                                                                                            }}
+                                                                                            className="w-full mt-2 py-2 border border-dashed border-blue-400 rounded text-blue-600 hover:bg-blue-50 transition text-sm"
+                                                                                        >
+                                                                                            <Icon name="Plus" size={14} className="inline mr-1" />
+                                                                                            枠を追加
+                                                                                        </button>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <p className="text-xs text-gray-600 mt-2">運動テンプレートがありません</p>
+                                                                                )}
                                                                             </div>
 
                                                                         </div>
                                                                         <p className="text-xs text-yellow-700 mt-2">
-                                                                            ✨ 選択した複数のテンプレートが「ルーティン入力」ボタンで一括追加されます
+                                                                            ✨ 同じテンプレートを何回でも追加できます
                                                                         </p>
                                                                     </details>
                                                                 </div>
@@ -2736,31 +2912,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             </button>
                                         )}
 
-                                        {localRoutines.length === 0 && (
-                                            <div className="text-center py-8">
-                                                <p className="text-gray-600 mb-4">ルーティンが設定されていません</p>
-                                                <button
-                                                    onClick={() => {
-                                                        const defaultRoutines = [
-                                                            { id: 1, name: '①月曜日', splitType: '胸', isRestDay: false },
-                                                            { id: 2, name: '②火曜日', splitType: '背中', isRestDay: false },
-                                                            { id: 3, name: '③水曜日', splitType: '脚', isRestDay: false },
-                                                            { id: 4, name: '④木曜日', splitType: '休み', isRestDay: true },
-                                                            { id: 5, name: '⑤金曜日', splitType: '肩・腕', isRestDay: false },
-                                                            { id: 6, name: '⑥土曜日', splitType: '全身', isRestDay: false },
-                                                            { id: 7, name: '⑦日曜日', splitType: '休み', isRestDay: true }
-                                                        ];
-                                                        localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(defaultRoutines));
-                                                        localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, new Date().toISOString());
-                                                        localStorage.setItem(STORAGE_KEYS.ROUTINE_ACTIVE, 'true');
-                                                        window.location.reload();
-                                                    }}
-                                                    className="px-6 py-3 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] shadow-lg transition"
-                                                >
-                                                    開始                                                </button>
-                                            </div>
-                                        )}
-
                                         {/* 管理用ボタン */}
                                         {localRoutines.length > 0 && (
                                             <div className="flex gap-3 pt-4 border-t">
@@ -2779,15 +2930,51 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     リセット
                                                 </button>
                                                 <button
-                                                    onClick={() => {
-                                                        localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, new Date().toISOString());
-                                                        window.location.reload();
-                                                    }}
+                                                    onClick={() => setShowRestartModal(true)}
                                                     className="flex-1 px-4 py-3 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-medium border border-indigo-200"
                                                 >
                                                     <Icon name="RotateCcw" size={18} className="inline mr-2" />
-                                                    Day1から再開
+                                                    任意の日から再開
                                                 </button>
+
+                                                {/* 再開モーダル */}
+                                                {showRestartModal && (
+                                                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]" onClick={() => setShowRestartModal(false)}>
+                                                        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+                                                            <h3 className="text-lg font-bold mb-4">どの日から再開しますか？</h3>
+                                                            <select
+                                                                value={selectedRestartDay}
+                                                                onChange={(e) => setSelectedRestartDay(parseInt(e.target.value))}
+                                                                className="w-full p-3 border rounded-lg mb-4"
+                                                            >
+                                                                {localRoutines.map((routine, index) => (
+                                                                    <option key={routine.id} value={index + 1}>
+                                                                        {routine.name} {routine.splitType ? `(${routine.splitType})` : ''}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <div className="flex gap-3">
+                                                                <button
+                                                                    onClick={() => setShowRestartModal(false)}
+                                                                    className="flex-1 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                                                                >
+                                                                    キャンセル
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const today = new Date();
+                                                                        today.setDate(today.getDate() - (selectedRestartDay - 1));
+                                                                        localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, today.toISOString());
+                                                                        window.location.reload();
+                                                                    }}
+                                                                    className="flex-1 px-4 py-2 bg-[#4A9EFF] text-white rounded-lg hover:bg-[#3b8fef] transition font-bold"
+                                                                >
+                                                                    再開
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>

@@ -814,12 +814,39 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 const newMeals = [];
                 const newWorkouts = [];
 
+                // itemsからカロリーと栄養素を計算する関数
+                const calculateNutrients = (items) => {
+                    let totalCalories = 0;
+                    let totalProtein = 0;
+                    let totalFat = 0;
+                    let totalCarbs = 0;
+
+                    items?.forEach(item => {
+                        const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
+                        const ratio = isCountUnit ? item.amount : item.amount / 100;
+
+                        totalCalories += (item.calories || 0) * ratio;
+                        totalProtein += (item.protein || 0) * ratio;
+                        totalFat += (item.fat || 0) * ratio;
+                        totalCarbs += (item.carbs || 0) * ratio;
+                    });
+
+                    return {
+                        calories: Math.round(totalCalories),
+                        protein: Math.round(totalProtein * 10) / 10,
+                        fat: Math.round(totalFat * 10) / 10,
+                        carbs: Math.round(totalCarbs * 10) / 10
+                    };
+                };
+
                 // 食事テンプレートを展開
                 mealTemplates.forEach(templateId => {
                     const template = userMealTemplates.find(t => t.id === templateId);
                     if (template) {
+                        const nutrients = calculateNutrients(template.items);
                         newMeals.push({
                             ...template,
+                            ...nutrients,
                             id: Date.now() + Math.random(),
                             isRoutine: true
                         });
@@ -838,12 +865,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     }
                 });
 
+                console.log('[DEBUG] New Meals to add:', newMeals);
+                console.log('[DEBUG] New Workouts to add:', newWorkouts);
+
                 // dailyRecordに追加
                 const updatedRecord = {
                     ...dailyRecord,
                     meals: [...(dailyRecord.meals || []), ...newMeals],
                     workouts: [...(dailyRecord.workouts || []), ...newWorkouts]
                 };
+
+                console.log('[DEBUG] Updated Record:', updatedRecord);
 
                 setDailyRecord(updatedRecord);
                 await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
