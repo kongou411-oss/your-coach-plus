@@ -264,11 +264,27 @@ const DataService = {
             profile = saved ? JSON.parse(saved) : null;
         } else {
             try {
-                const doc = await db.collection('users').doc(userId).get();
+                // サーバー優先で取得（キャッシュを使わない）
+                const doc = await db.collection('users').doc(userId).get({ source: 'server' });
                 profile = doc.exists ? doc.data() : null;
             } catch (error) {
-                console.error('Error fetching user profile:', error);
-                return null;
+                // ネットワークエラーの場合はキャッシュから取得を試みる
+                if (error.code === 'unavailable') {
+                    console.warn('[DataService] Network unavailable, trying cache for user profile');
+                    try {
+                        const doc = await db.collection('users').doc(userId).get({ source: 'cache' });
+                        profile = doc.exists ? doc.data() : null;
+                    } catch (cacheError) {
+                        console.error('[DataService] Cache fetch failed for user profile:', cacheError);
+                        return null;
+                    }
+                } else if (error.code === 'permission-denied') {
+                    // 権限エラー（新規ユーザー）の場合は静かに null を返す
+                    return null;
+                } else {
+                    console.error('Error fetching user profile:', error);
+                    return null;
+                }
             }
         }
 
@@ -304,7 +320,15 @@ const DataService = {
             return true;
         }
         try {
-            await db.collection('users').doc(userId).set(profile, { merge: true });
+            // Firestoreはundefinedを許可しないため、undefinedフィールドを削除
+            const cleanProfile = { ...profile };
+            Object.keys(cleanProfile).forEach(key => {
+                if (cleanProfile[key] === undefined) {
+                    delete cleanProfile[key];
+                }
+            });
+
+            await db.collection('users').doc(userId).set(cleanProfile, { merge: true });
             return true;
         } catch (error) {
             console.error('Error saving user profile:', error);
@@ -320,14 +344,35 @@ const DataService = {
             return records[date] || null;
         }
         try {
+            // サーバー優先で取得（キャッシュを使わない）
             const doc = await db
                 .collection('dailyRecords')
                 .doc(userId)
                 .collection('records')
                 .doc(date)
-                .get();
+                .get({ source: 'server' });
             return doc.exists ? doc.data() : null;
         } catch (error) {
+            // ネットワークエラーの場合はキャッシュから取得を試みる
+            if (error.code === 'unavailable') {
+                console.warn('[DataService] Network unavailable, trying cache');
+                try {
+                    const doc = await db
+                        .collection('dailyRecords')
+                        .doc(userId)
+                        .collection('records')
+                        .doc(date)
+                        .get({ source: 'cache' });
+                    return doc.exists ? doc.data() : null;
+                } catch (cacheError) {
+                    console.error('[DataService] Cache fetch failed:', cacheError);
+                    return null;
+                }
+            }
+            // 権限エラー（新規ユーザー）の場合は静かに null を返す
+            if (error.code === 'permission-denied') {
+                return null;
+            }
             console.error('Error fetching daily record:', error);
             return null;
         }
@@ -358,6 +403,109 @@ const DataService = {
         } catch (error) {
             console.error('Error saving daily record:', error);
             return false;
+        }
+    },
+
+    // 分析レポート保存
+    saveAnalysisReport: async (userId, report) => {
+        const reportData = {
+            ...report,
+            createdAt: new Date().toISOString(),
+            id: `report_${Date.now()}`
+        };
+
+        if (DEV_MODE) {
+            const saved = localStorage.getItem('analysisReports');
+            const reports = saved ? JSON.parse(saved) : [];
+            reports.push(reportData);
+            localStorage.setItem('analysisReports', JSON.stringify(reports));
+            return reportData;
+        }
+
+        try {
+            const reportRef = db
+                .collection('users')
+                .doc(userId)
+                .collection('analysisReports')
+                .doc(reportData.id);
+            await reportRef.set(reportData);
+            return reportData;
+        } catch (error) {
+            console.error('Error saving analysis report:', error);
+            throw error;
+        }
+    },
+
+    // 分析レポート取得
+    getAnalysisReports: async (userId) => {
+        if (DEV_MODE) {
+            const saved = localStorage.getItem('analysisReports');
+            const reports = saved ? JSON.parse(saved) : [];
+            // 新しい順にソート
+            return reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+
+        try {
+            const snapshot = await db
+                .collection('users')
+                .doc(userId)
+                .collection('analysisReports')
+                .orderBy('createdAt', 'desc')
+                .get();
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error('Error getting analysis reports:', error);
+            return [];
+        }
+    },
+
+    // 分析レポート削除
+    deleteAnalysisReport: async (userId, reportId) => {
+        if (DEV_MODE) {
+            const saved = localStorage.getItem('analysisReports');
+            const reports = saved ? JSON.parse(saved) : [];
+            const filtered = reports.filter(r => r.id !== reportId);
+            localStorage.setItem('analysisReports', JSON.stringify(filtered));
+            return true;
+        }
+
+        try {
+            await db
+                .collection('users')
+                .doc(userId)
+                .collection('analysisReports')
+                .doc(reportId)
+                .delete();
+            return true;
+        } catch (error) {
+            console.error('Error deleting analysis report:', error);
+            throw error;
+        }
+    },
+
+    updateAnalysisReport: async (userId, reportId, updates) => {
+        if (DEV_MODE) {
+            const saved = localStorage.getItem('analysisReports');
+            const reports = saved ? JSON.parse(saved) : [];
+            const reportIndex = reports.findIndex(r => r.id === reportId);
+            if (reportIndex !== -1) {
+                reports[reportIndex] = { ...reports[reportIndex], ...updates };
+                localStorage.setItem('analysisReports', JSON.stringify(reports));
+            }
+            return true;
+        }
+
+        try {
+            await db
+                .collection('users')
+                .doc(userId)
+                .collection('analysisReports')
+                .doc(reportId)
+                .update(updates);
+            return true;
+        } catch (error) {
+            console.error('Error updating analysis report:', error);
+            throw error;
         }
     },
 
@@ -901,91 +1049,313 @@ const DataService = {
         const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス'];
         const isBodymaker = bodymakerStyles.includes(profile.style);
 
-        // 食事データ
+        // ===== 食事データの集計（ダッシュボードと同じロジック） =====
         const totalCalories = (record.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
-        const totalProtein = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
-        const totalFat = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
-        const totalCarbs = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
 
-        // 食事スコア計算
-        const proteinRate = Math.min(100, target.protein > 0 ? (totalProtein / target.protein) * 100 : 0);
-        const fatRate = Math.min(100, target.fat > 0 ? (totalFat / target.fat) * 100 : 0);
-        const carbsRate = Math.min(100, target.carbs > 0 ? (totalCarbs / target.carbs) * 100 : 0);
-        const pfcBalance = (proteinRate + fatRate + carbsRate) / 3;
+        let totalProtein = 0;
+        let totalFat = 0;
+        let totalCarbs = 0;
+        let totalFiber = 0;
+        let totalSaturatedFat = 0;
+        let totalMonounsaturatedFat = 0;
+        let totalPolyunsaturatedFat = 0;
+        let totalMediumChainFat = 0;
+        let weightedDIAAS = 0; // タンパク質量で重み付けしたDIAAS
+        let totalGL = 0; // グリセミック負荷
 
-        const calorieDeviation = Math.abs(totalCalories - target.calories) / target.calories;
-        const calorieScore = Math.max(0, 100 - calorieDeviation * 100);
+        // ビタミン・ミネラルの集計
+        const vitamins = {
+            vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
+            vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0
+        };
+        const minerals = {
+            calcium: 0, iron: 0, magnesium: 0, zinc: 0, sodium: 0, potassium: 0
+        };
 
-        const foodScore = Math.round(pfcBalance * 0.7 + calorieScore * 0.3);
+        (record.meals || []).forEach(meal => {
+            (meal.items || []).forEach(item => {
+                const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
+                const ratio = isCountUnit ? item.amount : item.amount / 100;
+
+                // 基本栄養素
+                const protein = (item.protein || 0) * ratio;
+                const fat = (item.fat || 0) * ratio;
+                const carbs = (item.carbs || 0) * ratio;
+
+                totalProtein += protein;
+                totalFat += fat;
+                totalCarbs += carbs;
+                totalFiber += (item.fiber || 0) * ratio;
+
+                // 脂肪酸
+                totalSaturatedFat += (item.saturatedFat || 0) * ratio;
+                totalMonounsaturatedFat += (item.monounsaturatedFat || 0) * ratio;
+                totalPolyunsaturatedFat += (item.polyunsaturatedFat || 0) * ratio;
+                totalMediumChainFat += (item.mediumChainFat || 0) * ratio;
+
+                // DIAAS（タンパク質量で重み付け）
+                if (item.diaas && protein > 0) {
+                    weightedDIAAS += item.diaas * protein;
+                }
+
+                // GL値（GI × 炭水化物g / 100）
+                if (item.gi && carbs > 0) {
+                    totalGL += (item.gi * carbs) / 100;
+                }
+
+                // ビタミン（個別キー形式）
+                const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK'];
+                vitaminKeys.forEach(key => {
+                    if (item[key]) {
+                        vitamins[key] = (vitamins[key] || 0) + item[key] * ratio;
+                    }
+                });
+
+                // ミネラル（個別キー形式）
+                const mineralKeys = ['calcium', 'iron', 'magnesium', 'zinc', 'sodium', 'potassium'];
+                mineralKeys.forEach(key => {
+                    if (item[key]) {
+                        minerals[key] = (minerals[key] || 0) + item[key] * ratio;
+                    }
+                });
+            });
+        });
+
+        // ===== ① カロリースコア (10%) =====
+        const calorieDeviation = target.calories > 0 ? Math.abs(totalCalories - target.calories) / target.calories : 0;
+        const calorieScore = Math.max(0, 100 - (calorieDeviation * 200));
+        // ±10%で80点、±20%で60点、±30%で40点、±50%で0点
+
+        // ===== ② PFCスコア (20% × 3 = 60%) =====
+        // タンパク質スコア
+        const proteinDeviation = target.protein > 0 ? Math.abs(totalProtein - target.protein) / target.protein : 0;
+        const proteinScore = Math.max(0, 100 - (proteinDeviation * 150));
+        // ±10%で85点、±20%で70点、±30%で55点
+
+        // 脂質スコア
+        const fatDeviation = target.fat > 0 ? Math.abs(totalFat - target.fat) / target.fat : 0;
+        const fatScore = Math.max(0, 100 - (fatDeviation * 200));
+        // ±10%で80点、±20%で60点、±30%で40点
+
+        // 炭水化物スコア
+        const carbsDeviation = target.carbs > 0 ? Math.abs(totalCarbs - target.carbs) / target.carbs : 0;
+        const carbsScore = Math.max(0, 100 - (carbsDeviation * 200));
+        // ±10%で80点、±20%で60点、±30%で40点
+
+        // ===== ③ DIAASスコア (5%) =====
+        const avgDIAAS = totalProtein > 0 ? weightedDIAAS / totalProtein : 0;
+        let diaaScore = 0;
+        if (avgDIAAS >= 1.00) diaaScore = 100; // 優秀
+        else if (avgDIAAS >= 0.90) diaaScore = 80; // 良好
+        else if (avgDIAAS >= 0.75) diaaScore = 60; // 普通
+        else if (avgDIAAS >= 0.50) diaaScore = 40; // 要改善
+        else diaaScore = 20; // データ不足またはDIAAS低い
+
+        // ===== ④ 脂肪酸バランススコア (5%) =====
+        let fattyAcidScore = 50; // デフォルト（データ不足時）
+
+        if (totalFat > 0) {
+            const satRatio = totalSaturatedFat / totalFat; // 理想: 0.30-0.35
+            const monoRatio = totalMonounsaturatedFat / totalFat; // 理想: 0.35-0.45
+            const polyRatio = totalPolyunsaturatedFat / totalFat; // 理想: 0.20-0.30
+
+            // 飽和脂肪酸スコア（30-35%が理想）
+            let satScore = 0;
+            if (satRatio >= 0.30 && satRatio <= 0.35) satScore = 100;
+            else if (satRatio >= 0.25 && satRatio < 0.30) satScore = 80;
+            else if (satRatio >= 0.20 && satRatio < 0.25) satScore = 60;
+            else if (satRatio > 0.35 && satRatio <= 0.40) satScore = 80;
+            else if (satRatio > 0.40 && satRatio <= 0.50) satScore = 60;
+            else satScore = 40;
+
+            // 一価不飽和脂肪酸スコア（35-45%が理想）
+            let monoScore = 0;
+            if (monoRatio >= 0.35 && monoRatio <= 0.45) monoScore = 100;
+            else if (monoRatio >= 0.30 && monoRatio < 0.35) monoScore = 80;
+            else if (monoRatio >= 0.25 && monoRatio < 0.30) monoScore = 60;
+            else if (monoRatio > 0.45 && monoRatio <= 0.50) monoScore = 80;
+            else monoScore = 40;
+
+            // 多価不飽和脂肪酸スコア（20-30%が理想）
+            let polyScore = 0;
+            if (polyRatio >= 0.20 && polyRatio <= 0.30) polyScore = 100;
+            else if (polyRatio >= 0.15 && polyRatio < 0.20) polyScore = 80;
+            else if (polyRatio >= 0.10 && polyRatio < 0.15) polyScore = 60;
+            else if (polyRatio > 0.30 && polyRatio <= 0.35) polyScore = 80;
+            else polyScore = 40;
+
+            fattyAcidScore = (satScore * 0.4 + monoScore * 0.3 + polyScore * 0.3);
+        }
+
+        // ===== ⑤ 血糖管理スコア (5%) =====
+        let glScore = 50; // デフォルト（データ不足時）
+
+        if (totalGL > 0) {
+            // 1日のGL値: 100以下が理想、150以下が許容、それ以上は要改善
+            if (totalGL <= 80) glScore = 100;
+            else if (totalGL <= 100) glScore = 90;
+            else if (totalGL <= 120) glScore = 75;
+            else if (totalGL <= 150) glScore = 60;
+            else if (totalGL <= 180) glScore = 40;
+            else glScore = Math.max(0, 40 - (totalGL - 180) / 5);
+        }
+
+        // ===== ⑥ 食物繊維スコア (5%) =====
+        let fiberScore = 50; // デフォルト
+
+        // 食物繊維量スコア（20-30gが理想）
+        let fiberAmountScore = 0;
+        if (totalFiber >= 20 && totalFiber <= 30) fiberAmountScore = 100;
+        else if (totalFiber >= 15 && totalFiber < 20) fiberAmountScore = 80;
+        else if (totalFiber >= 10 && totalFiber < 15) fiberAmountScore = 60;
+        else if (totalFiber >= 5 && totalFiber < 10) fiberAmountScore = 40;
+        else if (totalFiber < 5) fiberAmountScore = 20;
+        else if (totalFiber > 30 && totalFiber <= 35) fiberAmountScore = 90;
+        else fiberAmountScore = Math.max(60, 90 - (totalFiber - 35) * 5);
+
+        // 糖質:食物繊維比（10:1以下が理想）
+        let carbFiberRatioScore = 0;
+        if (totalFiber > 0) {
+            const carbFiberRatio = totalCarbs / totalFiber;
+            if (carbFiberRatio <= 10) carbFiberRatioScore = 100;
+            else if (carbFiberRatio <= 15) carbFiberRatioScore = 80;
+            else if (carbFiberRatio <= 20) carbFiberRatioScore = 60;
+            else carbFiberRatioScore = Math.max(0, 60 - (carbFiberRatio - 20) * 3);
+        } else {
+            carbFiberRatioScore = 0;
+        }
+
+        fiberScore = (fiberAmountScore * 0.6 + carbFiberRatioScore * 0.4);
+
+        // ===== ⑦ ビタミンスコア (5%) =====
+        const vitaminTargets = {
+            vitaminA: 800,      // μg/日
+            vitaminB1: 1.4,     // mg/日
+            vitaminB2: 1.6,     // mg/日
+            vitaminB6: 1.4,     // mg/日
+            vitaminB12: 2.4,    // μg/日
+            vitaminC: 100,      // mg/日
+            vitaminD: 8.5,      // μg/日
+            vitaminE: 6.0,      // mg/日
+            vitaminK: 150       // μg/日
+        };
+
+        const vitaminScores = Object.keys(vitaminTargets).map(key => {
+            const actual = vitamins[key] || 0;
+            const targetVal = vitaminTargets[key];
+            const rate = targetVal > 0 ? actual / targetVal : 0;
+
+            // 70-150%が100点、不足・過剰をペナルティ
+            if (rate >= 0.7 && rate <= 1.5) return 100;
+            else if (rate >= 0.5 && rate < 0.7) return 70;
+            else if (rate >= 0.3 && rate < 0.5) return 50;
+            else if (rate > 1.5 && rate < 2.0) return 80;
+            else if (rate >= 2.0 && rate < 3.0) return 60;
+            else return 30;
+        });
+
+        const vitaminScore = vitaminScores.length > 0
+            ? vitaminScores.reduce((a, b) => a + b, 0) / vitaminScores.length
+            : 50;
+
+        // ===== ⑧ ミネラルスコア (5%) =====
+        const mineralTargets = {
+            calcium: 800,       // mg/日
+            iron: 10,           // mg/日
+            magnesium: 340,     // mg/日
+            zinc: 10,           // mg/日
+            sodium: 2000,       // mg/日（上限）
+            potassium: 2500     // mg/日
+        };
+
+        const mineralScores = Object.keys(mineralTargets).map(key => {
+            const actual = minerals[key] || 0;
+            const targetVal = mineralTargets[key];
+            const rate = targetVal > 0 ? actual / targetVal : 0;
+
+            // Naは上限評価、他は充足率評価
+            if (key === 'sodium') {
+                if (rate <= 1.0) return 100;
+                else if (rate <= 1.2) return 80;
+                else if (rate <= 1.5) return 60;
+                else return Math.max(0, 60 - (rate - 1.5) * 40);
+            }
+
+            // その他のミネラル
+            if (rate >= 0.8 && rate <= 1.5) return 100;
+            else if (rate >= 0.6 && rate < 0.8) return 75;
+            else if (rate >= 0.4 && rate < 0.6) return 50;
+            else if (rate > 1.5 && rate < 2.0) return 80;
+            else return 30;
+        });
+
+        const mineralScore = mineralScores.length > 0
+            ? mineralScores.reduce((a, b) => a + b, 0) / mineralScores.length
+            : 50;
+
+        // ===== 最終食事スコア =====
+        const foodScore = Math.round(
+            calorieScore * 0.10 +
+            proteinScore * 0.20 +
+            fatScore * 0.20 +
+            carbsScore * 0.20 +
+            diaaScore * 0.05 +
+            fattyAcidScore * 0.05 +
+            glScore * 0.05 +
+            fiberScore * 0.05 +
+            vitaminScore * 0.05 +
+            mineralScore * 0.05
+        );
 
         // 運動データ
         const workouts = record.workouts || [];
-
-        // 種目数を計算（workouts配列内の全エクササイズ）
-        const exerciseCount = workouts.reduce((sum, w) => {
-            return sum + (w.exercises || []).length;
+        const totalDuration = workouts.reduce((sum, w) => {
+            return sum + (w.sets || []).reduce((s, set) => s + (set.duration || 0), 0);
         }, 0);
-
-        // 総セット数を計算（筋トレのセット数）
-        const totalSets = workouts.reduce((sum, w) => {
-            return sum + (w.exercises || []).reduce((s, ex) => {
-                // 筋トレの場合はsets配列の長さ
-                if (ex.sets && Array.isArray(ex.sets)) {
-                    return s + ex.sets.length;
-                }
-                // 有酸素・ストレッチの場合は時間を15分/10分単位で換算してセット数化
-                if (ex.exerciseType === 'aerobic' && ex.duration) {
-                    return s + Math.ceil(ex.duration / 15); // 15分 = 1セット
-                }
-                if (ex.exerciseType === 'stretch' && ex.duration) {
-                    return s + Math.ceil(ex.duration / 10); // 10分 = 1セット
-                }
-                return s;
-            }, 0);
-        }, 0);
+        const exerciseCount = workouts.length;
 
         // 休養日判定（ルーティンで明示的に設定されている場合）
         const isRestDay = record.routine?.is_rest_day === true;
 
         // 運動スコア計算（ボディメイカー/一般で基準が異なる）
-        let setsScore = 0;
+        let durationScore = 0;
         let exerciseCountScore = 0;
 
         // 休養日の場合は運動スコアを100点として扱う（計画的な休養）
         if (isRestDay) {
-            setsScore = 100;
+            durationScore = 100;
             exerciseCountScore = 100;
         } else if (isBodymaker) {
             // ボディメイカー基準
+            if (totalDuration === 0) durationScore = 0;
+            else if (totalDuration >= 120) durationScore = 100; // 2時間以上
+            else if (totalDuration >= 90) durationScore = 75;   // 1.5時間以上
+            else if (totalDuration >= 60) durationScore = 50;   // 1時間以上
+            else if (totalDuration >= 30) durationScore = 25;   // 30分以上
+            else durationScore = 0;
+
             if (exerciseCount === 0) exerciseCountScore = 0;
             else if (exerciseCount >= 5) exerciseCountScore = 100;
-            else if (exerciseCount >= 4) exerciseCountScore = 80;
-            else if (exerciseCount >= 3) exerciseCountScore = 60;
-            else if (exerciseCount >= 2) exerciseCountScore = 40;
+            else if (exerciseCount === 4) exerciseCountScore = 80;
+            else if (exerciseCount === 3) exerciseCountScore = 60;
+            else if (exerciseCount === 2) exerciseCountScore = 40;
             else if (exerciseCount === 1) exerciseCountScore = 20;
-
-            if (totalSets === 0) setsScore = 0;
-            else if (totalSets >= 20) setsScore = 100;
-            else if (totalSets >= 15) setsScore = 80;
-            else if (totalSets >= 10) setsScore = 60;
-            else if (totalSets >= 5) setsScore = 40;
-            else setsScore = 20;
         } else {
             // 一般基準
+            if (totalDuration === 0) durationScore = 0;
+            else if (totalDuration >= 60) durationScore = 100;  // 1時間以上
+            else if (totalDuration >= 45) durationScore = 75;   // 45分以上
+            else if (totalDuration >= 30) durationScore = 50;   // 30分以上
+            else if (totalDuration >= 15) durationScore = 25;   // 15分以上
+            else durationScore = 0;
+
             if (exerciseCount === 0) exerciseCountScore = 0;
             else if (exerciseCount >= 3) exerciseCountScore = 100;
             else if (exerciseCount === 2) exerciseCountScore = 66;
             else if (exerciseCount === 1) exerciseCountScore = 33;
-
-            if (totalSets === 0) setsScore = 0;
-            else if (totalSets >= 12) setsScore = 100;
-            else if (totalSets >= 9) setsScore = 80;
-            else if (totalSets >= 6) setsScore = 60;
-            else if (totalSets >= 3) setsScore = 40;
-            else setsScore = 20;
         }
 
-        const exerciseScore = Math.round((exerciseCountScore + setsScore) / 2);
+        const exerciseScore = Math.round((durationScore + exerciseCountScore) / 2);
 
         // コンディションデータ（全項目1-5の値として扱う）
         const sleepHours = record.conditions?.sleepHours || 0;
@@ -1004,16 +1374,38 @@ const DataService = {
         return {
             food: {
                 score: foodScore,
-                protein: Math.round(proteinRate),
-                fat: Math.round(fatRate),
-                carbs: Math.round(carbsRate),
-                calories: Math.round(calorieScore)
+                // 8軸スコア
+                calorie: Math.round(calorieScore),
+                protein: Math.round(proteinScore),
+                fat: Math.round(fatScore),
+                carbs: Math.round(carbsScore),
+                diaas: Math.round(diaaScore),
+                fattyAcid: Math.round(fattyAcidScore),
+                gl: Math.round(glScore),
+                fiber: Math.round(fiberScore),
+                vitamin: Math.round(vitaminScore),
+                mineral: Math.round(mineralScore),
+                // 実際の摂取量
+                totalCalories: Math.round(totalCalories),
+                totalProtein: Math.round(totalProtein * 10) / 10,
+                totalFat: Math.round(totalFat * 10) / 10,
+                totalCarbs: Math.round(totalCarbs * 10) / 10,
+                totalFiber: Math.round(totalFiber * 10) / 10,
+                totalGL: Math.round(totalGL * 10) / 10,
+                avgDIAAS: Math.round(avgDIAAS * 100) / 100,
+                // 脂肪酸詳細
+                totalSaturatedFat: Math.round(totalSaturatedFat * 10) / 10,
+                totalMonounsaturatedFat: Math.round(totalMonounsaturatedFat * 10) / 10,
+                totalPolyunsaturatedFat: Math.round(totalPolyunsaturatedFat * 10) / 10,
+                // ビタミン・ミネラル詳細
+                vitamins: vitamins,
+                minerals: minerals
             },
             exercise: {
                 score: exerciseScore,
-                sets: Math.round(setsScore),
+                duration: Math.round(durationScore),
                 exerciseCount: Math.round(exerciseCountScore),
-                totalSets: totalSets,
+                totalMinutes: totalDuration,
                 count: exerciseCount
             },
             condition: {
@@ -1026,73 +1418,6 @@ const DataService = {
                 stress: Math.round((stress / 5) * 100)
             }
         };
-    },
-
-    // ===== 分析レポート管理 =====
-    // レポート保存
-    saveAnalysisReport: async (userId, report) => {
-        try {
-            if (DEV_MODE) {
-                const storageKey = `analysisReports_${userId}`;
-                const reports = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                const newReport = {
-                    id: Date.now().toString(),
-                    ...report,
-                    createdAt: new Date().toISOString()
-                };
-                reports.push(newReport);
-                localStorage.setItem(storageKey, JSON.stringify(reports));
-                return newReport;
-            } else {
-                const reportRef = db.collection('users').doc(userId).collection('analysisReports').doc();
-                const newReport = {
-                    id: reportRef.id,
-                    ...report,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                await reportRef.set(newReport);
-                return newReport;
-            }
-        } catch (error) {
-            console.error('Failed to save analysis report:', error);
-            throw error;
-        }
-    },
-
-    // レポート一覧取得
-    getAnalysisReports: async (userId) => {
-        try {
-            if (DEV_MODE) {
-                const storageKey = `analysisReports_${userId}`;
-                const reports = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                return reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            } else {
-                const snapshot = await db.collection('users').doc(userId).collection('analysisReports')
-                    .orderBy('createdAt', 'desc')
-                    .get();
-                return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            }
-        } catch (error) {
-            console.error('Failed to get analysis reports:', error);
-            return [];
-        }
-    },
-
-    // レポート削除
-    deleteAnalysisReport: async (userId, reportId) => {
-        try {
-            if (DEV_MODE) {
-                const storageKey = `analysisReports_${userId}`;
-                const reports = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                const filtered = reports.filter(r => r.id !== reportId);
-                localStorage.setItem(storageKey, JSON.stringify(filtered));
-            } else {
-                await db.collection('users').doc(userId).collection('analysisReports').doc(reportId).delete();
-            }
-        } catch (error) {
-            console.error('Failed to delete analysis report:', error);
-            throw error;
-        }
     }
 };
 
@@ -1962,25 +2287,11 @@ const NotificationService = {
 
             const messaging = firebase.messaging();
 
-            // Service Workerの登録を確認（登録されていなければ登録する）
-            let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+            // Service Workerの登録を確認
+            const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
             if (!registration) {
-                // Service Workerを登録
-                registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                // Service Workerがアクティブになるまで待機
-                await navigator.serviceWorker.ready;
-            }
-
-            // Service Workerがアクティブになるまで待機（最大10秒）
-            const maxWaitTime = 10000;
-            const startTime = Date.now();
-            while (!registration.active && (Date.now() - startTime) < maxWaitTime) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-
-            if (!registration.active) {
-                console.error('[Notification] Service Worker not active after waiting');
-                return { success: false, error: 'Service Worker not active' };
+                console.error('[Notification] Service Worker not registered');
+                return { success: false, error: 'Service Worker not registered' };
             }
 
             const token = await messaging.getToken({
@@ -2006,6 +2317,7 @@ const NotificationService = {
     saveToken: async (userId, token) => {
         try {
             if (DEV_MODE) {
+                // DEV_MODEではLocalStorageに保存
                 localStorage.setItem(`fcmToken_${userId}`, token);
                 return { success: true };
             } else {
@@ -2030,60 +2342,34 @@ const NotificationService = {
         try {
             // DEV_MODEの場合はスキップ
             if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
-                console.log('[Notification] Foreground listener skipped (DEV_MODE)');
                 return;
             }
 
             // Firebaseアプリが初期化されているか確認
             if (!firebase.apps || firebase.apps.length === 0) {
-                console.log('[Notification] Foreground listener skipped (Firebase not initialized)');
                 return;
             }
 
             if (!firebase.messaging.isSupported()) {
-                console.log('[Notification] Foreground listener skipped (Messaging not supported)');
                 return;
             }
 
             const messaging = firebase.messaging();
-            console.log('[Notification] Foreground listener setup started');
 
-            messaging.onMessage(async (payload) => {
-                console.log('[Notification] Foreground message received:', payload);
-
-                // Service Workerを使って通知を表示（actionsをサポート）
+            messaging.onMessage((payload) => {
+                // 通知を表示
                 const notificationTitle = payload.notification?.title || 'Your Coach+';
                 const notificationOptions = {
                     body: payload.notification?.body || '新しい通知があります',
                     icon: '/icons/icon-192.png',
-                    badge: '/icons/icon-72.png',
                     tag: payload.data?.tag || 'default',
-                    data: payload.data,
-                    requireInteraction: false,
-                    actions: [
-                        {
-                            action: 'open',
-                            title: '開く',
-                            icon: '/icons/icon-72.png'
-                        },
-                        {
-                            action: 'close',
-                            title: '閉じる'
-                        }
-                    ]
+                    data: payload.data
                 };
 
                 if (Notification.permission === 'granted') {
-                    console.log('[Notification] Showing notification:', notificationTitle);
-                    // Service Workerのregistrationを使用
-                    const registration = await navigator.serviceWorker.ready;
-                    await registration.showNotification(notificationTitle, notificationOptions);
-                } else {
-                    console.warn('[Notification] Permission not granted:', Notification.permission);
+                    new Notification(notificationTitle, notificationOptions);
                 }
             });
-
-            console.log('[Notification] Foreground listener setup completed');
         } catch (error) {
             console.error('[Notification] Failed to setup foreground listener:', error);
         }
@@ -2197,16 +2483,49 @@ const NotificationService = {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open('YourCoachNotifications', 1);
 
-            request.onerror = () => reject(request.error);
+            request.onerror = () => {
+                console.error('[IndexedDB] Open error:', request.error);
+                reject(request.error);
+            };
 
             request.onsuccess = () => {
                 const db = request.result;
-                const transaction = db.transaction(['schedules'], 'readwrite');
-                const store = transaction.objectStore('schedules');
-                const saveRequest = store.put(schedules, userId);
+                let transaction;
 
-                saveRequest.onsuccess = () => resolve();
-                saveRequest.onerror = () => reject(saveRequest.error);
+                try {
+                    transaction = db.transaction(['schedules'], 'readwrite');
+                    const store = transaction.objectStore('schedules');
+                    const saveRequest = store.put(schedules, userId);
+
+                    // トランザクション完了時の処理
+                    transaction.oncomplete = () => {
+                        db.close();
+                        resolve();
+                    };
+
+                    // トランザクションエラー時の処理
+                    transaction.onerror = () => {
+                        console.error('[IndexedDB] Transaction error:', transaction.error);
+                        db.close();
+                        reject(transaction.error);
+                    };
+
+                    // トランザクション中断時の処理
+                    transaction.onabort = () => {
+                        console.error('[IndexedDB] Transaction aborted');
+                        db.close();
+                        reject(new Error('Transaction aborted'));
+                    };
+
+                    // 個別リクエストのエラーハンドリング
+                    saveRequest.onerror = () => {
+                        console.error('[IndexedDB] Save request error:', saveRequest.error);
+                    };
+                } catch (error) {
+                    console.error('[IndexedDB] Transaction creation error:', error);
+                    db.close();
+                    reject(error);
+                }
             };
 
             request.onupgradeneeded = (event) => {
@@ -2399,7 +2718,10 @@ const MFAService = {
     }
 };
 
-// グローバル変数として公開 (2025-11-10)
-window.NotificationService = NotificationService;
+// ===== グローバルに公開 =====
 window.DataService = DataService;
+window.GeminiAPI = GeminiAPI;
+window.CreditService = CreditService;
+window.ExperienceService = ExperienceService;
+window.NotificationService = NotificationService;
 window.MFAService = MFAService;

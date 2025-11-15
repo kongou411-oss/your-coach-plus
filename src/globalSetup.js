@@ -1,18 +1,7 @@
 // グローバルセットアップ: 既存コードとの互換性のため、必要なオブジェクトをwindowに公開
 
-// config.jsの内容を読み込んでグローバルに公開
-import './config.js';
-
-// utils.jsの内容を読み込んでグローバルに公開
-import './utils.js';
-
-// services.jsの内容を読み込んでグローバルに公開
-import './services.js';
-
-// データベースを読み込んでグローバルに公開
-import './foodDatabase.js';
-import './trainingDatabase.js';
-import './notificationSound.js';
+// 注: config.js, foodDatabase.js, trainingDatabase.js, notificationSound.js, services.js は
+// index.htmlで<script>タグとして読み込まれているため、ここではimportしない
 
 // これらのファイルは既にwindowにオブジェクトを公開しているはず
 // 念のため、確認用のログを出力

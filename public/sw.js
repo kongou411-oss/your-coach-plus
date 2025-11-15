@@ -2,8 +2,8 @@
 // PWA対応 + Network First戦略 + 自動バージョン管理
 
 // キャッシュ名にタイムスタンプを含めて毎回デプロイ時に新しいキャッシュを作成
-// 強制キャッシュクリア: 2025-11-15 13:00
-const CACHE_VERSION = 'v1763186400000';
+// 強制キャッシュクリア: 2025-11-15 15:36 (8軸スコア修正)
+const CACHE_VERSION = 'v' + Date.now();
 const CACHE_NAME = 'yourcoach-' + CACHE_VERSION;
 
 // 最小限のキャッシュ対象（HTML、マニフェストのみ）

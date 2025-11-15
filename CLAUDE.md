@@ -101,11 +101,14 @@ firebase deploy --only hosting  # dist/をデプロイ
 ```
 
 ### デプロイの完全フロー
+
+**🚨 重要: Git更新は必須のバックアップ手段です**
+
 ```bash
 # 1. ビルド
 npm run build
 
-# 2. Gitコミット
+# 2. Git更新（バックアップ）← 必須！
 git add -A
 git commit -m "Fix: 変更内容の説明
 
@@ -113,9 +116,18 @@ git commit -m "Fix: 変更内容の説明
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 
-# 3. デプロイ
+# 3. GitHubへpush（リモートバックアップ）← 必須！
+git push
+
+# 4. Firebaseデプロイ
 firebase deploy --only hosting
 ```
+
+**⚠️ Git更新の重要性**:
+- Gitはバックアップのために使用しています
+- **コミット＋pushまで完了して初めて「Git更新完了」**
+- pushしないとリモートにバックアップされず、万一の場合に大損害になります
+- デプロイ前に必ずGit更新を完了すること
 
 ## 🚨 作業フロー（必須）
 

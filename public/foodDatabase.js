@@ -303,11 +303,11 @@ const foodDatabase = {
         // 油脂類
         "ごま油": { "calories": 921, "protein": 0, "fat": 100.0, "carbs": 0, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "vitaminE": 0.4 },
         "オリーブオイル": { "calories": 921, "protein": 0, "fat": 100.0, "carbs": 0, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "vitaminE": 7.4 },
-        "MCTオイル": { "calories": 900, "protein": 0, "fat": 100.0, "carbs": 0, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1 },
+        "MCTオイル": { "calories": 900, "protein": 0, "fat": 100.0, "carbs": 0, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "mediumChainFat": 100.0 },
         "えごま油": { "calories": 921, "protein": 0, "fat": 100.0, "carbs": 0, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "vitaminE": 3.2, "omega3": 58000 },
         "アマニ油": { "calories": 921, "protein": 0, "fat": 100.0, "carbs": 0, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "vitaminE": 2.1, "omega3": 57000 },
         "米油": { "calories": 921, "protein": 0, "fat": 100.0, "carbs": 0, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "vitaminE": 25.5 },
-        "ココナッツオイル": { "calories": 921, "protein": 0, "fat": 100.0, "carbs": 0, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1 },
+        "ココナッツオイル": { "calories": 921, "protein": 0, "fat": 100.0, "carbs": 0, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "mediumChainFat": 60.0, "saturatedFat": 85.0 },
         "バター": { "calories": 763, "protein": 0.5, "fat": 83.0, "carbs": 0.2, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "vitaminA": 520, "vitaminE": 1.5 },
         "無塩バター": { "calories": 763, "protein": 0.5, "fat": 83.0, "carbs": 0.2, "unit": "g", "servingSize": 100, "servingUnit": "g", "category": "調味料", "cost": 1, "vitaminA": 520, "vitaminE": 1.5, "sodium": 6 },
 

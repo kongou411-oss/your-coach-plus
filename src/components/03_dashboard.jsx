@@ -7,6 +7,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
     const chartRef = React.useRef(null);
     const [recalculating, setRecalculating] = React.useState(false);
     const [showFoodDetails, setShowFoodDetails] = React.useState(false);
+    const [show8AxisGuide, setShow8AxisGuide] = React.useState(false);
 
     // useMemoでdailyRecordが変更されたときにスコアを再計算
     const scores = React.useMemo(() => {
@@ -203,7 +204,16 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
             {/* 8軸詳細スコア */}
             {showFoodDetails && scores.food && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h4 className="text-sm font-bold text-gray-700 mb-3">食事スコア8軸評価</h4>
+                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-bold text-gray-700">食事スコア8軸評価</h4>
+                        <button
+                            onClick={() => setShow8AxisGuide(true)}
+                            className="flex items-center gap-1 hover:opacity-80"
+                            style={{ color: '#4A9EFF' }}
+                        >
+                            <Icon name="HelpCircle" size={18} />
+                        </button>
+                    </div>
 
                     {/* 主要3軸（PFC） */}
                     <div className="mb-4">
@@ -211,18 +221,18 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                         <div className="grid grid-cols-3 gap-2">
                             <div className="bg-white p-2 rounded border border-gray-200">
                                 <div className="text-xs text-gray-600">タンパク質</div>
-                                <div className="text-lg font-bold text-blue-600">{scores.food.protein || 0}</div>
-                                <div className="text-xs text-gray-500">重み: 20%</div>
+                                <div className="text-lg font-bold text-red-500">{scores.food.protein || 0}</div>
+                                <div className="text-xs text-gray-500">配点: 20%</div>
                             </div>
                             <div className="bg-white p-2 rounded border border-gray-200">
                                 <div className="text-xs text-gray-600">脂質</div>
-                                <div className="text-lg font-bold text-yellow-600">{scores.food.fat || 0}</div>
-                                <div className="text-xs text-gray-500">重み: 20%</div>
+                                <div className="text-lg font-bold text-yellow-500">{scores.food.fat || 0}</div>
+                                <div className="text-xs text-gray-500">配点: 20%</div>
                             </div>
                             <div className="bg-white p-2 rounded border border-gray-200">
                                 <div className="text-xs text-gray-600">炭水化物</div>
-                                <div className="text-lg font-bold text-orange-600">{scores.food.carbs || 0}</div>
-                                <div className="text-xs text-gray-500">重み: 20%</div>
+                                <div className="text-lg font-bold text-green-500">{scores.food.carbs || 0}</div>
+                                <div className="text-xs text-gray-500">配点: 20%</div>
                             </div>
                         </div>
                     </div>
@@ -233,48 +243,71 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                         <div className="bg-white p-2 rounded border border-gray-200">
                             <div className="flex justify-between items-center">
                                 <div className="text-xs text-gray-600">カロリー</div>
-                                <div className="text-lg font-bold text-purple-600">{scores.food.calorie || 0}</div>
+                                <div className="flex items-center gap-2">
+                                    <div className="text-lg font-bold text-blue-600">{scores.food.calorie || 0}</div>
+                                    <div className="text-xs text-gray-500">配点: 10%</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* その他5軸 */}
+                    {/* 栄養品質6軸 */}
                     <div>
                         <div className="text-xs font-semibold text-gray-600 mb-2">栄養品質（30%）</div>
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        <div className="space-y-2">
                             <div className="bg-white p-2 rounded border border-gray-200">
-                                <div className="text-xs text-gray-600">DIAAS</div>
-                                <div className="text-sm font-bold text-green-600">{scores.food.diaas || 0}</div>
-                                <div className="text-xs text-gray-500">5%</div>
+                                <div className="flex justify-between items-center">
+                                    <div className="text-xs text-gray-600">DIAAS（タンパク質の質）</div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-sm font-bold text-teal-600">{scores.food.diaas || 0}</div>
+                                        <div className="text-xs text-gray-500">配点: 5%</div>
+                                    </div>
+                                </div>
                             </div>
                             <div className="bg-white p-2 rounded border border-gray-200">
-                                <div className="text-xs text-gray-600">脂肪酸</div>
-                                <div className="text-sm font-bold text-amber-600">{scores.food.fattyAcid || 0}</div>
-                                <div className="text-xs text-gray-500">5%</div>
+                                <div className="flex justify-between items-center">
+                                    <div className="text-xs text-gray-600">脂肪酸バランス</div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-sm font-bold text-orange-600">{scores.food.fattyAcid || 0}</div>
+                                        <div className="text-xs text-gray-500">配点: 5%</div>
+                                    </div>
+                                </div>
                             </div>
                             <div className="bg-white p-2 rounded border border-gray-200">
-                                <div className="text-xs text-gray-600">血糖管理</div>
-                                <div className="text-sm font-bold text-red-600">{scores.food.gl || 0}</div>
-                                <div className="text-xs text-gray-500">5%</div>
+                                <div className="flex justify-between items-center">
+                                    <div className="text-xs text-gray-600">血糖管理（GL値）</div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-sm font-bold text-purple-600">{scores.food.gl || 0}</div>
+                                        <div className="text-xs text-gray-500">配点: 5%</div>
+                                    </div>
+                                </div>
                             </div>
                             <div className="bg-white p-2 rounded border border-gray-200">
-                                <div className="text-xs text-gray-600">食物繊維</div>
-                                <div className="text-sm font-bold text-lime-600">{scores.food.fiber || 0}</div>
-                                <div className="text-xs text-gray-500">5%</div>
+                                <div className="flex justify-between items-center">
+                                    <div className="text-xs text-gray-600">食物繊維</div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-sm font-bold text-emerald-600">{scores.food.fiber || 0}</div>
+                                        <div className="text-xs text-gray-500">配点: 5%</div>
+                                    </div>
+                                </div>
                             </div>
                             <div className="bg-white p-2 rounded border border-gray-200">
-                                <div className="text-xs text-gray-600">ビタミン</div>
-                                <div className="text-sm font-bold text-cyan-600">{scores.food.vitamin || 0}</div>
-                                <div className="text-xs text-gray-500">5%</div>
+                                <div className="flex justify-between items-center">
+                                    <div className="text-xs text-gray-600">ビタミン</div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-sm font-bold text-pink-600">{scores.food.vitamin || 0}</div>
+                                        <div className="text-xs text-gray-500">配点: 5%</div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div className="mt-2">
                             <div className="bg-white p-2 rounded border border-gray-200">
                                 <div className="flex justify-between items-center">
                                     <div className="text-xs text-gray-600">ミネラル</div>
-                                    <div className="text-sm font-bold text-indigo-600">{scores.food.mineral || 0}</div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-sm font-bold text-indigo-600">{scores.food.mineral || 0}</div>
+                                        <div className="text-xs text-gray-500">配点: 5%</div>
+                                    </div>
                                 </div>
-                                <div className="text-xs text-gray-500 text-right">重み: 5%</div>
                             </div>
                         </div>
                     </div>
@@ -315,6 +348,151 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* 8軸評価基準モーダル */}
+            {show8AxisGuide && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[10000]" onClick={() => setShow8AxisGuide(false)}>
+                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-800">8軸評価基準について</h3>
+                            <button onClick={() => setShow8AxisGuide(false)} className="text-gray-500 hover:text-gray-700">
+                                <Icon name="X" size={24} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            {/* 総合スコア計算方法 */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h4 className="font-bold text-blue-900 mb-2">総合スコアの算出方法</h4>
+                                <p className="text-sm text-blue-800">
+                                    8軸の各スコアを加重平均して算出します。<br/>
+                                    総合スコア = タンパク質×20% + 脂質×20% + 炭水化物×20% + カロリー×10% + DIAAS×5% + 脂肪酸×5% + GL×5% + 食物繊維×5% + ビタミン×5% + ミネラル×5%
+                                </p>
+                            </div>
+
+                            {/* 主要栄養素（60%） */}
+                            <div>
+                                <h4 className="font-bold text-gray-800 mb-3">主要栄養素（配点: 60%）</h4>
+
+                                <div className="space-y-4">
+                                    <div className="border-l-4 border-red-500 pl-3">
+                                        <h5 className="font-semibold text-red-600 mb-1">タンパク質（配点: 20%）</h5>
+                                        <div className="text-sm text-gray-700 space-y-1">
+                                            <p><strong>100点:</strong> 目標値の95〜105%を摂取</p>
+                                            <p><strong>80〜99点:</strong> 目標値の85〜95% または 105〜115%を摂取</p>
+                                            <p><strong>60〜79点:</strong> 目標値の75〜85% または 115〜125%を摂取</p>
+                                            <p><strong>0〜59点:</strong> 目標値の75%未満 または 125%超過</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-l-4 border-yellow-500 pl-3">
+                                        <h5 className="font-semibold text-yellow-600 mb-1">脂質（配点: 20%）</h5>
+                                        <div className="text-sm text-gray-700 space-y-1">
+                                            <p><strong>100点:</strong> 目標値の95〜105%を摂取</p>
+                                            <p><strong>80〜99点:</strong> 目標値の85〜95% または 105〜115%を摂取</p>
+                                            <p><strong>60〜79点:</strong> 目標値の75〜85% または 115〜125%を摂取</p>
+                                            <p><strong>0〜59点:</strong> 目標値の75%未満 または 125%超過</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-l-4 border-green-500 pl-3">
+                                        <h5 className="font-semibold text-green-600 mb-1">炭水化物（配点: 20%）</h5>
+                                        <div className="text-sm text-gray-700 space-y-1">
+                                            <p><strong>100点:</strong> 目標値の95〜105%を摂取</p>
+                                            <p><strong>80〜99点:</strong> 目標値の85〜95% または 105〜115%を摂取</p>
+                                            <p><strong>60〜79点:</strong> 目標値の75〜85% または 115〜125%を摂取</p>
+                                            <p><strong>0〜59点:</strong> 目標値の75%未満 または 125%超過</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* エネルギー（10%） */}
+                            <div>
+                                <h4 className="font-bold text-gray-800 mb-3">エネルギー（配点: 10%）</h4>
+                                <div className="border-l-4 border-blue-600 pl-3">
+                                    <h5 className="font-semibold text-blue-600 mb-1">カロリー（配点: 10%）</h5>
+                                    <div className="text-sm text-gray-700 space-y-1">
+                                        <p><strong>100点:</strong> 目標値の95〜105%を摂取</p>
+                                        <p><strong>80〜99点:</strong> 目標値の85〜95% または 105〜115%を摂取</p>
+                                        <p><strong>60〜79点:</strong> 目標値の75〜85% または 115〜125%を摂取</p>
+                                        <p><strong>0〜59点:</strong> 目標値の75%未満 または 125%超過</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 栄養品質（30%） */}
+                            <div>
+                                <h4 className="font-bold text-gray-800 mb-3">栄養品質（配点: 30%）</h4>
+
+                                <div className="space-y-4">
+                                    <div className="border-l-4 border-teal-600 pl-3">
+                                        <h5 className="font-semibold text-teal-600 mb-1">DIAAS - タンパク質の質（配点: 5%）</h5>
+                                        <div className="text-sm text-gray-700 space-y-1">
+                                            <p><strong>100点:</strong> 平均DIAAS 1.0以上（優秀なタンパク質源）</p>
+                                            <p><strong>75〜99点:</strong> 平均DIAAS 0.75〜1.0（良好なタンパク質源）</p>
+                                            <p><strong>0〜74点:</strong> 平均DIAAS 0.75未満（改善推奨）</p>
+                                            <p className="text-xs text-gray-500 mt-2">※DIAAS: 消化性必須アミノ酸スコア</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-l-4 border-orange-600 pl-3">
+                                        <h5 className="font-semibold text-orange-600 mb-1">脂肪酸バランス（配点: 5%）</h5>
+                                        <div className="text-sm text-gray-700 space-y-1">
+                                            <p><strong>100点:</strong> 理想比率（飽和30%/中鎖5%/一価40%/多価25%）に近い</p>
+                                            <p><strong>80〜99点:</strong> バランスが良好</p>
+                                            <p><strong>60〜79点:</strong> やや偏りあり</p>
+                                            <p><strong>0〜59点:</strong> バランス改善が必要</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-l-4 border-purple-600 pl-3">
+                                        <h5 className="font-semibold text-purple-600 mb-1">血糖管理 - GL値（配点: 5%）</h5>
+                                        <div className="text-sm text-gray-700 space-y-1">
+                                            <p><strong>100点:</strong> 1日合計GL値が目標値の70%以下（優秀）</p>
+                                            <p><strong>90〜99点:</strong> 目標値の70〜85%（良好）</p>
+                                            <p><strong>70〜89点:</strong> 目標値の85〜100%（許容範囲）</p>
+                                            <p><strong>0〜69点:</strong> 目標値超過（改善推奨）</p>
+                                            <p className="text-xs text-gray-500 mt-2">※GL: グリセミック負荷（血糖値上昇度）</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-l-4 border-emerald-600 pl-3">
+                                        <h5 className="font-semibold text-emerald-600 mb-1">食物繊維（配点: 5%）</h5>
+                                        <div className="text-sm text-gray-700 space-y-1">
+                                            <p><strong>100点:</strong> 目標値（20g）の100%以上を摂取</p>
+                                            <p><strong>80〜99点:</strong> 目標値の80〜100%を摂取</p>
+                                            <p><strong>60〜79点:</strong> 目標値の60〜80%を摂取</p>
+                                            <p><strong>0〜59点:</strong> 目標値の60%未満</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-l-4 border-pink-600 pl-3">
+                                        <h5 className="font-semibold text-pink-600 mb-1">ビタミン（配点: 5%）</h5>
+                                        <div className="text-sm text-gray-700 space-y-1">
+                                            <p><strong>100点:</strong> 13種類のビタミン全ての平均達成率が100%</p>
+                                            <p><strong>80〜99点:</strong> 平均達成率80〜100%</p>
+                                            <p><strong>60〜79点:</strong> 平均達成率60〜80%</p>
+                                            <p><strong>0〜59点:</strong> 平均達成率60%未満</p>
+                                            <p className="text-xs text-gray-500 mt-2">※対象: ビタミンA, D, E, K, B1, B2, B3, B5, B6, B7, B9, B12, C</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-l-4 border-indigo-600 pl-3">
+                                        <h5 className="font-semibold text-indigo-600 mb-1">ミネラル（配点: 5%）</h5>
+                                        <div className="text-sm text-gray-700 space-y-1">
+                                            <p><strong>100点:</strong> 13種類のミネラル全ての平均達成率が100%</p>
+                                            <p><strong>80〜99点:</strong> 平均達成率80〜100%</p>
+                                            <p><strong>60〜79点:</strong> 平均達成率60〜80%</p>
+                                            <p><strong>0〜59点:</strong> 平均達成率60%未満</p>
+                                            <p className="text-xs text-gray-500 mt-2">※対象: カルシウム, 鉄, マグネシウム, リン, カリウム, ナトリウム, 亜鉛, 銅, マンガン, ヨウ素, セレン, クロム, モリブデン</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

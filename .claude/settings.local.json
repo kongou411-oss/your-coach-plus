@@ -110,7 +110,14 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:www.yasainavi.com)",
       "Bash(staples_analysis.txt)",
-      "Bash(staples_list.txt)"
+      "Bash(staples_list.txt)",
+      "Bash(if exist \"node_modules\\.vite\" rmdir /s /q \"node_modules\\.vite\")",
+      "Bash(cmd /c \"if exist node_modules\\.vite rmdir /s /q node_modules\\.vite\")",
+      "Bash(cmd /c \"taskkill /F /IM node.exe\")",
+      "Bash(where /R \"C:\\Users\\yourc\\yourcoach_new\" services.js)",
+      "Bash(start http://localhost:8003)",
+      "Bash(cmd /c dir publicutils.js)",
+      "Bash(cmd /c \"if exist public\\utils.js (echo EXISTS) else (echo NOT FOUND)\")"
     ],
     "deny": [],
     "ask": []

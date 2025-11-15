@@ -247,22 +247,193 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス'];
         const isBodymaker = bodymakerStyles.includes(profile.style);
 
-        // 食事データ
-        const totalCalories = (record.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
-        const totalProtein = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
-        const totalFat = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
-        const totalCarbs = (record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
+        // 食事データの詳細集計（ダッシュボードと同じロジック）
+        let totalCalories = 0;
+        let totalProtein = 0;
+        let totalFat = 0;
+        let totalCarbs = 0;
+        let totalSugar = 0;
+        let totalFiber = 0;
+        let totalSolubleFiber = 0;
+        let totalInsolubleFiber = 0;
+        let totalSaturatedFat = 0;
+        let totalMonounsaturatedFat = 0;
+        let totalPolyunsaturatedFat = 0;
+        let totalGL = 0;
+        let totalProteinWeightedDiaas = 0;
+        let totalProteinAmount = 0;
+        const vitamins = {};
+        const minerals = {};
 
-        // 食事スコア計算
+        (record.meals || []).forEach(meal => {
+            totalCalories += meal.calories || 0;
+            (meal.items || []).forEach(item => {
+                // 個数単位と重量単位でratio計算を分岐（ダッシュボードと同じ）
+                const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
+                const ratio = isCountUnit ? item.amount : item.amount / 100;
+
+                // PFC
+                const proteinAmount = (item.protein || 0) * ratio;
+                totalProtein += proteinAmount;
+                totalFat += (item.fat || 0) * ratio;
+                totalCarbs += (item.carbs || 0) * ratio;
+
+                // DIAAS（タンパク質量で重み付け平均）
+                if (item.diaas && proteinAmount > 0) {
+                    totalProteinWeightedDiaas += item.diaas * proteinAmount;
+                    totalProteinAmount += proteinAmount;
+                }
+
+                // GL値
+                const carbsAmount = (item.carbs || 0) * ratio;
+                if (item.gi && carbsAmount > 0) {
+                    const itemGL = (item.gi * carbsAmount) / 100;
+                    totalGL += itemGL;
+                }
+
+                // 糖質・食物繊維
+                totalSugar += (item.sugar || 0) * ratio;
+                totalFiber += (item.fiber || 0) * ratio;
+                totalSolubleFiber += (item.solubleFiber || 0) * ratio;
+                totalInsolubleFiber += (item.insolubleFiber || 0) * ratio;
+
+                // 脂肪酸
+                totalSaturatedFat += (item.saturatedFat || 0) * ratio;
+                totalMonounsaturatedFat += (item.monounsaturatedFat || 0) * ratio;
+                totalPolyunsaturatedFat += (item.polyunsaturatedFat || 0) * ratio;
+
+                // ビタミン（オブジェクト形式）
+                if (item.vitamins) {
+                    Object.keys(item.vitamins).forEach(v => {
+                        vitamins[v] = (vitamins[v] || 0) + (item.vitamins[v] || 0);
+                    });
+                }
+
+                // ビタミン（個別キー形式）
+                const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'niacin', 'pantothenicAcid', 'biotin', 'folicAcid'];
+                vitaminKeys.forEach(key => {
+                    if (item[key] !== undefined && item[key] !== 0) {
+                        vitamins[key] = (vitamins[key] || 0) + ((item[key] || 0) * ratio);
+                    }
+                });
+
+                // ミネラル（オブジェクト形式）
+                if (item.minerals) {
+                    Object.keys(item.minerals).forEach(m => {
+                        minerals[m] = (minerals[m] || 0) + (item.minerals[m] || 0);
+                    });
+                }
+
+                // ミネラル（個別キー形式）
+                const mineralKeys = ['sodium', 'potassium', 'calcium', 'magnesium', 'phosphorus', 'iron', 'zinc', 'copper', 'manganese', 'iodine', 'selenium', 'chromium', 'molybdenum'];
+                mineralKeys.forEach(key => {
+                    if (item[key] !== undefined && item[key] !== 0) {
+                        minerals[key] = (minerals[key] || 0) + ((item[key] || 0) * ratio);
+                    }
+                });
+            });
+        });
+
+        // 8軸スコア計算
+
+        // 1. タンパク質スコア (0-100点)
         const proteinRate = Math.min(100, target.protein > 0 ? (totalProtein / target.protein) * 100 : 0);
-        const fatRate = Math.min(100, target.fat > 0 ? (totalFat / target.fat) * 100 : 0);
-        const carbsRate = Math.min(100, target.carbs > 0 ? (totalCarbs / target.carbs) * 100 : 0);
-        const pfcBalance = (proteinRate + fatRate + carbsRate) / 3;
 
+        // 2. 脂質スコア (0-100点)
+        const fatRate = Math.min(100, target.fat > 0 ? (totalFat / target.fat) * 100 : 0);
+
+        // 3. 炭水化物スコア (0-100点)
+        const carbsRate = Math.min(100, target.carbs > 0 ? (totalCarbs / target.carbs) * 100 : 0);
+
+        // 4. カロリースコア (0-100点)
         const calorieDeviation = Math.abs(totalCalories - target.calories) / target.calories;
         const calorieScore = Math.max(0, 100 - calorieDeviation * 100);
 
-        const foodScore = Math.round(pfcBalance * 0.7 + calorieScore * 0.3);
+        // 5. DIAASスコア（タンパク質の質） (0-100点)
+        const averageDiaas = totalProteinAmount > 0 ? totalProteinWeightedDiaas / totalProteinAmount : 0;
+        // DIAAS 1.0以上で100点、0.75で75点、0未満は0点
+        const diaasScore = Math.min(100, Math.max(0, averageDiaas * 100));
+
+        // 6. 脂肪酸バランススコア (0-100点)
+        // 理想比率: 飽和30% / 一価40% / 多価25% (中鎖5%は無視)
+        const totalFattyAcids = totalSaturatedFat + totalMonounsaturatedFat + totalPolyunsaturatedFat;
+        let fattyAcidScore = 0;
+        if (totalFattyAcids > 0) {
+            const saturatedPercent = (totalSaturatedFat / totalFattyAcids) * 100;
+            const monounsaturatedPercent = (totalMonounsaturatedFat / totalFattyAcids) * 100;
+            const polyunsaturatedPercent = (totalPolyunsaturatedFat / totalFattyAcids) * 100;
+
+            // 理想からの乖離度を計算（0%なら100点、30%以上乖離で0点）
+            const saturatedDeviation = Math.abs(saturatedPercent - 30);
+            const monounsaturatedDeviation = Math.abs(monounsaturatedPercent - 40);
+            const polyunsaturatedDeviation = Math.abs(polyunsaturatedPercent - 25);
+            const averageDeviation = (saturatedDeviation + monounsaturatedDeviation + polyunsaturatedDeviation) / 3;
+
+            fattyAcidScore = Math.max(0, 100 - (averageDeviation / 30) * 100);
+        }
+
+        // 7. GL値スコア（血糖管理） (0-100点)
+        // 動的GL上限を計算（ダッシュボードと同じ）
+        const dynamicGLLimit = Math.round(target.carbs * 0.6); // GI 60基準
+        const glPercent = dynamicGLLimit > 0 ? (totalGL / dynamicGLLimit) * 100 : 0;
+        // 上限以下で100点、上限の2倍で0点
+        const glScore = Math.max(0, 100 - Math.max(0, glPercent - 100));
+
+        // 8. 食物繊維スコア (0-100点)
+        // 推奨量を取得
+        const micronutrientTargets = LBMUtils.calculatePersonalizedMicronutrients(profile);
+        const fiberTarget = micronutrientTargets.carbohydrateQuality?.fiber || 20;
+        const fiberRate = (totalFiber / fiberTarget) * 100;
+        const fiberScore = Math.min(100, fiberRate);
+
+        // 9. ビタミンスコア (0-100点)
+        // 主要ビタミン13種の平均達成率
+        const vitaminKeys = ['vitaminA', 'vitaminD', 'vitaminE', 'vitaminK', 'vitaminB1', 'vitaminB2', 'niacin', 'pantothenicAcid', 'vitaminB6', 'biotin', 'folicAcid', 'vitaminB12', 'vitaminC'];
+        let vitaminTotalRate = 0;
+        let vitaminCount = 0;
+        vitaminKeys.forEach(key => {
+            const targetValue = micronutrientTargets[key] || 0;
+            if (targetValue > 0) {
+                const currentValue = vitamins[key] || 0;
+                const rate = Math.min(100, (currentValue / targetValue) * 100);
+                vitaminTotalRate += rate;
+                vitaminCount++;
+            }
+        });
+        const vitaminScore = vitaminCount > 0 ? Math.round(vitaminTotalRate / vitaminCount) : 0;
+
+        // 10. ミネラルスコア (0-100点)
+        // 主要ミネラル13種の平均達成率
+        const mineralKeys = ['calcium', 'iron', 'magnesium', 'phosphorus', 'potassium', 'sodium', 'zinc', 'copper', 'manganese', 'selenium', 'iodine', 'chromium', 'molybdenum'];
+        let mineralTotalRate = 0;
+        let mineralCount = 0;
+        mineralKeys.forEach(key => {
+            const targetValue = micronutrientTargets[key] || 0;
+            if (targetValue > 0) {
+                const currentValue = minerals[key] || 0;
+                const rate = Math.min(100, (currentValue / targetValue) * 100);
+                mineralTotalRate += rate;
+                mineralCount++;
+            }
+        });
+        const mineralScore = mineralCount > 0 ? Math.round(mineralTotalRate / mineralCount) : 0;
+
+        // 8軸スコアの重み付け平均で総合食事スコアを計算
+        // 主要栄養素60%: タンパク質20% + 脂質20% + 炭水化物20%
+        // エネルギー10%: カロリー10%
+        // 栄養品質30%: DIAAS5% + 脂肪酸5% + GL5% + 食物繊維5% + ビタミン5% + ミネラル5%
+        const foodScore = Math.round(
+            proteinRate * 0.20 +
+            fatRate * 0.20 +
+            carbsRate * 0.20 +
+            calorieScore * 0.10 +
+            diaasScore * 0.05 +
+            fattyAcidScore * 0.05 +
+            glScore * 0.05 +
+            fiberScore * 0.05 +
+            vitaminScore * 0.05 +
+            mineralScore * 0.05
+        );
 
         // 運動データ
         const workouts = record.workouts || [];
@@ -352,10 +523,27 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         return {
             food: {
                 score: foodScore,
+                // 主要栄養素（60%）
                 protein: Math.round(proteinRate),
                 fat: Math.round(fatRate),
                 carbs: Math.round(carbsRate),
-                calories: Math.round(calorieScore)
+                // エネルギー（10%）
+                calorie: Math.round(calorieScore),
+                // 栄養品質（30%）
+                diaas: Math.round(diaasScore),
+                fattyAcid: Math.round(fattyAcidScore),
+                gl: Math.round(glScore),
+                fiber: Math.round(fiberScore),
+                vitamin: Math.round(vitaminScore),
+                mineral: Math.round(mineralScore),
+                // 実績値（参考データ）
+                totalCalories: Math.round(totalCalories),
+                totalProtein: Math.round(totalProtein * 10) / 10,
+                totalFat: Math.round(totalFat * 10) / 10,
+                totalCarbs: Math.round(totalCarbs * 10) / 10,
+                totalFiber: Math.round(totalFiber * 10) / 10,
+                totalGL: Math.round(totalGL),
+                avgDIAAS: Math.round(averageDiaas * 100) / 100
             },
             exercise: {
                 score: exerciseScore,
