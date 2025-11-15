@@ -1466,7 +1466,26 @@ JSON形式のみ出力、説明文不要`;
                 throw new Error('栄養素の解析に失敗しました');
             }
 
-            const response = JSON.parse(jsonMatch[0]);
+            // JSON修復処理
+            let jsonString = jsonMatch[0];
+
+            // 1. 末尾カンマを削除（配列・オブジェクト内）
+            jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
+
+            // 2. 連続カンマを削除
+            jsonString = jsonString.replace(/,{2,}/g, ',');
+
+            // 3. NaN, Infinity を null に変換
+            jsonString = jsonString.replace(/:\s*NaN/g, ': null').replace(/:\s*Infinity/g, ': null');
+
+            let response;
+            try {
+                response = JSON.parse(jsonString);
+            } catch (parseError) {
+                console.error('[fetchNutritionFromHachitei] JSON parse error:', parseError);
+                console.error('[fetchNutritionFromHachitei] Failed JSON:', jsonString.substring(0, 1000));
+                throw new Error(`栄養素の解析に失敗しました: ${parseError.message}`);
+            }
 
             if (!response.bestMatch || !response.bestMatch.name) {
                 throw new Error('最適候補が見つかりませんでした');
