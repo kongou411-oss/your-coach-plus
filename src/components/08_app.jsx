@@ -866,7 +866,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 });
 
                 console.log('[DEBUG] New Meals to add:', newMeals);
-                console.log('[DEBUG] New Workouts to add:', newWorkouts);
+                console.log('[DEBUG] Each meal isRoutine flag:', newMeals.map(m => ({name: m.name, isRoutine: m.isRoutine})));
 
                 // dailyRecordに追加
                 const updatedRecord = {
@@ -875,7 +875,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     workouts: [...(dailyRecord.workouts || []), ...newWorkouts]
                 };
 
-                console.log('[DEBUG] Updated Record:', updatedRecord);
+                console.log('[DEBUG] Updated Record meals:', updatedRecord.meals.map(m => ({name: m.name, isRoutine: m.isRoutine, isPredicted: m.isPredicted, isTemplate: m.isTemplate})));
 
                 setDailyRecord(updatedRecord);
                 await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
