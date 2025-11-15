@@ -177,6 +177,19 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
                 return await Promise.race([apiCallPromise, timeoutPromise]);
             } catch (error) {
+                // Service Workerエラーを無視（Push通知関連のエラー）
+                const isServiceWorkerError = error.name === 'AbortError' &&
+                    error.message && error.message.includes('Service Worker');
+
+                if (isServiceWorkerError) {
+                    console.warn('[callGeminiWithRetry] Service Workerエラーを検出（無視します）:', error.message);
+                    // Service Workerエラーは無視して再試行
+                    if (attempt < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        continue;
+                    }
+                }
+
                 const is429Error = error.message && (
                     error.message.includes('429') ||
                     error.message.includes('Resource exhausted') ||
@@ -721,9 +734,16 @@ JSONのみ出力、説明文不要`;
                     const amount = food.amount || 100;
                     const ratio = amount / 100;
 
+                    // DIAAS・GI値の推定
+                    const estimatedDiaas = estimateDiaas(bestMatch.name, bestMatch.category);
+                    const estimatedGI = estimateGI(bestMatch.name, bestMatch.category);
+
+                    const categoryValue = bestMatch.category || '八訂';
+                    console.log(`[recognizeFood] 八訂取得アイテムのcategory設定: ${food.name} → category="${categoryValue}", isHachitei=true`);
+
                     return {
                         name: `${food.name}（${bestMatch.name}）`,
-                        category: '八訂',
+                        category: categoryValue,
                         itemType: food.itemType || 'food',
                         amount: amount,  // g単位
                         unit: 'g',
@@ -731,6 +751,53 @@ JSONのみ出力、説明文不要`;
                         protein: parseFloat(((bestMatch.protein || 0) * ratio).toFixed(1)),
                         fat: parseFloat(((bestMatch.fat || 0) * ratio).toFixed(1)),
                         carbs: parseFloat(((bestMatch.carbs || 0) * ratio).toFixed(1)),
+
+                        // 品質指標（推定値）
+                        diaas: bestMatch.diaas || estimatedDiaas,
+                        gi: bestMatch.gi || estimatedGI,
+
+                        // 脂肪酸（実量）
+                        saturatedFat: bestMatch.saturatedFat ? parseFloat((bestMatch.saturatedFat * ratio).toFixed(2)) : null,
+                        monounsaturatedFat: bestMatch.monounsaturatedFat ? parseFloat((bestMatch.monounsaturatedFat * ratio).toFixed(2)) : null,
+                        polyunsaturatedFat: bestMatch.polyunsaturatedFat ? parseFloat((bestMatch.polyunsaturatedFat * ratio).toFixed(2)) : null,
+                        mediumChainFat: bestMatch.mediumChainFat ? parseFloat((bestMatch.mediumChainFat * ratio).toFixed(2)) : null,
+
+                        // 糖質・食物繊維（実量）
+                        sugar: bestMatch.sugar ? parseFloat((bestMatch.sugar * ratio).toFixed(1)) : null,
+                        fiber: bestMatch.fiber ? parseFloat((bestMatch.fiber * ratio).toFixed(1)) : null,
+                        solubleFiber: bestMatch.solubleFiber ? parseFloat((bestMatch.solubleFiber * ratio).toFixed(1)) : null,
+                        insolubleFiber: bestMatch.insolubleFiber ? parseFloat((bestMatch.insolubleFiber * ratio).toFixed(1)) : null,
+
+                        // ビタミン（個別キー、実量）
+                        vitaminA: bestMatch.vitaminA ? parseFloat((bestMatch.vitaminA * ratio).toFixed(1)) : null,
+                        vitaminD: bestMatch.vitaminD ? parseFloat((bestMatch.vitaminD * ratio).toFixed(2)) : null,
+                        vitaminE: bestMatch.vitaminE ? parseFloat((bestMatch.vitaminE * ratio).toFixed(2)) : null,
+                        vitaminK: bestMatch.vitaminK ? parseFloat((bestMatch.vitaminK * ratio).toFixed(1)) : null,
+                        vitaminB1: bestMatch.vitaminB1 ? parseFloat((bestMatch.vitaminB1 * ratio).toFixed(2)) : null,
+                        vitaminB2: bestMatch.vitaminB2 ? parseFloat((bestMatch.vitaminB2 * ratio).toFixed(2)) : null,
+                        niacin: bestMatch.niacin ? parseFloat((bestMatch.niacin * ratio).toFixed(1)) : null,
+                        pantothenicAcid: bestMatch.pantothenicAcid ? parseFloat((bestMatch.pantothenicAcid * ratio).toFixed(2)) : null,
+                        vitaminB6: bestMatch.vitaminB6 ? parseFloat((bestMatch.vitaminB6 * ratio).toFixed(2)) : null,
+                        biotin: bestMatch.biotin ? parseFloat((bestMatch.biotin * ratio).toFixed(1)) : null,
+                        folicAcid: bestMatch.folicAcid ? parseFloat((bestMatch.folicAcid * ratio).toFixed(1)) : null,
+                        vitaminB12: bestMatch.vitaminB12 ? parseFloat((bestMatch.vitaminB12 * ratio).toFixed(1)) : null,
+                        vitaminC: bestMatch.vitaminC ? parseFloat((bestMatch.vitaminC * ratio).toFixed(1)) : null,
+
+                        // ミネラル（個別キー、実量）
+                        calcium: bestMatch.calcium ? parseFloat((bestMatch.calcium * ratio).toFixed(1)) : null,
+                        iron: bestMatch.iron ? parseFloat((bestMatch.iron * ratio).toFixed(2)) : null,
+                        magnesium: bestMatch.magnesium ? parseFloat((bestMatch.magnesium * ratio).toFixed(1)) : null,
+                        phosphorus: bestMatch.phosphorus ? parseFloat((bestMatch.phosphorus * ratio).toFixed(1)) : null,
+                        potassium: bestMatch.potassium ? parseFloat((bestMatch.potassium * ratio).toFixed(1)) : null,
+                        sodium: bestMatch.sodium ? parseFloat((bestMatch.sodium * ratio).toFixed(1)) : null,
+                        zinc: bestMatch.zinc ? parseFloat((bestMatch.zinc * ratio).toFixed(2)) : null,
+                        copper: bestMatch.copper ? parseFloat((bestMatch.copper * ratio).toFixed(2)) : null,
+                        manganese: bestMatch.manganese ? parseFloat((bestMatch.manganese * ratio).toFixed(2)) : null,
+                        selenium: bestMatch.selenium ? parseFloat((bestMatch.selenium * ratio).toFixed(1)) : null,
+                        iodine: bestMatch.iodine ? parseFloat((bestMatch.iodine * ratio).toFixed(1)) : null,
+                        chromium: bestMatch.chromium ? parseFloat((bestMatch.chromium * ratio).toFixed(1)) : null,
+                        molybdenum: bestMatch.molybdenum ? parseFloat((bestMatch.molybdenum * ratio).toFixed(1)) : null,
+
                         confidence: bestMatch.confidence || 0.8,
                         isUnknown: false,
                         needsHachiteiFetch: false,
@@ -744,6 +811,42 @@ JSONのみ出力、説明文不要`;
                             protein: bestMatch.protein || 0,
                             fat: bestMatch.fat || 0,
                             carbs: bestMatch.carbs || 0,
+                            diaas: bestMatch.diaas || estimatedDiaas,
+                            gi: bestMatch.gi || estimatedGI,
+                            saturatedFat: bestMatch.saturatedFat || null,
+                            monounsaturatedFat: bestMatch.monounsaturatedFat || null,
+                            polyunsaturatedFat: bestMatch.polyunsaturatedFat || null,
+                            mediumChainFat: bestMatch.mediumChainFat || null,
+                            sugar: bestMatch.sugar || null,
+                            fiber: bestMatch.fiber || null,
+                            solubleFiber: bestMatch.solubleFiber || null,
+                            insolubleFiber: bestMatch.insolubleFiber || null,
+                            vitaminA: bestMatch.vitaminA || null,
+                            vitaminD: bestMatch.vitaminD || null,
+                            vitaminE: bestMatch.vitaminE || null,
+                            vitaminK: bestMatch.vitaminK || null,
+                            vitaminB1: bestMatch.vitaminB1 || null,
+                            vitaminB2: bestMatch.vitaminB2 || null,
+                            niacin: bestMatch.niacin || null,
+                            pantothenicAcid: bestMatch.pantothenicAcid || null,
+                            vitaminB6: bestMatch.vitaminB6 || null,
+                            biotin: bestMatch.biotin || null,
+                            folicAcid: bestMatch.folicAcid || null,
+                            vitaminB12: bestMatch.vitaminB12 || null,
+                            vitaminC: bestMatch.vitaminC || null,
+                            calcium: bestMatch.calcium || null,
+                            iron: bestMatch.iron || null,
+                            magnesium: bestMatch.magnesium || null,
+                            phosphorus: bestMatch.phosphorus || null,
+                            potassium: bestMatch.potassium || null,
+                            sodium: bestMatch.sodium || null,
+                            zinc: bestMatch.zinc || null,
+                            copper: bestMatch.copper || null,
+                            manganese: bestMatch.manganese || null,
+                            selenium: bestMatch.selenium || null,
+                            iodine: bestMatch.iodine || null,
+                            chromium: bestMatch.chromium || null,
+                            molybdenum: bestMatch.molybdenum || null,
                             servingSize: 100,
                             servingUnit: 'g',
                             unit: '100g'
@@ -801,15 +904,66 @@ JSONのみ出力、説明文不要`;
                                         const amount = food.amount || 100;
                                         const ratio = amount / 100;
 
+                                        // DIAAS・GI値の推定
+                                        const estimatedDiaas = estimateDiaas(bestMatch.name, bestMatch.category);
+                                        const estimatedGI = estimateGI(bestMatch.name, bestMatch.category);
+
                                         return {
                                             ...food,
                                             name: `${food.name.split('（')[0]}（${bestMatch.name}）`,
-                                            category: '八訂',
+                                            category: bestMatch.category || '八訂',
                                             itemType: food.itemType || 'food',
                                             calories: Math.round((bestMatch.calories || 0) * ratio),
                                             protein: parseFloat(((bestMatch.protein || 0) * ratio).toFixed(1)),
                                             fat: parseFloat(((bestMatch.fat || 0) * ratio).toFixed(1)),
                                             carbs: parseFloat(((bestMatch.carbs || 0) * ratio).toFixed(1)),
+
+                                            // 品質指標（推定値）
+                                            diaas: bestMatch.diaas || estimatedDiaas,
+                                            gi: bestMatch.gi || estimatedGI,
+
+                                            // 脂肪酸（実量）
+                                            saturatedFat: bestMatch.saturatedFat ? parseFloat((bestMatch.saturatedFat * ratio).toFixed(2)) : null,
+                                            monounsaturatedFat: bestMatch.monounsaturatedFat ? parseFloat((bestMatch.monounsaturatedFat * ratio).toFixed(2)) : null,
+                                            polyunsaturatedFat: bestMatch.polyunsaturatedFat ? parseFloat((bestMatch.polyunsaturatedFat * ratio).toFixed(2)) : null,
+                                            mediumChainFat: bestMatch.mediumChainFat ? parseFloat((bestMatch.mediumChainFat * ratio).toFixed(2)) : null,
+
+                                            // 糖質・食物繊維（実量）
+                                            sugar: bestMatch.sugar ? parseFloat((bestMatch.sugar * ratio).toFixed(1)) : null,
+                                            fiber: bestMatch.fiber ? parseFloat((bestMatch.fiber * ratio).toFixed(1)) : null,
+                                            solubleFiber: bestMatch.solubleFiber ? parseFloat((bestMatch.solubleFiber * ratio).toFixed(1)) : null,
+                                            insolubleFiber: bestMatch.insolubleFiber ? parseFloat((bestMatch.insolubleFiber * ratio).toFixed(1)) : null,
+
+                                            // ビタミン（個別キー、実量）
+                                            vitaminA: bestMatch.vitaminA ? parseFloat((bestMatch.vitaminA * ratio).toFixed(1)) : null,
+                                            vitaminD: bestMatch.vitaminD ? parseFloat((bestMatch.vitaminD * ratio).toFixed(2)) : null,
+                                            vitaminE: bestMatch.vitaminE ? parseFloat((bestMatch.vitaminE * ratio).toFixed(2)) : null,
+                                            vitaminK: bestMatch.vitaminK ? parseFloat((bestMatch.vitaminK * ratio).toFixed(1)) : null,
+                                            vitaminB1: bestMatch.vitaminB1 ? parseFloat((bestMatch.vitaminB1 * ratio).toFixed(2)) : null,
+                                            vitaminB2: bestMatch.vitaminB2 ? parseFloat((bestMatch.vitaminB2 * ratio).toFixed(2)) : null,
+                                            niacin: bestMatch.niacin ? parseFloat((bestMatch.niacin * ratio).toFixed(1)) : null,
+                                            pantothenicAcid: bestMatch.pantothenicAcid ? parseFloat((bestMatch.pantothenicAcid * ratio).toFixed(2)) : null,
+                                            vitaminB6: bestMatch.vitaminB6 ? parseFloat((bestMatch.vitaminB6 * ratio).toFixed(2)) : null,
+                                            biotin: bestMatch.biotin ? parseFloat((bestMatch.biotin * ratio).toFixed(1)) : null,
+                                            folicAcid: bestMatch.folicAcid ? parseFloat((bestMatch.folicAcid * ratio).toFixed(1)) : null,
+                                            vitaminB12: bestMatch.vitaminB12 ? parseFloat((bestMatch.vitaminB12 * ratio).toFixed(1)) : null,
+                                            vitaminC: bestMatch.vitaminC ? parseFloat((bestMatch.vitaminC * ratio).toFixed(1)) : null,
+
+                                            // ミネラル（個別キー、実量）
+                                            calcium: bestMatch.calcium ? parseFloat((bestMatch.calcium * ratio).toFixed(1)) : null,
+                                            iron: bestMatch.iron ? parseFloat((bestMatch.iron * ratio).toFixed(2)) : null,
+                                            magnesium: bestMatch.magnesium ? parseFloat((bestMatch.magnesium * ratio).toFixed(1)) : null,
+                                            phosphorus: bestMatch.phosphorus ? parseFloat((bestMatch.phosphorus * ratio).toFixed(1)) : null,
+                                            potassium: bestMatch.potassium ? parseFloat((bestMatch.potassium * ratio).toFixed(1)) : null,
+                                            sodium: bestMatch.sodium ? parseFloat((bestMatch.sodium * ratio).toFixed(1)) : null,
+                                            zinc: bestMatch.zinc ? parseFloat((bestMatch.zinc * ratio).toFixed(2)) : null,
+                                            copper: bestMatch.copper ? parseFloat((bestMatch.copper * ratio).toFixed(2)) : null,
+                                            manganese: bestMatch.manganese ? parseFloat((bestMatch.manganese * ratio).toFixed(2)) : null,
+                                            selenium: bestMatch.selenium ? parseFloat((bestMatch.selenium * ratio).toFixed(1)) : null,
+                                            iodine: bestMatch.iodine ? parseFloat((bestMatch.iodine * ratio).toFixed(1)) : null,
+                                            chromium: bestMatch.chromium ? parseFloat((bestMatch.chromium * ratio).toFixed(1)) : null,
+                                            molybdenum: bestMatch.molybdenum ? parseFloat((bestMatch.molybdenum * ratio).toFixed(1)) : null,
+
                                             confidence: bestMatch.confidence || 0.8,
                                             isUnknown: false,
                                             needsManualHachiteiFetch: false,
@@ -824,6 +978,42 @@ JSONのみ出力、説明文不要`;
                                                 protein: bestMatch.protein || 0,
                                                 fat: bestMatch.fat || 0,
                                                 carbs: bestMatch.carbs || 0,
+                                                diaas: bestMatch.diaas || estimatedDiaas,
+                                                gi: bestMatch.gi || estimatedGI,
+                                                saturatedFat: bestMatch.saturatedFat || null,
+                                                monounsaturatedFat: bestMatch.monounsaturatedFat || null,
+                                                polyunsaturatedFat: bestMatch.polyunsaturatedFat || null,
+                                                mediumChainFat: bestMatch.mediumChainFat || null,
+                                                sugar: bestMatch.sugar || null,
+                                                fiber: bestMatch.fiber || null,
+                                                solubleFiber: bestMatch.solubleFiber || null,
+                                                insolubleFiber: bestMatch.insolubleFiber || null,
+                                                vitaminA: bestMatch.vitaminA || null,
+                                                vitaminD: bestMatch.vitaminD || null,
+                                                vitaminE: bestMatch.vitaminE || null,
+                                                vitaminK: bestMatch.vitaminK || null,
+                                                vitaminB1: bestMatch.vitaminB1 || null,
+                                                vitaminB2: bestMatch.vitaminB2 || null,
+                                                niacin: bestMatch.niacin || null,
+                                                pantothenicAcid: bestMatch.pantothenicAcid || null,
+                                                vitaminB6: bestMatch.vitaminB6 || null,
+                                                biotin: bestMatch.biotin || null,
+                                                folicAcid: bestMatch.folicAcid || null,
+                                                vitaminB12: bestMatch.vitaminB12 || null,
+                                                vitaminC: bestMatch.vitaminC || null,
+                                                calcium: bestMatch.calcium || null,
+                                                iron: bestMatch.iron || null,
+                                                magnesium: bestMatch.magnesium || null,
+                                                phosphorus: bestMatch.phosphorus || null,
+                                                potassium: bestMatch.potassium || null,
+                                                sodium: bestMatch.sodium || null,
+                                                zinc: bestMatch.zinc || null,
+                                                copper: bestMatch.copper || null,
+                                                manganese: bestMatch.manganese || null,
+                                                selenium: bestMatch.selenium || null,
+                                                iodine: bestMatch.iodine || null,
+                                                chromium: bestMatch.chromium || null,
+                                                molybdenum: bestMatch.molybdenum || null,
                                                 servingSize: 100,
                                                 servingUnit: 'g',
                                                 unit: '100g'
@@ -1176,15 +1366,51 @@ JSONのみ出力、説明文不要`;
   ],
   "bestMatch": {
     "name": "最も一致する候補",
+    "category": "食品分類（肉類/魚介類/卵類/豆類/穀類/野菜類/果実類/きのこ類/藻類/乳類など）",
     "calories": 100gあたりkcal,
     "protein": 100gあたりg,
     "fat": 100gあたりg,
     "carbs": 100gあたりg,
+    "sugar": 100gあたりg（糖質、八訂に記載がない場合はnull）,
+    "fiber": 100gあたりg（食物繊維総量）,
+    "solubleFiber": 100gあたりg（水溶性食物繊維、八訂に記載がない場合はnull）,
+    "insolubleFiber": 100gあたりg（不溶性食物繊維、八訂に記載がない場合はnull）,
+    "saturatedFat": 100gあたりg（飽和脂肪酸、八訂に記載がない場合はnull）,
+    "monounsaturatedFat": 100gあたりg（一価不飽和脂肪酸、八訂に記載がない場合はnull）,
+    "polyunsaturatedFat": 100gあたりg（多価不飽和脂肪酸、八訂に記載がない場合はnull）,
+    "mediumChainFat": 100gあたりg（中鎖脂肪酸、八訂に記載がない場合はnull）,
+    "vitaminA": 100gあたりμg（レチノール活性当量、八訂に記載がない場合はnull）,
+    "vitaminD": 100gあたりμg（八訂に記載がない場合はnull）,
+    "vitaminE": 100gあたりmg（α-トコフェロール、八訂に記載がない場合はnull）,
+    "vitaminK": 100gあたりμg（八訂に記載がない場合はnull）,
+    "vitaminB1": 100gあたりmg（チアミン、八訂に記載がない場合はnull）,
+    "vitaminB2": 100gあたりmg（リボフラビン、八訂に記載がない場合はnull）,
+    "niacin": 100gあたりmg（ナイアシン当量、八訂に記載がない場合はnull）,
+    "pantothenicAcid": 100gあたりmg（パントテン酸、八訂に記載がない場合はnull）,
+    "vitaminB6": 100gあたりmg（八訂に記載がない場合はnull）,
+    "biotin": 100gあたりμg（八訂に記載がない場合はnull）,
+    "folicAcid": 100gあたりμg（葉酸、八訂に記載がない場合はnull）,
+    "vitaminB12": 100gあたりμg（八訂に記載がない場合はnull）,
+    "vitaminC": 100gあたりmg（八訂に記載がない場合はnull）,
+    "calcium": 100gあたりmg（カルシウム、八訂に記載がない場合はnull）,
+    "iron": 100gあたりmg（鉄、八訂に記載がない場合はnull）,
+    "magnesium": 100gあたりmg（マグネシウム、八訂に記載がない場合はnull）,
+    "phosphorus": 100gあたりmg（リン、八訂に記載がない場合はnull）,
+    "potassium": 100gあたりmg（カリウム、八訂に記載がない場合はnull）,
+    "sodium": 100gあたりmg（ナトリウム、八訂に記載がない場合はnull）,
+    "zinc": 100gあたりmg（亜鉛、八訂に記載がない場合はnull）,
+    "copper": 100gあたりmg（銅、八訂に記載がない場合はnull）,
+    "manganese": 100gあたりmg（マンガン、八訂に記載がない場合はnull）,
+    "selenium": 100gあたりμg（セレン、八訂に記載がない場合はnull）,
+    "iodine": 100gあたりμg（ヨウ素、八訂に記載がない場合はnull）,
+    "chromium": 100gあたりμg（クロム、八訂に記載がない場合はnull）,
+    "molybdenum": 100gあたりμg（モリブデン、八訂に記載がない場合はnull）,
     "confidence": 0-1,
     "matchScore": 0-100
   }
 }
 
+重要: 八訂に記載がない栄養素はnullを設定してください。0と区別するため必ずnullにしてください。
 confidence基準: 1.0=完全一致, 0.95=表記揺れ, 0.9=調理状態違い, 0.85=部位表記違い, 0.8=類似食材
 matchScore基準: 100=完全一致, 90-99=表記揺れ, 80-89=調理状態/部位違い, 70-79=類似食材
 
@@ -1216,12 +1442,23 @@ JSON形式のみ出力、説明文不要`;
             }
 
             // レスポンスの構造チェック
-            if (!result.data.response || !result.data.response.candidates || result.data.response.candidates.length === 0) {
-                console.error('[fetchNutritionFromHachitei] 不正なレスポンス:', result.data);
+            if (!result.data || !result.data.response) {
+                console.error('[fetchNutritionFromHachitei] result.dataまたはresponseが未定義:', result);
+                throw new Error('APIレスポンスが不正です');
+            }
+
+            if (!result.data.response.candidates || result.data.response.candidates.length === 0) {
+                console.error('[fetchNutritionFromHachitei] candidatesが空:', result.data.response);
                 throw new Error('AIからの応答がありませんでした');
             }
 
-            const textContent = result.data.response.candidates[0].content.parts[0].text;
+            const candidate = result.data.response.candidates[0];
+            if (!candidate || !candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+                console.error('[fetchNutritionFromHachitei] candidate構造が不正:', candidate);
+                throw new Error('AIレスポンスの構造が不正です');
+            }
+
+            const textContent = candidate.content.parts[0].text;
 
             // JSONを抽出
             let jsonText = textContent.trim();
@@ -1268,6 +1505,94 @@ JSON形式のみ出力、説明文不要`;
                 error: errorMessage
             };
         }
+    };
+
+    // ===== DIAAS推定ロジック（食材カテゴリから推定） =====
+    const estimateDiaas = (foodName, category) => {
+        const lowerName = foodName.toLowerCase();
+        const lowerCategory = (category || '').toLowerCase();
+
+        // 動物性タンパク質（高DIAAS）
+        if (lowerCategory.includes('卵') || lowerName.includes('卵') || lowerName.includes('たまご')) {
+            return 1.13; // 卵
+        }
+        if (lowerCategory.includes('乳') || lowerName.includes('牛乳') || lowerName.includes('ヨーグルト') || lowerName.includes('チーズ')) {
+            return 1.18; // 乳製品
+        }
+        if (lowerCategory.includes('肉') || lowerName.includes('鶏') || lowerName.includes('豚') || lowerName.includes('牛') || lowerName.includes('ささみ')) {
+            if (lowerName.includes('鶏') || lowerName.includes('チキン')) return 1.08; // 鶏肉
+            if (lowerName.includes('牛')) return 1.15; // 牛肉
+            if (lowerName.includes('豚')) return 1.11; // 豚肉
+            return 1.10; // その他の肉類
+        }
+        if (lowerCategory.includes('魚') || lowerName.includes('魚') || lowerName.includes('鮭') || lowerName.includes('まぐろ') || lowerName.includes('サーモン')) {
+            return 1.09; // 魚介類
+        }
+
+        // 植物性タンパク質（中〜低DIAAS）
+        if (lowerCategory.includes('豆') || lowerName.includes('大豆') || lowerName.includes('豆腐') || lowerName.includes('納豆')) {
+            if (lowerName.includes('大豆')) return 0.90; // 大豆
+            if (lowerName.includes('豆腐')) return 0.88; // 豆腐
+            return 0.85; // その他の豆類
+        }
+        if (lowerCategory.includes('穀') || lowerName.includes('米') || lowerName.includes('パン') || lowerName.includes('麺') || lowerName.includes('小麦')) {
+            if (lowerName.includes('米') || lowerName.includes('ご飯')) return 0.59; // 米
+            if (lowerName.includes('小麦') || lowerName.includes('パン')) return 0.40; // 小麦
+            if (lowerName.includes('オート') || lowerName.includes('オーツ')) return 0.69; // オーツ麦
+            return 0.50; // その他の穀類
+        }
+
+        // タンパク質が少ない食品
+        if (lowerCategory.includes('野菜') || lowerCategory.includes('果') || lowerCategory.includes('きのこ')) {
+            return null; // 野菜・果物・きのこはDIAAS不要
+        }
+
+        // デフォルト（不明な場合）
+        return null;
+    };
+
+    // ===== GI値推定ロジック（食材カテゴリから推定） =====
+    const estimateGI = (foodName, category) => {
+        const lowerName = foodName.toLowerCase();
+        const lowerCategory = (category || '').toLowerCase();
+
+        // 高GI食品（70以上）
+        if (lowerName.includes('白米') || lowerName.includes('ご飯') || lowerName.includes('ライス')) return 76;
+        if (lowerName.includes('食パン') || lowerName.includes('フランスパン')) return 91;
+        if (lowerName.includes('うどん')) return 80;
+        if (lowerName.includes('もち') || lowerName.includes('餅')) return 80;
+        if (lowerName.includes('じゃがいも') || lowerName.includes('ジャガイモ')) return 90;
+        if (lowerName.includes('砂糖') || lowerName.includes('グラニュー糖')) return 109;
+
+        // 中GI食品（56-69）
+        if (lowerName.includes('玄米')) return 56;
+        if (lowerName.includes('そば') || lowerName.includes('蕎麦')) return 59;
+        if (lowerName.includes('オートミール') || lowerName.includes('オーツ')) return 55;
+        if (lowerName.includes('さつまいも') || lowerName.includes('サツマイモ')) return 55;
+        if (lowerName.includes('バナナ')) return 65;
+        if (lowerName.includes('パイナップル')) return 65;
+        if (lowerName.includes('ぶどう') || lowerName.includes('ブドウ')) return 59;
+
+        // 低GI食品（55以下）
+        if (lowerName.includes('パスタ') || lowerName.includes('スパゲティ')) return 41;
+        if (lowerName.includes('全粒粉パン') || lowerName.includes('ライ麦パン')) return 50;
+        if (lowerName.includes('豆') || lowerName.includes('大豆') || lowerName.includes('納豆') || lowerName.includes('豆腐')) return 15;
+        if (lowerName.includes('りんご') || lowerName.includes('リンゴ')) return 36;
+        if (lowerName.includes('オレンジ')) return 31;
+        if (lowerName.includes('牛乳') || lowerName.includes('ヨーグルト')) return 25;
+
+        // タンパク質・脂質中心の食品（GI値が低いまたは無関係）
+        if (lowerCategory.includes('肉') || lowerCategory.includes('魚') || lowerCategory.includes('卵')) {
+            return null; // 肉・魚・卵はGI値不要
+        }
+
+        // 野菜・きのこ（ほとんど低GI）
+        if (lowerCategory.includes('野菜') || lowerCategory.includes('きのこ')) {
+            return 25; // 一般的な野菜の平均GI値
+        }
+
+        // デフォルト（不明な場合）
+        return null;
     };
 
     // ===== foodDatabaseから候補を検索 =====
@@ -1698,15 +2023,15 @@ JSON形式のみ出力、説明文不要`;
 
     // 確定して親コンポーネントに渡す
     const confirmFoods = async () => {
-        // ===== 全ての認識食材をカスタムアイテムとして自動保存 =====
-        // データベース登録済み（八訂含む）も含めて全て保存
+        // ===== 未登録の認識食材のみカスタムアイテムとして自動保存 =====
+        // foodDatabaseに存在しないアイテムのみ保存（重複を避ける）
         const foodsToSave = recognizedFoods.filter(food =>
             // パッケージ情報は既存データベースにないため保存
             food.isPackageInfo ||
             // 未登録・失敗したものも保存
             food.isUnknown || food.hachiteiFailed || food.needsManualHachiteiFetch ||
-            // 八訂から自動取得したものも保存（isHachitei=trueかつcategoryが八訂）
-            (food.isHachitei && food.category === '八訂')
+            // 八訂から自動取得したものも保存（isHachitei=trueのみで判定）
+            food.isHachitei
         );
 
         if (foodsToSave.length > 0) {
@@ -1724,35 +2049,21 @@ JSON形式のみ出力、説明文不要`;
                         servingUnit: 'g'
                     };
 
-                    // itemTypeとcustomLabelを決定
+                    // itemTypeに応じてcategoryを決定（以前のロジックに戻す）
+                    let category = 'カスタム食材';  // デフォルト
                     let itemType = 'food';  // デフォルト
-                    let customLabel = 'カスタム食材';  // 表示用ラベル
                     if (food.itemType === 'meal') {
-                        customLabel = 'カスタム料理';
+                        category = 'カスタム料理';
                         itemType = 'recipe';
                     } else if (food.itemType === 'supplement') {
-                        customLabel = 'カスタムサプリ';
+                        category = 'カスタムサプリ';
                         itemType = 'supplement';
-                    }
-
-                    // 実際のカテゴリ（検索フィルタ用）を決定
-                    // データベースマッチしたものはfood.categoryに肉類などが入っている
-                    // 未知のものはデフォルトで'その他'
-                    let actualCategory = food.category || 'その他';
-
-                    // サプリメントの場合は特殊処理（既存のカスタム食材と同じロジック）
-                    if (itemType === 'supplement') {
-                        // categoryにはサブカテゴリ名を保存（プロテイン、アミノ酸など）
-                        // food.categoryが存在しない場合はデフォルトで'プロテイン'
-                        actualCategory = food.category || 'プロテイン';
                     }
 
                     // 100gあたりの値を保存（実量換算前の基準値）
                     const customFood = {
                         name: food.name.split('（')[0], // 括弧を除去
-                        category: actualCategory,  // 検索フィルタリング用の実際のカテゴリ
-                        customLabel: customLabel,  // 表示用ラベル（カスタム食材など）
-                        isCustom: true,  // カスタムアイテムフラグ
+                        category: category,  // カスタム食材/カスタム料理/カスタムサプリ
                         itemType: itemType,  // 設定画面でのフィルタリング用
                         calories: base.calories || 0,
                         protein: base.protein || 0,
@@ -1762,25 +2073,51 @@ JSON形式のみ出力、説明文不要`;
                         servingUnit: 'g',
 
                         // 品質指標（100g基準）
-                        diaas: food.diaas || null,
-                        gi: food.gi || null,
+                        diaas: base.diaas || null,
+                        gi: base.gi || null,
 
                         // 脂肪酸（100g基準）
-                        saturatedFat: food.saturatedFat || 0,
-                        monounsaturatedFat: food.monounsaturatedFat || 0,
-                        polyunsaturatedFat: food.polyunsaturatedFat || 0,
-                        mediumChainFat: food.mediumChainFat || 0,
+                        saturatedFat: base.saturatedFat || null,
+                        monounsaturatedFat: base.monounsaturatedFat || null,
+                        polyunsaturatedFat: base.polyunsaturatedFat || null,
+                        mediumChainFat: base.mediumChainFat || null,
 
                         // 糖質・食物繊維（100g基準）
-                        sugar: food.sugar || 0,
-                        fiber: food.fiber || 0,
-                        solubleFiber: food.solubleFiber || 0,
-                        insolubleFiber: food.insolubleFiber || 0,
+                        sugar: base.sugar || null,
+                        fiber: base.fiber || null,
+                        solubleFiber: base.solubleFiber || null,
+                        insolubleFiber: base.insolubleFiber || null,
 
-                        // ビタミン・ミネラル（foodオブジェクトから取得）
-                        vitamins: food.vitamins || {},
-                        minerals: food.minerals || {},
-                        otherNutrients: food.otherNutrients || [],
+                        // ビタミン（個別キー、100g基準）
+                        vitaminA: base.vitaminA || null,
+                        vitaminD: base.vitaminD || null,
+                        vitaminE: base.vitaminE || null,
+                        vitaminK: base.vitaminK || null,
+                        vitaminB1: base.vitaminB1 || null,
+                        vitaminB2: base.vitaminB2 || null,
+                        niacin: base.niacin || null,
+                        pantothenicAcid: base.pantothenicAcid || null,
+                        vitaminB6: base.vitaminB6 || null,
+                        biotin: base.biotin || null,
+                        folicAcid: base.folicAcid || null,
+                        vitaminB12: base.vitaminB12 || null,
+                        vitaminC: base.vitaminC || null,
+
+                        // ミネラル（個別キー、100g基準）
+                        calcium: base.calcium || null,
+                        iron: base.iron || null,
+                        magnesium: base.magnesium || null,
+                        phosphorus: base.phosphorus || null,
+                        potassium: base.potassium || null,
+                        sodium: base.sodium || null,
+                        zinc: base.zinc || null,
+                        copper: base.copper || null,
+                        manganese: base.manganese || null,
+                        selenium: base.selenium || null,
+                        iodine: base.iodine || null,
+                        chromium: base.chromium || null,
+                        molybdenum: base.molybdenum || null,
+
                         createdAt: new Date().toISOString()
                     };
 
@@ -1834,21 +2171,31 @@ JSON形式のみ出力、説明文不要`;
             const amount = food.amount || 100;
             const ratio = amount / 100;
 
-            // ビタミン・ミネラルの実量換算
+            // ビタミン・ミネラルの実量換算（個別キー形式とオブジェクト形式の両方に対応）
             const vitamins = {};
             const minerals = {};
 
-            if (food.vitamins) {
-                Object.keys(food.vitamins).forEach(key => {
-                    vitamins[key] = parseFloat(((food.vitamins[key] || 0) * ratio).toFixed(2));
-                });
-            }
+            // ビタミン（個別キー優先、なければオブジェクトから取得）
+            const vitaminKeys = ['vitaminA', 'vitaminD', 'vitaminE', 'vitaminK', 'vitaminB1', 'vitaminB2',
+                                 'niacin', 'pantothenicAcid', 'vitaminB6', 'biotin', 'folicAcid', 'vitaminB12', 'vitaminC'];
+            vitaminKeys.forEach(key => {
+                const value = food[key] !== undefined ? food[key] : (food.vitamins && food.vitamins[key]);
+                if (value !== null && value !== undefined) {
+                    // 既に実量換算済みの場合はそのまま、100g基準の場合は換算
+                    vitamins[key] = value;
+                }
+            });
 
-            if (food.minerals) {
-                Object.keys(food.minerals).forEach(key => {
-                    minerals[key] = parseFloat(((food.minerals[key] || 0) * ratio).toFixed(2));
-                });
-            }
+            // ミネラル（個別キー優先、なければオブジェクトから取得）
+            const mineralKeys = ['calcium', 'iron', 'magnesium', 'phosphorus', 'potassium', 'sodium',
+                                 'zinc', 'copper', 'manganese', 'selenium', 'iodine', 'chromium', 'molybdenum'];
+            mineralKeys.forEach(key => {
+                const value = food[key] !== undefined ? food[key] : (food.minerals && food.minerals[key]);
+                if (value !== null && value !== undefined) {
+                    // 既に実量換算済みの場合はそのまま、100g基準の場合は換算
+                    minerals[key] = value;
+                }
+            });
 
             return {
                 name: food.name,
@@ -1862,6 +2209,23 @@ JSON形式のみ出力、説明文不要`;
                 servingSize: base.servingSize || 100,
                 servingUnit: base.servingUnit || 'g',
                 category: food.category || 'その他',
+
+                // 品質指標（実量）
+                diaas: food.diaas || base.diaas || null,
+                gi: food.gi || base.gi || null,
+
+                // 脂肪酸（実量）
+                saturatedFat: food.saturatedFat || null,
+                monounsaturatedFat: food.monounsaturatedFat || null,
+                polyunsaturatedFat: food.polyunsaturatedFat || null,
+                mediumChainFat: food.mediumChainFat || null,
+
+                // 糖質・食物繊維（実量）
+                sugar: food.sugar || null,
+                fiber: food.fiber || null,
+                solubleFiber: food.solubleFiber || null,
+                insolubleFiber: food.insolubleFiber || null,
+
                 // ビタミン・ミネラルは実量換算済み（既存の仕様を維持）
                 vitamins: vitamins,
                 minerals: minerals,

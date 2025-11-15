@@ -372,3 +372,5 @@ const foodDatabase = {
 function getFoodDatabase() {
     return foodDatabase;
 }
+// グローバル公開
+window.foodDB = foodDatabase;
