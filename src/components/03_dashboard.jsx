@@ -5,8 +5,59 @@ import toast from 'react-hot-toast';
 const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate, setDailyRecord }) => {
     const canvasRef = React.useRef(null);
     const chartRef = React.useRef(null);
+    const [recalculating, setRecalculating] = React.useState(false);
 
     const scores = DataService.calculateScores(profile, dailyRecord, targetPFC);
+
+    // スコア再計算関数（当日のみ）
+    const recalculateAllScores = async () => {
+        if (!user || !user.uid) {
+            toast.error('ユーザーIDが見つかりません');
+            return;
+        }
+
+        if (!currentDate) {
+            toast.error('日付が選択されていません');
+            return;
+        }
+
+        if (recalculating) return;
+
+        setRecalculating(true);
+
+        try {
+            // 当日のデータを取得
+            const record = await DataService.getDailyRecord(user.uid, currentDate);
+
+            if (!record || (!record.meals?.length && !record.workouts?.length && !record.conditions)) {
+                toast.error('当日のデータがありません');
+                setRecalculating(false);
+                return;
+            }
+
+            // スコアを計算
+            const calcScores = DataService.calculateScores(profile, record, targetPFC);
+
+            // recordにスコアを追加して保存
+            record.scores = {
+                food: calcScores.food.score,
+                exercise: calcScores.exercise.score,
+                condition: calcScores.condition.score
+            };
+
+            await DataService.saveDailyRecord(user.uid, currentDate, record);
+
+            // dailyRecordを更新
+            setDailyRecord(record);
+
+            toast.success('当日のスコアを再計算しました');
+        } catch (error) {
+            console.error('[Dashboard] スコア再計算エラー:', error);
+            toast.error('スコア再計算中にエラーが発生しました');
+        } finally {
+            setRecalculating(false);
+        }
+    };
 
     // スコアをdailyRecordに保存
     React.useEffect(() => {
@@ -113,6 +164,18 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                 </div>
             </div>
             <p className="text-sm text-gray-600 mt-4 text-center">AIによる詳細な栄養分析を確認できます</p>
+
+            {/* スコア再計算ボタン */}
+            <div className="mt-4">
+                <button
+                    onClick={recalculateAllScores}
+                    disabled={recalculating}
+                    className="w-full px-3 py-2 bg-purple-600 text-white text-sm font-bold rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <Icon name="RefreshCw" size={14} className={recalculating ? 'animate-spin' : ''} />
+                    {recalculating ? '再計算中...' : '当日のスコアを再計算'}
+                </button>
+            </div>
         </div>
     );
 };
