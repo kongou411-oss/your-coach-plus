@@ -118,7 +118,9 @@
       "Bash(start http://localhost:8003)",
       "Bash(cmd /c dir publicutils.js)",
       "Bash(cmd /c \"if exist public\\utils.js (echo EXISTS) else (echo NOT FOUND)\")",
-      "Bash(\"C:\\Users\\yourc\\yourcoach_new\\public\\foodDatabase.js\")"
+      "Bash(\"C:\\Users\\yourc\\yourcoach_new\\public\\foodDatabase.js\")",
+      "Bash(where:*)",
+      "Bash(cmd /c \"if exist dist\\config.js (echo EXISTS) else (echo NOT FOUND)\")"
     ],
     "deny": [],
     "ask": []
