@@ -153,89 +153,95 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
     const daysSinceReg = calculateDaysSinceRegistration(userId);
     const unlocked = [];
 
+    console.log('[calculateUnlockedFeatures] userId:', userId);
+    console.log('[calculateUnlockedFeatures] completionStatus:', completionStatus);
+    console.log('[calculateUnlockedFeatures] todayRecord:', todayRecord);
+    console.log('[calculateUnlockedFeatures] isPremium:', isPremium);
+
     // 0日目（初日）：段階的開放
     // 1. 食事記録は常に開放
     unlocked.push('food');
 
-    // 2. 食事記録を1回完了したら運動記録を開放
-    if (completionStatus.food || checkMealComplete(todayRecord)) {
+    // 2. 食事記録を1回完了したら運動記録を開放（一度完了したら永続）
+    if (completionStatus.food || completionStatus.training || checkMealComplete(todayRecord)) {
         unlocked.push('training');
     }
 
-    // 3. 運動記録を1回完了したらコンディション記録を開放
-    if (completionStatus.training || checkTrainingComplete(todayRecord)) {
+    // 3. 運動記録を1回完了したらコンディション記録を開放（一度完了したら永続）
+    if (completionStatus.training || completionStatus.condition || checkTrainingComplete(todayRecord)) {
         unlocked.push('condition');
     }
 
-    // 4. コンディション記録を6項目全て入力したら分析を開放
-    if (completionStatus.condition || checkConditionComplete(todayRecord)) {
+    // 4. コンディション記録を6項目全て入力したら分析を開放（一度完了したら永続）
+    if (completionStatus.condition || completionStatus.analysis || checkConditionComplete(todayRecord)) {
         unlocked.push('analysis');
     }
 
-    // 5. テンプレート機能は初期から開放（トライアル終了後はPremium限定）
-    unlocked.push('template');
-    unlocked.push('training_template'); // 旧互換性
-
-    // 6. 初回分析後：その他の機能を開放（05_analysis.jsで実行）
-    // - 指示書、履歴（モーダル①）
-    // - PG BASE、COMY（モーダル②）
-    // - ルーティン、ショートカット、履歴分析（モーダル③）
-    if (completionStatus.directive) {
-        unlocked.push('directive');
-    }
+    // 5. 閃き機能（無料機能、一度開放したら永続）
     if (completionStatus.idea) {
         unlocked.push('idea');
     }
-    if (completionStatus.history) {
-        unlocked.push('history');
-    }
-    if (completionStatus.pg_base) {
-        unlocked.push('pg_base');
-    }
-    if (completionStatus.community) {
-        unlocked.push('community');
-    }
-    if (completionStatus.routine) {
-        unlocked.push('routine');
-    }
-    if (completionStatus.shortcut) {
-        unlocked.push('shortcut');
-    }
-    if (completionStatus.history_analysis) {
-        unlocked.push('history_analysis');
-    }
 
-    // 8日目以降：Premium機能制限
-    // トライアル期間（0-6日 = 登録後7日間）は全機能利用可能
-    // 8日目以降（7日目から）は以下の機能をPremium会員限定に制限
-    const isTrialActive = daysSinceReg < 7;
-    if (daysSinceReg >= 7 && !isPremium && !DEV_PREMIUM_MODE) {
-        // 8日目以降の無料ユーザーは以下の機能をロック
-        // directive, pg_base, template, routine, shortcut, history, history_analysis, community, micronutrients
-        // これらは既に配列に追加されているので、削除する
-        const restrictedFeatures = [
-            'directive', 'pg_base', 'template', 'routine', 'shortcut',
-            'history', 'history_analysis', 'community', 'micronutrients'
-        ];
-        restrictedFeatures.forEach(feature => {
-            const index = unlocked.indexOf(feature);
-            if (index > -1) {
-                unlocked.splice(index, 1);
-            }
-        });
-    }
+    // ===== 有料・無料の判定 =====
+    const isTrialActive = daysSinceReg < 7; // 0-6日目（7日間）はトライアル
+    const hasPremiumAccess = isTrialActive || isPremium || DEV_PREMIUM_MODE;
 
-    // Premium専用機能（トライアル期間中（0-7日）も含む全期間で開放）
-    if (isTrialActive || isPremium || DEV_PREMIUM_MODE) {
+    // 6. Premium機能（トライアル中または有料会員のみ）
+    // 一度開放されたら、completionStatusに記録されているので永続的に維持
+    if (hasPremiumAccess) {
+        // テンプレート機能
+        unlocked.push('template');
+        unlocked.push('training_template'); // 旧互換性
+
+        // 初回分析後に開放される機能
+        if (completionStatus.directive) {
+            unlocked.push('directive');
+        }
+        if (completionStatus.history) {
+            unlocked.push('history');
+            unlocked.push('history_graph'); // 旧互換性
+        }
+        if (completionStatus.pg_base) {
+            unlocked.push('pg_base');
+        }
+        if (completionStatus.community) {
+            unlocked.push('community');
+        }
+        if (completionStatus.routine) {
+            unlocked.push('routine');
+        }
+        if (completionStatus.shortcut) {
+            unlocked.push('shortcut');
+        }
+        if (completionStatus.history_analysis) {
+            unlocked.push('history_analysis');
+        }
+
+        // 常時Premium専用機能
         unlocked.push('micronutrients');
         unlocked.push('community_view');
         unlocked.push('community_post');
     }
 
-    // 旧互換性: history_graph は初回分析後の history に統合
-    if (completionStatus.history) {
-        unlocked.push('history_graph');
-    }
+    console.log('[calculateUnlockedFeatures] ===== 機能開放状態 =====');
+    console.log('[calculateUnlockedFeatures] 登録日数:', daysSinceReg, '日目');
+    console.log('[calculateUnlockedFeatures] トライアル中:', isTrialActive);
+    console.log('[calculateUnlockedFeatures] Premium会員:', isPremium);
+    console.log('[calculateUnlockedFeatures] Premium機能アクセス:', hasPremiumAccess);
+    console.log('[calculateUnlockedFeatures] 開放機能:', unlocked);
+    console.log('[calculateUnlockedFeatures] ===== 基本機能 =====');
+    console.log('[calculateUnlockedFeatures] - food:', unlocked.includes('food'));
+    console.log('[calculateUnlockedFeatures] - training:', unlocked.includes('training'));
+    console.log('[calculateUnlockedFeatures] - condition:', unlocked.includes('condition'));
+    console.log('[calculateUnlockedFeatures] - analysis:', unlocked.includes('analysis'));
+    console.log('[calculateUnlockedFeatures] - idea:', unlocked.includes('idea'));
+    console.log('[calculateUnlockedFeatures] ===== Premium機能 =====');
+    console.log('[calculateUnlockedFeatures] - directive:', unlocked.includes('directive'));
+    console.log('[calculateUnlockedFeatures] - history:', unlocked.includes('history'));
+    console.log('[calculateUnlockedFeatures] - pg_base:', unlocked.includes('pg_base'));
+    console.log('[calculateUnlockedFeatures] - template:', unlocked.includes('template'));
+    console.log('[calculateUnlockedFeatures] - routine:', unlocked.includes('routine'));
+    console.log('[calculateUnlockedFeatures] - micronutrients:', unlocked.includes('micronutrients'));
 
     return unlocked;
 };

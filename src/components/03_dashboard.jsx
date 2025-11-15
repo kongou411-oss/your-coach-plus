@@ -6,37 +6,61 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
     const canvasRef = React.useRef(null);
     const chartRef = React.useRef(null);
     const [recalculating, setRecalculating] = React.useState(false);
+    const [showFoodDetails, setShowFoodDetails] = React.useState(false);
 
-    const scores = DataService.calculateScores(profile, dailyRecord, targetPFC);
+    // useMemoでdailyRecordが変更されたときにスコアを再計算
+    const scores = React.useMemo(() => {
+        const calculatedScores = DataService.calculateScores(profile, dailyRecord, targetPFC);
+        console.log('[ScoreDoughnutChart] スコアを計算:', calculatedScores);
+        console.log('[ScoreDoughnutChart] 食事スコア詳細:', JSON.stringify(calculatedScores.food, null, 2));
+        return calculatedScores;
+    }, [profile, dailyRecord, targetPFC]);
 
     // スコア再計算関数（当日のみ）
     const recalculateAllScores = async () => {
+        console.log('[再計算] ボタンがクリックされました');
+        console.log('[再計算] user:', user?.uid);
+        console.log('[再計算] currentDate:', currentDate);
+        console.log('[再計算] profile:', profile);
+        console.log('[再計算] targetPFC:', targetPFC);
+
         if (!user || !user.uid) {
+            console.error('[再計算] ユーザーIDが見つかりません');
             toast.error('ユーザーIDが見つかりません');
             return;
         }
 
         if (!currentDate) {
+            console.error('[再計算] 日付が選択されていません');
             toast.error('日付が選択されていません');
             return;
         }
 
-        if (recalculating) return;
+        if (recalculating) {
+            console.log('[再計算] 既に再計算中のためスキップ');
+            return;
+        }
 
         setRecalculating(true);
 
         try {
+            console.log('[再計算] データ取得開始:', user.uid, currentDate);
             // 当日のデータを取得
             const record = await DataService.getDailyRecord(user.uid, currentDate);
+            console.log('[再計算] 取得したrecord:', record);
 
             if (!record || (!record.meals?.length && !record.workouts?.length && !record.conditions)) {
+                console.error('[再計算] 当日のデータがありません');
                 toast.error('当日のデータがありません');
                 setRecalculating(false);
                 return;
             }
 
+            console.log('[再計算] スコア計算開始');
             // スコアを計算
             const calcScores = DataService.calculateScores(profile, record, targetPFC);
+            console.log('[再計算] 計算されたスコア:', calcScores);
+            console.log('[再計算] 食事スコア詳細:', JSON.stringify(calcScores.food, null, 2));
 
             // recordにスコアを追加して保存
             record.scores = {
@@ -45,17 +69,23 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                 condition: calcScores.condition.score
             };
 
+            console.log('[再計算] recordにスコアを追加:', record.scores);
+            console.log('[再計算] データ保存開始');
             await DataService.saveDailyRecord(user.uid, currentDate, record);
+            console.log('[再計算] データ保存完了');
 
             // dailyRecordを更新
             setDailyRecord(record);
+            console.log('[再計算] dailyRecord更新完了');
 
             toast.success('当日のスコアを再計算しました');
         } catch (error) {
-            console.error('[Dashboard] スコア再計算エラー:', error);
-            toast.error('スコア再計算中にエラーが発生しました');
+            console.error('[再計算] エラー発生:', error);
+            console.error('[再計算] エラー詳細:', error.message, error.stack);
+            toast.error('スコア再計算中にエラーが発生しました: ' + error.message);
         } finally {
             setRecalculating(false);
+            console.log('[再計算] 処理完了');
         }
     };
 
@@ -153,6 +183,12 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                 <div>
                     <div className="text-xs text-gray-600 mb-1">食事</div>
                     <div className="text-2xl font-bold text-green-600">{scores.food.score}</div>
+                    <button
+                        onClick={() => setShowFoodDetails(!showFoodDetails)}
+                        className="text-xs text-blue-600 hover:text-blue-700 mt-1"
+                    >
+                        {showFoodDetails ? '詳細を閉じる ▲' : '8軸詳細を見る ▼'}
+                    </button>
                 </div>
                 <div>
                     <div className="text-xs text-gray-600 mb-1">運動</div>
@@ -163,6 +199,125 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                     <div className="text-2xl font-bold text-red-600">{scores.condition.score}</div>
                 </div>
             </div>
+
+            {/* 8軸詳細スコア */}
+            {showFoodDetails && scores.food && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h4 className="text-sm font-bold text-gray-700 mb-3">食事スコア8軸評価</h4>
+
+                    {/* 主要3軸（PFC） */}
+                    <div className="mb-4">
+                        <div className="text-xs font-semibold text-gray-600 mb-2">主要栄養素（60%）</div>
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="bg-white p-2 rounded border border-gray-200">
+                                <div className="text-xs text-gray-600">タンパク質</div>
+                                <div className="text-lg font-bold text-blue-600">{scores.food.protein || 0}</div>
+                                <div className="text-xs text-gray-500">重み: 20%</div>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-gray-200">
+                                <div className="text-xs text-gray-600">脂質</div>
+                                <div className="text-lg font-bold text-yellow-600">{scores.food.fat || 0}</div>
+                                <div className="text-xs text-gray-500">重み: 20%</div>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-gray-200">
+                                <div className="text-xs text-gray-600">炭水化物</div>
+                                <div className="text-lg font-bold text-orange-600">{scores.food.carbs || 0}</div>
+                                <div className="text-xs text-gray-500">重み: 20%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* カロリー */}
+                    <div className="mb-4">
+                        <div className="text-xs font-semibold text-gray-600 mb-2">エネルギー（10%）</div>
+                        <div className="bg-white p-2 rounded border border-gray-200">
+                            <div className="flex justify-between items-center">
+                                <div className="text-xs text-gray-600">カロリー</div>
+                                <div className="text-lg font-bold text-purple-600">{scores.food.calorie || 0}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* その他5軸 */}
+                    <div>
+                        <div className="text-xs font-semibold text-gray-600 mb-2">栄養品質（30%）</div>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            <div className="bg-white p-2 rounded border border-gray-200">
+                                <div className="text-xs text-gray-600">DIAAS</div>
+                                <div className="text-sm font-bold text-green-600">{scores.food.diaas || 0}</div>
+                                <div className="text-xs text-gray-500">5%</div>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-gray-200">
+                                <div className="text-xs text-gray-600">脂肪酸</div>
+                                <div className="text-sm font-bold text-amber-600">{scores.food.fattyAcid || 0}</div>
+                                <div className="text-xs text-gray-500">5%</div>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-gray-200">
+                                <div className="text-xs text-gray-600">血糖管理</div>
+                                <div className="text-sm font-bold text-red-600">{scores.food.gl || 0}</div>
+                                <div className="text-xs text-gray-500">5%</div>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-gray-200">
+                                <div className="text-xs text-gray-600">食物繊維</div>
+                                <div className="text-sm font-bold text-lime-600">{scores.food.fiber || 0}</div>
+                                <div className="text-xs text-gray-500">5%</div>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-gray-200">
+                                <div className="text-xs text-gray-600">ビタミン</div>
+                                <div className="text-sm font-bold text-cyan-600">{scores.food.vitamin || 0}</div>
+                                <div className="text-xs text-gray-500">5%</div>
+                            </div>
+                        </div>
+                        <div className="mt-2">
+                            <div className="bg-white p-2 rounded border border-gray-200">
+                                <div className="flex justify-between items-center">
+                                    <div className="text-xs text-gray-600">ミネラル</div>
+                                    <div className="text-sm font-bold text-indigo-600">{scores.food.mineral || 0}</div>
+                                </div>
+                                <div className="text-xs text-gray-500 text-right">重み: 5%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 実際の値 */}
+                    {scores.food.totalProtein !== undefined && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="text-xs font-semibold text-gray-600 mb-2">実績値</div>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">カロリー:</span>
+                                    <span className="font-semibold">{scores.food.totalCalories || 0} kcal</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">タンパク質:</span>
+                                    <span className="font-semibold">{scores.food.totalProtein || 0} g</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">脂質:</span>
+                                    <span className="font-semibold">{scores.food.totalFat || 0} g</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">炭水化物:</span>
+                                    <span className="font-semibold">{scores.food.totalCarbs || 0} g</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">食物繊維:</span>
+                                    <span className="font-semibold">{scores.food.totalFiber || 0} g</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">GL値:</span>
+                                    <span className="font-semibold">{scores.food.totalGL || 0}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">平均DIAAS:</span>
+                                    <span className="font-semibold">{scores.food.avgDIAAS || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             <p className="text-sm text-gray-600 mt-4 text-center">AIによる詳細な栄養分析を確認できます</p>
 
             {/* スコア再計算ボタン */}
