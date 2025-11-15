@@ -1103,56 +1103,65 @@ const DataService = {
                     totalGL += (item.gi * carbs) / 100;
                 }
 
-                // ビタミン（個別キー形式）
+                // ビタミン（個別キー形式 or ネストされたオブジェクト形式の両方に対応）
                 const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK'];
                 vitaminKeys.forEach(key => {
-                    if (item[key]) {
-                        vitamins[key] = (vitamins[key] || 0) + item[key] * ratio;
+                    // 個別キーを優先、なければネストされたvitaminsオブジェクトから取得
+                    const value = item[key] !== undefined ? item[key] : (item.vitamins && item.vitamins[key]);
+                    if (value) {
+                        vitamins[key] = (vitamins[key] || 0) + value * ratio;
                     }
                 });
 
-                // ミネラル（個別キー形式）
+                // ミネラル（個別キー形式 or ネストされたオブジェクト形式の両方に対応）
                 const mineralKeys = ['calcium', 'iron', 'magnesium', 'zinc', 'sodium', 'potassium'];
                 mineralKeys.forEach(key => {
-                    if (item[key]) {
-                        minerals[key] = (minerals[key] || 0) + item[key] * ratio;
+                    // 個別キーを優先、なければネストされたmineralsオブジェクトから取得
+                    const value = item[key] !== undefined ? item[key] : (item.minerals && item.minerals[key]);
+                    if (value) {
+                        minerals[key] = (minerals[key] || 0) + value * ratio;
                     }
                 });
             });
         });
 
+        // ===== 食事記録が0件の場合は食事スコアを0にする =====
+        const hasMealRecords = (record.meals || []).length > 0;
+
         // ===== ① カロリースコア (10%) =====
         const calorieDeviation = target.calories > 0 ? Math.abs(totalCalories - target.calories) / target.calories : 0;
-        const calorieScore = Math.max(0, 100 - (calorieDeviation * 200));
+        const calorieScore = hasMealRecords ? Math.max(0, 100 - (calorieDeviation * 200)) : 0;
         // ±10%で80点、±20%で60点、±30%で40点、±50%で0点
 
         // ===== ② PFCスコア (20% × 3 = 60%) =====
         // タンパク質スコア
         const proteinDeviation = target.protein > 0 ? Math.abs(totalProtein - target.protein) / target.protein : 0;
-        const proteinScore = Math.max(0, 100 - (proteinDeviation * 150));
+        const proteinScore = hasMealRecords ? Math.max(0, 100 - (proteinDeviation * 150)) : 0;
         // ±10%で85点、±20%で70点、±30%で55点
 
         // 脂質スコア
         const fatDeviation = target.fat > 0 ? Math.abs(totalFat - target.fat) / target.fat : 0;
-        const fatScore = Math.max(0, 100 - (fatDeviation * 200));
+        const fatScore = hasMealRecords ? Math.max(0, 100 - (fatDeviation * 200)) : 0;
         // ±10%で80点、±20%で60点、±30%で40点
 
         // 炭水化物スコア
         const carbsDeviation = target.carbs > 0 ? Math.abs(totalCarbs - target.carbs) / target.carbs : 0;
-        const carbsScore = Math.max(0, 100 - (carbsDeviation * 200));
+        const carbsScore = hasMealRecords ? Math.max(0, 100 - (carbsDeviation * 200)) : 0;
         // ±10%で80点、±20%で60点、±30%で40点
 
         // ===== ③ DIAASスコア (5%) =====
         const avgDIAAS = totalProtein > 0 ? weightedDIAAS / totalProtein : 0;
         let diaaScore = 0;
-        if (avgDIAAS >= 1.00) diaaScore = 100; // 優秀
+        if (!hasMealRecords) {
+            diaaScore = 0; // データなし
+        } else if (avgDIAAS >= 1.00) diaaScore = 100; // 優秀
         else if (avgDIAAS >= 0.90) diaaScore = 80; // 良好
         else if (avgDIAAS >= 0.75) diaaScore = 60; // 普通
         else if (avgDIAAS >= 0.50) diaaScore = 40; // 要改善
         else diaaScore = 20; // データ不足またはDIAAS低い
 
         // ===== ④ 脂肪酸バランススコア (5%) =====
-        let fattyAcidScore = 50; // デフォルト（データ不足時）
+        let fattyAcidScore = hasMealRecords ? 50 : 0; // デフォルト（データ不足時）
 
         if (totalFat > 0) {
             const satRatio = totalSaturatedFat / totalFat; // 理想: 0.30-0.35
@@ -1188,7 +1197,7 @@ const DataService = {
         }
 
         // ===== ⑤ 血糖管理スコア (5%) =====
-        let glScore = 50; // デフォルト（データ不足時）
+        let glScore = hasMealRecords ? 50 : 0; // デフォルト（データ不足時）
 
         if (totalGL > 0) {
             // 1日のGL値: 100以下が理想、150以下が許容、それ以上は要改善
@@ -1201,31 +1210,35 @@ const DataService = {
         }
 
         // ===== ⑥ 食物繊維スコア (5%) =====
-        let fiberScore = 50; // デフォルト
+        let fiberScore = 0;
 
-        // 食物繊維量スコア（20-30gが理想）
-        let fiberAmountScore = 0;
-        if (totalFiber >= 20 && totalFiber <= 30) fiberAmountScore = 100;
-        else if (totalFiber >= 15 && totalFiber < 20) fiberAmountScore = 80;
-        else if (totalFiber >= 10 && totalFiber < 15) fiberAmountScore = 60;
-        else if (totalFiber >= 5 && totalFiber < 10) fiberAmountScore = 40;
-        else if (totalFiber < 5) fiberAmountScore = 20;
-        else if (totalFiber > 30 && totalFiber <= 35) fiberAmountScore = 90;
-        else fiberAmountScore = Math.max(60, 90 - (totalFiber - 35) * 5);
-
-        // 糖質:食物繊維比（10:1以下が理想）
-        let carbFiberRatioScore = 0;
-        if (totalFiber > 0) {
-            const carbFiberRatio = totalCarbs / totalFiber;
-            if (carbFiberRatio <= 10) carbFiberRatioScore = 100;
-            else if (carbFiberRatio <= 15) carbFiberRatioScore = 80;
-            else if (carbFiberRatio <= 20) carbFiberRatioScore = 60;
-            else carbFiberRatioScore = Math.max(0, 60 - (carbFiberRatio - 20) * 3);
+        if (!hasMealRecords) {
+            fiberScore = 0;
         } else {
-            carbFiberRatioScore = 0;
-        }
+            // 食物繊維量スコア（20-30gが理想）
+            let fiberAmountScore = 0;
+            if (totalFiber >= 20 && totalFiber <= 30) fiberAmountScore = 100;
+            else if (totalFiber >= 15 && totalFiber < 20) fiberAmountScore = 80;
+            else if (totalFiber >= 10 && totalFiber < 15) fiberAmountScore = 60;
+            else if (totalFiber >= 5 && totalFiber < 10) fiberAmountScore = 40;
+            else if (totalFiber < 5) fiberAmountScore = 20;
+            else if (totalFiber > 30 && totalFiber <= 35) fiberAmountScore = 90;
+            else fiberAmountScore = Math.max(60, 90 - (totalFiber - 35) * 5);
 
-        fiberScore = (fiberAmountScore * 0.6 + carbFiberRatioScore * 0.4);
+            // 糖質:食物繊維比（10:1以下が理想）
+            let carbFiberRatioScore = 0;
+            if (totalFiber > 0) {
+                const carbFiberRatio = totalCarbs / totalFiber;
+                if (carbFiberRatio <= 10) carbFiberRatioScore = 100;
+                else if (carbFiberRatio <= 15) carbFiberRatioScore = 80;
+                else if (carbFiberRatio <= 20) carbFiberRatioScore = 60;
+                else carbFiberRatioScore = Math.max(0, 60 - (carbFiberRatio - 20) * 3);
+            } else {
+                carbFiberRatioScore = 50; // 食物繊維が0の場合はデフォルト50点
+            }
+
+            fiberScore = (fiberAmountScore * 0.6 + carbFiberRatioScore * 0.4);
+        }
 
         // ===== ⑦ ビタミンスコア (5%) =====
         const vitaminTargets = {
@@ -1254,9 +1267,9 @@ const DataService = {
             else return 30;
         });
 
-        const vitaminScore = vitaminScores.length > 0
+        const vitaminScore = !hasMealRecords ? 0 : (vitaminScores.length > 0
             ? vitaminScores.reduce((a, b) => a + b, 0) / vitaminScores.length
-            : 50;
+            : 50);
 
         // ===== ⑧ ミネラルスコア (5%) =====
         const mineralTargets = {
@@ -1289,9 +1302,9 @@ const DataService = {
             else return 30;
         });
 
-        const mineralScore = mineralScores.length > 0
+        const mineralScore = !hasMealRecords ? 0 : (mineralScores.length > 0
             ? mineralScores.reduce((a, b) => a + b, 0) / mineralScores.length
-            : 50;
+            : 50);
 
         // ===== 最終食事スコア =====
         const foodScore = Math.round(
