@@ -4,7 +4,7 @@ import React from 'react';
 
 // 機能完了状態を取得（旧ONBOARDING_TRIGGERSとの互換性あり）
 const getFeatureCompletionStatus = (userId) => {
-    // LocalStorage優先（DEV_MODEに関わらず）
+    // LocalStorage優先
     const key = STORAGE_KEYS.FEATURES_COMPLETED;
 
     // 新しい形式を優先
@@ -34,7 +34,7 @@ const getFeatureCompletionStatus = (userId) => {
 
 // 機能完了状態を保存
 const saveFeatureCompletionStatus = async (userId, completionStatus) => {
-    // LocalStorage優先（DEV_MODEに関わらず）
+    // LocalStorage優先
     const key = STORAGE_KEYS.FEATURES_COMPLETED;
     const value = JSON.stringify(completionStatus);
     localStorage.setItem(key, value);
@@ -42,7 +42,7 @@ const saveFeatureCompletionStatus = async (userId, completionStatus) => {
     // console.log('[FeatureUnlock] Saved features:', Object.keys(completionStatus).filter(k => completionStatus[k]).join(', '));
 
     // Firestoreにも保存（非同期、エラーは無視）
-    if (!DEV_MODE && typeof db !== 'undefined') {
+    if (typeof db !== 'undefined') {
         try {
             await db.collection('users').doc(userId).set({
                 featuresCompleted: completionStatus
@@ -69,20 +69,13 @@ const markFeatureCompleted = async (userId, featureId) => {
 
 // 機能開放モーダル表示履歴を取得
 const getUnlockModalsShown = (userId) => {
-    if (DEV_MODE) {
-        const stored = localStorage.getItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN);
-        return stored ? JSON.parse(stored) : {};
-    }
-    // TODO: Firestore実装
-    return {};
+    const stored = localStorage.getItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN);
+    return stored ? JSON.parse(stored) : {};
 };
 
 // 機能開放モーダル表示履歴を保存
 const saveUnlockModalsShown = (userId, modalsShown) => {
-    if (DEV_MODE) {
-        localStorage.setItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN, JSON.stringify(modalsShown));
-    }
-    // TODO: Firestore実装
+    localStorage.setItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN, JSON.stringify(modalsShown));
 };
 
 // 特定のモーダルが表示済みかチェック
@@ -126,7 +119,7 @@ const checkTrainingComplete = (todayRecord) => {
 
 // 登録日を取得
 const getRegistrationDate = (userId) => {
-    // LocalStorageから登録日を取得（DEV_MODEに関わらず）
+    // LocalStorageから登録日を取得
     const stored = localStorage.getItem(STORAGE_KEYS.REGISTRATION_DATE);
     if (!stored) {
         // 初回起動時は現在日時を登録日とする
@@ -184,7 +177,7 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
 
     // ===== 有料・無料の判定 =====
     const isTrialActive = daysSinceReg < 7; // 0-6日目（7日間）はトライアル
-    const hasPremiumAccess = isTrialActive || isPremium || DEV_PREMIUM_MODE;
+    const hasPremiumAccess = isTrialActive || isPremium;
 
     // 6. Premium機能（トライアル中または有料会員のみ）
     // 一度開放されたら、completionStatusに記録されているので永続的に維持
@@ -329,7 +322,7 @@ const checkAndCompleteFeatures = async (userId, todayRecord) => {
 // 8日目以降のPremium機能制限チェック
 const checkPremiumAccessRequired = (userId, featureId, userProfile) => {
     const daysSinceReg = calculateDaysSinceRegistration(userId);
-    const isPremium = userProfile?.subscriptionTier === 'premium' || DEV_PREMIUM_MODE;
+    const isPremium = userProfile?.subscriptionTier === 'premium';
 
     // トライアル期間中（0-7日）は全機能アクセス可能
     if (daysSinceReg < 7) {

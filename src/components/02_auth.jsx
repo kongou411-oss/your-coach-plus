@@ -985,14 +985,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
             processedDirectiveDates: [],
 
             // 無料トライアル
-            freeTrialStartDate: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now),
-            freeTrialEndDate: DEV_MODE ? trialEndDate.toISOString() : firebase.firestore.Timestamp.fromDate(trialEndDate),
+            freeTrialStartDate: firebase.firestore.Timestamp.fromDate(now),
+            freeTrialEndDate: firebase.firestore.Timestamp.fromDate(trialEndDate),
             freeTrialCreditsUsed: 0,
             isFreeTrialExpired: false,
 
             // 登録日
-            joinDate: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now),
-            registrationDate: DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.fromDate(now),
+            joinDate: firebase.firestore.Timestamp.fromDate(now),
+            registrationDate: firebase.firestore.Timestamp.fromDate(now),
         };
 
         console.log('[Auth] Creating new user profile:', {

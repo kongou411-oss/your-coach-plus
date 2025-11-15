@@ -1371,19 +1371,6 @@ const CreditService = {
 
     // 分析アクセス可否チェック
     canAccessAnalysis: async (userId, userProfile) => {
-        // 開発モード：Premium機能有効化
-        if (typeof DEV_PREMIUM_MODE !== 'undefined' && DEV_PREMIUM_MODE) {
-            return {
-                allowed: true,
-                remainingCredits: 999,
-                tier: 'premium',
-                freeTrialActive: false,
-                freeTrialDaysRemaining: 0,
-                profile: userProfile,
-                devMode: true
-            };
-        }
-
         // 無料期間チェック & 期限切れ処理
         await CreditService.expireFreeTrialIfNeeded(userId, userProfile);
 
@@ -1404,17 +1391,6 @@ const CreditService = {
 
     // クレジット消費
     consumeCredit: async (userId, userProfile) => {
-        // 開発モード：クレジット消費をスキップ
-        if (typeof DEV_PREMIUM_MODE !== 'undefined' && DEV_PREMIUM_MODE) {
-            console.log(`[Credit] DEV MODE: Skipping credit consumption`);
-            return {
-                success: true,
-                remainingCredits: 999,
-                isFirstAnalysis: (userProfile.totalAnalysisUsed || 0) === 0,
-                devMode: true
-            };
-        }
-
         const accessCheck = await CreditService.canAccessAnalysis(userId, userProfile);
 
         if (!accessCheck.allowed) {

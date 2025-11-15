@@ -450,73 +450,10 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 return () => window.removeEventListener('message', handleMessage);
             }, [user, userProfile]);
 
-            // 認証状態監視（開発モードではスキップ）
+            // 認証状態監視
             useEffect(() => {
-                if (DEV_MODE) {
-                    // 開発モード: ダミーユーザーでログイン
-                    const loadDevData = async () => {
-                        setUser({ uid: DEV_USER_ID });
-                        const profile = await DataService.getUserProfile(DEV_USER_ID);
-
-                        if (profile) {
-                            setUserProfile(profile);
-
-                            // 開発モード: 手動設定された日数を優先
-                            const manualDays = localStorage.getItem(STORAGE_KEYS.USAGE_DAYS);
-                            let days;
-                            if (manualDays !== null) {
-                                days = parseInt(manualDays, 10);
-                            } else {
-                                days = calculateDaysSinceRegistration(DEV_USER_ID);
-                            }
-                            setUsageDays(days);
-
-                            // 今日の記録を取得（機能開放判定に必要）
-                            const today = getTodayDate();
-                            const todayRecord = await DataService.getDailyRecord(DEV_USER_ID, today);
-
-                            // 新しい機能開放システムで開放状態を計算
-                            const isPremium = profile.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
-                            const unlocked = calculateUnlockedFeatures(DEV_USER_ID, todayRecord, isPremium);
-                            setUnlockedFeatures(unlocked);
-
-                            // 守破離の段階を更新（21日で離、7日で破）
-                            if (days >= 21) setCurrentStage('離');
-                            else if (days >= 7) setCurrentStage('破');
-                            else setCurrentStage('守');
-                        }
-
-                        const generateDummyData = async () => {
-                            // ダミーデータ生成を無効化
-                            return;
-                        };
-
-                        await generateDummyData();
-
-                        const today = getTodayDate();
-                        const record = await DataService.getDailyRecord(DEV_USER_ID, today);
-                        if (record) {
-                            setDailyRecord(record);
-                        }
-
-                        // 前日データから予測を生成
-                        const prevDayRecord = await DataService.getPreviousDayRecord(DEV_USER_ID, today);
-                        if (prevDayRecord) {
-                            setYesterdayRecord(prevDayRecord); // 完全な記録を保存
-                            generatePredictions(prevDayRecord);
-                        }
-
-                        // 通知チェッカーは停止（Cloud Functionsで自動送信するため不要）
-                        // if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                        //     NotificationService.startNotificationChecker(DEV_USER_ID);
-                        // }
-
-                        setLoading(false);
-                    };
-                    loadDevData();
-                } else {
-                    // 本番モード: Firebase認証
-                    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+                // Firebase認証
+                const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
                         if (firebaseUser) {
                             const profile = await DataService.getUserProfile(firebaseUser.uid);
 
@@ -541,7 +478,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             const todayRecord = await DataService.getDailyRecord(firebaseUser.uid, today);
 
                             // 新しい機能開放システムで開放状態を計算
-                            const isPremium = profile.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                            const isPremium = profile.subscriptionStatus === 'active';
                             const unlocked = calculateUnlockedFeatures(firebaseUser.uid, todayRecord, isPremium);
                             setUnlockedFeatures(unlocked);
 
@@ -599,10 +536,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             setUserProfile(null);
                             setLoading(false);
                         }
-                    });
+                });
 
-                    return () => unsubscribe();
-                }
+                return () => unsubscribe();
             }, []);
 
             // currentDateは初期化時に今日の日付が設定されているので、このuseEffectは不要
@@ -623,7 +559,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             //         // 現在の表示日付が今日でない場合、handleDateChangeを使って切り替える
             //         if (currentDate !== today) {
             //             // 前日のデータを保存（既に保存されているが、念のため再保存）
-            //             const userId = user?.uid || DEV_USER_ID;
+            //             const userId = user?.uid;
             //             const currentRecord = await DataService.getDailyRecord(userId, currentDate);
             //             if (currentRecord && (currentRecord.meals?.length > 0 || currentRecord.workouts?.length > 0 || currentRecord.supplements?.length > 0 || currentRecord.conditions)) {
             //                 await DataService.saveDailyRecord(userId, currentDate, currentRecord);
@@ -722,7 +658,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 console.log('[App] 日付変更:', newDate);
                 setCurrentDate(newDate);
                 // 新しい日付のデータを読み込む
-                const userId = user?.uid || DEV_USER_ID;
+                const userId = user?.uid;
                 const record = await DataService.getDailyRecord(userId, newDate);
                 setDailyRecord(record || { meals: [], workouts: [], supplements: [], conditions: null });
 
@@ -799,7 +735,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         return; // ユーザーがいない場合はスキップ
                     }
 
-                    const userId = user?.uid || DEV_USER_ID;
+                    const userId = user?.uid;
                     // console.log('[App] データ読み込み中:', { userId, currentDate });
                     const record = await DataService.getDailyRecord(userId, currentDate);
                     // console.log('[App] getDailyRecord結果:', record);
@@ -871,7 +807,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 }
 
                 // テンプレートを読み込み
-                const userId = user?.uid || DEV_USER_ID;
+                const userId = user?.uid;
                 const userMealTemplates = await DataService.getMealTemplates(userId);
                 const userWorkoutTemplates = await DataService.getWorkoutTemplates(userId);
 
@@ -983,7 +919,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 if (type === 'pgbase') {
                     if (!unlockedFeatures.includes('pg_base')) {
                         const accessCheck = checkPremiumAccessRequired(
-                            DEV_MODE ? DEV_USER_ID : user?.uid,
+                            user?.uid,
                             'pg_base',
                             userProfile
                         );
@@ -1003,7 +939,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 if (type === 'history') {
                     if (!unlockedFeatures.includes('history_graph')) {
                         const accessCheck = checkPremiumAccessRequired(
-                            DEV_MODE ? DEV_USER_ID : user?.uid,
+                            user?.uid,
                             'history',
                             userProfile
                         );
@@ -1023,7 +959,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 if (type === 'comy') {
                     if (!unlockedFeatures.includes('community')) {
                         const accessCheck = checkPremiumAccessRequired(
-                            DEV_MODE ? DEV_USER_ID : user?.uid,
+                            user?.uid,
                             'community',
                             userProfile
                         );
@@ -1132,7 +1068,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         break;
                     case 'open_pgbase':
                         const pgBaseAccessCheck = checkPremiumAccessRequired(
-                            DEV_MODE ? DEV_USER_ID : user?.uid,
+                            user?.uid,
                             'pg_base',
                             userProfile
                         );
@@ -1146,7 +1082,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         break;
                     case 'open_community':
                         const comyAccessCheck = checkPremiumAccessRequired(
-                            DEV_MODE ? DEV_USER_ID : user?.uid,
+                            user?.uid,
                             'community',
                             userProfile
                         );
@@ -1585,7 +1521,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             unlockedFeatures={unlockedFeatures}
                             usageDays={usageDays}
                             onUpdate={async (updatedMeal) => {
-                                const userId = user?.uid || DEV_USER_ID;
+                                const userId = user?.uid;
                                 const targetDate = updatedMeal.date || currentDate;
                                 try {
                                     // 対象日付のレコードを取得
@@ -1623,7 +1559,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 setShowAddView(false);
                             }}
                             onUpdate={async (updatedWorkout, keepModalOpen = true) => {
-                                const userId = user?.uid || DEV_USER_ID;
+                                const userId = user?.uid;
                                 try {
                                     // 表示中の日付（currentDate）の記録を取得
                                     const currentRecord = await DataService.getDailyRecord(userId, currentDate);
@@ -1686,7 +1622,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             selectedDate={currentDate}
                             onAdd={async (meal) => {
                                 console.log('[App] 新しいゴールベースモーダルのonAddが呼ばれました');
-                                const userId = user?.uid || DEV_USER_ID;
+                                const userId = user?.uid;
                                 const targetDate = meal.date || currentDate; // mealに日付が含まれていればそれを使用
                                 try {
                                     console.log('[AddMealModal onAdd] 保存時の日付:', targetDate);
@@ -1717,7 +1653,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                                     // 新しい機能開放システム
                                     const oldUnlocked = [...unlockedFeatures];
-                                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                    const isPremium = userProfile?.subscriptionStatus === 'active';
                                     const newUnlocked = calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(newUnlocked);
 
@@ -1748,7 +1684,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         <AddWorkoutModal
                             onClose={() => setShowNewWorkoutModal(false)}
                             onAdd={async (workout) => {
-                                const userId = user?.uid || DEV_USER_ID;
+                                const userId = user?.uid;
                                 try {
                                     // React stateを直接使用（キャッシュを読まない）
                                     let updatedRecord = { ...dailyRecord };
@@ -1798,7 +1734,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             unlockedFeatures={unlockedFeatures}
                             usageDays={usageDays}
                             onAdd={async (item) => {
-                                const userId = user?.uid || DEV_USER_ID;
+                                const userId = user?.uid;
                                 const targetDate = item.date || currentDate;
 
                                 try {
@@ -1841,7 +1777,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     const oldUnlocked = [...unlockedFeatures];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
-                                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                    const isPremium = userProfile?.subscriptionStatus === 'active';
                                     const newUnlocked = calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(newUnlocked);
 
@@ -1864,7 +1800,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 }
                             }}
                             onUpdate={async (updatedMeal) => {
-                                const userId = user?.uid || DEV_USER_ID;
+                                const userId = user?.uid;
 
                                 try {
                                     // 表示中の日付（currentDate）の記録を取得
@@ -1931,7 +1867,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             usageDays={usageDays}
                             dailyRecord={dailyRecord}
                             onAdd={async (item) => {
-                                const userId = user?.uid || DEV_USER_ID;
+                                const userId = user?.uid;
                                 const targetDate = item.date || currentDate; // itemに日付が含まれていればそれを使用
 
                                 try {
@@ -1966,7 +1902,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     const oldUnlocked = [...unlockedFeatures];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
-                                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                    const isPremium = userProfile?.subscriptionStatus === 'active';
                                     const newUnlocked = calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(newUnlocked);
 
@@ -2002,8 +1938,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 setShowAnalysisView(false);
 
                                 // 新しい機能開放システム：分析を閲覧したら完了マーク
-                                const userId = user?.uid || DEV_USER_ID;
-                                const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                const userId = user?.uid;
+                                const isPremium = userProfile?.subscriptionStatus === 'active';
 
                                 // 常にunlockedFeaturesを再計算（機能開放状態を最新に保つ）
                                 const unlocked = calculateUnlockedFeatures(userId, dailyRecord, isPremium);
@@ -2017,8 +1953,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             }}
                             onFeatureUnlocked={() => {
                                 // 分析実行後すぐにunlockedFeaturesを再計算
-                                const userId = user?.uid || DEV_USER_ID;
-                                const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                const userId = user?.uid;
+                                const isPremium = userProfile?.subscriptionStatus === 'active';
                                 const unlocked = calculateUnlockedFeatures(userId, dailyRecord, isPremium);
                                 setUnlockedFeatures(unlocked);
                                 console.log('[App] Features unlocked, updated unlocked features:', unlocked);
@@ -2106,7 +2042,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             }}
                             onCheckIn={async () => {
                                 // セーフティ・チェックイン
-                                const userId = user?.uid || DEV_USER_ID;
+                                const userId = user?.uid;
                                 await DataService.saveDailyRecord(userId, currentDate, {
                                     ...dailyRecord,
                                     checkInStatus: true,
@@ -2680,7 +2616,7 @@ ${aiInputText}
                                                             exercises: [...(dailyRecord.exercises || []), ...newExercises]
                                                         };
 
-                                                        await DataService.saveDailyRecord(user?.uid || DEV_USER_ID, currentDate, updatedRecord);
+                                                        await DataService.saveDailyRecord(user?.uid, currentDate, updatedRecord);
 
                                                         // モーダルを閉じてリロード
                                                         setShowAIInput(false);
@@ -2901,7 +2837,7 @@ AIコーチなどの高度な機能が解放されます。
                                     onClick={() => {
                                         if (!unlockedFeatures.includes('history_graph')) {
                                             const accessCheck = checkPremiumAccessRequired(
-                                                DEV_MODE ? DEV_USER_ID : user?.uid,
+                                                user?.uid,
                                                 'history',
                                                 userProfile
                                             );
@@ -2929,7 +2865,7 @@ AIコーチなどの高度な機能が解放されます。
                                     onClick={() => {
                                         if (!unlockedFeatures.includes('pg_base')) {
                                             const accessCheck = checkPremiumAccessRequired(
-                                                DEV_MODE ? DEV_USER_ID : user?.uid,
+                                                user?.uid,
                                                 'pg_base',
                                                 userProfile
                                             );
@@ -2957,7 +2893,7 @@ AIコーチなどの高度な機能が解放されます。
                                     onClick={() => {
                                         if (!unlockedFeatures.includes('community')) {
                                             const accessCheck = checkPremiumAccessRequired(
-                                                DEV_MODE ? DEV_USER_ID : user?.uid,
+                                                user?.uid,
                                                 'community',
                                                 userProfile
                                             );

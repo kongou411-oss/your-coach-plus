@@ -182,14 +182,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             const expInfo = await window.ExperienceService.getUserExperience(userId);
 
             // Premium会員かどうかの判定
-            const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
+            const isPremium = userProfile?.subscriptionStatus === 'active';
 
             setCreditInfo({
                 tier: isPremium ? 'premium' : 'free',
                 totalCredits: expInfo.totalCredits,
                 freeCredits: expInfo.freeCredits,
                 paidCredits: expInfo.paidCredits,
-                devMode: DEV_MODE
+                
             });
         } catch (error) {
             console.error('[Settings] Error loading credit info:', error);
@@ -229,16 +229,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
         // 通知設定のみを保存（fcmTokenを含む他のフィールドを上書きしない）
         try {
-            if (DEV_MODE) {
-                // DEV_MODEの場合はプロファイル全体を保存
-                onUpdateProfile(updatedProfile);
-            } else {
-                // 本番環境では通知設定のみを更新（merge: trueで他のフィールドを保護）
-                await db.collection('users').doc(userId).set({
-                    notificationSettings: newSettings,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-            }
+            // 通知設定のみを更新（merge: trueで他のフィールドを保護）
+            await db.collection('users').doc(userId).set({
+                notificationSettings: newSettings,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
 
             // 通知をスケジュール（これはnotificationSchedulesフィールドのみを更新）
             const result = await NotificationService.scheduleNotification(userId, newSettings);
@@ -471,7 +466,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         <summary className="cursor-pointer p-4 hover:bg-amber-100 font-medium flex items-center gap-2">
                             <Icon name="Crown" size={18} className="text-amber-600" />
                             プレミアム
-                            {(userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE) && (
+                            {(userProfile?.subscriptionStatus === 'active') && (
                                 <span className="ml-2 px-2 py-0.5 bg-[#FFF59A] text-gray-800 text-xs rounded-full relative overflow-hidden">
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                                     <span className="relative z-10">Premium会員</span>
@@ -482,7 +477,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         <div className="p-4 pt-0 border-t border-amber-200">
                             <div className="space-y-4">
                                 {(() => {
-                                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                    const isPremium = userProfile?.subscriptionStatus === 'active';
                                     const isTrial = usageDays <= 7;
                                     const daysRemaining = isTrial ? Math.max(0, 8 - usageDays) : 0;
 
@@ -510,15 +505,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 >
                                                     サブスクリプション解約
                                                 </button>
-
-                                                {DEV_PREMIUM_MODE && (
-                                                    <div className="mt-3 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                                                        <p className="text-sm text-yellow-800">
-                                                            <Icon name="Code" size={16} className="inline mr-1" />
-                                                            開発モード：すべてのPremium機能が有効
-                                                        </p>
-                                                    </div>
-                                                )}
                                             </div>
                                         );
                                     } else if (isTrial) {
@@ -5330,8 +5316,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <span className="font-medium">Beta 1.0.0</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-gray-600">開発モード</span>
-                                        <span className="font-medium">{DEV_MODE ? 'ON' : 'OFF'}</span>
+                                        <span className="text-gray-600">本番モード</span>
+                                        <span className="font-medium">ON</span>
                                     </div>
                                 </div>
                             </div>
@@ -5421,66 +5407,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     このタブは開発中のみ表示されます。守破離機能のテストや日付の手動操作が可能です。                                </p>
                             </div>
 
-                            {/* Premium有効/無効分析切替*/}
-                            <div className="border rounded-lg p-6 bg-yellow-50">
-                                <h4 className="font-bold mb-4 flex items-center gap-2">
-                                    <Icon name="Crown" size={18} className="text-yellow-600" />
-                                    Premium会員分析切替                                </h4>
-                                <div className="space-y-3">
-                                    <div className="bg-white p-4 rounded-lg border border-yellow-200">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium text-gray-600">現在の状態</span>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                                DEV_PREMIUM_MODE ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'
-                                            }`}>
-                                                {DEV_PREMIUM_MODE ? '👑 Premium会員' : '無料会員'}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-gray-600">
-                                            {DEV_PREMIUM_MODE
-                                                ? '月額支払い時にクレジット100付与+全機能利用可能'
-                                                : '1-7日目は全機能無料、8日目以降は機能制限'}
-                                        </p>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <button
-                                            onClick={async () => {
-                                                localStorage.setItem('DEV_PREMIUM_MODE', 'false');
-                                                window.location.reload();
-                                            }}
-                                            className={`px-4 py-3 rounded-lg font-medium transition ${
-                                                !DEV_PREMIUM_MODE
-                                                    ? 'bg-gray-600 text-white'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                            }`}
-                                        >
-                                            無料会員
-                                        </button>
-                                        <button
-                                            onClick={async () => {
-                                                // Premium会員に切替えてクレジット100付与
-                                                localStorage.setItem('DEV_PREMIUM_MODE', 'true');
-                                                const result = await window.ExperienceService.addPaidCredits(userId, 100);
-                                                if (result.success) {
-                                                    toast('Premium会員に切替え、クレジット100を付与しました');
-                                                } else {
-                                                    toast('Premium会員に切替えました');
-                                                }
-                                                window.location.reload();
-                                            }}
-                                            className={`px-4 py-3 rounded-lg font-medium transition flex items-center justify-center gap-1 ${
-                                                DEV_PREMIUM_MODE
-                                                    ? 'bg-yellow-600 text-white'
-                                                    : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                                            }`}
-                                        >
-                                            <Icon name="Crown" size={16} />
-                                            Premium会員
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* 機能開放状況*/}
                             <div className="border rounded-lg p-6">
                                 <h4 className="font-bold mb-4 flex items-center gap-2">
@@ -5492,7 +5418,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         const completionStatus = getFeatureCompletionStatus(userId);
                                         const daysSinceReg = calculateDaysSinceRegistration(userId);
                                         const currentDay = daysSinceReg; // calculateDaysSinceRegistrationが既に+1済み
-                                        const isPremium = DEV_PREMIUM_MODE;
+                                        const isPremium = userProfile?.subscriptionStatus === 'active';
                                         const isTrial = currentDay <= 7;
 
                                         const featureList = [
@@ -5558,7 +5484,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 const daysSinceReg = calculateDaysSinceRegistration(userId);
                                                 const currentDay = daysSinceReg; // calculateDaysSinceRegistrationが既に+1済み
                                                 const isTrial = currentDay <= 7;
-                                                const isPremium = DEV_PREMIUM_MODE;
+                                                const isPremium = userProfile?.subscriptionStatus === 'active';
 
                                                 if (isTrial) {
                                                     return (

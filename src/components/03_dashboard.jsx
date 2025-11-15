@@ -1111,7 +1111,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         setDailyRecord(copiedRecord);
 
         // DBに保存して永続化
-        const userId = user?.uid || DEV_USER_ID;
+        const userId = user?.uid;
         await DataService.saveDailyRecord(userId, currentDate, copiedRecord);
     };
 
@@ -2387,7 +2387,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             conditions: dailyRecord.conditions?.isPredicted ? {} : dailyRecord.conditions
                                         };
                                         setDailyRecord(clearedRecord);
-                                        const userId = user?.uid || DEV_USER_ID;
+                                        const userId = user?.uid;
                                         await DataService.saveDailyRecord(userId, currentDate, clearedRecord);
                                     } else {
                                         // 入力
@@ -2429,7 +2429,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             workouts: dailyRecord.workouts?.filter(w => !w.isRoutine) || []
                                         };
                                         setDailyRecord(clearedRecord);
-                                        const userId = user?.uid || DEV_USER_ID;
+                                        const userId = user?.uid;
                                         await DataService.saveDailyRecord(userId, currentDate, clearedRecord);
                                     } else {
                                         // 入力
@@ -3107,13 +3107,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             };
                                             setDailyRecord(updated);
-                                            const userId = user?.uid || DEV_USER_ID;
+                                            const userId = user?.uid;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
 
                                             // 機能開放チェック
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const isPremium = profile?.subscriptionStatus === 'active';
                                             const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
@@ -3168,13 +3168,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             };
                                             setDailyRecord(updated);
-                                            const userId = user?.uid || DEV_USER_ID;
+                                            const userId = user?.uid;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
 
                                             // 機能開放チェック
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const isPremium = profile?.subscriptionStatus === 'active';
                                             const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
@@ -3229,13 +3229,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             };
                                             setDailyRecord(updated);
-                                            const userId = user?.uid || DEV_USER_ID;
+                                            const userId = user?.uid;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
 
                                             // 機能開放チェック
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const isPremium = profile?.subscriptionStatus === 'active';
                                             const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
@@ -3290,13 +3290,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             };
                                             setDailyRecord(updated);
-                                            const userId = user?.uid || DEV_USER_ID;
+                                            const userId = user?.uid;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
 
                                             // 機能開放チェック
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const isPremium = profile?.subscriptionStatus === 'active';
                                             const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
@@ -3351,13 +3351,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             };
                                             setDailyRecord(updated);
-                                            const userId = user?.uid || DEV_USER_ID;
+                                            const userId = user?.uid;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
 
                                             // 機能開放チェック
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const isPremium = profile?.subscriptionStatus === 'active';
                                             const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
@@ -3412,13 +3412,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             };
                                             setDailyRecord(updated);
-                                            const userId = user?.uid || DEV_USER_ID;
+                                            const userId = user?.uid;
                                             await DataService.saveDailyRecord(userId, currentDate, updated);
 
                                             // 機能開放チェック
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active' || DEV_PREMIUM_MODE;
+                                            const isPremium = profile?.subscriptionStatus === 'active';
                                             const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
@@ -3460,7 +3460,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         notes: e.target.value
                                     };
                                     setDailyRecord(updated);
-                                    const userId = user?.uid || DEV_USER_ID;
+                                    const userId = user?.uid;
                                     await DataService.saveDailyRecord(userId, currentDate, updated);
 
                                     // 履歴グラフiframeにデータ再読み込みメッセージを送信

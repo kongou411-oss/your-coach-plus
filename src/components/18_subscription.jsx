@@ -21,22 +21,6 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
         try {
             // TODO: Stripe Checkoutセッション作成
             toast('Stripe統合は実装中です。\n\n本番環境では、ここでStripe Checkoutにリダイレクトされます。');
-
-            // DEV_MODE用のモック処理
-            if (DEV_MODE) {
-                console.log('[Subscription] DEV MODE: Mock subscription created');
-                // ユーザープロフィールを更新（モック）
-                const updatedProfile = {
-                    ...userProfile,
-                    subscriptionTier: 'premium',
-                    subscriptionStatus: 'active',
-                    analysisCredits: 100,
-                    creditsResetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString()
-                };
-                await DataService.saveUserProfile(userId, updatedProfile);
-                toast.success('Premium会員への登録が完了しました！（開発モード）');
-                onClose();
-            }
         } catch (error) {
             console.error('[Subscription] Error:', error);
             toast.error('エラーが発生しました。もう一度お試しください。');
@@ -52,19 +36,6 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
         try {
             // TODO: Stripe Checkoutセッション作成（単発購入）
             toast(`${selectedCreditPack.name}の購入処理は実装中です。\n\n本番環境では、ここでStripe Checkoutにリダイレクトされます。`);
-
-            // DEV_MODE用のモック処理
-            if (DEV_MODE) {
-                console.log('[Subscription] DEV MODE: Mock credit purchase');
-                const updatedProfile = {
-                    ...userProfile,
-                    analysisCredits: (userProfile.analysisCredits || 0) + selectedCreditPack.credits,
-                    lifetimeCreditsPurchased: (userProfile.lifetimeCreditsPurchased || 0) + selectedCreditPack.credits
-                };
-                await DataService.saveUserProfile(userId, updatedProfile);
-                toast.success(`${selectedCreditPack.credits}クレジットを追加しました！（開発モード）`);
-                onClose();
-            }
         } catch (error) {
             console.error('[Subscription] Error:', error);
             toast.error('エラーが発生しました。もう一度お試しください。');

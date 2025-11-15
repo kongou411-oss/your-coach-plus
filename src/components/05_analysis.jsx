@@ -574,7 +574,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         // クレジットチェック（新システム） - 最優先で実行
         try {
             const expInfo = await ExperienceService.getUserExperience(userId);
-            const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
+            const isPremium = userProfile?.subscriptionStatus === 'active';
 
             setCreditInfo({
                 tier: isPremium ? 'premium' : 'free',
@@ -582,7 +582,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
                 freeCredits: expInfo.freeCredits,
                 paidCredits: expInfo.paidCredits,
                 remainingCredits: expInfo.totalCredits,
-                devMode: DEV_MODE,
+                
                 allowed: expInfo.totalCredits > 0
             });
 
@@ -1068,14 +1068,14 @@ ${section2Prompt}
                 // Cloud Functionから返された更新済みクレジット情報で表示を更新
                 if (response.remainingCredits !== undefined) {
                     const updatedExpInfo = await ExperienceService.getUserExperience(userId);
-                    const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
+                    const isPremium = userProfile?.subscriptionStatus === 'active';
                     setCreditInfo({
                         tier: isPremium ? 'premium' : 'free',
                         totalCredits: updatedExpInfo.totalCredits,
                         freeCredits: updatedExpInfo.freeCredits,
                         paidCredits: updatedExpInfo.paidCredits,
                         remainingCredits: updatedExpInfo.totalCredits,
-                        devMode: DEV_MODE,
+                        
                         allowed: updatedExpInfo.totalCredits > 0
                     });
                 }
@@ -1248,7 +1248,8 @@ ${section2Prompt}
 
         // Premium販促モーダル（初回分析後）
         // 新機能開放モーダルが完了した後に表示するためのフラグを設定
-        if (isFirstAnalysisParam && !DEV_PREMIUM_MODE) {
+        const isPremium = userProfile?.subscriptionStatus === 'active';
+        if (isFirstAnalysisParam && !isPremium) {
             localStorage.setItem('showUpgradeModalPending', 'true');
         }
     };
@@ -1331,14 +1332,14 @@ ${conversationContext}
 
             // クレジット消費後、更新された情報を取得して表示
             const updatedExpInfo = await ExperienceService.getUserExperience(userId);
-            const isPremium = userProfile?.subscriptionStatus === 'active' || DEV_MODE;
+            const isPremium = userProfile?.subscriptionStatus === 'active';
             setCreditInfo({
                 tier: isPremium ? 'premium' : 'free',
                 totalCredits: updatedExpInfo.totalCredits,
                 freeCredits: updatedExpInfo.freeCredits,
                 paidCredits: updatedExpInfo.paidCredits,
                 remainingCredits: updatedExpInfo.totalCredits,
-                devMode: DEV_MODE,
+                
                 allowed: updatedExpInfo.totalCredits > 0
             });
 

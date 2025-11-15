@@ -681,25 +681,17 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     useEffect(() => {
         const loadUserProjects = async () => {
             try {
-                if (!DEV_MODE) {
-                    const snapshot = await db.collection('communityProjects')
-                        .where('userId', '==', userProfile.uid)
-                        .where('isActive', '==', true)
-                        .orderBy('createdAt', 'desc')
-                        .get();
+                const snapshot = await db.collection('communityProjects')
+                    .where('userId', '==', userProfile.uid)
+                    .where('isActive', '==', true)
+                    .orderBy('createdAt', 'desc')
+                    .get();
 
-                    const projects = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-                    setUserProjects(projects);
-                } else {
-                    // DEV_MODE: LocalStorageから読み込み
-                    const stored = localStorage.getItem(`projects_${userProfile.uid}`);
-                    if (stored) {
-                        setUserProjects(JSON.parse(stored));
-                    }
-                }
+                const projects = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setUserProjects(projects);
             } catch (error) {
                 console.error('[CommunityPost] Failed to load projects:', error);
             }
@@ -804,11 +796,11 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
         setIsSubmitting(true);
 
         try {
-            // 画像アップロード（本番環境ではFirebase Storageへ）
+            // 画像アップロード（Firebase Storageへ）
             let beforePhotoUrl = beforePhoto;
             let afterPhotoUrl = afterPhoto;
 
-            if (!DEV_MODE && postCategory === 'body') {
+            if (postCategory === 'body') {
                 if (beforePhotoFile) {
                     beforePhotoUrl = await DataService.uploadCommunityPhoto(userProfile.uid, beforePhotoFile, 'before');
                 }
@@ -1055,41 +1047,29 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 comments: []
             };
 
-            let projectId;
+            // Firestoreにプロジェクト作成
+            const projectRef = await db.collection('communityProjects').add(projectData);
+            const projectId = projectRef.id;
 
-            if (!DEV_MODE) {
-                // Firestoreにプロジェクト作成
-                const projectRef = await db.collection('communityProjects').add(projectData);
-                projectId = projectRef.id;
+            // ビフォー写真をアップロード
+            const photoUrl = await DataService.uploadCommunityPhoto(userProfile.uid, beforePhoto, 'before');
 
-                // ビフォー写真をアップロード
-                const photoUrl = await DataService.uploadCommunityPhoto(userProfile.uid, beforePhoto, 'before');
+            // 進捗（ビフォー）を追加（自動取得したデータを使用）
+            const progressData = {
+                projectId: projectId,
+                progressType: 'before',
+                progressNumber: 0,
+                photo: photoUrl,
+                caption: projectGoal.trim() || '開始します！',
+                bodyData: autoFetchedData?.body || {},
+                dailyData: autoFetchedData?.today || {},
+                historyData: autoFetchedData?.history || {},
+                timestamp: new Date().toISOString(),
+                daysSinceStart: 0,
+                approvalStatus: 'pending'
+            };
 
-                // 進捗（ビフォー）を追加（自動取得したデータを使用）
-                const progressData = {
-                    projectId: projectId,
-                    progressType: 'before',
-                    progressNumber: 0,
-                    photo: photoUrl,
-                    caption: projectGoal.trim() || '開始します！',
-                    bodyData: autoFetchedData?.body || {},
-                    dailyData: autoFetchedData?.today || {},
-                    historyData: autoFetchedData?.history || {},
-                    timestamp: new Date().toISOString(),
-                    daysSinceStart: 0,
-                    approvalStatus: 'pending'
-                };
-
-                await db.collection('communityProjects').doc(projectId).collection('progress').add(progressData);
-            } else {
-                // DEV_MODE: LocalStorageに保存
-                projectId = `project_${Date.now()}`;
-                projectData.id = projectId;
-
-                const projects = [...userProjects, projectData];
-                localStorage.setItem(`projects_${userProfile.uid}`, JSON.stringify(projects));
-                setUserProjects(projects);
-            }
+            await db.collection('communityProjects').doc(projectId).collection('progress').add(progressData);
 
             toast.success('プロジェクトを作成しました！\n管理者の承認をお待ちください。');
             onClose();
@@ -1134,16 +1114,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 comments: []
             };
 
-            if (!DEV_MODE) {
-                // Firestoreに投稿作成
-                await db.collection('communityPosts').add(postData);
-            } else {
-                // DEV_MODE: LocalStorageに保存
-                const posts = JSON.parse(localStorage.getItem('communityPosts') || '[]');
-                postData.id = Date.now().toString();
-                posts.push(postData);
-                localStorage.setItem('communityPosts', JSON.stringify(posts));
-            }
+            // Firestoreに投稿作成
+            await db.collection('communityPosts').add(postData);
 
             toast.success('投稿しました！');
             onClose();
@@ -1174,36 +1146,31 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
             const startDate = new Date(project.startDate);
             const daysSinceStart = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
 
-            if (!DEV_MODE) {
-                // 写真をアップロード
-                const photoUrl = await DataService.uploadCommunityPhoto(userProfile.uid, progressPhoto, 'progress');
+            // 写真をアップロード
+            const photoUrl = await DataService.uploadCommunityPhoto(userProfile.uid, progressPhoto, 'progress');
 
-                // 進捗データを作成（自動取得したデータを使用）
-                const progressData = {
-                    projectId: selectedProject,
-                    progressType: progressType,
-                    progressNumber: project.progressCount,
-                    photo: photoUrl,
-                    caption: progressCaption.trim() || '',
-                    bodyData: autoFetchedData?.body || {},
-                    dailyData: autoFetchedData?.today || {},
-                    historyData: autoFetchedData?.history || {},
-                    timestamp: new Date().toISOString(),
-                    daysSinceStart: daysSinceStart,
-                    approvalStatus: 'pending'
-                };
+            // 進捗データを作成（自動取得したデータを使用）
+            const progressData = {
+                projectId: selectedProject,
+                progressType: progressType,
+                progressNumber: project.progressCount,
+                photo: photoUrl,
+                caption: progressCaption.trim() || '',
+                bodyData: autoFetchedData?.body || {},
+                dailyData: autoFetchedData?.today || {},
+                historyData: autoFetchedData?.history || {},
+                timestamp: new Date().toISOString(),
+                daysSinceStart: daysSinceStart,
+                approvalStatus: 'pending'
+            };
 
-                await db.collection('communityProjects').doc(selectedProject).collection('progress').add(progressData);
+            await db.collection('communityProjects').doc(selectedProject).collection('progress').add(progressData);
 
-                // プロジェクトの更新
-                await db.collection('communityProjects').doc(selectedProject).update({
-                    progressCount: project.progressCount + 1,
-                    lastUpdatedAt: new Date().toISOString()
-                });
-            } else {
-                // DEV_MODE: LocalStorage更新
-                toast('DEV_MODE: 進捗追加は本番環境でのみ動作します');
-            }
+            // プロジェクトの更新
+            await db.collection('communityProjects').doc(selectedProject).update({
+                progressCount: project.progressCount + 1,
+                lastUpdatedAt: new Date().toISOString()
+            });
 
             toast.success('進捗を追加しました！\n管理者の承認をお待ちください。');
             onClose();

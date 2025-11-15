@@ -224,8 +224,8 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
         setError(null);
 
         try {
-            // ユーザーID取得（DEV_MODEの場合はDEV_USER_IDを使用）
-            const effectiveUserId = userId || DEV_USER_ID;
+            // ユーザーID取得
+            const effectiveUserId = userId;
 
             if (!effectiveUserId) {
                 setError('ユーザー情報が取得できませんでした');
