@@ -900,9 +900,37 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
 ## 計算済みスコア（事前計算済み、そのまま使用）
 
-- 食事スコア: ${scores ? scores.food.score : 0}/100
-- 運動スコア: ${scores ? scores.exercise.score : 0}/100
-- コンディションスコア: ${scores ? scores.condition.score : 0}/100
+### 食事スコア: ${scores ? scores.food.score : 0}/100
+
+**主要栄養素（配点60%）:**
+- タンパク質: ${scores ? scores.food.totalProtein : 0}g / 目標${Math.round(targetPFC.protein)}g（達成率${scores ? scores.food.protein : 0}%、スコア${scores ? Math.round(scores.food.protein) : 0}/100）
+- 脂質: ${scores ? scores.food.totalFat : 0}g / 目標${Math.round(targetPFC.fat)}g（達成率${scores ? scores.food.fat : 0}%、スコア${scores ? Math.round(scores.food.fat) : 0}/100）
+- 炭水化物: ${scores ? scores.food.totalCarbs : 0}g / 目標${Math.round(targetPFC.carbs)}g（達成率${scores ? scores.food.carbs : 0}%、スコア${scores ? Math.round(scores.food.carbs) : 0}/100）
+
+**エネルギー（配点10%）:**
+- カロリー: ${scores ? scores.food.totalCalories : 0}kcal / 目標${Math.round(targetPFC.calories)}kcal（スコア${scores ? scores.food.calorie : 0}/100）
+
+**栄養品質（配点30%）:**
+- DIAAS（タンパク質の質）: 平均${scores ? scores.food.avgDIAAS : 0}（スコア${scores ? scores.food.diaas : 0}/100）
+- 脂肪酸バランス: スコア${scores ? scores.food.fattyAcid : 0}/100（理想比率: 飽和30% / 一価40% / 多価25%）
+- GL値（血糖管理）: ${scores ? scores.food.totalGL : 0}（スコア${scores ? scores.food.gl : 0}/100）
+- 食物繊維: ${scores ? scores.food.totalFiber : 0}g / 推奨20g（スコア${scores ? scores.food.fiber : 0}/100）
+- ビタミン13種平均: スコア${scores ? scores.food.vitamin : 0}/100
+- ミネラル13種平均: スコア${scores ? scores.food.mineral : 0}/100
+
+### 運動スコア: ${scores ? scores.exercise.score : 0}/100
+- 種目数: ${scores ? scores.exercise.count : 0}種目（スコア${scores ? scores.exercise.exerciseCount : 0}/100）
+- セット数: ${scores ? scores.exercise.totalSets : 0}セット（スコア${scores ? scores.exercise.sets : 0}/100）
+- 総合: 上記2つの平均
+
+### コンディションスコア: ${scores ? scores.condition.score : 0}/100
+- 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5（スコア${scores ? scores.condition.sleep : 0}/100）
+- 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5（スコア${scores ? scores.condition.quality : 0}/100）
+- 食欲: ${todayRecord.conditions?.appetite || 0}/5（スコア${scores ? scores.condition.appetite : 0}/100）
+- 腸内環境: ${todayRecord.conditions?.digestion || 0}/5（スコア${scores ? scores.condition.digestion : 0}/100）
+- 集中力: ${todayRecord.conditions?.focus || 0}/5（スコア${scores ? scores.condition.focus : 0}/100）
+- ストレス: ${todayRecord.conditions?.stress || 0}/5（スコア${scores ? scores.condition.stress : 0}/100）
+- 総合: 上記6項目の平均×20
 
 ## 出力形式（厳守）
 
@@ -964,14 +992,35 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
 ## 本日の達成率
 
-- タンパク質: ${Math.round((totalProtein/targetPFC.protein)*100)}%
-- 脂質: ${Math.round((totalFat/targetPFC.fat)*100)}%
-- 炭水化物: ${Math.round((totalCarbs/targetPFC.carbs)*100)}%
-- カロリー: ${Math.round(totalCalories)}kcal / 目標: ${Math.round(targetPFC.calories)}kcal
-- 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5
-- 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5
+### 食事スコア: ${scores ? scores.food.score : 0}/100
+**主要栄養素:**
+- タンパク質: ${Math.round((totalProtein/targetPFC.protein)*100)}%（スコア${scores ? Math.round(scores.food.protein) : 0}/100）
+- 脂質: ${Math.round((totalFat/targetPFC.fat)*100)}%（スコア${scores ? Math.round(scores.food.fat) : 0}/100）
+- 炭水化物: ${Math.round((totalCarbs/targetPFC.carbs)*100)}%（スコア${scores ? Math.round(scores.food.carbs) : 0}/100）
+
+**エネルギー:**
+- カロリー: ${Math.round(totalCalories)}kcal / 目標${Math.round(targetPFC.calories)}kcal（スコア${scores ? scores.food.calorie : 0}/100）
+
+**栄養品質:**
+- DIAAS: ${scores ? scores.food.diaas : 0}/100
+- 脂肪酸バランス: ${scores ? scores.food.fattyAcid : 0}/100
+- GL値: ${scores ? scores.food.gl : 0}/100
+- 食物繊維: ${scores ? scores.food.fiber : 0}/100
+- ビタミン: ${scores ? scores.food.vitamin : 0}/100
+- ミネラル: ${scores ? scores.food.mineral : 0}/100
+
+### 運動スコア: ${scores ? scores.exercise.score : 0}/100
 - ルーティン: ${todayRecord.routine?.is_rest_day ? '休養日（計画的な休息）' : (todayRecord.routine?.type || 'なし')}
-- 運動: ${(todayRecord.workouts || []).length}種目
+- 実施種目: ${(todayRecord.workouts || []).length}種目（スコア${scores ? scores.exercise.exerciseCount : 0}/100）
+- セット数: ${scores ? scores.exercise.totalSets : 0}セット（スコア${scores ? scores.exercise.sets : 0}/100）
+
+### コンディションスコア: ${scores ? scores.condition.score : 0}/100
+- 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5（スコア${scores ? scores.condition.sleep : 0}/100）
+- 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5（スコア${scores ? scores.condition.quality : 0}/100）
+- 食欲: ${scores ? scores.condition.appetite : 0}/100
+- 腸内環境: ${scores ? scores.condition.digestion : 0}/100
+- 集中力: ${scores ? scores.condition.focus : 0}/100
+- ストレス: ${scores ? scores.condition.stress : 0}/100
 
 ${dailyRecord.notes ? `
 ユーザーの気づき: 「${dailyRecord.notes}」
@@ -987,22 +1036,28 @@ ${dailyRecord.notes ? `
 
 ${currentPurpose === '増量' ? `
 **増量の優先順位:**
-1. カロリー不足 → 食材+量を指定してオーバーカロリーを達成
-2. タンパク質<90% → 食材+量を指定
-3. 運動未実施（※休養日を除く） → 種目+重量+回数を指定（筋肥大のため）
-4. 睡眠<85%または睡眠の質≤3 → 改善策を指定（回復のため）
+1. カロリースコア<80 → 食材+量を指定してオーバーカロリーを達成
+2. タンパク質スコア<80 → 食材+量を指定
+3. DIAAS<70 → 高品質タンパク質（鶏胸肉、卵、プロテイン等）を指定
+4. 運動スコア<60（※休養日を除く） → 種目+重量+回数を指定（筋肥大のため）
+5. 睡眠スコア<85 → 改善策を指定（回復のため）
+6. ビタミン・ミネラル<60 → 野菜・果物の追加を指定
 ` : currentPurpose === '減量' ? `
 **減量の優先順位:**
-1. カロリー超過 → 食材の見直しでアンダーカロリーを達成
-2. タンパク質<90% → 食材+量を指定（筋肉維持のため）
-3. 運動未実施（※休養日を除く） → 種目+重量+回数を指定（代謝維持のため）
-4. 睡眠<85%または睡眠の質≤3 → 改善策を指定（回復のため）
+1. カロリースコア<80 → 食材の見直しでアンダーカロリーを達成
+2. タンパク質スコア<80 → 食材+量を指定（筋肉維持のため）
+3. GL値スコア<70 → 低GI食材への変更を指定
+4. 食物繊維スコア<70 → 野菜・全粒穀物の追加を指定
+5. 運動スコア<60（※休養日を除く） → 種目+重量+回数を指定（代謝維持のため）
+6. 睡眠スコア<85 → 改善策を指定（回復のため）
 ` : `
 **メンテナンスの優先順位:**
-1. カロリー乖離>10% → 食材の調整でカロリー均衡を達成
-2. タンパク質<90% → 食材+量を指定
-3. 運動未実施（※休養日を除く） → 種目+重量+回数を指定
-4. 睡眠<85%または睡眠の質≤3 → 改善策を指定
+1. カロリースコア<80 → 食材の調整でカロリー均衡を達成
+2. タンパク質スコア<80 → 食材+量を指定
+3. 脂肪酸バランス<70 → 不飽和脂肪酸（魚、ナッツ等）の追加を指定
+4. ビタミン・ミネラル<70 → 野菜・果物の多様化を指定
+5. 運動スコア<60（※休養日を除く） → 種目+重量+回数を指定
+6. 睡眠スコア<85 → 改善策を指定
 `}
 
 ## 出力形式（厳守）
