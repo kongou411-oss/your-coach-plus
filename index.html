@@ -52,5 +52,24 @@
     <script src="/services.js?v=20251115v1"></script>
 
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Service Worker自動解除スクリプト -->
+    <script>
+        // 既存のService Workerを自動的に解除
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                if (registrations.length > 0) {
+                    console.log('[Cleanup] 古いService Workerを解除します...');
+                    for (let registration of registrations) {
+                        registration.unregister().then(function(success) {
+                            if (success) {
+                                console.log('[Cleanup] Service Workerを解除しました:', registration.scope);
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>
