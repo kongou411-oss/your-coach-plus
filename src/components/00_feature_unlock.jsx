@@ -153,10 +153,10 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
     const daysSinceReg = calculateDaysSinceRegistration(userId);
     const unlocked = [];
 
-    console.log('[calculateUnlockedFeatures] userId:', userId);
-    console.log('[calculateUnlockedFeatures] completionStatus:', completionStatus);
-    console.log('[calculateUnlockedFeatures] todayRecord:', todayRecord);
-    console.log('[calculateUnlockedFeatures] isPremium:', isPremium);
+    // console.log('[calculateUnlockedFeatures] userId:', userId);
+    // console.log('[calculateUnlockedFeatures] completionStatus:', completionStatus);
+    // console.log('[calculateUnlockedFeatures] todayRecord:', todayRecord);
+    // console.log('[calculateUnlockedFeatures] isPremium:', isPremium);
 
     // 0日目（初日）：段階的開放
     // 1. 食事記録は常に開放
@@ -223,25 +223,25 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
         unlocked.push('community_post');
     }
 
-    console.log('[calculateUnlockedFeatures] ===== 機能開放状態 =====');
-    console.log('[calculateUnlockedFeatures] 登録日数:', daysSinceReg, '日目');
-    console.log('[calculateUnlockedFeatures] トライアル中:', isTrialActive);
-    console.log('[calculateUnlockedFeatures] Premium会員:', isPremium);
-    console.log('[calculateUnlockedFeatures] Premium機能アクセス:', hasPremiumAccess);
-    console.log('[calculateUnlockedFeatures] 開放機能:', unlocked);
-    console.log('[calculateUnlockedFeatures] ===== 基本機能 =====');
-    console.log('[calculateUnlockedFeatures] - food:', unlocked.includes('food'));
-    console.log('[calculateUnlockedFeatures] - training:', unlocked.includes('training'));
-    console.log('[calculateUnlockedFeatures] - condition:', unlocked.includes('condition'));
-    console.log('[calculateUnlockedFeatures] - analysis:', unlocked.includes('analysis'));
-    console.log('[calculateUnlockedFeatures] - idea:', unlocked.includes('idea'));
-    console.log('[calculateUnlockedFeatures] ===== Premium機能 =====');
-    console.log('[calculateUnlockedFeatures] - directive:', unlocked.includes('directive'));
-    console.log('[calculateUnlockedFeatures] - history:', unlocked.includes('history'));
-    console.log('[calculateUnlockedFeatures] - pg_base:', unlocked.includes('pg_base'));
-    console.log('[calculateUnlockedFeatures] - template:', unlocked.includes('template'));
-    console.log('[calculateUnlockedFeatures] - routine:', unlocked.includes('routine'));
-    console.log('[calculateUnlockedFeatures] - micronutrients:', unlocked.includes('micronutrients'));
+    // console.log('[calculateUnlockedFeatures] ===== 機能開放状態 =====');
+    // console.log('[calculateUnlockedFeatures] 登録日数:', daysSinceReg, '日目');
+    // console.log('[calculateUnlockedFeatures] トライアル中:', isTrialActive);
+    // console.log('[calculateUnlockedFeatures] Premium会員:', isPremium);
+    // console.log('[calculateUnlockedFeatures] Premium機能アクセス:', hasPremiumAccess);
+    // console.log('[calculateUnlockedFeatures] 開放機能:', unlocked);
+    // console.log('[calculateUnlockedFeatures] ===== 基本機能 =====');
+    // console.log('[calculateUnlockedFeatures] - food:', unlocked.includes('food'));
+    // console.log('[calculateUnlockedFeatures] - training:', unlocked.includes('training'));
+    // console.log('[calculateUnlockedFeatures] - condition:', unlocked.includes('condition'));
+    // console.log('[calculateUnlockedFeatures] - analysis:', unlocked.includes('analysis'));
+    // console.log('[calculateUnlockedFeatures] - idea:', unlocked.includes('idea'));
+    // console.log('[calculateUnlockedFeatures] ===== Premium機能 =====');
+    // console.log('[calculateUnlockedFeatures] - directive:', unlocked.includes('directive'));
+    // console.log('[calculateUnlockedFeatures] - history:', unlocked.includes('history'));
+    // console.log('[calculateUnlockedFeatures] - pg_base:', unlocked.includes('pg_base'));
+    // console.log('[calculateUnlockedFeatures] - template:', unlocked.includes('template'));
+    // console.log('[calculateUnlockedFeatures] - routine:', unlocked.includes('routine'));
+    // console.log('[calculateUnlockedFeatures] - micronutrients:', unlocked.includes('micronutrients'));
 
     return unlocked;
 };

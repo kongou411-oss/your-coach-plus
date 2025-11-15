@@ -12,8 +12,8 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
     // useMemoでdailyRecordが変更されたときにスコアを再計算
     const scores = React.useMemo(() => {
         const calculatedScores = DataService.calculateScores(profile, dailyRecord, targetPFC);
-        console.log('[ScoreDoughnutChart] スコアを計算:', calculatedScores);
-        console.log('[ScoreDoughnutChart] 食事スコア詳細:', JSON.stringify(calculatedScores.food, null, 2));
+        // console.log('[ScoreDoughnutChart] スコアを計算:', calculatedScores);
+        // console.log('[ScoreDoughnutChart] 食事スコア詳細:', JSON.stringify(calculatedScores.food, null, 2));
         return calculatedScores;
     }, [profile, dailyRecord, targetPFC]);
 
@@ -599,7 +599,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 if (todayRecord?.bodyComposition?.weight && todayRecord?.bodyComposition?.bodyFatPercentage) {
                     weight = parseFloat(todayRecord.bodyComposition.weight) || 0;
                     bodyFat = parseFloat(todayRecord.bodyComposition.bodyFatPercentage) || 0;
-                    console.log('[Dashboard] 今日の体組成データを取得:', { weight, bodyFat });
+                    // console.log('[Dashboard] 今日の体組成データを取得:', { weight, bodyFat });
                 } else {
                     // 2. 前日のdailyRecordをチェック
                     const yesterday = new Date();
@@ -610,12 +610,12 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     if (yesterdayRecord?.bodyComposition?.weight && yesterdayRecord?.bodyComposition?.bodyFatPercentage) {
                         weight = parseFloat(yesterdayRecord.bodyComposition.weight) || 0;
                         bodyFat = parseFloat(yesterdayRecord.bodyComposition.bodyFatPercentage) || 0;
-                        console.log('[Dashboard] 前日の体組成データを取得:', { weight, bodyFat });
+                        // console.log('[Dashboard] 前日の体組成データを取得:', { weight, bodyFat });
                     } else if (profile?.weight && profile?.bodyFatPercentage) {
                         // 3. プロフィールデータをチェック
                         weight = parseFloat(profile.weight) || 0;
                         bodyFat = parseFloat(profile.bodyFatPercentage) || 0;
-                        console.log('[Dashboard] プロフィールの体組成データを取得:', { weight, bodyFat });
+                        // console.log('[Dashboard] プロフィールの体組成データを取得:', { weight, bodyFat });
                     }
                 }
 
@@ -636,7 +636,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             bodyComposition: bodyComp
                         };
                         await DataService.saveDailyRecord(user.uid, todayDate, updatedRecord);
-                        console.log('[Dashboard] 体組成を今日のレコードに保存:', bodyComp);
+                        // console.log('[Dashboard] 体組成を今日のレコードに保存:', bodyComp);
                     }
                 }
             } catch (error) {
@@ -685,10 +685,12 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         }
 
                         // 個別キー形式のビタミン
-                        const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'niacin', 'pantothenicAcid', 'biotin', 'folicAcid'];
+                        const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'niacin', 'pantothenicAcid', 'biotin', 'folicAcid', 'folate'];
                         vitaminKeys.forEach(key => {
                             if (item[key] !== undefined && item[key] !== 0) {
-                                intake.vitamins[key] = (intake.vitamins[key] || 0) + ((item[key] || 0) * ratio);
+                                // folateはfolicAcidとして集計（データベースでプロパティ名が混在しているため）
+                                const targetKey = (key === 'folate') ? 'folicAcid' : key;
+                                intake.vitamins[targetKey] = (intake.vitamins[targetKey] || 0) + ((item[key] || 0) * ratio);
                             }
                         });
 
@@ -734,7 +736,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 };
 
                 await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
-                console.log('[Dashboard] micronutrientsを保存:', Object.keys(micronutrients).length, 'keys');
+                // console.log('[Dashboard] micronutrientsを保存:', Object.keys(micronutrients).length, 'keys');
             } catch (error) {
                 console.error('[Dashboard] micronutrients保存エラー:', error);
             }
@@ -745,10 +747,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // recordUpdatedイベントを監視して自動リロード
     useEffect(() => {
-        console.log('[Dashboard] recordUpdatedイベントリスナーを登録:', { userId: user?.uid, currentDate });
+        // console.log('[Dashboard] recordUpdatedイベントリスナーを登録:', { userId: user?.uid, currentDate });
 
         const handleRecordUpdate = async (event) => {
-            console.log('[Dashboard] recordUpdatedイベント受信:', event.detail);
+            // console.log('[Dashboard] recordUpdatedイベント受信:', event.detail);
             if (user?.uid && currentDate) {
                 try {
                     console.log('[Dashboard] データを再読み込み中...');
@@ -764,10 +766,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         };
 
         window.addEventListener('recordUpdated', handleRecordUpdate);
-        console.log('[Dashboard] イベントリスナー登録完了');
+        // console.log('[Dashboard] イベントリスナー登録完了');
 
         return () => {
-            console.log('[Dashboard] イベントリスナーを削除');
+            // console.log('[Dashboard] イベントリスナーを削除');
             window.removeEventListener('recordUpdated', handleRecordUpdate);
         };
     }, [user?.uid, currentDate]);
@@ -1210,14 +1212,15 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             mealFiber += (item.fiber || 0) * ratio;
 
             // 糖質・食物繊維・脂肪酸（SCALED to actual amount - ビタミン・ミネラルと同じ）
-            currentIntake.sugar += (item.sugar || 0) * ratio;
-            currentIntake.fiber += (item.fiber || 0) * ratio;
-            currentIntake.solubleFiber += (item.solubleFiber || 0) * ratio;
-            currentIntake.insolubleFiber += (item.insolubleFiber || 0) * ratio;
-            currentIntake.saturatedFat += (item.saturatedFat || 0) * ratio;
-            currentIntake.mediumChainFat += (item.mediumChainFat || 0) * ratio;
-            currentIntake.monounsaturatedFat += (item.monounsaturatedFat || 0) * ratio;
-            currentIntake.polyunsaturatedFat += (item.polyunsaturatedFat || 0) * ratio;
+            // 糖質・食物繊維・脂肪酸（既に実量換算済み - ratioをかけない）
+            currentIntake.sugar += (item.sugar || 0);
+            currentIntake.fiber += (item.fiber || 0);
+            currentIntake.solubleFiber += (item.solubleFiber || 0);
+            currentIntake.insolubleFiber += (item.insolubleFiber || 0);
+            currentIntake.saturatedFat += (item.saturatedFat || 0);
+            currentIntake.mediumChainFat += (item.mediumChainFat || 0);
+            currentIntake.monounsaturatedFat += (item.monounsaturatedFat || 0);
+            currentIntake.polyunsaturatedFat += (item.polyunsaturatedFat || 0);
 
 
             // ビタミン・ミネラル（オブジェクト形式 - 既に実量換算済み）
@@ -1233,10 +1236,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             }
 
             // ビタミン・ミネラル（個別キー形式 - データベースから直接）
-            const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'niacin', 'pantothenicAcid', 'biotin', 'folicAcid'];
+            const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'niacin', 'pantothenicAcid', 'biotin', 'folicAcid', 'folate'];
             vitaminKeys.forEach(key => {
                 if (item[key] !== undefined && item[key] !== 0) {
-                    currentIntake.vitamins[key] = (currentIntake.vitamins[key] || 0) + ((item[key] || 0) * ratio);
+                    // folateはfolicAcidとして集計（データベースでプロパティ名が混在しているため）
+                    const targetKey = (key === 'folate') ? 'folicAcid' : key;
+                    const value = (item[key] || 0) * ratio;
+                    currentIntake.vitamins[targetKey] = (currentIntake.vitamins[targetKey] || 0) + value;
                 }
             });
 

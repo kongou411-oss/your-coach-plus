@@ -310,10 +310,12 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
                 }
 
                 // ビタミン（個別キー形式）
-                const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'niacin', 'pantothenicAcid', 'biotin', 'folicAcid'];
+                const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'niacin', 'pantothenicAcid', 'biotin', 'folicAcid', 'folate'];
                 vitaminKeys.forEach(key => {
                     if (item[key] !== undefined && item[key] !== 0) {
-                        vitamins[key] = (vitamins[key] || 0) + ((item[key] || 0) * ratio);
+                        // folateはfolicAcidとして集計（データベースでプロパティ名が混在しているため）
+                        const targetKey = (key === 'folate') ? 'folicAcid' : key;
+                        vitamins[targetKey] = (vitamins[targetKey] || 0) + ((item[key] || 0) * ratio);
                     }
                 });
 
@@ -389,6 +391,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         // 9. ビタミンスコア (0-100点)
         // 主要ビタミン13種の平均達成率
         const vitaminKeys = ['vitaminA', 'vitaminD', 'vitaminE', 'vitaminK', 'vitaminB1', 'vitaminB2', 'niacin', 'pantothenicAcid', 'vitaminB6', 'biotin', 'folicAcid', 'vitaminB12', 'vitaminC'];
+        // 注: folateは集計時にfolicAcidに統合されているため、ここでは不要
         let vitaminTotalRate = 0;
         let vitaminCount = 0;
         vitaminKeys.forEach(key => {

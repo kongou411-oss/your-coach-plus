@@ -708,10 +708,12 @@ const DataService = {
         // ビタミン・ミネラルの集計
         const vitamins = {
             vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
-            vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0
+            vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
+            niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0
         };
         const minerals = {
-            calcium: 0, iron: 0, magnesium: 0, zinc: 0, sodium: 0, potassium: 0
+            calcium: 0, iron: 0, magnesium: 0, zinc: 0, sodium: 0, potassium: 0,
+            phosphorus: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0
         };
 
         (record.meals || []).forEach(meal => {
@@ -746,15 +748,17 @@ const DataService = {
                 }
 
                 // ビタミン（個別キー形式）
-                const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK'];
+                const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'niacin', 'pantothenicAcid', 'biotin', 'folicAcid', 'folate'];
                 vitaminKeys.forEach(key => {
                     if (item[key]) {
-                        vitamins[key] = (vitamins[key] || 0) + item[key] * ratio;
+                        // folateはfolicAcidとして集計（データベースでプロパティ名が混在しているため）
+                        const targetKey = (key === 'folate') ? 'folicAcid' : key;
+                        vitamins[targetKey] = (vitamins[targetKey] || 0) + item[key] * ratio;
                     }
                 });
 
                 // ミネラル（個別キー形式）
-                const mineralKeys = ['calcium', 'iron', 'magnesium', 'zinc', 'sodium', 'potassium'];
+                const mineralKeys = ['calcium', 'iron', 'magnesium', 'zinc', 'sodium', 'potassium', 'phosphorus', 'copper', 'manganese', 'iodine', 'selenium', 'chromium', 'molybdenum'];
                 mineralKeys.forEach(key => {
                     if (item[key]) {
                         minerals[key] = (minerals[key] || 0) + item[key] * ratio;

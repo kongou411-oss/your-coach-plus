@@ -324,7 +324,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
             // currentDate監視デバッグ
             useEffect(() => {
-                console.log('[App useEffect] currentDate変更:', currentDate);
+                // console.log('[App useEffect] currentDate変更:', currentDate);
             }, [currentDate]);
 
             // 日付自動更新（0時になったら自動的に今日の日付に戻す）
@@ -793,16 +793,16 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             // 初回読み込み時のデータ取得（handleDateChangeで日付変更時は処理されるので、ここでは初回のみ）
             useEffect(() => {
                 const loadDateRecord = async () => {
-                    console.log('[App] loadDateRecord開始:', { user: !!user, currentDate });
+                    // console.log('[App] loadDateRecord開始:', { user: !!user, currentDate });
                     if (!user) {
-                        console.log('[App] userが未定義のためスキップ');
+                        // console.log('[App] userが未定義のためスキップ');
                         return; // ユーザーがいない場合はスキップ
                     }
 
                     const userId = user?.uid || DEV_USER_ID;
-                    console.log('[App] データ読み込み中:', { userId, currentDate });
+                    // console.log('[App] データ読み込み中:', { userId, currentDate });
                     const record = await DataService.getDailyRecord(userId, currentDate);
-                    console.log('[App] getDailyRecord結果:', record);
+                    // console.log('[App] getDailyRecord結果:', record);
 
                     // 表示用にフィルタリング（元のデータは変更しない）
                     let displayRecord = record || { meals: [], workouts: [], supplements: [], conditions: null };

@@ -514,7 +514,26 @@ const EditMealModal = ({ meal, onClose, onUpdate, onDeleteItem }) => {
             calories: Math.round(selectedNewItem.calories * ratio),
             protein: parseFloat((selectedNewItem.protein * ratio).toFixed(1)),
             fat: parseFloat((selectedNewItem.fat * ratio).toFixed(1)),
-            carbs: parseFloat((selectedNewItem.carbs * ratio).toFixed(1))
+            carbs: parseFloat((selectedNewItem.carbs * ratio).toFixed(1)),
+            // 脂肪酸
+            saturatedFat: parseFloat(((selectedNewItem.saturatedFat || 0) * ratio).toFixed(2)),
+            mediumChainFat: parseFloat(((selectedNewItem.mediumChainFat || 0) * ratio).toFixed(2)),
+            monounsaturatedFat: parseFloat(((selectedNewItem.monounsaturatedFat || 0) * ratio).toFixed(2)),
+            polyunsaturatedFat: parseFloat(((selectedNewItem.polyunsaturatedFat || 0) * ratio).toFixed(2)),
+            // その他すべての栄養素をコピー（詳細栄養素対応）
+            ...Object.keys(selectedNewItem).reduce((acc, key) => {
+                if (!['name', 'amount', 'unit', 'calories', 'protein', 'fat', 'carbs',
+                      'saturatedFat', 'mediumChainFat', 'monounsaturatedFat', 'polyunsaturatedFat',
+                      'servingSize', 'servingUnit', 'category', 'cost'].includes(key)) {
+                    const value = selectedNewItem[key];
+                    if (typeof value === 'number') {
+                        acc[key] = parseFloat((value * ratio).toFixed(2));
+                    } else {
+                        acc[key] = value;
+                    }
+                }
+                return acc;
+            }, {})
         };
 
         // 新しいアイテム配列を作成
