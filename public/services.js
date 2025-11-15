@@ -3,7 +3,7 @@
 // Contains database functions, DataService object, and GeminiAPI utilities
 //
 // Dependencies:
-// - config.js: DEV_MODE, STORAGE_KEYS, GEMINI_API_KEY
+// - config.js: STORAGE_KEYS, GEMINI_API_KEY
 // - utils.js: LBMUtils (for LBM calculations in GeminiAPI)
 // - foodDatabase.js: foodDatabase object
 // - trainingDatabase.js: trainingDatabase object
@@ -166,51 +166,6 @@ const DataService = {
             updatedAt: new Date().toISOString()
         };
 
-        if (DEV_MODE) {
-            // DEV_MODEでは認証情報をLocalStorageに保存
-            // getUserProfileはSTORAGE_KEYS.USER_PROFILEを使うので、そこからクレジット情報を取得
-            const existingProfile = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
-
-            if (!existingProfile) {
-                // 新規ユーザーの場合、機能開放関連のLocalStorageをクリア
-                console.log('[DEV] New user detected, clearing feature unlock data');
-                localStorage.removeItem(STORAGE_KEYS.FEATURES_COMPLETED);
-                localStorage.removeItem(STORAGE_KEYS.REGISTRATION_DATE);
-                localStorage.removeItem(STORAGE_KEYS.UNLOCK_MODALS_SHOWN);
-                localStorage.removeItem(STORAGE_KEYS.ONBOARDING_TRIGGERS);
-                localStorage.removeItem('showFeatureUnlockModals');
-                localStorage.removeItem('featureUnlockModalsCompleted');
-                localStorage.removeItem('showUpgradeModalPending');
-
-                // 新規ユーザーの場合、初期クレジットを追加
-                authData.createdAt = new Date().toISOString();
-                authData.joinDate = new Date().toISOString();
-                authData.registrationDate = new Date().toISOString();
-                authData.experience = 0;
-                authData.level = 1;
-                authData.freeCredits = 14; // 初回クレジット
-                authData.paidCredits = 0;
-                authData.processedScoreDates = [];
-                authData.processedDirectiveDates = [];
-
-                // STORAGE_KEYS.USER_PROFILEに保存（getUserProfileが参照する）
-                localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(authData));
-                console.log('[DEV] New user created:', userId, 'with 14 initial credits');
-            } else {
-                // 既存ユーザーの場合、保存済みデータをマージ
-                const existingData = JSON.parse(existingProfile);
-                authData = { ...existingData, ...authData }; // 既存データを保持しつつログイン情報を更新
-
-                // STORAGE_KEYS.USER_PROFILEに保存（getUserProfileが参照する）
-                localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(authData));
-                console.log('[DEV] User login updated:', userId, 'freeCredits:', authData.freeCredits, 'paidCredits:', authData.paidCredits);
-            }
-
-            // 認証情報も別途保存
-            localStorage.setItem('yourCoachBeta_authUser', JSON.stringify(authData));
-            return true;
-        }
-
         try {
             const userRef = db.collection('users').doc(userId);
             const doc = await userRef.get();
@@ -259,32 +214,27 @@ const DataService = {
     getUserProfile: async (userId) => {
         let profile = null;
 
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
-            profile = saved ? JSON.parse(saved) : null;
-        } else {
-            try {
-                // サーバー優先で取得（キャッシュを使わない）
-                const doc = await db.collection('users').doc(userId).get({ source: 'server' });
-                profile = doc.exists ? doc.data() : null;
-            } catch (error) {
-                // ネットワークエラーの場合はキャッシュから取得を試みる
-                if (error.code === 'unavailable') {
-                    console.warn('[DataService] Network unavailable, trying cache for user profile');
-                    try {
-                        const doc = await db.collection('users').doc(userId).get({ source: 'cache' });
-                        profile = doc.exists ? doc.data() : null;
-                    } catch (cacheError) {
-                        console.error('[DataService] Cache fetch failed for user profile:', cacheError);
-                        return null;
-                    }
-                } else if (error.code === 'permission-denied') {
-                    // 権限エラー（新規ユーザー）の場合は静かに null を返す
-                    return null;
-                } else {
-                    console.error('Error fetching user profile:', error);
+        try {
+            // サーバー優先で取得（キャッシュを使わない）
+            const doc = await db.collection('users').doc(userId).get({ source: 'server' });
+            profile = doc.exists ? doc.data() : null;
+        } catch (error) {
+            // ネットワークエラーの場合はキャッシュから取得を試みる
+            if (error.code === 'unavailable') {
+                console.warn('[DataService] Network unavailable, trying cache for user profile');
+                try {
+                    const doc = await db.collection('users').doc(userId).get({ source: 'cache' });
+                    profile = doc.exists ? doc.data() : null;
+                } catch (cacheError) {
+                    console.error('[DataService] Cache fetch failed for user profile:', cacheError);
                     return null;
                 }
+            } else if (error.code === 'permission-denied') {
+                // 権限エラー（新規ユーザー）の場合は静かに null を返す
+                return null;
+            } else {
+                console.error('Error fetching user profile:', error);
+                return null;
             }
         }
 
@@ -315,10 +265,6 @@ const DataService = {
 
     // ユーザープロファイル保存
     saveUserProfile: async (userId, profile) => {
-        if (DEV_MODE) {
-            localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
-            return true;
-        }
         try {
             // Firestoreはundefinedを許可しないため、undefinedフィールドを削除
             const cleanProfile = { ...profile };
@@ -338,11 +284,6 @@ const DataService = {
 
     // 日次記録取得
     getDailyRecord: async (userId, date) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.DAILY_RECORDS);
-            const records = saved ? JSON.parse(saved) : {};
-            return records[date] || null;
-        }
         try {
             // サーバー優先で取得（キャッシュを使わない）
             const doc = await db
@@ -380,13 +321,6 @@ const DataService = {
 
     // 日次記録保存
     saveDailyRecord: async (userId, date, record) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.DAILY_RECORDS);
-            const records = saved ? JSON.parse(saved) : {};
-            records[date] = record;
-            localStorage.setItem(STORAGE_KEYS.DAILY_RECORDS, JSON.stringify(records));
-            return true;
-        }
         try {
             // undefinedフィールドを除去
             const cleanRecord = JSON.parse(JSON.stringify(record, (key, value) => {
@@ -414,14 +348,6 @@ const DataService = {
             id: `report_${Date.now()}`
         };
 
-        if (DEV_MODE) {
-            const saved = localStorage.getItem('analysisReports');
-            const reports = saved ? JSON.parse(saved) : [];
-            reports.push(reportData);
-            localStorage.setItem('analysisReports', JSON.stringify(reports));
-            return reportData;
-        }
-
         try {
             const reportRef = db
                 .collection('users')
@@ -438,13 +364,6 @@ const DataService = {
 
     // 分析レポート取得
     getAnalysisReports: async (userId) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem('analysisReports');
-            const reports = saved ? JSON.parse(saved) : [];
-            // 新しい順にソート
-            return reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        }
-
         try {
             const snapshot = await db
                 .collection('users')
@@ -461,14 +380,6 @@ const DataService = {
 
     // 分析レポート削除
     deleteAnalysisReport: async (userId, reportId) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem('analysisReports');
-            const reports = saved ? JSON.parse(saved) : [];
-            const filtered = reports.filter(r => r.id !== reportId);
-            localStorage.setItem('analysisReports', JSON.stringify(filtered));
-            return true;
-        }
-
         try {
             await db
                 .collection('users')
@@ -484,17 +395,6 @@ const DataService = {
     },
 
     updateAnalysisReport: async (userId, reportId, updates) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem('analysisReports');
-            const reports = saved ? JSON.parse(saved) : [];
-            const reportIndex = reports.findIndex(r => r.id === reportId);
-            if (reportIndex !== -1) {
-                reports[reportIndex] = { ...reports[reportIndex], ...updates };
-                localStorage.setItem('analysisReports', JSON.stringify(reports));
-            }
-            return true;
-        }
-
         try {
             await db
                 .collection('users')
@@ -511,14 +411,6 @@ const DataService = {
 
     // 写真アップロード
     uploadPhoto: async (userId, file, recordId) => {
-        if (DEV_MODE) {
-            // 開発中は写真をBase64として保存
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(file);
-            });
-        }
         try {
             const ref = storage.ref(`photos/${userId}/${recordId}_${Date.now()}.jpg`);
             await ref.put(file);
@@ -545,10 +437,6 @@ const DataService = {
 
     // ワークアウトテンプレート取得
     getWorkoutTemplates: async (userId) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.WORKOUT_TEMPLATES);
-            return saved ? JSON.parse(saved) : [];
-        }
         try {
             const doc = await db.collection('workoutTemplates').doc(userId).get();
             return doc.exists ? doc.data().templates : [];
@@ -560,7 +448,7 @@ const DataService = {
 
     // ワークアウトテンプレート保存
     saveWorkoutTemplate: async (userId, template) => {
-        if (DEV_MODE) {
+        try {
             const templates = await DataService.getWorkoutTemplates(userId);
             // 同じIDのテンプレートが既に存在する場合は更新、なければ追加
             const existingIndex = templates.findIndex(t => t.id === template.id);
@@ -569,47 +457,25 @@ const DataService = {
             } else {
                 templates.push(template);
             }
-            localStorage.setItem(STORAGE_KEYS.WORKOUT_TEMPLATES, JSON.stringify(templates));
-        } else {
-            try {
-                const templates = await DataService.getWorkoutTemplates(userId);
-                // 同じIDのテンプレートが既に存在する場合は更新、なければ追加
-                const existingIndex = templates.findIndex(t => t.id === template.id);
-                if (existingIndex >= 0) {
-                    templates[existingIndex] = template;
-                } else {
-                    templates.push(template);
-                }
-                await db.collection('workoutTemplates').doc(userId).set({ templates });
-            } catch (error) {
-                console.error('Error saving workout template:', error);
-            }
+            await db.collection('workoutTemplates').doc(userId).set({ templates });
+        } catch (error) {
+            console.error('Error saving workout template:', error);
         }
     },
 
     // ワークアウトテンプレート削除
     deleteWorkoutTemplate: async (userId, templateId) => {
-        if (DEV_MODE) {
+        try {
             const templates = await DataService.getWorkoutTemplates(userId);
             const filtered = templates.filter(t => t.id !== templateId);
-            localStorage.setItem(STORAGE_KEYS.WORKOUT_TEMPLATES, JSON.stringify(filtered));
-        } else {
-            try {
-                const templates = await DataService.getWorkoutTemplates(userId);
-                const filtered = templates.filter(t => t.id !== templateId);
-                await db.collection('workoutTemplates').doc(userId).set({ templates: filtered });
-            } catch (error) {
-                console.error('Error deleting workout template:', error);
-            }
+            await db.collection('workoutTemplates').doc(userId).set({ templates: filtered });
+        } catch (error) {
+            console.error('Error deleting workout template:', error);
         }
     },
 
     // 食事テンプレート取得
     getMealTemplates: async (userId) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.MEAL_TEMPLATES);
-            return saved ? JSON.parse(saved) : [];
-        }
         try {
             const doc = await db.collection('mealTemplates').doc(userId).get();
             return doc.exists ? doc.data().templates : [];
@@ -621,7 +487,7 @@ const DataService = {
 
     // 食事テンプレート保存
     saveMealTemplate: async (userId, template) => {
-        if (DEV_MODE) {
+        try {
             const templates = await DataService.getMealTemplates(userId);
             // 同じIDのテンプレートが既に存在する場合は更新、なければ追加
             const existingIndex = templates.findIndex(t => t.id === template.id);
@@ -630,47 +496,25 @@ const DataService = {
             } else {
                 templates.push(template);
             }
-            localStorage.setItem(STORAGE_KEYS.MEAL_TEMPLATES, JSON.stringify(templates));
-        } else {
-            try {
-                const templates = await DataService.getMealTemplates(userId);
-                // 同じIDのテンプレートが既に存在する場合は更新、なければ追加
-                const existingIndex = templates.findIndex(t => t.id === template.id);
-                if (existingIndex >= 0) {
-                    templates[existingIndex] = template;
-                } else {
-                    templates.push(template);
-                }
-                await db.collection('mealTemplates').doc(userId).set({ templates });
-            } catch (error) {
-                console.error('Error saving meal template:', error);
-            }
+            await db.collection('mealTemplates').doc(userId).set({ templates });
+        } catch (error) {
+            console.error('Error saving meal template:', error);
         }
     },
 
     // 食事テンプレート削除
     deleteMealTemplate: async (userId, templateId) => {
-        if (DEV_MODE) {
+        try {
             const templates = await DataService.getMealTemplates(userId);
             const filtered = templates.filter(t => t.id !== templateId);
-            localStorage.setItem(STORAGE_KEYS.MEAL_TEMPLATES, JSON.stringify(filtered));
-        } else {
-            try {
-                const templates = await DataService.getMealTemplates(userId);
-                const filtered = templates.filter(t => t.id !== templateId);
-                await db.collection('mealTemplates').doc(userId).set({ templates: filtered });
-            } catch (error) {
-                console.error('Error deleting meal template:', error);
-            }
+            await db.collection('mealTemplates').doc(userId).set({ templates: filtered });
+        } catch (error) {
+            console.error('Error deleting meal template:', error);
         }
     },
 
     // サプリメントテンプレート取得
     getSupplementTemplates: async (userId) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.SUPPLEMENT_TEMPLATES);
-            return saved ? JSON.parse(saved) : [];
-        }
         try {
             const doc = await db.collection('supplementTemplates').doc(userId).get();
             return doc.exists ? doc.data().templates : [];
@@ -682,7 +526,7 @@ const DataService = {
 
     // サプリメントテンプレート保存
     saveSupplementTemplate: async (userId, template) => {
-        if (DEV_MODE) {
+        try {
             const templates = await DataService.getSupplementTemplates(userId);
             // 同じIDのテンプレートが既に存在する場合は更新、なければ追加
             const existingIndex = templates.findIndex(t => t.id === template.id);
@@ -691,57 +535,31 @@ const DataService = {
             } else {
                 templates.push(template);
             }
-            localStorage.setItem(STORAGE_KEYS.SUPPLEMENT_TEMPLATES, JSON.stringify(templates));
-        } else {
-            try {
-                const templates = await DataService.getSupplementTemplates(userId);
-                // 同じIDのテンプレートが既に存在する場合は更新、なければ追加
-                const existingIndex = templates.findIndex(t => t.id === template.id);
-                if (existingIndex >= 0) {
-                    templates[existingIndex] = template;
-                } else {
-                    templates.push(template);
-                }
-                await db.collection('supplementTemplates').doc(userId).set({ templates });
-            } catch (error) {
-                console.error('Error saving supplement template:', error);
-            }
+            await db.collection('supplementTemplates').doc(userId).set({ templates });
+        } catch (error) {
+            console.error('Error saving supplement template:', error);
         }
     },
 
     // サプリメントテンプレート削除
     deleteSupplementTemplate: async (userId, templateId) => {
-        if (DEV_MODE) {
+        try {
             const templates = await DataService.getSupplementTemplates(userId);
             const filtered = templates.filter(t => t.id !== templateId);
-            localStorage.setItem(STORAGE_KEYS.SUPPLEMENT_TEMPLATES, JSON.stringify(filtered));
-        } else {
-            try {
-                const templates = await DataService.getSupplementTemplates(userId);
-                const filtered = templates.filter(t => t.id !== templateId);
-                await db.collection('supplementTemplates').doc(userId).set({ templates: filtered });
-            } catch (error) {
-                console.error('Error deleting supplement template:', error);
-            }
+            await db.collection('supplementTemplates').doc(userId).set({ templates: filtered });
+        } catch (error) {
+            console.error('Error deleting supplement template:', error);
         }
     },
 
     // PG BASE チャット履歴取得
     getPGBaseChatHistory: async () => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.PGBASE_CHAT_HISTORY);
-            return saved ? JSON.parse(saved) : [];
-        }
         // Firestore実装時はここに追加
         return [];
     },
 
     // PG BASE チャット履歴保存
     savePGBaseChatHistory: async (history) => {
-        if (DEV_MODE) {
-            localStorage.setItem(STORAGE_KEYS.PGBASE_CHAT_HISTORY, JSON.stringify(history));
-            return true;
-        }
         // Firestore実装時はここに追加
         return true;
     },
@@ -750,10 +568,6 @@ const DataService = {
     // コミュニティ投稿取得
     // コミュニティ投稿取得（承認済みのみ）
     getCommunityPosts: async () => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS);
-            return saved ? JSON.parse(saved) : [];
-        }
         try {
             const snapshot = await db.collection('communityPosts')
                 .where('approvalStatus', '==', 'approved')
@@ -769,13 +583,6 @@ const DataService = {
 
     // コミュニティ投稿作成
     createCommunityPost: async (postData) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS);
-            const posts = saved ? JSON.parse(saved) : [];
-            posts.unshift(postData);
-            localStorage.setItem(STORAGE_KEYS.COMMUNITY_POSTS, JSON.stringify(posts));
-            return { success: true, postId: postData.id };
-        }
         try {
             const docRef = await db.collection('communityPosts').add({
                 ...postData,
@@ -790,13 +597,6 @@ const DataService = {
 
     // コミュニティ画像アップロード
     uploadCommunityPhoto: async (userId, file, photoType) => {
-        if (DEV_MODE) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(file);
-            });
-        }
         try {
             const timestamp = Date.now();
             const ref = storage.ref(`community/${userId}/${photoType}_${timestamp}.jpg`);
@@ -811,11 +611,6 @@ const DataService = {
 
     // 管理者: 承認待ち投稿取得
     getPendingPosts: async () => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS);
-            const posts = saved ? JSON.parse(saved) : [];
-            return posts.filter(p => p.approvalStatus === 'pending');
-        }
         try {
             const snapshot = await db.collection('communityPosts')
                 .where('approvalStatus', '==', 'pending')
@@ -830,15 +625,6 @@ const DataService = {
 
     // 管理者: 投稿承認
     approvePost: async (postId) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS);
-            const posts = saved ? JSON.parse(saved) : [];
-            const updated = posts.map(p =>
-                p.id === postId ? { ...p, approvalStatus: 'approved' } : p
-            );
-            localStorage.setItem(STORAGE_KEYS.COMMUNITY_POSTS, JSON.stringify(updated));
-            return true;
-        }
         try {
             await db.collection('communityPosts').doc(postId).update({
                 approvalStatus: 'approved',
@@ -853,15 +639,6 @@ const DataService = {
 
     // 管理者: 投稿却下
     rejectPost: async (postId, reason) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS);
-            const posts = saved ? JSON.parse(saved) : [];
-            const updated = posts.map(p =>
-                p.id === postId ? { ...p, approvalStatus: 'rejected', rejectionReason: reason } : p
-            );
-            localStorage.setItem(STORAGE_KEYS.COMMUNITY_POSTS, JSON.stringify(updated));
-            return true;
-        }
         try {
             await db.collection('communityPosts').doc(postId).update({
                 approvalStatus: 'rejected',
@@ -877,18 +654,6 @@ const DataService = {
 
     // 投稿にいいね追加
     togglePostLike: async (postId, userId) => {
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS);
-            const posts = saved ? JSON.parse(saved) : [];
-            const updated = posts.map(p => {
-                if (p.id === postId) {
-                    return { ...p, likes: (p.likes || 0) + 1 };
-                }
-                return p;
-            });
-            localStorage.setItem(STORAGE_KEYS.COMMUNITY_POSTS, JSON.stringify(updated));
-            return true;
-        }
         try {
             await db.collection('communityPosts').doc(postId).update({
                 likes: firebase.firestore.FieldValue.increment(1)
@@ -902,10 +667,6 @@ const DataService = {
 
     // 非推奨: 旧メソッド（互換性のため残す）
     saveCommunityPosts: async (posts) => {
-        if (DEV_MODE) {
-            localStorage.setItem(STORAGE_KEYS.COMMUNITY_POSTS, JSON.stringify(posts));
-            return true;
-        }
         return true;
     },
 
@@ -913,25 +674,7 @@ const DataService = {
 
     // ワークアウト履歴を保存（種目別、RM別、重量別に記録）
     saveWorkoutHistory: async (userId, exerciseName, setData) => {
-        const historyKey = `workout_history_${userId}`;
         const timestamp = new Date().toISOString();
-
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(historyKey);
-            const history = saved ? JSON.parse(saved) : [];
-
-            history.push({
-                exerciseName,
-                weight: setData.weight,
-                rm: setData.rm || 1,
-                reps: setData.reps,
-                setType: setData.setType || 'main',
-                timestamp
-            });
-
-            localStorage.setItem(historyKey, JSON.stringify(history));
-            return true;
-        }
 
         try {
             await db
@@ -955,17 +698,6 @@ const DataService = {
 
     // ワークアウト履歴を取得（種目別フィルタ）
     getWorkoutHistoryByExercise: async (userId, exerciseName) => {
-        const historyKey = `workout_history_${userId}`;
-
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(historyKey);
-            const history = saved ? JSON.parse(saved) : [];
-
-            return history
-                .filter(h => h.exerciseName === exerciseName)
-                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        }
-
         try {
             const snapshot = await db
                 .collection('users')
@@ -985,17 +717,6 @@ const DataService = {
 
     // ワークアウト履歴を取得（種目別 + RM別フィルタ）
     getWorkoutHistoryByExerciseAndRM: async (userId, exerciseName, rm) => {
-        const historyKey = `workout_history_${userId}`;
-
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(historyKey);
-            const history = saved ? JSON.parse(saved) : [];
-
-            return history
-                .filter(h => h.exerciseName === exerciseName && h.rm === rm)
-                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        }
-
         try {
             const snapshot = await db
                 .collection('users')
@@ -1016,17 +737,6 @@ const DataService = {
 
     // 全ワークアウト履歴を取得（最近100件）
     getAllWorkoutHistory: async (userId) => {
-        const historyKey = `workout_history_${userId}`;
-
-        if (DEV_MODE) {
-            const saved = localStorage.getItem(historyKey);
-            const history = saved ? JSON.parse(saved) : [];
-
-            return history
-                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                .slice(0, 100);
-        }
-
         try {
             const snapshot = await db
                 .collection('users')
@@ -1696,8 +1406,7 @@ const CreditService = {
         }
 
         // 登録日から7日間が無料トライアル期間
-        const registrationDate = userProfile.registrationDate ||
-            (DEV_MODE ? localStorage.getItem(STORAGE_KEYS.REGISTRATION_DATE) : null);
+        const registrationDate = userProfile.registrationDate;
 
         if (!registrationDate) {
             return { isActive: false, daysRemaining: 0, isInTrial: false };
@@ -1823,7 +1532,7 @@ const CreditService = {
 
         // 今日が1日 かつ 前回リセットが先月以前
         if (now.getDate() === 1 && (!lastResetDate || now.getMonth() !== lastResetDate.getMonth())) {
-            const timestamp = DEV_MODE ? now.toISOString() : firebase.firestore.Timestamp.now();
+            const timestamp = firebase.firestore.Timestamp.now();
 
             await DataService.saveUserProfile(userId, {
                 ...userProfile,
@@ -2131,18 +1840,10 @@ const ExperienceService = {
     // 指示書完了で経験値付与（1日1回のみ）
     processDirectiveCompletion: async (userId, date) => {
         try {
-            const userRef = DEV_MODE
-                ? { id: userId }
-                : db.collection('users').doc(userId);
+            const userRef = db.collection('users').doc(userId);
 
-            let userData;
-            if (DEV_MODE) {
-                const stored = localStorage.getItem(`user_${userId}`);
-                userData = stored ? JSON.parse(stored) : null;
-            } else {
-                const userDoc = await userRef.get();
-                userData = userDoc.exists ? userDoc.data() : null;
-            }
+            const userDoc = await userRef.get();
+            const userData = userDoc.exists ? userDoc.data() : null;
 
             if (!userData) {
                 console.error('[Experience] User not found');
@@ -2162,14 +1863,9 @@ const ExperienceService = {
             // 処理済み日付を記録
             processedDates.push(date);
 
-            if (DEV_MODE) {
-                userData.processedDirectiveDates = processedDates;
-                localStorage.setItem(`user_${userId}`, JSON.stringify(userData));
-            } else {
-                await userRef.update({
-                    processedDirectiveDates: processedDates
-                });
-            }
+            await userRef.update({
+                processedDirectiveDates: processedDates
+            });
 
             console.log(`[Experience] Directive completion processed for ${date}: +10 XP`);
 
@@ -2187,21 +1883,13 @@ const ExperienceService = {
         }
     },
 
-    // 無料クレジットを手動追加（開発モード用）
+    // 無料クレジットを手動追加
     addFreeCredits: async (userId, amount) => {
         try {
-            const userRef = DEV_MODE
-                ? { id: userId }
-                : db.collection('users').doc(userId);
+            const userRef = db.collection('users').doc(userId);
 
-            let userData;
-            if (DEV_MODE) {
-                const stored = localStorage.getItem(`user_${userId}`);
-                userData = stored ? JSON.parse(stored) : null;
-            } else {
-                const userDoc = await userRef.get();
-                userData = userDoc.exists ? userDoc.data() : null;
-            }
+            const userDoc = await userRef.get();
+            const userData = userDoc.exists ? userDoc.data() : null;
 
             if (!userData) {
                 console.error('[Experience] User not found');
@@ -2210,14 +1898,9 @@ const ExperienceService = {
 
             const newFreeCredits = (userData.freeCredits || 0) + amount;
 
-            if (DEV_MODE) {
-                userData.freeCredits = newFreeCredits;
-                localStorage.setItem(`user_${userId}`, JSON.stringify(userData));
-            } else {
-                await userRef.update({
-                    freeCredits: newFreeCredits
-                });
-            }
+            await userRef.update({
+                freeCredits: newFreeCredits
+            });
 
             console.log(`[Experience] Added ${amount} free credits. Total free: ${newFreeCredits}`);
 
@@ -2245,7 +1928,6 @@ const NotificationService = {
                 return { success: false, error: 'Notification not supported' };
             }
 
-            // DEV_MODEでもブラウザの通知権限は取得可能
             const permission = await Notification.requestPermission();
 
             return {
@@ -2279,14 +1961,6 @@ const NotificationService = {
     // FCMトークンを取得
     getFCMToken: async (userId) => {
         try {
-            // DEV_MODEの場合はダミートークンを返す
-            if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
-                console.log('[Notification] DEV_MODE enabled, using dummy FCM token');
-                const dummyToken = 'dev_fcm_token_' + userId;
-                await NotificationService.saveToken(userId, dummyToken);
-                return { success: true, token: dummyToken, devMode: true };
-            }
-
             // Firebaseアプリが初期化されているか確認
             if (!firebase.apps || firebase.apps.length === 0) {
                 console.error('[Notification] Firebase not initialized');
@@ -2329,21 +2003,15 @@ const NotificationService = {
     // FCMトークンをFirestoreに保存 (updated 2025-11-10)
     saveToken: async (userId, token) => {
         try {
-            if (DEV_MODE) {
-                // DEV_MODEではLocalStorageに保存
-                localStorage.setItem(`fcmToken_${userId}`, token);
-                return { success: true };
-            } else {
-                // Firestoreのユーザードキュメント直下にfcmTokenとして保存
-                // グローバルdbまたはfirebase.firestore()を使用
-                const firestore = window.db || firebase.firestore();
-                await firestore.collection('users').doc(userId).set({
-                    fcmToken: token,
-                    fcmTokenUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-                console.log('[Notification] Token saved to Firestore:', userId);
-                return { success: true };
-            }
+            // Firestoreのユーザードキュメント直下にfcmTokenとして保存
+            // グローバルdbまたはfirebase.firestore()を使用
+            const firestore = window.db || firebase.firestore();
+            await firestore.collection('users').doc(userId).set({
+                fcmToken: token,
+                fcmTokenUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            console.log('[Notification] Token saved to Firestore:', userId);
+            return { success: true };
         } catch (error) {
             console.error('[Notification] Failed to save token:', error);
             return { success: false, error: error.message };
@@ -2353,11 +2021,6 @@ const NotificationService = {
     // フォアグラウンド通知リスナーをセットアップ
     setupForegroundListener: () => {
         try {
-            // DEV_MODEの場合はスキップ
-            if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
-                return;
-            }
-
             // Firebaseアプリが初期化されているか確認
             if (!firebase.apps || firebase.apps.length === 0) {
                 return;
@@ -2461,26 +2124,11 @@ const NotificationService = {
             }
 
             // 通知スケジュールを保存
-            if (DEV_MODE) {
-                localStorage.setItem('notificationSchedules_' + userId, JSON.stringify(schedules));
-
-                // 時刻変更時に再度通知を送るため、表示済みフラグをクリア
-                const today = new Date().toISOString().split('T')[0];
-                localStorage.removeItem('shownNotifications_' + userId + '_' + today);
-
-                // IndexedDBにも保存（Service Workerで使用）
-                try {
-                    await NotificationService.saveSchedulesToIndexedDB(userId, schedules);
-                } catch (error) {
-                    console.error('[Notification] Failed to save to IndexedDB:', error);
-                }
-            } else {
-                await db.collection('users').doc(userId).set({
-                    notificationSchedules: schedules,
-                    notificationSettings: notificationSettings,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-            }
+            await db.collection('users').doc(userId).set({
+                notificationSchedules: schedules,
+                notificationSettings: notificationSettings,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
 
             return { success: true, schedules };
         } catch (error) {

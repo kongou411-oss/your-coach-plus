@@ -3,7 +3,13 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
 
-// グローバルセットアップ（config, utils, services, databases）
+// config を先にインポートして window に公開（他のモジュールより先に実行）
+import * as config from './config.js'
+Object.keys(config).forEach(key => {
+    window[key] = config[key];
+});
+
+// グローバルセットアップ（utils, services, databases）
 import './globalSetup.js'
 
 // グローバルエラーハンドラ（iOS Safari対応、エラー自動送信）

@@ -1,12 +1,6 @@
 // グローバルセットアップ: 既存コードとの互換性のため、必要なオブジェクトをwindowに公開
 
-// config.js をインポートして window に公開
-import * as config from './config.js';
-
-// すべての config 定数を window に公開
-Object.keys(config).forEach(key => {
-    window[key] = config[key];
-});
+// config.jsは main.jsx で既に window に公開済み
 
 // 注: foodDatabase.js, trainingDatabase.js, notificationSound.js, services.js は
 // index.htmlで<script>タグとして読み込まれているため、ここではimportしない

@@ -1,4 +1,6 @@
 import React from 'react';
+import { FEATURES, STORAGE_KEYS } from '../config.js';
+
 // ===== Feature Unlock Utilities =====
 // 機能開放システムのユーティリティ関数
 
