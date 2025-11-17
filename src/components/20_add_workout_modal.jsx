@@ -1,385 +1,5474 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import toast from 'react-hot-toast';
 
-// ===== AddWorkoutModal: ゴールベースの運動記録モーダル =====
-// フロー: 運動名入力 → エクササイズ選択・追加 → 記録
-//
-// Props:
-// - onClose: () => void - モーダルを閉じる
-// - onAdd: (workout) => void - 運動を記録
-// - onUpdate: (workout) => void - 運動を更新（編集モード時）
-// - editingWorkout: Object | null - 編集対象の運動データ
-// - user: Object - ユーザー情報
-// - userProfile: Object - ユーザープロフィール
-// - unlockedFeatures: Array - 解放済み機能
-// - usageDays: Number - 利用日数
-
-const AddWorkoutModal = ({
-    onClose,
-    onAdd,
-    onUpdate,
-    editingWorkout = null,
-    user,
-    userProfile,
-    unlockedFeatures = [],
-    usageDays = 0
-}) => {
-    // ===== 編集モード判定 =====
-    const isEditMode = !!editingWorkout;
-
-    // ===== State管理 =====
-    const [workoutName, setWorkoutName] = useState(isEditMode ? editingWorkout.name : 'トレーニング');
-    const [isEditingWorkoutName, setIsEditingWorkoutName] = useState(false); // 運動名編集モード
-    const [workoutTemplates, setWorkoutTemplates] = useState([]);
-    const [addedExercises, setAddedExercises] = useState(isEditMode ? editingWorkout.exercises || [] : []);
-    const [showSearchModal, setShowSearchModal] = useState(false);
-    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
-    const [showCustomForm, setShowCustomForm] = useState(false);
-    const [showHelpModal, setShowHelpModal] = useState(false); // ヘルプモーダル
-
-    // 検索モーダル用のstate
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('胸'); // デフォルトで胸を表示
-
-    // 量調整UI用のstate
-    const [selectedExerciseIndex, setSelectedExerciseIndex] = useState(null); // 選択中のエクササイズ
-    const [adjustmentStep, setAdjustmentStep] = useState(5); // 増減ステップ（回数のデフォルト）
-    const [originalAmount, setOriginalAmount] = useState(null); // キャンセル用：元の量を保存
-
-    // 確認モーダル
-    const { showConfirm, ConfirmModalComponent } = window.useConfirmModal();
-
-    // カスタムエクササイズデータ
-    const [customData, setCustomData] = useState({
-        name: '',
-        category: '胸',
-        met: 3.0,
-        unit: '回'
-    });
-
-    // Icon はグローバルに公開されている前提
-    const Icon = window.Icon;
-
-    // DataService を使用
-    const DataService = window.DataService;
-
-    // Firestoreから読み込んだカスタムエクササイズ
-    const [customExercises, setCustomExercises] = useState([]);
-
-    // 非表示設定
-    const [hiddenStandardExercises, setHiddenStandardExercises] = useState([]);
-    const [hiddenCategories, setHiddenCategories] = useState([]);
-
-    // ===== 非表示設定をFirestoreから読み込み =====
-    useEffect(() => {
-        const loadHiddenSettings = async () => {
-            const currentUser = firebase.auth().currentUser;
-            if (!currentUser || !currentUser.uid) return;
-
-            try {
-                // 非表示エクササイズを読み込み
-                const exercisesDoc = await firebase.firestore()
-                    .collection('users')
-                    .doc(currentUser.uid)
-                    .collection('settings')
-                    .doc('hiddenStandardExercises')
-                    .get();
-
-                if (exercisesDoc.exists) {
-                    setHiddenStandardExercises(exercisesDoc.data().exercises || []);
-                }
-
-                // 非表示カテゴリを読み込み
-                const categoriesDoc = await firebase.firestore()
-                    .collection('users')
-                    .doc(currentUser.uid)
-                    .collection('settings')
-                    .doc('hiddenCategories')
-                    .get();
-
-                if (categoriesDoc.exists) {
-                    setHiddenCategories(categoriesDoc.data().categories || []);
-                }
-            } catch (error) {
-                console.error('非表示設定の読み込みエラー:', error);
+// ===== Edit Workout Modal (運動編集専用モーダル) =====
+const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
+    const [selectedExerciseIndex, setSelectedExerciseIndex] = useState(0);
+    const [exercises, setExercises] = useState(workout.exercises || []);
+    const [totalDurationInput, setTotalDurationInput] = useState(
+        // 総時間を初期化（全種目のdurationまたはsetsから計算）
+        workout.exercises?.reduce((sum, ex) => {
+            if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
+                return sum + (ex.duration || 0);
+            } else if (ex.sets) {
+                return sum + ex.sets.reduce((s, set) => s + (set.duration || 0), 0);
             }
-        };
+            return sum;
+        }, 0) || 5
+    );
 
-        loadHiddenSettings();
-    }, [user]);
+    // 運動名の編集
+    const [workoutName, setWorkoutName] = useState(workout.name || 'トレーニング');
+    const [isEditingWorkoutName, setIsEditingWorkoutName] = useState(false);
 
-    // ===== カスタムエクササイズを読み込み =====
-    useEffect(() => {
-        const loadCustomExercises = async () => {
-            const currentUser = firebase.auth().currentUser;
-            if (!currentUser || !currentUser.uid) return;
+    const currentExercise = exercises[selectedExerciseIndex];
 
-            try {
-                const snapshot = await firebase.firestore()
-                    .collection('users')
-                    .doc(currentUser.uid)
-                    .collection('customExercises')
-                    .get();
+    // セット編集用のstate
+    const [editingSetIndex, setEditingSetIndex] = useState(null);
+    const [editingSet, setEditingSet] = useState(null);
 
-                const exercises = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-
-                setCustomExercises(exercises);
-            } catch (error) {
-                console.error('カスタムエクササイズの読み込みエラー:', error);
-            }
-        };
-
-        loadCustomExercises();
-    }, [user]);
-
-    // ===== テンプレート読み込み =====
-    useEffect(() => {
-        const loadTemplates = async () => {
-            const currentUser = firebase.auth().currentUser;
-            if (!currentUser || !currentUser.uid) return;
-
-            try {
-                const templatesData = await DataService.getWorkoutTemplates(currentUser.uid);
-                setWorkoutTemplates(templatesData);
-            } catch (error) {
-                console.error('テンプレート読み込みエラー:', error);
-            }
-        };
-
-        loadTemplates();
-    }, [user]);
-
-    // ===== 合計カロリーを計算 =====
-    const totalCalories = addedExercises.reduce((sum, exercise) => {
-        const weight = userProfile?.weight || 60; // デフォルト60kg
-        const met = exercise.met || 3.0;
-        const duration = exercise.duration || 30; // デフォルト30分
-        const calories = met * weight * (duration / 60);
-        return sum + calories;
-    }, 0);
-
-    // ===== エクササイズを追加 =====
-    const handleAddExercise = (exercise) => {
-        const newExercise = {
-            ...exercise,
-            id: Date.now().toString(),
-            sets: exercise.sets || 3,
-            reps: exercise.reps || 10,
-            weight: exercise.weight || 0,
-            duration: exercise.duration || 30,
-            distance: exercise.distance || 0
-        };
-        setAddedExercises([...addedExercises, newExercise]);
-        setShowSearchModal(false);
-        setShowCustomForm(false);
+    // セット編集開始
+    const handleEditSet = (setIndex) => {
+        setEditingSetIndex(setIndex);
+        setEditingSet({ ...currentExercise.sets[setIndex] });
     };
 
-    // ===== エクササイズを削除 =====
-    const handleRemoveExercise = async (index) => {
-        const confirmed = await showConfirm(
-            'このエクササイズを削除しますか？',
-            '削除'
-        );
+    // セット更新
+    const handleUpdateSet = () => {
+        const updatedExercises = [...exercises];
+        updatedExercises[selectedExerciseIndex].sets[editingSetIndex] = editingSet;
+        setExercises(updatedExercises);
+        setEditingSetIndex(null);
+        setEditingSet(null);
+    };
 
-        if (confirmed) {
-            const newExercises = addedExercises.filter((_, i) => i !== index);
-            setAddedExercises(newExercises);
+    // セット削除
+    const handleDeleteSet = (setIndex) => {
+        if (currentExercise.sets.length === 1) {
+            toast.error('最後のセットは削除できません。種目ごと削除してください。');
+            return;
+        }
+        const updatedExercises = [...exercises];
+        updatedExercises[selectedExerciseIndex].sets = currentExercise.sets.filter((_, i) => i !== setIndex);
+        setExercises(updatedExercises);
+    };
+
+    // 有酸素・ストレッチの時間編集
+    const handleUpdateDuration = (newDuration) => {
+        const updatedExercises = [...exercises];
+        updatedExercises[selectedExerciseIndex].duration = newDuration;
+        setExercises(updatedExercises);
+    };
+
+    // 種目削除
+    const handleDeleteExercise = (exerciseIndex) => {
+        if (exercises.length === 1) {
+            toast.error('最後の種目は削除できません。運動全体を削除してください。');
+            return;
+        }
+        const updatedExercises = exercises.filter((_, i) => i !== exerciseIndex);
+        setExercises(updatedExercises);
+        if (selectedExerciseIndex >= updatedExercises.length) {
+            setSelectedExerciseIndex(updatedExercises.length - 1);
         }
     };
 
-    // ===== エクササイズの量を変更 =====
-    const handleUpdateExerciseAmount = (index, field, value) => {
-        const newExercises = [...addedExercises];
-        newExercises[index][field] = value;
-        setAddedExercises(newExercises);
-    };
-
-    // ===== 記録を保存 =====
+    // 更新保存
     const handleSave = () => {
-        if (addedExercises.length === 0) {
-            toast.error('エクササイズを追加してください');
-            return;
-        }
-
-        const workout = {
+        const updatedWorkout = {
+            ...workout,
             name: workoutName,
-            exercises: addedExercises,
-            totalCalories: Math.round(totalCalories),
-            timestamp: new Date().toISOString()
+            exercises: exercises,
+            totalDuration: totalDurationInput
         };
-
-        if (isEditMode) {
-            onUpdate({ ...editingWorkout, ...workout });
-        } else {
-            onAdd(workout);
-        }
-
-        onClose();
+        onUpdate(updatedWorkout, false);
     };
 
-    // ===== テンプレートとして保存 =====
-    const saveAsTemplate = async () => {
-        if (addedExercises.length === 0) {
-            toast.error('エクササイズを追加してください');
-            return;
-        }
-
-        const confirmed = await showConfirm(
-            `「${workoutName}」をテンプレートとして保存しますか？`,
-            '保存'
-        );
-
-        if (!confirmed) return;
-
-        try {
-            const currentUser = firebase.auth().currentUser;
-            if (!currentUser) throw new Error('ユーザーが認証されていません');
-
-            await DataService.saveWorkoutTemplate(currentUser.uid, {
-                name: workoutName,
-                exercises: addedExercises
-            });
-
-            toast.success('テンプレートを保存しました');
-        } catch (error) {
-            console.error('テンプレート保存エラー:', error);
-            toast.error('テンプレートの保存に失敗しました');
-        }
-    };
-
-    // ===== テンプレートを適用 =====
-    const applyTemplate = (template) => {
-        setWorkoutName(template.name);
-        setAddedExercises(template.exercises || []);
-        setShowTemplateSelector(false);
-        toast.success(`テンプレート「${template.name}」を適用しました`);
-    };
-
-    // ===== カスタムエクササイズを保存 =====
-    const saveCustomExercise = async () => {
-        if (!customData.name.trim()) {
-            toast.error('エクササイズ名を入力してください');
-            return;
-        }
-
-        try {
-            const currentUser = firebase.auth().currentUser;
-            if (!currentUser) throw new Error('ユーザーが認証されていません');
-
-            await firebase.firestore()
-                .collection('users')
-                .doc(currentUser.uid)
-                .collection('customExercises')
-                .add({
-                    ...customData,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-            toast.success('カスタムエクササイズを保存しました');
-
-            // カスタムエクササイズをリロード
-            const snapshot = await firebase.firestore()
-                .collection('users')
-                .doc(currentUser.uid)
-                .collection('customExercises')
-                .get();
-
-            const exercises = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            setCustomExercises(exercises);
-
-            // カスタムエクササイズを追加
-            handleAddExercise(customData);
-
-            // フォームをリセット
-            setCustomData({
-                name: '',
-                category: '胸',
-                met: 3.0,
-                unit: '回'
-            });
-        } catch (error) {
-            console.error('カスタムエクササイズ保存エラー:', error);
-            toast.error('カスタムエクササイズの保存に失敗しました');
-        }
-    };
-
-    // ===== 運動データベースを取得 =====
-    const getExerciseDatabase = () => {
-        return window.trainingDatabase || [];
-    };
-
-    // ===== カテゴリ一覧を取得 =====
-    const getCategories = () => {
-        const db = getExerciseDatabase();
-        const categories = [...new Set(db.map(ex => ex.category))];
-        return categories.filter(cat => !hiddenCategories.includes(cat));
-    };
-
-    // ===== カテゴリ別にエクササイズを取得 =====
-    const getExercisesByCategory = (category) => {
-        const db = getExerciseDatabase();
-        const standardExercises = db.filter(ex =>
-            ex.category === category && !hiddenStandardExercises.includes(ex.name)
-        );
-        const custom = customExercises.filter(ex => ex.category === category);
-        return [...standardExercises, ...custom];
-    };
-
-    // ===== 検索フィルタリング =====
-    const filterExercises = (exercises) => {
-        if (!searchTerm) return exercises;
-        return exercises.filter(ex => ex.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    };
+    const isCardioOrStretch = currentExercise?.exerciseType === 'aerobic' || currentExercise?.exerciseType === 'stretch';
 
     return (
-        <>
-            <div className="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4" onClick={(e) => {
-                if (e.target === e.currentTarget) {
-                    onClose();
-                }
-            }}>
-                <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-                    {/* ヘッダー */}
-                    <div className="bg-white border-b px-4 py-2 flex-shrink-0">
-                        <div className="flex justify-between items-center">
-                            {/* 運動名（編集可能） */}
-                            <div className="flex-1 min-w-0 mr-2">
-                                {isEditingWorkoutName ? (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+                    {/* 運動名（編集可能） */}
+                    <div className="flex-1 min-w-0 mr-2">
+                        {isEditingWorkoutName ? (
+                            <input
+                                type="text"
+                                value={workoutName}
+                                onChange={(e) => setWorkoutName(e.target.value)}
+                                onBlur={() => {
+                                    if (!workoutName.trim()) {
+                                        setWorkoutName('トレーニング');
+                                    }
+                                    setIsEditingWorkoutName(false);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        if (!workoutName.trim()) {
+                                            setWorkoutName('トレーニング');
+                                        }
+                                        setIsEditingWorkoutName(false);
+                                    }
+                                }}
+                                className="text-xl font-bold border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 w-full"
+                                autoFocus
+                            />
+                        ) : (
+                            <h2 className="text-xl font-bold truncate">{workoutName}</h2>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                        {/* 編集ボタン */}
+                        {!isEditingWorkoutName && (
+                            <button
+                                onClick={() => setIsEditingWorkoutName(true)}
+                                className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
+                                title="編集"
+                            >
+                                <Icon name="Edit" size={18} />
+                            </button>
+                        )}
+                        {/* 閉じるボタン */}
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                            <Icon name="X" size={24} />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    {/* 総時間入力 */}
+                    <div>
+                        <label className="block text-sm font-medium mb-2">総時間（分）</label>
+                        <input
+                            type="number"
+                            value={totalDurationInput}
+                            onChange={(e) => setTotalDurationInput(Number(e.target.value))}
+                            className="w-full px-4 py-2 border rounded-lg"
+                            min="0"
+                        />
+                    </div>
+
+                    {/* 種目タブ */}
+                    <div>
+                        <label className="block text-sm font-medium mb-2">種目を選択</label>
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                            {exercises.map((ex, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setSelectedExerciseIndex(index)}
+                                    className={`px-4 py-2 rounded-lg whitespace-nowrap ${
+                                        selectedExerciseIndex === index
+                                            ? 'bg-[#4A9EFF] text-white font-semibold shadow-md'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {ex.exercise?.name || ex.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 種目詳細編集 */}
+                    {currentExercise && (
+                        <div className="border rounded-lg p-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-lg">{currentExercise.exercise?.name || currentExercise.name}</h3>
+                                <button
+                                    onClick={() => handleDeleteExercise(selectedExerciseIndex)}
+                                    className="text-red-600 hover:text-red-800 text-sm"
+                                >
+                                    <Icon name="Trash2" size={18} />
+                                </button>
+                            </div>
+
+                            {isCardioOrStretch ? (
+                                // 有酸素・ストレッチ: 時間のみ編集
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">時間（分）</label>
                                     <input
-                                        type="text"
-                                        value={workoutName}
-                                        onChange={(e) => setWorkoutName(e.target.value)}
-                                        onBlur={() => {
-                                            if (!workoutName.trim()) {
-                                                setWorkoutName('トレーニング');
+                                        type="number"
+                                        value={currentExercise.duration || 0}
+                                        onChange={(e) => handleUpdateDuration(Number(e.target.value))}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                        min="0"
+                                    />
+                                </div>
+                            ) : (
+                                // 筋トレ: セット一覧と編集
+                                <div>
+                                    <div className="space-y-2 mb-4">
+                                        {currentExercise.sets?.map((set, setIndex) => (
+                                            <div key={setIndex} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                                                <div className="flex-1">
+                                                    <div className="font-medium">Set {setIndex + 1}</div>
+                                                    <div className="text-sm text-gray-600">
+                                                        {set.weight}kg × {set.reps}回
+                                                        {set.rm && set.rmWeight && (
+                                                            <span className="ml-2 text-orange-600">
+                                                                🏆 {set.rm}RM × {set.rmWeight}kg
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleEditSet(setIndex)}
+                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                >
+                                                    <Icon name="Edit" size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteSet(setIndex)}
+                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                >
+                                                    <Icon name="Trash2" size={18} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* セット編集モーダル */}
+                                    {editingSetIndex !== null && editingSet && (
+                                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
+                                            <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+                                                <h3 className="text-lg font-bold mb-4">Set {editingSetIndex + 1} を編集</h3>
+                                                <div className="space-y-4">
+                                                    {/* 重量入力 */}
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-1">重量（kg）</label>
+                                                        {/* スライダー */}
+                                                        <div className="mb-3">
+                                                            <input
+                                                                type="range"
+                                                                min="0"
+                                                                max="500"
+                                                                step="2.5"
+                                                                value={editingSet.weight || 0}
+                                                                onChange={(e) => setEditingSet({...editingSet, weight: Number(e.target.value)})}
+                                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                                style={{
+                                                                    background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((editingSet.weight || 0)/500)*100}%, #e5e7eb ${((editingSet.weight || 0)/500)*100}%, #e5e7eb 100%)`
+                                                                }}
+                                                            />
+                                                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 0})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">0kg</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 100})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">100kg</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 200})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">200kg</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 300})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">300kg</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 400})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">400kg</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, weight: 500})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">500kg</span>
+                                                            </div>
+                                                        </div>
+                                                        <input
+                                                            type="number"
+                                                            value={editingSet.weight || 0}
+                                                            onChange={(e) => setEditingSet({...editingSet, weight: Number(e.target.value)})}
+                                                            className="w-full px-4 py-3 border rounded-lg"
+                                                        />
+                                                        {/* 増減ボタン */}
+                                                        <div className="grid grid-cols-6 gap-1 mt-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Math.max(0, Number(editingSet.weight) - 10)})}
+                                                                className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                                                            >
+                                                                -10
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Math.max(0, Number(editingSet.weight) - 5)})}
+                                                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                            >
+                                                                -5
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Math.max(0, Number(editingSet.weight) - 2.5)})}
+                                                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                            >
+                                                                -2.5
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Number(editingSet.weight) + 2.5})}
+                                                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                            >
+                                                                +2.5
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Number(editingSet.weight) + 5})}
+                                                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                            >
+                                                                +5
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, weight: Number(editingSet.weight) + 10})}
+                                                                className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                                                            >
+                                                                +10
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 回数入力 */}
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-1">回数</label>
+                                                        {/* スライダー */}
+                                                        <div className="mb-3">
+                                                            <input
+                                                                type="range"
+                                                                min="0"
+                                                                max="50"
+                                                                step="1"
+                                                                value={editingSet.reps || 0}
+                                                                onChange={(e) => setEditingSet({...editingSet, reps: Number(e.target.value)})}
+                                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                                style={{
+                                                                    background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((editingSet.reps || 0)/50)*100}%, #e5e7eb ${((editingSet.reps || 0)/50)*100}%, #e5e7eb 100%)`
+                                                                }}
+                                                            />
+                                                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 0})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">0回</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 10})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">10回</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 20})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">20回</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 30})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">30回</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 40})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">40回</span>
+                                                                <span onClick={() => setEditingSet({...editingSet, reps: 50})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">50回</span>
+                                                            </div>
+                                                        </div>
+                                                        <input
+                                                            type="number"
+                                                            value={editingSet.reps || 0}
+                                                            onChange={(e) => setEditingSet({...editingSet, reps: Number(e.target.value)})}
+                                                            className="w-full px-4 py-3 border rounded-lg"
+                                                        />
+                                                        {/* 増減ボタン */}
+                                                        <div className="grid grid-cols-4 gap-1 mt-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, reps: Math.max(0, Number(editingSet.reps) - 5)})}
+                                                                className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                                                            >
+                                                                -5
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, reps: Math.max(0, Number(editingSet.reps) - 1)})}
+                                                                className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                            >
+                                                                -1
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, reps: Number(editingSet.reps) + 1})}
+                                                                className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                            >
+                                                                +1
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingSet({...editingSet, reps: Number(editingSet.reps) + 5})}
+                                                                className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                                                            >
+                                                                +5
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex gap-2 mt-6">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingSetIndex(null);
+                                                                setEditingSet(null);
+                                                            }}
+                                                            className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                                                        >
+                                                            キャンセル
+                                                        </button>
+                                                        <button
+                                                            onClick={handleUpdateSet}
+                                                            className="flex-1 py-3 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
+                                                        >
+                                                            更新
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* フッターボタン */}
+                <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                    >
+                        キャンセル
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        className="flex-1 py-3 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
+                    >
+                        更新
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ===== Edit Meal Modal (食事編集専用モーダル) =====
+const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate, editingMeal, isTemplateMode = false }) => {
+            // 運動専用モーダル：type !== 'workout' の場合はエラー
+            if (type !== 'workout') {
+                return (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+                        <div className="bg-white rounded-lg p-6 max-w-md">
+                            <h2 className="text-xl font-bold mb-4 text-red-600">エラー</h2>
+                            <p className="mb-4">このモーダルは運動記録専用です。type='{type}' は対応していません。</p>
+                            <button onClick={onClose} className="bg-blue-500 text-white px-4 py-2 rounded">閉じる</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // 食事とサプリを統合する場合、itemTypeで管理
+            const isMealOrSupplement = type === 'meal' || type === 'supplement';
+
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedItem, setSelectedItem] = useState(null);
+            const [amount, setAmount] = useState(type === 'supplement' ? '1' : '100');
+            const [expandedCategories, setExpandedCategories] = useState({});
+            const [mealName, setMealName] = useState('');
+            const [addedItems, setAddedItems] = useState([]);
+            const [addedItemsExpanded, setAddedItemsExpanded] = useState(true); // 追加済セクションの展開状態
+            const [selectedFoods, setSelectedFoods] = useState([]); // 選択中の食品リスト
+            const [editingItemIndex, setEditingItemIndex] = useState(null); // 編集中のアイテムのインデックス
+            const [mealTemplates, setMealTemplates] = useState([]);
+            const [supplementTemplates, setSupplementTemplates] = useState([]);
+            const [showTemplates, setShowTemplates] = useState(false);
+            const [templateName, setTemplateName] = useState('');
+            const [editingTemplateId, setEditingTemplateId] = useState(null); // 編集中のテンプレートID
+            const [editingTemplateObj, setEditingTemplateObj] = useState(null); // 編集中のテンプレートオブジェクト（ローカル用）
+            const [selectedExercise, setSelectedExercise] = useState(null);
+            const [showAIFoodRecognition, setShowAIFoodRecognition] = useState(false);
+            const [showCustomFoodCreator, setShowCustomFoodCreator] = useState(false);
+            const [showSearchModal, setShowSearchModal] = useState(false);
+            const [foodOrSupplementTab, setFoodOrSupplementTab] = useState('food'); // 'food' or 'supplement'
+            const [exerciseTab, setExerciseTab] = useState('strength'); // 'strength' or 'cardio' or 'stretch'
+            const [selectedExerciseCategory, setSelectedExerciseCategory] = useState('胸'); // 運動のカテゴリフィルタ
+
+            // 料理作成用のstate
+            const [showRecipeCreator, setShowRecipeCreator] = useState(false);
+            const [recipeIngredients, setRecipeIngredients] = useState([]);
+
+            // サプリメント用のstate
+            const [showCustomSupplementForm, setShowCustomSupplementForm] = useState(false);
+            const [showQuickCreate, setShowQuickCreate] = useState(false);
+            const [isAICreation, setIsAICreation] = useState(false); // AI解析からの作成かどうか
+            const [isFromAIRecognition, setIsFromAIRecognition] = useState(false); // AI写真解析経由かどうか
+            const [showMealInfoModal, setShowMealInfoModal] = useState(false); // 食事記録の使い方モーダル
+            const [showWorkoutInfoModal, setShowWorkoutInfoModal] = useState(false); // 運動記録の使い方モーダル
+            const [nutritionInputMethod, setNutritionInputMethod] = useState('manual'); // 'manual' or 'ai'
+
+            // 非表示設定（運動用）
+            const [hiddenStandardTrainings, setHiddenStandardTrainings] = useState([]);
+            const [hiddenTrainingCategories, setHiddenTrainingCategories] = useState([]);
+            const [aiImage, setAiImage] = useState(null); // AI推定用の画像
+            const [aiImagePreview, setAiImagePreview] = useState(null); // AI推定用の画像プレビュー
+            const [aiRecognizing, setAiRecognizing] = useState(false); // AI認識中
+            const [saveMethod, setSaveMethod] = useState('database'); // 'database' or 'addToList'
+            const [showSaveMethodInfo, setShowSaveMethodInfo] = useState(false); // 保存方法説明モーダル
+            const [onCustomCompleteCallback, setOnCustomCompleteCallback] = useState(null); // カスタム登録完了時のコールバック
+            const [customSupplementData, setCustomSupplementData] = useState({
+                itemType: 'food', // 'food', 'recipe', 'supplement'
+                name: '',
+                category: 'ビタミン・ミネラル',
+                servingSize: 100,
+                servingUnit: 'g',
+                unit: 'g',  // 表示単位（'g', '1個', '本'など）
+                calories: 0,
+                protein: 0,
+                fat: 0,
+                carbs: 0,
+                vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
+                vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
+                niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0,
+                sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0,
+                iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0,
+                otherNutrients: []
+            });
+
+            // Workout用のstate
+            const [workoutName, setWorkoutName] = useState('トレーニング'); // 運動名
+            const [isEditingWorkoutName, setIsEditingWorkoutName] = useState(false); // 運動名編集モード
+            const [exercises, setExercises] = useState([]);
+            const [currentExercise, setCurrentExercise] = useState(null);
+            const [sets, setSets] = useState([]);
+            const [isFromTemplate, setIsFromTemplate] = useState(false); // テンプレートから読み込んだか
+            const [currentSet, setCurrentSet] = useState({
+                weight: 50,
+                reps: 10,
+                distance: 0.5,
+                tut: 30,
+                restInterval: 90,
+                duration: 5
+            });
+            const [workoutTemplates, setWorkoutTemplates] = useState([]);
+            const [showCustomExerciseForm, setShowCustomExerciseForm] = useState(false);
+            const [workoutInfoModal, setWorkoutInfoModal] = useState({ show: false, title: '', content: '' });
+            const [showAdvancedTraining, setShowAdvancedTraining] = useState(false);
+            const [exerciseSaveMethod, setExerciseSaveMethod] = useState('database'); // 'database' or 'addToList'
+            const [showExerciseSaveMethodInfo, setShowExerciseSaveMethodInfo] = useState(false); // 保存方法説明モーダル
+            const [customExerciseData, setCustomExerciseData] = useState({
+                name: '',
+                category: '胸',
+                subcategory: 'コンパウンド',
+                exerciseType: 'anaerobic',
+                jointType: 'single',
+                defaultDistance: 0.5,
+                defaultTutPerRep: 3,
+                exerciseFactor: 1.0,
+                epocRate: 0.15,
+                intervalMultiplier: 1.3,
+                equipment: '',
+                difficulty: '初級',
+                primaryMuscles: [],
+                secondaryMuscles: []
+            });
+
+            // Firestoreから読み込んだカスタムアイテム（AI解析経由で保存されたもの）
+            const [customFoods, setCustomFoods] = useState([]);
+
+            // customFoodsをFirestoreから読み込み
+            useEffect(() => {
+                console.log('[AddItemView] useEffect開始');
+                const loadCustomFoods = async () => {
+                    const currentUser = firebase.auth().currentUser;
+                    console.log('[AddItemView] loadCustomFoods実行、currentUser:', currentUser);
+                    if (!currentUser || !currentUser.uid) {
+                        console.log('[AddItemView] ユーザー未ログインのためスキップ');
+                        return;
+                    }
+
+                    try {
+                        console.log('[AddItemView] customFoods読み込み開始...');
+                        const customFoodsSnapshot = await firebase.firestore()
+                            .collection('users')
+                            .doc(currentUser.uid)
+                            .collection('customFoods')
+                            .get();
+
+                        const foods = customFoodsSnapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        }));
+
+                        setCustomFoods(foods);
+                        console.log(`[AddItemView] customFoods読み込み完了: ${foods.length}件`, foods.map(f => f.name));
+                    } catch (error) {
+                        console.error('[AddItemView] customFoods読み込みエラー:', error);
+                    }
+                };
+
+                const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                    if (user) {
+                        console.log('[AddItemView] 認証状態変化: ログイン済み');
+                        loadCustomFoods();
+                    } else {
+                        console.log('[AddItemView] 認証状態変化: 未ログイン');
+                        setCustomFoods([]);
+                    }
+                });
+
+                return () => {
+                    console.log('[AddItemView] useEffectクリーンアップ');
+                    unsubscribe();
+                };
+            }, []);
+
+            // 非表示設定をFirestoreから読み込み（運動用）
+            useEffect(() => {
+                const loadHiddenTrainings = async () => {
+                    const currentUser = firebase.auth().currentUser;
+                    if (!currentUser || !currentUser.uid) return;
+
+                    try {
+                        // 非表示運動アイテムを読み込み
+                        const itemsDoc = await firebase.firestore()
+                            .collection('users')
+                            .doc(currentUser.uid)
+                            .collection('settings')
+                            .doc('hiddenStandardTrainings')
+                            .get();
+
+                        if (itemsDoc.exists) {
+                            setHiddenStandardTrainings(itemsDoc.data().items || []);
+                        }
+
+                        // 非表示運動カテゴリを読み込み
+                        const categoriesDoc = await firebase.firestore()
+                            .collection('users')
+                            .doc(currentUser.uid)
+                            .collection('settings')
+                            .doc('hiddenTrainingCategories')
+                            .get();
+
+                        if (categoriesDoc.exists) {
+                            setHiddenTrainingCategories(categoriesDoc.data().categories || []);
+                        }
+                    } catch (error) {
+                        console.error('[AddItemView] Failed to load hidden trainings:', error);
+                    }
+                };
+
+                const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                    if (user) {
+                        loadHiddenTrainings();
+                    } else {
+                        setHiddenStandardTrainings([]);
+                        setHiddenTrainingCategories([]);
+                    }
+                });
+
+                return () => unsubscribe();
+            }, []);
+
+            // テンプレート読み込み
+            useEffect(() => {
+                if (type === 'meal' && unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id)) {
+                    DataService.getMealTemplates(user.uid).then(setMealTemplates);
+                } else if (type === 'supplement' && unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id)) {
+                    DataService.getSupplementTemplates(user.uid).then(setSupplementTemplates);
+                }
+            }, [type]);
+
+            // テンプレート編集モードの初期化
+            useEffect(() => {
+                // テンプレート編集モードの場合、既存のテンプレートデータを読み込む
+                if (editingTemplate) {
+                    // カテゴリ展開状態を初期化（折りたたんだ状態にリセット）
+                    setExpandedCategories({});
+
+                    // 既存のテンプレートデータを各stateに設定
+                    if (type === 'meal' && editingTemplate.items) {
+                        setAddedItems(editingTemplate.items);
+                        setMealName(editingTemplate.name || '');
+                    } else if (type === 'workout' && editingTemplate.exercises) {
+                        setExercises(editingTemplate.exercises);
+                        setMealName(editingTemplate.name || '');
+                    }
+                }
+            }, [editingTemplate]);
+
+            // 食事編集時：既存データをロード
+            useEffect(() => {
+                if (editingMeal && type === 'meal') {
+                    console.log('📝 食事編集モード: データ読み込み', editingMeal);
+                    if (editingMeal.items && editingMeal.items.length > 0) {
+                        // amountが文字列の場合は数値に変換
+                        const normalizedItems = editingMeal.items.map(item => ({
+                            ...item,
+                            amount: typeof item.amount === 'string' ? parseFloat(item.amount) || 100 : item.amount
+                        }));
+                        setAddedItems(normalizedItems);
+                        setMealName(editingMeal.name || '');
+                    }
+                }
+            }, [editingMeal, type]);
+
+            // selectedItemが変更されたときにデフォルト量を設定
+            useEffect(() => {
+                if (selectedItem) {
+                    // servingSizeとservingUnitが定義されている場合はそれを使用
+                    if (selectedItem.servingSize !== undefined && selectedItem.servingUnit !== undefined) {
+                        setAmount(String(selectedItem.servingSize));
+                    } else {
+                        // 定義されていない場合は従来通り100gまたは1個
+                        if (type === 'supplement') {
+                            setAmount('1');
+                        } else {
+                            setAmount('100');
+                        }
+                    }
+                }
+            }, [selectedItem]);
+
+            const renderConditionInput = () => {
+                const [condition, setCondition] = useState({
+                    sleepHours: 7,
+                    sleepQuality: 3,
+                    stress: 3,
+                    appetite: 3,
+                    digestion: 3,
+                    focus: 3,
+                    weight: userProfile.weight || 0,
+                    bodyFat: userProfile.bodyFat || 0,
+                    notes: ''
+                });
+
+                const RatingButton = ({ label, value, onChange, options }) => (
+                    <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">{label}</label>
+                        <div className="grid grid-cols-5 gap-2">
+                            {options.map((opt, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => onChange(opt.value)}
+                                    className={`py-3 px-2 rounded-lg border-2 transition ${
+                                        value === opt.value
+                                            ? 'border-[#4A9EFF] bg-blue-50 shadow-md'
+                                            : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                >
+                                    <div className="text-2xl mb-1">{opt.emoji}</div>
+                                    <div className="text-xs font-medium">{opt.label}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                );
+
+                return (
+                    <div className="space-y-5">
+                        {/* 睡眠時間 */}
+                        <RatingButton
+                            label="⏰ 睡眠時間"
+                            value={condition.sleepHours}
+                            onChange={(val) => setCondition({...condition, sleepHours: val})}
+                            options={[
+                                { value: 5, emoji: '😫', label: '5h以下' },
+                                { value: 6, emoji: '😪', label: '6h' },
+                                { value: 7, emoji: '😐', label: '7h' },
+                                { value: 8, emoji: '😊', label: '8h' },
+                                { value: 9, emoji: '🌟', label: '9h以上' }
+                            ]}
+                        />
+
+                        <RatingButton
+                            label="😴 睡眠の質"
+                            value={condition.sleepQuality}
+                            onChange={(val) => setCondition({...condition, sleepQuality: val})}
+                            options={[
+                                { value: 1, emoji: '😫', label: '最悪' },
+                                { value: 2, emoji: '😪', label: '悪い' },
+                                { value: 3, emoji: '😐', label: '普通' },
+                                { value: 4, emoji: '😊', label: '良い' },
+                                { value: 5, emoji: '🌟', label: '最高' }
+                            ]}
+                        />
+
+                        <RatingButton
+                            label="😰 ストレスレベル"
+                            value={condition.stress}
+                            onChange={(val) => setCondition({...condition, stress: val})}
+                            options={[
+                                { value: 1, emoji: '😌', label: 'なし' },
+                                { value: 2, emoji: '🙂', label: '少し' },
+                                { value: 3, emoji: '😐', label: '普通' },
+                                { value: 4, emoji: '😰', label: '多い' },
+                                { value: 5, emoji: '🤯', label: '極度' }
+                            ]}
+                        />
+
+                        <RatingButton
+                            label="🍽️ 食欲"
+                            value={condition.appetite}
+                            onChange={(val) => setCondition({...condition, appetite: val})}
+                            options={[
+                                { value: 1, emoji: '😣', label: 'なし' },
+                                { value: 2, emoji: '😕', label: '少ない' },
+                                { value: 3, emoji: '😐', label: '普通' },
+                                { value: 4, emoji: '😋', label: 'あり' },
+                                { value: 5, emoji: '🤤', label: '旺盛' }
+                            ]}
+                        />
+
+                        <RatingButton
+                            label="🦠 腸内環境"
+                            value={condition.digestion}
+                            onChange={(val) => setCondition({...condition, digestion: val})}
+                            options={[
+                                { value: 1, emoji: '😖', label: '悪い' },
+                                { value: 2, emoji: '😕', label: '不調' },
+                                { value: 3, emoji: '😐', label: '普通' },
+                                { value: 4, emoji: '🙂', label: '良好' },
+                                { value: 5, emoji: '✨', label: '快調' }
+                            ]}
+                        />
+
+                        <RatingButton
+                            label="🧠 集中力"
+                            value={condition.focus}
+                            onChange={(val) => setCondition({...condition, focus: val})}
+                            options={[
+                                { value: 1, emoji: '😵', label: '集中できない' },
+                                { value: 2, emoji: '😕', label: 'ぼんやり' },
+                                { value: 3, emoji: '😐', label: '普通' },
+                                { value: 4, emoji: '🙂', label: '集中できる' },
+                                { value: 5, emoji: '✨', label: '超集中' }
+                            ]}
+                        />
+
+                        {/* 体組成記録 */}
+                        <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                            <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                                <Icon name="Scale" size={16} />
+                                体組成記録（任意）
+                            </h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-medium mb-1">
+                                        体重 (kg)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={condition.weight}
+                                        onChange={(e) => setCondition({...condition, weight: parseFloat(e.target.value) || 0})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
+                                        placeholder="例: 65.5"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium mb-1">
+                                        体脂肪率 (%)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={condition.bodyFat}
+                                        onChange={(e) => setCondition({...condition, bodyFat: parseFloat(e.target.value) || 0})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
+                                        placeholder="例: 15.5"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-2">メモ（任意）</label>
+                            <textarea
+                                value={condition.notes}
+                                onChange={(e) => setCondition({...condition, notes: e.target.value})}
+                                placeholder="体調や気になることを記録..."
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                rows="3"
+                            />
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                const newCondition = {
+                                    id: Date.now(),
+                                    time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                                    date: selectedDate, // 記録対象の日付を明示的に保存
+                                    ...condition
+                                };
+
+                                onAdd(newCondition);
+
+                                // 体組成をプロフィールに即時反映（記録後に実行）
+                                if (condition.weight > 0 || condition.bodyFat > 0) {
+                                    setTimeout(() => {
+                                        const currentProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)) || {};
+                                        if (condition.weight > 0) {
+                                            currentProfile.weight = condition.weight;
+                                        }
+                                        if (condition.bodyFat > 0) {
+                                            currentProfile.bodyFat = condition.bodyFat;
+                                            currentProfile.bodyFatPercentage = condition.bodyFat;
+                                            // LBM（除脂肪体重）を再計算
+                                            currentProfile.leanBodyMass = currentProfile.weight * (1 - currentProfile.bodyFat / 100);
+                                        }
+                                        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(currentProfile));
+                                        // ページをリロードして更新を反映
+                                        window.location.reload();
+                                    }, 100);
+                                }
+                            }}
+                            className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
+                        >
+                            記録
+                        </button>
+                    </div>
+                );
+            };
+
+            const renderSupplementInput = () => {
+                const fuzzyMatch = (text, query) => {
+                    if (!query || query.trim() === '') return true;
+                    const normalize = (str) => {
+                        return str
+                            .toLowerCase()
+                            .replace(/[（）\(\)]/g, '') // 括弧を削除
+                            .replace(/[\u3041-\u3096]/g, (m) => String.fromCharCode(m.charCodeAt(0) + 0x60)) // ひらがな→カタカナ
+                            .replace(/\s+/g, ''); // 空白削除
+                    };
+                    const normalizedText = normalize(text);
+                    const normalizedQuery = normalize(query);
+                    return normalizedText.includes(normalizedQuery);
+                };
+
+                const filteredSupplements = supplementDB.filter(supp =>
+                    fuzzyMatch(supp.name, searchTerm)
+                );
+
+                // テンプレート保存
+                const saveAsTemplate = async () => {
+                    if (!templateName.trim() || addedItems.length === 0) {
+                        toast('テンプレート名を入力し、サプリメントを追加してください');
+                        return;
+                    }
+                    const template = {
+                        id: editingTemplateId || Date.now(), // 編集中なら既存ID、新規ならタイムスタンプ
+                        name: templateName,
+                        items: addedItems
+                    };
+                    await DataService.saveSupplementTemplate(user.uid, template);
+                    const templates = await DataService.getSupplementTemplates(user.uid);
+                    setSupplementTemplates(templates);
+                    toast.success(editingTemplateId ? 'テンプレートを更新しました' : 'テンプレートを保存しました');
+                    setTemplateName('');
+                    setEditingTemplateId(null); // 編集状態をリセット
+                };
+
+                const loadTemplate = (template) => {
+                    console.log('[Template Load] テンプレート読み込み開始:', template);
+                    // ディープコピーして参照を切る（複製不具合を防止）
+                    const copiedItems = JSON.parse(JSON.stringify(template.items));
+                    console.log('[Template Load] コピーされたアイテム:', copiedItems);
+                    setAddedItems(copiedItems);
+                    setTemplateName(template.name); // テンプレート名も設定
+                    setEditingTemplateId(template.id); // 編集中のテンプレートIDを保存
+                    console.log('[Template Load] 読み込み完了 - テンプレート名:', template.name, 'ID:', template.id);
+                };
+
+                const deleteTemplate = async (templateId) => {
+                    window.showGlobalConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
+                        await DataService.deleteSupplementTemplate(user.uid, templateId);
+                        const templates = await DataService.getSupplementTemplates(user.uid);
+                        setSupplementTemplates(templates);
+                    });
+                };
+
+                return (
+                    <div className="space-y-4">
+                        {/* ①検索欄 */}
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="サプリメントを検索..."
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        />
+
+                        {/* ②折りたたみカテゴリ一覧 */}
+                        {!selectedItem ? (
+                            <div className="space-y-2 max-h-96 overflow-y-auto">
+                                {(() => {
+                                    const categories = {};
+                                    filteredSupplements.forEach(supp => {
+                                        if (!categories[supp.category]) {
+                                            categories[supp.category] = [];
+                                        }
+                                        categories[supp.category].push(supp);
+                                    });
+
+                                    return Object.keys(categories).map(category => (
+                                        <div key={category} className="border rounded-lg overflow-hidden">
+                                            <button
+                                                onClick={() => setExpandedCategories(prev => ({...prev, [category]: !prev[category]}))}
+                                                className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
+                                            >
+                                                <span className="font-medium">{category}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs text-gray-500">{categories[category].length}品目</span>
+                                                    <Icon name={expandedCategories[category] ? 'ChevronDown' : 'ChevronRight'} size={20} />
+                                                </div>
+                                            </button>
+                                            {expandedCategories[category] && (
+                                                <div className="p-2 space-y-1">
+                                                    {categories[category].map(supp => (
+                                                        <button
+                                                            key={supp.id}
+                                                            onClick={() => setSelectedItem(supp)}
+                                                            className="w-full text-left px-3 py-2 hover:bg-blue-50 rounded-lg transition"
+                                                        >
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="font-medium">{supp.name}</span>
+                                                                <div className="text-right text-xs">
+                                                                    <div className="text-blue-600 font-medium">{supp.calories}kcal</div>
+                                                                    <div className="text-gray-500">P:{supp.protein}g</div>
+                                                                </div>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ));
+                                })()}
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h4 className="font-bold text-lg">{selectedItem.name}</h4>
+                                            <p className="text-sm text-gray-600">{selectedItem.category}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedItem(null);
+                                                setEditingItemIndex(null);
+                                            }}
+                                            className="text-gray-500 hover:text-gray-700"
+                                        >
+                                            <Icon name="X" size={20} />
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
+                                        <div>
+                                            <p className="text-gray-600">カロリー</p>
+                                            <p className="font-bold text-blue-600">{selectedItem.calories}kcal</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">P</p>
+                                            <p className="font-bold text-red-600">{selectedItem.protein}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">F</p>
+                                            <p className="font-bold text-yellow-600">{selectedItem.fat}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">C</p>
+                                            <p className="font-bold text-green-600">{selectedItem.carbs}g</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">
+                                        回数（1回分 = {selectedItem.unit || `${selectedItem.servingSize || 1}${selectedItem.servingUnit || 'g'}`}）
+                                    </label>
+                                    <div className="mb-3">
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max="20"
+                                            step="1"
+                                            value={amount || 1}
+                                            onChange={(e) => setAmount(e.target.value)}
+                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                            style={{
+                                                background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((amount || 1)/20)*100}%, #e5e7eb ${((amount || 1)/20)*100}%, #e5e7eb 100%)`
+                                            }}
+                                        />
+                                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                            <span onClick={() => setAmount(1)} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">1</span>
+                                            <span onClick={() => setAmount(5)} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">5</span>
+                                            <span onClick={() => setAmount(10)} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">10</span>
+                                            <span onClick={() => setAmount(15)} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">15</span>
+                                            <span onClick={() => setAmount(20)} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">20</span>
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={amount || '1'}
+                                        onChange={(e) => setAmount(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        placeholder="1"
+                                    />
+                                </div>
+
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <p className="text-sm font-medium mb-2">摂取量（{amount || 1}回分）</p>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        <div>
+                                            <p className="text-xs text-gray-600">カロリー</p>
+                                            <p className="font-bold text-blue-600">
+                                                {Math.round(selectedItem.calories * Number(amount || 1))}kcal
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-600">P</p>
+                                            <p className="font-bold">{(selectedItem.protein * Number(amount || 1)).toFixed(1)}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-600">F</p>
+                                            <p className="font-bold">{(selectedItem.fat * Number(amount || 1)).toFixed(1)}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-600">C</p>
+                                            <p className="font-bold">{(selectedItem.carbs * Number(amount || 1)).toFixed(1)}g</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        const numAmount = Number(amount || 1);
+
+                                        // Calculate vitamins and minerals based on amount
+                                        const vitamins = {};
+                                        const minerals = {};
+
+                                        if (selectedItem.vitamins) {
+                                            Object.keys(selectedItem.vitamins).forEach(key => {
+                                                vitamins[key] = selectedItem.vitamins[key] * numAmount;
+                                            });
+                                        }
+
+                                        if (selectedItem.minerals) {
+                                            Object.keys(selectedItem.minerals).forEach(key => {
+                                                minerals[key] = selectedItem.minerals[key] * numAmount;
+                                            });
+                                        }
+
+                                        // その他の栄養素を計算
+                                        const otherNutrients = {};
+                                        const otherNutrientKeys = ['caffeine', 'catechin', 'tannin', 'polyphenol', 'chlorogenicAcid',
+                                                                    'creatine', 'lArginine', 'lCarnitine', 'EPA', 'DHA', 'coQ10',
+                                                                    'lutein', 'astaxanthin'];
+                                        otherNutrientKeys.forEach(key => {
+                                            if (selectedItem[key]) {
+                                                otherNutrients[key] = selectedItem[key] * numAmount;
                                             }
-                                            setIsEditingWorkoutName(false);
+                                        });
+
+                                        // unitフィールドから分量と単位を抽出
+                                        let servingSize = selectedItem.servingSize || 1;
+                                        let servingUnit = selectedItem.servingUnit || 'g';
+
+                                        if (selectedItem.unit) {
+                                            // "30g" → servingSize=30, servingUnit="g"
+                                            // "1粒" → servingSize=1, servingUnit="粒"
+                                            // "2粒" → servingSize=2, servingUnit="粒"
+                                            const match = selectedItem.unit.match(/^(\d+(?:\.\d+)?)(.*)/);
+                                            if (match) {
+                                                servingSize = parseFloat(match[1]);
+                                                servingUnit = match[2] || 'g';
+                                            }
+                                        }
+
+                                        const newItem = {
+                                            name: selectedItem.name,
+                                            amount: `${numAmount}回分`,
+                                            servings: numAmount,
+                                            totalWeight: servingSize * numAmount,
+                                            servingSize: servingSize,
+                                            servingUnit: servingUnit,
+                                            unit: selectedItem.unit || `${servingSize}${servingUnit}`,
+                                            protein: selectedItem.protein * numAmount,
+                                            fat: selectedItem.fat * numAmount,
+                                            carbs: selectedItem.carbs * numAmount,
+                                            calories: selectedItem.calories * numAmount,
+                                            vitamins: vitamins,
+                                            minerals: minerals,
+                                            otherNutrients: otherNutrients
+                                        };
+                                        setAddedItems([...addedItems, newItem]);
+                                        setSelectedItem(null);
+                                        setAmount('1');
+                                    }}
+                                    className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
+                                >
+                                    追加
+                                </button>
+                            </div>
+                        )}
+
+
+                        {/* ④テンプレート（一覧+新規保存） - 12日以上で開放 */}
+                        {unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id) && !selectedItem && (
+                            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                                <button
+                                    onClick={() => setShowTemplates(!showTemplates)}
+                                    className="w-full flex items-center justify-between mb-3"
+                                >
+                                    <span className="font-medium text-yellow-800 flex items-center gap-2">
+                                        <Icon name="BookTemplate" size={16} />
+                                        テンプレート
+                                    </span>
+                                    <Icon name={showTemplates ? "ChevronUp" : "ChevronDown"} size={16} />
+                                </button>
+
+                                {showTemplates && (
+                                    <div className="space-y-3">
+                                        {/* テンプレート一覧 */}
+                                        {supplementTemplates.length > 0 && (
+                                            <div className="space-y-2">
+                                                {supplementTemplates.map(template => {
+                                                    // 総カロリーとPFCを計算
+                                                    let totalCalories = 0;
+                                                    let totalProtein = 0;
+                                                    let totalFat = 0;
+                                                    let totalCarbs = 0;
+
+                                                    template.items.forEach(item => {
+                                                        totalCalories += item.calories || 0;
+                                                        totalProtein += item.protein || 0;
+                                                        totalFat += item.fat || 0;
+                                                        totalCarbs += item.carbs || 0;
+                                                    });
+
+                                                    return (
+                                                        <details key={template.id} className="bg-white rounded border">
+                                                            <summary className="p-2 cursor-pointer hover:bg-gray-50 rounded">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex-1">
+                                                                        <p className="font-medium text-sm">{template.name}</p>
+                                                                        <p className="text-xs text-gray-600 mt-0.5">
+                                                                            {Math.round(totalCalories)}kcal
+                                                                            <span className="text-red-600 ml-2">P:{Math.round(totalProtein)}g</span>
+                                                                            <span className="text-yellow-600 ml-1">F:{Math.round(totalFat)}g</span>
+                                                                            <span className="text-green-600 ml-1">C:{Math.round(totalCarbs)}g</span>
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1 ml-2">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                loadTemplate(template);
+                                                                            }}
+                                                                            className="p-1 text-blue-500 hover:text-blue-700"
+                                                                        >
+                                                                            <Icon name="Pencil" size={14} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                deleteTemplate(template.id);
+                                                                            }}
+                                                                            className="p-1 text-red-500 hover:text-red-700"
+                                                                        >
+                                                                            <Icon name="Trash2" size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </summary>
+                                                            <div className="px-2 pb-2 space-y-1">
+                                                                {template.items.map((item, idx) => (
+                                                                    <div key={idx} className="text-xs text-gray-700 py-1 border-t border-gray-200">
+                                                                        <span className="font-medium">{item.name}</span>
+                                                                        <span className="text-gray-500 ml-2">{item.amount}</span>
+                                                                        <span className="text-xs text-gray-500 ml-2">
+                                                                            ({Math.round(item.calories)}kcal
+                                                                            <span className="text-red-600 ml-1">P:{Math.round(item.protein)}g</span>
+                                                                            <span className="text-yellow-600 ml-1">F:{Math.round(item.fat)}g</span>
+                                                                            <span className="text-green-600 ml-1">C:{Math.round(item.carbs)}g</span>)
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </details>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {/* テンプレート新規保存 */}
+                                        {addedItems.length > 0 && (
+                                            <div className="pt-3 border-t border-yellow-300">
+                                                <p className="text-xs text-yellow-800 mb-2">新しいテンプレートとして保存</p>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={templateName}
+                                                        onChange={(e) => setTemplateName(e.target.value)}
+                                                        placeholder="テンプレート名（例: 朝の定番サプリ）"
+                                                        className="flex-1 px-3 py-2 text-sm border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none"
+                                                    />
+                                                    <button
+                                                        onClick={saveAsTemplate}
+                                                        className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-sm font-medium"
+                                                    >
+                                                        保存
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {supplementTemplates.length === 0 && addedItems.length === 0 && (
+                                            <p className="text-sm text-gray-600">保存されたテンプレートはありません</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* カスタムアイテム作成 */}
+                        {!selectedItem && (
+                            <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+                                <div className="w-full flex items-center justify-between">
+                                    <button
+                                        onClick={() => setShowCustomFoodCreator(true)}
+                                        className="flex-1 flex items-center gap-2 font-medium text-green-800"
+                                    >
+                                        <Icon name="Plus" size={16} />
+                                        カスタムアイテムを作成
+                                    </button>
+                                    <button
+                                        onClick={() => setShowCustomSupplementForm(!showCustomSupplementForm)}
+                                        className="text-green-800 p-1"
+                                    >
+                                        <Icon name={showCustomSupplementForm ? "ChevronUp" : "ChevronDown"} size={16} />
+                                    </button>
+                                </div>
+                                {showCustomSupplementForm && (
+                                    <div className="mt-3 space-y-3 max-h-96 overflow-y-auto">
+                                        {/* 名前入力（最初） */}
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-700 mb-1">名前</label>
+                                            <input
+                                                type="text"
+                                                value={customSupplementData.name}
+                                                onChange={(e) => setCustomSupplementData({...customSupplementData, name: e.target.value})}
+                                                placeholder={
+                                                    customSupplementData.itemType === 'food' ? '例: 自家製プロテインバー' :
+                                                    customSupplementData.itemType === 'recipe' ? '例: 自家製カレー' :
+                                                    '例: マルチビタミン'
+                                                }
+                                                className="w-full px-3 py-2 text-sm border rounded-lg"
+                                            />
+                                        </div>
+
+                                        {/* カテゴリタブ（食材検索モーダルと同じスタイル） */}
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-700 mb-1">カテゴリ</label>
+                                            <div className="grid grid-cols-3 border-b border-gray-200">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'food'})}
+                                                    className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                        customSupplementData.itemType === 'food'
+                                                            ? 'border-green-600 text-green-600'
+                                                            : 'border-transparent text-gray-600 hover:text-green-600'
+                                                    }`}
+                                                >
+                                                    <Icon name="Apple" size={16} />
+                                                    <span className="text-sm">食材</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'recipe'})}
+                                                    className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                        customSupplementData.itemType === 'recipe'
+                                                            ? 'border-orange-600 text-orange-600'
+                                                            : 'border-transparent text-gray-600 hover:text-orange-600'
+                                                    }`}
+                                                >
+                                                    <Icon name="ChefHat" size={16} />
+                                                    <span className="text-sm">料理</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'supplement'})}
+                                                    className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                        customSupplementData.itemType === 'supplement'
+                                                            ? 'border-blue-600 text-blue-600'
+                                                            : 'border-transparent text-gray-600 hover:text-blue-600'
+                                                    }`}
+                                                >
+                                                    <Icon name="Pill" size={16} />
+                                                    <span className="text-sm">サプリ</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {customSupplementData.itemType === 'recipe' ? (
+                                                <input
+                                                    type="text"
+                                                    value="料理"
+                                                    disabled
+                                                    className="w-full px-3 py-2 text-sm border rounded-lg bg-gray-100"
+                                                />
+                                            ) : (
+                                                <select
+                                                    value={customSupplementData.category}
+                                                    onChange={(e) => setCustomSupplementData({...customSupplementData, category: e.target.value})}
+                                                    className="w-full px-3 py-2 text-sm border rounded-lg"
+                                                >
+                                                    {customSupplementData.itemType === 'supplement' ? (
+                                                        <>
+                                                            <option value="ビタミン・ミネラル">ビタミン・ミネラル</option>
+                                                            <option value="プロテイン">プロテイン</option>
+                                                            <option value="アミノ酸">アミノ酸</option>
+                                                            <option value="ドリンク">ドリンク</option>
+                                                            <option value="その他">その他</option>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <option value="穀類">穀類</option>
+                                                            <option value="肉類">肉類</option>
+                                                            <option value="魚介類">魚介類</option>
+                                                            <option value="野菜類">野菜類</option>
+                                                            <option value="果物類">果物類</option>
+                                                            <option value="乳製品">乳製品</option>
+                                                            <option value="調味料">調味料</option>
+                                                            <option value="その他">その他</option>
+                                                        </>
+                                                    )}
+                                                </select>
+                                            )}
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="number"
+                                                    value={customSupplementData.servingSize}
+                                                    onChange={(e) => setCustomSupplementData({...customSupplementData, servingSize: e.target.value === '' ? '' : (parseFloat(e.target.value) || 1)})}
+                                                    placeholder="1回分の量"
+                                                    className="flex-1 px-3 py-2 text-sm border rounded-lg"
+                                                />
+                                                <select
+                                                    value={customSupplementData.servingUnit}
+                                                    onChange={(e) => setCustomSupplementData({...customSupplementData, servingUnit: e.target.value})}
+                                                    className="px-3 py-2 text-sm border rounded-lg"
+                                                >
+                                                    <option value="g">g</option>
+                                                    <option value="mg">mg</option>
+                                                    <option value="ml">ml</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t pt-2">
+                                            <p className="text-xs font-medium text-gray-700 mb-2">基本栄養素（{customSupplementData.servingSize}{customSupplementData.servingUnit}あたり）</p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="text-xs text-gray-600">カロリー (kcal)</label>
+                                                    <input type="number" value={customSupplementData.calories} onChange={(e) => setCustomSupplementData({...customSupplementData, calories: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">タンパク質 (g)</label>
+                                                    <input type="number" value={customSupplementData.protein} onChange={(e) => setCustomSupplementData({...customSupplementData, protein: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">脂質 (g)</label>
+                                                    <input type="number" value={customSupplementData.fat} onChange={(e) => setCustomSupplementData({...customSupplementData, fat: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">炭水化物 (g)</label>
+                                                    <input type="number" value={customSupplementData.carbs} onChange={(e) => setCustomSupplementData({...customSupplementData, carbs: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t pt-2">
+                                            <p className="text-xs font-medium text-gray-700 mb-2">ビタミン（{customSupplementData.servingSize}{customSupplementData.servingUnit}あたり）</p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div><label className="text-xs text-gray-600">ビタミンA (μg)</label><input type="number" value={customSupplementData.vitaminA} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminA: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">ビタミンB1 (mg)</label><input type="number" value={customSupplementData.vitaminB1} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminB1: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">ビタミンB2 (mg)</label><input type="number" value={customSupplementData.vitaminB2} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminB2: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">ビタミンB6 (mg)</label><input type="number" value={customSupplementData.vitaminB6} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminB6: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">ビタミンB12 (μg)</label><input type="number" value={customSupplementData.vitaminB12} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminB12: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">ビタミンC (mg)</label><input type="number" value={customSupplementData.vitaminC} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminC: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">ビタミンD (μg)</label><input type="number" value={customSupplementData.vitaminD} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminD: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">ビタミンE (mg)</label><input type="number" value={customSupplementData.vitaminE} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminE: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">ビタミンK (μg)</label><input type="number" value={customSupplementData.vitaminK} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminK: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">ナイアシン (mg)</label><input type="number" value={customSupplementData.niacin} onChange={(e) => setCustomSupplementData({...customSupplementData, niacin: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">パントテン酸 (mg)</label><input type="number" value={customSupplementData.pantothenicAcid} onChange={(e) => setCustomSupplementData({...customSupplementData, pantothenicAcid: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">ビオチン (μg)</label><input type="number" value={customSupplementData.biotin} onChange={(e) => setCustomSupplementData({...customSupplementData, biotin: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">葉酸 (μg)</label><input type="number" value={customSupplementData.folicAcid} onChange={(e) => setCustomSupplementData({...customSupplementData, folicAcid: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t pt-2">
+                                            <p className="text-xs font-medium text-gray-700 mb-2">ミネラル（{customSupplementData.servingSize}{customSupplementData.servingUnit}あたり）</p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div><label className="text-xs text-gray-600">ナトリウム (mg)</label><input type="number" value={customSupplementData.sodium} onChange={(e) => setCustomSupplementData({...customSupplementData, sodium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">カリウム (mg)</label><input type="number" value={customSupplementData.potassium} onChange={(e) => setCustomSupplementData({...customSupplementData, potassium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">カルシウム (mg)</label><input type="number" value={customSupplementData.calcium} onChange={(e) => setCustomSupplementData({...customSupplementData, calcium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">マグネシウム (mg)</label><input type="number" value={customSupplementData.magnesium} onChange={(e) => setCustomSupplementData({...customSupplementData, magnesium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">リン (mg)</label><input type="number" value={customSupplementData.phosphorus} onChange={(e) => setCustomSupplementData({...customSupplementData, phosphorus: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">鉄 (mg)</label><input type="number" value={customSupplementData.iron} onChange={(e) => setCustomSupplementData({...customSupplementData, iron: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">亜鉛 (mg)</label><input type="number" value={customSupplementData.zinc} onChange={(e) => setCustomSupplementData({...customSupplementData, zinc: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">銅 (mg)</label><input type="number" value={customSupplementData.copper} onChange={(e) => setCustomSupplementData({...customSupplementData, copper: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">マンガン (mg)</label><input type="number" value={customSupplementData.manganese} onChange={(e) => setCustomSupplementData({...customSupplementData, manganese: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">ヨウ素 (μg)</label><input type="number" value={customSupplementData.iodine} onChange={(e) => setCustomSupplementData({...customSupplementData, iodine: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">セレン (μg)</label><input type="number" value={customSupplementData.selenium} onChange={(e) => setCustomSupplementData({...customSupplementData, selenium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">クロム (μg)</label><input type="number" value={customSupplementData.chromium} onChange={(e) => setCustomSupplementData({...customSupplementData, chromium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                <div><label className="text-xs text-gray-600">モリブデン (μg)</label><input type="number" value={customSupplementData.molybdenum} onChange={(e) => setCustomSupplementData({...customSupplementData, molybdenum: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t pt-2">
+                                            <p className="text-xs font-medium text-gray-700 mb-2">その他栄養素</p>
+                                            {customSupplementData.otherNutrients.map((nutrient, idx) => (
+                                                <div key={idx} className="flex gap-1 mb-2">
+                                                    <input type="text" value={nutrient.name} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].name = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="名" className="flex-1 px-2 py-1 text-xs border rounded" />
+                                                    <input type="number" value={nutrient.amount} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].amount = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="量" className="w-16 px-2 py-1 text-xs border rounded" />
+                                                    <input type="text" value={nutrient.unit} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].unit = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="単位" className="w-12 px-1 py-1 text-xs border rounded" />
+                                                    <button onClick={() => { const updated = customSupplementData.otherNutrients.filter((_, i) => i !== idx); setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} className="text-red-500 px-1"><Icon name="X" size={14} /></button>
+                                                </div>
+                                            ))}
+                                            <button onClick={() => setCustomSupplementData({...customSupplementData, otherNutrients: [...customSupplementData.otherNutrients, {name: '', amount: '', unit: ''}]})} className="w-full px-2 py-1.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 text-xs">+ 追加</button>
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                if (!customSupplementData.name.trim()) {
+                                                    toast('サプリメント名を入力してください');
+                                                    return;
+                                                }
+                                                const customSupplement = {
+                                                    id: Date.now(),
+                                                    ...customSupplementData,
+                                                    isCustom: true
+                                                };
+                                                setSelectedItem(customSupplement);
+                                                setCustomSupplementData({
+                                                    itemType: 'food',
+                                                    name: '', category: 'ビタミン・ミネラル', servingSize: 100, servingUnit: 'g', unit: 'g',
+                                                    calories: 0, protein: 0, fat: 0, carbs: 0,
+                                                    vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
+                                                    vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
+                                                    niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0,
+                                                    sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0,
+                                                    iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0,
+                                                    otherNutrients: []
+                                                });
+                                                setShowCustomSupplementForm(false);
+                                            }}
+                                            className="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium"
+                                        >
+                                            作成して選択
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ⑤記録ボタン */}
+                        {addedItems.length > 0 && !selectedItem && (
+                            <button
+                                onClick={async () => {
+                                    // テンプレート編集モードの場合
+                                    if (editingTemplate) {
+                                        const updatedTemplate = {
+                                            ...editingTemplate,
+                                            items: addedItems,
+                                            name: mealName || editingTemplate.name
+                                        };
+                                        await DataService.saveSupplementTemplate(user.uid, updatedTemplate);
+                                        toast('テンプレートを更新しました');
+                                        onClose();
+                                        return;
+                                    }
+
+                                    // 通常の記録モード
+                                    const newSupplement = {
+                                        id: Date.now(),
+                                        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                                        name: 'サプリメント',
+                                        icon: 'Pill',
+                                        items: addedItems
+                                    };
+
+                                    // テンプレートとして自動保存（テンプレート名があり、テンプレート機能が開放されている場合）
+                                    if (templateName && unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id)) {
+                                        const template = {
+                                            id: Date.now(),
+                                            name: templateName,
+                                            items: addedItems
+                                        };
+                                        await DataService.saveSupplementTemplate(user.uid, template);
+                                        const templates = await DataService.getSupplementTemplates(user.uid);
+                                        setSupplementTemplates(templates);
+                                        setTemplateName('');
+                                    }
+
+                                    onAdd(newSupplement);
+                                }}
+                                className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {editingTemplate ? '更新' : '記録'}
+                            </button>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderWorkoutInput = () => {
+                const fuzzyMatch = (text, query) => {
+                    if (!query || query.trim() === '') return true;
+                    const normalize = (str) => {
+                        return str
+                            .toLowerCase()
+                            .replace(/[（）\(\)]/g, '') // 括弧を削除
+                            .replace(/[\u3041-\u3096]/g, (m) => String.fromCharCode(m.charCodeAt(0) + 0x60)) // ひらがな→カタカナ
+                            .replace(/\s+/g, ''); // 空白削除
+                    };
+                    const normalizedText = normalize(text);
+                    const normalizedQuery = normalize(query);
+                    return normalizedText.includes(normalizedQuery);
+                };
+
+                useEffect(() => {
+                    loadTemplates();
+                    // ルーティンからワークアウト自動読み込み
+                    if (currentRoutine && !currentRoutine.isRestDay && currentRoutine.exercises) {
+                        // ルーティンの最初の種目を自動選択
+                        if (currentRoutine.exercises.length > 0) {
+                            const firstExercise = currentRoutine.exercises[0];
+                            setCurrentExercise(firstExercise.exercise);
+                            if (firstExercise.sets && firstExercise.sets.length > 0) {
+                                setSets(firstExercise.sets.map(set => ({
+                                    ...set,
+                                    duration: set.duration || 0
+                                })));
+                            }
+                        }
+                    }
+                }, []);
+
+                const loadTemplates = async () => {
+                    console.log('[20_add_workout_modal] テンプレート読み込み開始');
+                    const templates = await DataService.getWorkoutTemplates(user.uid);
+                    console.log('[20_add_workout_modal] 読み込んだテンプレート数:', templates.length);
+                    setWorkoutTemplates(templates);
+                };
+
+                const saveAsTemplate = async () => {
+                    if (exercises.length === 0 || !templateName.trim()) {
+                        toast('テンプレート名を入力し、種目を追加してください');
+                        return;
+                    }
+                    const template = {
+                        id: Date.now(),
+                        name: templateName,
+                        exercises: exercises, // 複数種目を保存
+                        createdAt: new Date().toISOString()
+                    };
+                    await DataService.saveWorkoutTemplate(user.uid, template);
+                    setTemplateName('');
+                    toast.success('テンプレートを保存しました');
+                    loadTemplates();
+                };
+
+                const loadTemplate = (template) => {
+                    // 新形式（複数種目）と旧形式（単一種目）の両方に対応
+                    if (template.exercises && Array.isArray(template.exercises)) {
+                        // 新形式：複数種目を読み込み
+                        setExercises(template.exercises);
+                        setCurrentExercise(null);
+                        setSets([]);
+                    } else if (template.exercise) {
+                        // 旧形式：単一種目を読み込み
+                        setCurrentExercise(template.exercise);
+                        setSets(template.sets || []);
+                    }
+                    setIsFromTemplate(true); // テンプレートから読み込んだことをマーク
+                    setShowTemplates(false);
+                };
+
+                const deleteTemplate = async (templateId) => {
+                    window.showGlobalConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
+                        await DataService.deleteWorkoutTemplate(user.uid, templateId);
+                        loadTemplates();
+                    });
+                };
+
+                const handleWorkoutSave = async () => {
+                    if (exercises.length === 0) {
+                        toast('運動を追加してください');
+                        return;
+                    }
+
+                    // テンプレート編集モードの場合
+                    if (editingTemplate) {
+                        const updatedTemplate = {
+                            ...editingTemplate,
+                            exercises: exercises,
+                            name: mealName || editingTemplate.name
+                        };
+                        await DataService.saveWorkoutTemplate(user.uid, updatedTemplate);
+                        toast('テンプレートを更新しました');
+                        onClose();
+                        return;
+                    }
+
+                    // テンプレート作成モードの場合（新規）
+                    if (isTemplateMode) {
+                        if (!templateName.trim()) {
+                            toast('テンプレート名を入力してください');
+                            return;
+                        }
+                        const template = {
+                            id: Date.now(),
+                            name: templateName,
+                            exercises: exercises,
+                            createdAt: new Date().toISOString()
+                        };
+                        await DataService.saveWorkoutTemplate(user.uid, template);
+                        toast.success('テンプレートを保存しました');
+                        onClose();
+                        return;
+                    }
+
+                    // 通常の記録モード
+                    // 全ての種目を1つのworkoutオブジェクトにまとめる
+                    const workoutData = {
+                        id: Date.now(),
+                        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                        name: workoutName, // ユーザーが編集可能な運動名を使用
+                        category: exercises[0].exercise?.category || exercises[0].category,
+                        isTemplate: isFromTemplate, // テンプレートから読み込んだ場合はtrueを付与
+                        date: selectedDate, // 記録対象の日付を明示的に保存
+                        exercises: exercises.map(ex => {
+                            // 有酸素・ストレッチの場合
+                            if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
+                                return {
+                                    exercise: {
+                                        name: ex.name || ex.exercise?.name,
+                                        category: ex.category || ex.exercise?.category,
+                                        exerciseType: ex.exerciseType
+                                    },
+                                    name: ex.name || ex.exercise?.name,  // ダッシュボード表示用
+                                    exerciseType: ex.exerciseType,
+                                    duration: ex.duration,
+                                    totalDuration: ex.totalDuration || ex.duration
+                                };
+                            }
+
+                            // 筋トレの場合
+                            return {
+                                exercise: ex.exercise,
+                                exerciseType: ex.exercise?.exerciseType || 'anaerobic',
+                                name: ex.name || ex.exercise?.name,  // ダッシュボード表示用
+                                sets: ex.sets
+                            };
+                        })
+                    };
+
+                    // 1つのworkoutとして追加
+                    onAdd(workoutData);
+                    onClose();
+                };
+
+                // LocalStorageからカスタム種目を読み込み
+                const customExercises = JSON.parse(localStorage.getItem('customExercises') || '[]');
+
+                // exerciseDBとカスタム種目をマージ
+                const allExercises = [...exerciseDB, ...customExercises];
+
+                const filteredExercises = allExercises.filter(ex => {
+                    // 非表示アイテムまたはカテゴリをスキップ
+                    if (hiddenStandardTrainings.includes(ex.name) || hiddenTrainingCategories.includes(ex.category)) {
+                        return false;
+                    }
+                    // 検索フィルタ
+                    return fuzzyMatch(ex.name, searchTerm) || fuzzyMatch(ex.category, searchTerm);
+                });
+
+                // セット単位では体積のみを記録
+                const calculateSetVolume = (set) => {
+                    const weight = set.weight || 0;
+                    const reps = set.reps || 0;
+                    return weight * reps; // 総体積 (kg × reps)
+                };
+
+                return (
+                    <div className="space-y-4">
+                        {/* ①どうやって記録しますか？ */}
+                        {!currentExercise && !showCustomExerciseForm && (
+                            <div className="space-y-2">
+                                {/* 一覧から検索（白背景、グレー枠） */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSearchModal(true)}
+                                    className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg font-semibold transition"
+                                >
+                                    <Icon name="Search" size={16} className="inline mr-1" />
+                                    一覧から検索
+                                </button>
+
+                                {/* カスタム作成（白背景、グレー枠） */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCustomExerciseForm(true)}
+                                    className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 rounded-lg font-semibold transition"
+                                >
+                                    <Icon name="PlusCircle" size={16} className="inline mr-1" />
+                                    カスタム作成
+                                </button>
+
+                                {/* テンプレート - 初日から開放 */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowTemplates(!showTemplates)}
+                                    className="w-full px-4 py-3 bg-purple-50 border-2 border-purple-400 text-purple-700 rounded-lg font-semibold hover:bg-purple-100 transition"
+                                >
+                                    <Icon name="BookTemplate" size={16} className="inline mr-1" />
+                                    テンプレート
+                                </button>
+                            </div>
+                        )}
+
+                        {/* テンプレートモーダル */}
+                        {showTemplates && (
+                            <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+                                <div className="bg-white rounded-2xl w-full max-w-md max-h-[70vh] overflow-hidden flex flex-col">
+                                    {/* ヘッダー */}
+                                    <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center">
+                                        <h3 className="text-lg font-bold flex items-center gap-2">
+                                            <Icon name="BookMarked" size={20} />
+                                            テンプレートから選択
+                                        </h3>
+                                        <button
+                                            onClick={() => setShowTemplates(false)}
+                                            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full"
+                                        >
+                                            <Icon name="X" size={20} />
+                                        </button>
+                                    </div>
+
+                                    {/* テンプレート一覧 */}
+                                    <div className="flex-1 overflow-y-auto p-4">
+                                        {workoutTemplates.length === 0 ? (
+                                            <div className="text-center py-12">
+                                                <Icon name="BookMarked" size={48} className="mx-auto mb-3 opacity-30 text-purple-600" />
+                                                <p className="text-gray-900 font-semibold mb-2">まだテンプレートがありません</p>
+                                                <p className="text-sm text-gray-600 px-4">
+                                                    種目を追加後に「保存」ボタンで保存するか、<br/>
+                                                    ダッシュボードのテンプレートボタンから作成できます
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {workoutTemplates.map(template => {
+                                                    // 種目数、総セット数、総重量、総時間を計算
+                                                    const exerciseCount = template.exercises?.length || 0;
+                                                    let totalSets = 0;
+                                                    let totalVolume = 0;
+                                                    let totalDuration = 0;
+
+                                                    template.exercises?.forEach(exercise => {
+                                                        totalSets += exercise.sets?.length || 0;
+                                                        exercise.sets?.forEach(set => {
+                                                            totalVolume += (set.weight || 0) * (set.reps || 0);
+                                                            totalDuration += set.duration || 0;
+                                                        });
+                                                    });
+
+                                                    return (
+                                                        <details key={template.id} className="bg-gray-50 border-2 border-gray-200 rounded-lg group">
+                                                            <summary className="p-3 cursor-pointer list-none">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <div className="font-semibold text-gray-900">{template.name}</div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                loadTemplate(template);
+                                                                                setShowTemplates(false);
+                                                                            }}
+                                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                                            title="編集"
+                                                                        >
+                                                                            <Icon name="Edit" size={18} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                window.showGlobalConfirm('テンプレート削除の確認', `テンプレート「${template.name}」を削除しますか？`, () => {
+                                                                                    deleteTemplate(template.id);
+                                                                                });
+                                                                            }}
+                                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                                            title="削除"
+                                                                        >
+                                                                            <Icon name="Trash2" size={18} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-xs text-gray-600 mb-2">
+                                                                    {exerciseCount}種目
+                                                                </div>
+                                                                <div className="text-xs mb-3 flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-orange-600 font-semibold">{totalSets}セット</span>
+                                                                        {totalVolume > 0 && (
+                                                                            <>
+                                                                                <span className="text-gray-400">|</span>
+                                                                                <span className="text-orange-600 font-semibold">{totalVolume}kg</span>
+                                                                            </>
+                                                                        )}
+                                                                        {totalDuration > 0 && (
+                                                                            <>
+                                                                                <span className="text-gray-400">|</span>
+                                                                                <span className="text-orange-600 font-semibold">{totalDuration}分</span>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                    <Icon name="ChevronRight" size={16} className="text-gray-600 group-open:rotate-90 transition-transform" />
+                                                                </div>
+
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        const workoutData = {
+                                                                            name: template.name,
+                                                                            timestamp: new Date().toISOString(),
+                                                                            time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                                                                            exercises: template.exercises,
+                                                                            isTemplate: true,
+                                                                            date: selectedDate // 記録対象の日付を明示的に保存
+                                                                        };
+                                                                        onAdd(workoutData);
+                                                                        setShowTemplates(false);
+                                                                        onClose();
+                                                                    }}
+                                                                    className="w-full px-4 py-2 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] transition text-sm"
+                                                                >
+                                                                    記録
+                                                                </button>
+                                                            </summary>
+
+                                                            <div className="px-3 pb-3 border-t border-gray-300">
+                                                                <div className="text-xs font-medium text-gray-600 mt-2 mb-2">内訳を表示</div>
+                                                                <div className="space-y-2">
+                                                                    {template.exercises?.map((exercise, exIdx) => (
+                                                                        <div key={exIdx} className="bg-white p-2 rounded text-xs border border-gray-200">
+                                                                            <div className="font-semibold">{exercise.name}</div>
+                                                                            <div className="text-gray-600 mt-1 space-y-1">
+                                                                                {exercise.sets?.map((set, setIdx) => (
+                                                                                    <div key={setIdx}>
+                                                                                        セット{setIdx + 1}: {set.weight || 0}kg × {set.reps || 0}回
+                                                                                        {set.duration > 0 && ` (${set.duration}分)`}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </details>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* フッター */}
+                                    <div className="border-t p-4">
+                                        <button
+                                            onClick={() => setShowTemplates(false)}
+                                            className="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                                        >
+                                            閉じる
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 検索モーダル */}
+                        {showSearchModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[70vh] overflow-hidden flex flex-col">
+                                    {/* ヘッダー */}
+                                    <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-500 text-white p-4 rounded-t-2xl z-10">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                                <Icon name="Search" size={20} />
+                                                種目を検索
+                                            </h3>
+                                            <button
+                                                onClick={() => setShowSearchModal(false)}
+                                                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                                            >
+                                                <Icon name="X" size={20} />
+                                            </button>
+                                        </div>
+
+                                        {/* 検索欄 */}
+                                        <input
+                                            type="text"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            placeholder="種目を検索..."
+                                            className="w-full px-4 py-2 rounded-lg text-gray-800 focus:ring-2 focus:ring-white focus:outline-none"
+                                        />
+
+                                        {/* 筋トレ/有酸素/ストレッチ タブ */}
+                                        <div className="grid grid-cols-3 mt-3 gap-2">
+                                            <button
+                                                onClick={() => setExerciseTab('strength')}
+                                                className={`py-2 px-3 rounded-lg font-medium transition flex items-center justify-center gap-1 text-sm ${
+                                                    exerciseTab === 'strength'
+                                                        ? 'bg-white text-orange-600'
+                                                        : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                                                }`}
+                                            >
+                                                <Icon name="Dumbbell" size={16} />
+                                                筋トレ
+                                            </button>
+                                            <button
+                                                onClick={() => setExerciseTab('cardio')}
+                                                className={`py-2 px-3 rounded-lg font-medium transition flex items-center justify-center gap-1 text-sm ${
+                                                    exerciseTab === 'cardio'
+                                                        ? 'bg-white text-blue-600'
+                                                        : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                                                }`}
+                                            >
+                                                <Icon name="Heart" size={16} />
+                                                有酸素
+                                            </button>
+                                            <button
+                                                onClick={() => setExerciseTab('stretch')}
+                                                className={`py-2 px-3 rounded-lg font-medium transition flex items-center justify-center gap-1 text-sm ${
+                                                    exerciseTab === 'stretch'
+                                                        ? 'bg-white text-green-600'
+                                                        : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                                                }`}
+                                            >
+                                                <Icon name="Wind" size={16} />
+                                                ストレッチ
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* カテゴリフィルタ（筋トレの場合のみ） */}
+                                    {exerciseTab === 'strength' && (() => {
+                                        const strengthCategories = ['胸', '背中', '脚', '肩', '腕', '腹筋・体幹', '尻', 'ウエイトリフティング', 'カスタム'];
+                                        return (
+                                            <div className="px-4 py-3 border-b bg-gray-50">
+                                                <div className="flex flex-wrap gap-2">
+                                                    {strengthCategories.map(cat => (
+                                                        <button
+                                                            key={cat}
+                                                            onClick={() => setSelectedExerciseCategory(cat)}
+                                                            className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                                                                (selectedExerciseCategory || '胸') === cat
+                                                                    ? 'bg-orange-600 text-white'
+                                                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                                            }`}
+                                                        >
+                                                            {cat}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* コンテンツエリア */}
+                                    <div className="flex-1 overflow-y-auto p-4">
+                                        {(() => {
+                                            // タブに応じてフィルタリング
+                                            const strengthCategories = ['胸', '背中', '脚', '肩', '腕', '腹筋・体幹', '尻', 'ウエイトリフティング', 'カスタム'];
+                                            const cardioCategories = ['有酸素運動'];
+                                            const stretchCategories = ['ストレッチ'];
+
+                                            let displayedExercises = filteredExercises.filter(ex => {
+                                                if (exerciseTab === 'strength') {
+                                                    // 筋トレタブ
+                                                    const targetCategory = selectedExerciseCategory || '胸';
+
+                                                    // カスタムアイテムの場合、exerciseTabが'strength'のものだけ表示
+                                                    if (ex.category === 'カスタム') {
+                                                        return ex.exerciseTab === 'strength' && targetCategory === 'カスタム';
+                                                    }
+
+                                                    return strengthCategories.includes(ex.category) && ex.category === targetCategory;
+                                                } else if (exerciseTab === 'cardio') {
+                                                    // 有酸素タブ
+                                                    // カスタムアイテムの場合、exerciseTabが'cardio'のものだけ表示
+                                                    if (ex.category === 'カスタム') {
+                                                        return ex.exerciseTab === 'cardio';
+                                                    }
+                                                    return cardioCategories.includes(ex.category);
+                                                } else if (exerciseTab === 'stretch') {
+                                                    // ストレッチタブ
+                                                    // カスタムアイテムの場合、exerciseTabが'stretch'のものだけ表示
+                                                    if (ex.category === 'カスタム') {
+                                                        return ex.exerciseTab === 'stretch';
+                                                    }
+                                                    return stretchCategories.includes(ex.category);
+                                                }
+                                                return false;
+                                            });
+
+                                            if (displayedExercises.length === 0) {
+                                                return (
+                                                    <div className="text-center py-12 text-gray-600">
+                                                        <Icon name="Search" size={48} className="mx-auto mb-3 opacity-30" />
+                                                        <p className="text-sm">種目が見つかりませんでした</p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            return (
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {displayedExercises.map(exercise => (
+                                                        <button
+                                                            key={exercise.id}
+                                                            onClick={() => {
+                                                                setCurrentExercise(exercise);
+                                                                // 種目切り替え時にcurrentSetを初期値にリセット
+                                                                setCurrentSet({
+                                                                    weight: 50,
+                                                                    reps: 10,
+                                                                    distance: 0.5,
+                                                                    tut: 30,
+                                                                    restInterval: 90,
+                                                                    duration: 5
+                                                                });
+                                                                setSets([]);  // セットリストもクリア
+                                                                setShowSearchModal(false);
+                                                            }}
+                                                            className="w-full text-left p-3 bg-white hover:bg-orange-50 transition border border-gray-200 hover:border-orange-300 rounded-lg"
+                                                        >
+                                                            <div className="flex justify-between items-center">
+                                                                <p className="font-medium text-sm text-gray-900 flex-1">{exercise.name}</p>
+                                                                {exercise.subcategory && (
+                                                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full whitespace-nowrap ml-2 flex-shrink-0">
+                                                                        {exercise.subcategory}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* カスタム種目作成フォーム */}
+                        {showCustomExerciseForm && (
+                            <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+                                <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+                                    {/* ヘッダー */}
+                                    <div className="sticky top-0 bg-orange-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                                        <h3 className="text-lg font-bold flex items-center gap-2">
+                                            <Icon name="PlusCircle" size={20} />
+                                            カスタム種目を作成
+                                        </h3>
+                                        <button
+                                            onClick={() => {
+                                                setShowCustomExerciseForm(false);
+                                                setCustomExerciseData({ name: '', exerciseTab: 'strength', subcategory: 'コンパウンド' });
+                                                setExerciseSaveMethod('database');
+                                            }}
+                                            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                                        >
+                                            <Icon name="X" size={20} />
+                                        </button>
+                                    </div>
+
+                                    {/* コンテンツ */}
+                                    <div className="p-6 space-y-4">
+                                    {/* 種目名 */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">種目名</label>
+                                        <input
+                                            type="text"
+                                            value={customExerciseData.name}
+                                            onChange={(e) => setCustomExerciseData({...customExerciseData, name: e.target.value})}
+                                            placeholder="例: マイトレーニング"
+                                            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                        />
+                                    </div>
+
+                                    {/* タブ選択（筋トレ/有酸素/ストレッチ） */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">タブ</label>
+                                        <select
+                                            value={customExerciseData.exerciseTab || 'strength'}
+                                            onChange={(e) => setCustomExerciseData({...customExerciseData, exerciseTab: e.target.value})}
+                                            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                        >
+                                            <option value="strength">筋トレ</option>
+                                            <option value="cardio">有酸素</option>
+                                            <option value="stretch">ストレッチ</option>
+                                        </select>
+                                    </div>
+
+                                    {/* 種類 */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">種類</label>
+                                        <select
+                                            value={customExerciseData.subcategory}
+                                            onChange={(e) => setCustomExerciseData({...customExerciseData, subcategory: e.target.value})}
+                                            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                        >
+                                            <option value="コンパウンド">コンパウンド</option>
+                                            <option value="アイソレーション">アイソレーション</option>
+                                            <option value="持久系">持久系</option>
+                                            <option value="HIIT">HIIT</option>
+                                            <option value="ダイナミックストレッチ">ダイナミックストレッチ</option>
+                                            <option value="スタティックストレッチ">スタティックストレッチ</option>
+                                        </select>
+                                    </div>
+
+                                    {/* 保存方法選択 */}
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <label className="text-sm font-medium text-gray-600">保存方法</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowExerciseSaveMethodInfo(true)}
+                                                className="text-[#4A9EFF] hover:text-[#3b8fef]"
+                                            >
+                                                <Icon name="Info" size={16} />
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition ${
+                                                exerciseSaveMethod === 'database'
+                                                    ? 'border-orange-500 bg-orange-50'
+                                                    : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                                            }`}>
+                                                <input
+                                                    type="radio"
+                                                    name="exerciseSaveMethod"
+                                                    value="database"
+                                                    checked={exerciseSaveMethod === 'database'}
+                                                    onChange={(e) => setExerciseSaveMethod(e.target.value)}
+                                                    className="mt-0.5"
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-sm text-gray-900">データベースに保存</div>
+                                                    <div className="text-xs text-gray-600 mt-0.5">後で検索して使用できます</div>
+                                                </div>
+                                            </label>
+                                            <label className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition ${
+                                                exerciseSaveMethod === 'addToList'
+                                                    ? 'border-orange-500 bg-orange-50'
+                                                    : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                                            }`}>
+                                                <input
+                                                    type="radio"
+                                                    name="exerciseSaveMethod"
+                                                    value="addToList"
+                                                    checked={exerciseSaveMethod === 'addToList'}
+                                                    onChange={(e) => setExerciseSaveMethod(e.target.value)}
+                                                    className="mt-0.5"
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-sm text-gray-900">リストに追加</div>
+                                                    <div className="text-xs text-gray-600 mt-0.5">今すぐ種目選択されます</div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {/* ボタン */}
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            onClick={() => {
+                                                setShowCustomExerciseForm(false);
+                                                setCustomExerciseData({ name: '', exerciseTab: 'strength', subcategory: 'コンパウンド' });
+                                                setExerciseSaveMethod('database');
+                                            }}
+                                            className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition"
+                                        >
+                                            キャンセル
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                if (!customExerciseData.name.trim()) {
+                                                    toast('種目名を入力してください');
+                                                    return;
+                                                }
+
+                                                // exerciseTabに応じてcategoryを設定（すべて「カスタム」だが、タブ表示用にexerciseTabを保存）
+                                                const customExercise = {
+                                                    id: Date.now(),
+                                                    name: customExerciseData.name,
+                                                    category: 'カスタム',
+                                                    exerciseTab: customExerciseData.exerciseTab || 'strength', // タブ情報を保存
+                                                    subcategory: customExerciseData.subcategory,
+                                                    exerciseType: 'anaerobic',
+                                                    isCustom: true
+                                                };
+
+                                                // LocalStorageにカスタム種目を保存
+                                                try {
+                                                    const savedExercises = JSON.parse(localStorage.getItem('customExercises') || '[]');
+                                                    savedExercises.push(customExercise);
+                                                    localStorage.setItem('customExercises', JSON.stringify(savedExercises));
+                                                    console.log('カスタム種目を保存:', customExercise);
+                                                } catch (error) {
+                                                    console.error('カスタム種目の保存に失敗:', error);
+                                                }
+
+                                                // 保存方法に応じて処理を分岐
+                                                if (exerciseSaveMethod === 'addToList') {
+                                                    // リストに追加: 種目を選択状態にする
+                                                    setCurrentExercise(customExercise);
+                                                    // 種目切り替え時にcurrentSetを初期値にリセット
+                                                    setCurrentSet({
+                                                        weight: 50,
+                                                        reps: 10,
+                                                        distance: 0.5,
+                                                        tut: 30,
+                                                        restInterval: 90,
+                                                        duration: 5
+                                                    });
+                                                    setSets([]);  // セットリストもクリア
+                                                    toast.success('カスタム種目を作成し、選択しました！');
+                                                } else {
+                                                    // データベースに保存のみ
+                                                    toast.success('カスタム種目を保存しました！種目検索から追加できます。');
+                                                }
+
+                                                setShowCustomExerciseForm(false);
+                                                setCustomExerciseData({ name: '', exerciseTab: 'strength', subcategory: 'コンパウンド' });
+                                                setExerciseSaveMethod('database'); // デフォルトに戻す
+                                            }}
+                                            className="flex-1 px-4 py-3 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] transition"
+                                        >
+                                            保存
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        )}
+
+                        {/* 保存方法説明モーダル */}
+                        {showExerciseSaveMethodInfo && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10003] flex items-center justify-center p-4">
+                                <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-y-auto">
+                                    <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 rounded-t-lg flex justify-between items-center z-10">
+                                        <h3 className="font-bold">保存方法について</h3>
+                                        <button
+                                            onClick={() => setShowExerciseSaveMethodInfo(false)}
+                                            className="p-1 hover:bg-white hover:bg-opacity-20 rounded"
+                                        >
+                                            <Icon name="X" size={20} />
+                                        </button>
+                                    </div>
+                                    <div className="p-4 space-y-4">
+                                        <div className="border-l-4 border-blue-500 pl-4 py-2">
+                                            <h4 className="font-semibold text-gray-900 mb-1">データベースに保存</h4>
+                                            <p className="text-sm text-gray-700">
+                                                カスタム種目をデータベースに保存します。今すぐ記録には追加されませんが、次回以降、種目検索から簡単に見つけて使用できます。
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-2">
+                                                <strong>使用例：</strong>よく行う自己流トレーニングを登録しておきたい場合
+                                            </p>
+                                        </div>
+
+                                        <div className="border-l-4 border-green-500 pl-4 py-2">
+                                            <h4 className="font-semibold text-gray-900 mb-1">リストに追加</h4>
+                                            <p className="text-sm text-gray-700">
+                                                カスタム種目をデータベースに保存し、同時に種目選択状態にします。今すぐ記録したい場合に便利です。
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-2">
+                                                <strong>使用例：</strong>新しい種目を作成してすぐに記録したい場合
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setShowExerciseSaveMethodInfo(false)}
+                                            className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
+                                        >
+                                            閉じる
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 種目選択後の入力フォーム */}
+                        {currentExercise && (
+                            <div className="space-y-4">
+                                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h4 className="font-bold text-lg">{currentExercise.name}</h4>
+                                            <p className="text-sm text-gray-600">{currentExercise.category}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setCurrentExercise(null);
+                                                setSets([]);
+                                            }}
+                                            className="text-gray-500 hover:text-gray-700"
+                                        >
+                                            <Icon name="X" size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* ストレッチ・有酸素種目の場合：時間のみ入力 */}
+                                {(currentExercise.exerciseType === 'stretch' || currentExercise.exerciseType === 'aerobic') ? (
+                                    <div className="space-y-3">
+                                        {/* 総時間入力 */}
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                                                総時間 (分)
+                                            </label>
+                                            <div className="mb-3">
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="120"
+                                                    step="1"
+                                                    value={currentSet.duration || 0}
+                                                    onChange={(e) => setCurrentSet({...currentSet, duration: Number(e.target.value)})}
+                                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                    style={{
+                                                        background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((currentSet.duration || 0)/120)*100}%, #e5e7eb ${((currentSet.duration || 0)/120)*100}%, #e5e7eb 100%)`
+                                                    }}
+                                                />
+                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                    <span onClick={() => setCurrentSet({...currentSet, duration: 0})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">0分</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, duration: 30})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">30分</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, duration: 60})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">60分</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, duration: 90})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">90分</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, duration: 120})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">120分</span>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                value={currentSet.duration || 0}
+                                                onChange={(e) => setCurrentSet({...currentSet, duration: Number(e.target.value)})}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+
+                                        {/* セット追加ボタン */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (!currentSet.duration || currentSet.duration === 0) {
+                                                    toast('時間を入力してください');
+                                                    return;
+                                                }
+                                                setSets([...sets, {...currentSet}]);
+                                                setCurrentSet({ duration: currentSet.duration });
+                                            }}
+                                            className="w-full py-3 bg-[#4A9EFF] text-white font-bold px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
+                                        >
+                                            <Icon name="Plus" size={18} />
+                                            追加
+                                        </button>
+
+                                        {/* 追加済みセットリスト */}
+                                        {sets.length > 0 && (
+                                            <div className="p-3 rounded-lg border-2" style={{backgroundColor: '#EFF6FF', borderColor: '#4A9EFF'}}>
+                                                <p className="text-xs font-bold mb-2" style={{color: '#4A9EFF'}}>追加済み（{sets.length}セット）</p>
+                                                <div className="space-y-1">
+                                                    {sets.map((set, idx) => (
+                                                        <div key={idx} className="flex justify-between items-center text-sm bg-white p-2 rounded">
+                                                            <span className="font-medium">セット{idx + 1}</span>
+                                                            <span className="text-gray-600">{set.duration}分</span>
+                                                            <button
+                                                                onClick={() => setSets(sets.filter((_, i) => i !== idx))}
+                                                                className="text-red-500 hover:text-red-700"
+                                                            >
+                                                                <Icon name="X" size={16} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {/* 通常の運動：重量・回数・可動距離入力 */}
+                                        {/* 重量入力 */}
+                                        <div>
+                                        <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                                            重量 (kg)
+                                            </label>
+                                            {/* スライダー - 重量 */}
+                                            <div className="mb-3">
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="500"
+                                                    step="2.5"
+                                                    value={currentSet.weight || 0}
+                                                    onChange={(e) => setCurrentSet({...currentSet, weight: e.target.value === '' ? 0 : Number(e.target.value)})}
+                                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                                                    style={{
+                                                        background: `linear-gradient(to right, #ea580c 0%, #ea580c ${((currentSet.weight || 0)/500)*100}%, #e5e7eb ${((currentSet.weight || 0)/500)*100}%, #e5e7eb 100%)`
+                                                    }}
+                                                />
+                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                    <span onClick={() => setCurrentSet({...currentSet, weight: 0})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">0kg</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, weight: 100})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">100kg</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, weight: 200})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">200kg</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, weight: 300})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">300kg</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, weight: 400})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">400kg</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, weight: 500})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">500kg</span>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                value={currentSet.weight === '' ? '' : (currentSet.weight || 0)}
+                                                onChange={(e) => setCurrentSet({...currentSet, weight: e.target.value})}
+                                                onBlur={(e) => {
+                                                    // フォーカスが外れた際に空文字列なら0にする
+                                                    if (e.target.value === '') {
+                                                        setCurrentSet({...currentSet, weight: 0});
+                                                    }
+                                                }}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                            />
+                                            {/* 増減ボタン */}
+                                            <div className="grid grid-cols-6 gap-1 mt-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, weight: Math.max(0, Number(currentSet.weight) - 10)})}
+                                                    className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                                                >
+                                                    -10
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, weight: Math.max(0, Number(currentSet.weight) - 5)})}
+                                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                >
+                                                    -5
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, weight: Math.max(0, Number(currentSet.weight) - 2.5)})}
+                                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                >
+                                                    -2.5
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, weight: Number(currentSet.weight) + 2.5})}
+                                                    className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                >
+                                                    +2.5
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, weight: Number(currentSet.weight) + 5})}
+                                                    className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                >
+                                                    +5
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, weight: Number(currentSet.weight) + 10})}
+                                                    className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                                                >
+                                                    +10
+                                                </button>
+                                            </div>
+                                    </div>
+
+                                    {/* 回数入力 */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">
+                                            回数
+                                        </label>
+                                            {/* スライダー - 回数 */}
+                                            <div className="mb-2">
+                                                <input
+                                                    type="range"
+                                                    min="1"
+                                                    max="50"
+                                                    step="1"
+                                                    value={currentSet.reps || 1}
+                                                    onChange={(e) => setCurrentSet({...currentSet, reps: e.target.value === '' ? 1 : Number(e.target.value)})}
+                                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                                                    style={{
+                                                        background: `linear-gradient(to right, #ea580c 0%, #ea580c ${((currentSet.reps || 1)/50)*100}%, #e5e7eb ${((currentSet.reps || 1)/50)*100}%, #e5e7eb 100%)`
+                                                    }}
+                                                />
+                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                    <span onClick={() => setCurrentSet({...currentSet, reps: 1})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">1回</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, reps: 10})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">10回</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, reps: 20})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">20回</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, reps: 30})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">30回</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, reps: 40})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">40回</span>
+                                                    <span onClick={() => setCurrentSet({...currentSet, reps: 50})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">50回</span>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                value={currentSet.reps === '' ? '' : (currentSet.reps || 1)}
+                                                onChange={(e) => setCurrentSet({...currentSet, reps: e.target.value})}
+                                                onBlur={(e) => {
+                                                    // フォーカスが外れた際に空文字列または0以下なら1にする
+                                                    const val = Number(e.target.value);
+                                                    if (e.target.value === '' || val < 1) {
+                                                        setCurrentSet({...currentSet, reps: 1});
+                                                    }
+                                                }}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                            />
+                                            {/* 増減ボタン */}
+                                            <div className="grid grid-cols-6 gap-1 mt-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, reps: Math.max(1, Number(currentSet.reps) - 5)})}
+                                                    className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                                                >
+                                                    -5
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, reps: Math.max(1, Number(currentSet.reps) - 3)})}
+                                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                >
+                                                    -3
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, reps: Math.max(1, Number(currentSet.reps) - 1)})}
+                                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                >
+                                                    -1
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, reps: Number(currentSet.reps) + 1})}
+                                                    className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                >
+                                                    +1
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, reps: Number(currentSet.reps) + 3})}
+                                                    className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                >
+                                                    +3
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentSet({...currentSet, reps: Number(currentSet.reps) + 5})}
+                                                    className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                                                >
+                                                    +5
+                                                </button>
+                                            </div>
+                                    </div>
+
+                                    {/* RM更新記録（構造化） */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                                            RM更新記録（任意）
+                                            <button
+                                                type="button"
+                                                onClick={() => setWorkoutInfoModal({
+                                                    show: true,
+                                                    title: 'RM更新記録とは？',
+                                                    content: `この種目で自己ベスト（RM: Repetition Maximum）を更新した場合に記録します。
+
+【RMとは】
+• 1RM: 1回だけ挙げられる最大重量
+• 5RM: 5回だけ挙げられる最大重量
+• 10RM: 10回だけ挙げられる最大重量
+
+【記録例】
+• ベンチプレス 1RM × 100kg
+• スクワット 5RM × 120kg
+• デッドリフト 3RM × 150kg
+
+【活用方法】
+履歴画面でRM更新の記録を確認でき、筋力の成長を可視化できます。目標達成のモチベーション維持に役立ちます。
+
+【入力方法】
+RM回数と重量を別々に入力してください。`
+                                                })}
+                                                className="text-indigo-600 hover:text-indigo-800"
+                                            >
+                                                <Icon name="Info" size={14} />
+                                            </button>
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="text-xs text-gray-600 block mb-1">RM回数</label>
+                                                <input
+                                                    type="number"
+                                                    value={currentSet.rm || ''}
+                                                    onChange={(e) => setCurrentSet({...currentSet, rm: e.target.value === '' ? '' : Number(e.target.value)})}
+                                                    placeholder="1, 3, 5..."
+                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-600 block mb-1">重量 (kg)</label>
+                                                <input
+                                                    type="number"
+                                                    value={currentSet.rmWeight || ''}
+                                                    onChange={(e) => setCurrentSet({...currentSet, rmWeight: e.target.value === '' ? '' : Number(e.target.value)})}
+                                                    placeholder="100"
+                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 総時間（常設） */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                                            総時間 (分)
+                                            <button
+                                                type="button"
+                                                onClick={() => setWorkoutInfoModal({
+                                                    show: true,
+                                                    title: '総時間とは？',
+                                                    content: `この種目に費やした総時間を分単位で入力します。ウォームアップからクールダウンまでの全体時間です。
+
+【入力の目安】
+• 筋トレ: 5～15分/種目（セット間休憩含む）
+• 有酸素運動: 実施した時間（例: ランニング30分）
+• ストレッチ: 実施した時間
+
+【意図】
+総時間は、セット間の休憩時間や準備動作も含めた総合的な運動時間を把握するための指標です。特に有酸素運動や持久系トレーニングでは重要な入力項目となります。
+
+【オプション】
+この項目は任意入力です。空欄の場合は他のパラメータから消費カロリーを算出します。`
+                                                })}
+                                                className="text-indigo-600 hover:text-indigo-800"
+                                            >
+                                                <Icon name="Info" size={14} />
+                                            </button>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={currentSet.duration}
+                                            onChange={(e) => setCurrentSet({...currentSet, duration: e.target.value === '' ? '' : Number(e.target.value)})}
+                                            placeholder="この種目にかかった時間"
+                                            className="w-full px-3 py-2 border rounded-lg"
+                                        />
+                                    </div>
+
+                                    {/* セット追加ボタン（筋トレのみ：アップセット/メインセット） */}
+                                    {currentExercise.exerciseType === 'anaerobic' ? (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setSets([...sets, { ...currentSet, setType: 'warmup' }]);
+                                                }}
+                                                className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
+                                            >
+                                                <Icon name="Zap" size={20} />
+                                                <span>アップ追加</span>
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setSets([...sets, { ...currentSet, setType: 'main' }]);
+                                                }}
+                                                className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
+                                            >
+                                                <Icon name="Plus" size={20} />
+                                                <span>メイン追加</span>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                setSets([...sets, { ...currentSet }]);
+                                            }}
+                                            className="w-full px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
+                                        >
+                                            <Icon name="Plus" size={20} />
+                                            <span>追加</span>
+                                        </button>
+                                    )}
+
+                                    {sets.length > 0 && (
+                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                            <p className="text-sm font-medium mb-2">セット一覧</p>
+                                            {sets.map((set, index) => (
+                                                <div key={index} className="border-b border-gray-200 py-2 text-sm last:border-0">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium">Set {index + 1}</span>
+                                                            {currentExercise.exerciseType === 'anaerobic' && (
+                                                                <>
+                                                                    {set.setType === 'warmup' ? (
+                                                                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                                                            アップ
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+                                                                            メイン
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => setSets(sets.filter((_, i) => i !== index))}
+                                                            className="text-red-500 hover:text-red-700 p-1"
+                                                        >
+                                                            <Icon name="Trash2" size={16} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 space-y-0.5">
+                                                        {currentExercise.exerciseType === 'anaerobic' ? (
+                                                            <>
+                                                                <div><span>重量: {set.weight}kg</span></div>
+                                                                <div><span>回数: {set.reps}回</span></div>
+                                                                <div><span>体積: {calculateSetVolume(set)} kg×reps</span></div>
+                                                                {set.rm && set.rmWeight && (
+                                                                    <div className="text-orange-600 font-medium">
+                                                                        <span>🏆 RM更新: {set.rm}RM × {set.rmWeight}kg</span>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <div><span>時間: {set.duration || 0}分</span></div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {currentExercise.exerciseType === 'anaerobic' && (
+                                                <div className="border-t mt-2 pt-2 space-y-1">
+                                                    <div className="flex justify-between text-sm text-gray-600">
+                                                        <span>総体積</span>
+                                                        <span>{sets.reduce((sum, s) => sum + calculateSetVolume(s), 0)} kg×reps</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                )}
+
+                                <button
+                                    onClick={() => {
+                                        if (sets.length === 0) return;
+
+                                        // 有酸素・ストレッチの場合は、種目名と総時間のみ記録
+                                        let newExercise;
+                                        if (currentExercise.exerciseType === 'aerobic' || currentExercise.exerciseType === 'stretch') {
+                                            // 総時間を計算
+                                            const totalDuration = sets.reduce((sum, set) => sum + (set.duration || 0), 0);
+                                            newExercise = {
+                                                exercise: {
+                                                    ...currentExercise,
+                                                    name: currentExercise.name || currentExercise.exercise?.name
+                                                },
+                                                name: currentExercise.name || currentExercise.exercise?.name,  // 種目名を直接保存
+                                                duration: totalDuration, // 総時間のみ
+                                                totalDuration: totalDuration,
+                                                exerciseType: currentExercise.exerciseType
+                                            };
+                                        } else {
+                                            // 筋トレの場合は従来通り（セット詳細を含む）
+                                            newExercise = {
+                                                exercise: {
+                                                    ...currentExercise,
+                                                    name: currentExercise.name || currentExercise.exercise?.name
+                                                },
+                                                name: currentExercise.name || currentExercise.exercise?.name,  // 種目名を直接保存
+                                                sets: sets,
+                                                exerciseType: currentExercise.exerciseType
+                                            };
+                                        }
+
+                                        setExercises([...exercises, newExercise]);
+                                        setCurrentExercise(null);
+                                        setSets([]);
+                                    }}
+                                    disabled={sets.length === 0}
+                                    className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    種目追加
+                                </button>
+                            </div>
+                        )}
+
+                        {/* 追加済み種目リスト */}
+                        {exercises.length > 0 && !currentExercise && (
+                            <div className="p-4 rounded-lg border-2" style={{backgroundColor: '#EFF6FF', borderColor: '#4A9EFF'}}>
+                                <p className="text-sm font-bold mb-3" style={{color: '#4A9EFF'}}>追加済み（{exercises.length}種目）</p>
+
+                                {/* 種目一覧 */}
+                                <div className="space-y-2 mb-3">
+                                    {exercises.map((ex, index) => {
+                                        // 有酸素・ストレッチの場合は総時間のみ、筋トレの場合は総重量も計算
+                                        const isCardioOrStretch = ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch';
+
+                                        let totalVolume = 0;
+                                        let totalDuration = 0;
+
+                                        if (isCardioOrStretch) {
+                                            // 有酸素・ストレッチ: durationのみ
+                                            totalDuration = ex.duration || 0;
+                                        } else {
+                                            // 筋トレ: setsから計算
+                                            totalVolume = ex.sets.reduce((sum, set) => {
+                                                return sum + (set.weight || 0) * (set.reps || 0);
+                                            }, 0);
+                                            totalDuration = ex.sets.reduce((sum, set) => {
+                                                return sum + (set.duration || 0);
+                                            }, 0);
+                                        }
+
+                                        // RM更新があるかチェック
+                                        const rmUpdates = !isCardioOrStretch && ex.sets ? ex.sets.filter(set => set.rm && set.rmWeight) : [];
+
+                                        return (
+                                            <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-sm">{ex.exercise.name}</p>
+                                                        {isCardioOrStretch ? (
+                                                            <p className="text-xs text-gray-600">{totalDuration}分</p>
+                                                        ) : (
+                                                            <>
+                                                                <p className="text-xs text-gray-600">{ex.sets.length}セット - {totalVolume}kg</p>
+                                                                {rmUpdates.length > 0 && (
+                                                                    <p className="text-xs text-orange-600 font-medium">
+                                                                        🏆 {rmUpdates.map(s => `${s.rm}RM×${s.rmWeight}kg`).join(', ')}
+                                                                    </p>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                // 編集：該当種目をcurrentExerciseに戻す
+                                                                setCurrentExercise(ex.exercise);
+                                                                if (isCardioOrStretch) {
+                                                                    // 有酸素・ストレッチは時間を1セットとして扱う
+                                                                    setSets([{ duration: ex.duration }]);
+                                                                } else {
+                                                                    setSets(ex.sets);
+                                                                }
+                                                                setExercises(exercises.filter((_, i) => i !== index));
+                                                            }}
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                        >
+                                                            <Icon name="Edit" size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setExercises(exercises.filter((_, i) => i !== index))}
+                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                        >
+                                                            <Icon name="Trash2" size={18} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* 総重量・総時間の表示 */}
+                                <div className="grid grid-cols-2 gap-4 p-3 bg-white rounded-lg border border-gray-200 mb-3">
+                                    {/* 総重量: 筋トレのみ表示 */}
+                                    {exercises.some(ex => ex.exerciseType === 'anaerobic') && (
+                                        <div className="text-center">
+                                            <p className="text-xs text-gray-600 mb-1">総重量</p>
+                                            <p className="text-lg font-bold text-orange-600">
+                                                {exercises.reduce((sum, ex) => {
+                                                    if (ex.exerciseType === 'anaerobic' && ex.sets) {
+                                                        return sum + ex.sets.reduce((setSum, set) => {
+                                                            return setSum + (set.weight || 0) * (set.reps || 0);
+                                                        }, 0);
+                                                    }
+                                                    return sum;
+                                                }, 0)}kg
+                                            </p>
+                                        </div>
+                                    )}
+                                    {/* 総時間: すべての種目で表示 */}
+                                    <div className="text-center">
+                                        <p className="text-xs text-gray-600 mb-1">総時間</p>
+                                        <p className="text-lg font-bold text-orange-600">
+                                            {exercises.reduce((sum, ex) => {
+                                                if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
+                                                    // 有酸素・ストレッチ: durationを直接加算
+                                                    return sum + (ex.duration || 0);
+                                                } else if (ex.sets) {
+                                                    // 筋トレ: setsから計算
+                                                    return sum + ex.sets.reduce((setSum, set) => {
+                                                        return setSum + (set.duration || 0);
+                                                    }, 0);
+                                                }
+                                                return sum;
+                                            }, 0)}分
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* 種目を追加ボタン */}
+                                <button
+                                    onClick={() => setShowSearchModal(true)}
+                                    className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition mb-2"
+                                >
+                                    追加
+                                </button>
+
+                                {/* テンプレート名入力（テンプレートモード時） */}
+                                {(isTemplateMode || editingTemplate) && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">テンプレート名</label>
+                                        <input
+                                            type="text"
+                                            value={templateName}
+                                            onChange={(e) => setTemplateName(e.target.value)}
+                                            placeholder="例: 胸トレ1"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* 記録ボタン */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={handleWorkoutSave}
+                                        className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
+                                    >
+                                        {(isTemplateMode || editingTemplate) ? '保存' : '記録'}
+                                    </button>
+                                    <button
+                                        onClick={onClose}
+                                        className="bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400 transition"
+                                    >
+                                        キャンセル
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+// ========== 運動記録コンポーネント終了 ==========
+
+            const renderFoodInput = () => {
+
+                // 曖昧検索用のヘルパー関数
+                const fuzzyMatch = (text, query) => {
+                    if (!query || query.trim() === '') return true;
+                    // ひらがな、カタカナ、漢字の正規化
+                    const normalize = (str) => {
+                        return str
+                            .toLowerCase()
+                            .replace(/[（）\(\)]/g, '') // 括弧を削除
+                            .replace(/[\u3041-\u3096]/g, (m) => String.fromCharCode(m.charCodeAt(0) + 0x60)) // ひらがな→カタカナ
+                            .replace(/\s+/g, ''); // 空白削除
+                    };
+                    const normalizedText = normalize(text);
+                    const normalizedQuery = normalize(query);
+                    return normalizedText.includes(normalizedQuery);
+                };
+
+                // Helper function to map foodDatabase format to tracking format
+                const mapNutrients = (food) => {
+                    const vitamins = {
+                        A: food.vitaminA || 0,
+                        D: food.vitaminD || 0,
+                        E: food.vitaminE || 0,
+                        K: food.vitaminK || 0,
+                        B1: food.vitaminB1 || 0,
+                        B2: food.vitaminB2 || 0,
+                        B3: food.niacin || 0,
+                        B5: food.pantothenicAcid || 0,
+                        B6: food.vitaminB6 || 0,
+                        B7: food.biotin || 0,
+                        B9: food.folicAcid || 0,
+                        B12: food.vitaminB12 || 0,
+                        C: food.vitaminC || 0
+                    };
+                    const minerals = {
+                        calcium: food.calcium || 0,
+                        iron: food.iron || 0,
+                        magnesium: food.magnesium || 0,
+                        phosphorus: food.phosphorus || 0,
+                        potassium: food.potassium || 0,
+                        sodium: food.sodium || 0,
+                        zinc: food.zinc || 0,
+                        copper: food.copper || 0,
+                        manganese: food.manganese || 0,
+                        selenium: food.selenium || 0,
+                        iodine: food.iodine || 0,
+                        chromium: food.chromium || 0
+                    };
+                    return {
+                        vitamins,
+                        minerals,
+                        sugar: food.sugar || 0,
+                        fiber: food.fiber || 0,
+                        solubleFiber: food.solubleFiber || 0,
+                        insolubleFiber: food.insolubleFiber || 0,
+                        gi: food.gi || 0,
+                        caffeine: food.caffeine || 0,
+                        catechin: food.catechin || 0,
+                        tannin: food.tannin || 0,
+                        polyphenol: food.polyphenol || 0,
+                        chlorogenicAcid: food.chlorogenicAcid || 0,
+                        creatine: food.creatine || 0,
+                        lArginine: food.lArginine || 0,
+                        lCarnitine: food.lCarnitine || 0,
+                        EPA: food.EPA || 0,
+                        DHA: food.DHA || 0,
+                        coQ10: food.coQ10 || 0,
+                        lutein: food.lutein || 0,
+                        astaxanthin: food.astaxanthin || 0
+                    };
+                };
+
+                // 食材名を正規化する関数（カタカナ→ひらがな、括弧内を除外）
+                const normalizeFoodName = (name) => {
+                    if (!name) return '';
+
+                    // カタカナをひらがなに変換
+                    let normalized = name.replace(/[\u30a1-\u30f6]/g, (match) => {
+                        return String.fromCharCode(match.charCodeAt(0) - 0x60);
+                    });
+
+                    // 括弧内を除外（「人参（生）」→「人参」）
+                    normalized = normalized.replace(/[（(].*?[）)]/g, '');
+
+                    // 空白を削除
+                    normalized = normalized.replace(/\s+/g, '');
+
+                    return normalized.toLowerCase();
+                };
+
+                // レーベンシュタイン距離を計算する関数（文字列の類似度測定）
+                const levenshteinDistance = (str1, str2) => {
+                    const len1 = str1.length;
+                    const len2 = str2.length;
+                    const matrix = [];
+
+                    for (let i = 0; i <= len1; i++) {
+                        matrix[i] = [i];
+                    }
+                    for (let j = 0; j <= len2; j++) {
+                        matrix[0][j] = j;
+                    }
+
+                    for (let i = 1; i <= len1; i++) {
+                        for (let j = 1; j <= len2; j++) {
+                            const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+                            matrix[i][j] = Math.min(
+                                matrix[i - 1][j] + 1,
+                                matrix[i][j - 1] + 1,
+                                matrix[i - 1][j - 1] + cost
+                            );
+                        }
+                    }
+
+                    return matrix[len1][len2];
+                };
+
+                // 最も類似度の高い食材を見つける関数
+                const findBestMatch = (inputName) => {
+                    const normalizedInput = normalizeFoodName(inputName);
+                    let bestMatch = null;
+                    let bestDistance = Infinity;
+                    let bestCategory = null;
+
+                    Object.keys(foodDB).forEach(cat => {
+                        Object.keys(foodDB[cat]).forEach(dbName => {
+                            const normalizedDbName = normalizeFoodName(dbName);
+                            const distance = levenshteinDistance(normalizedInput, normalizedDbName);
+
+                            // 距離が短いほど類似度が高い
+                            // ただし、長さの半分以下の距離でないと候補にしない（類似度50%以上）
+                            const maxLength = Math.max(normalizedInput.length, normalizedDbName.length);
+                            if (distance < bestDistance && distance <= maxLength / 2) {
+                                bestDistance = distance;
+                                bestMatch = dbName;
+                                bestCategory = cat;
+                            }
+                        });
+                    });
+
+                    return bestMatch ? { name: bestMatch, category: bestCategory, distance: bestDistance } : null;
+                };
+
+                // AI食事認識のコールバック
+                const handleFoodsRecognized = (recognizedFoods) => {
+                    console.log('[handleFoodsRecognized] 開始');
+                    console.log('[handleFoodsRecognized] recognizedFoods received:', recognizedFoods);
+                    console.log('[handleFoodsRecognized] 現在のaddedItems:', addedItems);
+
+                    // 既にaddedItemsに追加済みの食材は除外（重複防止）
+                    const filteredFoods = recognizedFoods.filter(food => {
+                        return !addedItems.some(item => item.name === food.name);
+                    });
+
+                    console.log('[handleFoodsRecognized] フィルター後のfilteredFoods:', filteredFoods);
+
+                    // 認識された食材を直接addedItemsに追加（一時的な項目として）
+                    const newItems = filteredFoods.map(food => {
+                        console.log(`[handleFoodsRecognized] Processing food:`, {
+                            name: food.name,
+                            amount: food.amount,
+                            type: typeof food.amount,
+                            isCustom: food.isCustom,
+                            calories: food.calories
+                        });
+
+                        // food.amountから数値とunitを抽出
+                        let foodAmount = food.amount;
+                        let foodUnit = food.unit || 'g';
+
+                        if (typeof foodAmount === 'string') {
+                            const numMatch = foodAmount.match(/^([\d.]+)/);
+                            const unitMatch = foodAmount.match(/[a-zA-Z]+$/);
+                            if (numMatch) {
+                                foodAmount = parseFloat(numMatch[1]);
+                            }
+                            if (unitMatch) {
+                                foodUnit = unitMatch[0];
+                            }
+                            console.log(`[handleFoodsRecognized] String parsed: ${food.name} -> ${foodAmount}${foodUnit}`);
+                        } else {
+                            // 数値の場合、そのまま使用（100にフォールバックしない）
+                            foodAmount = parseFloat(foodAmount);
+                            if (isNaN(foodAmount) || foodAmount <= 0) {
+                                console.warn(`[handleFoodsRecognized] Invalid amount for ${food.name}, defaulting to 100`);
+                                foodAmount = 100;
+                            }
+                            console.log(`[handleFoodsRecognized] Number parsed: ${food.name} -> ${foodAmount}`);
+                        }
+
+                        // データベースから該当食材を探す
+                        let foundFood = null;
+                        let foundCategory = null;
+
+                        // 1. 完全一致で検索
+                        Object.keys(foodDB).forEach(cat => {
+                            if (foodDB[cat][food.name]) {
+                                foundFood = foodDB[cat][food.name];
+                                foundCategory = cat;
+                            }
+                        });
+
+                        // 2. 完全一致しない場合、正規化して検索（ニュアンスヒット）
+                        if (!foundFood) {
+                            const normalizedInputName = normalizeFoodName(food.name);
+                            console.log(`[handleFoodsRecognized] 正規化: "${food.name}" → "${normalizedInputName}"`);
+
+                            Object.keys(foodDB).forEach(cat => {
+                                if (foundFood) return; // 既に見つかっている場合はスキップ
+
+                                Object.keys(foodDB[cat]).forEach(dbName => {
+                                    if (foundFood) return; // 既に見つかっている場合はスキップ
+
+                                    const normalizedDbName = normalizeFoodName(dbName);
+                                    if (normalizedDbName === normalizedInputName || normalizedDbName.includes(normalizedInputName) || normalizedInputName.includes(normalizedDbName)) {
+                                        foundFood = foodDB[cat][dbName];
+                                        foundCategory = cat;
+                                        console.log(`[handleFoodsRecognized] ニュアンスヒット: "${food.name}" → "${dbName}"`);
+                                    }
+                                });
+                            });
+                        }
+
+                        if (foundFood) {
+                            const nutrients = mapNutrients(foundFood);
+                            console.log(`[handleFoodsRecognized] foundFood:`, {
+                                name: food.name,
+                                servingSize: foundFood.servingSize,
+                                unit: foundFood.unit,
+                                servingUnit: foundFood.servingUnit,
+                                calories: foundFood.calories,
+                                inputAmount: foodAmount,
+                                inputUnit: foodUnit
+                            });
+
+                            // 常にg単位として100g換算で計算（特殊単位処理を削除）
+                            const ratio = foodAmount / 100;
+                            const displayAmount = foodAmount;
+                            const displayUnit = 'g';
+                            console.log(`[handleFoodsRecognized] 100g換算: ${foodAmount}g, ratio=${ratio}`);
+
+                            const result = {
+                                name: food.name,
+                                amount: displayAmount,
+                                unit: displayUnit,
+                                calories: Math.round((foundFood.calories || 0) * ratio),
+                                protein: parseFloat(((foundFood.protein || 0) * ratio).toFixed(1)),
+                                fat: parseFloat(((foundFood.fat || 0) * ratio).toFixed(1)),
+                                carbs: parseFloat(((foundFood.carbs || 0) * ratio).toFixed(1)),
+                                category: foundCategory,
+                                // _base情報を追加（FoodItemTagで基準量表示に使用）
+                                _base: {
+                                    calories: foundFood.calories || 0,
+                                    protein: foundFood.protein || 0,
+                                    fat: foundFood.fat || 0,
+                                    carbs: foundFood.carbs || 0,
+                                    servingSize: foundFood.servingSize || 100,
+                                    servingUnit: foundFood.servingUnit || 'g',
+                                    unit: foundFood.unit || '100g'
+                                },
+                                ...nutrients
+                            };
+                            console.log(`[handleFoodsRecognized] 計算結果:`, result);
+                            return result;
+                        } else {
+                            // DBに見つからない場合はカスタム食材として扱う
+                            // まず、類似度の高い候補を検索
+                            const bestMatch = findBestMatch(food.name);
+                            console.log(`[handleFoodsRecognized] 類似候補検索: "${food.name}" → ${bestMatch ? `"${bestMatch.name}" (距離: ${bestMatch.distance})` : 'なし'}`);
+
+                            // _baseがあれば100gあたりの値から実量計算、なければそのまま使用
+                            const base = food._base || {
+                                calories: food.calories || 0,
+                                protein: food.protein || 0,
+                                fat: food.fat || 0,
+                                carbs: food.carbs || 0
+                            };
+                            const ratio = foodAmount / 100;
+
+                            console.log(`[handleFoodsRecognized] カスタムアイテム処理: ${food.name}`, {
+                                base: base,
+                                foodAmount: foodAmount,
+                                ratio: ratio,
+                                calculated: {
+                                    calories: Math.round(base.calories * ratio),
+                                    protein: parseFloat((base.protein * ratio).toFixed(1)),
+                                    fat: parseFloat((base.fat * ratio).toFixed(1)),
+                                    carbs: parseFloat((base.carbs * ratio).toFixed(1))
+                                }
+                            });
+
+                            return {
+                                name: food.name,
+                                amount: foodAmount, // 数値のみ
+                                unit: foodUnit,     // 単位は別フィールド
+                                calories: Math.round(base.calories * ratio),
+                                protein: parseFloat((base.protein * ratio).toFixed(1)),
+                                fat: parseFloat((base.fat * ratio).toFixed(1)),
+                                carbs: parseFloat((base.carbs * ratio).toFixed(1)),
+                                category: food.category || 'カスタム',
+                                isUnknown: food.isUnknown || false,
+                                isCustom: food.isCustom || false,
+                                vitamins: {},
+                                minerals: {},
+                                suggestion: bestMatch ? { name: bestMatch.name, category: bestMatch.category } : null // 候補を追加
+                            };
+                        }
+                    });
+
+                    console.log('[handleFoodsRecognized] newItems calculated:', newItems);
+                    newItems.forEach((item, i) => {
+                        console.log(`  [${i}] ${item.name}: ${item.amount}${item.unit}, ${item.calories}kcal, P${item.protein}g, F${item.fat}g, C${item.carbs}g`);
+                    });
+
+                    setAddedItems([...addedItems, ...newItems]);
+
+                    console.log('[handleFoodsRecognized] addedItems updated:', [...addedItems, ...newItems]);
+                    console.log('[handleFoodsRecognized] 完了、検索モーダルに遷移します');
+
+                    setShowAIFoodRecognition(false);
+                    setShowSearchModal(true); // 検索モーダルを開いてaddedItemsを表示
+                };
+
+                // AI写真解析から未登録食材のカスタム作成を開始
+                const handleOpenCustomFromAI = async (foodData, onCompleteCallback) => {
+                    setIsFromAIRecognition(true); // AI写真解析経由フラグ
+                    setSaveMethod('addToList'); // AI経由はデフォルトで「リストに追加」
+                    setOnCustomCompleteCallback(() => onCompleteCallback); // コールバックを保存
+                    setShowCustomSupplementForm(true);
+                    // setShowAIFoodRecognition(false); // コンポーネントをアンマウントしない（状態保持のため）
+                    setAiRecognizing(true);
+
+                    try {
+                        // Cloud Function経由でGemini APIを呼び出し（食材名から栄養素を推定）
+                        const functions = firebase.app().functions('asia-northeast2');
+                        const callGemini = functions.httpsCallable('callGemini');
+
+                        const promptText = `「${foodData.name}」の栄養素を日本食品標準成分表2020年版（八訂）を基準に推定してJSON形式で出力してください。
+
+【出力形式】
+{
+  "calories": カロリー（kcal/100g、数値のみ）,
+  "protein": たんぱく質（g/100g、数値のみ）,
+  "fat": 脂質（g/100g、数値のみ）,
+  "carbs": 炭水化物（g/100g、数値のみ）
+}
+
+【推定ルール】
+1. 日本食品標準成分表2020年版（八訂）の値を基準に推定
+2. 100gあたりの栄養素で推定
+3. 最も一般的な調理法・状態の値を使用
+4. JSON形式のみを出力し、他のテキストは含めない`;
+
+                        const result = await callGemini({
+                            model: 'gemini-2.5-pro',
+                            contents: [{
+                                role: 'user',
+                                parts: [{ text: promptText }]
+                            }],
+                            generationConfig: {
+                                temperature: 0.2,
+                                topK: 32,
+                                topP: 1,
+                                maxOutputTokens: 2048,
+                            }
+                        });
+
+                        if (!result.data || !result.data.success) {
+                            throw new Error('AI推定に失敗しました');
+                        }
+
+                        const textContent = result.data.response.candidates[0].content.parts[0].text;
+
+                        const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+                        if (!jsonMatch) {
+                            throw new Error('栄養素の解析に失敗しました');
+                        }
+
+                        const nutrition = JSON.parse(jsonMatch[0]);
+
+                        console.log('[handleOpenCustomFromAI] AI推定完了:', {
+                            name: foodData.name,
+                            amount: foodData.amount,
+                            nutrition: nutrition
+                        });
+
+                        // AI推定値を設定（100gあたりで統一）
+                        setCustomSupplementData({
+                            itemType: 'food',
+                            name: foodData.name || '',
+                            category: 'ビタミン・ミネラル',
+                            servingSize: 100,  // 100gで固定
+                            servingUnit: 'g',
+                            calories: nutrition.calories || 0,
+                            protein: nutrition.protein || 0,
+                            fat: nutrition.fat || 0,
+                            carbs: nutrition.carbs || 0,
+                            vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
+                            vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
+                            niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0,
+                            sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0,
+                            iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0,
+                            otherNutrients: []
+                        });
+
+                    } catch (error) {
+                        console.error('AI nutrition estimation error:', error);
+                        // エラー時はfoodDataの値を使用（100gあたりで統一）
+                        setCustomSupplementData({
+                            itemType: 'food',
+                            name: foodData.name || '',
+                            category: 'ビタミン・ミネラル',
+                            servingSize: 100,  // 100gで固定
+                            servingUnit: 'g',
+                            calories: foodData.calories || 0,
+                            protein: foodData.protein || 0,
+                            fat: foodData.fat || 0,
+                            carbs: foodData.carbs || 0,
+                            vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
+                            vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
+                            niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0,
+                            sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0,
+                            iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0,
+                            otherNutrients: []
+                        });
+                    } finally {
+                        setAiRecognizing(false);
+                    }
+                };
+
+                // AI推定（カスタム作成用）
+                const recognizeNutrition = async () => {
+                    if (!aiImage) {
+                        toast('画像を選択してください');
+                        return;
+                    }
+
+                    setAiRecognizing(true);
+
+                    try {
+                        // 画像をBase64に変換
+                        const imageToBase64 = (file) => {
+                            return new Promise((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    const base64String = reader.result.split(',')[1];
+                                    resolve(base64String);
+                                };
+                                reader.onerror = reject;
+                                reader.readAsDataURL(file);
+                            });
+                        };
+
+                        const base64Image = await imageToBase64(aiImage);
+
+                        // Cloud Function経由でGemini Vision APIを呼び出し
+                        const functions = firebase.app().functions('asia-northeast2');
+                        const callGemini = functions.httpsCallable('callGemini');
+
+                        const promptText = `この食品画像の栄養素を推定してJSON形式で出力してください。
+
+【出力形式】
+{
+  "name": "食品名（日本語）",
+  "servingSize": 1回分の量（数値のみ、通常100g）,
+  "servingUnit": "単位（g、ml、個など）",
+  "calories": カロリー（kcal、数値のみ）,
+  "protein": たんぱく質（g、数値のみ）,
+  "fat": 脂質（g、数値のみ）,
+  "carbs": 炭水化物（g、数値のみ）
+}
+
+【推定ルール】
+1. 100gあたりの栄養素で推定
+2. 複合的な料理の場合は、全体の栄養素を推定
+3. 信頼できる栄養成分表を参考に推定
+4. JSON形式のみを出力し、他のテキストは含めない
+
+例:
+- 鶏むね肉 → {"name":"鶏むね肉","servingSize":100,"servingUnit":"g","calories":108,"protein":22.3,"fat":1.5,"carbs":0}
+- プロテインバー → {"name":"プロテインバー","servingSize":1,"servingUnit":"本","calories":200,"protein":20,"fat":8,"carbs":15}`;
+
+                        const result = await callGemini({
+                            model: 'gemini-2.5-pro',
+                            contents: [{
+                                role: 'user',
+                                parts: [
+                                    { text: promptText },
+                                    {
+                                        inline_data: {
+                                            mime_type: aiImage.type || 'image/jpeg',
+                                            data: base64Image
+                                        }
+                                    }
+                                ]
+                            }],
+                            generationConfig: {
+                                temperature: 0.4,
+                                topK: 32,
+                                topP: 1,
+                                maxOutputTokens: 8192,
+                            }
+                        });
+
+                        if (!result.data || !result.data.success) {
+                            throw new Error('AI認識に失敗しました');
+                        }
+
+                        const textContent = result.data.response.candidates[0].content.parts[0].text;
+
+                        // JSONを抽出
+                        const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+                        if (!jsonMatch) {
+                            throw new Error('栄養素の解析に失敗しました');
+                        }
+
+                        const nutrition = JSON.parse(jsonMatch[0]);
+
+                        // customSupplementDataに反映
+                        setCustomSupplementData(prev => ({
+                            ...prev,
+                            name: nutrition.name || prev.name,
+                            servingSize: nutrition.servingSize || 100,
+                            servingUnit: nutrition.servingUnit || 'g',
+                            calories: nutrition.calories || 0,
+                            protein: nutrition.protein || 0,
+                            fat: nutrition.fat || 0,
+                            carbs: nutrition.carbs || 0
+                        }));
+
+                        setIsAICreation(true);
+                        setNutritionInputMethod('manual'); // 自動的に手動入力タブに切り替え
+                        toast.success('AI推定が完了しました。値を確認・編集してから保存してください。');
+
+                    } catch (error) {
+                        console.error('AI recognition error:', error);
+                        toast.error('AI認識に失敗しました: ' + error.message);
+                    } finally {
+                        setAiRecognizing(false);
+                    }
+                };
+
+                // AI推定用の画像選択ハンドラー
+                const handleAiImageSelect = (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        setAiImage(file);
+
+                        // プレビュー表示
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            setAiImagePreview(reader.result);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                };
+
+                // 階層化されたカテゴリ構造を構築
+                const hierarchicalCategories = {
+                    '食材': {},
+                    'サプリメント': {}
+                };
+
+                Object.keys(foodDB).forEach(category => {
+                    // サプリメントカテゴリの場合、サブカテゴリごとに分類
+                    if (category === 'サプリメント') {
+                        const supplementsBySubcategory = {};
+                        const drinkItems = [];
+
+                        Object.keys(foodDB[category]).forEach(itemName => {
+                            const item = foodDB[category][itemName];
+                            const subcategory = item.subcategory || 'その他';
+
+                            if (fuzzyMatch(itemName, searchTerm)) {
+                                // ドリンクは食材カテゴリに移動
+                                if (subcategory === 'ドリンク') {
+                                    drinkItems.push(itemName);
+                                } else {
+                                    if (!supplementsBySubcategory[subcategory]) {
+                                        supplementsBySubcategory[subcategory] = [];
+                                    }
+                                    supplementsBySubcategory[subcategory].push(itemName);
+                                }
+                            }
+                        });
+
+                        // ドリンクを食材カテゴリに追加
+                        if (drinkItems.length > 0) {
+                            hierarchicalCategories['食材']['ドリンク'] = drinkItems;
+                        }
+
+                        // サプリメントの各サブカテゴリを追加（ドリンク除く）
+                        Object.keys(supplementsBySubcategory).forEach(subcategory => {
+                            if (supplementsBySubcategory[subcategory].length > 0) {
+                                hierarchicalCategories['サプリメント'][subcategory] = supplementsBySubcategory[subcategory];
+                            }
+                        });
+                    } else {
+                        // 通常の食材カテゴリ
+                        const items = Object.keys(foodDB[category]).filter(name =>
+                            fuzzyMatch(name, searchTerm)
+                        );
+                        if (items.length > 0) {
+                            hierarchicalCategories['食材'][category] = items;
+                        }
+                    }
+                });
+
+                // カスタム食材を食材配下に追加（Firestoreから取得したcustomFoods stateを使用）
+                // itemTypeが未設定の古いデータはデフォルトで'food'として扱う
+                const filteredCustomFoods = customFoods.filter(food =>
+                    (!food.itemType || food.itemType === 'food') && fuzzyMatch(food.name, searchTerm)
+                );
+                if (filteredCustomFoods.length > 0) {
+                    hierarchicalCategories['食材']['カスタム食材'] = filteredCustomFoods.map(f => f.name);
+                }
+
+                // カスタム料理を最上位に追加
+                const filteredCustomRecipes = customFoods.filter(food =>
+                    food.itemType === 'recipe' && fuzzyMatch(food.name, searchTerm)
+                );
+                if (filteredCustomRecipes.length > 0) {
+                    hierarchicalCategories['カスタム料理'] = { 'カスタム料理': filteredCustomRecipes.map(f => f.name) };
+                }
+
+                // カスタムサプリをサプリメント配下に追加
+                const filteredCustomSupplements = customFoods.filter(food =>
+                    food.itemType === 'supplement' && fuzzyMatch(food.name, searchTerm)
+                );
+                if (filteredCustomSupplements.length > 0) {
+                    hierarchicalCategories['サプリメント']['カスタムサプリ'] = filteredCustomSupplements.map(f => f.name);
+                }
+
+                const filteredFoods = hierarchicalCategories;
+
+                // テンプレート保存
+                const saveAsTemplate = async () => {
+                    if (!templateName.trim() || addedItems.length === 0) {
+                        toast('テンプレート名を入力し、食材を追加してください');
+                        return;
+                    }
+                    const template = {
+                        id: Date.now(),
+                        name: templateName,
+                        items: addedItems
+                    };
+                    await DataService.saveMealTemplate(user.uid, template);
+                    const templates = await DataService.getMealTemplates(user.uid);
+                    setMealTemplates(templates);
+                    toast.success('テンプレートを保存しました');
+                    setTemplateName('');
+                };
+
+                const loadTemplate = (template) => {
+                    // ディープコピーして参照を切る（複製不具合を防止）
+                    const copiedItems = JSON.parse(JSON.stringify(template.items));
+                    setAddedItems(copiedItems);
+                    setMealName(template.name);
+                };
+
+                const deleteTemplate = async (templateId) => {
+                    window.showGlobalConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
+                        await DataService.deleteMealTemplate(user.uid, templateId);
+                        const templates = await DataService.getMealTemplates(user.uid);
+                        setMealTemplates(templates);
+                    });
+                };
+
+                return (
+                    <div className="space-y-4">
+                        {/* ①食事名入力 */}
+                        <div>
+                            <label className="block text-sm font-medium mb-2">食事名</label>
+                            <input
+                                type="text"
+                                value={mealName}
+                                onChange={(e) => setMealName(e.target.value)}
+                                placeholder="朝食、1食目など..."
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                            />
+                        </div>
+
+                        {/* ②どうやって記録しますか？ */}
+                        {!selectedItem && !showAIFoodRecognition && !showCustomSupplementForm && !editingMeal && (
+                            <div className="space-y-3">
+                                <p className="text-center text-base font-medium text-gray-700 mb-4">どうやって記録しますか？</p>
+
+                                {/* 写真から記録（黒背景） */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAIFoodRecognition(true)}
+                                    className="w-full bg-black text-white py-3 px-4 rounded-lg hover:bg-gray-900 transition flex items-center gap-4"
+                                >
+                                    <Icon name="Camera" size={32} />
+                                    <div className="text-left flex-1">
+                                        <div className="font-bold text-base">写真から記録</div>
+                                        <div className="text-xs text-gray-400 mt-0.5">料理の写真をAIが解析</div>
+                                    </div>
+                                </button>
+
+                                {/* 食材を検索（グレー背景、グレー枠） */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSearchModal(true)}
+                                    className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                >
+                                    <Icon name="Search" size={32} />
+                                    <div className="text-left flex-1">
+                                        <div className="font-bold text-base">食材を検索</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">データベースから選択</div>
+                                    </div>
+                                </button>
+
+                                {/* 手動で作成（グレー背景、グレー枠） */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsAICreation(false);
+                                        setNutritionInputMethod('manual'); // 手動入力タブを初期選択
+                                        setAiImage(null);
+                                        setAiImagePreview(null);
+                                        setShowCustomSupplementForm(true);
+                                    }}
+                                    className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                >
+                                    <Icon name="Plus" size={32} />
+                                    <div className="text-left flex-1">
+                                        <div className="font-bold text-base">手動で作成</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">カスタム食材を登録</div>
+                                    </div>
+                                </button>
+
+                                {/* テンプレート - 12日以上で開放 */}
+                                {unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTemplates(!showTemplates)}
+                                        className="w-full bg-gray-100 border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition flex items-center gap-4"
+                                    >
+                                        <Icon name="BookTemplate" size={32} />
+                                        <div className="text-left flex-1">
+                                            <div className="font-bold text-base">テンプレート</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">保存した食事を呼び出す</div>
+                                        </div>
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* テンプレートモーダル */}
+                        {showTemplates && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+                                    <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+                                        <h3 className="text-lg font-bold">テンプレート</h3>
+                                        <button
+                                            onClick={() => setShowTemplates(false)}
+                                            className="text-gray-500 hover:text-gray-700"
+                                        >
+                                            <Icon name="X" size={24} />
+                                        </button>
+                                    </div>
+                                    <div className="p-4 space-y-3">
+                                        {/* テンプレート一覧 */}
+                                        {mealTemplates.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {mealTemplates.map(template => {
+                                                    // 総カロリーとPFCを計算
+                                                    let totalCalories = 0;
+                                                    let totalProtein = 0;
+                                                    let totalFat = 0;
+                                                    let totalCarbs = 0;
+
+                                                    template.items.forEach(item => {
+                                                        totalCalories += item.calories || 0;
+                                                        totalProtein += item.protein || 0;
+                                                        totalFat += item.fat || 0;
+                                                        totalCarbs += item.carbs || 0;
+                                                    });
+
+                                                    return (
+                                                        <div key={template.id} className="bg-gray-50 rounded-lg border border-gray-200 p-3">
+                                                            <div className="flex items-center justify-between mb-3">
+                                                                <div className="flex-1">
+                                                                    <p className="font-medium">{template.name}</p>
+                                                                    <p className="text-xs text-gray-600 mt-1">
+                                                                        {Math.round(totalCalories)}kcal
+                                                                        <span className="text-red-600 ml-2">P:{Math.round(totalProtein)}g</span>
+                                                                        <span className="text-yellow-600 ml-1">F:{Math.round(totalFat)}g</span>
+                                                                        <span className="text-green-600 ml-1">C:{Math.round(totalCarbs)}g</span>
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 ml-2">
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            console.log('[Template Edit] 編集ボタンがクリックされました');
+                                                                            console.log('[Template Edit] テンプレート:', template);
+                                                                            loadTemplate(template);
+                                                                            setShowTemplates(false);
+                                                                            setEditingTemplateId(template.id);
+                                                                            // 検索モーダルを開いて追加済みアイテムを表示
+                                                                            setShowSearchModal(true);
+                                                                            setAddedItemsExpanded(true); // 追加済みアイテムを展開
+                                                                            console.log('[Template Edit] テンプレートを編集モードで読み込み完了');
+                                                                        }}
+                                                                        className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                                        title="編集"
+                                                                    >
+                                                                        <Icon name="Pencil" size={18} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            deleteTemplate(template.id);
+                                                                        }}
+                                                                        className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                                        title="削除"
+                                                                    >
+                                                                        <Icon name="Trash2" size={18} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 追加ボタン */}
+                                                            <button
+                                                            onClick={async (e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                console.log('[Template Add] 追加ボタンがクリックされました');
+                                                                console.log('[Template Add] テンプレートのアイテム:', template.items);
+
+                                                                // テンプレートの各アイテムを直接ダッシュボードに追加
+                                                                for (const item of template.items) {
+                                                                    const mealData = {
+                                                                        name: `${template.name} - ${item.name}`,
+                                                                        timestamp: new Date().toISOString(),
+                                                                        items: [item],
+                                                                        totalCalories: item.calories || 0,
+                                                                        totalProtein: item.protein || 0,
+                                                                        totalFat: item.fat || 0,
+                                                                        totalCarbs: item.carbs || 0,
+                                                                        isTemplate: true // テンプレートタグ
+                                                                    };
+                                                                    console.log('[Template Add] ダッシュボードに追加:', mealData);
+                                                                    await onAdd(mealData);
+                                                                }
+
+                                                                setShowTemplates(false);
+                                                                onClose(); // モーダルを閉じる
+                                                                console.log('[Template Add] 追加完了');
+                                                            }}
+                                                            className="w-full py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm mb-3"
+                                                        >
+                                                            追加
+                                                        </button>
+
+                                                            {/* アイテム一覧（折りたたみ） */}
+                                                            <details className="border-t border-gray-200 pt-2">
+                                                                <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700 list-none flex items-center gap-1">
+                                                                    <Icon name="ChevronDown" size={14} />
+                                                                    内訳を表示
+                                                                </summary>
+                                                                <div className="mt-2 space-y-1">
+                                                                    {template.items.map((item, idx) => (
+                                                                        <div key={idx} className="text-sm text-gray-700 py-1">
+                                                                            <span className="font-medium">{item.name}</span>
+                                                                            <span className="text-gray-500 ml-2">{item.amount}g</span>
+                                                                            <span className="text-xs text-gray-500 ml-2">
+                                                                                ({Math.round(item.calories)}kcal
+                                                                                <span className="text-red-600 ml-1">P:{Math.round(item.protein)}g</span>
+                                                                                <span className="text-yellow-600 ml-1">F:{Math.round(item.fat)}g</span>
+                                                                                <span className="text-green-600 ml-1">C:{Math.round(item.carbs)}g</span>)
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </details>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-500 text-center py-8">保存されたテンプレートはありません</p>
+                                        )}
+
+                                        {/* テンプレート新規保存 */}
+                                        {addedItems.length > 0 && (
+                                            <div className="pt-3 border-t border-gray-200">
+                                                <p className="text-sm font-medium mb-2">新しいテンプレートとして保存</p>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={templateName}
+                                                        onChange={(e) => setTemplateName(e.target.value)}
+                                                        placeholder="テンプレート名（例: 朝食パターン1）"
+                                                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            saveAsTemplate();
+                                                            setShowTemplates(false);
+                                                        }}
+                                                        className="px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm"
+                                                    >
+                                                        保存
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 検索モーダル */}
+                        {showSearchModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+                                    {/* ヘッダー */}
+                                    <div className="sticky top-0 bg-white border-b p-4">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-lg font-bold">食材を検索</h3>
+                                            <button
+                                                onClick={() => {
+                                                    setShowSearchModal(false);
+                                                    setEditingTemplateId(null); // 編集状態をリセット
+                                                }}
+                                                className="text-gray-500 hover:text-gray-700"
+                                            >
+                                                <Icon name="X" size={24} />
+                                            </button>
+                                        </div>
+
+                                        {/* 検索欄 */}
+                                        <input
+                                            type="text"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            placeholder="食材・サプリメントを検索..."
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        />
+
+                                        {/* 追加済みアイテム一覧 */}
+                                        {(() => {
+                                            console.log('[Added Items Display] addedItems.length:', addedItems.length);
+                                            console.log('[Added Items Display] addedItemsExpanded:', addedItemsExpanded);
+                                            return addedItems.length > 0;
+                                        })() && (
+                                            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mt-3">
+                                                <div
+                                                    className="flex justify-between items-center mb-3 cursor-pointer"
+                                                    onClick={() => {
+                                                        console.log('[Added Items] トグルクリック - 現在:', addedItemsExpanded);
+                                                        setAddedItemsExpanded(!addedItemsExpanded);
+                                                    }}
+                                                >
+                                                    <p className="text-sm font-medium text-indigo-900">追加済み ({addedItems.length}品目)</p>
+                                                    <Icon name={addedItemsExpanded ? "ChevronUp" : "ChevronDown"} size={20} className="text-indigo-600" />
+                                                </div>
+                                                {addedItemsExpanded && (
+                                                <>
+                                                <div className="space-y-2 max-h-40 overflow-y-auto">
+                                                    {addedItems.map((item, index) => (
+                                                        <div key={index} className="bg-white p-2 rounded-lg flex justify-between items-center">
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-medium">{item.name}</p>
+                                                                <p className="text-xs text-gray-600">{item.amount}{item.unit || 'g'} - {Math.round(item.calories)}kcal</p>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        // 編集時は100gあたりの栄養価に戻す必要がある
+                                                                        const originalRatio = 100 / item.amount;
+                                                                        setSelectedItem({
+                                                                            name: item.name,
+                                                                            calories: item.calories * originalRatio,
+                                                                            protein: item.protein * originalRatio,
+                                                                            fat: item.fat * originalRatio,
+                                                                            carbs: item.carbs * originalRatio,
+                                                                            vitamins: item.vitamins,
+                                                                            minerals: item.minerals,
+                                                                            category: item.category || ''
+                                                                        });
+                                                                        setAmount(item.amount.toString());
+                                                                        setEditingItemIndex(index);
+                                                                        setShowSearchModal(false);
+                                                                    }}
+                                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                                    title="編集"
+                                                                >
+                                                                    <Icon name="Edit" size={18} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setAddedItems(addedItems.filter((_, i) => i !== index))}
+                                                                    className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                                >
+                                                                    <Icon name="Trash2" size={18} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="mt-3 pt-3 border-t border-indigo-200">
+                                                    <div className="grid grid-cols-4 gap-2 text-xs">
+                                                        <div>
+                                                            <p className="text-gray-600">カロリー</p>
+                                                            <p className="font-bold text-blue-600">
+                                                                {Math.round(addedItems.reduce((sum, item) => sum + item.calories, 0))}kcal
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-gray-600">P</p>
+                                                            <p className="font-bold text-red-600">
+                                                                {addedItems.reduce((sum, item) => sum + item.protein, 0).toFixed(1)}g
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-gray-600">F</p>
+                                                            <p className="font-bold text-yellow-600">
+                                                                {addedItems.reduce((sum, item) => sum + item.fat, 0).toFixed(1)}g
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-gray-600">C</p>
+                                                            <p className="font-bold text-green-600">
+                                                                {addedItems.reduce((sum, item) => sum + item.carbs, 0).toFixed(1)}g
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* アイテムを追加ボタン */}
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedItem(null);
+                                                    }}
+                                                    className="w-full bg-[#4A9EFF] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm mt-3"
+                                                >
+                                                    追加
+                                                </button>
+                                                </>
+                                                )}
+
+                                                {/* 記録とキャンセルボタン */}
+                                                <div className="flex gap-2 mt-3">
+                                                    <button
+                                                        onClick={async () => {
+                                                            // テンプレート編集モードの場合
+                                                            if (editingTemplate) {
+                                                                const updatedTemplate = {
+                                                                    ...editingTemplate,
+                                                                    items: addedItems,
+                                                                    name: mealName || editingTemplate.name
+                                                                };
+                                                                await DataService.saveMealTemplate(user.uid, updatedTemplate);
+                                                                toast('テンプレートを更新しました');
+                                                                setShowSearchModal(false);
+                                                                onClose();
+                                                                return;
+                                                            }
+
+                                                            // テンプレート作成モードの場合（新規）
+                                                            if (isTemplateMode) {
+                                                                if (!mealName.trim()) {
+                                                                    toast('テンプレート名を入力してください');
+                                                                    return;
+                                                                }
+                                                                if (addedItems.length === 0) {
+                                                                    toast('食材を追加してください');
+                                                                    return;
+                                                                }
+                                                                const template = {
+                                                                    id: Date.now(),
+                                                                    name: mealName,
+                                                                    items: addedItems
+                                                                };
+                                                                await DataService.saveMealTemplate(user.uid, template);
+                                                                toast.success('テンプレートを保存しました');
+                                                                setShowSearchModal(false);
+                                                                onClose();
+                                                                return;
+                                                            }
+
+                                                            // 通常の記録モード
+                                                            const totalCalories = addedItems.reduce((sum, item) => sum + item.calories, 0);
+                                                            const totalProtein = parseFloat(addedItems.reduce((sum, item) => sum + (item.protein || 0), 0).toFixed(1));
+                                                            const totalFat = parseFloat(addedItems.reduce((sum, item) => sum + (item.fat || 0), 0).toFixed(1));
+                                                            const totalCarbs = parseFloat(addedItems.reduce((sum, item) => sum + (item.carbs || 0), 0).toFixed(1));
+                                                            const newMeal = {
+                                                                id: Date.now(),
+                                                                time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                                                                name: mealName || '食事',
+                                                                calories: Math.round(totalCalories),
+                                                                protein: totalProtein,
+                                                                fat: totalFat,
+                                                                carbs: totalCarbs,
+                                                                items: addedItems.map(item => ({
+                                                                    name: item.name,
+                                                                    amount: item.amount,  // 数値として保存
+                                                                    unit: item.unit || 'g',  // unitを追加
+                                                                    calories: item.calories || 0,  // caloriesを追加（重要！）
+                                                                    protein: item.protein || 0,
+                                                                    fat: item.fat || 0,
+                                                                    carbs: item.carbs || 0,
+                                                                    sugar: item.sugar || 0,
+                                                                    fiber: item.fiber || 0,
+                                                                    solubleFiber: item.solubleFiber || 0,
+                                                                    insolubleFiber: item.insolubleFiber || 0,
+                                                                    gi: item.gi || 0,
+                                                                    vitamins: item.vitamins || {},
+                                                                    minerals: item.minerals || {}
+                                                                }))
+                                                            };
+
+                                                            onAdd(newMeal);
+                                                            setShowSearchModal(false);
+                                                        }}
+                                                        className="flex-1 bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
+                                                    >
+                                                        {(editingTemplate || isTemplateMode) ? '保存' : '記録'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setAddedItems([]);
+                                                            setShowSearchModal(false);
+                                                            onClose();
+                                                        }}
+                                                        className="px-4 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
+                                                    >
+                                                        キャンセル
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* 食材/料理/サプリメント タブ */}
+                                        <div className="grid grid-cols-3 mt-3 border-b border-gray-200">
+                                            <button
+                                                onClick={() => setFoodOrSupplementTab('food')}
+                                                className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    foodOrSupplementTab === 'food'
+                                                        ? 'border-green-600 text-green-600'
+                                                        : 'border-transparent text-gray-600 hover:text-green-600'
+                                                }`}
+                                            >
+                                                <Icon name="Apple" size={20} />
+                                                <span className="text-sm">食材</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setFoodOrSupplementTab('recipe')}
+                                                className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    foodOrSupplementTab === 'recipe'
+                                                        ? 'border-orange-600 text-orange-600'
+                                                        : 'border-transparent text-gray-600 hover:text-orange-600'
+                                                }`}
+                                            >
+                                                <Icon name="ChefHat" size={20} />
+                                                <span className="text-sm">料理</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setFoodOrSupplementTab('supplement')}
+                                                className={`py-3 px-4 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    foodOrSupplementTab === 'supplement'
+                                                        ? 'border-blue-600 text-blue-600'
+                                                        : 'border-transparent text-gray-600 hover:text-blue-600'
+                                                }`}
+                                            >
+                                                <Icon name="Pill" size={20} />
+                                                <span className="text-sm">サプリメント</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* コンテンツエリア */}
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                {!selectedItem ? (
+                                    <>
+                                {/* よく使う食材（予測） - 9日以上で開放 */}
+                                {usageDays >= 9 && predictedData?.commonMeals && predictedData.commonMeals.length > 0 && !searchTerm && addedItems.length === 0 && (
+                                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-3 rounded-lg border border-purple-200">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Icon name="Sparkles" size={16} className="text-purple-600" />
+                                            <p className="text-sm font-medium text-purple-800 flex items-center gap-2">
+                                                よく使う食材
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {predictedData.commonMeals.map(foodName => {
+                                                // データベースから該当食材を探す
+                                                let foundFood = null;
+                                                let foundCategory = null;
+                                                Object.keys(foodDB).forEach(cat => {
+                                                    if (foodDB[cat][foodName]) {
+                                                        foundFood = foodDB[cat][foodName];
+                                                        foundCategory = cat;
+                                                    }
+                                                });
+
+                                                if (!foundFood) return null;
+
+                                                return (
+                                                    <button
+                                                        key={foodName}
+                                                        onClick={() => {
+                                                            const nutrients = mapNutrients(foundFood);
+                                                            setSelectedItem({ name: foodName, ...foundFood, category: foundCategory, ...nutrients });
+                                                            setAmount('100');
+                                                        }}
+                                                        className="px-3 py-1.5 bg-white border border-purple-300 rounded-full text-sm hover:bg-purple-100 transition"
+                                                    >
+                                                        {foodName}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="space-y-2">
+                                    {Object.keys(filteredFoods).map(topCategory => {
+                                        const subcategories = filteredFoods[topCategory];
+                                        if (Object.keys(subcategories).length === 0) return null;
+
+                                        // タブに応じてフィルタリング
+                                        if (foodOrSupplementTab === 'food' && topCategory !== '食材') return null;
+                                        if (foodOrSupplementTab === 'recipe' && topCategory !== 'カスタム料理') return null;
+                                        if (foodOrSupplementTab === 'supplement' && topCategory !== 'サプリメント') return null;
+
+                                        return (
+                                            <div key={topCategory}>
+                                                {/* サブカテゴリ */}
+                                                <div className="bg-white">
+                                                    {Object.keys(subcategories).map(subCategory => (
+                                                        <div key={subCategory} className="border-t border-gray-200">
+                                                            {/* カテゴリ見出し */}
+                                                            <button
+                                                                onClick={() => setExpandedCategories(prev => ({...prev, [subCategory]: !prev[subCategory]}))}
+                                                                className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
+                                                            >
+                                                                <span className="font-medium text-sm">{subCategory}</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs text-gray-500">{subcategories[subCategory].length}品目</span>
+                                                                    <Icon name={expandedCategories[subCategory] ? 'ChevronDown' : 'ChevronRight'} size={18} />
+                                                                </div>
+                                                            </button>
+
+                                                            {/* アイテム一覧 - 折りたたみ可能 */}
+                                                            {expandedCategories[subCategory] && (
+                                                            <div className="p-2 space-y-1 bg-gray-50">
+                                                                {subcategories[subCategory].map(foodName => {
+                                                                    // カスタムアイテムの場合はlocalStorageから取得
+                                                                    let food;
+                                                                    let actualCategory;
+                                                                    const isCustom = subCategory === 'カスタム食材' || subCategory === 'カスタム料理' || subCategory === 'カスタムサプリ';
+
+                                                                    if (isCustom) {
+                                                                        // Firestoreから取得したcustomFoodsを使用
+                                                                        food = customFoods.find(f => f.name === foodName);
+                                                                        actualCategory = subCategory;
+                                                                    } else if (topCategory === 'サプリメント' || subCategory === 'ドリンク') {
+                                                                        // サプリメント・ドリンクの場合はサプリメントカテゴリから取得
+                                                                        food = foodDB['サプリメント'][foodName];
+                                                                        actualCategory = subCategory === 'ドリンク' ? 'ドリンク' : 'サプリメント';
+                                                                    } else {
+                                                                        // 通常の食材
+                                                                        if (foodDB[subCategory] && foodDB[subCategory][foodName]) {
+                                                                            food = foodDB[subCategory][foodName];
+                                                                            actualCategory = subCategory;
+                                                                        }
+                                                                    }
+
+                                                                            if (!food) return null;
+
+                                                                            // PFCのカロリー計算
+                                                                            const pCal = parseFloat(food.protein) * 4;
+                                                                            const fCal = parseFloat(food.fat) * 9;
+                                                                            const cCal = parseFloat(food.carbs) * 4;
+
+                                                                            // 最も高い割合の栄養素を判定
+                                                                            const maxCal = Math.max(pCal, fCal, cCal);
+                                                                            let borderColor = 'border-gray-300';
+                                                                            if (maxCal === pCal) borderColor = 'border-red-500';
+                                                                            else if (maxCal === fCal) borderColor = 'border-yellow-500';
+                                                                            else if (maxCal === cCal) borderColor = 'border-green-500';
+
+                                                                            // 複数選択用の処理
+                                                                            const nutrients = isCustom
+                                                                                ? (food.vitamins && food.minerals ? { vitamins: food.vitamins, minerals: food.minerals } : { vitamins: {}, minerals: {} })
+                                                                                : mapNutrients(food);
+
+                                                                            const foodData = {
+                                                                                id: foodName, // IDとして名前を使用
+                                                                                name: foodName,
+                                                                                calories: food.calories,
+                                                                                protein: parseFloat(food.protein),
+                                                                                fat: parseFloat(food.fat),
+                                                                                carbs: parseFloat(food.carbs),
+                                                                                category: actualCategory,
+                                                                                isCustom: isCustom,
+                                                                                unit: food.unit,
+                                                                                servingSize: food.servingSize,
+                                                                                servingUnit: food.servingUnit,
+                                                                                ...nutrients
+                                                                            };
+
+                                                                            return (
+                                                                                <button
+                                                                                    key={foodName}
+                                                                                    onClick={() => {
+                                                                                        setSelectedItem(foodData);
+                                                                                        setShowSearchModal(false);
+                                                                                    }}
+                                                                                    className={`w-full text-left rounded-lg transition hover:bg-gray-50 border-l-4 ${borderColor} bg-white`}
+                                                                                >
+                                                                                    <div className="px-3 py-2">
+                                                                                        <div className="flex-1">
+                                                                                            <div className="flex justify-between items-start mb-1">
+                                                                                                <span className="text-sm font-medium">{foodName}</span>
+                                                                                                <span className="text-xs font-bold text-blue-600">
+                                                                                                    {food.calories}kcal
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            <div className="flex justify-between items-center">
+                                                                                                <div className="flex gap-2 text-xs">
+                                                                                                    <span className="text-red-600">P:{food.protein}g</span>
+                                                                                                    <span className="text-yellow-600">F:{food.fat}g</span>
+                                                                                                    <span className="text-green-600">C:{food.carbs}g</span>
+                                                                                                </div>
+                                                                                                <span className="text-xs text-gray-400">
+                                                                                                    ※{(food.servingSize !== undefined && food.servingUnit !== undefined)
+                                                                                                        ? `${food.servingSize}${food.servingUnit}`
+                                                                                                        : (food.unit === 'g' || food.unit === 'ml')
+                                                                                                            ? `100${food.unit}`
+                                                                                                            : (food.unit && (food.unit.includes('個') || food.unit.includes('本') || food.unit.includes('枚')))
+                                                                                                                ? food.unit
+                                                                                                                : food.unit || '1個'}あたり
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                            </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                    </>
+                                ) : (
+                                    /* 詳細画面（量調整UI） */
+                                    <div className="space-y-4">
+                                        {/* アイテム情報 */}
+                                        <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <h4 className="font-bold text-lg">{selectedItem.name}</h4>
+                                                    <p className="text-sm text-gray-600">{selectedItem.category}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedItem(null);
+                                                        setEditingItemIndex(null);
+                                                    }}
+                                                    className="text-gray-500 hover:text-gray-700"
+                                                >
+                                                    <Icon name="X" size={20} />
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
+                                                <div>
+                                                    <p className="text-gray-600">カロリー</p>
+                                                    <p className="font-bold text-blue-600">{selectedItem.calories}kcal</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-600">P</p>
+                                                    <p className="font-bold text-red-600">{selectedItem.protein}g</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-600">F</p>
+                                                    <p className="font-bold text-yellow-600">{selectedItem.fat}g</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-600">C</p>
+                                                    <p className="font-bold text-green-600">{selectedItem.carbs}g</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                ※{selectedItem.servingSize || 100}{selectedItem.servingUnit || 'g'}あたり
+                                            </p>
+                                        </div>
+
+                                        {/* 量調整 */}
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">
+                                                量 ({selectedItem.servingUnit || 'g'})
+                                            </label>
+
+                                            {/* スライダー */}
+                                            <div className="mb-3">
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="500"
+                                                    step="5"
+                                                    value={amount}
+                                                    onChange={(e) => setAmount(e.target.value)}
+                                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                                    style={{
+                                                        background: `linear-gradient(to right, #4f46e5 0%, #4f46e5 ${(amount/500)*100}%, #e5e7eb ${(amount/500)*100}%, #e5e7eb 100%)`
+                                                    }}
+                                                />
+                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                    <span onClick={() => setAmount(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0{selectedItem.servingUnit || 'g'}</span>
+                                                    <span onClick={() => setAmount(100)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">100{selectedItem.servingUnit || 'g'}</span>
+                                                    <span onClick={() => setAmount(200)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">200{selectedItem.servingUnit || 'g'}</span>
+                                                    <span onClick={() => setAmount(300)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">300{selectedItem.servingUnit || 'g'}</span>
+                                                    <span onClick={() => setAmount(400)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">400{selectedItem.servingUnit || 'g'}</span>
+                                                    <span onClick={() => setAmount(500)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">500{selectedItem.servingUnit || 'g'}</span>
+                                                </div>
+                                            </div>
+
+                                            <input
+                                                type="number"
+                                                value={amount}
+                                                onChange={(e) => setAmount(e.target.value)}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2"
+                                            />
+
+                                            {/* 増減ボタン */}
+                                            <div className="grid grid-cols-6 gap-1">
+                                                <button
+                                                    onClick={() => setAmount(Math.max(0, Number(amount) - 100))}
+                                                    className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                                                >
+                                                    -100
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Math.max(0, Number(amount) - 50))}
+                                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                >
+                                                    -50
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Math.max(0, Number(amount) - 10))}
+                                                    className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                                >
+                                                    -10
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Number(amount) + 10)}
+                                                    className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                >
+                                                    +10
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Number(amount) + 50)}
+                                                    className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                                >
+                                                    +50
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Number(amount) + 100)}
+                                                    className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                                                >
+                                                    +100
+                                                </button>
+                                            </div>
+                                            {/* 倍増減ボタン */}
+                                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                                <button
+                                                    onClick={() => setAmount(Math.max(0, Math.round(Number(amount) * 0.5)))}
+                                                    className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                                                >
+                                                    ×0.5
+                                                </button>
+                                                <button
+                                                    onClick={() => setAmount(Math.round(Number(amount) * 2))}
+                                                    className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                                                >
+                                                    ×2
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 摂取量プレビュー */}
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <p className="text-sm font-medium mb-2">摂取量</p>
+                                            <div className="grid grid-cols-4 gap-2">
+                                                <div>
+                                                    <p className="text-xs text-gray-600">カロリー</p>
+                                                    <p className="font-bold text-blue-600">
+                                                        {(() => {
+                                                            const servingSize = selectedItem.servingSize || 100;
+                                                            const ratio = Number(amount) / servingSize;
+                                                            console.log(`[摂取量] amount=${amount}, servingSize=${servingSize}, ratio=${ratio}, carbs=${selectedItem.carbs}, result=${selectedItem.carbs * ratio}`);
+                                                            return Math.round(selectedItem.calories * ratio);
+                                                        })()}kcal
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-600">P</p>
+                                                    <p className="font-bold text-red-600">{(selectedItem.protein * (Number(amount) / (selectedItem.servingSize || 100))).toFixed(1)}g</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-600">F</p>
+                                                    <p className="font-bold text-yellow-600">{(selectedItem.fat * (Number(amount) / (selectedItem.servingSize || 100))).toFixed(1)}g</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-600">C</p>
+                                                    <p className="font-bold text-green-600">{(selectedItem.carbs * (Number(amount) / (selectedItem.servingSize || 100))).toFixed(1)}g</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 追加ボタン */}
+                                        <button
+                                            onClick={() => {
+                                                const numAmount = Number(amount);
+                                                // データベースはservingSizeあたりの値なので、servingSizeで割る
+                                                const baseAmount = selectedItem.servingSize || 100;
+                                                const ratio = numAmount / baseAmount;
+
+                                                const vitamins = {};
+                                                const minerals = {};
+
+                                                if (selectedItem.vitamins) {
+                                                    Object.keys(selectedItem.vitamins).forEach(key => {
+                                                        vitamins[key] = selectedItem.vitamins[key] * ratio;
+                                                    });
+                                                }
+
+                                                if (selectedItem.minerals) {
+                                                    Object.keys(selectedItem.minerals).forEach(key => {
+                                                        minerals[key] = selectedItem.minerals[key] * ratio;
+                                                    });
+                                                }
+
+                                                const otherNutrients = {};
+                                                const otherNutrientKeys = ['caffeine', 'catechin', 'tannin', 'polyphenol', 'chlorogenicAcid',
+                                                                            'creatine', 'lArginine', 'lCarnitine', 'EPA', 'DHA', 'coQ10',
+                                                                            'lutein', 'astaxanthin'];
+                                                otherNutrientKeys.forEach(key => {
+                                                    if (selectedItem[key]) {
+                                                        otherNutrients[key] = selectedItem[key] * ratio;
+                                                    }
+                                                });
+
+                                                const newItem = {
+                                                    name: selectedItem.name,
+                                                    amount: numAmount,
+                                                    unit: selectedItem.servingUnit || 'g', // 単位を保存
+                                                    protein: selectedItem.protein * ratio,
+                                                    fat: selectedItem.fat * ratio,
+                                                    carbs: selectedItem.carbs * ratio,
+                                                    calories: selectedItem.calories * ratio,
+                                                    vitamins: vitamins,
+                                                    minerals: minerals,
+                                                    otherNutrients: otherNutrients
+                                                };
+
+                                                if (editingItemIndex !== null) {
+                                                    const updatedItems = [...addedItems];
+                                                    updatedItems[editingItemIndex] = newItem;
+                                                    setAddedItems(updatedItems);
+                                                    setEditingItemIndex(null);
+                                                } else {
+                                                    setAddedItems([...addedItems, newItem]);
+                                                }
+
+                                                setSelectedItem(null);
+                                                setSearchTerm(''); // 検索ワードをクリア
+                                                // デフォルト量にリセット（selectedItemがnullになるとuseEffectは発火しないので手動で設定）
+                                                setAmount(type === 'supplement' ? '1' : '100');
+                                            }}
+                                            className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
+                                        >
+                                            {editingItemIndex !== null ? '更新' : '追加'}
+                                        </button>
+                                    </div>
+                                )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {showCustomSupplementForm && (
+                            <div className="bg-white border border-gray-200 p-4 rounded-lg">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                                        <Icon name="Plus" size={20} />
+                                        カスタムアイテムを作成
+                                    </h3>
+                                    <button
+                                        onClick={() => {
+                                            setShowCustomSupplementForm(false);
+                                            setIsFromAIRecognition(false);
+                                            // AI写真解析モーダルはマウントされたままなので、
+                                            // カスタムモーダルを閉じるだけで自動的に認識リストが表示される
                                         }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
+                                        className="text-gray-500 hover:text-gray-700"
+                                    >
+                                        <Icon name="X" size={20} />
+                                    </button>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    データベースにない食材・料理・サプリメントを独自に登録できます
+                                </p>
+                                <div className="space-y-3">
+                                    {/* Row 1: 名前入力 */}
+                                    <div>
+                                        <label className="text-xs font-medium text-gray-700 mb-1 block">名前</label>
+                                        <input
+                                            type="text"
+                                            value={customSupplementData.name}
+                                            onChange={(e) => setCustomSupplementData({...customSupplementData, name: e.target.value})}
+                                            placeholder={
+                                                customSupplementData.itemType === 'food' ? '例: 自家製プロテインバー' :
+                                                customSupplementData.itemType === 'recipe' ? '例: 自家製カレー' :
+                                                '例: マルチビタミン'
+                                            }
+                                            className="w-full px-3 py-2 text-sm border rounded-lg"
+                                        />
+                                    </div>
+
+                                    {/* Row 2: カテゴリタブ（食材検索モーダルと同じスタイル） */}
+                                    <div>
+                                        <label className="text-xs font-medium text-gray-700 mb-1 block">カテゴリ</label>
+                                        <div className="grid grid-cols-3 border-b border-gray-200">
+                                            <button
+                                                type="button"
+                                                onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'food'})}
+                                                className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    customSupplementData.itemType === 'food'
+                                                        ? 'border-green-600 text-green-600'
+                                                        : 'border-transparent text-gray-600 hover:text-green-600'
+                                                }`}
+                                            >
+                                                <Icon name="Apple" size={16} />
+                                                <span className="text-sm">食材</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'recipe'})}
+                                                className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    customSupplementData.itemType === 'recipe'
+                                                        ? 'border-orange-600 text-orange-600'
+                                                        : 'border-transparent text-gray-600 hover:text-orange-600'
+                                                }`}
+                                            >
+                                                <Icon name="ChefHat" size={16} />
+                                                <span className="text-sm">料理</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setCustomSupplementData({...customSupplementData, itemType: 'supplement'})}
+                                                className={`py-2 px-3 font-medium transition flex items-center justify-center gap-2 border-b-2 ${
+                                                    customSupplementData.itemType === 'supplement'
+                                                        ? 'border-blue-600 text-blue-600'
+                                                        : 'border-transparent text-gray-600 hover:text-blue-600'
+                                                }`}
+                                            >
+                                                <Icon name="Pill" size={16} />
+                                                <span className="text-sm">サプリ</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                                        {/* 栄養素の入力方法タブ */}
+                                                        <div className="border-t pt-3">
+                                                            <label className="text-xs font-medium text-gray-700 mb-2 block">栄養素の入力方法</label>
+                                                            <div className="flex gap-2 mb-3">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setNutritionInputMethod('manual')}
+                                                                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                                                                        nutritionInputMethod === 'manual'
+                                                                            ? 'bg-green-600 text-white'
+                                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                    }`}
+                                                                >
+                                                                    手動入力
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setNutritionInputMethod('ai')}
+                                                                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1 ${
+                                                                        nutritionInputMethod === 'ai'
+                                                                            ? 'bg-[#4A9EFF] text-white font-semibold shadow-md'
+                                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                    }`}
+                                                                >
+                                                                    <Icon name="Sparkles" size={14} />
+                                                                    AI推定
+                                                                </button>
+                                                            </div>
+
+                                                            {/* AI推定タブの内容 */}
+                                                            {nutritionInputMethod === 'ai' && (
+                                                                <div className="bg-purple-50 p-3 rounded-lg mb-3">
+                                                                    <p className="text-xs text-gray-700 mb-2">写真から栄養素を推定します</p>
+
+                                                                    {!aiImagePreview ? (
+                                                                        <label className="block cursor-pointer">
+                                                                            <div className="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center hover:bg-purple-100 transition">
+                                                                                <Icon name="Camera" size={32} className="mx-auto text-purple-600 mb-2" />
+                                                                                <p className="text-sm font-medium text-purple-700">写真を選択</p>
+                                                                                <p className="text-xs text-gray-500 mt-1">タップして写真を選択</p>
+                                                                            </div>
+                                                                            <input
+                                                                                type="file"
+                                                                                accept="image/*"
+                                                                                onChange={handleAiImageSelect}
+                                                                                className="hidden"
+                                                                            />
+                                                                        </label>
+                                                                    ) : (
+                                                                        <div>
+                                                                            <img src={aiImagePreview} alt="Preview" className="w-full rounded-lg mb-2" />
+                                                                            <div className="flex gap-2">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={recognizeNutrition}
+                                                                                    disabled={aiRecognizing}
+                                                                                    className="flex-1 bg-[#4A9EFF] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition disabled:opacity-50 text-sm"
+                                                                                >
+                                                                                    {aiRecognizing ? '解析中...' : '解析'}
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        setAiImage(null);
+                                                                                        setAiImagePreview(null);
+                                                                                    }}
+                                                                                    className="px-3 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
+                                                                                >
+                                                                                    削除
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Row 3: 基準単位選択 */}
+                                                        <div>
+                                                            <label className="text-xs font-medium text-gray-700 mb-1 block">基準単位</label>
+                                                            <select
+                                                                value={customSupplementData.servingUnit}
+                                                                onChange={(e) => {
+                                                                    const unit = e.target.value;
+                                                                    setCustomSupplementData({
+                                                                        ...customSupplementData,
+                                                                        servingUnit: unit === '1個' || unit === '本' ? 'g' : unit,
+                                                                        unit: unit,
+                                                                        servingSize: unit === 'g' || unit === 'mg' || unit === 'ml' ? 100 : customSupplementData.servingSize
+                                                                    });
+                                                                }}
+                                                                className="w-full px-3 py-2 text-sm border rounded-lg"
+                                                            >
+                                                                <option value="g">100gあたり</option>
+                                                                <option value="1個">1個あたり</option>
+                                                                <option value="本">1本あたり</option>
+                                                                <option value="mg">mg</option>
+                                                                <option value="ml">ml</option>
+                                                            </select>
+                                                        </div>
+
+                                                        {/* 1個/1本の場合のみ重量入力を表示 */}
+                                                        {(customSupplementData.servingUnit === '1個' || customSupplementData.unit === '1個' ||
+                                                          customSupplementData.servingUnit === '本' || customSupplementData.unit === '本') && (
+                                                            <div>
+                                                                <label className="text-xs font-medium text-gray-700 mb-1 block">
+                                                                    {customSupplementData.servingUnit === '本' || customSupplementData.unit === '本' ? '1本あたりの容量（ml）' : '1個あたりの重量（g）'}
+                                                                </label>
+                                                                <input
+                                                                    type="number"
+                                                                    value={customSupplementData.servingSize}
+                                                                    onChange={(e) => setCustomSupplementData({...customSupplementData, servingSize: e.target.value === '' ? '' : (parseFloat(e.target.value) || 1)})}
+                                                                    placeholder={customSupplementData.servingUnit === '本' || customSupplementData.unit === '本' ? '例: 355' : '例: 58'}
+                                                                    className="w-full px-3 py-2 text-sm border rounded-lg"
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        <div className="border-t pt-2">
+                                                            <p className="text-xs font-medium text-gray-700 mb-2">
+                                                                基本栄養素（
+                                                                {customSupplementData.unit === '1個' ? `1個（${customSupplementData.servingSize}${customSupplementData.servingUnit}）` :
+                                                                 customSupplementData.unit === '本' ? `1本（${customSupplementData.servingSize}${customSupplementData.servingUnit}）` :
+                                                                 `${customSupplementData.servingSize}${customSupplementData.servingUnit}`}
+                                                                あたり）
+                                                            </p>
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <div>
+                                                                    <label className="text-xs text-gray-600">カロリー (kcal)</label>
+                                                                    <input type="number" value={customSupplementData.calories} onChange={(e) => setCustomSupplementData({...customSupplementData, calories: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-xs text-gray-600">タンパク質 (g)</label>
+                                                                    <input type="number" value={customSupplementData.protein} onChange={(e) => setCustomSupplementData({...customSupplementData, protein: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-xs text-gray-600">脂質 (g)</label>
+                                                                    <input type="number" value={customSupplementData.fat} onChange={(e) => setCustomSupplementData({...customSupplementData, fat: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-xs text-gray-600">炭水化物 (g)</label>
+                                                                    <input type="number" value={customSupplementData.carbs} onChange={(e) => setCustomSupplementData({...customSupplementData, carbs: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="border-t pt-2">
+                                                            <p className="text-xs font-medium text-gray-700 mb-2">ビタミン（{customSupplementData.servingSize}{customSupplementData.servingUnit}あたり）</p>
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <div><label className="text-xs text-gray-600">ビタミンA (μg)</label><input type="number" value={customSupplementData.vitaminA} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminA: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">ビタミンB1 (mg)</label><input type="number" value={customSupplementData.vitaminB1} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminB1: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">ビタミンB2 (mg)</label><input type="number" value={customSupplementData.vitaminB2} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminB2: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">ビタミンB6 (mg)</label><input type="number" value={customSupplementData.vitaminB6} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminB6: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">ビタミンB12 (μg)</label><input type="number" value={customSupplementData.vitaminB12} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminB12: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">ビタミンC (mg)</label><input type="number" value={customSupplementData.vitaminC} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminC: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">ビタミンD (μg)</label><input type="number" value={customSupplementData.vitaminD} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminD: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">ビタミンE (mg)</label><input type="number" value={customSupplementData.vitaminE} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminE: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">ビタミンK (μg)</label><input type="number" value={customSupplementData.vitaminK} onChange={(e) => setCustomSupplementData({...customSupplementData, vitaminK: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">ナイアシン (mg)</label><input type="number" value={customSupplementData.niacin} onChange={(e) => setCustomSupplementData({...customSupplementData, niacin: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">パントテン酸 (mg)</label><input type="number" value={customSupplementData.pantothenicAcid} onChange={(e) => setCustomSupplementData({...customSupplementData, pantothenicAcid: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">ビオチン (μg)</label><input type="number" value={customSupplementData.biotin} onChange={(e) => setCustomSupplementData({...customSupplementData, biotin: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">葉酸 (μg)</label><input type="number" value={customSupplementData.folicAcid} onChange={(e) => setCustomSupplementData({...customSupplementData, folicAcid: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="border-t pt-2">
+                                                            <p className="text-xs font-medium text-gray-700 mb-2">ミネラル（{customSupplementData.servingSize}{customSupplementData.servingUnit}あたり）</p>
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <div><label className="text-xs text-gray-600">ナトリウム (mg)</label><input type="number" value={customSupplementData.sodium} onChange={(e) => setCustomSupplementData({...customSupplementData, sodium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">カリウム (mg)</label><input type="number" value={customSupplementData.potassium} onChange={(e) => setCustomSupplementData({...customSupplementData, potassium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">カルシウム (mg)</label><input type="number" value={customSupplementData.calcium} onChange={(e) => setCustomSupplementData({...customSupplementData, calcium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">マグネシウム (mg)</label><input type="number" value={customSupplementData.magnesium} onChange={(e) => setCustomSupplementData({...customSupplementData, magnesium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">リン (mg)</label><input type="number" value={customSupplementData.phosphorus} onChange={(e) => setCustomSupplementData({...customSupplementData, phosphorus: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">鉄 (mg)</label><input type="number" value={customSupplementData.iron} onChange={(e) => setCustomSupplementData({...customSupplementData, iron: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">亜鉛 (mg)</label><input type="number" value={customSupplementData.zinc} onChange={(e) => setCustomSupplementData({...customSupplementData, zinc: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">銅 (mg)</label><input type="number" value={customSupplementData.copper} onChange={(e) => setCustomSupplementData({...customSupplementData, copper: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">マンガン (mg)</label><input type="number" value={customSupplementData.manganese} onChange={(e) => setCustomSupplementData({...customSupplementData, manganese: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">ヨウ素 (μg)</label><input type="number" value={customSupplementData.iodine} onChange={(e) => setCustomSupplementData({...customSupplementData, iodine: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">セレン (μg)</label><input type="number" value={customSupplementData.selenium} onChange={(e) => setCustomSupplementData({...customSupplementData, selenium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">クロム (μg)</label><input type="number" value={customSupplementData.chromium} onChange={(e) => setCustomSupplementData({...customSupplementData, chromium: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                                <div><label className="text-xs text-gray-600">モリブデン (μg)</label><input type="number" value={customSupplementData.molybdenum} onChange={(e) => setCustomSupplementData({...customSupplementData, molybdenum: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full px-2 py-1 text-sm border rounded" /></div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="border-t pt-2">
+                                                            <p className="text-xs font-medium text-gray-700 mb-2">その他栄養素</p>
+                                                            {customSupplementData.otherNutrients.map((nutrient, idx) => (
+                                                                <div key={idx} className="mb-3 p-2 border rounded-lg bg-gray-50">
+                                                                    <div className="flex justify-between items-center mb-1">
+                                                                        <label className="text-xs font-medium text-gray-600">名</label>
+                                                                        <button onClick={() => { const updated = customSupplementData.otherNutrients.filter((_, i) => i !== idx); setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} className="text-red-500 px-1"><Icon name="X" size={14} /></button>
+                                                                    </div>
+                                                                    <input type="text" value={nutrient.name} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].name = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="栄養素名" className="w-full px-2 py-1 text-xs border rounded mb-2" />
+
+                                                                    <label className="text-xs font-medium text-gray-600 block mb-1">量と単位</label>
+                                                                    <div className="flex gap-2">
+                                                                        <input type="number" value={nutrient.amount} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].amount = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="量" className="flex-1 px-2 py-1 text-xs border rounded" />
+                                                                        <input type="text" value={nutrient.unit} onChange={(e) => { const updated = [...customSupplementData.otherNutrients]; updated[idx].unit = e.target.value; setCustomSupplementData({...customSupplementData, otherNutrients: updated}); }} placeholder="単位" className="w-16 px-2 py-1 text-xs border rounded" />
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                            <button onClick={() => setCustomSupplementData({...customSupplementData, otherNutrients: [...customSupplementData.otherNutrients, {name: '', amount: '', unit: ''}]})} className="w-full px-2 py-1.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 text-xs">+ 追加</button>
+                                                        </div>
+
+                                                        {/* 保存方法選択 */}
+                                                        <div className="border-t pt-4 mt-4">
+                                                            <div className="flex items-center gap-2 mb-3">
+                                                                <label className="text-sm font-medium text-gray-700">保存方法</label>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setShowSaveMethodInfo(true)}
+                                                                    className="text-blue-600 hover:text-blue-700"
+                                                                >
+                                                                    <Icon name="Info" size={16} />
+                                                                </button>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                                                    <input
+                                                                        type="radio"
+                                                                        name="saveMethod"
+                                                                        value="database"
+                                                                        checked={saveMethod === 'database'}
+                                                                        onChange={(e) => setSaveMethod(e.target.value)}
+                                                                        className="mt-0.5"
+                                                                    />
+                                                                    <div className="flex-1">
+                                                                        <div className="font-medium text-sm text-gray-900">データベースに保存</div>
+                                                                        <div className="text-xs text-gray-600 mt-0.5">後で検索して使用できます</div>
+                                                                    </div>
+                                                                </label>
+                                                                <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                                                    <input
+                                                                        type="radio"
+                                                                        name="saveMethod"
+                                                                        value="addToList"
+                                                                        checked={saveMethod === 'addToList'}
+                                                                        onChange={(e) => setSaveMethod(e.target.value)}
+                                                                        className="mt-0.5"
+                                                                    />
+                                                                    <div className="flex-1">
+                                                                        <div className="font-medium text-sm text-gray-900">リストに追加</div>
+                                                                        <div className="text-xs text-gray-600 mt-0.5">今すぐ記録に追加されます</div>
+                                                                    </div>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            onClick={() => {
+                                                                if (!customSupplementData.name.trim()) {
+                                                                    toast('アイテム名を入力してください');
+                                                                    return;
+                                                                }
+
+                                                                // itemTypeに応じてカテゴリを自動設定
+                                                                const finalCategory = customSupplementData.itemType === 'food' ? 'カスタム食材'
+                                                                    : customSupplementData.itemType === 'recipe' ? 'カスタム料理'
+                                                                    : 'カスタムサプリ';
+
+                                                                // PFCからカロリーを自動計算（カロリーが0または未設定の場合）
+                                                                let calculatedCalories = customSupplementData.calories || 0;
+                                                                if (calculatedCalories === 0 && (customSupplementData.protein || customSupplementData.fat || customSupplementData.carbs)) {
+                                                                    calculatedCalories = Math.round(
+                                                                        (customSupplementData.protein || 0) * 4 +
+                                                                        (customSupplementData.fat || 0) * 9 +
+                                                                        (customSupplementData.carbs || 0) * 4
+                                                                    );
+                                                                    console.log('🔢 PFCからカロリーを自動計算:', calculatedCalories, 'kcal');
+                                                                }
+
+                                                                // localStorageに保存するデータ
+                                                                const customItem = {
+                                                                    itemType: customSupplementData.itemType,
+                                                                    name: customSupplementData.name,
+                                                                    category: finalCategory,
+                                                                    servingSize: customSupplementData.servingSize,
+                                                                    servingUnit: customSupplementData.servingUnit,
+                                                                    unit: customSupplementData.unit || customSupplementData.servingUnit,  // 表示単位を追加
+                                                                    calories: calculatedCalories,
+                                                                    protein: customSupplementData.protein,
+                                                                    fat: customSupplementData.fat,
+                                                                    carbs: customSupplementData.carbs,
+                                                                    vitamins: {
+                                                                        A: customSupplementData.vitaminA || 0,
+                                                                        B1: customSupplementData.vitaminB1 || 0,
+                                                                        B2: customSupplementData.vitaminB2 || 0,
+                                                                        B6: customSupplementData.vitaminB6 || 0,
+                                                                        B12: customSupplementData.vitaminB12 || 0,
+                                                                        C: customSupplementData.vitaminC || 0,
+                                                                        D: customSupplementData.vitaminD || 0,
+                                                                        E: customSupplementData.vitaminE || 0,
+                                                                        K: customSupplementData.vitaminK || 0,
+                                                                        B3: customSupplementData.niacin || 0,
+                                                                        B5: customSupplementData.pantothenicAcid || 0,
+                                                                        B7: customSupplementData.biotin || 0,
+                                                                        B9: customSupplementData.folicAcid || 0
+                                                                    },
+                                                                    minerals: {
+                                                                        sodium: customSupplementData.sodium || 0,
+                                                                        potassium: customSupplementData.potassium || 0,
+                                                                        calcium: customSupplementData.calcium || 0,
+                                                                        magnesium: customSupplementData.magnesium || 0,
+                                                                        phosphorus: customSupplementData.phosphorus || 0,
+                                                                        iron: customSupplementData.iron || 0,
+                                                                        zinc: customSupplementData.zinc || 0,
+                                                                        copper: customSupplementData.copper || 0,
+                                                                        manganese: customSupplementData.manganese || 0,
+                                                                        iodine: customSupplementData.iodine || 0,
+                                                                        selenium: customSupplementData.selenium || 0,
+                                                                        chromium: customSupplementData.chromium || 0
+                                                                    }
+                                                                };
+
+                                                                // localStorageに保存
+                                                                const customFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
+                                                                customFoods.push(customItem);
+                                                                localStorage.setItem('customFoods', JSON.stringify(customFoods));
+
+                                                                // 保存方法に応じて処理を分岐
+                                                                if (saveMethod === 'addToList') {
+                                                                    const newItem = {
+                                                                        name: customSupplementData.name,
+                                                                        amount: 1,  // 1個/1本として追加（ユーザーは後で調整可能）
+                                                                        unit: customSupplementData.unit || customSupplementData.servingUnit,
+                                                                        calories: calculatedCalories, // 1個/1本あたりのカロリー
+                                                                        protein: customSupplementData.protein,
+                                                                        fat: customSupplementData.fat,
+                                                                        carbs: customSupplementData.carbs,
+                                                                        category: finalCategory,
+                                                                        isCustom: true,
+                                                                        vitamins: customItem.vitamins,
+                                                                        minerals: customItem.minerals,
+                                                                        _base: {
+                                                                            calories: calculatedCalories,
+                                                                            protein: customSupplementData.protein,
+                                                                            fat: customSupplementData.fat,
+                                                                            carbs: customSupplementData.carbs,
+                                                                            servingSize: customSupplementData.servingSize,
+                                                                            servingUnit: customSupplementData.servingUnit,
+                                                                            unit: customSupplementData.unit || customSupplementData.servingUnit
+                                                                        }
+                                                                    };
+                                                                    setAddedItems([...addedItems, newItem]);
+                                                                }
+
+                                                                // フォームをリセット
+                                                                setCustomSupplementData({
+                                                                    itemType: 'food',
+                                                                    name: '', category: 'ビタミン・ミネラル', servingSize: 100, servingUnit: 'g', unit: 'g',
+                                                                    calories: 0, protein: 0, fat: 0, carbs: 0,
+                                                                    vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
+                                                                    vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
+                                                                    niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0,
+                                                                    sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0,
+                                                                    iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0,
+                                                                    otherNutrients: []
+                                                                });
+                                                                setShowCustomSupplementForm(false);
+                                                                setSaveMethod('database'); // デフォルトに戻す
+
+                                                                // AI写真解析経由の場合、コールバックを実行してrecognizedFoodsを更新
+                                                                if (isFromAIRecognition && onCustomCompleteCallback) {
+                                                                    onCustomCompleteCallback({
+                                                                        calories: calculatedCalories, // PFCから計算されたカロリー
+                                                                        protein: customSupplementData.protein,
+                                                                        fat: customSupplementData.fat,
+                                                                        carbs: customSupplementData.carbs,
+                                                                        isUnknown: false
+                                                                    });
+                                                                    setOnCustomCompleteCallback(null); // コールバックをクリア
+                                                                }
+
+                                                                setIsFromAIRecognition(false);
+                                                                // AI写真解析モーダルはマウントされたままなので、
+                                                                // カスタムモーダルを閉じるだけで自動的に認識リストが表示される
+
+                                                                // 通知メッセージ
+                                                                if (saveMethod === 'database') {
+                                                                    toast.success('カスタムアイテムを保存しました！食材検索から追加できます。');
+                                                                } else {
+                                                                    toast.success('カスタムアイテムを作成し、追加しました！');
+                                                                }
+
+                                                                setIsAICreation(false);
+                                                            }}
+                                                            className="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium"
+                                                        >
+                                                            {saveMethod === 'addToList' ? '保存して追加' : '保存'}
+                                                        </button>
+
+                                                        {/* 保存方法説明モーダル */}
+                                                        {showSaveMethodInfo && (
+                                                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001]" onClick={() => setShowSaveMethodInfo(false)}>
+                                                                <div className="bg-white rounded-lg p-6 max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+                                                                    <div className="flex justify-between items-start mb-4">
+                                                                        <h3 className="text-lg font-bold text-gray-900">保存方法について</h3>
+                                                                        <button onClick={() => setShowSaveMethodInfo(false)} className="text-gray-500 hover:text-gray-700">
+                                                                            <Icon name="X" size={20} />
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <div className="space-y-4">
+                                                                        <div className="border-l-4 border-blue-500 pl-4 py-2">
+                                                                            <h4 className="font-semibold text-gray-900 mb-1">データベースに保存</h4>
+                                                                            <p className="text-sm text-gray-700">
+                                                                                カスタムアイテムをデータベースに保存します。今すぐ記録には追加されませんが、次回以降、食材検索から簡単に見つけて使用できます。
+                                                                            </p>
+                                                                            <p className="text-xs text-gray-600 mt-2">
+                                                                                <strong>使用例：</strong>よく使う自家製料理やサプリを登録しておきたい場合
+                                                                            </p>
+                                                                        </div>
+
+                                                                        <div className="border-l-4 border-green-500 pl-4 py-2">
+                                                                            <h4 className="font-semibold text-gray-900 mb-1">リストに追加</h4>
+                                                                            <p className="text-sm text-gray-700">
+                                                                                カスタムアイテムをデータベースに保存し、同時に現在の記録リストにも追加します。今すぐ記録したい場合に便利です。
+                                                                            </p>
+                                                                            <p className="text-xs text-gray-600 mt-2">
+                                                                                <strong>使用例：</strong>AI写真解析で検出された未登録の食品を編集して記録したい場合
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <button
+                                                                        onClick={() => setShowSaveMethodInfo(false)}
+                                                                        className="w-full mt-4 px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
+                                                                    >
+                                                                        閉じる
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                </div>
+                            </div>
+                        )}
+
+                        {!selectedItem && !showAIFoodRecognition && !showCustomSupplementForm && !showSearchModal ? null : selectedItem && (
+                            <div className="space-y-4">
+                                <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h4 className="font-bold text-lg">{selectedItem.name}</h4>
+                                            <p className="text-sm text-gray-600">{selectedItem.category}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                // 追加済みアイテムから編集している場合は、検索モーダルに戻る
+                                                if (editingItemIndex !== null) {
+                                                    setShowSearchModal(true);
+                                                }
+                                                setSelectedItem(null);
+                                                setEditingItemIndex(null);
+                                            }}
+                                            className="text-gray-500 hover:text-gray-700"
+                                        >
+                                            <Icon name="X" size={20} />
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
+                                        <div>
+                                            <p className="text-gray-600">カロリー</p>
+                                            <p className="font-bold text-blue-600">{selectedItem.calories}kcal</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">P</p>
+                                            <p className="font-bold text-red-600">{selectedItem.protein}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">F</p>
+                                            <p className="font-bold text-yellow-600">{selectedItem.fat}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">C</p>
+                                            <p className="font-bold text-green-600">{selectedItem.carbs}g</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        ※{selectedItem.servingSize || 100}{selectedItem.servingUnit || 'g'}あたり
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">
+                                        量 (g)
+                                    </label>
+
+                                    {/* スライダー */}
+                                    <div className="mb-3">
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="500"
+                                            step="5"
+                                            value={amount}
+                                            onChange={(e) => setAmount(e.target.value)}
+                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                            style={{
+                                                background: `linear-gradient(to right, #4f46e5 0%, #4f46e5 ${(amount/500)*100}%, #e5e7eb ${(amount/500)*100}%, #e5e7eb 100%)`
+                                            }}
+                                        />
+                                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                            <span onClick={() => setAmount(0)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">0g</span>
+                                            <span onClick={() => setAmount(100)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">100g</span>
+                                            <span onClick={() => setAmount(200)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">200g</span>
+                                            <span onClick={() => setAmount(300)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">300g</span>
+                                            <span onClick={() => setAmount(400)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">400g</span>
+                                            <span onClick={() => setAmount(500)} className="cursor-pointer hover:text-indigo-600 hover:font-bold transition">500g</span>
+                                        </div>
+                                    </div>
+
+                                    <input
+                                        type="number"
+                                        value={amount}
+                                        onChange={(e) => setAmount(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    />
+                                    {/* 増減ボタン */}
+                                    <div className="grid grid-cols-6 gap-1 mt-2">
+                                        <button
+                                            onClick={() => setAmount(Math.max(0, Number(amount) - 100))}
+                                            className="py-1.5 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 font-medium"
+                                        >
+                                            -100
+                                        </button>
+                                        <button
+                                            onClick={() => setAmount(Math.max(0, Number(amount) - 50))}
+                                            className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                        >
+                                            -50
+                                        </button>
+                                        <button
+                                            onClick={() => setAmount(Math.max(0, Number(amount) - 10))}
+                                            className="py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 font-medium"
+                                        >
+                                            -10
+                                        </button>
+                                        <button
+                                            onClick={() => setAmount(Number(amount) + 10)}
+                                            className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                        >
+                                            +10
+                                        </button>
+                                        <button
+                                            onClick={() => setAmount(Number(amount) + 50)}
+                                            className="py-1.5 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 font-medium"
+                                        >
+                                            +50
+                                        </button>
+                                        <button
+                                            onClick={() => setAmount(Number(amount) + 100)}
+                                            className="py-1.5 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200 font-medium"
+                                        >
+                                            +100
+                                        </button>
+                                    </div>
+                                    {/* 倍増減ボタン */}
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <button
+                                            onClick={() => setAmount(Math.max(0, Math.round(Number(amount) * 0.5)))}
+                                            className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                                        >
+                                            ×0.5
+                                        </button>
+                                        <button
+                                            onClick={() => setAmount(Math.round(Number(amount) * 2))}
+                                            className="py-1.5 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 font-medium"
+                                        >
+                                            ×2
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <p className="text-sm font-medium mb-2">摂取量</p>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        <div>
+                                            <p className="text-xs text-gray-600">カロリー</p>
+                                            <p className="font-bold text-blue-600">
+                                                {Math.round(selectedItem.calories * (Number(amount) / (selectedItem.servingSize || 100)))}kcal
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-600">P</p>
+                                            <p className="font-bold text-red-600">{(selectedItem.protein * (Number(amount) / (selectedItem.servingSize || 100))).toFixed(1)}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-600">F</p>
+                                            <p className="font-bold text-yellow-600">{(selectedItem.fat * (Number(amount) / (selectedItem.servingSize || 100))).toFixed(1)}g</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-600">C</p>
+                                            <p className="font-bold text-green-600">{(selectedItem.carbs * (Number(amount) / (selectedItem.servingSize || 100))).toFixed(1)}g</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        const numAmount = Number(amount);
+                                        const ratio = numAmount / (selectedItem.servingSize || 100);
+
+                                        // Calculate vitamins and minerals based on amount
+                                        const vitamins = {};
+                                        const minerals = {};
+
+                                        if (selectedItem.vitamins) {
+                                            Object.keys(selectedItem.vitamins).forEach(key => {
+                                                vitamins[key] = selectedItem.vitamins[key] * ratio;
+                                            });
+                                        }
+
+                                        if (selectedItem.minerals) {
+                                            Object.keys(selectedItem.minerals).forEach(key => {
+                                                minerals[key] = selectedItem.minerals[key] * ratio;
+                                            });
+                                        }
+
+                                        // その他の栄養素を計算
+                                        const otherNutrients = {};
+                                        const otherNutrientKeys = ['caffeine', 'catechin', 'tannin', 'polyphenol', 'chlorogenicAcid',
+                                                                    'creatine', 'lArginine', 'lCarnitine', 'EPA', 'DHA', 'coQ10',
+                                                                    'lutein', 'astaxanthin'];
+                                        otherNutrientKeys.forEach(key => {
+                                            if (selectedItem[key]) {
+                                                otherNutrients[key] = selectedItem[key] * ratio;
+                                            }
+                                        });
+
+                                        const newItem = {
+                                            name: selectedItem.name,
+                                            amount: numAmount,
+                                            protein: selectedItem.protein * ratio,
+                                            fat: selectedItem.fat * ratio,
+                                            carbs: selectedItem.carbs * ratio,
+                                            calories: selectedItem.calories * ratio,
+                                            vitamins: vitamins,
+                                            minerals: minerals,
+                                            otherNutrients: otherNutrients
+                                        };
+
+                                        // 編集モードの場合は既存アイテムを更新、それ以外は新規追加
+                                        if (editingItemIndex !== null) {
+                                            const updatedItems = [...addedItems];
+                                            updatedItems[editingItemIndex] = newItem;
+                                            setAddedItems(updatedItems);
+                                            setEditingItemIndex(null);
+                                        } else {
+                                            setAddedItems([...addedItems, newItem]);
+                                        }
+
+                                        setSelectedItem(null);
+                                        setAmount('100');
+                                        setShowSearchModal(true);
+                                    }}
+                                    className="w-full bg-[#4A9EFF] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition text-sm"
+                                >
+                                    {editingItemIndex !== null ? '更新' : '追加'}
+                                </button>
+                            </div>
+                        )}
+
+
+                        {/* AI食事認識モーダル */}
+                        {showAIFoodRecognition && (
+                            <div style={{ display: showCustomSupplementForm ? 'none' : 'block' }}>
+                                <AIFoodRecognition
+                                    onFoodsRecognized={handleFoodsRecognized}
+                                    onClose={() => setShowAIFoodRecognition(false)}
+                                    onOpenCustomCreator={handleOpenCustomFromAI}
+                                    user={user}
+                                    dailyRecord={dailyRecord}
+                                    selectedDate={selectedDate}
+                                />
+                            </div>
+                        )}
+
+                        {/* カスタム作成モーダル（食材・料理・サプリ共通） */}
+                        {showCustomFoodCreator && (
+                            <CustomFoodCreator
+                                initialName=""
+                                itemType={customSupplementData.itemType}
+                                onClose={() => setShowCustomFoodCreator(false)}
+                                onSave={(customFood) => {
+                                    // 全てのアイテムをaddedItemsに追加（統一的な処理）
+                                    setAddedItems([...addedItems, {
+                                        ...customFood,
+                                        amount: customFood.servingSize || customFood.amount || 100,
+                                        isCustom: true
+                                    }]);
+                                    setShowCustomFoodCreator(false);
+                                }}
+                            />
+                        )}
+                    </div>
+                );
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden slide-up flex flex-col">
+                        <div className="bg-white border-b p-4 flex justify-between items-center flex-shrink-0">
+                            {/* 運動名（編集可能） */}
+                            {type === 'workout' ? (
+                                <div className="flex-1 min-w-0 mr-2">
+                                    {isEditingWorkoutName ? (
+                                        <input
+                                            type="text"
+                                            value={workoutName}
+                                            onChange={(e) => setWorkoutName(e.target.value)}
+                                            onBlur={() => {
                                                 if (!workoutName.trim()) {
                                                     setWorkoutName('トレーニング');
                                                 }
                                                 setIsEditingWorkoutName(false);
-                                            }
-                                        }}
-                                        className="text-lg font-bold border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 w-full"
-                                        autoFocus
-                                    />
-                                ) : (
-                                    <h3 className="text-lg font-bold truncate">{workoutName}</h3>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                                {/* 編集ボタン */}
-                                {!isEditingWorkoutName && (
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    if (!workoutName.trim()) {
+                                                        setWorkoutName('トレーニング');
+                                                    }
+                                                    setIsEditingWorkoutName(false);
+                                                }
+                                            }}
+                                            className="text-lg font-bold border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 w-full"
+                                            autoFocus
+                                        />
+                                    ) : (
+                                        <h3 className="text-lg font-bold truncate">{workoutName}</h3>
+                                    )}
+                                </div>
+                            ) : (
+                                <h3 className="text-lg font-bold">
+                                    {type === 'meal' && '食事を記録'}
+                                    {type === 'condition' && 'コンディションを記録'}
+                                </h3>
+                            )}
+                            <div className="flex items-center gap-2">
+                                {/* 運動名編集ボタン */}
+                                {type === 'workout' && !isEditingWorkoutName && (
                                     <button
                                         onClick={() => setIsEditingWorkoutName(true)}
                                         className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
@@ -388,365 +5477,346 @@ const AddWorkoutModal = ({
                                         <Icon name="Edit" size={18} />
                                     </button>
                                 )}
-                                {/* ヘルプボタン */}
-                                <button
-                                    onClick={() => setShowHelpModal(true)}
-                                    className="p-2 hover:bg-blue-50 rounded-full transition"
-                                    title="使い方"
-                                >
-                                    <Icon name="HelpCircle" size={20} className="text-[#4A9EFF]" />
-                                </button>
-                                {/* 閉じるボタン */}
-                                <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+                                {type === 'meal' && (
+                                    <button
+                                        onClick={() => setShowMealInfoModal(true)}
+                                        className="p-1.5 hover:bg-gray-100 rounded-full transition"
+                                        title="使い方"
+                                        style={{color: '#4A9EFF'}}
+                                    >
+                                        <Icon name="HelpCircle" size={20} />
+                                    </button>
+                                )}
+                                {type === 'workout' && (
+                                    <button
+                                        onClick={() => setShowWorkoutInfoModal(true)}
+                                        className="p-1.5 hover:bg-gray-100 rounded-full transition"
+                                        title="使い方"
+                                        style={{color: '#4A9EFF'}}
+                                    >
+                                        <Icon name="HelpCircle" size={20} />
+                                    </button>
+                                )}
+                                <button onClick={() => {
+                                    // 食事記録中に食材を選択している場合は、まず検索リストに戻る
+                                    if (type === 'meal' && selectedItem) {
+                                        setSelectedItem(null);
+                                    }
+                                    // トレーニング記録中に種目を選択している場合は、まず検索リストに戻る
+                                    else if (type === 'workout' && currentExercise) {
+                                        setCurrentExercise(null);
+                                    }
+                                    // それ以外の場合はモーダルを閉じる
+                                    else {
+                                        onClose();
+                                    }
+                                }} className="p-2 hover:bg-gray-100 rounded-full">
                                     <Icon name="X" size={20} />
                                 </button>
                             </div>
                         </div>
+                        <div className="p-6 overflow-y-auto flex-1">
+                            {type === 'meal' && renderFoodInput()}
+                            {type === 'workout' && renderWorkoutInput()}
+                            {type === 'condition' && renderConditionInput()}
+                        </div>
                     </div>
 
-                    {/* この運動の合計 + テンプレート保存ボタン */}
-                    {addedExercises.length > 0 && (
-                        <div className="px-4 pt-3 pb-2">
-                            <div className="flex gap-2">
-                                {/* 左側：この運動の合計 */}
-                                <div className="flex-1 bg-gradient-to-r from-orange-50 to-red-50 p-3 rounded-lg border border-orange-200">
-                                    <div className="text-xs font-medium text-gray-600 mb-1">消費カロリー</div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-lg font-bold text-orange-600">
-                                            {Math.round(totalCalories)}kcal
-                                        </div>
-                                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                                            {addedExercises.length}種目
-                                        </div>
-                                    </div>
+                    {/* 食事記録の使い方モーダル */}
+                    {showMealInfoModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                                {/* ヘッダー */}
+                                <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                                    <h3 className="text-lg font-bold flex items-center gap-2">
+                                        <Icon name="Utensils" size={20} />
+                                        食事記録の使い方
+                                    </h3>
+                                    <button
+                                        onClick={() => setShowMealInfoModal(false)}
+                                        className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                                    >
+                                        <Icon name="X" size={20} />
+                                    </button>
                                 </div>
 
-                                {/* 右側：テンプレート保存ボタン */}
-                                <button
-                                    onClick={saveAsTemplate}
-                                    className="px-3 bg-purple-50 text-purple-700 border-2 border-purple-500 rounded-lg font-semibold hover:bg-purple-100 transition flex flex-col items-center justify-center"
-                                >
-                                    <Icon name="BookTemplate" size={16} className="mb-1" />
-                                    <span className="text-xs whitespace-nowrap">保存</span>
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* 追加済みエクササイズ一覧 */}
-                    <div className="flex-1 overflow-y-auto p-4">
-                        {addedExercises.length === 0 ? (
-                            <div className="text-center py-12 text-gray-600">
-                                <Icon name="Dumbbell" size={48} className="mx-auto mb-4 text-gray-400" />
-                                <p>エクササイズを追加してください</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {addedExercises.map((exercise, index) => (
-                                    <div key={exercise.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="flex-1">
-                                                <div className="font-semibold text-gray-800">{exercise.name}</div>
-                                                <div className="text-xs text-gray-500">{exercise.category}</div>
+                                <div className="p-6 space-y-6">
+                                    {/* 記録方法 */}
+                                    <div className="space-y-4">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="Plus" size={20} className="text-green-600" />
+                                            食事の記録方法
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                                <p className="font-semibold text-purple-900 mb-2 flex items-center gap-2">
+                                                    <Icon name="Camera" size={18} />
+                                                    方法1: 写真から記録（AI解析）
+                                                </p>
+                                                <p className="text-sm text-purple-800 mb-2">
+                                                    食事の写真を撮影すると、AIが自動で食材を認識して栄養素を計算します。最も簡単な方法です。精肉のパックを解析すると、g数がそのまま一覧に登録されます。
+                                                </p>
+                                                <p className="text-xs text-purple-700">
+                                                    💡 クレジット1個消費 | 複数の食材を一度に認識可能
+                                                </p>
                                             </div>
-                                            <button
-                                                onClick={() => handleRemoveExercise(index)}
-                                                className="text-red-500 hover:text-red-700 p-1"
-                                            >
-                                                <Icon name="Trash2" size={16} />
-                                            </button>
+                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                                    <Icon name="Search" size={18} />
+                                                    方法2: 検索して記録
+                                                </p>
+                                                <p className="text-sm text-blue-800 mb-2">
+                                                    食材名で検索してデータベースから選択します。正確な栄養素データで記録できます。
+                                                </p>
+                                                <p className="text-xs text-blue-700">
+                                                    💡 クレジット不要 | 1,000種類以上の食材データベース
+                                                </p>
+                                            </div>
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                                <p className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                                                    <Icon name="Edit" size={18} />
+                                                    方法3: 手動で作成
+                                                </p>
+                                                <p className="text-sm text-amber-800 mb-2">
+                                                    カスタム食材を自分で作成します。栄養成分表示や八訂データを参照して入力します。
+                                                </p>
+                                                <p className="text-xs text-amber-700">
+                                                    💡 クレジット不要 | 一度作成すると保存され、次回から簡単に使用可能
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="grid grid-cols-3 gap-2 text-sm">
-                                            {/* セット数 */}
-                                            <div>
-                                                <label className="text-xs text-gray-500">セット</label>
-                                                <input
-                                                    type="number"
-                                                    value={exercise.sets || 3}
-                                                    onChange={(e) => handleUpdateExerciseAmount(index, 'sets', parseFloat(e.target.value) || 0)}
-                                                    className="w-full border rounded px-2 py-1 text-center"
-                                                />
-                                            </div>
-                                            {/* 回数 */}
-                                            <div>
-                                                <label className="text-xs text-gray-500">回数</label>
-                                                <input
-                                                    type="number"
-                                                    value={exercise.reps || 10}
-                                                    onChange={(e) => handleUpdateExerciseAmount(index, 'reps', parseFloat(e.target.value) || 0)}
-                                                    className="w-full border rounded px-2 py-1 text-center"
-                                                />
-                                            </div>
-                                            {/* 重量 */}
-                                            <div>
-                                                <label className="text-xs text-gray-500">重量(kg)</label>
-                                                <input
-                                                    type="number"
-                                                    value={exercise.weight || 0}
-                                                    onChange={(e) => handleUpdateExerciseAmount(index, 'weight', parseFloat(e.target.value) || 0)}
-                                                    className="w-full border rounded px-2 py-1 text-center"
-                                                />
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                                            <p className="text-sm text-green-800">
+                                                <strong>💡 推奨:</strong> Your Coach+は自炊での食事管理を前提として設計されています。食材単位で記録することで、より正確な栄養管理が可能になります。
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* テンプレート機能 */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="Clock" size={20} className="text-indigo-600" />
+                                            テンプレート機能
+                                        </h4>
+                                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                                            <p className="font-semibold text-indigo-900 mb-2">
+                                                よく食べる食事を保存して簡単に記録
+                                            </p>
+                                            <p className="text-sm text-indigo-800 mb-3">
+                                                12日以上利用すると開放される機能です。頻繁に食べる食事の組み合わせをテンプレートとして保存できます。
+                                            </p>
+                                            <div className="bg-white rounded p-3 text-sm text-gray-700 border border-indigo-300">
+                                                <p className="font-semibold mb-1">使い方:</p>
+                                                <ol className="list-decimal list-inside space-y-1 text-xs">
+                                                    <li>食事を記録した後、「テンプレートとして保存」をタップ</li>
+                                                    <li>次回から記録画面の下部にテンプレートが表示される</li>
+                                                    <li>テンプレートをタップすると、保存した食事がすぐに追加される</li>
+                                                </ol>
                                             </div>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
 
-                    {/* テンプレートボタン（12日以上利用で表示） */}
-                    {usageDays >= 12 && workoutTemplates.length > 0 && (
-                        <div className="px-4 pb-2">
-                            <button
-                                onClick={() => setShowTemplateSelector(true)}
-                                className="w-full bg-purple-50 text-purple-700 border-2 border-purple-500 rounded-lg py-2 font-semibold hover:bg-purple-100 transition flex items-center justify-center gap-2"
-                            >
-                                <Icon name="BookTemplate" size={18} />
-                                テンプレートから選ぶ
-                            </button>
+                                    {/* 編集・削除 */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="Settings" size={20} className="text-gray-600" />
+                                            編集・削除
+                                        </h4>
+                                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                            <p className="font-semibold text-gray-900 mb-2">食事を編集・削除する</p>
+                                            <p className="text-sm text-gray-700 mb-2">
+                                                食事カードの右上にある「ペン」アイコンで食事全体を編集、「ゴミ箱」アイコンで削除できます。
+                                            </p>
+                                            <p className="text-xs text-gray-600">
+                                                💡 各食材の個別編集・削除は、編集画面で行えます。
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* 閉じるボタン */}
+                                    <div className="pt-4 border-t">
+                                        <button
+                                            onClick={() => setShowMealInfoModal(false)}
+                                            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition"
+                                        >
+                                            閉じる
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
-                    {/* アクションボタン */}
-                    <div className="p-4 border-t space-y-2">
-                        {/* エクササイズを追加ボタン */}
-                        <button
-                            onClick={() => setShowSearchModal(true)}
-                            className="w-full bg-blue-600 text-white rounded-lg py-3 font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
-                        >
-                            <Icon name="Plus" size={20} />
-                            エクササイズを追加
-                        </button>
-
-                        {/* 記録ボタン */}
-                        <button
-                            onClick={handleSave}
-                            disabled={addedExercises.length === 0}
-                            className={`w-full rounded-lg py-3 font-semibold transition ${
-                                addedExercises.length === 0
-                                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                    : 'bg-green-600 text-white hover:bg-green-700'
-                            }`}
-                        >
-                            {isEditMode ? '更新する' : '記録する'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* 検索モーダル */}
-            {showSearchModal && (
-                <div className="fixed inset-0 bg-black/50 z-[10001] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
-                        {/* ヘッダー */}
-                        <div className="border-b px-4 py-3 flex justify-between items-center">
-                            <h3 className="text-lg font-bold">エクササイズを選ぶ</h3>
-                            <button onClick={() => setShowSearchModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
-                                <Icon name="X" size={20} />
-                            </button>
-                        </div>
-
-                        {/* 検索バー */}
-                        <div className="p-4 border-b">
-                            <input
-                                type="text"
-                                placeholder="エクササイズを検索..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full border rounded-lg px-4 py-2"
-                            />
-                        </div>
-
-                        {/* カテゴリとエクササイズ一覧 */}
-                        <div className="flex-1 overflow-y-auto p-4">
-                            <div className="space-y-4">
-                                {getCategories().map(category => {
-                                    const exercises = filterExercises(getExercisesByCategory(category));
-                                    if (exercises.length === 0) return null;
-
-                                    return (
-                                        <div key={category}>
-                                            <div className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                                <Icon name="Dumbbell" size={16} />
-                                                {category}
-                                            </div>
-                                            <div className="space-y-1">
-                                                {exercises.map(exercise => (
-                                                    <button
-                                                        key={exercise.name}
-                                                        onClick={() => handleAddExercise(exercise)}
-                                                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-blue-50 transition"
-                                                    >
-                                                        {exercise.name}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* カスタム作成ボタン */}
-                        <div className="p-4 border-t">
-                            <button
-                                onClick={() => {
-                                    setShowSearchModal(false);
-                                    setShowCustomForm(true);
-                                }}
-                                className="w-full bg-purple-600 text-white rounded-lg py-3 font-semibold hover:bg-purple-700 transition flex items-center justify-center gap-2"
-                            >
-                                <Icon name="Plus" size={20} />
-                                カスタムエクササイズを作成
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* カスタムエクササイズ作成モーダル */}
-            {showCustomForm && (
-                <div className="fixed inset-0 bg-black/50 z-[10001] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
-                        {/* ヘッダー */}
-                        <div className="border-b px-4 py-3 flex justify-between items-center">
-                            <h3 className="text-lg font-bold">カスタムエクササイズ</h3>
-                            <button onClick={() => setShowCustomForm(false)} className="p-2 hover:bg-gray-100 rounded-full">
-                                <Icon name="X" size={20} />
-                            </button>
-                        </div>
-
-                        {/* フォーム */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">エクササイズ名 *</label>
-                                <input
-                                    type="text"
-                                    value={customData.name}
-                                    onChange={(e) => setCustomData({ ...customData, name: e.target.value })}
-                                    className="w-full border rounded-lg px-3 py-2"
-                                    placeholder="例: プランク"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">カテゴリ</label>
-                                <select
-                                    value={customData.category}
-                                    onChange={(e) => setCustomData({ ...customData, category: e.target.value })}
-                                    className="w-full border rounded-lg px-3 py-2"
-                                >
-                                    {getCategories().map(cat => (
-                                        <option key={cat} value={cat}>{cat}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">MET値（運動強度）</label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    value={customData.met}
-                                    onChange={(e) => setCustomData({ ...customData, met: parseFloat(e.target.value) || 0 })}
-                                    className="w-full border rounded-lg px-3 py-2"
-                                />
-                            </div>
-                        </div>
-
-                        {/* 保存ボタン */}
-                        <div className="p-4 border-t">
-                            <button
-                                onClick={saveCustomExercise}
-                                className="w-full bg-green-600 text-white rounded-lg py-3 font-semibold hover:bg-green-700 transition"
-                            >
-                                保存して追加
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* テンプレート選択モーダル */}
-            {showTemplateSelector && (
-                <div className="fixed inset-0 bg-black/50 z-[10001] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
-                        {/* ヘッダー */}
-                        <div className="border-b px-4 py-3 flex justify-between items-center">
-                            <h3 className="text-lg font-bold">テンプレートを選ぶ</h3>
-                            <button onClick={() => setShowTemplateSelector(false)} className="p-2 hover:bg-gray-100 rounded-full">
-                                <Icon name="X" size={20} />
-                            </button>
-                        </div>
-
-                        {/* テンプレート一覧 */}
-                        <div className="flex-1 overflow-y-auto p-4">
-                            <div className="space-y-2">
-                                {workoutTemplates.map(template => (
+                    {/* 運動記録の使い方モーダル */}
+                    {showWorkoutInfoModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                                {/* ヘッダー */}
+                                <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-red-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                                    <h3 className="text-lg font-bold flex items-center gap-2">
+                                        <Icon name="Dumbbell" size={20} />
+                                        運動記録の使い方
+                                    </h3>
                                     <button
-                                        key={template.id}
-                                        onClick={() => applyTemplate(template)}
-                                        className="w-full text-left p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition border-2 border-purple-200"
+                                        onClick={() => setShowWorkoutInfoModal(false)}
+                                        className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
                                     >
-                                        <div className="font-semibold text-purple-900">{template.name}</div>
-                                        <div className="text-sm text-purple-600 mt-1">
-                                            {template.exercises?.length || 0}種目
-                                        </div>
+                                        <Icon name="X" size={20} />
                                     </button>
-                                ))}
+                                </div>
+
+                                <div className="p-6 space-y-6">
+                                    {/* 記録方法 */}
+                                    <div className="space-y-4">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="Plus" size={20} className="text-orange-600" />
+                                            運動の記録方法
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                                    <Icon name="Search" size={18} />
+                                                    方法1: 検索して記録
+                                                </p>
+                                                <p className="text-sm text-blue-800 mb-2">
+                                                    種目名で検索してデータベースから選択します。
+                                                </p>
+                                                <p className="text-xs text-blue-700">
+                                                    💡 100種類以上の運動種目データベース
+                                                </p>
+                                            </div>
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                                <p className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                                                    <Icon name="Edit" size={18} />
+                                                    方法2: 手動で作成
+                                                </p>
+                                                <p className="text-sm text-amber-800 mb-2">
+                                                    カスタム種目を自分で作成します。オリジナルの運動を記録できます。
+                                                </p>
+                                                <p className="text-xs text-amber-700">
+                                                    💡 一度作成すると保存され、次回から簡単に使用可能
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 入力項目 */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="Edit3" size={20} className="text-purple-600" />
+                                            入力項目
+                                        </h4>
+                                        <div className="space-y-2">
+                                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                                <p className="font-semibold text-purple-900 mb-1">種目・セット</p>
+                                                <p className="text-sm text-purple-800">
+                                                    運動の種目名と実施したセット数を入力します。
+                                                </p>
+                                            </div>
+                                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                                <p className="font-semibold text-purple-900 mb-1">重量・回数</p>
+                                                <p className="text-sm text-purple-800 mb-2">
+                                                    筋トレの場合は、使用重量（kg）と回数を入力します。自重トレーニングの場合は、自分の体重（kg）を記入します。
+                                                </p>
+                                                <p className="text-xs text-purple-700">
+                                                    💡 総重量 = 重量 × 回数 × セット数
+                                                </p>
+                                            </div>
+                                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                                <p className="font-semibold text-purple-900 mb-1">時間</p>
+                                                <p className="text-sm text-purple-800">
+                                                    運動の実施時間（分）を入力します。筋トレ、有酸素運動、ストレッチなど、すべての運動で記録できます。
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* RM値について */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="TrendingUp" size={20} className="text-green-600" />
+                                            RM値とは
+                                        </h4>
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                            <p className="font-semibold text-green-900 mb-2">
+                                                Repetition Maximum（最大挙上重量）
+                                            </p>
+                                            <p className="text-sm text-green-800 mb-3">
+                                                RM値は、その重量で何回できるかを示す指標です。例えば、100kgで10回できる場合、「10RM = 100kg」となります。
+                                            </p>
+                                            <div className="bg-white rounded p-3 text-sm text-gray-700 border border-green-300">
+                                                <p className="font-semibold mb-2">RM値の計算式:</p>
+                                                <p className="text-xs mb-2">1RM（最大挙上重量） = 使用重量 × (1 + 回数 ÷ 40)</p>
+                                                <p className="text-xs text-green-700">
+                                                    例: 80kg × 10回 → 1RM = 100kg
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 総重量と総時間 */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                            <Icon name="BarChart3" size={20} className="text-indigo-600" />
+                                            総重量と総時間の表示
+                                        </h4>
+                                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                                            <p className="font-semibold text-indigo-900 mb-2">
+                                                運動セクションの見出し横に表示
+                                            </p>
+                                            <p className="text-sm text-indigo-800 mb-3">
+                                                その日の筋トレ総重量（kg）と全運動の総時間（分）が自動で集計されて表示されます。
+                                            </p>
+                                            <div className="bg-white rounded p-3 text-sm text-gray-700 border border-indigo-300 space-y-1">
+                                                <p className="text-xs"><strong>総重量:</strong> すべての筋トレ種目の「重量×回数×セット数」の合計</p>
+                                                <p className="text-xs"><strong>総時間:</strong> すべての運動の時間の合計</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 閉じるボタン */}
+                                    <div className="pt-4 border-t">
+                                        <button
+                                            onClick={() => setShowWorkoutInfoModal(false)}
+                                            className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold py-3 rounded-lg hover:from-orange-700 hover:to-red-700 transition"
+                                        >
+                                            閉じる
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* WorkoutInfoModal */}
+                    {workoutInfoModal.show && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                                <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+                                    <h3 className="text-lg font-bold">{workoutInfoModal.title}</h3>
+                                    <button onClick={() => setWorkoutInfoModal({ show: false, title: '', content: '' })} className="text-gray-400 hover:text-gray-600">
+                                        <Icon name="X" size={24} />
+                                    </button>
+                                </div>
+                                <div className="p-6">
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{workoutInfoModal.content}</p>
+                                </div>
+                                <div className="p-6 border-t">
+                                    <button
+                                        onClick={() => setWorkoutInfoModal({ show: false, title: '', content: '' })}
+                                        className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
+                                    >
+                                        閉じる
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            )}
+            );
+        };
 
-            {/* ヘルプモーダル */}
-            {showHelpModal && (
-                <div className="fixed inset-0 bg-black/50 z-[10001] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
-                        {/* ヘッダー */}
-                        <div className="border-b px-4 py-3 flex justify-between items-center">
-                            <h3 className="text-lg font-bold">運動記録の使い方</h3>
-                            <button onClick={() => setShowHelpModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
-                                <Icon name="X" size={20} />
-                            </button>
-                        </div>
-
-                        {/* ヘルプ内容 */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            <div>
-                                <h4 className="font-semibold text-gray-800 mb-2">1. 運動名を編集</h4>
-                                <p className="text-sm text-gray-600">運動名横の編集ボタンをクリックして、「朝トレ」「ジム」など好きな名前に変更できます。</p>
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-gray-800 mb-2">2. エクササイズを追加</h4>
-                                <p className="text-sm text-gray-600">「エクササイズを追加」ボタンからデータベースを検索、またはカスタム作成できます。</p>
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-gray-800 mb-2">3. セット・回数・重量を入力</h4>
-                                <p className="text-sm text-gray-600">各エクササイズのセット数、回数、重量を入力します。</p>
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-gray-800 mb-2">4. テンプレート機能</h4>
-                                <p className="text-sm text-gray-600">よく行うワークアウトはテンプレートとして保存でき、次回から簡単に呼び出せます（12日以上利用で開放）。</p>
-                            </div>
-                        </div>
-
-                        {/* 閉じるボタン */}
-                        <div className="p-4 border-t">
-                            <button
-                                onClick={() => setShowHelpModal(false)}
-                                className="w-full bg-blue-600 text-white rounded-lg py-3 font-semibold hover:bg-blue-700 transition"
-                            >
-                                閉じる
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {ConfirmModalComponent}
-        </>
-    );
-};
 
 // グローバルに公開
-window.AddWorkoutModal = AddWorkoutModal;
+window.AddItemView = AddItemView;
+window.EditWorkoutModal = EditWorkoutModal;

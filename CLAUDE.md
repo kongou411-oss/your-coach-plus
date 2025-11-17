@@ -2,75 +2,105 @@
 
 ## プロジェクト概要
 
-Your Coach+は、React 18とFirebaseを使用したフィットネスコーチングアプリケーションです。
+Your Coach+は、React 19とFirebaseを使用したフィットネスコーチングアプリケーションです。
 食事管理、トレーニング記録、コンディション記録などの機能を提供します。
 
 ## 技術スタック
 
-- **フロントエンド**: React 19 + Vite
-- **バックエンド**: Firebase（Auth, Firestore, Storage, Functions）
+- **フロントエンド**: React 19.2.0 + Vite 7.1.12
+- **バックエンド**: Firebase 12.5.0（Auth, Firestore, Storage, Functions）
 - **AI**: Google Gemini API
-- **スタイリング**: Tailwind CSS
-- **アイコン**: Lucide React
-- **ビルドツール**: Vite 7.1.12
+- **スタイリング**: Tailwind CSS 3.4.17
+- **アイコン**: Lucide React 0.552.0
+- **グラフ**: Chart.js 4.5.1
+- **その他**: react-hot-toast 2.6.0, flatpickr 4.6.13
 
 ## ファイル構造
 
 ```
 C:\Users\yourc\yourcoach_new\
-├── src/                      # ソースコード（ビルド対象）
-│   ├── main.jsx             # エントリーポイント
-│   ├── App.jsx              # メインアプリコンポーネント
-│   ├── index.css            # グローバルCSS
-│   └── components/          # Reactコンポーネント（.jsx）
-│       ├── 00_init.jsx
-│       ├── 00_feature_unlock.jsx
-│       ├── 01_common.jsx
-│       ├── 02_auth.jsx
-│       ├── 03_dashboard.jsx   # ← 実際にビルドされるファイル
-│       ├── 04_settings.jsx
-│       ├── 05_analysis.jsx
-│       ├── 06_community.jsx
-│       ├── 07_add_item_v2.jsx
-│       ├── 08_app.jsx
-│       ├── 10_feedback.jsx
-│       ├── 11_ai_food_recognition.jsx
-│       ├── 12_wearable_integration.jsx
-│       ├── 13_collaborative_planning.jsx
-│       ├── 14_microlearning.jsx
-│       ├── 15_community_growth.jsx
-│       ├── 16_history_v10.jsx
-│       ├── 17_chevron_shortcut.jsx
-│       └── 18_subscription.jsx
-├── dist/                     # ビルド出力（デプロイ対象）
-├── components/               # 旧バージョン（.js）【使用されていない】
-├── public/                   # 静的ファイル
-├── config.js                 # Firebase設定
-├── services.js               # サービス層
-├── utils.js                  # ユーティリティ関数
-├── foodDatabase.js           # 食品データベース
-├── trainingDatabase.js       # トレーニングデータベース
-├── index.html                # Vite用エントリーHTML
-├── home.html                 # ランディングページ（サービス紹介）
-├── vite.config.js            # Vite設定
-├── package.json              # 依存関係
-└── firebase.json             # Firebase設定（publicディレクトリ: dist）
+├── src/                          # ソースコード（ビルド対象）
+│   ├── main.jsx                 # Viteエントリーポイント
+│   ├── App.jsx                  # メインアプリコンポーネント
+│   ├── index.css                # グローバルCSS（Tailwind含む）
+│   ├── globalSetup.js           # グローバル初期化
+│   ├── errorHandler.js          # エラーハンドリング
+│   ├── config.js                # アプリ設定
+│   ├── services.js              # サービス層
+│   ├── utils.js                 # ユーティリティ関数
+│   ├── foodDatabase.js          # 食品データベース（163KB）
+│   ├── trainingDatabase.js      # トレーニングデータベース（47KB）
+│   ├── notificationSound.js     # 通知音制御
+│   └── components/              # Reactコンポーネント（.jsx）
+│       ├── 00_confirm_modal.jsx    # 確認モーダル
+│       ├── 00_init.jsx             # 初期化
+│       ├── 00_feature_unlock.jsx   # 機能開放
+│       ├── 01_common.jsx           # 共通コンポーネント
+│       ├── 02_auth.jsx             # 認証
+│       ├── 03_dashboard.jsx        # ダッシュボード
+│       ├── 04_settings.jsx         # 設定
+│       ├── 05_analysis.jsx         # 分析
+│       ├── 06_community.jsx        # コミュニティ
+│       ├── 08_app.jsx              # メインアプリ
+│       ├── 10_feedback.jsx         # フィードバック
+│       ├── 11_ai_food_recognition.jsx  # AI食事認識
+│       ├── 13_collaborative_planning.jsx  # 共同計画
+│       ├── 14_microlearning.jsx    # マイクロラーニング
+│       ├── 15_community_growth.jsx # コミュニティ成長
+│       ├── 16_history_v10.jsx      # 履歴v10
+│       ├── 17_chevron_shortcut.jsx # シェブロンショートカット
+│       ├── 18_subscription.jsx     # サブスクリプション
+│       ├── 19_add_meal_modal.jsx   # 食事・サプリ記録モーダル
+│       └── 20_add_workout_modal.jsx # 運動記録モーダル（運動専用）
+├── dist/                         # ビルド出力（デプロイ対象）
+│   ├── index.html               # ビルド済みHTML
+│   ├── assets/                  # ビルド済みJS/CSS
+│   │   ├── index-[hash]-[timestamp].js
+│   │   ├── react-vendor-[hash]-[timestamp].js
+│   │   ├── firebase-[hash]-[timestamp].js
+│   │   ├── charts-[hash]-[timestamp].js
+│   │   ├── icons-[hash]-[timestamp].js
+│   │   ├── vendor-[hash]-[timestamp].js
+│   │   └── index-[hash].css
+│   ├── module/                  # 教科書モジュール
+│   └── [public/の静的ファイルがコピーされる]
+├── public/                       # 静的ファイル（ビルド時にdist/へコピー）
+│   ├── config.js                # Firebase設定
+│   ├── foodDatabase.js
+│   ├── trainingDatabase.js
+│   ├── services.js
+│   ├── utils.js
+│   ├── notificationSound.js
+│   ├── manifest.json            # PWAマニフェスト
+│   ├── icons/                   # PWAアイコン
+│   ├── sounds/                  # 通知音
+│   ├── module/                  # 教科書コンテンツ
+│   ├── privacy.html             # プライバシーポリシー
+│   ├── terms.html               # 利用規約
+│   └── history_v10_standalone.html  # スタンドアロン履歴
+├── index.html                    # Vite用エントリーHTML
+├── home.html                     # ランディングページ
+├── vite.config.js                # Vite設定
+├── package.json                  # 依存関係
+├── firebase.json                 # Firebase設定（publicディレクトリ: dist）
+├── tailwind.config.js            # Tailwind CSS設定
+└── postcss.config.js             # PostCSS設定
 ```
 
 ## 🚨 重要：ファイル構造の変更点
 
-**プロジェクトがVite化されました！**
+**プロジェクトはVite化済みです！**
 
 ### 編集するファイル
 - ✅ **`src/components/*.jsx`** ← これを編集する
-- ❌ **`components/*.js`** ← 旧バージョン、使用されていない
+- ❌ **`components/*.js`** ← 旧バージョン、**完全に削除済み**
 
 ### ビルド・デプロイフロー
 1. `src/`内のファイルを編集
 2. `npm run build`でビルド → `dist/`に出力
 3. `firebase deploy --only hosting`で`dist/`をデプロイ
 
-**キャッシュバスターは不要**（Viteがハッシュ付きファイル名を自動生成）
+**キャッシュバスターは不要**（Viteがハッシュ + タイムスタンプ付きファイル名を自動生成）
 
 ## 開発コマンド
 
@@ -79,12 +109,15 @@ C:\Users\yourc\yourcoach_new\
 npm run dev
 # Vite devサーバーが起動（http://localhost:8000）
 # ホットリロード対応
+# ブラウザが自動で開く
 ```
 
 ### ビルド
 ```bash
 npm run build
 # src/ をビルドして dist/ に出力
+# Terserで圧縮
+# コード分割（react-vendor, firebase, charts, icons, vendor）
 ```
 
 ### プレビュー（ビルド後の確認）
@@ -95,8 +128,8 @@ npm run preview
 
 ### Firebaseデプロイ
 ```bash
-npm run build          # 必ずビルドしてから
-firebase deploy --only hosting  # dist/をデプロイ
+npm run build                      # 必ずビルドしてから
+firebase deploy --only hosting     # dist/をデプロイ
 ```
 
 ### デプロイの完全フロー
@@ -175,13 +208,14 @@ npm run dev
 # 1. ビルド
 npm run build
 
-# 2. Gitコミット
+# 2. Gitコミット＋push
 git add -A
 git commit -m "変更内容
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
+git push
 
 # 3. デプロイ
 firebase deploy --only hosting
@@ -205,13 +239,14 @@ Git更新（バックアップ）を実行しますか？
 - 変更ファイル: [ファイル一覧]
 - 変更内容: [変更の概要]
 
-承認いただければコミットします。
+承認いただければコミット＋pushします。
 ```
 
 **実行コマンド（承認後）:**
 ```bash
 git add .
 git commit -m "チャット内容の説明"
+git push
 ```
 
 **100%遵守事項:**
@@ -227,7 +262,7 @@ git commit -m "チャット内容の説明"
 - **命名規則**:
   - コンポーネント: PascalCase（例: `DashboardView`）
   - 関数: camelCase（例: `getFoodDB`）
-  - 定数: UPPER_SNAKE_CASE（例: `DEV_MODE`）
+  - 定数: UPPER_SNAKE_CASE（例: `MAX_CALORIES`）
 - **React Hooks**:
   - `useState`, `useEffect`, `useCallback`, `useMemo`を適切に使用
   - 依存配列を必ず指定
@@ -305,25 +340,33 @@ git commit -m "チャット内容の説明"
 - 日次記録の表示
 - 食事、トレーニング、サプリ、コンディションの一覧
 - カロリー・PFCバランスの表示
+- スコア表示（食事、運動、コンディション）
 
-### 入力機能（src/components/07_add_item_v2.jsx）
-- 体組成入力（体重、体脂肪率）
-- 食事入力（検索、カスタム、写真解析）
-- 運動入力（検索、カスタム）
-- コンディション入力（睡眠時間、睡眠の質、食欲、腸内環境、集中力、ストレス）
+### 入力機能
 
-#### 食事・サプリメント入力の仕様
-- **選択画面**: 「どうやって記録しますか？」で3つの選択肢を表示
-  1. **写真から記録** (黒背景) - AI食事認識機能
-  2. **食材を検索** (白背景、グレー枠) - データベース検索
-  3. **手動で作成** (白背景、グレー枠) - カスタム入力
-- **検索モーダル**: 食材/サプリメントタブで切り替え可能、カテゴリは常に展開表示
-- **テンプレート**: 選択画面の下に表示（12日以上利用で開放）
+#### 食事・サプリ記録（src/components/19_add_meal_modal.jsx）
+- **3つのタブ**: 食材、料理、サプリメント
+- **3つの入力方法**: 写真から記録、データベース検索、手動で作成
+- **テンプレート機能**: 初日から利用可能
+- **カスタム作成**: 食材・料理・サプリの登録
+- **initialTab props**: モーダル開始時のタブを指定可能（'food', 'recipe', 'supplement'）
+
+#### 運動記録（src/components/20_add_workout_modal.jsx）
+- **機能**: 運動の追加・編集（統合済み）
+- **3つの入力方法**: データベース検索、カスタム作成、テンプレート
+- **テンプレート機能**: 初日から利用可能
+- **セット編集**: スライダー、増減ボタンで直感的に編集
+- **type制限**: type='workout' 専用（他のtypeはエラー表示）
+
+#### コンディション記録
+- **場所**: ダッシュボード内で直接入力（モーダル不要）
+- **方式**: ドット選択式（5段階評価）
 
 ### 分析機能（src/components/05_analysis.jsx）
-- AI搭載のPFC分析
+- AI搭載のPFC分析（Gemini API）
 - カレンダービュー
 - 履歴グラフ・トレンド
+- デイリー分析
 
 ### コミュニティ（src/components/06_community.jsx）
 - 投稿の作成・閲覧
@@ -334,6 +377,13 @@ git commit -m "チャット内容の説明"
 - プロフィール管理
 - ルーティン設定
 - テンプレート管理
+- データ管理（エクスポート・インポート）
+- カスタムアイテム管理
+
+### 履歴（src/components/16_history_v10.jsx）
+- 体重・体脂肪率の推移グラフ
+- カロリー・PFC推移グラフ
+- 日付選択機能
 
 ## データ構造
 
@@ -342,13 +392,13 @@ git commit -m "チャット内容の説明"
 - `users/{userId}/dailyRecords/{date}` - 日次記録
 - `users/{userId}/favorites` - お気に入り
 - `users/{userId}/routines` - ルーティン
+- `users/{userId}/templates` - テンプレート
 - `community/posts` - コミュニティ投稿
 
-### LocalStorage（DEV_MODE=true時）
-- `currentUser` - 現在のユーザー情報
-- `dailyRecords_${userId}` - 日次記録
-- `favorites_${userId}` - お気に入り
-- `routines_${userId}` - ルーティン
+### 注意：DEV_MODE削除済み
+- **DEV_MODE完全削除済み**（2025年11月17日時点）
+- LocalStorageでのテストモードは存在しません
+- すべての操作はFirebaseに直接接続されます
 
 ## 開発フロー
 
@@ -368,10 +418,9 @@ git commit -m "チャット内容の説明"
 
 ### テスト
 - **手動テスト**: ブラウザで各機能を実際に操作
-- **DEV_MODE**: `config.js`で`DEV_MODE=true`に設定すると、Firebaseを使わずにLocalStorageでテスト可能
 - **エラー確認**: 必ずブラウザのコンソール（F12）でエラーをチェック
 
-## トラブルシューティング（現行版：Vite構成）
+## トラブルシューティング
 
 ### ビルドエラーが発生する
 1. `npm install`で依存関係を再インストール
@@ -380,7 +429,7 @@ git commit -m "チャット内容の説明"
 
 ### 開発サーバーが起動しない
 1. ポート8000が既に使用されていないか確認: `netstat -ano | findstr :8000`
-2. `vite.config.js`でポート設定を確認
+2. Node.jsプロセスを終了: `taskkill /F /IM node.exe`
 3. `npm run dev`を再実行
 
 ### コンポーネントが表示されない
@@ -389,13 +438,8 @@ git commit -m "チャット内容の説明"
 3. ビルドエラーがないか確認
 
 ### Firebase接続エラー
-- `config.js`のFirebase設定が正しいか確認
+- `public/config.js`のFirebase設定が正しいか確認
 - Firebase Consoleでプロジェクトが有効か確認
-
-### データが保存されない
-- `config.js`で`DEV_MODE`の設定を確認
-- `DEV_MODE=true`: LocalStorage使用
-- `DEV_MODE=false`: Firebase使用
 
 ### スタイルが適用されない
 - Tailwind CSSの設定を確認（`tailwind.config.js`）
@@ -409,7 +453,7 @@ git commit -m "チャット内容の説明"
 #### BAB（Bottom Action Bar）について
 - **正しい定義**: BABは画面下部の「ホーム、履歴、PGBASE、COMY、設定」のタブバーのこと
 - **絶対に「FAB」と呼ばない**: FAB（Floating Action Button）は削除済みで存在しない
-- **BABの実装**: `components/08_app.js`の2096行目から実装されている
+- **BABの実装**: `src/components/08_app.jsx`に実装されている
 - **BABの構造**:
   - クラス: `fixed bottom-0 left-0 right-0 z-[9999] bg-white border-t shadow-lg`
   - 折りたたみボタン（ChevronUp/ChevronDown）で展開/格納を切り替え
@@ -423,11 +467,11 @@ git commit -m "チャット内容の説明"
 
 #### シェブロンショートカットについて
 - **BABとは別物**: 画面左右の端にある展開式ショートカットメニュー
-- **実装**: `components/17_chevron_shortcut.js`に実装されている
+- **実装**: `src/components/17_chevron_shortcut.jsx`に実装されている
 - **位置**: 画面左右の端（`top-[85%]`の位置）にシェブロンボタンがあり、クリックで展開
 
 ### セキュリティ
-- **APIキー**: `config.js`の機密情報は公開リポジトリにコミットしない
+- **APIキー**: `public/config.js`の機密情報は公開リポジトリにコミットしない
 - **Firebase Rules**: Firestoreセキュリティルールを適切に設定
 - **認証**: 全ての機密操作は認証済みユーザーのみに制限
 
@@ -435,11 +479,12 @@ git commit -m "チャット内容の説明"
 - **画像最適化**: アップロード画像は適切なサイズに圧縮
 - **データ取得**: 必要なデータのみを取得（無駄なクエリを避ける）
 - **キャッシュ**: 頻繁にアクセスするデータはキャッシュを活用
+- **Code Splitting**: Viteが自動で実行（react-vendor, firebase, charts, icons, vendor）
 
 ### メンテナンス
 - **バックアップ**: 作業経過3時間で必ずバックアップを作成するように提案
 - **バージョン管理**: 会話圧縮後、最優先でGitにコミット
-- **ドキュメント**: 大きな変更時はREADME.mdも更新
+- **ドキュメント**: 大きな変更時はCLAUDE.mdも更新
 
 ## AI（Claude Code）への指示
 
@@ -481,7 +526,7 @@ git commit -m "チャット内容の説明"
 ### 新機能追加時
 - **まず実装方針の解釈を提示し、承認を得てから実装**（必須）
 - 関連する既存コードを確認し、スタイルを統一
-- 必要に応じてREADME.mdも更新
+- 必要に応じてCLAUDE.mdも更新
 
 ### デバッグ時
 - エラーメッセージを詳細に分析
@@ -507,7 +552,6 @@ git commit -m "チャット内容の説明"
 - **トークン使用量**: XX,XXX / 200,000 トークン
 - **使用率**: XX%
 - **経過時間**: XX分
-- **使用クレジット**: XX クレジット
 
 ### 実装内容
 
@@ -515,15 +559,13 @@ git commit -m "チャット内容の説明"
 
 ### 変更ファイル
 
-1. **ファイル名**: `components/XX_xxx.js`
+1. **ファイル名**: `src/components/XX_xxx.jsx`
    - **変更場所**: Line XXX-YYY
    - **変更内容**: [何をどう変更したか]
-   - **キャッシュバスター**: ?v=YYYYMMDDVN
 
-2. **ファイル名**: `components/YY_yyy.js`
+2. **ファイル名**: `src/components/YY_yyy.jsx`
    - **変更場所**: Line ZZZ
    - **変更内容**: [何をどう変更したか]
-   - **キャッシュバスター**: ?v=YYYYMMDDVN
 
 ### 確認方法
 
@@ -544,66 +586,11 @@ git commit -m "チャット内容の説明"
 - 動作確認: [完了/未完了]
 ```
 
-### 報告例
-
-```markdown
-## 実装完了報告
-
-### セッション情報（必須）
-- **トークン使用量**: 45,230 / 200,000 トークン
-- **使用率**: 22.6%
-- **経過時間**: 15分
-- **使用クレジット**: 0.5 クレジット
-
-### 実装内容
-
-カスタムアイテム（食材・料理・サプリ）の管理機能を実装しました。
-
-### 変更ファイル
-
-1. **ファイル名**: `components/07_add_item_v2.js`
-   - **変更場所**: Line 3956-3958 (category自動設定), Line 2925-2931 (カスタムサプリ表示), Line 3440 (カスタム判定)
-   - **変更内容**:
-     - itemTypeに応じてcategoryを自動設定（カスタム食材/カスタム料理/カスタムサプリ）
-     - 検索モーダルでカスタムサプリを表示するロジックを追加
-     - カスタムアイテム判定にカスタムサプリを追加
-   - **キャッシュバスター**: ?v=20251028v6
-
-2. **ファイル名**: `components/04_settings.js`
-   - **変更場所**: Line 2510-2725 (データ管理セクション内に追加)
-   - **変更内容**: データ管理セクション内にカスタムアイテム管理UIを追加（3タブ：食材/料理/サプリ）
-   - **キャッシュバスター**: ?v=20251028v2
-
-### 確認方法
-
-**場所**: 設定（右下タブ）→ データ管理セクションを展開
-
-**手順**:
-1. 設定画面を開く
-2. 「データ管理」セクションをクリックして展開
-3. 「カスタムアイテム管理」が表示されることを確認
-4. 食材/料理/サプリのタブが表示されることを確認
-5. カスタムアイテムがある場合、一覧が表示されることを確認
-6. 編集・削除ボタンが表示されることを確認
-
-**期待される動作**:
-- ✅ データ管理セクション内にカスタムアイテム管理が表示される
-- ✅ 3つのタブ（食材・料理・サプリ）が正しく切り替わる
-- ✅ 各タブに該当するアイテムのみが表示される
-- ✅ 「すべて削除」ボタンでカテゴリ単位の削除ができる
-- ✅ 個別の編集・削除ボタンが機能する
-
-### ブラウザ確認
-
-- コンソールエラー: なし
-- 動作確認: 完了
-```
-
 ### 重要なポイント
 
-1. **セッション情報を必ず報告**: トークン使用量・使用率・経過時間・使用クレジットを明記
+1. **セッション情報を必ず報告**: トークン使用量・使用率・経過時間を明記
 2. **変更場所を明記**: 行番号を必ず記載する
-3. **キャッシュバスターを必ず更新**: 変更したすべてのファイルのキャッシュバスターを明記
+3. **キャッシュバスター不要**: Viteが自動でハッシュ + タイムスタンプを付与
 4. **確認方法を具体的に**: ユーザーが実際に確認できる手順を記載
 5. **期待される動作を列挙**: チェックリスト形式で明確に
 
@@ -613,132 +600,10 @@ git commit -m "チャット内容の説明"
 2. ~~**ビルドツール**: Vite/Webpackの導入~~ ✅ 完了（Vite 7.1.12）
 3. **TypeScript化**: 型安全性の向上
 4. **テスト**: Jest + React Testing Libraryの導入
-5. **パフォーマンス**: Code splitting, Lazy loading
+5. **パフォーマンス**: さらなるCode splitting, Lazy loading
 
 ---
 
-# 📚 旧バージョン用リファレンス（components/*.js使用時）
-
-**⚠️ 注意: 以下は旧バージョン（CDN版React + components/*.js）用の情報です。**
-**現在のプロジェクトはVite構成（src/components/*.jsx）を使用しています。**
-
-## 旧バージョンのファイル構造
-
-```
-C:\Users\yourc\yourcoach_new\
-├── components/              # 旧Reactコンポーネント（.js）【使用されていない・削除済み】
-│   ├── 00_init.js
-│   ├── 02_auth.js
-│   ├── 03_dashboard.js
-│   └── ...
-├── styles.css               # カスタムCSS
-├── styles_dark.css          # ダークモードスタイル
-└── ...
-```
-
-## 旧バージョンの開発コマンド
-
-### ローカル開発サーバー（旧）
-```bash
-python -m http.server 8000
-# ブラウザで http://localhost:8000 を開く
-```
-
-### キャッシュバスターの更新（旧バージョンのみ必要）
-
-**重要:** 旧バージョンでコンポーネントファイルを編集した後、ブラウザに変更を反映させるには**必ず**キャッシュバスターを更新する必要がありました。
-
-#### キャッシュバスターとは
-index_old.htmlで読み込まれるJavaScriptファイルのURLに付与されているバージョン番号（例: `?v=20251028v1`）のこと。この値を変更することで、ブラウザに新しいファイルを強制的に読み込ませることができます。
-
-#### 更新手順（旧バージョン）
-
-1. **編集したファイル名を確認**
-   - 例: `components/07_add_item_v2.js` を編集した場合
-
-2. **index_old.htmlを開く**
-
-3. **該当ファイルの読み込み行を検索**
-   ```html
-   <script type="text/babel" src="components/07_add_item_v2.js?v=20251025v11"></script>
-   ```
-
-4. **キャッシュバスターを更新**
-   - フォーマット: `YYYYMMDD + v + 連番`
-   - 例: `20251028v1` → `20251028v2`（同日2回目の更新の場合）
-   - 例: `20251025v11` → `20251028v1`（日付が変わった場合は連番をリセット）
-   ```html
-   <script type="text/babel" src="components/07_add_item_v2.js?v=20251028v1"></script>
-   ```
-
-5. **ブラウザでスーパーリロード**
-   - Windows: `Ctrl + Shift + R` または `Ctrl + F5`
-   - Mac: `Cmd + Shift + R`
-
-6. **動作確認**
-   - F12でコンソールを開き、エラーがないことを確認
-   - 実装した機能が正しく動作することを確認
-
-#### 更新が必要なケース（旧バージョン）
-- ✅ コンポーネントファイル（components/*.js）を編集した場合
-- ✅ services.js、utils.js、config.jsを編集した場合
-- ✅ styles.css、styles_dark.cssを編集した場合
-- ❌ データベースファイル（foodDatabase.js、trainingDatabase.js）は通常キャッシュバスター不要
-
-#### トラブルシューティング（旧バージョン）
-**問題:** キャッシュバスターを更新したのに変更が反映されない
-
-**対策:**
-1. ブラウザのキャッシュを完全にクリア（設定 → プライバシーとセキュリティ → 閲覧データを削除）
-2. シークレットモードで開く
-3. `clear_cache.html` を開く
-
-### ERR_CONNECTION_REFUSED エラーの対策（旧バージョン）
-
-**問題:** ブラウザで `http://localhost:8000` にアクセスすると `ERR_CONNECTION_REFUSED` エラーが表示される
-
-**原因と対策:**
-
-#### 1. サーバーが起動していない
-```bash
-# サーバーを起動
-python -m http.server 8000
-```
-
-#### 2. ポート8000が既に使用されている
-```bash
-# Windowsでポート8000を使用しているプロセスを確認
-netstat -ano | findstr :8000
-
-# プロセスIDが表示されたら、タスクマネージャーで終了するか以下のコマンドで終了
-# taskkill /PID [プロセスID] /F
-```
-
-#### 3. サーバーがバックグラウンドで起動しているが応答しない
-```bash
-# すべてのPythonプロセスを終了（注意：他のPythonプログラムも終了します）
-taskkill /IM python.exe /F
-
-# サーバーを再起動
-python -m http.server 8000
-```
-
-#### 4. 代替ポートで起動（ポート8000が解放できない場合）
-```bash
-# ポート8080で起動
-python -m http.server 8080
-
-# ブラウザで http://localhost:8080 を開く
-```
-
-**推奨フロー（旧バージョン）:**
-1. まずポート8000の使用状況を確認: `netstat -ano | findstr :8000`
-2. 使用中なら強制終了: `taskkill /IM python.exe /F`
-3. サーバーを起動: `python -m http.server 8000`
-4. ブラウザで確認: `http://localhost:8000`
-
----
-
-**最終更新**: 2025年11月5日
+**最終更新**: 2025年11月17日
 **プロジェクト開始**: 2025年10月12日
 **Vite化**: 2025年11月4日

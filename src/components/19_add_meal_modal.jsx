@@ -27,9 +27,11 @@ const AddMealModal = ({
     user,
     userProfile,
     unlockedFeatures = [],
-    usageDays = 0
+    usageDays = 0,
+    initialTab = 'food' // 初期タブ: 'food', 'recipe', 'supplement'
 }) => {
     // Props確認（デバッグ用）
+    console.log('[AddMealModal] 初期タブ:', initialTab);
 
     // ===== 編集モード判定 =====
     const isEditMode = !!editingMeal;
@@ -51,7 +53,7 @@ const AddMealModal = ({
 
     // 検索モーダル用のstate
     const [searchTerm, setSearchTerm] = useState('');
-    const [foodTab, setFoodTab] = useState('food'); // 'food', 'recipe', 'supplement'
+    const [foodTab, setFoodTab] = useState(initialTab); // 初期タブを反映
     const [selectedCategory, setSelectedCategory] = useState('肉類'); // デフォルトで肉類を表示
 
     // 量調整UI用のstate

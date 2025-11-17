@@ -474,6 +474,11 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             }, 0);
         }, 0);
 
+        // 運動種目数を計算（全運動の総エクササイズ数）
+        const exerciseCount = workouts.reduce((sum, w) => {
+            return sum + (w.exercises || []).length;
+        }, 0);
+
         // 休養日判定（ルーティンで明示的に設定されている場合）
         const isRestDay = record.routine?.is_rest_day === true;
 
@@ -567,8 +572,9 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             exercise: {
                 score: exerciseScore,
                 sets: Math.round(setsScore),
-                exerciseCount: Math.round(exerciseCountScore),
+                duration: Math.round(durationScore),
                 totalSets: totalSets,
+                totalDuration: totalDuration,
                 count: exerciseCount
             },
             condition: {
@@ -935,9 +941,9 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 - ミネラル13種平均: スコア${scores ? scores.food.mineral : 0}/100
 
 ### 運動スコア: ${scores ? scores.exercise.score : 0}/100
-- 種目数: ${scores ? scores.exercise.count : 0}種目（スコア${scores ? scores.exercise.exerciseCount : 0}/100）
-- セット数: ${scores ? scores.exercise.totalSets : 0}セット（スコア${scores ? scores.exercise.sets : 0}/100）
-- 総合: 上記2つの平均
+- 種目数: ${scores ? scores.exercise.count : 0}種目
+- 総時間: ${scores ? scores.exercise.totalDuration : 0}分（スコア${scores ? scores.exercise.duration : 0}/100、配点30%）
+- セット数: ${scores ? scores.exercise.totalSets : 0}セット（スコア${scores ? scores.exercise.sets : 0}/100、配点70%）
 
 ### コンディションスコア: ${scores ? scores.condition.score : 0}/100
 - 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5（スコア${scores ? scores.condition.sleep : 0}/100）
@@ -1027,8 +1033,9 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
 ### 運動スコア: ${scores ? scores.exercise.score : 0}/100
 - ルーティン: ${todayRecord.routine?.is_rest_day ? '休養日（計画的な休息）' : (todayRecord.routine?.type || 'なし')}
-- 実施種目: ${(todayRecord.workouts || []).length}種目（スコア${scores ? scores.exercise.exerciseCount : 0}/100）
-- セット数: ${scores ? scores.exercise.totalSets : 0}セット（スコア${scores ? scores.exercise.sets : 0}/100）
+- 実施種目: ${scores ? scores.exercise.count : 0}種目
+- 総時間: ${scores ? scores.exercise.totalDuration : 0}分（スコア${scores ? scores.exercise.duration : 0}/100、配点30%）
+- セット数: ${scores ? scores.exercise.totalSets : 0}セット（スコア${scores ? scores.exercise.sets : 0}/100、配点70%）
 
 ### コンディションスコア: ${scores ? scores.condition.score : 0}/100
 - 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5（スコア${scores ? scores.condition.sleep : 0}/100）

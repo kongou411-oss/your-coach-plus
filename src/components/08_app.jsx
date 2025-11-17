@@ -148,7 +148,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const AddItemView = window.AddItemView;
             const AddMealModal = window.AddMealModal; // 新しいゴールベースモーダル
             const AddWorkoutModal = window.AddWorkoutModal; // 新しい運動記録モーダル
-            const EditMealModal = window.EditMealModal;
             const EditWorkoutModal = window.EditWorkoutModal;
             const SettingsView = window.SettingsView;
             const SubscriptionView = window.SubscriptionView;
@@ -163,6 +162,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [showAddView, setShowAddView] = useState(false);
             const [showNewMealModal, setShowNewMealModal] = useState(false); // 新しいゴールベースモーダル
             const [showNewWorkoutModal, setShowNewWorkoutModal] = useState(false); // 新しい運動記録モーダル
+            const [mealModalInitialTab, setMealModalInitialTab] = useState('food'); // AddMealModalの初期タブ
             const [addViewType, setAddViewType] = useState('meal');
             const [openedFromSettings, setOpenedFromSettings] = useState(false);
             const [openedFromTemplateEditModal, setOpenedFromTemplateEditModal] = useState(false); // テンプレート編集モーダルから開いたか
@@ -495,36 +495,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 generatePredictions(prevDayRecord);
                             }
 
-                            // ========== FCM通知（凍結 2025-11-10） ==========
-                            /*
-                            // FCMトークンを取得してFirestoreに保存（スマホPWA通知用）
-                            // エラーが発生してもログイン処理は続行
-                            if (typeof NotificationService !== 'undefined' && typeof Notification !== 'undefined') {
-                                try {
-                                    // フォアグラウンド通知リスナーをセットアップ
-                                    NotificationService.setupForegroundListener();
-
-                                    if (Notification.permission === 'granted') {
-                                        // 既に権限がある場合はトークンを取得（バックグラウンドで実行）
-                                        NotificationService.requestNotificationPermission(firebaseUser.uid)
-                                            .then(result => {
-                                                if (!result.success) {
-                                                    console.warn('[App] FCM token registration failed:', result.error);
-                                                }
-                                            })
-                                            .catch(err => console.warn('[App] FCM token error:', err));
-                                    }
-                                    // 権限がない場合は通知設定画面で手動リクエスト
-                                } catch (error) {
-                                    console.warn('[App] FCM initialization skipped:', error);
-                                }
-                            }
-                            */
-
-                            // 通知チェッカーは停止（Cloud Functionsで自動送信するため不要）
-                            // if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                            //     NotificationService.startNotificationChecker(firebaseUser.uid);
-                            // }
+                            // ========== FCM通知機能は削除されました ==========
 
                             setLoading(false);
                         } else {
@@ -890,8 +861,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             setBottomBarExpanded(false);
                             break;
                         case 'supplement':
-                            setAddViewType('supplement');
-                            setShowAddView(true);
+                            console.log('[08_app] サプリメント記録: AddMealModal をサプリタブで開きます');
+                            setMealModalInitialTab('supplement');
+                            setShowNewMealModal(true);
                             setBottomBarMenu(null);
                             setBottomBarExpanded(false);
                             break;
@@ -1646,8 +1618,10 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             onClose={() => {
                                 console.log('[App] 新しいゴールベースモーダルを閉じる');
                                 setShowNewMealModal(false);
+                                setMealModalInitialTab('food'); // 閉じる時にリセット
                             }}
                             selectedDate={currentDate}
+                            initialTab={mealModalInitialTab}
                             onAdd={async (meal) => {
                                 console.log('[App] 新しいゴールベースモーダルのonAddが呼ばれました');
                                 const userId = user?.uid;
@@ -1867,8 +1841,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         />
                     )}
 
-                    {/* 追加ビュー - 旧モーダル（運動・サプリメント・コンディション用） */}
-                    {showAddView && !editingWorkout && addViewType !== 'meal' && (
+                    {/* 追加ビュー - 旧モーダル（運動用のみ） */}
+                    {showAddView && !editingWorkout && addViewType === 'workout' && (
                         <AddItemView
                             type={addViewType}
                             selectedDate={currentDate}

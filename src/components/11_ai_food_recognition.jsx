@@ -177,19 +177,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
 
                 return await Promise.race([apiCallPromise, timeoutPromise]);
             } catch (error) {
-                // Service Workerエラーを無視（Push通知関連のエラー）
-                const isServiceWorkerError = error.name === 'AbortError' &&
-                    error.message && error.message.includes('Service Worker');
-
-                if (isServiceWorkerError) {
-                    console.warn('[callGeminiWithRetry] Service Workerエラーを検出（無視します）:', error.message);
-                    // Service Workerエラーは無視して再試行
-                    if (attempt < maxRetries) {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                        continue;
-                    }
-                }
-
                 const is429Error = error.message && (
                     error.message.includes('429') ||
                     error.message.includes('Resource exhausted') ||
