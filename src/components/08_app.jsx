@@ -148,6 +148,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const AddItemView = window.AddItemView;
             const AddMealModal = window.AddMealModal; // 新しいゴールベースモーダル
             const AddWorkoutModal = window.AddWorkoutModal; // 新しい運動記録モーダル
+            const AddConditionModal = window.AddConditionModal; // 新しいコンディション記録モーダル
             const EditMealModal = window.EditMealModal;
             const EditWorkoutModal = window.EditWorkoutModal;
             const SettingsView = window.SettingsView;
@@ -163,6 +164,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [showAddView, setShowAddView] = useState(false);
             const [showNewMealModal, setShowNewMealModal] = useState(false); // 新しいゴールベースモーダル
             const [showNewWorkoutModal, setShowNewWorkoutModal] = useState(false); // 新しい運動記録モーダル
+            const [showNewConditionModal, setShowNewConditionModal] = useState(false); // 新しいコンディション記録モーダル
             const [addViewType, setAddViewType] = useState('meal');
             const [openedFromSettings, setOpenedFromSettings] = useState(false);
             const [openedFromTemplateEditModal, setOpenedFromTemplateEditModal] = useState(false); // テンプレート編集モーダルから開いたか
@@ -902,8 +904,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             setBottomBarExpanded(false);
                             break;
                         case 'condition':
-                            setAddViewType('condition');
-                            setShowAddView(true);
+                            setShowNewConditionModal(true);
                             setBottomBarMenu(null);
                             setBottomBarExpanded(false);
                             break;
@@ -1733,6 +1734,31 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             userProfile={userProfile}
                             unlockedFeatures={unlockedFeatures}
                             usageDays={usageDays}
+                        />
+                    )}
+
+                    {/* 新しいコンディション記録モーダル */}
+                    {showNewConditionModal && AddConditionModal && (
+                        <AddConditionModal
+                            onClose={() => setShowNewConditionModal(false)}
+                            onAdd={async (condition) => {
+                                const userId = user?.uid;
+                                try {
+                                    let updatedRecord = { ...dailyRecord };
+                                    updatedRecord.conditions = condition;
+
+                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
+                                    setDailyRecord(updatedRecord);
+                                    setLastUpdate(Date.now());
+
+                                    setShowNewConditionModal(false);
+                                } catch (error) {
+                                    console.error('コンディション記録エラー:', error);
+                                    toast.error('コンディションの記録に失敗しました');
+                                }
+                            }}
+                            userProfile={userProfile}
+                            selectedDate={currentDate}
                         />
                     )}
 
@@ -2833,8 +2859,7 @@ AIコーチなどの高度な機能が解放されます。
                                 </button>
                                 <button
                                     onClick={() => {
-                                        setAddViewType('condition');
-                                        setShowAddView(true);
+                                        setShowNewConditionModal(true);
                                         setBottomBarMenu(null);
                                         setBottomBarExpanded(false);
                                     }}
