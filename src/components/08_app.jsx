@@ -148,7 +148,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const AddItemView = window.AddItemView;
             const AddMealModal = window.AddMealModal; // 新しいゴールベースモーダル
             const AddWorkoutModal = window.AddWorkoutModal; // 新しい運動記録モーダル
-            const AddConditionModal = window.AddConditionModal; // 新しいコンディション記録モーダル
             const EditMealModal = window.EditMealModal;
             const EditWorkoutModal = window.EditWorkoutModal;
             const SettingsView = window.SettingsView;
@@ -164,7 +163,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [showAddView, setShowAddView] = useState(false);
             const [showNewMealModal, setShowNewMealModal] = useState(false); // 新しいゴールベースモーダル
             const [showNewWorkoutModal, setShowNewWorkoutModal] = useState(false); // 新しい運動記録モーダル
-            const [showNewConditionModal, setShowNewConditionModal] = useState(false); // 新しいコンディション記録モーダル
             const [addViewType, setAddViewType] = useState('meal');
             const [openedFromSettings, setOpenedFromSettings] = useState(false);
             const [openedFromTemplateEditModal, setOpenedFromTemplateEditModal] = useState(false); // テンプレート編集モーダルから開いたか
@@ -904,7 +902,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             setBottomBarExpanded(false);
                             break;
                         case 'condition':
-                            setShowNewConditionModal(true);
+                            // コンディションはダッシュボード内で直接入力（ドット選択式）
+                            // モーダルは不要
                             setBottomBarMenu(null);
                             setBottomBarExpanded(false);
                             break;
@@ -1737,30 +1736,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         />
                     )}
 
-                    {/* 新しいコンディション記録モーダル */}
-                    {showNewConditionModal && AddConditionModal && (
-                        <AddConditionModal
-                            onClose={() => setShowNewConditionModal(false)}
-                            onAdd={async (condition) => {
-                                const userId = user?.uid;
-                                try {
-                                    let updatedRecord = { ...dailyRecord };
-                                    updatedRecord.conditions = condition;
-
-                                    await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
-                                    setDailyRecord(updatedRecord);
-                                    setLastUpdate(Date.now());
-
-                                    setShowNewConditionModal(false);
-                                } catch (error) {
-                                    console.error('コンディション記録エラー:', error);
-                                    toast.error('コンディションの記録に失敗しました');
-                                }
-                            }}
-                            userProfile={userProfile}
-                            selectedDate={currentDate}
-                        />
-                    )}
+                    {/* コンディション記録はダッシュボード内で直接入力（ドット選択式） */}
 
                     {/* 追加ビュー - 新モーダル（食事の新規追加・編集） */}
                     {showAddView && !editingWorkout && addViewType === 'meal' && (
@@ -2859,7 +2835,7 @@ AIコーチなどの高度な機能が解放されます。
                                 </button>
                                 <button
                                     onClick={() => {
-                                        setShowNewConditionModal(true);
+                                        // コンディションはダッシュボード内で直接入力
                                         setBottomBarMenu(null);
                                         setBottomBarExpanded(false);
                                     }}
