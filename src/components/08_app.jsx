@@ -160,7 +160,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [usageDays, setUsageDays] = useState(0);
             const [unlockedFeatures, setUnlockedFeatures] = useState(['food']); // 食事記録は最初から開放
             const [currentStage, setCurrentStage] = useState('守');
-            const [fabOpen, setFabOpen] = useState(false);
             const [showAddView, setShowAddView] = useState(false);
             const [showNewMealModal, setShowNewMealModal] = useState(false); // 新しいゴールベースモーダル
             const [showNewWorkoutModal, setShowNewWorkoutModal] = useState(false); // 新しい運動記録モーダル
@@ -180,9 +179,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             });
             const [currentRoutine, setCurrentRoutine] = useState(null);
             // 写真解析機能は仕様書により削除（食事記録はテキスト入力のみ）
-            // const [showPhotoInput, setShowPhotoInput] = useState(false);
-            const [capturedPhoto, setCapturedPhoto] = useState(null);
-            const [showCameraButton, setShowCameraButton] = useState(true);
             const [infoModal, setInfoModal] = useState({ show: false, title: '', content: '' });
             const [predictedData, setPredictedData] = useState(null);
             const [yesterdayRecord, setYesterdayRecord] = useState(null); // 前日の完全な記録データ

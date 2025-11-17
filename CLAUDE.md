@@ -51,8 +51,7 @@ C:\Users\yourc\yourcoach_new\
 ├── foodDatabase.js           # 食品データベース
 ├── trainingDatabase.js       # トレーニングデータベース
 ├── index.html                # Vite用エントリーHTML
-├── index_old.html            # 旧バージョン（使用されていない）
-├── home.html                 # 旧バージョン（使用されていない）
+├── home.html                 # ランディングページ（サービス紹介）
 ├── vite.config.js            # Vite設定
 ├── package.json              # 依存関係
 └── firebase.json             # Firebase設定（publicディレクトリ: dist）
@@ -627,9 +626,7 @@ git commit -m "チャット内容の説明"
 
 ```
 C:\Users\yourc\yourcoach_new\
-├── index_old.html           # 旧メインHTMLファイル
-├── home.html                # 旧バージョン
-├── components/              # 旧Reactコンポーネント（.js）【使用されていない】
+├── components/              # 旧Reactコンポーネント（.js）【使用されていない・削除済み】
 │   ├── 00_init.js
 │   ├── 02_auth.js
 │   ├── 03_dashboard.js

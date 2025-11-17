@@ -124,7 +124,8 @@
       "Bash(C:Usersyourcyourcoach_newfood_analysis.txt)",
       "Bash(\"C:\\Users\\yourc\\yourcoach_new\\fatty_acids_report.txt\")",
       "Bash(\"C:\\Users\\yourc\\yourcoach_new\\fatty_stats.json\")",
-      "Bash(cmd /c xcopy:*)"
+      "Bash(cmd /c xcopy:*)",
+      "Bash(git rev-parse:*)"
     ],
     "deny": [],
     "ask": []

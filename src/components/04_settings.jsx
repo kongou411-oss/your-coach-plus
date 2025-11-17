@@ -30,11 +30,6 @@ const ConfirmModal = ({ show, title, message, onConfirm, onCancel }) => {
 };
 
 // ===== Settings Components =====
-// TutorialView機能は削除されました（ダミー定義）
-const TutorialView = ({ onClose, onComplete }) => {
-    return null;
-};
-
 
 // ===== 設定画面 =====
 const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays, unlockedFeatures, onOpenAddView, darkMode, onToggleDarkMode, shortcuts = [], onUpdateShortcuts, reopenTemplateEditModal = false, reopenTemplateEditType = null, onTemplateEditModalOpened }) => {
