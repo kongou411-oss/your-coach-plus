@@ -2256,6 +2256,100 @@ const MFAService = {
     }
 };
 
+// ===== Firestoreヘルパーユーティリティ =====
+const FirestoreUtils = {
+    // ユーザー設定を取得（単一ドキュメント）
+    getUserSettings: async (userId, settingName) => {
+        try {
+            const doc = await db.collection('users')
+                .doc(userId)
+                .collection('settings')
+                .doc(settingName)
+                .get();
+            return doc.exists ? doc.data() : null;
+        } catch (error) {
+            console.error(`[FirestoreUtils] Error loading ${settingName}:`, error);
+            return null;
+        }
+    },
+
+    // ユーザー設定を保存
+    setUserSettings: async (userId, settingName, data) => {
+        try {
+            await db.collection('users')
+                .doc(userId)
+                .collection('settings')
+                .doc(settingName)
+                .set(data, { merge: true });
+            return true;
+        } catch (error) {
+            console.error(`[FirestoreUtils] Error saving ${settingName}:`, error);
+            return false;
+        }
+    },
+
+    // ユーザーコレクションを取得（複数ドキュメント）
+    getUserCollection: async (userId, collectionName) => {
+        try {
+            const snapshot = await db.collection('users')
+                .doc(userId)
+                .collection(collectionName)
+                .get();
+            return snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+        } catch (error) {
+            console.error(`[FirestoreUtils] Error loading ${collectionName}:`, error);
+            return [];
+        }
+    },
+
+    // ユーザーコレクションにドキュメントを追加
+    addToUserCollection: async (userId, collectionName, data) => {
+        try {
+            const docRef = await db.collection('users')
+                .doc(userId)
+                .collection(collectionName)
+                .add(data);
+            return docRef.id;
+        } catch (error) {
+            console.error(`[FirestoreUtils] Error adding to ${collectionName}:`, error);
+            return null;
+        }
+    },
+
+    // ユーザーコレクションのドキュメントを更新
+    updateUserDocument: async (userId, collectionName, docId, data) => {
+        try {
+            await db.collection('users')
+                .doc(userId)
+                .collection(collectionName)
+                .doc(docId)
+                .update(data);
+            return true;
+        } catch (error) {
+            console.error(`[FirestoreUtils] Error updating ${collectionName}/${docId}:`, error);
+            return false;
+        }
+    },
+
+    // ユーザーコレクションのドキュメントを削除
+    deleteUserDocument: async (userId, collectionName, docId) => {
+        try {
+            await db.collection('users')
+                .doc(userId)
+                .collection(collectionName)
+                .doc(docId)
+                .delete();
+            return true;
+        } catch (error) {
+            console.error(`[FirestoreUtils] Error deleting ${collectionName}/${docId}:`, error);
+            return false;
+        }
+    }
+};
+
 // ===== グローバルに公開 =====
 window.DataService = DataService;
 window.GeminiAPI = GeminiAPI;
@@ -2263,3 +2357,4 @@ window.CreditService = CreditService;
 window.ExperienceService = ExperienceService;
 window.NotificationService = NotificationService;
 window.MFAService = MFAService;
+window.FirestoreUtils = FirestoreUtils;

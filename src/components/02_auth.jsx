@@ -47,32 +47,6 @@ const LoginScreen = () => {
         return () => window.removeEventListener('message', handleMessage);
     }, []);
 
-    // Googleリダイレクト認証の結果を処理（signInWithPopup使用のためコメントアウト）
-    // useEffect(() => {
-    //     console.log('🔍 useEffect: リダイレクト結果処理を開始');
-    //     const handleRedirectResult = async () => {
-    //         if (!auth) return;
-    //         try {
-    //             const result = await auth.getRedirectResult();
-    //             if (result.user) {
-    //                 const user = result.user;
-    //                 console.log('✅ リダイレクト認証成功:', { uid: user.uid, email: user.email });
-    //                 if (!isSignUp) {
-    //                     const profile = await DataService.getUserProfile(user.uid);
-    //                     if (!profile) {
-    //                         await auth.signOut();
-    //                         toast('Googleアカウントが未登録です。まずアカウントを作成してください。');
-    //                         setIsSignUp(true);
-    //                     }
-    //                 }
-    //             }
-    //         } catch (error) {
-    //             console.error('❌ Redirect result error:', error);
-    //         }
-    //     };
-    //     handleRedirectResult();
-    // }, [isSignUp]);
-
     // パスワード強度チェック
     const checkPasswordStrength = (pwd) => {
         let score = 0;

@@ -495,6 +495,13 @@ const LBMUtils = {
 
 // 日付ユーティリティ
 const DateUtils = {
+    // ISO形式の日付文字列に変換（YYYY-MM-DD）
+    toISODate: (date = new Date()) => {
+        if (typeof date === 'string') return date.split('T')[0];
+        return date.toISOString().split('T')[0];
+    },
+
+    // 日本語形式の日付文字列に変換
     formatDate: (date) => {
         return new Date(date).toLocaleDateString('ja-JP', {
             year: 'numeric',
@@ -503,10 +510,21 @@ const DateUtils = {
         });
     },
 
+    // 年月日を個別に取得してフォーマット
+    formatDateTime: (date = new Date()) => {
+        const d = typeof date === 'string' ? new Date(date) : date;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    },
+
+    // 日数の差を計算
     getDaysDifference: (date1, date2) => {
         return Math.floor((new Date(date1) - new Date(date2)) / (1000 * 60 * 60 * 24));
     },
 
+    // 今日の日付文字列を取得（YYYY-MM-DD）
     getTodayString: () => {
         return new Date().toISOString().split('T')[0];
     }
@@ -676,6 +694,53 @@ const ConditionUtils = {
             conditions[field] >= 1 &&
             conditions[field] <= 5
         );
+    }
+};
+
+// LocalStorageユーティリティ
+const StorageUtils = {
+    // LocalStorageから値を取得（JSON.parse付き、エラーハンドリング付き）
+    get: (key, defaultValue = null) => {
+        try {
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) : defaultValue;
+        } catch (error) {
+            console.error(`Error parsing localStorage key "${key}":`, error);
+            return defaultValue;
+        }
+    },
+
+    // LocalStorageに値を保存（JSON.stringify付き、エラーハンドリング付き）
+    set: (key, value) => {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        } catch (error) {
+            console.error(`Error saving to localStorage key "${key}":`, error);
+            return false;
+        }
+    },
+
+    // LocalStorageから値を削除
+    remove: (key) => {
+        try {
+            localStorage.removeItem(key);
+            return true;
+        } catch (error) {
+            console.error(`Error removing localStorage key "${key}":`, error);
+            return false;
+        }
+    },
+
+    // LocalStorageをクリア
+    clear: () => {
+        try {
+            localStorage.clear();
+            return true;
+        } catch (error) {
+            console.error('Error clearing localStorage:', error);
+            return false;
+        }
     }
 };
 
@@ -908,3 +973,9 @@ const CalcUtils = {
 
 // グローバルに公開
 window.LBMUtils = LBMUtils;
+window.DateUtils = DateUtils;
+window.ThemeUtils = ThemeUtils;
+window.SubscriptionUtils = SubscriptionUtils;
+window.ConditionUtils = ConditionUtils;
+window.CalcUtils = CalcUtils;
+window.StorageUtils = StorageUtils;
