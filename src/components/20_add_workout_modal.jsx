@@ -425,7 +425,7 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
 };
 
 // ===== Edit Meal Modal (食事編集専用モーダル) =====
-const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate, editingMeal, isTemplateMode = false }) => {
+const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile, predictedData, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate, editingMeal, editingWorkout, isTemplateMode = false }) => {
             // 運動専用モーダル：type !== 'workout' の場合はエラー
             if (type !== 'workout') {
                 return (
@@ -454,6 +454,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predicte
             const [mealTemplates, setMealTemplates] = useState([]);
             const [supplementTemplates, setSupplementTemplates] = useState([]);
             const [showTemplates, setShowTemplates] = useState(false);
+            const [showTemplateInfoModal, setShowTemplateInfoModal] = useState(false); // テンプレート仕様説明モーダル
             const [templateName, setTemplateName] = useState('');
             const [editingTemplateId, setEditingTemplateId] = useState(null); // 編集中のテンプレートID
             const [editingTemplateObj, setEditingTemplateObj] = useState(null); // 編集中のテンプレートオブジェクト（ローカル用）
@@ -1600,6 +1601,10 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predicte
             };
 
             const renderWorkoutInput = () => {
+                // 編集モード判定（食事モーダルと同じ仕様）
+                const isEditMode = !!editingWorkout;
+                console.log('[AddItemView] isEditMode:', isEditMode, 'editingWorkout:', editingWorkout);
+
                 const fuzzyMatch = (text, query) => {
                     if (!query || query.trim() === '') return true;
                     const normalize = (str) => {
@@ -1616,6 +1621,16 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predicte
 
                 useEffect(() => {
                     loadTemplates();
+
+                    // 編集モード時の初期値設定
+                    if (editingWorkout) {
+                        console.log('[AddItemView] 編集モード初期化:', editingWorkout);
+                        if (editingWorkout.exercises && Array.isArray(editingWorkout.exercises)) {
+                            setExercises(JSON.parse(JSON.stringify(editingWorkout.exercises)));
+                        }
+                        return; // 編集モード時はルーティン読み込みをスキップ
+                    }
+
                     // ルーティンからワークアウト自動読み込み
                     if (currentRoutine && !currentRoutine.isRestDay && currentRoutine.exercises) {
                         // ルーティンの最初の種目を自動選択
@@ -1636,31 +1651,90 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predicte
                     console.log('[20_add_workout_modal] テンプレート読み込み開始');
                     const templates = await DataService.getWorkoutTemplates(user.uid);
                     console.log('[20_add_workout_modal] 読み込んだテンプレート数:', templates.length);
+                    
+                    console.log("[20_add_workout_modal] テンプレートデータ（isTrialCreated確認用）:", templates.map(t => ({id: t.id, name: t.name, isTrialCreated: t.isTrialCreated})));
                     setWorkoutTemplates(templates);
                 };
 
                 const saveAsTemplate = async () => {
-                    if (exercises.length === 0 || !templateName.trim()) {
-                        toast('テンプレート名を入力し、種目を追加してください');
+                    if (exercises.length === 0) {
+                        toast('運動を追加してください');
                         return;
                     }
-                    const template = {
-                        id: Date.now(),
-                        name: templateName,
-                        exercises: exercises, // 複数種目を保存
-                        createdAt: new Date().toISOString()
+
+                    // 無料会員の枠制限チェック（7日目以降）
+                    const isFreeUser = userProfile?.subscriptionStatus !== 'active' && usageDays >= 7;
+                    if (isFreeUser && workoutTemplates.length >= 1) {
+                        toast.error('無料会員は運動テンプレートを1枠まで作成できます。既存のテンプレートを削除してから新しいテンプレートを作成するか、Premium会員にアップグレードしてください。');
+                        return;
+                    }
+
+                    // デフォルト値：最初の運動名または空文字
+                    const defaultName = exercises.length > 0 && exercises[0].exercise ? exercises[0].exercise.name : '';
+                    const inputName = prompt('テンプレート名を入力してください', defaultName);
+                    if (!inputName || !inputName.trim()) {
+                        return;
+                    }
+
+                    // トライアル期間中（0-6日目）かどうかを判定
+                    const isTrialPeriod = usageDays < 7;
+                    console.log("[20_add_workout_modal] テンプレート保存:", {usageDays, isTrialPeriod, isFreeUser, templatesCount: workoutTemplates.length});
+
+                    // undefinedを再帰的に除去する関数
+                    const removeUndefined = (obj) => {
+                        if (Array.isArray(obj)) {
+                            return obj.map(item => removeUndefined(item));
+                        } else if (obj !== null && typeof obj === 'object') {
+                            const cleaned = {};
+                            Object.keys(obj).forEach(key => {
+                                if (obj[key] !== undefined) {
+                                    cleaned[key] = removeUndefined(obj[key]);
+                                }
+                            });
+                            return cleaned;
+                        }
+                        return obj;
                     };
-                    await DataService.saveWorkoutTemplate(user.uid, template);
-                    setTemplateName('');
-                    toast.success('テンプレートを保存しました');
-                    loadTemplates();
+
+                    // exercises配列全体からundefinedを除去
+                    const cleanedExercises = removeUndefined(exercises);
+
+                    const template = {
+                        id: Date.now().toString(), // 一意のIDを生成
+                        name: inputName.trim(),
+                        exercises: cleanedExercises, // クリーンアップした運動データを保存
+                        createdAt: new Date().toISOString(),
+                        isTrialCreated: isTrialPeriod, // トライアル期間中に作成されたかを記録
+                    };
+
+                    try {
+                        if (!window.DataService) {
+                            console.error('[20_add_workout_modal] DataService is not available on window object');
+                            console.log('[20_add_workout_modal] Available window objects:', Object.keys(window).filter(k => k.includes('Service') || k.includes('Data')));
+                            toast.error('DataServiceが利用できません。ページを再読み込みしてください。');
+                            return;
+                        }
+
+                        // DataService経由でテンプレートを保存
+                        await window.DataService.saveWorkoutTemplate(user.uid, template);
+
+                        // テンプレート一覧を再読み込み
+                        const templates = await window.DataService.getWorkoutTemplates(user.uid);
+                        setWorkoutTemplates(templates || []);
+                        toast.success('テンプレートを保存しました');
+                    } catch (error) {
+                        console.error('テンプレート保存エラー:', error);
+                        toast.error('テンプレートの保存に失敗しました: ' + error.message);
+                    }
                 };
 
                 const loadTemplate = (template) => {
+                    console.log('[20_add_workout_modal] テンプレート編集モード開始:', template);
                     // 新形式（複数種目）と旧形式（単一種目）の両方に対応
                     if (template.exercises && Array.isArray(template.exercises)) {
-                        // 新形式：複数種目を読み込み
-                        setExercises(template.exercises);
+                        // 新形式：複数種目を読み込み（ディープコピー）
+                        const copiedExercises = JSON.parse(JSON.stringify(template.exercises));
+                        setExercises(copiedExercises);
                         setCurrentExercise(null);
                         setSets([]);
                     } else if (template.exercise) {
@@ -1668,8 +1742,13 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predicte
                         setCurrentExercise(template.exercise);
                         setSets(template.sets || []);
                     }
+
+                    // 編集モード設定
+                    setEditingTemplateId(template.id);
+                    setEditingTemplateObj(template);
                     setIsFromTemplate(true); // テンプレートから読み込んだことをマーク
                     setShowTemplates(false);
+                    console.log('[20_add_workout_modal] 編集モード設定完了 - テンプレートID:', template.id);
                 };
 
                 const deleteTemplate = async (templateId) => {
@@ -1825,12 +1904,21 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predicte
                                             <Icon name="BookMarked" size={20} />
                                             テンプレートから選択
                                         </h3>
-                                        <button
-                                            onClick={() => setShowTemplates(false)}
-                                            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full"
-                                        >
-                                            <Icon name="X" size={20} />
-                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => setShowTemplateInfoModal(true)}
+                                                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                                                title="テンプレートについて"
+                                            >
+                                                <Icon name="Info" size={18} className="text-[#4A9EFF]" />
+                                            </button>
+                                            <button
+                                                onClick={() => setShowTemplates(false)}
+                                                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full"
+                                            >
+                                                <Icon name="X" size={20} />
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {/* テンプレート一覧 */}
@@ -1846,7 +1934,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predicte
                                             </div>
                                         ) : (
                                             <div className="space-y-2">
-                                                {workoutTemplates.map(template => {
+                                                {workoutTemplates.map((template, index) => {
                                                     // 種目数、総セット数、総重量、総時間を計算
                                                     const exerciseCount = template.exercises?.length || 0;
                                                     let totalSets = 0;
@@ -1861,21 +1949,38 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predicte
                                                         });
                                                     });
 
+                                                    // ロック判定：無料会員は1枠目（index 0）のみ使用可能
+                                                    const isLocked = userProfile?.subscriptionStatus !== 'active' && index !== 0;
+                                                    console.log('[20_add_workout_modal] テンプレートロック判定:', {templateName: template.name, index, subscriptionStatus: userProfile?.subscriptionStatus, isLocked});
+
                                                     return (
-                                                        <details key={template.id} className="bg-gray-50 border-2 border-gray-200 rounded-lg group">
+                                                        <details key={template.id} className={`border-2 rounded-lg group ${isLocked ? 'bg-gray-100 border-gray-300 opacity-60' : 'bg-gray-50 border-gray-200'}`}>
                                                             <summary className="p-3 cursor-pointer list-none">
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <div className="font-semibold text-gray-900">{template.name}</div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="font-semibold text-gray-900">{template.name}</div>
+                                                                        {isLocked && (
+                                                                            <Icon name="Lock" size={16} className="text-amber-600" title="無料会員は1枠目のみ使用可能" />
+                                                                        )}
+                                                                    </div>
                                                                     <div className="flex items-center gap-2">
                                                                         <button
                                                                             onClick={(e) => {
                                                                                 e.preventDefault();
                                                                                 e.stopPropagation();
+                                                                                if (isLocked) {
+                                                                                    toast.error('このテンプレートは使用できません。無料会員は1枠目のテンプレートのみ使用可能です。Premium会員にアップグレードすると全てのテンプレートが使用できます。');
+                                                                                    return;
+                                                                                }
                                                                                 loadTemplate(template);
                                                                                 setShowTemplates(false);
                                                                             }}
-                                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
-                                                                            title="編集"
+                                                                            className={`w-10 h-10 rounded-lg shadow-md flex items-center justify-center transition border-2 ${
+                                                                                isLocked
+                                                                                ? 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
+                                                                                : 'bg-white text-blue-600 hover:bg-blue-50 border-blue-500'
+                                                                            }`}
+                                                                            title={isLocked ? 'トライアル期間中作成のため利用不可' : '編集'}
                                                                         >
                                                                             <Icon name="Edit" size={18} />
                                                                         </button>
@@ -1920,6 +2025,10 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predicte
                                                                     onClick={(e) => {
                                                                         e.preventDefault();
                                                                         e.stopPropagation();
+                                                                        if (isLocked) {
+                                                                            toast.error('このテンプレートは使用できません。無料会員は1枠目のテンプレートのみ使用可能です。Premium会員にアップグレードすると全てのテンプレートが使用できます。');
+                                                                            return;
+                                                                        }
                                                                         const workoutData = {
                                                                             name: template.name,
                                                                             timestamp: new Date().toISOString(),
@@ -1932,7 +2041,11 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predicte
                                                                         setShowTemplates(false);
                                                                         onClose();
                                                                     }}
-                                                                    className="w-full px-4 py-2 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] transition text-sm"
+                                                                    className={`w-full px-4 py-2 rounded-lg font-bold transition text-sm ${
+                                                                        isLocked
+                                                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                                        : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
+                                                                    }`}
                                                                 >
                                                                     記録
                                                                 </button>
@@ -1968,6 +2081,144 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, userProfile, predicte
                                         <button
                                             onClick={() => setShowTemplates(false)}
                                             className="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                                        >
+                                            閉じる
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* テンプレート仕様説明モーダル */}
+                        {showTemplateInfoModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-60 z-[70] flex items-center justify-center p-4">
+                                <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto">
+                                    {/* ヘッダー */}
+                                    <div className="bg-gradient-to-r from-[#4A9EFF] to-[#3B82F6] text-white p-4 flex justify-between items-center sticky top-0">
+                                        <h3 className="text-lg font-bold flex items-center gap-2">
+                                            <Icon name="Info" size={20} />
+                                            テンプレートについて
+                                        </h3>
+                                        <button
+                                            onClick={() => setShowTemplateInfoModal(false)}
+                                            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                                        >
+                                            <Icon name="X" size={20} />
+                                        </button>
+                                    </div>
+
+                                    {/* 内容 */}
+                                    <div className="p-6 space-y-6">
+                                        {/* テンプレートとは */}
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                                <Icon name="BookMarked" size={18} className="text-[#4A9EFF]" />
+                                                テンプレートとは
+                                            </h4>
+                                            <p className="text-sm text-gray-700 leading-relaxed">
+                                                よく行うトレーニングメニューを登録しておくことで、毎回同じ種目・セット数を設定する手間を省くことができます。
+                                            </p>
+                                        </div>
+
+                                        {/* 無料会員の制限 */}
+                                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                            <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                                <Icon name="User" size={18} className="text-orange-600" />
+                                                無料会員の制限
+                                            </h4>
+                                            <div className="space-y-2 text-sm text-gray-700">
+                                                <div className="flex items-start gap-2">
+                                                    <Icon name="Lock" size={16} className="text-orange-600 flex-shrink-0 mt-0.5" />
+                                                    <div>
+                                                        <div className="font-semibold">1枠のみ使用可能</div>
+                                                        <div className="text-xs text-gray-600 mt-1">
+                                                            無料会員は<span className="font-bold text-orange-600">最初に作成したテンプレート（1枠目）のみ</span>使用できます。2枠目以降はロックされます。
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-2">
+                                                    <Icon name="Edit" size={16} className="text-orange-600 flex-shrink-0 mt-0.5" />
+                                                    <div>
+                                                        <div className="font-semibold">編集・削除は可能</div>
+                                                        <div className="text-xs text-gray-600 mt-1">
+                                                            1枠目のテンプレートは自由に編集・削除できます。削除後に新しいテンプレートを作成することも可能です。
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Premium会員の特典 */}
+                                        <div className="bg-gradient-to-r from-[#FFF59A] to-[#FFF176] border border-amber-300 rounded-lg p-4">
+                                            <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                                <Icon name="Crown" size={18} className="text-amber-600" />
+                                                Premium会員の特典
+                                            </h4>
+                                            <div className="space-y-2 text-sm text-gray-700">
+                                                <div className="flex items-start gap-2">
+                                                    <Icon name="Unlock" size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                                                    <div>
+                                                        <div className="font-semibold">無制限で使用可能</div>
+                                                        <div className="text-xs text-gray-600 mt-1">
+                                                            Premium会員は<span className="font-bold text-amber-600">何個でもテンプレートを作成・使用</span>できます。
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-2">
+                                                    <Icon name="Star" size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                                                    <div>
+                                                        <div className="font-semibold">解約後の制限</div>
+                                                        <div className="text-xs text-gray-600 mt-1">
+                                                            Premium会員を解約すると、2枠目以降のテンプレートはロックされ、1枠目のみ使用可能になります。
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 使い方 */}
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                                <Icon name="Lightbulb" size={18} className="text-[#4A9EFF]" />
+                                                使い方
+                                            </h4>
+                                            <div className="space-y-3 text-sm text-gray-700">
+                                                <div className="flex items-start gap-2">
+                                                    <div className="bg-[#4A9EFF] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</div>
+                                                    <div>
+                                                        <div className="font-semibold">テンプレートの作成</div>
+                                                        <div className="text-xs text-gray-600 mt-1">
+                                                            運動を追加後、「テンプレートとして保存」ボタンで保存できます。
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-2">
+                                                    <div className="bg-[#4A9EFF] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</div>
+                                                    <div>
+                                                        <div className="font-semibold">テンプレートの使用</div>
+                                                        <div className="text-xs text-gray-600 mt-1">
+                                                            「テンプレートから選択」ボタンから、保存したテンプレートを呼び出せます。
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-2">
+                                                    <div className="bg-[#4A9EFF] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</div>
+                                                    <div>
+                                                        <div className="font-semibold">テンプレートの管理</div>
+                                                        <div className="text-xs text-gray-600 mt-1">
+                                                            設定 → データ管理 → テンプレート管理から、全てのテンプレートを編集・削除できます。
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* フッター */}
+                                    <div className="border-t p-4 bg-gray-50">
+                                        <button
+                                            onClick={() => setShowTemplateInfoModal(false)}
+                                            className="w-full px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-semibold hover:bg-[#3B82F6] transition"
                                         >
                                             閉じる
                                         </button>
@@ -2762,19 +3013,17 @@ RM回数と重量を別々に入力してください。`
                                                 onClick={() => {
                                                     setSets([...sets, { ...currentSet, setType: 'warmup' }]);
                                                 }}
-                                                className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
+                                                className="bg-blue-100 text-blue-700 font-bold py-3 px-6 rounded-lg hover:bg-blue-200 shadow-lg transition"
                                             >
-                                                <Icon name="Zap" size={20} />
-                                                <span>アップ追加</span>
+                                                アップ追加
                                             </button>
                                             <button
                                                 onClick={() => {
                                                     setSets([...sets, { ...currentSet, setType: 'main' }]);
                                                 }}
-                                                className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition flex items-center justify-center gap-2"
+                                                className="bg-orange-100 text-orange-700 font-bold py-3 px-6 rounded-lg hover:bg-orange-200 shadow-lg transition"
                                             >
-                                                <Icon name="Plus" size={20} />
-                                                <span>メイン追加</span>
+                                                メイン追加
                                             </button>
                                         </div>
                                     ) : (
@@ -2888,7 +3137,7 @@ RM回数と重量を別々に入力してください。`
                                     disabled={sets.length === 0}
                                     className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    種目追加
+                                    {editingTemplateId ? '種目を追加' : '種目追加'}
                                 </button>
                             </div>
                         )}
@@ -2896,7 +3145,19 @@ RM回数と重量を別々に入力してください。`
                         {/* 追加済み種目リスト */}
                         {exercises.length > 0 && !currentExercise && (
                             <div className="p-4 rounded-lg border-2" style={{backgroundColor: '#EFF6FF', borderColor: '#4A9EFF'}}>
-                                <p className="text-sm font-bold mb-3" style={{color: '#4A9EFF'}}>追加済み（{exercises.length}種目）</p>
+                                {/* ヘッダー：タイトル + 保存ボタン */}
+                                <div className="flex justify-between items-center mb-3">
+                                    <p className="text-sm font-bold" style={{color: '#4A9EFF'}}>追加済み（{exercises.length}種目）</p>
+                                    {!editingTemplateId && (
+                                        <button
+                                            onClick={saveAsTemplate}
+                                            className="px-3 bg-purple-50 text-purple-700 border-2 border-purple-500 rounded-lg font-semibold hover:bg-purple-100 transition flex flex-col items-center justify-center"
+                                        >
+                                            <Icon name="BookTemplate" size={16} className="mb-1" />
+                                            <span className="text-xs whitespace-nowrap">保存</span>
+                                        </button>
+                                    )}
+                                </div>
 
                                 {/* 種目一覧 */}
                                 <div className="space-y-2 mb-3">
@@ -3017,14 +3278,14 @@ RM回数と重量を別々に入力してください。`
                                     追加
                                 </button>
 
-                                {/* テンプレート名入力（テンプレートモード時） */}
-                                {(isTemplateMode || editingTemplate) && (
-                                    <div>
+                                {/* テンプレート名入力（編集モード時） */}
+                                {editingTemplateId && (
+                                    <div className="mb-3">
                                         <label className="block text-sm font-medium mb-2">テンプレート名</label>
                                         <input
                                             type="text"
-                                            value={templateName}
-                                            onChange={(e) => setTemplateName(e.target.value)}
+                                            value={editingTemplateObj?.name || ''}
+                                            onChange={(e) => setEditingTemplateObj({...editingTemplateObj, name: e.target.value})}
                                             placeholder="例: 胸トレ1"
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                                         />
@@ -3034,10 +3295,52 @@ RM回数と重量を別々に入力してください。`
                                 {/* 記録ボタン */}
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
-                                        onClick={handleWorkoutSave}
+                                        onClick={editingTemplateId ? async () => {
+                                            // テンプレート更新処理
+                                            if (!editingTemplateObj?.name || !editingTemplateObj.name.trim()) {
+                                                toast.error('テンプレート名を入力してください');
+                                                return;
+                                            }
+
+                                            const updatedTemplate = {
+                                                ...editingTemplateObj,
+                                                name: editingTemplateObj.name.trim(),
+                                                exercises: exercises,
+                                                updatedAt: new Date().toISOString()
+                                            };
+
+                                            try {
+                                                await window.DataService.saveWorkoutTemplate(user.uid, updatedTemplate);
+                                                const templates = await window.DataService.getWorkoutTemplates(user.uid);
+                                                setWorkoutTemplates(templates || []);
+                                                toast.success('テンプレートを更新しました');
+
+                                                // 編集モード解除
+                                                setEditingTemplateId(null);
+                                                setEditingTemplateObj(null);
+                                                setExercises([]);
+                                                onClose();
+                                            } catch (error) {
+                                                console.error('テンプレート更新エラー:', error);
+                                                toast.error('テンプレートの更新に失敗しました');
+                                            }
+                                        } : isEditMode ? async () => {
+                                            // 運動記録更新処理（食事モーダルと同じ仕様）
+                                            const updatedWorkout = {
+                                                ...editingWorkout,
+                                                exercises: exercises,
+                                                timestamp: editingWorkout.timestamp,
+                                                updatedAt: new Date().toISOString()
+                                            };
+
+                                            if (onUpdate) {
+                                                onUpdate(updatedWorkout);
+                                                onClose();
+                                            }
+                                        } : handleWorkoutSave}
                                         className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
                                     >
-                                        {(isTemplateMode || editingTemplate) ? '保存' : '記録'}
+                                        {editingTemplateId ? '更新' : isEditMode ? '更新' : '記録'}
                                     </button>
                                     <button
                                         onClick={onClose}

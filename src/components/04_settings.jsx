@@ -473,8 +473,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                             <div className="space-y-4">
                                 {(() => {
                                     const isPremium = userProfile?.subscriptionStatus === 'active';
-                                    const isTrial = usageDays <= 7;
-                                    const daysRemaining = isTrial ? Math.max(0, 8 - usageDays) : 0;
+                                    const isTrial = usageDays < 7; // 0-6日目がトライアル
+                                    const daysRemaining = isTrial ? Math.max(0, 7 - usageDays) : 0;
 
                                     if (isPremium) {
                                         // Premium会員
@@ -490,7 +490,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                 <div className="bg-[#FFF59A]/10 p-4 rounded-lg border border-amber-200 mb-3">
                                                     <p className="text-sm font-medium text-gray-600 mb-1">月額料金</p>
-                                                    <p className="text-3xl font-bold text-amber-600">¥740</p>
+                                                    <p className="text-3xl font-bold text-amber-600">¥940</p>
                                                     <p className="text-xs text-gray-600 mt-1">税込</p>
                                                 </div>
 
@@ -516,7 +516,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                 <div className="bg-blue-50 p-3 rounded-lg mb-3">
                                                     <p className="text-sm font-medium text-gray-600 mb-1">現在の利用日数</p>
-                                                    <p className="text-2xl font-bold text-blue-600">{usageDays} 日目</p>
+                                                    <p className="text-2xl font-bold text-blue-600">{usageDays + 1} 日目</p>
                                                     <p className="text-xs text-gray-600 mt-1">8日目以降はPremium登録が必要です</p>
                                                 </div>
 
@@ -525,7 +525,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     onClick={() => toast('サブスクリプション画面は実装予定！')}
                                                 >
                                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
-                                                    <span className="relative z-10">月額740円でPremium登録</span>
+                                                    <span className="relative z-10">月額940円でPremium登録</span>
                                                 </button>
                                             </div>
                                         );
@@ -543,7 +543,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
 
                                                 <div className="bg-white p-3 rounded-lg mb-3">
                                                     <p className="text-sm font-medium text-gray-600 mb-1">現在の利用日数</p>
-                                                    <p className="text-2xl font-bold text-red-600">{usageDays} 日目</p>
+                                                    <p className="text-2xl font-bold text-red-600">{usageDays + 1} 日目</p>
                                                 </div>
 
                                                 <button
@@ -551,7 +551,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     onClick={() => toast('サブスクリプション画面は実装予定！')}
                                                 >
                                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
-                                                    <span className="relative z-10">月額740円でPremium登録</span>
+                                                    <span className="relative z-10">月額940円でPremium登録</span>
                                                 </button>
                                             </div>
                                         );
@@ -1956,8 +1956,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                     </details>
                     )}
 
-                    {/* テンプレート - 初回分析後に開放 */}
-                    {unlockedFeatures.includes('template') && (
+                    {/* テンプレート - 初日から開放 */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="BookTemplate" size={18} className="text-blue-600" />
@@ -1966,6 +1965,24 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         <div className="p-4 pt-0 border-t">
                         <div className="space-y-4">
                             <p className="text-sm text-gray-600">保存したテンプレートを管理できます。ルーティンに紐づけて使用することも可能です。</p>
+
+                            {/* 無料会員の制限警告 */}
+                            {userProfile?.subscriptionStatus !== 'active' && usageDays >= 7 && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                    <div className="flex items-start gap-2">
+                                        <Icon name="AlertCircle" size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                                        <div className="text-sm">
+                                            <p className="font-medium text-amber-800 mb-1">無料会員の制限</p>
+                                            <p className="text-amber-700 text-xs">
+                                                食事・運動テンプレートは各1枠のみ作成可能です。既存のテンプレートを編集または削除すると、再度作成できます。
+                                            </p>
+                                            <p className="text-amber-700 text-xs mt-1">
+                                                ⚠️ トライアル期間中に作成したテンプレートは、無料期間終了後は使用できません（Premium会員は制限なし）。
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* 食事テンプレート*/}
                             <div className="border rounded-lg p-4">
@@ -1992,11 +2009,19 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             const totalFat = (template.items || []).reduce((sum, i) => sum + (i.fat || 0), 0);
                                             const totalCarbs = (template.items || []).reduce((sum, i) => sum + (i.carbs || 0), 0);
 
+                                            // トライアル中作成テンプレートのロック判定
+                                            const isLocked = template.isTrialCreated && userProfile?.subscriptionStatus !== 'active' && usageDays >= 7;
+
                                             return (
-                                                <details key={template.id} className="bg-gray-50 p-3 rounded-lg">
+                                                <details key={template.id} className={`p-3 rounded-lg ${isLocked ? 'bg-gray-100 opacity-60' : 'bg-gray-50'}`}>
                                                     <summary className="flex items-center justify-between cursor-pointer hover:bg-gray-100 -m-3 p-3 rounded-lg">
                                                         <div className="flex-1">
-                                                            <p className="font-medium text-sm">{template.name}</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="font-medium text-sm">{template.name}</p>
+                                                                {isLocked && (
+                                                                    <Icon name="Lock" size={14} className="text-amber-600" title="トライアル期間中作成のため利用不可" />
+                                                                )}
+                                                            </div>
                                                             <p className="text-xs text-gray-600">
                                                                 {template.items?.length || 0}品目 | {Math.round(totalCals)}kcal
                                                             </p>
@@ -2087,11 +2112,19 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             const totalSets = exercises.reduce((sum, ex) => sum + (ex.sets?.length || 0), 0);
                                             const totalDuration = exercises.reduce((sum, ex) => sum + (ex.sets || []).reduce((s, set) => s + (set.duration || 0), 0), 0);
 
+                                            // トライアル中作成テンプレートのロック判定
+                                            const isLocked = template.isTrialCreated && userProfile?.subscriptionStatus !== 'active' && usageDays >= 7;
+
                                             return (
-                                                <details key={template.id} className="bg-gray-50 p-3 rounded-lg">
+                                                <details key={template.id} className={`p-3 rounded-lg ${isLocked ? 'bg-gray-100 opacity-60' : 'bg-gray-50'}`}>
                                                     <summary className="flex items-center justify-between cursor-pointer hover:bg-gray-100 -m-3 p-3 rounded-lg">
                                                         <div className="flex-1">
-                                                            <p className="font-medium text-sm">{template.name}</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="font-medium text-sm">{template.name}</p>
+                                                                {isLocked && (
+                                                                    <Icon name="Lock" size={14} className="text-amber-600" title="トライアル期間中作成のため利用不可" />
+                                                                )}
+                                                            </div>
                                                             <p className="text-xs text-gray-600">
                                                                 {exerciseCount}種目 | {totalSets}セット | {totalDuration}分
                                                             </p>
@@ -2148,7 +2181,6 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                         </div>
                     </details>
-                    )}
 
                     {/* ルーティン - 初回分析後に開放 */}
                     {false && (
@@ -5598,10 +5630,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                     {/* 進行状況に応じた機能一覧 */}
                                     {(() => {
                                         const completionStatus = getFeatureCompletionStatus(userId);
-                                        const daysSinceReg = calculateDaysSinceRegistration(userId);
-                                        const currentDay = daysSinceReg; // calculateDaysSinceRegistrationが既に+1済み
+                                        const currentDay = usageDays; // 0-6日目がトライアル期間（内部計算）
                                         const isPremium = userProfile?.subscriptionStatus === 'active';
-                                        const isTrial = currentDay <= 7;
+                                        const isTrial = currentDay < 7; // 0-6日目がトライアル
 
                                         const featureList = [
                                             { id: 'food', name: '食事記録', unlocked: true },
@@ -5623,7 +5654,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
                                                     <p className="text-xs text-gray-600">
                                                         <Icon name="Info" size={14} className="inline text-blue-600 mr-1" />
-                                                        現在: {currentDay}日目 ({isTrial ? `無料期間：残り${8-currentDay}日` : (isPremium ? 'Premium会員' : '無料会員・機能制限中')})
+                                                        現在: {currentDay + 1}日目 ({isTrial ? `無料期間：残り${7-currentDay}日` : (isPremium ? 'Premium会員' : '無料会員・機能制限中')})
                                                     </p>
                                                 </div>
                                                 {featureList.map((feature) => (
@@ -5655,23 +5686,19 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         <div className="flex justify-between items-center mb-3">
                                             <span className="text-sm text-gray-600">現在</span>
                                             <span className="text-2xl font-bold text-indigo-600">
-                                                {(() => {
-                                                    const daysSinceReg = calculateDaysSinceRegistration(userId);
-                                                    return `${daysSinceReg}日目`;
-                                                })()}
+                                                {`${usageDays + 1}日目`}
                                             </span>
                                         </div>
                                         <div className="text-xs text-gray-600">
                                             {(() => {
-                                                const daysSinceReg = calculateDaysSinceRegistration(userId);
-                                                const currentDay = daysSinceReg; // calculateDaysSinceRegistrationが既に+1済み
-                                                const isTrial = currentDay <= 7;
+                                                const currentDay = usageDays; // 0-6日目がトライアル
+                                                const isTrial = currentDay < 7;
                                                 const isPremium = userProfile?.subscriptionStatus === 'active';
 
                                                 if (isTrial) {
                                                     return (
                                                         <span className="text-green-600 font-medium">
-                                                            🎁 無料トライアル中（残り{8 - currentDay}日）
+                                                            🎁 無料トライアル中（残り{7 - currentDay}日）
                                                         </span>
                                                     );
                                                 } else if (isPremium) {
@@ -5697,7 +5724,9 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <button
                                                 onClick={() => {
                                                     // 1日目（登録日）に戻る
-                                                    localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, new Date().toISOString());
+                                                    const today = new Date();
+                                                    today.setHours(0, 0, 0, 0);
+                                                    localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, today.toISOString());
                                                     localStorage.removeItem(STORAGE_KEYS.FEATURES_COMPLETED);
                                                     window.location.reload();
                                                 }}
@@ -5740,10 +5769,12 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             </button>
                                         </div>
                                         <button
-                                            onClick={() => {
+                                            onClick={async () => {
                                                 // +7日進める（登録日を7日前に移動）
-                                                const currentReg = new Date(getRegistrationDate(userId));
+                                                const currentRegDateStr = await getRegistrationDate(userId);
+                                                const currentReg = new Date(currentRegDateStr);
                                                 currentReg.setDate(currentReg.getDate() - 7);
+                                                currentReg.setHours(0, 0, 0, 0);
                                                 localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, currentReg.toISOString());
                                                 window.location.reload();
                                             }}
@@ -5752,6 +5783,71 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                             <Icon name="ChevronRight" size={18} className="inline mr-1" />
                                             +7日進める
                                         </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* プレミアムモード切り替え */}
+                            <div className="border rounded-lg p-6">
+                                <h4 className="font-bold mb-4 flex items-center gap-2">
+                                    <Icon name="Crown" size={18} className="text-amber-600" />
+                                    プレミアムモード（開発用）
+                                </h4>
+                                <div className="space-y-4">
+                                    {/* 現在の状態表示 */}
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-600">現在の状態</span>
+                                            <span className={`text-lg font-bold ${
+                                                userProfile?.subscriptionStatus === 'active'
+                                                ? 'text-amber-600'
+                                                : 'text-gray-600'
+                                            }`}>
+                                                {userProfile?.subscriptionStatus === 'active' ? '👑 Premium会員' : '無料会員'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* モード切り替えボタン */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={() => {
+                                                const currentProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)) || {};
+                                                currentProfile.subscriptionStatus = 'none';
+                                                localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(currentProfile));
+                                                window.location.reload();
+                                            }}
+                                            className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+                                        >
+                                            <Icon name="User" size={18} className="inline mr-1" />
+                                            無料会員にする
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const currentProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)) || {};
+                                                currentProfile.subscriptionStatus = 'active';
+                                                localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(currentProfile));
+                                                window.location.reload();
+                                            }}
+                                            className="px-4 py-3 bg-[#FFF59A] text-gray-800 rounded-lg hover:opacity-90 transition font-medium relative overflow-hidden"
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                            <span className="relative z-10">
+                                                <Icon name="Crown" size={18} className="inline mr-1" />
+                                                Premium会員にする
+                                            </span>
+                                        </button>
+                                    </div>
+
+                                    {/* 注意事項 */}
+                                    <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg">
+                                        <div className="flex items-start gap-2">
+                                            <Icon name="AlertTriangle" size={16} className="text-orange-600 flex-shrink-0 mt-0.5" />
+                                            <div className="text-xs text-orange-700">
+                                                <p className="font-medium mb-1">開発用機能</p>
+                                                <p>この機能は開発・テスト用です。実際のサブスクリプション登録は別途実装されます。</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

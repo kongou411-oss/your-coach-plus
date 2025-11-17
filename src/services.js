@@ -429,10 +429,30 @@ const DataService = {
 
     // ワークアウトテンプレート保存
     saveWorkoutTemplate: async (userId, template) => {
+        try {
+            const templates = await DataService.getWorkoutTemplates(userId);
+            // 同じIDのテンプレートが既に存在する場合は更新、なければ追加
+            const existingIndex = templates.findIndex(t => t.id === template.id);
+            if (existingIndex >= 0) {
+                templates[existingIndex] = template;
+            } else {
+                templates.push(template);
+            }
+            await db.collection('workoutTemplates').doc(userId).set({ templates });
+        } catch (error) {
+            console.error('Error saving workout template:', error);
+        }
     },
 
     // ワークアウトテンプレート削除
     deleteWorkoutTemplate: async (userId, templateId) => {
+        try {
+            const templates = await DataService.getWorkoutTemplates(userId);
+            const filtered = templates.filter(t => t.id !== templateId);
+            await db.collection('workoutTemplates').doc(userId).set({ templates: filtered });
+        } catch (error) {
+            console.error('Error deleting workout template:', error);
+        }
     },
 
     // 食事テンプレート取得
@@ -448,10 +468,29 @@ const DataService = {
 
     // 食事テンプレート保存
     saveMealTemplate: async (userId, template) => {
+        try {
+            const templates = await DataService.getMealTemplates(userId);
+            const existingIndex = templates.findIndex(t => t.id === template.id);
+            if (existingIndex >= 0) {
+                templates[existingIndex] = template;
+            } else {
+                templates.push(template);
+            }
+            await db.collection('mealTemplates').doc(userId).set({ templates });
+        } catch (error) {
+            console.error('Error saving meal template:', error);
+        }
     },
 
     // 食事テンプレート削除
     deleteMealTemplate: async (userId, templateId) => {
+        try {
+            const templates = await DataService.getMealTemplates(userId);
+            const filtered = templates.filter(t => t.id !== templateId);
+            await db.collection('mealTemplates').doc(userId).set({ templates: filtered });
+        } catch (error) {
+            console.error('Error deleting meal template:', error);
+        }
     },
 
     // サプリメントテンプレート取得
@@ -467,10 +506,29 @@ const DataService = {
 
     // サプリメントテンプレート保存
     saveSupplementTemplate: async (userId, template) => {
+        try {
+            const templates = await DataService.getSupplementTemplates(userId);
+            const existingIndex = templates.findIndex(t => t.id === template.id);
+            if (existingIndex >= 0) {
+                templates[existingIndex] = template;
+            } else {
+                templates.push(template);
+            }
+            await db.collection('supplementTemplates').doc(userId).set({ templates });
+        } catch (error) {
+            console.error('Error saving supplement template:', error);
+        }
     },
 
     // サプリメントテンプレート削除
     deleteSupplementTemplate: async (userId, templateId) => {
+        try {
+            const templates = await DataService.getSupplementTemplates(userId);
+            const filtered = templates.filter(t => t.id !== templateId);
+            await db.collection('supplementTemplates').doc(userId).set({ templates: filtered });
+        } catch (error) {
+            console.error('Error deleting supplement template:', error);
+        }
     },
 
     // PG BASE チャット履歴取得

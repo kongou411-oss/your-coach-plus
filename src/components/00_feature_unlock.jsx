@@ -4,31 +4,14 @@ import { FEATURES, STORAGE_KEYS } from '../config.js';
 // ===== Feature Unlock Utilities =====
 // 機能開放システムのユーティリティ関数
 
-// 機能完了状態を取得（旧ONBOARDING_TRIGGERSとの互換性あり）
+// 機能完了状態を取得
 const getFeatureCompletionStatus = (userId) => {
     // LocalStorage優先
     const key = STORAGE_KEYS.FEATURES_COMPLETED;
-
-    // 新しい形式を優先
-    let stored = localStorage.getItem(key);
+    const stored = localStorage.getItem(key);
 
     if (stored) {
         return JSON.parse(stored);
-    }
-
-    // 旧形式（ONBOARDING_TRIGGERS）からの移行
-    const oldTriggers = localStorage.getItem(STORAGE_KEYS.ONBOARDING_TRIGGERS);
-    if (oldTriggers) {
-        const triggers = JSON.parse(oldTriggers);
-        const completion = {};
-        if (triggers.after_meal) completion.food = true;
-        if (triggers.after_training) completion.training = true;
-        if (triggers.after_condition) completion.condition = true;
-        if (triggers.after_analysis) completion.analysis = true;
-        // 新形式で保存
-        localStorage.setItem(key, JSON.stringify(completion));
-        console.log('[FeatureUnlock] Migrated from old format:', completion);
-        return completion;
     }
 
     return {};
@@ -119,33 +102,56 @@ const checkTrainingComplete = (todayRecord) => {
     return todayRecord.workouts.length > 0;
 };
 
-// 登録日を取得
-const getRegistrationDate = (userId) => {
-    // LocalStorageから登録日を取得
+// 登録日を取得（Firestore優先）
+const getRegistrationDate = async (userId) => {
+    // 1. LocalStorageを確認
     const stored = localStorage.getItem(STORAGE_KEYS.REGISTRATION_DATE);
-    if (!stored) {
-        // 初回起動時は現在日時を登録日とする
-        const now = new Date().toISOString();
-        localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, now);
-        return now;
+    if (stored) return stored;
+
+    // 2. Firestoreから取得
+    if (typeof db !== 'undefined' && userId) {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (userDoc.exists && userDoc.data().registrationDate) {
+                const regDate = userDoc.data().registrationDate.toDate().toISOString();
+                localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, regDate);
+                console.log('[FeatureUnlock] Fetched registrationDate from Firestore:', regDate);
+                return regDate;
+            }
+        } catch (error) {
+            console.warn('[FeatureUnlock] Failed to fetch registrationDate from Firestore:', error);
+        }
     }
-    return stored;
+
+    // 3. フォールバック: 現在日時
+    const now = new Date().toISOString();
+    localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, now);
+    console.log('[FeatureUnlock] Using current date as registrationDate:', now);
+    return now;
 };
 
-// 登録からの経過日数を計算
-const calculateDaysSinceRegistration = (userId) => {
-    const registrationDate = getRegistrationDate(userId);
+// 登録からの経過日数を計算（0日目から開始）
+const calculateDaysSinceRegistration = async (userId) => {
+    const registrationDate = await getRegistrationDate(userId);
     const now = new Date();
     const regDate = new Date(registrationDate);
-    const diffTime = Math.abs(now - regDate);
+
+    // 時刻を無視して日付のみで比較
+    const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const regDateOnly = new Date(regDate.getFullYear(), regDate.getMonth(), regDate.getDate());
+
+    const diffTime = nowDateOnly - regDateOnly;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays + 1; // 1日目から始まるように+1（0日目ではなく1日目から表示）
+
+    // 0日目から開始（登録日当日=0日目、翌日=1日目...）
+    // トライアル期間: 0-6日目（7日間）、制限開始: 7日目以降
+    return diffDays;
 };
 
 // 機能開放状態を計算
-const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
+const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false) => {
     const completionStatus = getFeatureCompletionStatus(userId);
-    const daysSinceReg = calculateDaysSinceRegistration(userId);
+    const daysSinceReg = await calculateDaysSinceRegistration(userId);
     const unlocked = [];
 
     // console.log('[calculateUnlockedFeatures] userId:', userId);
@@ -181,13 +187,13 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
     const isTrialActive = daysSinceReg < 7; // 0-6日目（7日間）はトライアル
     const hasPremiumAccess = isTrialActive || isPremium;
 
+    // 5. テンプレート機能 - 初日から全員に開放（無料会員は枠制限あり）
+    unlocked.push('template');
+    unlocked.push('training_template'); // 旧互換性
+
     // 6. Premium機能（トライアル中または有料会員のみ）
     // 一度開放されたら、completionStatusに記録されているので永続的に維持
     if (hasPremiumAccess) {
-        // テンプレート機能
-        unlocked.push('template');
-        unlocked.push('training_template'); // 旧互換性
-
         // 初回分析後に開放される機能
         if (completionStatus.directive) {
             unlocked.push('directive');
@@ -242,9 +248,9 @@ const calculateUnlockedFeatures = (userId, todayRecord, isPremium = false) => {
 };
 
 // 次に開放される機能を取得
-const getNextFeatureToUnlock = (userId, todayRecord) => {
+const getNextFeatureToUnlock = async (userId, todayRecord) => {
     const completionStatus = getFeatureCompletionStatus(userId);
-    const daysSinceReg = calculateDaysSinceRegistration(userId);
+    const daysSinceReg = await calculateDaysSinceRegistration(userId);
 
     // 0日目の段階的開放
     if (!completionStatus.food && !checkMealComplete(todayRecord)) {
@@ -322,8 +328,8 @@ const checkAndCompleteFeatures = async (userId, todayRecord) => {
 };
 
 // 8日目以降のPremium機能制限チェック
-const checkPremiumAccessRequired = (userId, featureId, userProfile) => {
-    const daysSinceReg = calculateDaysSinceRegistration(userId);
+const checkPremiumAccessRequired = async (userId, featureId, userProfile) => {
+    const daysSinceReg = await calculateDaysSinceRegistration(userId);
     const isPremium = userProfile?.subscriptionTier === 'premium';
 
     // トライアル期間中（0-7日）は全機能アクセス可能
@@ -332,8 +338,9 @@ const checkPremiumAccessRequired = (userId, featureId, userProfile) => {
     }
 
     // 8日目以降にPremium制限がかかる機能（7日間無料トライアル）
+    // テンプレート機能は除外（初日から全員利用可能、枠制限のみ）
     const premiumRestrictedFeatures = [
-        'directive', 'pg_base', 'template', 'routine', 'shortcut',
+        'directive', 'pg_base', 'routine', 'shortcut',
         'history', 'history_analysis', 'community', 'analysis', 'micronutrients'
     ];
 
@@ -368,6 +375,66 @@ const checkPremiumAccessRequired = (userId, featureId, userProfile) => {
     return { allowed: true, reason: 'free' };
 };
 
+// ===== テンプレート機能の制限チェック =====
+
+// トライアル中に作成されたテンプレートがロックされているかチェック
+const isTemplateLocked = async (template, userId, userProfile) => {
+    // Premium会員は常に利用可能
+    if (userProfile?.subscriptionStatus === 'active') return false;
+
+    // トライアル中に作成されたテンプレート
+    if (template.isTrialCreated) {
+        const daysSinceReg = await calculateDaysSinceRegistration(userId);
+        // 7日目以降はロック
+        return daysSinceReg >= 7;
+    }
+
+    return false;
+};
+
+// テンプレート作成可能かチェック（枠制限）
+const canCreateTemplate = async (type, templates, userId, userProfile) => {
+    // Premium会員は無制限
+    if (userProfile?.subscriptionStatus === 'active') return { canCreate: true, reason: 'premium' };
+
+    const daysSinceReg = await calculateDaysSinceRegistration(userId);
+
+    // トライアル中（0-6日目）は無制限
+    if (daysSinceReg < 7) return { canCreate: true, reason: 'trial' };
+
+    // 7日目以降は各1枠のみ（ロックされていないテンプレートをカウント）
+    const activeTemplates = [];
+    for (const template of templates) {
+        if (template.type === type) {
+            const locked = await isTemplateLocked(template, userId, userProfile);
+            if (!locked) {
+                activeTemplates.push(template);
+            }
+        }
+    }
+
+    if (activeTemplates.length < 1) {
+        return { canCreate: true, reason: 'free_slot_available' };
+    } else {
+        return {
+            canCreate: false,
+            reason: 'limit_reached',
+            message: '無料会員は食事・運動各1枠のみです。既存のテンプレートを編集または削除してください。'
+        };
+    }
+};
+
+// テンプレート作成時のメタデータを取得
+const getTemplateMetadata = async (userId) => {
+    const daysSinceReg = await calculateDaysSinceRegistration(userId);
+    const isTrialActive = daysSinceReg < 7;
+
+    return {
+        createdAt: new Date(),
+        isTrialCreated: isTrialActive // トライアル中に作成されたかフラグ
+    };
+};
+
 
 // グローバルに公開
 window.FEATURES = FEATURES;
@@ -388,3 +455,6 @@ window.calculateUnlockedFeatures = calculateUnlockedFeatures;
 window.getNextFeatureToUnlock = getNextFeatureToUnlock;
 window.checkAndCompleteFeatures = checkAndCompleteFeatures;
 window.checkPremiumAccessRequired = checkPremiumAccessRequired;
+window.isTemplateLocked = isTemplateLocked;
+window.canCreateTemplate = canCreateTemplate;
+window.getTemplateMetadata = getTemplateMetadata;

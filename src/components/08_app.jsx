@@ -465,8 +465,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                             // プロフィールが存在する既存ユーザー
                             setUser(firebaseUser);
+
+                            // 開発用：LocalStorageのsubscriptionStatusを優先（プレミアムモード切り替え用）
+                            const localProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
+                            if (localProfile.subscriptionStatus !== undefined) {
+                                profile.subscriptionStatus = localProfile.subscriptionStatus;
+                                // LocalStorageに保存して次回リロード時も反映されるようにする
+                                localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
+                            }
+
                             setUserProfile(profile);
-                            const days = calculateDaysSinceRegistration(firebaseUser.uid);
+                            const days = await calculateDaysSinceRegistration(firebaseUser.uid);
                             setUsageDays(days);
 
                             // 今日の記録を取得（機能開放判定に必要）
@@ -475,8 +484,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                             // 新しい機能開放システムで開放状態を計算
                             const isPremium = profile.subscriptionStatus === 'active';
-                            const unlocked = calculateUnlockedFeatures(firebaseUser.uid, todayRecord, isPremium);
-                            setUnlockedFeatures(unlocked);
+                            const unlocked = await calculateUnlockedFeatures(firebaseUser.uid, todayRecord, isPremium);
+                            
+                            setUnlockedFeatures(Array.isArray(unlocked) ? unlocked : []);
 
                             // 守破離の段階を更新（21日で離、7日で破）
                             if (days >= 21) setCurrentStage('離');
@@ -545,7 +555,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
             // 今日のルーティンを更新
             useEffect(() => {
-                if (unlockedFeatures.includes(FEATURES.ROUTINE.id)) {
+                if (Array.isArray(unlockedFeatures) && unlockedFeatures.includes(FEATURES.ROUTINE.id)) {
                     const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
                     const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
                     const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
@@ -575,42 +585,42 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         }
                         // 食事のショートカット
                         if (shortcut.action === 'open_meal') {
-                            const enabled = unlockedFeatures.includes('food');
+                            const enabled = Array.isArray(unlockedFeatures) && unlockedFeatures.includes('food');
                             return { ...shortcut, enabled };
                         }
                         // 運動のショートカット
                         if (shortcut.action === 'open_workout') {
-                            const enabled = unlockedFeatures.includes('training');
+                            const enabled = Array.isArray(unlockedFeatures) && unlockedFeatures.includes('training');
                             return { ...shortcut, enabled };
                         }
                         // コンディションのショートカット
                         if (shortcut.action === 'open_condition') {
-                            const enabled = unlockedFeatures.includes('condition');
+                            const enabled = Array.isArray(unlockedFeatures) && unlockedFeatures.includes('condition');
                             return { ...shortcut, enabled };
                         }
                         // 閃きは初回分析完了後
                         if (shortcut.action === 'open_idea') {
-                            const enabled = unlockedFeatures.includes('idea');
+                            const enabled = Array.isArray(unlockedFeatures) && unlockedFeatures.includes('idea');
                             return { ...shortcut, enabled };
                         }
                         // 分析のショートカット
                         if (shortcut.action === 'open_analysis') {
-                            const enabled = unlockedFeatures.includes('analysis');
+                            const enabled = (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('analysis'));
                             return { ...shortcut, enabled };
                         }
                         // 履歴のショートカット
                         if (shortcut.action === 'open_history') {
-                            const enabled = unlockedFeatures.includes('history');
+                            const enabled = (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history'));
                             return { ...shortcut, enabled };
                         }
                         // PGBASEのショートカット
                         if (shortcut.action === 'open_pgbase') {
-                            const enabled = unlockedFeatures.includes('pg_base');
+                            const enabled = (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base'));
                             return { ...shortcut, enabled };
                         }
                         // COMYのショートカット
                         if (shortcut.action === 'open_community') {
-                            const enabled = unlockedFeatures.includes('community');
+                            const enabled = (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community'));
                             return { ...shortcut, enabled };
                         }
                         return shortcut;
@@ -737,7 +747,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
             // 現在のルーティンを計算
             useEffect(() => {
-                if (!unlockedFeatures.includes(FEATURES.ROUTINE.id)) {
+                if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes(FEATURES.ROUTINE.id))) {
                     setCurrentRoutine(null);
                     return;
                 }
@@ -902,7 +912,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             }, []);
 
             // FABメニュー項目クリック
-            const handleFABItemClick = (type) => {
+            const handleFABItemClick = async (type) => {
                 // 分析
                 if (type === 'analysis') {
                     // コンディション記録が完了しているかチェック（6項目全て必須）
@@ -917,8 +927,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                 // PG BASE
                 if (type === 'pgbase') {
-                    if (!unlockedFeatures.includes('pg_base')) {
-                        const accessCheck = checkPremiumAccessRequired(
+                    if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base'))) {
+                        const accessCheck = await checkPremiumAccessRequired(
                             user?.uid,
                             'pg_base',
                             userProfile
@@ -937,8 +947,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                 // 履歴
                 if (type === 'history') {
-                    if (!unlockedFeatures.includes('history_graph')) {
-                        const accessCheck = checkPremiumAccessRequired(
+                    if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history_graph'))) {
+                        const accessCheck = await checkPremiumAccessRequired(
                             user?.uid,
                             'history',
                             userProfile
@@ -957,8 +967,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                 // COMY
                 if (type === 'comy') {
-                    if (!unlockedFeatures.includes('community')) {
-                        const accessCheck = checkPremiumAccessRequired(
+                    if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community'))) {
+                        const accessCheck = await checkPremiumAccessRequired(
                             user?.uid,
                             'community',
                             userProfile
@@ -983,7 +993,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 };
 
                 const featureId = featureMap[type];
-                if (!unlockedFeatures.includes(featureId)) {
+                if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes(featureId))) {
                     const feature = Object.values(FEATURES).find(f => f.id === featureId);
                     if (feature) {
                         const triggerMessages = {
@@ -1281,7 +1291,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         </div>
 
                         {/* ルーティンバナー */}
-                        {unlockedFeatures.includes(FEATURES.ROUTINE.id) && currentRoutine && !currentRoutine.isRestDay && (
+                        {(Array.isArray(unlockedFeatures) && unlockedFeatures.includes(FEATURES.ROUTINE.id)) && currentRoutine && !currentRoutine.isRestDay && (
                             <div className="px-4 py-3 bg-white border-b">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -1550,15 +1560,23 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         />
                     )}
 
-                    {/* 運動編集モーダル */}
+                    {/* 運動編集モーダル（食事と同じ仕様に統一） */}
                     {editingWorkout && addViewType === 'workout' && (
-                        <EditWorkoutModal
-                            workout={editingWorkout}
+                        <AddItemView
+                            type="workout"
+                            selectedDate={currentDate}
+                            editingWorkout={editingWorkout}
                             onClose={() => {
                                 setEditingWorkout(null);
                                 setShowAddView(false);
                             }}
-                            onUpdate={async (updatedWorkout, keepModalOpen = true) => {
+                            user={user}
+                            userProfile={userProfile}
+                            unlockedFeatures={unlockedFeatures}
+                            usageDays={usageDays}
+                            currentRoutine={currentRoutine}
+                            dailyRecord={dailyRecord}
+                            onUpdate={async (updatedWorkout) => {
                                 const userId = user?.uid;
                                 try {
                                     // 表示中の日付（currentDate）の記録を取得
@@ -1654,10 +1672,10 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     }
 
                                     // 新しい機能開放システム
-                                    const oldUnlocked = [...unlockedFeatures];
+                                    const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
                                     const isPremium = userProfile?.subscriptionStatus === 'active';
-                                    const newUnlocked = calculateUnlockedFeatures(userId, updatedRecord, isPremium);
-                                    setUnlockedFeatures(newUnlocked);
+                                    const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
+                                    setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
 
                                     // 新しく開放された機能があれば誘導モーダルを表示
                                     if (!oldUnlocked.includes('training') && newUnlocked.includes('training')) {
@@ -1778,12 +1796,12 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     }
 
                                     // 新しい機能開放システム：記録追加後に完了チェックと機能開放状態を再計算
-                                    const oldUnlocked = [...unlockedFeatures];
+                                    const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
                                     const isPremium = userProfile?.subscriptionStatus === 'active';
-                                    const newUnlocked = calculateUnlockedFeatures(userId, updatedRecord, isPremium);
-                                    setUnlockedFeatures(newUnlocked);
+                                    const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
+                                    setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
 
                                     // 新しく開放された機能があれば誘導モーダルを表示
                                     if (!oldUnlocked.includes('training') && newUnlocked.includes('training')) {
@@ -1903,12 +1921,12 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     }
 
                                     // 新しい機能開放システム：記録追加後に完了チェックと機能開放状態を再計算
-                                    const oldUnlocked = [...unlockedFeatures];
+                                    const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
                                     const isPremium = userProfile?.subscriptionStatus === 'active';
-                                    const newUnlocked = calculateUnlockedFeatures(userId, updatedRecord, isPremium);
-                                    setUnlockedFeatures(newUnlocked);
+                                    const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
+                                    setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
 
                                     // 新しく開放された機能があれば誘導モーダルを表示
                                     if (!oldUnlocked.includes('training') && newUnlocked.includes('training')) {
@@ -2838,7 +2856,7 @@ AIコーチなどの高度な機能が解放されます。
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 <button
                                     onClick={() => {
-                                        if (!unlockedFeatures.includes('history_graph')) {
+                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history_graph'))) {
                                             const accessCheck = checkPremiumAccessRequired(
                                                 user?.uid,
                                                 'history',
@@ -2855,18 +2873,18 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
-                                        unlockedFeatures.includes('history_graph') ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
+                                        (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history_graph')) ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 >
                                     <Icon name="Calendar" size={18} className="text-blue-600" />
                                     <span className="text-xs text-gray-600">履歴</span>
-                                    {!unlockedFeatures.includes('history_graph') && (
+                                    {!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history_graph')) && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
                                     )}
                                 </button>
                                 <button
                                     onClick={() => {
-                                        if (!unlockedFeatures.includes('pg_base')) {
+                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base'))) {
                                             const accessCheck = checkPremiumAccessRequired(
                                                 user?.uid,
                                                 'pg_base',
@@ -2883,18 +2901,18 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
-                                        unlockedFeatures.includes('pg_base') ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
+                                        (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 >
                                     <Icon name="BookOpen" size={18} className="text-blue-600" />
                                     <span className="text-xs text-gray-600">教科書</span>
-                                    {!unlockedFeatures.includes('pg_base') && (
+                                    {!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
                                     )}
                                 </button>
                                 <button
                                     onClick={() => {
-                                        if (!unlockedFeatures.includes('community')) {
+                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community'))) {
                                             const accessCheck = checkPremiumAccessRequired(
                                                 user?.uid,
                                                 'community',
@@ -2911,12 +2929,12 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
-                                        unlockedFeatures.includes('community') ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
+                                        (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community')) ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 >
                                     <Icon name="Users" size={18} className="text-blue-600" />
                                     <span className="text-xs text-gray-600">COMY</span>
-                                    {!unlockedFeatures.includes('community') && (
+                                    {!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community')) && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
                                     )}
                                 </button>
@@ -2998,7 +3016,7 @@ AIコーチなどの高度な機能が解放されます。
                                 {/* ②履歴 */}
                                 <button
                                     onClick={() => {
-                                        if (!unlockedFeatures.includes('history')) {
+                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history'))) {
                                             // 機能未開放の場合は開けない
                                             return;
                                         }
@@ -3011,7 +3029,7 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showHistoryV10 ? 'bg-blue-100' : (unlockedFeatures.includes('history') ? 'hover:bg-gray-50' : 'opacity-50')
+                                        showHistoryV10 ? 'bg-blue-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history')) ? 'hover:bg-gray-50' : 'opacity-50')
                                     }`}
                                 >
                                     <Icon name="TrendingUp" size={20} className={showHistoryV10 ? 'text-blue-700' : 'text-blue-600'} />
@@ -3023,7 +3041,7 @@ AIコーチなどの高度な機能が解放されます。
                                 {/* ③PGBASE */}
                                 <button
                                     onClick={async () => {
-                                        if (!unlockedFeatures.includes('pg_base')) {
+                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base'))) {
                                             // 機能未開放の場合は開けない
                                             return;
                                         }
@@ -3036,7 +3054,7 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showPGBaseView ? 'bg-cyan-100' : (unlockedFeatures.includes('pg_base') ? 'hover:bg-gray-50' : 'opacity-50')
+                                        showPGBaseView ? 'bg-cyan-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) ? 'hover:bg-gray-50' : 'opacity-50')
                                     }`}
                                 >
                                     <Icon name="BookOpen" size={20} className={showPGBaseView ? 'text-cyan-700' : 'text-cyan-600'} />
@@ -3048,7 +3066,7 @@ AIコーチなどの高度な機能が解放されます。
                                 {/* ④COMY */}
                                 <button
                                     onClick={async () => {
-                                        if (!unlockedFeatures.includes('community')) {
+                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community'))) {
                                             // 機能未開放の場合は開けない
                                             return;
                                         }
@@ -3061,7 +3079,7 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showCOMYView ? 'bg-fuchsia-100' : (unlockedFeatures.includes('community') ? 'hover:bg-gray-50' : 'opacity-50')
+                                        showCOMYView ? 'bg-fuchsia-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community')) ? 'hover:bg-gray-50' : 'opacity-50')
                                     }`}
                                 >
                                     <Icon name="Users" size={20} className={showCOMYView ? 'text-fuchsia-700' : 'text-fuchsia-600'} />

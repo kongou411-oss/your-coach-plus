@@ -31,7 +31,7 @@ const AddMealModal = ({
     initialTab = 'food' // 初期タブ: 'food', 'recipe', 'supplement'
 }) => {
     // Props確認（デバッグ用）
-    console.log('[AddMealModal] 初期タブ:', initialTab);
+    
 
     // ===== 編集モード判定 =====
     const isEditMode = !!editingMeal;
@@ -45,6 +45,7 @@ const AddMealModal = ({
     const [showSearchModal, setShowSearchModal] = useState(false);
     const [showAIFoodRecognition, setShowAIFoodRecognition] = useState(false);
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+    const [showTemplateInfoModal, setShowTemplateInfoModal] = useState(false); // テンプレート仕様説明モーダル
     const [showCustomForm, setShowCustomForm] = useState(false);
     const [showHelpModal, setShowHelpModal] = useState(false); // ヘルプモーダル
     const [showCustomGuide, setShowCustomGuide] = useState(false); // カスタム作成ガイドモーダル（包括的）
@@ -199,6 +200,8 @@ const AddMealModal = ({
             const loadTemplates = async () => {
                 try {
                     const templates = await window.DataService.getMealTemplates(user.uid);
+                    console.log("[19_add_meal_modal] テンプレートデータ（isTrialCreated確認用）:", templates?.map(t => ({id: t.id, name: t.name, isTrialCreated: t.isTrialCreated})));
+                    
                     setMealTemplates(templates || []);
                 } catch (error) {
                     console.error('テンプレート読み込みエラー:', error);
@@ -516,16 +519,47 @@ const AddMealModal = ({
             return;
         }
 
+        // 無料会員の枠制限チェック（7日目以降）
+        const isFreeUser = userProfile?.subscriptionStatus !== 'active' && usageDays >= 7;
+        if (isFreeUser && mealTemplates.length >= 1) {
+            toast.error('無料会員は食事テンプレートを1枠まで作成できます。既存のテンプレートを削除してから新しいテンプレートを作成するか、Premium会員にアップグレードしてください。');
+            return;
+        }
+
         const templateName = prompt('テンプレート名を入力してください', mealName || '');
         if (!templateName || !templateName.trim()) {
             return;
         }
 
+        // トライアル期間中（0-6日目）かどうかを判定
+        const isTrialPeriod = usageDays < 7;
+        console.log("[19_add_meal_modal] テンプレート保存:", {usageDays, isTrialPeriod, isFreeUser, templatesCount: mealTemplates.length});
+
+        // undefinedを再帰的に除去する関数
+        const removeUndefined = (obj) => {
+            if (Array.isArray(obj)) {
+                return obj.map(item => removeUndefined(item));
+            } else if (obj !== null && typeof obj === 'object') {
+                const cleaned = {};
+                Object.keys(obj).forEach(key => {
+                    if (obj[key] !== undefined) {
+                        cleaned[key] = removeUndefined(obj[key]);
+                    }
+                });
+                return cleaned;
+            }
+            return obj;
+        };
+
+        // addedItems配列全体からundefinedを除去
+        const cleanedItems = removeUndefined(addedItems);
+
         const template = {
             id: Date.now().toString(), // 一意のIDを生成
             name: templateName.trim(),
-            items: addedItems,
+            items: cleanedItems,
             createdAt: new Date().toISOString(),
+            isTrialCreated: isTrialPeriod, // トライアル期間中に作成されたかを記録
         };
 
         try {
@@ -1399,9 +1433,18 @@ const AddMealModal = ({
                                 <Icon name="BookMarked" size={20} />
                                 テンプレートから選択
                             </h3>
-                            <button onClick={() => setShowTemplateSelector(false)} className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full">
-                                <Icon name="X" size={20} />
-                            </button>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setShowTemplateInfoModal(true)}
+                                    className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                                    title="テンプレートについて"
+                                >
+                                    <Icon name="Info" size={18} className="text-[#4A9EFF]" />
+                                </button>
+                                <button onClick={() => setShowTemplateSelector(false)} className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full">
+                                    <Icon name="X" size={20} />
+                                </button>
+                            </div>
                         </div>
 
                         {/* テンプレート一覧 */}
@@ -1417,7 +1460,7 @@ const AddMealModal = ({
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {mealTemplates.map((template) => {
+                                    {mealTemplates.map((template, index) => {
                                     const totalPFC = template.items.reduce((sum, item) => {
                                         const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
                                         const ratio = isCountUnit ? item.amount : item.amount / 100;
@@ -1429,21 +1472,39 @@ const AddMealModal = ({
                                         };
                                     }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
 
+                                    // 無料会員：最初に作成したテンプレート（index 0）のみ使用可能
+                                    // プレミアム会員以外は、2枠目以降（index 1+）は全てロック
+                                    const isLocked = userProfile?.subscriptionStatus !== 'active' && index !== 0;
+                                    console.log('[19_add_meal_modal] テンプレートロック判定:', {templateName: template.name, index, subscriptionStatus: userProfile?.subscriptionStatus, isLocked});
+
                                     return (
-                                        <details key={template.id} className="bg-gray-50 border-2 border-gray-200 rounded-lg group">
+                                        <details key={template.id} className={`border-2 rounded-lg group ${isLocked ? 'bg-gray-100 border-gray-300 opacity-60' : 'bg-gray-50 border-gray-200'}`}>
                                             <summary className="p-3 cursor-pointer list-none">
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <div className="font-semibold text-gray-800">{template.name}</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="font-semibold text-gray-800">{template.name}</div>
+                                                        {isLocked && (
+                                                            <Icon name="Lock" size={16} className="text-amber-600" title="無料会員は1枠目のみ使用可能" />
+                                                        )}
+                                                    </div>
                                                     <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={(e) => {
                                                                 e.preventDefault();
                                                                 e.stopPropagation();
+                                                                if (isLocked) {
+                                                                    toast.error('このテンプレートは使用できません。無料会員は1枠目のテンプレートのみ使用可能です。Premium会員にアップグレードすると全てのテンプレートが使用できます。');
+                                                                    return;
+                                                                }
                                                                 loadTemplate(template);
                                                                 setShowTemplateSelector(false);
                                                             }}
-                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
-                                                            title="編集"
+                                                            className={`min-w-[44px] min-h-[44px] rounded-lg shadow-md flex items-center justify-center transition border-2 ${
+                                                                isLocked
+                                                                ? 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
+                                                                : 'bg-white text-[#4A9EFF] hover:bg-blue-50 border-[#4A9EFF]'
+                                                            }`}
+                                                            title={isLocked ? 'トライアル期間中作成のため利用不可' : '編集'}
                                                         >
                                                             <Icon name="Edit" size={18} />
                                                         </button>
@@ -1481,10 +1542,18 @@ const AddMealModal = ({
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
+                                                        if (isLocked) {
+                                                            toast.error('このテンプレートは使用できません。無料会員は1枠目のテンプレートのみ使用可能です。Premium会員にアップグレードすると全てのテンプレートが使用できます。');
+                                                            return;
+                                                        }
                                                         addFromTemplate(template);
                                                         setShowTemplateSelector(false);
                                                     }}
-                                                    className="w-full px-4 py-2 bg-[#4A9EFF] text-white rounded-lg font-bold hover:bg-[#3b8fef] transition text-sm"
+                                                    className={`w-full px-4 py-2 rounded-lg font-bold transition text-sm ${
+                                                        isLocked
+                                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                        : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
+                                                    }`}
                                                 >
                                                     記録
                                                 </button>
@@ -1530,6 +1599,143 @@ const AddMealModal = ({
                 </div>
             )}
 
+            {/* テンプレート仕様説明モーダル */}
+            {showTemplateInfoModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 z-[70] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto">
+                        {/* ヘッダー */}
+                        <div className="bg-gradient-to-r from-[#4A9EFF] to-[#3B82F6] text-white p-4 flex justify-between items-center sticky top-0">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <Icon name="Info" size={20} />
+                                テンプレートについて
+                            </h3>
+                            <button
+                                onClick={() => setShowTemplateInfoModal(false)}
+                                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                            >
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+
+                        {/* 内容 */}
+                        <div className="p-6 space-y-6">
+                            {/* テンプレートとは */}
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <Icon name="BookMarked" size={18} className="text-[#4A9EFF]" />
+                                    テンプレートとは
+                                </h4>
+                                <p className="text-sm text-gray-700 leading-relaxed">
+                                    よく食べる食事を登録しておくことで、毎回同じ食材を検索・追加する手間を省くことができます。
+                                </p>
+                            </div>
+
+                            {/* 無料会員の制限 */}
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <Icon name="User" size={18} className="text-orange-600" />
+                                    無料会員の制限
+                                </h4>
+                                <div className="space-y-2 text-sm text-gray-700">
+                                    <div className="flex items-start gap-2">
+                                        <Icon name="Lock" size={16} className="text-orange-600 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <div className="font-semibold">1枠のみ使用可能</div>
+                                            <div className="text-xs text-gray-600 mt-1">
+                                                無料会員は<span className="font-bold text-orange-600">最初に作成したテンプレート（1枠目）のみ</span>使用できます。2枠目以降はロックされます。
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <Icon name="Edit" size={16} className="text-orange-600 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <div className="font-semibold">編集・削除は可能</div>
+                                            <div className="text-xs text-gray-600 mt-1">
+                                                1枠目のテンプレートは自由に編集・削除できます。削除後に新しいテンプレートを作成することも可能です。
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Premium会員の特典 */}
+                            <div className="bg-gradient-to-r from-[#FFF59A] to-[#FFF176] border border-amber-300 rounded-lg p-4">
+                                <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <Icon name="Crown" size={18} className="text-amber-600" />
+                                    Premium会員の特典
+                                </h4>
+                                <div className="space-y-2 text-sm text-gray-700">
+                                    <div className="flex items-start gap-2">
+                                        <Icon name="Unlock" size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <div className="font-semibold">無制限で使用可能</div>
+                                            <div className="text-xs text-gray-600 mt-1">
+                                                Premium会員は<span className="font-bold text-amber-600">何個でもテンプレートを作成・使用</span>できます。
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <Icon name="Star" size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <div className="font-semibold">解約後の制限</div>
+                                            <div className="text-xs text-gray-600 mt-1">
+                                                Premium会員を解約すると、2枠目以降のテンプレートはロックされ、1枠目のみ使用可能になります。
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 使い方 */}
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <Icon name="Lightbulb" size={18} className="text-[#4A9EFF]" />
+                                    使い方
+                                </h4>
+                                <div className="space-y-3 text-sm text-gray-700">
+                                    <div className="flex items-start gap-2">
+                                        <div className="bg-[#4A9EFF] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</div>
+                                        <div>
+                                            <div className="font-semibold">テンプレートの作成</div>
+                                            <div className="text-xs text-gray-600 mt-1">
+                                                食材を追加後、「テンプレートとして保存」ボタンで保存できます。
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <div className="bg-[#4A9EFF] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</div>
+                                        <div>
+                                            <div className="font-semibold">テンプレートの使用</div>
+                                            <div className="text-xs text-gray-600 mt-1">
+                                                「テンプレートから選択」ボタンから、保存したテンプレートを呼び出せます。
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <div className="bg-[#4A9EFF] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</div>
+                                        <div>
+                                            <div className="font-semibold">テンプレートの管理</div>
+                                            <div className="text-xs text-gray-600 mt-1">
+                                                設定 → データ管理 → テンプレート管理から、全てのテンプレートを編集・削除できます。
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* フッター */}
+                        <div className="border-t p-4 bg-gray-50">
+                            <button
+                                onClick={() => setShowTemplateInfoModal(false)}
+                                className="w-full px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-semibold hover:bg-[#3B82F6] transition"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* カスタムアイテム作成モーダル */}
             {showCustomForm && (

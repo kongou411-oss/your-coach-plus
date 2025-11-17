@@ -2836,7 +2836,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                 {/* 運動セクション */}
                 {/* 運動セクション - 食事記録完了後に開放 */}
-                {unlockedFeatures.includes('training') && (
+                {(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('training')) && (
                     <div id="workout-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
                         <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-red-50 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
@@ -3064,7 +3064,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 )}
 
                 {/* 体調セクション - 運動記録完了後に開放 */}
-                {unlockedFeatures.includes('condition') && (
+                {(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('condition')) && (
                     <div id="condition-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
                     <div className="px-6 py-4 bg-gradient-to-r from-red-50 to-pink-50 flex items-center justify-between border-b-2 border-gray-200">
                         <div className="flex items-center gap-3">
@@ -3114,7 +3114,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
                                             const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
                                             // 新しく開放された機能があればコールバック
@@ -3175,7 +3175,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
                                             const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
                                             // 新しく開放された機能があればコールバック
@@ -3236,7 +3236,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
                                             const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
                                             // 新しく開放された機能があればコールバック
@@ -3297,7 +3297,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
                                             const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
                                             // 新しく開放された機能があればコールバック
@@ -3358,7 +3358,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
                                             const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
                                             // 新しく開放された機能があればコールバック
@@ -3419,7 +3419,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             const oldUnlocked = [...unlockedFeatures];
                                             await checkAndCompleteFeatures(userId, updated);
                                             const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = calculateUnlockedFeatures(userId, updated, isPremium);
+                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
                                             setUnlockedFeatures(newUnlocked);
 
                                             // 新しく開放された機能があればコールバック
@@ -3443,7 +3443,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 )}
 
                 {/* 閃きセクション - 初回分析完了後に開放 */}
-                {unlockedFeatures.includes('idea') && (
+                {(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('idea')) && (
                     <div id="idea-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
                         <div className="px-6 py-4 bg-[#FFF59A]/10 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
@@ -3480,7 +3480,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 )}
 
                 {/* 分析ボタン - コンディション完了後に開放 */}
-                {unlockedFeatures.includes('analysis') && (
+                {(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('analysis')) && (
                     <div id="analysis-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
                         <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between border-b-2 border-gray-200">
                             <div className="flex items-center gap-3">
