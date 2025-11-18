@@ -533,15 +533,14 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         // コンディションデータ（全項目1-5の値として扱う）
         const sleepHours = record.conditions?.sleepHours || 0;
         const sleepQuality = record.conditions?.sleepQuality || 0;
-        const appetite = record.conditions?.appetite || 0;
         const digestion = record.conditions?.digestion || 0;
         const focus = record.conditions?.focus || 0;
         const stress = record.conditions?.stress || 0;
 
-        // コンディションスコア計算（6項目すべてが5なら100点）
+        // コンディションスコア計算（5項目すべてが5なら100点）
         // 各項目1-5点 → 平均 → 20倍して100点満点に
         const conditionScore = Math.round(
-            ((sleepHours + sleepQuality + appetite + digestion + focus + stress) / 6) * 20
+            ((sleepHours + sleepQuality + digestion + focus + stress) / 5) * 20
         );
 
         return {
@@ -581,7 +580,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
                 score: conditionScore,
                 sleep: Math.round((sleepHours / 5) * 100),
                 quality: Math.round((sleepQuality / 5) * 100),
-                appetite: Math.round((appetite / 5) * 100),
                 digestion: Math.round((digestion / 5) * 100),
                 focus: Math.round((focus / 5) * 100),
                 stress: Math.round((stress / 5) * 100)
@@ -792,7 +790,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             condition: {
                 sleep_hours: todayRecord.conditions?.sleepHours || 0,
                 sleep_quality: todayRecord.conditions?.sleepQuality || 0,
-                appetite: todayRecord.conditions?.appetite || 0,
                 gut_health: todayRecord.conditions?.digestion || 0,
                 concentration: todayRecord.conditions?.focus || 0,
                 stress_level: todayRecord.conditions?.stress || 0
@@ -915,7 +912,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 ### コンディション
 - 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5（5=9h以上、4=8h、3=7h、2=6h、1=5h以下）
 - 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5（5=最高、1=最悪）
-- 食欲: ${todayRecord.conditions?.appetite || 0}/5（5=最適、1=なし）
 - 腸内環境: ${todayRecord.conditions?.digestion || 0}/5（5=最高、1=不調）
 - 集中力: ${todayRecord.conditions?.focus || 0}/5（5=最高、1=最低）
 - ストレス: ${todayRecord.conditions?.stress || 0}/5（5=なし、4=低、3=普通、2=高、1=極大）
@@ -948,11 +944,10 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 ### コンディションスコア: ${scores ? scores.condition.score : 0}/100
 - 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5（スコア${scores ? scores.condition.sleep : 0}/100）
 - 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5（スコア${scores ? scores.condition.quality : 0}/100）
-- 食欲: ${todayRecord.conditions?.appetite || 0}/5（スコア${scores ? scores.condition.appetite : 0}/100）
 - 腸内環境: ${todayRecord.conditions?.digestion || 0}/5（スコア${scores ? scores.condition.digestion : 0}/100）
 - 集中力: ${todayRecord.conditions?.focus || 0}/5（スコア${scores ? scores.condition.focus : 0}/100）
 - ストレス: ${todayRecord.conditions?.stress || 0}/5（スコア${scores ? scores.condition.stress : 0}/100）
-- 総合: 上記6項目の平均×20
+- 総合: 上記5項目の平均×20
 
 ## 出力形式（厳守）
 
@@ -1040,7 +1035,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 ### コンディションスコア: ${scores ? scores.condition.score : 0}/100
 - 睡眠時間: ${todayRecord.conditions?.sleepHours || 0}/5（スコア${scores ? scores.condition.sleep : 0}/100）
 - 睡眠の質: ${todayRecord.conditions?.sleepQuality || 0}/5（スコア${scores ? scores.condition.quality : 0}/100）
-- 食欲: ${scores ? scores.condition.appetite : 0}/100
 - 腸内環境: ${scores ? scores.condition.digestion : 0}/100
 - 集中力: ${scores ? scores.condition.focus : 0}/100
 - ストレス: ${scores ? scores.condition.stress : 0}/100

@@ -126,7 +126,9 @@
       "Bash(\"C:\\Users\\yourc\\yourcoach_new\\fatty_stats.json\")",
       "Bash(cmd /c xcopy:*)",
       "Bash(git rev-parse:*)",
-      "Bash(time /t:*)"
+      "Bash(time /t:*)",
+      "Bash(ping:*)",
+      "Bash(start http://localhost:8001)"
     ],
     "deny": [],
     "ask": []

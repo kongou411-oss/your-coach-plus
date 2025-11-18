@@ -3098,7 +3098,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 ].map(item => (
                                     <button
                                         key={item.value}
-                                        onClick={async () => {
+                                        onClick={() => {
                                             const updated = {
                                                 ...dailyRecord,
                                                 conditions: {
@@ -3106,21 +3106,26 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     sleepHours: item.value
                                                 }
                                             };
+                                            // 即座にUIを更新
                                             setDailyRecord(updated);
+
+                                            // 非同期処理はバックグラウンドで実行
                                             const userId = user?.uid;
-                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                            (async () => {
+                                                await DataService.saveDailyRecord(userId, currentDate, updated);
 
-                                            // 機能開放チェック
-                                            const oldUnlocked = [...unlockedFeatures];
-                                            await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
-                                            setUnlockedFeatures(newUnlocked);
+                                                // 機能開放チェック
+                                                const oldUnlocked = [...unlockedFeatures];
+                                                await checkAndCompleteFeatures(userId, updated);
+                                                const isPremium = profile?.subscriptionStatus === 'active';
+                                                const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
+                                                setUnlockedFeatures(newUnlocked);
 
-                                            // 新しく開放された機能があればコールバック
-                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
-                                                onFeatureUnlocked('analysis');
-                                            }
+                                                // 新しく開放された機能があればコールバック
+                                                if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                                    onFeatureUnlocked('analysis');
+                                                }
+                                            })();
                                         }}
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.sleepHours) || 0)
@@ -3159,7 +3164,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 ].map(item => (
                                     <button
                                         key={item.value}
-                                        onClick={async () => {
+                                        onClick={() => {
                                             const updated = {
                                                 ...dailyRecord,
                                                 conditions: {
@@ -3167,85 +3172,29 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     sleepQuality: item.value
                                                 }
                                             };
+                                            // 即座にUIを更新
                                             setDailyRecord(updated);
+
+                                            // 非同期処理はバックグラウンドで実行
                                             const userId = user?.uid;
-                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                            (async () => {
+                                                await DataService.saveDailyRecord(userId, currentDate, updated);
 
-                                            // 機能開放チェック
-                                            const oldUnlocked = [...unlockedFeatures];
-                                            await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
-                                            setUnlockedFeatures(newUnlocked);
+                                                // 機能開放チェック
+                                                const oldUnlocked = [...unlockedFeatures];
+                                                await checkAndCompleteFeatures(userId, updated);
+                                                const isPremium = profile?.subscriptionStatus === 'active';
+                                                const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
+                                                setUnlockedFeatures(newUnlocked);
 
-                                            // 新しく開放された機能があればコールバック
-                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
-                                                onFeatureUnlocked('analysis');
-                                            }
+                                                // 新しく開放された機能があればコールバック
+                                                if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                                    onFeatureUnlocked('analysis');
+                                                }
+                                            })();
                                         }}
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.sleepQuality) || 0)
-                                                ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
-                                        }`}
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* 食欲 */}
-                        <div className="py-2 px-3 bg-gray-50 rounded-lg">
-                            <div className="mb-2">
-                                <span className="text-sm text-gray-600 font-bold">食欲</span>
-                            </div>
-                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
-                                {/* スライド背景 */}
-                                {dailyRecord.conditions?.appetite && (
-                                    <div
-                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
-                                        style={{
-                                            left: `calc(${((dailyRecord.conditions.appetite - 1) / 5) * 100}% + 0.375rem)`,
-                                            width: 'calc(20% - 0.375rem)'
-                                        }}
-                                    />
-                                )}
-                                {[
-                                    { value: 1, label: 'なし' },
-                                    { value: 2, label: '少' },
-                                    { value: 3, label: '普通' },
-                                    { value: 4, label: '良好' },
-                                    { value: 5, label: '最適' }
-                                ].map(item => (
-                                    <button
-                                        key={item.value}
-                                        onClick={async () => {
-                                            const updated = {
-                                                ...dailyRecord,
-                                                conditions: {
-                                                    ...(dailyRecord.conditions || {}),
-                                                    appetite: item.value
-                                                }
-                                            };
-                                            setDailyRecord(updated);
-                                            const userId = user?.uid;
-                                            await DataService.saveDailyRecord(userId, currentDate, updated);
-
-                                            // 機能開放チェック
-                                            const oldUnlocked = [...unlockedFeatures];
-                                            await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
-                                            setUnlockedFeatures(newUnlocked);
-
-                                            // 新しく開放された機能があればコールバック
-                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
-                                                onFeatureUnlocked('analysis');
-                                            }
-                                        }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
-                                            item.value === ((dailyRecord.conditions?.appetite) || 0)
                                                 ? 'text-white shadow-sm'
                                                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
                                         }`}
@@ -3281,7 +3230,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 ].map(item => (
                                     <button
                                         key={item.value}
-                                        onClick={async () => {
+                                        onClick={() => {
                                             const updated = {
                                                 ...dailyRecord,
                                                 conditions: {
@@ -3289,21 +3238,26 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     digestion: item.value
                                                 }
                                             };
+                                            // 即座にUIを更新
                                             setDailyRecord(updated);
+
+                                            // 非同期処理はバックグラウンドで実行
                                             const userId = user?.uid;
-                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                            (async () => {
+                                                await DataService.saveDailyRecord(userId, currentDate, updated);
 
-                                            // 機能開放チェック
-                                            const oldUnlocked = [...unlockedFeatures];
-                                            await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
-                                            setUnlockedFeatures(newUnlocked);
+                                                // 機能開放チェック
+                                                const oldUnlocked = [...unlockedFeatures];
+                                                await checkAndCompleteFeatures(userId, updated);
+                                                const isPremium = profile?.subscriptionStatus === 'active';
+                                                const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
+                                                setUnlockedFeatures(newUnlocked);
 
-                                            // 新しく開放された機能があればコールバック
-                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
-                                                onFeatureUnlocked('analysis');
-                                            }
+                                                // 新しく開放された機能があればコールバック
+                                                if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                                    onFeatureUnlocked('analysis');
+                                                }
+                                            })();
                                         }}
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.digestion) || 0)
@@ -3342,7 +3296,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 ].map(item => (
                                     <button
                                         key={item.value}
-                                        onClick={async () => {
+                                        onClick={() => {
                                             const updated = {
                                                 ...dailyRecord,
                                                 conditions: {
@@ -3350,21 +3304,26 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     focus: item.value
                                                 }
                                             };
+                                            // 即座にUIを更新
                                             setDailyRecord(updated);
+
+                                            // 非同期処理はバックグラウンドで実行
                                             const userId = user?.uid;
-                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                            (async () => {
+                                                await DataService.saveDailyRecord(userId, currentDate, updated);
 
-                                            // 機能開放チェック
-                                            const oldUnlocked = [...unlockedFeatures];
-                                            await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
-                                            setUnlockedFeatures(newUnlocked);
+                                                // 機能開放チェック
+                                                const oldUnlocked = [...unlockedFeatures];
+                                                await checkAndCompleteFeatures(userId, updated);
+                                                const isPremium = profile?.subscriptionStatus === 'active';
+                                                const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
+                                                setUnlockedFeatures(newUnlocked);
 
-                                            // 新しく開放された機能があればコールバック
-                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
-                                                onFeatureUnlocked('analysis');
-                                            }
+                                                // 新しく開放された機能があればコールバック
+                                                if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                                    onFeatureUnlocked('analysis');
+                                                }
+                                            })();
                                         }}
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.focus) || 0)
@@ -3403,7 +3362,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 ].map(item => (
                                     <button
                                         key={item.value}
-                                        onClick={async () => {
+                                        onClick={() => {
                                             const updated = {
                                                 ...dailyRecord,
                                                 conditions: {
@@ -3411,21 +3370,26 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     stress: item.value
                                                 }
                                             };
+                                            // 即座にUIを更新
                                             setDailyRecord(updated);
+
+                                            // 非同期処理はバックグラウンドで実行
                                             const userId = user?.uid;
-                                            await DataService.saveDailyRecord(userId, currentDate, updated);
+                                            (async () => {
+                                                await DataService.saveDailyRecord(userId, currentDate, updated);
 
-                                            // 機能開放チェック
-                                            const oldUnlocked = [...unlockedFeatures];
-                                            await checkAndCompleteFeatures(userId, updated);
-                                            const isPremium = profile?.subscriptionStatus === 'active';
-                                            const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
-                                            setUnlockedFeatures(newUnlocked);
+                                                // 機能開放チェック
+                                                const oldUnlocked = [...unlockedFeatures];
+                                                await checkAndCompleteFeatures(userId, updated);
+                                                const isPremium = profile?.subscriptionStatus === 'active';
+                                                const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
+                                                setUnlockedFeatures(newUnlocked);
 
-                                            // 新しく開放された機能があればコールバック
-                                            if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
-                                                onFeatureUnlocked('analysis');
-                                            }
+                                                // 新しく開放された機能があればコールバック
+                                                if (onFeatureUnlocked && !oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                                    onFeatureUnlocked('analysis');
+                                                }
+                                            })();
                                         }}
                                         className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.stress) || 0)
@@ -3629,11 +3593,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <h4 className="font-bold text-blue-800">コンディションスコア（100点満点）</h4>
                                 </div>
                                 <div className="text-sm text-gray-600 space-y-1">
-                                    <p><strong>6項目の平均で評価</strong></p>
+                                    <p><strong>5項目の平均で評価</strong></p>
                                     <ul className="list-disc list-inside ml-2 space-y-1">
                                         <li>睡眠時間（1-5段階、5=9h以上）</li>
                                         <li>睡眠の質（1-5段階、5=最高）</li>
-                                        <li>食欲（1-5段階、5=最適）</li>
                                         <li>腸内環境（1-5段階、5=最高）</li>
                                         <li>集中力（1-5段階、5=最高）</li>
                                         <li>ストレス（1-5段階、5=なし、1=極大）</li>

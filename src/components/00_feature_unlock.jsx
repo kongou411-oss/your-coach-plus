@@ -76,13 +76,13 @@ const markUnlockModalShown = (userId, modalId) => {
     saveUnlockModalsShown(userId, modalsShown);
 };
 
-// コンディション記録が6項目全て入力されているかチェック
+// コンディション記録が5項目全て入力されているかチェック
 const checkConditionComplete = (todayRecord) => {
     if (!todayRecord || !todayRecord.conditions) return false;
     const conditions = todayRecord.conditions;
 
-    // 6項目: 睡眠時間、睡眠の質、食欲、腸内環境、集中力、ストレス
-    const requiredFields = ['sleepHours', 'sleepQuality', 'appetite', 'digestion', 'focus', 'stress'];
+    // 5項目: 睡眠時間、睡眠の質、腸内環境、集中力、ストレス
+    const requiredFields = ['sleepHours', 'sleepQuality', 'digestion', 'focus', 'stress'];
 
     return requiredFields.every(field => {
         const value = conditions[field];

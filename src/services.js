@@ -1064,15 +1064,14 @@ const DataService = {
         // コンディションデータ（全項目1-5の値として扱う）
         const sleepHours = record.conditions?.sleepHours || 0;
         const sleepQuality = record.conditions?.sleepQuality || 0;
-        const appetite = record.conditions?.appetite || 0;
         const digestion = record.conditions?.digestion || 0;
         const focus = record.conditions?.focus || 0;
         const stress = record.conditions?.stress || 0;
 
-        // コンディションスコア計算（6項目すべてが5なら100点）
+        // コンディションスコア計算（5項目すべてが5なら100点）
         // 各項目1-5点 → 平均 → 20倍して100点満点に
         const conditionScore = Math.round(
-            ((sleepHours + sleepQuality + appetite + digestion + focus + stress) / 6) * 20
+            ((sleepHours + sleepQuality + digestion + focus + stress) / 5) * 20
         );
 
         return {
@@ -1116,7 +1115,6 @@ const DataService = {
                 score: conditionScore,
                 sleep: Math.round((sleepHours / 5) * 100),
                 quality: Math.round((sleepQuality / 5) * 100),
-                appetite: Math.round((appetite / 5) * 100),
                 digestion: Math.round((digestion / 5) * 100),
                 focus: Math.round((focus / 5) * 100),
                 stress: Math.round((stress / 5) * 100)

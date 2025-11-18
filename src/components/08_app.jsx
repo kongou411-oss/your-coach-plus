@@ -915,9 +915,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const handleFABItemClick = async (type) => {
                 // 分析
                 if (type === 'analysis') {
-                    // コンディション記録が完了しているかチェック（6項目全て必須）
+                    // コンディション記録が完了しているかチェック（5項目全て必須）
                     if (!ConditionUtils.isFullyRecorded(dailyRecord)) {
-                        toast.success('この機能はコンディション記録を完了後に開放されます\n（睡眠時間・睡眠の質・食欲・消化・集中力・ストレスの6項目全て）');
+                        toast.success('この機能はコンディション記録を完了後に開放されます\n（睡眠時間・睡眠の質・腸内環境・集中力・ストレスの5項目全て）');
                         return;
                     }
                     setShowAnalysisView(true);
@@ -3207,7 +3207,7 @@ AIコーチなどの高度な機能が解放されます。
                     <GuideModal
                         show={showConditionGuide}
                         title="コンディションを記録しましょう！"
-                        message="OKボタンをクリックするとコンディション記録セクションに遷移します。&#10;睡眠時間・睡眠の質・食欲・消化・集中力・ストレスの6項目を記録してください。"
+                        message="OKボタンをクリックするとコンディション記録セクションに遷移します。&#10;睡眠時間・睡眠の質・腸内環境・集中力・ストレスの5項目を記録してください。"
                         iconName="HeartPulse"
                         iconColor="bg-indigo-100"
                         targetSectionId="condition-section"
