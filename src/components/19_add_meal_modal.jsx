@@ -897,14 +897,45 @@ const AddMealModal = ({
 
                 {/* フッター：アクションボタン */}
                 <div className="border-t p-4 space-y-2 flex-shrink-0">
-                    {/* 1行目：写真解析 */}
-                    <button
-                        onClick={() => setShowAIFoodRecognition(true)}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition shadow-md"
-                    >
-                        <Icon name="Camera" size={16} className="inline mr-1" />
-                        写真解析
-                    </button>
+                    {/* 1行目：写真解析（Premium制限あり） */}
+                    {(() => {
+                        const isPremium = userProfile?.subscriptionStatus === 'active';
+                        const isTrial = usageDays < 7;
+                        const hasAccess = isPremium || isTrial;
+
+                        if (!hasAccess) {
+                            // Premium専用ロック表示
+                            return (
+                                <div className="w-full p-3 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Icon name="Lock" size={18} className="text-amber-600" />
+                                            <span className="font-semibold text-amber-900 text-sm">AI写真解析（Premium専用）</span>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                toast('Premium会員になると、写真から自動で食事を記録できます', { icon: '📸', duration: 3000 });
+                                            }}
+                                            className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-md hover:from-amber-600 hover:to-orange-600 transition text-xs font-bold"
+                                        >
+                                            Premium会員になる
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        }
+
+                        // アクセス権限あり：通常の写真解析ボタン
+                        return (
+                            <button
+                                onClick={() => setShowAIFoodRecognition(true)}
+                                className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition shadow-md"
+                            >
+                                <Icon name="Camera" size={16} className="inline mr-1" />
+                                写真解析
+                            </button>
+                        );
+                    })()}
 
                     {/* 2行目：一覧から検索 */}
                     <button

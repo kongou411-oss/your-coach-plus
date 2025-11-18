@@ -271,7 +271,8 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
             ...pfcSettings, // PFC設定を上書き
             leanBodyMass: lbm,
             bmr: bmr,
-            tdeeBase: tdeeBase
+            tdeeBase: tdeeBase,
+            featuresCompleted: profile.featuresCompleted || {} // 機能開放状態を保持
         };
 
         // Firestoreはundefinedを許可しないため、undefinedフィールドを削除
@@ -5635,18 +5636,23 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                         const isTrial = currentDay < 7; // 0-6日目がトライアル
 
                                         const featureList = [
-                                            { id: 'food', name: '食事記録', unlocked: true },
-                                            { id: 'training', name: '運動記録', unlocked: completionStatus.food },
-                                            { id: 'condition', name: 'コンディション', unlocked: completionStatus.training },
-                                            { id: 'analysis', name: '分析', unlocked: completionStatus.condition, premium: !isTrial && !isPremium },
-                                            { id: 'directive', name: '指示書', unlocked: completionStatus.directive, premium: !isTrial && !isPremium },
-                                            { id: 'pg_base', name: 'PG BASE', unlocked: completionStatus.pg_base, premium: !isTrial && !isPremium },
-                                            { id: 'community', name: 'COMY', unlocked: completionStatus.community, premium: !isTrial && !isPremium },
-                                            { id: 'template', name: 'テンプレート', unlocked: completionStatus.template, premium: !isTrial && !isPremium },
-                                            { id: 'routine', name: 'ルーティン', unlocked: completionStatus.routine, premium: !isTrial && !isPremium },
-                                            { id: 'shortcut', name: 'ショートカット', unlocked: completionStatus.shortcut, premium: !isTrial && !isPremium },
-                                            { id: 'history', name: '履歴', unlocked: completionStatus.history, premium: !isTrial && !isPremium },
-                                            { id: 'history_analysis', name: '履歴分析', unlocked: completionStatus.history_analysis, premium: !isTrial && !isPremium }
+                                            // 無料機能（常に利用可能）
+                                            { id: 'food', name: '食事記録', unlocked: true, free: true },
+                                            { id: 'training', name: '運動記録', unlocked: true, free: true },
+                                            { id: 'condition', name: 'コンディション', unlocked: true, free: true },
+                                            { id: 'template', name: 'テンプレート（1枠）', unlocked: true, free: true },
+                                            { id: 'routine', name: 'ルーティン', unlocked: true, free: true },
+                                            { id: 'pg_base', name: 'PG BASE（初期教科書）', unlocked: true, free: true },
+
+                                            // Premium専用機能（8日目以降）
+                                            { id: 'ai_photo', name: 'AI食事認識', unlocked: false, premium: !isTrial && !isPremium },
+                                            { id: 'analysis', name: 'AI分析', unlocked: false, premium: !isTrial && !isPremium },
+                                            { id: 'directive', name: '指示書', unlocked: false, premium: !isTrial && !isPremium },
+                                            { id: 'history', name: '履歴', unlocked: false, premium: !isTrial && !isPremium },
+                                            { id: 'history_analysis', name: '履歴分析', unlocked: false, premium: !isTrial && !isPremium },
+                                            { id: 'shortcut', name: 'ショートカット', unlocked: false, premium: !isTrial && !isPremium },
+                                            { id: 'community', name: 'コミュニティ', unlocked: false, premium: !isTrial && !isPremium },
+                                            { id: 'detailed_nutrients', name: '詳細栄養素', unlocked: false, premium: !isTrial && !isPremium }
                                         ];
 
                                         return (
@@ -5661,10 +5667,11 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                                                     <div key={feature.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
                                                         <span className="text-sm">{feature.name}</span>
                                                         <span className={`text-xs px-2 py-1 rounded ${
+                                                            feature.free ? 'bg-blue-100 text-blue-700' :
                                                             feature.premium ? 'bg-red-100 text-red-700' :
                                                             feature.unlocked ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
                                                         }`}>
-                                                            {feature.premium ? '🔒Premium必須' : (feature.unlocked ? '✓開放済み' : '⏳未開放')}
+                                                            {feature.free ? '✓無料' : (feature.premium ? '🔒Premium必須' : (feature.unlocked ? '✓開放済み' : '⏳未開放'))}
                                                         </span>
                                                     </div>
                                                 ))}

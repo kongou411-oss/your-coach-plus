@@ -514,10 +514,13 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
 };
 
 // ===== Dashboard Component =====
-const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setUserProfile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData, onOpenNewMealModal, onOpenNewWorkoutModal, activeTab: externalActiveTab, onActiveTabChange }) => {
+const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFeatures, onDeleteItem, profile, setUserProfile, setInfoModal, yesterdayRecord, setDailyRecord, user, currentDate, onDateChange, triggers, shortcuts, onShortcutClick, onFeatureUnlocked, currentRoutine, onLoadRoutineData, onOpenNewMealModal, onOpenNewWorkoutModal, activeTab: externalActiveTab, onActiveTabChange, usageDays }) => {
     // 指示書管理
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
+
+    // Premiumモーダル管理
+    const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
     // 運動カードの展開状態
     const [expandedWorkouts, setExpandedWorkouts] = useState({});
@@ -800,7 +803,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     ...profile,
                     weight: newWeight,
                     bodyFatPercentage: newBodyFat,
-                    leanBodyMass: newLBM
+                    leanBodyMass: newLBM,
+                    featuresCompleted: profile.featuresCompleted || {} // 機能開放状態を保持
                 };
                 setUserProfile(updatedProfile);
                 // Firestoreにも保存
@@ -1611,24 +1615,50 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     </div>
                 </div>
 
-                {/* 詳細栄養素 */}
-                <details className="mt-4">
-                    <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{color: '#4A9EFF'}}>
-                        <Icon name="ChevronDown" size={16} />
-                        詳細栄養素＋
-                        <button
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setShowDetailedNutrientsGuide(true);
-                            }}
-                            className="ml-auto flex items-center"
-                            style={{ color: '#4A9EFF' }}
-                        >
-                            <Icon name="HelpCircle" size={18} />
-                        </button>
-                    </summary>
-                    <div className="mt-4 space-y-6">
+                {/* 詳細栄養素（Premium専用） */}
+                {(() => {
+                    const isPremium = profile?.subscriptionStatus === 'active';
+                    const isTrial = usageDays < 7;
+                    const hasAccess = isPremium || isTrial;
+
+                    if (!hasAccess) {
+                        return (
+                            <div className="mt-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-lg p-4">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Icon name="Lock" size={20} className="text-amber-600" />
+                                    <h4 className="text-sm font-bold text-amber-900">詳細栄養素（Premium専用）</h4>
+                                </div>
+                                <p className="text-xs text-amber-800 mb-3">
+                                    ビタミン・ミネラル・脂肪酸などの詳細な栄養素分析はPremium会員専用機能です。
+                                </p>
+                                <button
+                                    onClick={() => setShowSubscriptionModal(true)}
+                                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-2 px-4 rounded-lg hover:from-amber-600 hover:to-orange-600 transition font-bold text-sm"
+                                >
+                                    Premium会員になる
+                                </button>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <details className="mt-4">
+                            <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{color: '#4A9EFF'}}>
+                                <Icon name="ChevronDown" size={16} />
+                                詳細栄養素＋
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setShowDetailedNutrientsGuide(true);
+                                    }}
+                                    className="ml-auto flex items-center"
+                                    style={{ color: '#4A9EFF' }}
+                                >
+                                    <Icon name="HelpCircle" size={18} />
+                                </button>
+                            </summary>
+                            <div className="mt-4 space-y-6">
 
                         {/* 三大栄養素の質 */}
                         <div>
@@ -2301,7 +2331,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         )}
                     </div>
                 </details>
-
+                    );
+                })()}
                     </div>
                 )}
 
@@ -3443,42 +3474,70 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     </div>
                 )}
 
-                {/* 分析ボタン - コンディション完了後に開放 */}
-                {(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('analysis')) && (
-                    <div id="analysis-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
-                        <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between border-b-2 border-gray-200">
-                            <div className="flex items-center gap-3">
-                                <Icon name="PieChart" size={32} className="text-indigo-600" />
-                                <h4 className="font-bold text-gray-800">分析</h4>
+                {/* 分析ボタン - コンディション完了後に開放（Premium制限あり） */}
+                {(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('analysis')) && (() => {
+                    const isPremium = profile?.subscriptionStatus === 'active';
+                    const isTrial = usageDays < 7;
+                    const hasAccess = isPremium || isTrial;
+
+                    if (!hasAccess) {
+                        // Premium専用ロック表示
+                        return (
+                            <div id="analysis-section" className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-6 -mx-6">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <Icon name="Lock" size={24} className="text-amber-600" />
+                                    <h4 className="text-lg font-bold text-amber-900">AI分析（Premium専用）</h4>
+                                </div>
+                                <p className="text-sm text-amber-800 mb-4">
+                                    AIによる詳細な栄養分析・トレーニング分析・コンディション分析はPremium会員専用機能です。
+                                </p>
                                 <button
-                                    onClick={() => setShowScoringGuideModal(true)}
-                                    className="p-1 hover:bg-gray-100 rounded-full transition"
-                                    title="採点基準を見る"
-                                    style={{color: '#4A9EFF'}}
+                                    onClick={() => setShowSubscriptionModal(true)}
+                                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 px-4 rounded-lg hover:from-amber-600 hover:to-orange-600 transition font-bold"
                                 >
-                                    <Icon name="Info" size={16} />
+                                    Premium会員になる
                                 </button>
                             </div>
-                            <button
-                                onClick={() => window.handleQuickAction && window.handleQuickAction('analysis')}
-                                className="text-sm px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-lg hover:shadow-xl transition"
-                            >
-                                ＋ 分析
-                            </button>
+                        );
+                    }
+
+                    // アクセス権限あり：通常の分析セクション
+                    return (
+                        <div id="analysis-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
+                            <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between border-b-2 border-gray-200">
+                                <div className="flex items-center gap-3">
+                                    <Icon name="PieChart" size={32} className="text-indigo-600" />
+                                    <h4 className="font-bold text-gray-800">分析</h4>
+                                    <button
+                                        onClick={() => setShowScoringGuideModal(true)}
+                                        className="p-1 hover:bg-gray-100 rounded-full transition"
+                                        title="採点基準を見る"
+                                        style={{color: '#4A9EFF'}}
+                                    >
+                                        <Icon name="Info" size={16} />
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={() => window.handleQuickAction && window.handleQuickAction('analysis')}
+                                    className="text-sm px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-lg hover:shadow-xl transition"
+                                >
+                                    ＋ 分析
+                                </button>
+                            </div>
+                            <div className="p-6">
+                                {/* 当日のスコア表示（ドーナツグラフ） */}
+                                <ScoreDoughnutChart
+                                    profile={profile}
+                                    dailyRecord={dailyRecord}
+                                    targetPFC={targetPFC}
+                                    user={user}
+                                    currentDate={currentDate}
+                                    setDailyRecord={setDailyRecord}
+                                />
+                            </div>
                         </div>
-                        <div className="p-6">
-                            {/* 当日のスコア表示（ドーナツグラフ） */}
-                            <ScoreDoughnutChart
-                                profile={profile}
-                                dailyRecord={dailyRecord}
-                                targetPFC={targetPFC}
-                                user={user}
-                                currentDate={currentDate}
-                                setDailyRecord={setDailyRecord}
-                            />
-                        </div>
-                    </div>
-                )}
+                    );
+                })()}
 
             </div>
 
@@ -4269,6 +4328,84 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     この値を使用
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Premium会員登録モーダル */}
+            {showSubscriptionModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
+                        {/* ヘッダー */}
+                        <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white text-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                            <button
+                                onClick={() => setShowSubscriptionModal(false)}
+                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-10"
+                            >
+                                <Icon name="X" size={20} />
+                            </button>
+                            <div className="relative z-10">
+                                <Icon name="Crown" size={48} className="mx-auto mb-3 text-yellow-200" />
+                                <h3 className="text-2xl font-bold mb-2">Premium会員</h3>
+                                <p className="text-sm opacity-90">すべての機能を制限なく利用できます</p>
+                            </div>
+                        </div>
+
+                        {/* コンテンツ */}
+                        <div className="p-6 space-y-6">
+                            {/* 料金 */}
+                            <div className="text-center">
+                                <div className="text-4xl font-bold text-gray-800">
+                                    ¥940
+                                    <span className="text-lg text-gray-500 font-normal">/月</span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">税込み</p>
+                            </div>
+
+                            {/* Premium機能一覧 */}
+                            <div className="space-y-3">
+                                <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <Icon name="CheckCircle" size={18} className="text-green-500" />
+                                    Premium特典
+                                </h4>
+                                <div className="space-y-2">
+                                    {[
+                                        { icon: 'Camera', text: 'AI食事認識（写真解析）', color: 'text-purple-600' },
+                                        { icon: 'BarChart3', text: 'AI分析 100回/月', color: 'text-blue-600' },
+                                        { icon: 'FileText', text: '指示書・閃き機能', color: 'text-indigo-600' },
+                                        { icon: 'History', text: '履歴・履歴分析', color: 'text-amber-600' },
+                                        { icon: 'Droplets', text: '詳細栄養素（ビタミン・ミネラル）', color: 'text-teal-600' },
+                                        { icon: 'Zap', text: 'ショートカット機能', color: 'text-yellow-600' },
+                                        { icon: 'Users', text: 'コミュニティアクセス', color: 'text-pink-600' },
+                                        { icon: 'BookOpen', text: 'PG BASE全教科書', color: 'text-orange-600' },
+                                        { icon: 'Download', text: 'データエクスポート', color: 'text-gray-600' }
+                                    ].map((feature, index) => (
+                                        <div key={index} className="flex items-center gap-3 text-sm">
+                                            <Icon name={feature.icon} size={16} className={`flex-shrink-0 ${feature.color}`} />
+                                            <span className="text-gray-700">{feature.text}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 登録ボタン */}
+                            <button
+                                onClick={() => {
+                                    toast('サブスクリプション機能は準備中です', { icon: '🚧', duration: 3000 });
+                                    setShowSubscriptionModal(false);
+                                }}
+                                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3.5 rounded-lg font-bold hover:from-amber-600 hover:to-orange-600 transition shadow-lg relative overflow-hidden"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                <span className="relative z-10">今すぐPremium会員になる</span>
+                            </button>
+
+                            {/* 注意事項 */}
+                            <p className="text-xs text-gray-500 text-center">
+                                7日間の無料トライアル中は、すべてのPremium機能を無料でお試しいただけます
+                            </p>
                         </div>
                     </div>
                 </div>

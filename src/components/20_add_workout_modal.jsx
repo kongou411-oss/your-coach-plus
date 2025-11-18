@@ -1181,7 +1181,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                         )}
 
 
-                        {/* ④テンプレート（一覧+新規保存） - 12日以上で開放 */}
+                        {/* ④テンプレート（一覧+新規保存） - 初日から開放、8日目以降は無料会員に枠制限 */}
                         {unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id) && !selectedItem && (
                             <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
                                 <button
@@ -4080,7 +4080,7 @@ RM回数と重量を別々に入力してください。`
                                     </div>
                                 </button>
 
-                                {/* テンプレート - 12日以上で開放 */}
+                                {/* テンプレート - 初日から開放、8日目以降は無料会員に枠制限 */}
                                 {unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id) && (
                                     <button
                                         type="button"

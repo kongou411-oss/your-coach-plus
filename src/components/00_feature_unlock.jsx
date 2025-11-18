@@ -191,37 +191,31 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
     unlocked.push('template');
     unlocked.push('training_template'); // 旧互換性
 
-    // 6. Premium機能（トライアル中または有料会員のみ）
-    // 一度開放されたら、completionStatusに記録されているので永続的に維持
-    if (hasPremiumAccess) {
-        // 初回分析後に開放される機能
-        if (completionStatus.directive) {
-            unlocked.push('directive');
-        }
-        if (completionStatus.history) {
-            unlocked.push('history');
-            unlocked.push('history_graph'); // 旧互換性
-        }
-        if (completionStatus.pg_base) {
-            unlocked.push('pg_base');
-        }
-        if (completionStatus.community) {
-            unlocked.push('community');
-        }
-        if (completionStatus.routine) {
-            unlocked.push('routine');
-        }
-        if (completionStatus.shortcut) {
-            unlocked.push('shortcut');
-        }
-        if (completionStatus.history_analysis) {
-            unlocked.push('history_analysis');
-        }
+    // 6. ルーティン - 初日から全員に開放
+    unlocked.push('routine');
 
-        // 常時Premium専用機能
-        unlocked.push('micronutrients');
-        unlocked.push('community_view');
-        unlocked.push('community_post');
+    // 7. PG BASE（初期教科書） - 初日から全員に開放
+    unlocked.push('pg_base');
+
+    // ===== 8日目以降はPremium専用の機能 =====
+    if (hasPremiumAccess) {
+        // AI機能
+        unlocked.push('ai_photo_recognition'); // AI食事認識
+        unlocked.push('analysis'); // 分析（上書き）
+
+        // 指示書・履歴
+        unlocked.push('directive');
+        unlocked.push('history');
+        unlocked.push('history_graph'); // 旧互換性
+        unlocked.push('history_analysis');
+
+        // その他
+        unlocked.push('shortcut');
+        unlocked.push('community');
+        unlocked.push('community_view'); // 旧互換性
+        unlocked.push('community_post'); // 旧互換性
+        unlocked.push('detailed_nutrients'); // 詳細栄養素
+        unlocked.push('micronutrients'); // 旧互換性
     }
 
     // console.log('[calculateUnlockedFeatures] ===== 機能開放状態 =====');
@@ -337,11 +331,19 @@ const checkPremiumAccessRequired = async (userId, featureId, userProfile) => {
         return { allowed: true, reason: 'trial' };
     }
 
-    // 8日目以降にPremium制限がかかる機能（7日間無料トライアル）
-    // テンプレート機能は除外（初日から全員利用可能、枠制限のみ）
+    // 8日目以降にPremium制限がかかる機能
     const premiumRestrictedFeatures = [
-        'directive', 'pg_base', 'routine', 'shortcut',
-        'history', 'history_analysis', 'community', 'analysis', 'micronutrients'
+        'ai_photo_recognition', // AI食事認識
+        'analysis', // 分析
+        'directive', // 指示書
+        'history', // 履歴
+        'history_analysis', // 履歴分析
+        'shortcut', // ショートカット
+        'community', // コミュニティ
+        'community_view', // コミュニティ閲覧（旧）
+        'community_post', // コミュニティ投稿（旧）
+        'detailed_nutrients', // 詳細栄養素
+        'micronutrients' // 詳細栄養素（旧）
     ];
 
     // 該当機能がPremium制限対象かチェック
@@ -352,21 +354,7 @@ const checkPremiumAccessRequired = async (userId, featureId, userProfile) => {
             return {
                 allowed: false,
                 reason: 'premium_required',
-                message: 'この機能は8日目以降、Premium会員限定となります'
-            };
-        }
-    }
-
-    // 常時Premium専用機能
-    const alwaysPremiumFeatures = ['community_post'];
-    if (alwaysPremiumFeatures.includes(featureId)) {
-        if (isPremium) {
-            return { allowed: true, reason: 'premium' };
-        } else {
-            return {
-                allowed: false,
-                reason: 'premium_only',
-                message: 'この機能はPremium会員専用です'
+                message: 'この機能はPremium会員専用です。7日間の無料トライアル中は全機能をお試しいただけます。'
             };
         }
     }

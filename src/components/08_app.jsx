@@ -1494,6 +1494,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             onOpenNewWorkoutModal={() => setShowNewWorkoutModal(true)}
                             activeTab={activeTab}
                             onActiveTabChange={setActiveTab}
+                            usageDays={usageDays}
                             onFeatureUnlocked={(featureId) => {
                                 if (featureId === 'analysis') {
                                     setShowAnalysisGuide(true);
@@ -1964,7 +1965,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 const isPremium = userProfile?.subscriptionStatus === 'active';
 
                                 // 常にunlockedFeaturesを再計算（機能開放状態を最新に保つ）
-                                const unlocked = calculateUnlockedFeatures(userId, dailyRecord, isPremium);
+                                const unlocked = await calculateUnlockedFeatures(userId, dailyRecord, isPremium);
                                 setUnlockedFeatures(unlocked);
                                 console.log('[App] Updated unlocked features after analysis:', unlocked);
 
@@ -1973,11 +1974,11 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     await markFeatureCompleted(userId, 'analysis');
                                 }
                             }}
-                            onFeatureUnlocked={() => {
+                            onFeatureUnlocked={async () => {
                                 // 分析実行後すぐにunlockedFeaturesを再計算
                                 const userId = user?.uid;
                                 const isPremium = userProfile?.subscriptionStatus === 'active';
-                                const unlocked = calculateUnlockedFeatures(userId, dailyRecord, isPremium);
+                                const unlocked = await calculateUnlockedFeatures(userId, dailyRecord, isPremium);
                                 setUnlockedFeatures(unlocked);
                                 console.log('[App] Features unlocked, updated unlocked features:', unlocked);
                             }}
