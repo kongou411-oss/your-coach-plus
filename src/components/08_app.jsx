@@ -2972,11 +2972,24 @@ AIコーチなどの高度な機能が解放されます。
                     )}
 
                     {/* ボトムアプリバー */}
-                    <div className="fixed bottom-0 left-0 right-0 z-[9999] bg-white border-t shadow-lg">
+                    <div
+                        className="fixed bottom-0 left-0 right-0 z-[10000] bg-white border-t shadow-lg"
+                        style={{
+                            transform: 'translate3d(0, 0, 0)',
+                            WebkitTransform: 'translate3d(0, 0, 0)',
+                            backfaceVisibility: 'hidden',
+                            WebkitBackfaceVisibility: 'hidden'
+                        }}
+                    >
                         {/* 折りたたみトグルボタン - 最上辺に配置 */}
                         <button
                             onClick={() => setBottomBarExpanded(!bottomBarExpanded)}
-                            className="w-full py-1 flex items-center justify-center hover:bg-gray-50 transition border-b border-gray-100"
+                            onTouchStart={(e) => {
+                                e.preventDefault();
+                                setBottomBarExpanded(!bottomBarExpanded);
+                            }}
+                            className="w-full py-1 flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 transition border-b border-gray-100"
+                            style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                         >
                             <Icon
                                 name={bottomBarExpanded ? "ChevronDown" : "ChevronUp"}
@@ -3005,7 +3018,20 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowAIInput(false);
                                         setBottomBarExpanded(false);
                                     }}
-                                    className="flex flex-col items-center gap-1 p-2 rounded-lg transition hover:bg-gray-50"
+                                    onTouchStart={(e) => {
+                                        e.preventDefault();
+                                        setShowHistoryV10(false);
+                                        setShowPGBaseView(false);
+                                        setShowCOMYView(false);
+                                        setShowSettings(false);
+                                        setShowAnalysisView(false);
+                                        setShowAddView(false);
+                                        setShowHistoryView(false);
+                                        setShowAIInput(false);
+                                        setBottomBarExpanded(false);
+                                    }}
+                                    className="flex flex-col items-center gap-1 p-2 rounded-lg transition hover:bg-gray-50 active:bg-gray-100"
+                                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                 >
                                     <Icon name="Home" size={20} className="text-gray-600" />
                                     <span className="text-xs font-medium text-gray-600">
@@ -3028,9 +3054,21 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowHistoryV10(true);
                                         setBottomBarExpanded(false);
                                     }}
+                                    onTouchStart={(e) => {
+                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history'))) {
+                                            return;
+                                        }
+                                        e.preventDefault();
+                                        setShowPGBaseView(false);
+                                        setShowCOMYView(false);
+                                        setShowSettings(false);
+                                        setShowHistoryV10(true);
+                                        setBottomBarExpanded(false);
+                                    }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showHistoryV10 ? 'bg-blue-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history')) ? 'hover:bg-gray-50' : 'opacity-50')
+                                        showHistoryV10 ? 'bg-blue-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history')) ? 'hover:bg-gray-50 active:bg-gray-100' : 'opacity-50')
                                     }`}
+                                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                 >
                                     <Icon name="TrendingUp" size={20} className={showHistoryV10 ? 'text-blue-700' : 'text-blue-600'} />
                                     <span className={`text-xs font-medium ${showHistoryV10 ? 'text-blue-700' : 'text-gray-600'}`}>
@@ -3053,9 +3091,21 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowPGBaseView(true);
                                         setBottomBarExpanded(false);
                                     }}
+                                    onTouchStart={async (e) => {
+                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base'))) {
+                                            return;
+                                        }
+                                        e.preventDefault();
+                                        setShowHistoryV10(false);
+                                        setShowCOMYView(false);
+                                        setShowSettings(false);
+                                        setShowPGBaseView(true);
+                                        setBottomBarExpanded(false);
+                                    }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showPGBaseView ? 'bg-cyan-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) ? 'hover:bg-gray-50' : 'opacity-50')
+                                        showPGBaseView ? 'bg-cyan-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) ? 'hover:bg-gray-50 active:bg-gray-100' : 'opacity-50')
                                     }`}
+                                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                 >
                                     <Icon name="BookOpen" size={20} className={showPGBaseView ? 'text-cyan-700' : 'text-cyan-600'} />
                                     <span className={`text-xs font-medium ${showPGBaseView ? 'text-cyan-700' : 'text-gray-600'}`}>
@@ -3078,9 +3128,21 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowCOMYView(true);
                                         setBottomBarExpanded(false);
                                     }}
+                                    onTouchStart={async (e) => {
+                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community'))) {
+                                            return;
+                                        }
+                                        e.preventDefault();
+                                        setShowHistoryV10(false);
+                                        setShowPGBaseView(false);
+                                        setShowSettings(false);
+                                        setShowCOMYView(true);
+                                        setBottomBarExpanded(false);
+                                    }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showCOMYView ? 'bg-fuchsia-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community')) ? 'hover:bg-gray-50' : 'opacity-50')
+                                        showCOMYView ? 'bg-fuchsia-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community')) ? 'hover:bg-gray-50 active:bg-gray-100' : 'opacity-50')
                                     }`}
+                                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                 >
                                     <Icon name="Users" size={20} className={showCOMYView ? 'text-fuchsia-700' : 'text-fuchsia-600'} />
                                     <span className={`text-xs font-medium ${showCOMYView ? 'text-fuchsia-700' : 'text-gray-600'}`}>
@@ -3099,9 +3161,18 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowSettings(true);
                                         setBottomBarExpanded(false);
                                     }}
+                                    onTouchStart={(e) => {
+                                        e.preventDefault();
+                                        setShowHistoryV10(false);
+                                        setShowPGBaseView(false);
+                                        setShowCOMYView(false);
+                                        setShowSettings(true);
+                                        setBottomBarExpanded(false);
+                                    }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showSettings ? 'bg-gray-200' : 'hover:bg-gray-50'
+                                        showSettings ? 'bg-gray-200' : 'hover:bg-gray-50 active:bg-gray-100'
                                     }`}
+                                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                 >
                                     <Icon name="Settings" size={20} className={showSettings ? 'text-gray-800' : 'text-gray-600'} />
                                     <span className={`text-xs font-medium ${showSettings ? 'text-gray-800' : 'text-gray-600'}`}>

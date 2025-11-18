@@ -550,17 +550,13 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
 
             // customFoodsをFirestoreから読み込み
             useEffect(() => {
-                console.log('[AddItemView] useEffect開始');
                 const loadCustomFoods = async () => {
                     const currentUser = firebase.auth().currentUser;
-                    console.log('[AddItemView] loadCustomFoods実行、currentUser:', currentUser);
                     if (!currentUser || !currentUser.uid) {
-                        console.log('[AddItemView] ユーザー未ログインのためスキップ');
                         return;
                     }
 
                     try {
-                        console.log('[AddItemView] customFoods読み込み開始...');
                         const customFoodsSnapshot = await firebase.firestore()
                             .collection('users')
                             .doc(currentUser.uid)
@@ -573,7 +569,6 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                         }));
 
                         setCustomFoods(foods);
-                        console.log(`[AddItemView] customFoods読み込み完了: ${foods.length}件`, foods.map(f => f.name));
                     } catch (error) {
                         console.error('[AddItemView] customFoods読み込みエラー:', error);
                     }
@@ -581,16 +576,13 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
 
                 const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
                     if (user) {
-                        console.log('[AddItemView] 認証状態変化: ログイン済み');
                         loadCustomFoods();
                     } else {
-                        console.log('[AddItemView] 認証状態変化: 未ログイン');
                         setCustomFoods([]);
                     }
                 });
 
                 return () => {
-                    console.log('[AddItemView] useEffectクリーンアップ');
                     unsubscribe();
                 };
             }, []);
@@ -1603,7 +1595,6 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
             const renderWorkoutInput = () => {
                 // 編集モード判定（食事モーダルと同じ仕様）
                 const isEditMode = !!editingWorkout;
-                console.log('[AddItemView] isEditMode:', isEditMode, 'editingWorkout:', editingWorkout);
 
                 const fuzzyMatch = (text, query) => {
                     if (!query || query.trim() === '') return true;
@@ -1624,7 +1615,6 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
 
                     // 編集モード時の初期値設定
                     if (editingWorkout) {
-                        console.log('[AddItemView] 編集モード初期化:', editingWorkout);
                         if (editingWorkout.exercises && Array.isArray(editingWorkout.exercises)) {
                             setExercises(JSON.parse(JSON.stringify(editingWorkout.exercises)));
                         }

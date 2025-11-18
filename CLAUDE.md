@@ -44,7 +44,7 @@ C:\Users\yourc\yourcoach_new\
 │       ├── 08_app.jsx              # メインアプリ
 │       ├── 10_feedback.jsx         # フィードバック
 │       ├── 11_ai_food_recognition.jsx  # AI食事認識
-│       ├── 13_collaborative_planning.jsx  # 共同計画
+│       ├── 13_collaborative_planning.jsx  # 指示書
 │       ├── 14_microlearning.jsx    # マイクロラーニング
 │       ├── 15_community_growth.jsx # コミュニティ成長
 │       ├── 16_history_v10.jsx      # 履歴v10
@@ -338,7 +338,7 @@ git push
 
 ### ダッシュボード（src/components/03_dashboard.jsx）
 - 日次記録の表示
-- 食事、トレーニング、サプリ、コンディションの一覧
+- 食事、運動、コンディションの一覧
 - カロリー・PFCバランスの表示
 - スコア表示（食事、運動、コンディション）
 

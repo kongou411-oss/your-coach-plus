@@ -34,7 +34,7 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
         setExpandedSide(null);
     };
 
-    // メニュー外クリックで閉じる
+    // メニュー外クリック/タッチで閉じる（iOS対応）
     React.useEffect(() => {
         const handleClickOutside = (e) => {
             // モーダルやダイアログのクリックは無視
@@ -45,8 +45,21 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
                 setExpandedSide(null);
             }
         };
-        document.addEventListener('click', handleClickOutside, true); // キャプチャフェーズで処理
-        return () => document.removeEventListener('click', handleClickOutside, true);
+        const handleTouchOutside = (e) => {
+            // モーダルやダイアログのタッチは無視
+            if (e.target.closest('[role="dialog"]') || e.target.closest('.modal')) {
+                return;
+            }
+            if (!e.target.closest('.chevron-shortcut-container')) {
+                setExpandedSide(null);
+            }
+        };
+        document.addEventListener('click', handleClickOutside, true);
+        document.addEventListener('touchstart', handleTouchOutside, true); // iOS対応
+        return () => {
+            document.removeEventListener('click', handleClickOutside, true);
+            document.removeEventListener('touchstart', handleTouchOutside, true);
+        };
     }, []);
 
     const getIconColor = (action) => {
@@ -97,14 +110,19 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
         <>
             {/* Left Shortcut */}
             {visibility.left && leftShortcuts.length > 0 && (
-            <div className={`chevron-shortcut-container fixed left-0 ${getPositionStyle(leftConfig.position)} -translate-y-1/2 z-[9998]`}>
+            <div className={`chevron-shortcut-container fixed left-0 ${getPositionStyle(leftConfig.position)} -translate-y-1/2 z-[10000]`}>
                 <button
                     onClick={() => handleButtonClick('left')}
+                    onTouchStart={(e) => {
+                        e.preventDefault();
+                        handleButtonClick('left');
+                    }}
                     className={`${leftSize.width} ${leftSize.height} bg-white rounded-r-full shadow-lg
                                flex items-center justify-center
-                               hover:bg-gray-50 transition-all hover:scale-110
+                               hover:bg-gray-50 active:bg-gray-100 transition-all hover:scale-110
                                border border-gray-200 border-l-0
                                cursor-pointer px-2 -ml-3`}
+                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                 >
                     <Icon
                         name="ChevronRight"
@@ -124,12 +142,18 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
                                 <button
                                     key={index}
                                     onClick={() => handleShortcutItemClick(shortcut.action)}
-                                    className="absolute left-0 bg-white bg-opacity-95 rounded-lg shadow-lg hover:bg-opacity-100 transition flex items-center gap-2 px-3 py-2"
+                                    onTouchStart={(e) => {
+                                        e.preventDefault();
+                                        handleShortcutItemClick(shortcut.action);
+                                    }}
+                                    className="absolute left-0 bg-white bg-opacity-95 rounded-lg shadow-lg hover:bg-opacity-100 active:bg-opacity-100 transition flex items-center gap-2 px-3 py-2"
                                     style={{
                                         top: `${offset}px`,
                                         transform: 'translateY(-50%)',
                                         animationDelay: `${index * 0.05}s`,
-                                        minWidth: '120px'
+                                        minWidth: '120px',
+                                        WebkitTapHighlightColor: 'transparent',
+                                        touchAction: 'manipulation'
                                     }}
                                 >
                                     <Icon name={shortcut.icon} size={leftSize.iconSize + 4} className={getIconColor(shortcut.action)} />
@@ -144,14 +168,19 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
 
             {/* Right Shortcut */}
             {visibility.right && rightShortcuts.length > 0 && (
-            <div className={`chevron-shortcut-container fixed right-0 ${getPositionStyle(rightConfig.position)} -translate-y-1/2 z-[9998]`}>
+            <div className={`chevron-shortcut-container fixed right-0 ${getPositionStyle(rightConfig.position)} -translate-y-1/2 z-[10000]`}>
                 <button
                     onClick={() => handleButtonClick('right')}
+                    onTouchStart={(e) => {
+                        e.preventDefault();
+                        handleButtonClick('right');
+                    }}
                     className={`${rightSize.width} ${rightSize.height} bg-white rounded-l-full shadow-lg
                                flex items-center justify-center
-                               hover:bg-gray-50 transition-all hover:scale-110
+                               hover:bg-gray-50 active:bg-gray-100 transition-all hover:scale-110
                                border border-gray-200 border-r-0
                                cursor-pointer px-2 -mr-3`}
+                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                 >
                     <Icon
                         name="ChevronLeft"
@@ -171,12 +200,18 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
                                 <button
                                     key={index}
                                     onClick={() => handleShortcutItemClick(shortcut.action)}
-                                    className="absolute right-0 bg-white bg-opacity-95 rounded-lg shadow-lg hover:bg-opacity-100 transition flex items-center gap-2 px-3 py-2"
+                                    onTouchStart={(e) => {
+                                        e.preventDefault();
+                                        handleShortcutItemClick(shortcut.action);
+                                    }}
+                                    className="absolute right-0 bg-white bg-opacity-95 rounded-lg shadow-lg hover:bg-opacity-100 active:bg-opacity-100 transition flex items-center gap-2 px-3 py-2"
                                     style={{
                                         top: `${offset}px`,
                                         transform: 'translateY(-50%)',
                                         animationDelay: `${index * 0.05}s`,
-                                        minWidth: '120px'
+                                        minWidth: '120px',
+                                        WebkitTapHighlightColor: 'transparent',
+                                        touchAction: 'manipulation'
                                     }}
                                 >
                                     <Icon name={shortcut.icon} size={rightSize.iconSize + 4} className={getIconColor(shortcut.action)} />

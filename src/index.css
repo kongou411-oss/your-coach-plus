@@ -15,3 +15,40 @@ details[open] .details-chevron {
 .details-chevron {
   transition: transform 0.2s ease;
 }
+
+/* ========================================
+   iOS Safari 最適化
+   ======================================== */
+
+/* タップ時の青いハイライトを削除 */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* ボタン・リンク要素のタッチ最適化 */
+button, a, [role="button"] {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* フォーム要素のズーム防止（16px以上） */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
+/* スクロール領域の慣性スクロール有効化 */
+.overflow-y-auto, .overflow-x-auto, .overflow-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* 固定要素のGPU加速（レイアウトシフト防止） */
+.fixed {
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
