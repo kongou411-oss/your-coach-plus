@@ -75,6 +75,7 @@ C:\Users\yourc\yourcoach_new\
 │   ├── services.js
 │   ├── utils.js
 │   ├── notificationSound.js
+│   ├── home.html                # ランディングページ
 │   ├── manifest.json            # PWAマニフェスト
 │   ├── icons/                   # PWAアイコン
 │   ├── sounds/                  # 通知音
@@ -84,9 +85,9 @@ C:\Users\yourc\yourcoach_new\
 │   └── history_v10_standalone.html  # スタンドアロン履歴
 ├── scripts/                      # バージョン管理スクリプト
 │   ├── release.js                # インタラクティブリリース
-│   └── bump-version.js           # バージョン自動更新
+│   ├── bump-version.js           # バージョン自動更新
+│   └── auto-release.cjs          # 自動リリース（Claude用）
 ├── index.html                    # Vite用エントリーHTML
-├── home.html                     # ランディングページ
 ├── vite.config.js                # Vite設定
 ├── package.json                  # 依存関係
 ├── firebase.json                 # Firebase設定（publicディレクトリ: dist）
@@ -135,14 +136,22 @@ npm run preview
 
 ### バージョン管理（自動化）
 
-#### パターン1: インタラクティブリリース（推奨）
+#### パターン1: 自動リリース（Claude Code使用時）
+```bash
+npm run auto-release
+# Gitコミットメッセージから変更タイプを自動判定
+# config.js と home.html を自動更新
+# Claude Codeが「デプロイして」の指示で自動実行
+```
+
+#### パターン2: インタラクティブリリース（手動）
 ```bash
 npm run release
 # 対話形式でバージョンタイプとリリースノートを入力
 # Minor/Major版の場合、config.jsのRELEASE_NOTESを自動更新
 ```
 
-#### パターン2: コマンド指定
+#### パターン3: コマンド指定
 ```bash
 # Patch更新（バグ修正・小さな改善）- What's New表示なし
 npm run version:patch
@@ -154,7 +163,7 @@ npm run version:minor
 npm run version:major
 ```
 
-#### パターン3: バージョン更新 + ビルド + デプロイ（ワンライナー）
+#### パターン4: バージョン更新 + ビルド + デプロイ（ワンライナー）
 ```bash
 # Patch更新 + デプロイ
 npm run deploy:patch
@@ -176,11 +185,26 @@ firebase deploy --only hosting     # dist/をデプロイ
 
 **🚨 重要: Git更新は必須のバックアップ手段です**
 
+#### Claude Code使用時（自動）
+```
+ユーザー指示: 「デプロイして」または「deploy」
+
+Claude Codeが自動実行:
+1. npm run auto-release    # バージョン・リリースノート自動更新
+2. npm run build           # ビルド
+3. git add + commit + push # Git更新
+4. firebase deploy         # デプロイ
+```
+
+#### 手動デプロイ時
 ```bash
-# 1. ビルド
+# 1. バージョン更新（必要に応じて）
+npm run auto-release
+
+# 2. ビルド
 npm run build
 
-# 2. Git更新（バックアップ）← 必須！
+# 3. Git更新（バックアップ）← 必須！
 git add -A
 git commit -m "Fix: 変更内容の説明
 
@@ -188,10 +212,10 @@ git commit -m "Fix: 変更内容の説明
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 
-# 3. GitHubへpush（リモートバックアップ）← 必須！
+# 4. GitHubへpush（リモートバックアップ）← 必須！
 git push
 
-# 4. Firebaseデプロイ
+# 5. Firebaseデプロイ
 firebase deploy --only hosting
 ```
 
@@ -243,12 +267,15 @@ npm run dev
 
 **重要:** ユーザーが明示的に「デプロイして」と指示した場合のみ実行すること。
 
-**デプロイ手順:**
+**デプロイ手順（自動実行）:**
 ```bash
-# 1. ビルド
+# 1. バージョン・リリースノート自動更新
+npm run auto-release
+
+# 2. ビルド
 npm run build
 
-# 2. Gitコミット＋push
+# 3. Gitコミット＋push
 git add -A
 git commit -m "変更内容
 
@@ -257,14 +284,17 @@ git commit -m "変更内容
 Co-Authored-By: Claude <noreply@anthropic.com>"
 git push
 
-# 3. デプロイ
+# 4. デプロイ
 firebase deploy --only hosting
 ```
+
+**実行タイミング:**
+- ✅ ユーザーが「デプロイして」「deploy」と明示的に指示した時のみ
+- ✅ すべての手順を自動で実行（バージョン更新→ビルド→Git→デプロイ）
 
 **禁止事項:**
 - ❌ 勝手にデプロイしない
 - ❌ 実装完了＝デプロイではない
-- ❌ ビルドせずにデプロイしない
 - ❌ ユーザーの確認を待たずにデプロイしない
 
 ### 4. Git更新（バックアップ）：3時間に1回確認
@@ -821,3 +851,4 @@ npm run deploy:patch
 **プロジェクト開始**: 2025年10月12日
 **Vite化**: 2025年11月4日
 **バージョン管理自動化**: 2025年11月19日
+**home.html修正**: 2025年11月19日（public/に移動、firebase.jsonリライトルール修正）

@@ -148,7 +148,8 @@
       "Bash(cmd /c \"if not exist scripts mkdir scripts\")",
       "Bash(/dev/null)",
       "Bash(move home.html publichome.html)",
-      "Bash(cmd /c move home.html publichome.html)"
+      "Bash(cmd /c move home.html publichome.html)",
+      "Bash(npm run auto-release:*)"
     ],
     "deny": [],
     "ask": []
