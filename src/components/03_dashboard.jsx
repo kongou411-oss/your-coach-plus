@@ -3160,17 +3160,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mb-2">
                                 <span className="text-sm text-gray-600 font-bold">睡眠時間</span>
                             </div>
-                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
-                                {/* スライド背景 */}
-                                {dailyRecord.conditions?.sleepHours && (
-                                    <div
-                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
-                                        style={{
-                                            left: `calc(${((dailyRecord.conditions.sleepHours - 1) / 5) * 100}% + 0.375rem)`,
-                                            width: 'calc(20% - 0.375rem)'
-                                        }}
-                                    />
-                                )}
+                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1.5">
                                 {[
                                     { value: 1, label: '5h以下' },
                                     { value: 2, label: '6h' },
@@ -3209,10 +3199,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             })();
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
+                                        className={`flex-1 rounded-full py-2.5 text-center text-xs font-medium transition-all duration-150 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.sleepHours) || 0)
-                                                ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
+                                                ? 'bg-[#4A9EFF] text-white shadow'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
                                         }`}
                                     >
                                         {item.label}
@@ -3226,17 +3216,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mb-2">
                                 <span className="text-sm text-gray-600 font-bold">睡眠の質</span>
                             </div>
-                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
-                                {/* スライド背景 */}
-                                {dailyRecord.conditions?.sleepQuality && (
-                                    <div
-                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
-                                        style={{
-                                            left: `calc(${((dailyRecord.conditions.sleepQuality - 1) / 5) * 100}% + 0.375rem)`,
-                                            width: 'calc(20% - 0.375rem)'
-                                        }}
-                                    />
-                                )}
+                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1.5">
                                 {[
                                     { value: 1, label: '最悪' },
                                     { value: 2, label: '悪' },
@@ -3275,10 +3255,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             })();
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
+                                        className={`flex-1 rounded-full py-2.5 text-center text-xs font-medium transition-all duration-150 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.sleepQuality) || 0)
-                                                ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
+                                                ? 'bg-[#4A9EFF] text-white shadow'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
                                         }`}
                                     >
                                         {item.label}
@@ -3292,17 +3272,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mb-2">
                                 <span className="text-sm text-gray-600 font-bold">腸内環境</span>
                             </div>
-                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
-                                {/* スライド背景 */}
-                                {dailyRecord.conditions?.digestion && (
-                                    <div
-                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
-                                        style={{
-                                            left: `calc(${((dailyRecord.conditions.digestion - 1) / 5) * 100}% + 0.375rem)`,
-                                            width: 'calc(20% - 0.375rem)'
-                                        }}
-                                    />
-                                )}
+                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1.5">
                                 {[
                                     { value: 1, label: '不調' },
                                     { value: 2, label: 'やや悪' },
@@ -3341,10 +3311,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             })();
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
+                                        className={`flex-1 rounded-full py-2.5 text-center text-xs font-medium transition-all duration-150 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.digestion) || 0)
-                                                ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
+                                                ? 'bg-[#4A9EFF] text-white shadow'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
                                         }`}
                                     >
                                         {item.label}
@@ -3358,17 +3328,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mb-2">
                                 <span className="text-sm text-gray-600 font-bold">集中力</span>
                             </div>
-                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
-                                {/* スライド背景 */}
-                                {dailyRecord.conditions?.focus && (
-                                    <div
-                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
-                                        style={{
-                                            left: `calc(${((dailyRecord.conditions.focus - 1) / 5) * 100}% + 0.375rem)`,
-                                            width: 'calc(20% - 0.375rem)'
-                                        }}
-                                    />
-                                )}
+                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1.5">
                                 {[
                                     { value: 1, label: '最低' },
                                     { value: 2, label: '低' },
@@ -3407,10 +3367,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             })();
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
+                                        className={`flex-1 rounded-full py-2.5 text-center text-xs font-medium transition-all duration-150 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.focus) || 0)
-                                                ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
+                                                ? 'bg-[#4A9EFF] text-white shadow'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
                                         }`}
                                     >
                                         {item.label}
@@ -3424,17 +3384,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mb-2">
                                 <span className="text-sm text-gray-600 font-bold">ストレス</span>
                             </div>
-                            <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5 relative">
-                                {/* スライド背景 */}
-                                {dailyRecord.conditions?.stress && (
-                                    <div
-                                        className="absolute top-1.5 bottom-1.5 bg-[#4A9EFF] rounded-full shadow-md transition-all duration-300 ease-out"
-                                        style={{
-                                            left: `calc(${((dailyRecord.conditions.stress - 1) / 5) * 100}% + 0.375rem)`,
-                                            width: 'calc(20% - 0.375rem)'
-                                        }}
-                                    />
-                                )}
+                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1.5">
                                 {[
                                     { value: 1, label: '極大' },
                                     { value: 2, label: '高' },
@@ -3473,10 +3423,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             })();
                                         }}
-                                        className={`relative z-10 flex-1 rounded-full py-2 text-center text-xs font-medium transition-all duration-300 focus:outline-none ${
+                                        className={`flex-1 rounded-full py-2.5 text-center text-xs font-medium transition-all duration-150 focus:outline-none ${
                                             item.value === ((dailyRecord.conditions?.stress) || 0)
-                                                ? 'text-white shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:shadow-sm'
+                                                ? 'bg-[#4A9EFF] text-white shadow'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
                                         }`}
                                     >
                                         {item.label}
