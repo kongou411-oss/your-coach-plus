@@ -425,25 +425,67 @@ const BasicTab = ({
                             const forceResync = async () => {
                                 setIsSyncing(true);
                                 try {
-                                    // Firestoreから最新データを取得
                                     const db = firebase.firestore();
                                     const userDocRef = db.collection('users').doc(userId);
-                                    const userDoc = await userDocRef.get();
+
+                                    // 0. Firestoreに再同期フラグを設定（ブラウザ/PWA間で共有可能）
+                                    await userDocRef.set({
+                                        forceResyncFlag: true,
+                                        forceResyncTimestamp: new Date().toISOString()
+                                    }, { merge: true });
+                                    console.log('再同期フラグをFirestoreに設定しました');
+
+                                    // 1. LocalStorageをクリア（認証情報以外）
+                                    const keysToPreserve = ['firebase:authUser', 'firebase:host'];
+                                    const preservedData = {};
+                                    keysToPreserve.forEach(key => {
+                                        const value = localStorage.getItem(key);
+                                        if (value) preservedData[key] = value;
+                                    });
+
+                                    localStorage.clear();
+
+                                    // 認証情報を復元
+                                    Object.keys(preservedData).forEach(key => {
+                                        localStorage.setItem(key, preservedData[key]);
+                                    });
+
+                                    // 2. ServiceWorkerキャッシュをクリア（PWA対応）
+                                    if ('caches' in window) {
+                                        const cacheNames = await caches.keys();
+                                        await Promise.all(
+                                            cacheNames.map(cacheName => caches.delete(cacheName))
+                                        );
+                                        console.log('ServiceWorkerキャッシュをクリアしました');
+                                    }
+
+                                    // 3. Firestoreから最新データを取得して確認
+                                    const userDoc = await userDocRef.get({ source: 'server' }); // 強制的にサーバーから取得
 
                                     if (!userDoc.exists) {
                                         toast.error('ユーザーデータが見つかりません');
+                                        // エラー時はフラグを削除
+                                        await userDocRef.set({
+                                            forceResyncFlag: firebase.firestore.FieldValue.delete()
+                                        }, { merge: true });
                                         return;
                                     }
 
-                                    // 強制的にページをリロードして最新データを反映
+                                    const userData = userDoc.data();
+                                    console.log('Firestore最新データ取得完了:', {
+                                        userId,
+                                        dataKeys: Object.keys(userData || {}),
+                                        timestamp: new Date().toISOString()
+                                    });
+
+                                    // 4. ページをリロードして最新データを反映
                                     toast.success('データを再同期しています...');
                                     setTimeout(() => {
-                                        window.location.reload();
+                                        window.location.reload(true); // 強制リロード
                                     }, 1000);
                                 } catch (error) {
                                     console.error('Force resync error:', error);
                                     toast.error(`再同期エラー: ${error.message}`);
-                                } finally {
                                     setIsSyncing(false);
                                 }
                             };

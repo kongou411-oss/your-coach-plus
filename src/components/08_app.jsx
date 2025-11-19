@@ -467,15 +467,33 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             // プロフィールが存在する既存ユーザー
                             setUser(firebaseUser);
 
-                            // 開発用：LocalStorageのsubscriptionStatusを優先（プレミアムモード切り替え用）
-                            const localProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
-                            if (localProfile.subscriptionStatus !== undefined) {
-                                profile.subscriptionStatus = localProfile.subscriptionStatus;
-                                // LocalStorageに保存して次回リロード時も反映されるようにする
-                                localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
-                            }
+                            // Firestoreから再同期フラグをチェック（ブラウザ/PWA間で共有）
+                            const isForceResync = profile.forceResyncFlag === true;
 
-                            setUserProfile(profile);
+                            if (isForceResync) {
+                                // 再同期時：Firestoreデータをそのまま使用（LocalStorageを無視）
+                                console.log('[再同期モード] Firestoreデータを使用');
+
+                                // フラグを削除（次回は通常モード）
+                                const db = firebase.firestore();
+                                await db.collection('users').doc(firebaseUser.uid).set({
+                                    forceResyncFlag: firebase.firestore.FieldValue.delete(),
+                                    forceResyncTimestamp: firebase.firestore.FieldValue.delete()
+                                }, { merge: true });
+                                console.log('[再同期モード] フラグを削除しました');
+
+                                setUserProfile(profile);
+                            } else {
+                                // 通常モード：開発用のLocalStorage優先ロジック（プレミアムモード切り替え用）
+                                const localProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
+                                if (localProfile.subscriptionStatus !== undefined) {
+                                    console.log('[開発モード] LocalStorageのsubscriptionStatusを優先:', localProfile.subscriptionStatus);
+                                    profile.subscriptionStatus = localProfile.subscriptionStatus;
+                                    // LocalStorageに保存して次回リロード時も反映されるようにする
+                                    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
+                                }
+                                setUserProfile(profile);
+                            }
                             const days = await calculateDaysSinceRegistration(firebaseUser.uid);
                             setUsageDays(days);
 
