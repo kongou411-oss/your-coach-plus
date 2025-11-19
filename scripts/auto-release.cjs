@@ -7,6 +7,7 @@ const { execSync } = require('child_process');
 // ファイルパス
 const CONFIG_PATH = path.join(__dirname, '../src/config.js');
 const HOME_PATH = path.join(__dirname, '../public/home.html');
+const INDEX_PATH = path.join(__dirname, '../index.html');
 
 // 現在のバージョンを取得
 function getCurrentVersion() {
@@ -154,6 +155,20 @@ function updateHomeHtml(newVersion, type, commitMessage) {
     console.log(`✓ home.html updated`);
 }
 
+// index.html を更新
+function updateIndexHtml(newVersion) {
+    let content = fs.readFileSync(INDEX_PATH, 'utf-8');
+
+    // タイトルのバージョンを更新
+    content = content.replace(
+        /<title>Your Coach\+ v[^<]+<\/title>/,
+        `<title>Your Coach+ v${newVersion}</title>`
+    );
+
+    fs.writeFileSync(INDEX_PATH, content, 'utf-8');
+    console.log(`✓ index.html updated`);
+}
+
 // メイン処理
 function main() {
     console.log('🚀 Auto Release Script\n');
@@ -177,6 +192,7 @@ function main() {
     console.log('\n📝 ファイルを更新中...');
     updateConfigJs(newVersion, type, message);
     updateHomeHtml(newVersion, type, message);
+    updateIndexHtml(newVersion);
 
     console.log('\n✅ 自動リリース完了！');
     console.log(`\n次のステップ:`);

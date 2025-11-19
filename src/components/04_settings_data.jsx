@@ -186,17 +186,13 @@ const DataTab = ({
                                             console.log('[Cache] Service Worker caches cleared');
                                         }
 
-                                        // Service Workerを再登録
+                                        // Service Workerをアンレジスター（再登録はしない）
                                         if ('serviceWorker' in navigator) {
                                             const registrations = await navigator.serviceWorker.getRegistrations();
                                             await Promise.all(
                                                 registrations.map(registration => registration.unregister())
                                             );
                                             console.log('[Cache] Service Workers unregistered');
-
-                                            // 再登録
-                                            await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                                            console.log('[Cache] Service Worker re-registered');
                                         }
 
                                         toast('キャッシュをクリアしました。\nページをリロードします。');
