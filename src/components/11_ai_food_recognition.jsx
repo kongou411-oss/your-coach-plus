@@ -136,17 +136,38 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
     // 画像選択ハンドラー
     const handleImageSelect = (event) => {
         const file = event.target.files[0];
-        if (file) {
-            setSelectedImage(file);
-            setError(null);
 
-            // プレビュー表示
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result);
-            };
-            reader.readAsDataURL(file);
+        // ファイルが選択されていない場合（パーミッション拒否など）
+        if (!file) {
+            setError('写真が選択されませんでした。カメラへのアクセスを許可してください。');
+            return;
         }
+
+        // HEIC形式チェック
+        const fileName = file.name.toLowerCase();
+        const fileType = file.type.toLowerCase();
+        if (fileType === 'image/heic' || fileType === 'image/heif' || fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
+            setError('HEIC形式には対応していません。iPhoneの設定で「互換性優先」に変更するか、別の写真をお試しください。\n\n設定方法：設定 > カメラ > フォーマット > 互換性優先');
+            return;
+        }
+
+        // ファイルサイズチェック（5MB制限）
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+            setError(`写真のサイズが大きすぎます（${sizeMB}MB）。5MB以下の写真を選択してください。`);
+            return;
+        }
+
+        setSelectedImage(file);
+        setError(null);
+
+        // プレビュー表示
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
     };
 
     // 画像をBase64に変換
@@ -2349,7 +2370,7 @@ JSON形式のみ出力、説明文不要`;
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 {/* ヘッダー */}
                 <div className="sticky top-0 text-white p-4 rounded-t-2xl flex justify-between items-center z-10" style={{ backgroundColor: '#4A9EFF' }}>
@@ -2469,7 +2490,8 @@ JSON形式のみ出力、説明文不要`;
                                         setSelectedImage(null);
                                         setError(null);
                                     }}
-                                    className="absolute top-2 right-2 w-9 h-9 bg-red-500 text-white rounded-full hover:bg-red-600 transition flex items-center justify-center"
+                                    className="absolute top-2 right-2 w-11 h-11 bg-red-500 text-white rounded-full hover:bg-red-600 transition flex items-center justify-center"
+                                    title="写真を削除"
                                 >
                                     <Icon name="X" size={18} />
                                 </button>
