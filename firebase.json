@@ -14,7 +14,7 @@
     ],
     "rewrites": [
       {
-        "source": "**",
+        "source": "!{home.html,privacy.html,terms.html}",
         "destination": "/index.html"
       }
     ],
