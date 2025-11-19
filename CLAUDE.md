@@ -38,7 +38,11 @@ C:\Users\yourc\yourcoach_new\
 │       ├── 01_common.jsx           # 共通コンポーネント
 │       ├── 02_auth.jsx             # 認証
 │       ├── 03_dashboard.jsx        # ダッシュボード
-│       ├── 04_settings.jsx         # 設定
+│       ├── 04_settings.jsx         # 設定（親コンポーネント）
+│       ├── 04_settings_basic.jsx   # 設定 - 基本設定タブ
+│       ├── 04_settings_features.jsx # 設定 - 機能設定タブ
+│       ├── 04_settings_data.jsx    # 設定 - データ管理タブ
+│       ├── 04_settings_other.jsx   # 設定 - その他タブ
 │       ├── 05_analysis.jsx         # 分析
 │       ├── 06_community.jsx        # コミュニティ
 │       ├── 08_app.jsx              # メインアプリ
@@ -78,6 +82,9 @@ C:\Users\yourc\yourcoach_new\
 │   ├── privacy.html             # プライバシーポリシー
 │   ├── terms.html               # 利用規約
 │   └── history_v10_standalone.html  # スタンドアロン履歴
+├── scripts/                      # バージョン管理スクリプト
+│   ├── release.js                # インタラクティブリリース
+│   └── bump-version.js           # バージョン自動更新
 ├── index.html                    # Vite用エントリーHTML
 ├── home.html                     # ランディングページ
 ├── vite.config.js                # Vite設定
@@ -124,6 +131,39 @@ npm run build
 ```bash
 npm run preview
 # ビルド済みファイルをローカルでプレビュー
+```
+
+### バージョン管理（自動化）
+
+#### パターン1: インタラクティブリリース（推奨）
+```bash
+npm run release
+# 対話形式でバージョンタイプとリリースノートを入力
+# Minor/Major版の場合、config.jsのRELEASE_NOTESを自動更新
+```
+
+#### パターン2: コマンド指定
+```bash
+# Patch更新（バグ修正・小さな改善）- What's New表示なし
+npm run version:patch
+
+# Minor更新（新機能追加）- What's New表示あり
+npm run version:minor
+
+# Major更新（大きな変更）- What's New表示あり
+npm run version:major
+```
+
+#### パターン3: バージョン更新 + ビルド + デプロイ（ワンライナー）
+```bash
+# Patch更新 + デプロイ
+npm run deploy:patch
+
+# Minor更新 + デプロイ
+npm run deploy:minor
+
+# Major更新 + デプロイ
+npm run deploy:major
 ```
 
 ### Firebaseデプロイ
@@ -373,12 +413,36 @@ git push
 - いいね・コメント機能
 - 管理者パネル（投稿承認）
 
-### 設定（src/components/04_settings.jsx）
-- プロフィール管理
-- ルーティン設定
-- テンプレート管理
-- データ管理（エクスポート・インポート）
-- カスタムアイテム管理
+### 設定（src/components/04_settings*.jsx）
+
+**構成**: 親コンポーネント + 4つのタブコンポーネントに分割
+
+#### 04_settings.jsx（親コンポーネント）
+- タブ切り替え管理
+- 各タブコンポーネントの読み込み
+- 共通のレイアウト
+
+#### 04_settings_basic.jsx（基本設定タブ）
+- プロフィール管理（身長・体重・体脂肪率・年齢・性別）
+- 目標設定（目的、活動レベル）
+- LBM計算と目標栄養素の自動計算
+
+#### 04_settings_features.jsx（機能設定タブ）
+- テンプレート管理（食事・運動・サプリメント）
+- ルーティン設定（分割法）
+- カスタムアイテム管理（食材・料理・運動・サプリ）
+
+#### 04_settings_data.jsx（データ管理タブ）
+- データエクスポート（JSON形式）
+- データインポート
+- データ削除
+- バックアップ
+
+#### 04_settings_other.jsx（その他タブ）
+- **アプリ情報**: バージョン表示、リリース日
+- **リンク**: リリースノート、プライバシーポリシー、利用規約
+- **アカウント管理**: プレミアムモード切替（管理者のみ）
+- **ログアウト**
 
 ### 履歴（src/components/16_history_v10.jsx）
 - 体重・体脂肪率の推移グラフ
@@ -399,6 +463,155 @@ git push
 - **DEV_MODE完全削除済み**（2025年11月17日時点）
 - LocalStorageでのテストモードは存在しません
 - すべての操作はFirebaseに直接接続されます
+
+## バージョン管理システム
+
+### 概要
+**Semantic Versioning (SemVer)** 形式でバージョン管理を実施しています。
+
+```
+バージョン形式: Major.Minor.Patch (例: 1.2.15)
+
+- Major: 破壊的変更・大規模リニューアル（年に1-2回）
+- Minor: 新機能追加（月に1-2回）
+- Patch: バグ修正・小さな改善（頻繁）
+```
+
+### 重要な仕様
+- **What's New モーダル**: Minor版更新時のみ表示（Patch更新では非表示）
+- **頻繁なデプロイ対応**: 月100回以上のデプロイでもユーザーに通知を出さない設計
+
+### ファイル構成
+
+#### src/config.js
+```javascript
+const APP_VERSION = '1.0.0';  // フルバージョン
+
+const RELEASE_NOTES = {
+    '1.0': {  // Minor版キー（Patch版をまとめる）
+        date: '2025年11月4日',
+        title: '初回リリース',
+        features: [
+            'LBMベースの科学的な体組成管理機能',
+            '食事・運動・コンディション記録',
+            'AI分析（Google Gemini API）'
+        ]
+    }
+};
+```
+
+#### src/components/08_app.jsx
+- **WhatsNewModal コンポーネント**: 新機能紹介モーダル
+- **バージョン比較ロジック**: Minor版のみ比較してモーダル表示判定
+```javascript
+const getMinorVersion = (version) => {
+    const parts = version.split('.');
+    return `${parts[0]}.${parts[1]}`;  // '1.0'
+};
+
+if (lastMinorVersion !== currentMinorVersion) {
+    // What's Newモーダルを表示
+}
+```
+
+#### src/components/04_settings_other.jsx
+- アプリ情報セクション
+- バージョン表示（例: v1.0.0）
+- リリース日表示（Minor版キーでRELEASE_NOTESから取得）
+- リリースノート・プライバシー・利用規約へのリンク
+
+#### home.html
+- リリースノートのマスターデータ
+- アプリから `home.html#release-notes` でリンク
+- バージョン表記例: "v1.0.x"（Patch版をまとめて表示）
+
+### 自動化スクリプト
+
+#### scripts/release.js（推奨）
+インタラクティブなリリース管理スクリプト
+
+**使い方:**
+```bash
+npm run release
+```
+
+**機能:**
+1. バージョンタイプ選択（Patch/Minor/Major）
+2. 自動バージョンインクリメント
+3. リリースノート入力（Minor/Major時）
+4. config.jsの自動更新
+5. 次のステップを表示
+
+**出力例:**
+```
+📌 現在のバージョン: v1.0.0
+どのバージョンを更新しますか？
+1. Patch (バグ修正・小さな改善) - What's New表示なし
+2. Minor (新機能追加) - What's New表示あり
+3. Major (大きな変更) - What's New表示あり
+```
+
+#### scripts/bump-version.js
+コマンドライン引数でバージョンタイプを指定するシンプル版
+
+**使い方:**
+```bash
+npm run version:patch  # v1.0.0 → v1.0.1
+npm run version:minor  # v1.0.5 → v1.1.0
+npm run version:major  # v1.5.2 → v2.0.0
+```
+
+### リリースワークフロー
+
+#### 推奨フロー（インタラクティブ）
+```bash
+# 1. リリース準備（バージョン更新 + リリースノート入力）
+npm run release
+
+# 2. home.htmlを手動更新（Minor/Major時のみ）
+
+# 3. ビルド
+npm run build
+
+# 4. Git更新
+git add .
+git commit -m "Release: v1.1.0"
+git push
+
+# 5. デプロイ
+firebase deploy --only hosting
+```
+
+#### ワンライナーフロー（Patch版）
+```bash
+# バージョン更新 + ビルド + デプロイを一括実行
+npm run deploy:patch
+```
+
+### バージョン更新ルール
+
+#### Patch更新（頻繁）
+- **タイミング**: バグ修正、UIの微調整、小さな改善
+- **What's New**: 表示しない
+- **RELEASE_NOTES**: 更新不要
+- **home.html**: 更新不要
+
+#### Minor更新（月1-2回）
+- **タイミング**: 新機能追加、大きな改善
+- **What's New**: 表示する
+- **RELEASE_NOTES**: 更新必須
+- **home.html**: 更新推奨
+
+#### Major更新（年1-2回）
+- **タイミング**: 破壊的変更、大規模リニューアル
+- **What's New**: 表示する
+- **RELEASE_NOTES**: 更新必須
+- **home.html**: 更新必須
+
+### LocalStorage管理
+- **キー**: `yourCoachBeta_lastSeenVersion`
+- **保存形式**: フルバージョン（例: "1.0.0"）
+- **比較**: Minor版のみ比較（例: "1.0" と "1.1"）
 
 ## 開発フロー
 
@@ -604,6 +817,7 @@ git push
 
 ---
 
-**最終更新**: 2025年11月17日
+**最終更新**: 2025年11月19日
 **プロジェクト開始**: 2025年10月12日
 **Vite化**: 2025年11月4日
+**バージョン管理自動化**: 2025年11月19日

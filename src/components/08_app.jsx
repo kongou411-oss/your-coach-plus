@@ -55,6 +55,73 @@ const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId
     );
 };
 
+// ===== What's New Modal Component =====
+const WhatsNewModal = ({ show, version, releaseNote, onClose }) => {
+    const Icon = window.Icon;
+    if (!show) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden slide-up">
+                {/* ヘッダー */}
+                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 text-center relative">
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition"
+                    >
+                        <Icon name="X" size={20} />
+                    </button>
+                    <div className="mb-3">
+                        <Icon name="Sparkles" size={48} className="mx-auto mb-2" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2">What's New</h2>
+                    <p className="text-sm opacity-90">バージョン {version} の新機能</p>
+                </div>
+
+                {/* コンテンツ */}
+                <div className="p-6 space-y-4">
+                    {/* リリース情報 */}
+                    <div className="border-l-4 border-indigo-500 pl-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="font-bold text-indigo-600">{releaseNote.title}</span>
+                            <span className="text-sm text-gray-500">{releaseNote.date}</span>
+                        </div>
+                    </div>
+
+                    {/* 新機能リスト */}
+                    <div className="space-y-2">
+                        {releaseNote.features.map((feature, idx) => (
+                            <div key={idx} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                                <Icon name="Check" size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
+                                <span className="text-sm text-gray-700">{feature}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* ボタン */}
+                    <div className="space-y-2">
+                        <button
+                            onClick={onClose}
+                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 rounded-lg hover:opacity-90 transition"
+                        >
+                            始める
+                        </button>
+                        <a
+                            href="/home.html#release-notes"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full flex items-center justify-center gap-2 py-2 text-sm text-indigo-600 hover:text-indigo-700 transition"
+                        >
+                            <Icon name="ExternalLink" size={14} />
+                            <span>過去のリリースノートを見る</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ===== Premium Restriction Modal Component =====
 const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
     const Icon = window.Icon;
@@ -184,6 +251,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [predictedData, setPredictedData] = useState(null);
             const [yesterdayRecord, setYesterdayRecord] = useState(null); // 前日の完全な記録データ
 
+            // What's New モーダル
+            const [showWhatsNew, setShowWhatsNew] = useState(false);
+
             // ローカルタイムゾーンで今日の日付を取得
             const getTodayDate = () => {
                 const today = new Date();
@@ -276,6 +346,33 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
             // クレジット0警告モーダル
             const [showCreditWarning, setShowCreditWarning] = useState(false);
+
+            // What's Newモーダル表示チェック（マイナーバージョン比較）
+            useEffect(() => {
+                if (!user) return;
+
+                const { APP_VERSION, STORAGE_KEYS } = window;
+                const lastSeenVersion = localStorage.getItem(STORAGE_KEYS.LAST_SEEN_VERSION);
+
+                // バージョンからマイナーバージョンを取得（例: "1.2.15" → "1.2"）
+                const getMinorVersion = (version) => {
+                    if (!version) return null;
+                    const parts = version.split('.');
+                    return `${parts[0]}.${parts[1]}`;
+                };
+
+                const currentMinor = getMinorVersion(APP_VERSION);
+                const lastMinor = getMinorVersion(lastSeenVersion);
+
+                // 初回起動、またはマイナーバージョンが変わった場合にモーダルを表示
+                // （パッチバージョンの変更では表示しない）
+                if (!lastMinor || lastMinor !== currentMinor) {
+                    // 少し遅延させてからモーダルを表示（他のモーダルとの競合を避ける）
+                    setTimeout(() => {
+                        setShowWhatsNew(true);
+                    }, 1000);
+                }
+            }, [user]);
 
             // チュートリアル初回起動チェック
             useEffect(() => {
@@ -1152,6 +1249,14 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         </div>
                     </div>
                 );
+            };
+
+            // What's Newモーダルを閉じる
+            const handleCloseWhatsNew = () => {
+                const { APP_VERSION, STORAGE_KEYS } = window;
+                // バージョンをLocalStorageに保存
+                localStorage.setItem(STORAGE_KEYS.LAST_SEEN_VERSION, APP_VERSION);
+                setShowWhatsNew(false);
             };
 
             // ログイン画面
@@ -3305,6 +3410,18 @@ AIコーチなどの高度な機能が解放されます。
                             userProfile={userProfile}
                         />
                     )}
+
+                    {/* What's Newモーダル */}
+                    <WhatsNewModal
+                        show={showWhatsNew}
+                        version={window.APP_VERSION}
+                        releaseNote={(() => {
+                            const parts = (window.APP_VERSION || '').split('.');
+                            const minorKey = `${parts[0]}.${parts[1]}`;
+                            return window.RELEASE_NOTES?.[minorKey] || { date: '', title: '', features: [] };
+                        })()}
+                        onClose={handleCloseWhatsNew}
+                    />
 
                     {/* Feedback Manager（グローバル） */}
                     <FeedbackManager />

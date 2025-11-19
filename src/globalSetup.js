@@ -6,13 +6,7 @@
 // index.htmlで<script>タグとして読み込まれているため、ここではimportしない
 
 // これらのファイルは既にwindowにオブジェクトを公開しているはず
-// 念のため、確認用のログを出力
-console.log('[Global Setup] Checking global objects...');
-console.log('- Config loaded:', typeof window.FIREBASE_CONFIG !== 'undefined');
-console.log('- LBMUtils:', typeof window.LBMUtils);
-console.log('- DataService:', typeof window.DataService);
-console.log('- foodDatabase:', typeof window.foodDatabase);
-console.log('- trainingDatabase:', typeof window.trainingDatabase);
+// config.jsは main.jsx で既に window に公開済み
 
 // ========================================
 // iOS Safari 最適化: 動的ビューポート高さの設定

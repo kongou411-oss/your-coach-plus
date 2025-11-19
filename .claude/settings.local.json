@@ -142,7 +142,10 @@
       "Bash(cmd /c \"if exist extract_data_correct.py del extract_data_correct.py\")",
       "Bash(start http://localhost:8004)",
       "Bash(cmd /c \"taskkill /F /IM node.exe 2>nul & if exist node_modules\\.vite (rmdir /s /q node_modules\\.vite) & npm run dev\")",
-      "Bash(C:/Users/yourc/yourcoach_new/temp_features.txt)"
+      "Bash(C:/Users/yourc/yourcoach_new/temp_features.txt)",
+      "Bash(start home.html)",
+      "Bash(if not exist scripts mkdir scripts)",
+      "Bash(cmd /c \"if not exist scripts mkdir scripts\")"
     ],
     "deny": [],
     "ask": []

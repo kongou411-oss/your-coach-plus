@@ -2516,20 +2516,6 @@ const DataTab = ({
                         </div>
                     </div>
                 </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-bold mb-2">アプリ情報</h4>
-                    <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">バージョン</span>
-                            <span className="font-medium">Beta 1.0.0</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">本番モード</span>
-                            <span className="font-medium">ON</span>
-                        </div>
-                    </div>
-                </div>
             </div>
             </div>
         </details>

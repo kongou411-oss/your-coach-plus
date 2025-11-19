@@ -25,6 +25,99 @@ const OtherTab = ({
 
     return (
         <>
+            {/* アプリ情報 */}
+            <details className="border rounded-lg">
+                <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                    <Icon name="Info" size={18} className="text-blue-600" />
+                    アプリ情報
+                    <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                </summary>
+                <div className="p-4 pt-0 border-t">
+                    <div className="space-y-4">
+                        {/* バージョン情報 */}
+                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <Icon name="Sparkles" size={20} className="text-indigo-600" />
+                                    <span className="font-bold text-gray-800">Your Coach+</span>
+                                </div>
+                                <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-medium">
+                                    v{window.APP_VERSION}
+                                </span>
+                            </div>
+                            <div className="space-y-2 text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
+                                    <Icon name="Calendar" size={14} className="text-gray-400" />
+                                    <span>最終更新: {(() => {
+                                        const parts = (window.APP_VERSION || '').split('.');
+                                        const minorKey = `${parts[0]}.${parts[1]}`;
+                                        return window.RELEASE_NOTES?.[minorKey]?.date || '不明';
+                                    })()}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Icon name="Zap" size={14} className="text-gray-400" />
+                                    <span>LBMを中心とした科学的な体づくり</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* リリースノートボタン */}
+                        <a
+                            href="/home.html#release-notes"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition">
+                                    <Icon name="FileText" size={18} className="text-indigo-600" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-gray-800">リリースノート</p>
+                                    <p className="text-xs text-gray-600">更新履歴を確認</p>
+                                </div>
+                            </div>
+                            <Icon name="ExternalLink" size={18} className="text-gray-400 group-hover:text-indigo-600 transition" />
+                        </a>
+
+                        {/* 追加リンク */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <a
+                                href="/privacy.html"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition text-sm"
+                            >
+                                <Icon name="Shield" size={16} className="text-gray-600" />
+                                <span className="text-gray-700">プライバシー</span>
+                            </a>
+                            <a
+                                href="/terms.html"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition text-sm"
+                            >
+                                <Icon name="FileText" size={16} className="text-gray-600" />
+                                <span className="text-gray-700">利用規約</span>
+                            </a>
+                        </div>
+
+                        {/* 運営者情報 */}
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <p className="text-xs text-gray-600 mb-2">運営者</p>
+                            <p className="text-sm font-medium text-gray-800 mb-3">Your Coach+</p>
+                            <a
+                                href="mailto:kongou411@gmail.com"
+                                className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 transition"
+                            >
+                                <Icon name="Mail" size={14} />
+                                <span>kongou411@gmail.com</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
             {/* フィードバック */}
             <details className="border rounded-lg">
                 <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
