@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import { STORAGE_KEYS } from '../config.js';
 
 // ===== Edit Workout Modal (運動編集専用モーダル) =====
 const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
@@ -638,9 +639,9 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
             useEffect(() => {
                 if (type === 'meal' && unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id)) {
                     DataService.getMealTemplates(user.uid).then(setMealTemplates);
-                } else if (type === 'supplement' && unlockedFeatures.includes(FEATURES.TRAINING_TEMPLATE.id)) {
-                    DataService.getSupplementTemplates(user.uid).then(setSupplementTemplates);
                 }
+                // サプリメントは食事モーダル（19_add_meal_modal.jsx）に統合されました
+                // type='supplement'での使用は非推奨です
             }, [type]);
 
             // テンプレート編集モードの初期化
@@ -921,17 +922,9 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                         toast('テンプレート名を入力し、サプリメントを追加してください');
                         return;
                     }
-                    const template = {
-                        id: editingTemplateId || Date.now(), // 編集中なら既存ID、新規ならタイムスタンプ
-                        name: templateName,
-                        items: addedItems
-                    };
-                    await DataService.saveSupplementTemplate(user.uid, template);
-                    const templates = await DataService.getSupplementTemplates(user.uid);
-                    setSupplementTemplates(templates);
-                    toast.success(editingTemplateId ? 'テンプレートを更新しました' : 'テンプレートを保存しました');
-                    setTemplateName('');
-                    setEditingTemplateId(null); // 編集状態をリセット
+                    // サプリメントは食事モーダル（19_add_meal_modal.jsx）に統合されました
+                    toast.error('サプリメントテンプレート機能は削除されました。食事モーダルをご利用ください。');
+                    return;
                 };
 
                 const loadTemplate = (template) => {
@@ -946,11 +939,8 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                 };
 
                 const deleteTemplate = async (templateId) => {
-                    window.showGlobalConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
-                        await DataService.deleteSupplementTemplate(user.uid, templateId);
-                        const templates = await DataService.getSupplementTemplates(user.uid);
-                        setSupplementTemplates(templates);
-                    });
+                    // サプリメントは食事モーダル（19_add_meal_modal.jsx）に統合されました
+                    toast.error('サプリメントテンプレート機能は削除されました。食事モーダルをご利用ください。');
                 };
 
                 return (
@@ -1742,7 +1732,39 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                 };
 
                 const deleteTemplate = async (templateId) => {
-                    window.showGlobalConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
+                    // ルーティンでの使用状況をチェック
+                    const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+                    let confirmMessage = 'このテンプレートを削除しますか？';
+
+                    if (savedRoutines) {
+                        const routines = JSON.parse(savedRoutines);
+                        const usingRoutines = routines.filter(routine =>
+                            (routine.workoutTemplates || []).includes(templateId)
+                        );
+
+                        if (usingRoutines.length > 0) {
+                            const routineNames = usingRoutines.map(r => r.name).join('、');
+                            confirmMessage = `このテンプレートは以下のルーティンで使用されています：\n${routineNames}\n\n削除すると、これらのルーティンからも削除されます。よろしいですか？`;
+                        }
+                    }
+
+                    window.showGlobalConfirm('テンプレート削除の確認', confirmMessage, async () => {
+                        // ルーティンからテンプレートIDを削除
+                        if (savedRoutines) {
+                            const routines = JSON.parse(savedRoutines);
+                            const updatedRoutines = routines.map(routine => {
+                                if ((routine.workoutTemplates || []).includes(templateId)) {
+                                    return {
+                                        ...routine,
+                                        workoutTemplates: routine.workoutTemplates.filter(id => id !== templateId)
+                                    };
+                                }
+                                return routine;
+                            });
+                            localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(updatedRoutines));
+                        }
+
+                        // テンプレートを削除
                         await DataService.deleteWorkoutTemplate(user.uid, templateId);
                         loadTemplates();
                     });
@@ -6110,6 +6132,14 @@ RM回数と重量を別々に入力してください。`
         };
 
 
+// AddWorkoutModalコンポーネントの定義（運動記録専用）
+const AddWorkoutModal = (props) => {
+    return <AddItemView {...props} type="workout" />;
+};
+
 // グローバルに公開
 window.AddItemView = AddItemView;
 window.EditWorkoutModal = EditWorkoutModal;
+window.AddWorkoutModal = AddWorkoutModal;
+
+export default AddWorkoutModal;

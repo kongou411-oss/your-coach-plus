@@ -524,7 +524,40 @@ const FeaturesTab = ({
                                                     <button
                                                         onClick={(e) => {
                                                             e.preventDefault();
-                                                            showConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
+
+                                                            // ルーティンでの使用状況をチェック
+                                                            const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+                                                            let confirmMessage = 'このテンプレートを削除しますか？';
+
+                                                            if (savedRoutines) {
+                                                                const routines = JSON.parse(savedRoutines);
+                                                                const usingRoutines = routines.filter(routine =>
+                                                                    (routine.mealTemplates || []).includes(template.id)
+                                                                );
+
+                                                                if (usingRoutines.length > 0) {
+                                                                    const routineNames = usingRoutines.map(r => r.name).join('、');
+                                                                    confirmMessage = `このテンプレートは以下のルーティンで使用されています：\n${routineNames}\n\n削除すると、これらのルーティンからも削除されます。よろしいですか？`;
+                                                                }
+                                                            }
+
+                                                            showConfirm('テンプレート削除の確認', confirmMessage, async () => {
+                                                                // ルーティンからテンプレートIDを削除
+                                                                if (savedRoutines) {
+                                                                    const routines = JSON.parse(savedRoutines);
+                                                                    const updatedRoutines = routines.map(routine => {
+                                                                        if ((routine.mealTemplates || []).includes(template.id)) {
+                                                                            return {
+                                                                                ...routine,
+                                                                                mealTemplates: routine.mealTemplates.filter(id => id !== template.id)
+                                                                            };
+                                                                        }
+                                                                        return routine;
+                                                                    });
+                                                                    localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(updatedRoutines));
+                                                                }
+
+                                                                // テンプレートを削除
                                                                 await window.DataService.deleteMealTemplate(userId, template.id);
                                                                 await loadTemplates();
                                                             });
@@ -627,7 +660,40 @@ const FeaturesTab = ({
                                                     <button
                                                         onClick={(e) => {
                                                             e.preventDefault();
-                                                            showConfirm('テンプレート削除の確認', 'このテンプレートを削除しますか？', async () => {
+
+                                                            // ルーティンでの使用状況をチェック
+                                                            const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+                                                            let confirmMessage = 'このテンプレートを削除しますか？';
+
+                                                            if (savedRoutines) {
+                                                                const routines = JSON.parse(savedRoutines);
+                                                                const usingRoutines = routines.filter(routine =>
+                                                                    (routine.workoutTemplates || []).includes(template.id)
+                                                                );
+
+                                                                if (usingRoutines.length > 0) {
+                                                                    const routineNames = usingRoutines.map(r => r.name).join('、');
+                                                                    confirmMessage = `このテンプレートは以下のルーティンで使用されています：\n${routineNames}\n\n削除すると、これらのルーティンからも削除されます。よろしいですか？`;
+                                                                }
+                                                            }
+
+                                                            showConfirm('テンプレート削除の確認', confirmMessage, async () => {
+                                                                // ルーティンからテンプレートIDを削除
+                                                                if (savedRoutines) {
+                                                                    const routines = JSON.parse(savedRoutines);
+                                                                    const updatedRoutines = routines.map(routine => {
+                                                                        if ((routine.workoutTemplates || []).includes(template.id)) {
+                                                                            return {
+                                                                                ...routine,
+                                                                                workoutTemplates: routine.workoutTemplates.filter(id => id !== template.id)
+                                                                            };
+                                                                        }
+                                                                        return routine;
+                                                                    });
+                                                                    localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(updatedRoutines));
+                                                                }
+
+                                                                // テンプレートを削除
                                                                 await window.DataService.deleteWorkoutTemplate(userId, template.id);
                                                                 await loadTemplates();
                                                             });

@@ -600,9 +600,6 @@ const SubscriptionUtils = {
         } else if (templateType === 'workout') {
             limit = FREE_PLAN_LIMITS.workoutTemplates;
             typeName = '運動';
-        } else if (templateType === 'supplement') {
-            limit = FREE_PLAN_LIMITS.supplementTemplates;
-            typeName = 'サプリメント';
         }
 
         if (limit === 0) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { STORAGE_KEYS } from '../config.js';
 
 // 個数単位の定義（全箇所で統一使用）
 const COUNT_UNITS = ['本', '個', '杯', '枚', '錠', '包', '粒'];
@@ -28,7 +29,7 @@ const AddMealModal = ({
     userProfile,
     unlockedFeatures = [],
     usageDays = 0,
-    initialTab = 'food' // 初期タブ: 'food', 'recipe', 'supplement'
+    initialTab = 'food' // 初期タブ: 'food', 'supplement'
 }) => {
     // Props確認（デバッグ用）
     
@@ -48,6 +49,7 @@ const AddMealModal = ({
     const [showTemplateInfoModal, setShowTemplateInfoModal] = useState(false); // テンプレート仕様説明モーダル
     const [showCustomForm, setShowCustomForm] = useState(false);
     const [showHelpModal, setShowHelpModal] = useState(false); // ヘルプモーダル
+    const [viewportHeight, setViewportHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 0); // キーボード表示時の対応
     const [showCustomGuide, setShowCustomGuide] = useState(false); // カスタム作成ガイドモーダル（包括的）
     const [showCustomHelp, setShowCustomHelp] = useState(false); // 保存方法ヘルプモーダル（簡易）
     const [customSaveMethod, setCustomSaveMethod] = useState('database'); // 'database' or 'list'
@@ -68,7 +70,7 @@ const AddMealModal = ({
     // カスタムアイテムデータ
     const [customData, setCustomData] = useState({
         name: '',
-        itemType: 'food', // 'food', 'recipe', 'supplement'
+        itemType: 'food', // 'food', 'supplement'
         category: 'カスタム', // 全てカスタムカテゴリに統一
         servingSize: '',
         servingUnit: 'g',
@@ -113,6 +115,29 @@ const AddMealModal = ({
     // 非表示設定
     const [hiddenStandardItems, setHiddenStandardItems] = useState([]);
     const [hiddenCategories, setHiddenCategories] = useState([]);
+
+    // ===== キーボード表示時のビューポート高さ監視 =====
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const handleResize = () => {
+            setViewportHeight(window.innerHeight);
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // iOS向け: visualViewport APIも監視
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleResize);
+        }
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleResize);
+            }
+        };
+    }, []);
 
     // ===== 非表示設定をFirestoreから読み込み =====
     useEffect(() => {
@@ -401,6 +426,39 @@ const AddMealModal = ({
 
     // ===== テンプレート削除 =====
     const deleteTemplate = async (templateId) => {
+        // ルーティンでの使用状況をチェック
+        const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+        if (savedRoutines) {
+            const routines = JSON.parse(savedRoutines);
+            const usingRoutines = routines.filter(routine =>
+                (routine.mealTemplates || []).includes(templateId)
+            );
+
+            if (usingRoutines.length > 0) {
+                const routineNames = usingRoutines.map(r => r.name).join('、');
+                const confirmDelete = window.confirm(
+                    `このテンプレートは以下のルーティンで使用されています：\n${routineNames}\n\n削除すると、これらのルーティンからも削除されます。よろしいですか？`
+                );
+
+                if (!confirmDelete) {
+                    return; // キャンセルされた場合は削除しない
+                }
+
+                // ルーティンからテンプレートIDを削除
+                const updatedRoutines = routines.map(routine => {
+                    if ((routine.mealTemplates || []).includes(templateId)) {
+                        return {
+                            ...routine,
+                            mealTemplates: routine.mealTemplates.filter(id => id !== templateId)
+                        };
+                    }
+                    return routine;
+                });
+                localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(updatedRoutines));
+            }
+        }
+
+        // テンプレートを削除
         await DataService.deleteMealTemplate(user.uid, templateId);
         const templates = await DataService.getMealTemplates(user.uid);
         setMealTemplates(templates);
@@ -587,13 +645,17 @@ const AddMealModal = ({
     const totalPFC = calculateTotalPFC();
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={(e) => {
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4" onClick={(e) => {
             // モーダル外をクリックした場合は閉じる
             if (e.target === e.currentTarget) {
                 onClose();
             }
         }}>
-            <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div
+                className="bg-white rounded-2xl w-full max-w-md overflow-hidden flex flex-col"
+                style={{ maxHeight: `${viewportHeight * 0.9}px` }}
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* ヘッダー */}
                 <div className="bg-white border-b px-4 py-2 flex-shrink-0">
                     <div className="flex justify-between items-center">
@@ -999,26 +1061,9 @@ const AddMealModal = ({
                     // itemTypeが未設定の古いデータはデフォルトで'food'として扱う
                     const customItems = customFoods.filter(item => {
                         if (foodTab === 'food' && (!item.itemType || item.itemType === 'food')) return true;
-                        if (foodTab === 'recipe' && item.itemType === 'recipe') return true;
                         if (foodTab === 'supplement' && item.itemType === 'supplement') return true;
                         return false;
                     });
-
-                    // 料理タブの場合は、カスタム料理のみを表示（foodDBからは取得しない）
-                    if (foodTab === 'recipe') {
-                        customItems.forEach(item => {
-                            // 非表示設定されているアイテムをスキップ
-                            if (item.hidden) return;
-
-                            if (!searchTerm || item.name.includes(searchTerm)) {
-                                items.push({
-                                    ...item,
-                                    isCustom: true
-                                });
-                            }
-                        });
-                        return items;
-                    }
 
                     // タブに応じてカテゴリを決定（food, supplementのみ）
                     let targetCategory = selectedCategory;
@@ -1268,20 +1313,6 @@ const AddMealModal = ({
                                     >
                                         <Icon name="Apple" size={16} />
                                         食材
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setFoodTab('recipe');
-                                            setSelectedCategory('');
-                                        }}
-                                        className={`py-2 px-3 rounded-lg font-medium transition flex items-center justify-center gap-1 text-sm ${
-                                            foodTab === 'recipe'
-                                                ? 'bg-white text-orange-600'
-                                                : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
-                                        }`}
-                                    >
-                                        <Icon name="ChefHat" size={16} />
-                                        料理
                                     </button>
                                     <button
                                         onClick={() => {
@@ -1802,7 +1833,6 @@ const AddMealModal = ({
                                     onChange={(e) => setCustomData({...customData, name: e.target.value})}
                                     placeholder={
                                         customData.itemType === 'food' ? '例: 自家製プロテインバー' :
-                                        customData.itemType === 'recipe' ? '例: 自家製カレー' :
                                         '例: マルチビタミン'
                                     }
                                     className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
@@ -1824,18 +1854,6 @@ const AddMealModal = ({
                                     >
                                         <Icon name="Apple" size={20} />
                                         <span className="text-sm">食材</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setCustomData({...customData, itemType: 'recipe', category: 'カスタム'})}
-                                        className={`py-3 px-4 font-medium transition flex flex-col items-center justify-center gap-1 rounded-lg border-2 ${
-                                            customData.itemType === 'recipe'
-                                                ? 'border-orange-600 bg-orange-50 text-orange-600'
-                                                : 'border-gray-300 text-gray-600 hover:border-orange-600 hover:text-orange-600'
-                                        }`}
-                                    >
-                                        <Icon name="ChefHat" size={20} />
-                                        <span className="text-sm">料理</span>
                                     </button>
                                     <button
                                         type="button"
@@ -2678,7 +2696,7 @@ const AddMealModal = ({
                                         <Icon name="Plus" size={16} className="text-green-600 mt-0.5" />
                                         <div>
                                             <p className="text-sm font-medium text-gray-600">カスタム作成</p>
-                                            <p className="text-xs text-gray-600">オリジナルの食材や料理を作成</p>
+                                            <p className="text-xs text-gray-600">オリジナルの食材やサプリを作成</p>
                                         </div>
                                     </div>
                                 </div>

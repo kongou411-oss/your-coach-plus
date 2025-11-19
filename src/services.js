@@ -493,44 +493,6 @@ const DataService = {
         }
     },
 
-    // サプリメントテンプレート取得
-    getSupplementTemplates: async (userId) => {
-        try {
-            const doc = await db.collection('supplementTemplates').doc(userId).get();
-            return doc.exists ? doc.data().templates : [];
-        } catch (error) {
-            console.error('Error fetching supplement templates:', error);
-            return [];
-        }
-    },
-
-    // サプリメントテンプレート保存
-    saveSupplementTemplate: async (userId, template) => {
-        try {
-            const templates = await DataService.getSupplementTemplates(userId);
-            const existingIndex = templates.findIndex(t => t.id === template.id);
-            if (existingIndex >= 0) {
-                templates[existingIndex] = template;
-            } else {
-                templates.push(template);
-            }
-            await db.collection('supplementTemplates').doc(userId).set({ templates });
-        } catch (error) {
-            console.error('Error saving supplement template:', error);
-        }
-    },
-
-    // サプリメントテンプレート削除
-    deleteSupplementTemplate: async (userId, templateId) => {
-        try {
-            const templates = await DataService.getSupplementTemplates(userId);
-            const filtered = templates.filter(t => t.id !== templateId);
-            await db.collection('supplementTemplates').doc(userId).set({ templates: filtered });
-        } catch (error) {
-            console.error('Error deleting supplement template:', error);
-        }
-    },
-
     // PG BASE チャット履歴取得
     getPGBaseChatHistory: async () => {
         // Firestore実装時はここに追加

@@ -2702,8 +2702,27 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </span>
                         </div>
                         <button
-                            onClick={() => window.handleQuickAction && window.handleQuickAction('meal')}
-                            className="text-sm px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 shadow-lg hover:shadow-xl transition"
+                            onClick={() => {
+                                if (window.handleQuickAction) {
+                                    window.handleQuickAction('meal');
+                                } else {
+                                    console.error('[Dashboard] window.handleQuickAction is not defined');
+                                    alert('記録機能の読み込みに失敗しました。ページを再読み込みしてください。');
+                                }
+                            }}
+                            onTouchStart={(e) => {
+                                e.currentTarget.classList.add('scale-95');
+                            }}
+                            onTouchEnd={(e) => {
+                                e.currentTarget.classList.remove('scale-95');
+                            }}
+                            className="text-sm px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 shadow-lg hover:shadow-xl transition active:scale-95"
+                            style={{
+                                WebkitTapHighlightColor: 'transparent',
+                                touchAction: 'manipulation',
+                                minWidth: '44px',
+                                minHeight: '44px'
+                            }}
                         >
                             ＋ 追加
                         </button>
@@ -2825,9 +2844,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 const templateName = prompt('テンプレート名を入力してください', meal.name);
                                                 if (templateName && templateName.trim()) {
                                                     const template = {
-                                                        id: Date.now(),
+                                                        id: Date.now().toString(),
                                                         name: templateName,
-                                                        items: meal.items
+                                                        items: meal.items,
+                                                        createdAt: new Date().toISOString(),
+                                                        isTrialCreated: false  // ダッシュボードから保存の場合は常にfalse
                                                     };
                                                     await DataService.saveMealTemplate(user.uid, template);
                                                     toast.success('テンプレートを保存しました');
@@ -2887,8 +2908,27 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 </span>
                             </div>
                             <button
-                                onClick={() => window.handleQuickAction && window.handleQuickAction('workout')}
-                                className="text-sm px-4 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 shadow-lg hover:shadow-xl transition"
+                                onClick={() => {
+                                    if (window.handleQuickAction) {
+                                        window.handleQuickAction('workout');
+                                    } else {
+                                        console.error('[Dashboard] window.handleQuickAction is not defined');
+                                        alert('記録機能の読み込みに失敗しました。ページを再読み込みしてください。');
+                                    }
+                                }}
+                                onTouchStart={(e) => {
+                                    e.currentTarget.classList.add('scale-95');
+                                }}
+                                onTouchEnd={(e) => {
+                                    e.currentTarget.classList.remove('scale-95');
+                                }}
+                                className="text-sm px-4 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 shadow-lg hover:shadow-xl transition active:scale-95"
+                                style={{
+                                    WebkitTapHighlightColor: 'transparent',
+                                    touchAction: 'manipulation',
+                                    minWidth: '44px',
+                                    minHeight: '44px'
+                                }}
                             >
                                 ＋ 追加
                             </button>
@@ -3053,9 +3093,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                         };
 
                                                         const template = removeUndefined({
-                                                            id: Date.now(),
+                                                            id: Date.now().toString(),
                                                             name: templateName,
-                                                            exercises: workout.exercises
+                                                            exercises: workout.exercises,
+                                                            createdAt: new Date().toISOString(),
+                                                            isTrialCreated: false  // ダッシュボードから保存の場合は常にfalse
                                                         });
                                                         await DataService.saveWorkoutTemplate(user.uid, template);
                                                         toast.success('テンプレートを保存しました');

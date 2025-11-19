@@ -983,10 +983,9 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 window.handleQuickAction = (action) => {
                     switch (action) {
                         case 'meal':
-                            setAddViewType('meal');
-                            setEditingMeal(null); // 新規追加モードのため編集をクリア
-                            setEditingTemplate(null);
-                            setShowAddView(true);
+                            console.log('[08_app] 食事記録: AddMealModal を食材タブで開きます');
+                            setMealModalInitialTab('food');
+                            setShowNewMealModal(true);
                             setBottomBarMenu(null);
                             setBottomBarExpanded(false);
                             break;
