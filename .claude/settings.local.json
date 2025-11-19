@@ -130,7 +130,19 @@
       "Bash(ping:*)",
       "Bash(start http://localhost:8001)",
       "Bash(C:Usersyourcyourcoach_newagent_approval.txt)",
-      "Bash(C:Usersyourcyourcoach_newagent_continue.txt)"
+      "Bash(C:Usersyourcyourcoach_newagent_continue.txt)",
+      "Bash(if exist extract_features.py del extract_features.py)",
+      "Bash(if exist extract_data.py del extract_data.py)",
+      "Bash(if exist extract_other.py del extract_other.py)",
+      "Bash(/tmp/original_settings.jsx)",
+      "Bash(C:Usersyourcyourcoach_newdata_tab_extract.txt)",
+      "Bash(src/components/04_settings_other.jsx.tmp)",
+      "Bash(cmd /c \"rmdir /s /q node_modules\\.vite 2>nul & npm run dev\")",
+      "Bash(if exist extract_data_correct.py del extract_data_correct.py)",
+      "Bash(cmd /c \"if exist extract_data_correct.py del extract_data_correct.py\")",
+      "Bash(start http://localhost:8004)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe 2>nul & if exist node_modules\\.vite (rmdir /s /q node_modules\\.vite) & npm run dev\")",
+      "Bash(C:/Users/yourc/yourcoach_new/temp_features.txt)"
     ],
     "deny": [],
     "ask": []
