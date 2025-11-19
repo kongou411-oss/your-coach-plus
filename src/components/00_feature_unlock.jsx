@@ -143,9 +143,9 @@ const calculateDaysSinceRegistration = async (userId) => {
     const diffTime = nowDateOnly - regDateOnly;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    // 0日目から開始（登録日当日=0日目、翌日=1日目...）
-    // トライアル期間: 0-6日目（7日間）、制限開始: 7日目以降
-    return diffDays;
+    // 1日目から開始（登録日当日=1日目、翌日=2日目...）
+    // トライアル期間: 1-7日目（7日間）、制限開始: 8日目以降
+    return diffDays + 1;
 };
 
 // 機能開放状態を計算
@@ -159,7 +159,7 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
     // console.log('[calculateUnlockedFeatures] todayRecord:', todayRecord);
     // console.log('[calculateUnlockedFeatures] isPremium:', isPremium);
 
-    // 0日目（初日）：段階的開放
+    // 1日目（初日）：段階的開放
     // 1. 食事記録は常に開放
     unlocked.push('food');
 
@@ -173,48 +173,46 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
         unlocked.push('condition');
     }
 
-    // 4. コンディション記録を6項目全て入力したら分析を開放（一度完了したら永続）
-    if (completionStatus.condition || completionStatus.analysis || checkConditionComplete(todayRecord)) {
-        unlocked.push('analysis');
-    }
-
-    // 5. 閃き機能（無料機能、一度開放したら永続）
-    if (completionStatus.idea) {
-        unlocked.push('idea');
-    }
-
     // ===== 有料・無料の判定 =====
-    const isTrialActive = daysSinceReg < 7; // 0-6日目（7日間）はトライアル
+    const isTrialActive = daysSinceReg <= 7; // 1-7日目（7日間）はトライアル
     const hasPremiumAccess = isTrialActive || isPremium;
 
-    // 5. テンプレート機能 - 初日から全員に開放（無料会員は枠制限あり）
+    // 4. テンプレート機能 - 初日から全員に開放（無料会員は枠制限あり）
     unlocked.push('template');
     unlocked.push('training_template'); // 旧互換性
 
-    // 6. ルーティン - 初日から全員に開放
+    // 5. ルーティン - 初日から全員に開放
     unlocked.push('routine');
 
-    // 7. PG BASE（初期教科書） - 初日から全員に開放
-    unlocked.push('pg_base');
+    // 6. ショートカット - 初日から全員に開放
+    unlocked.push('shortcut');
 
     // ===== 8日目以降はPremium専用の機能 =====
     if (hasPremiumAccess) {
         // AI機能
         unlocked.push('ai_photo_recognition'); // AI食事認識
-        // 分析は上書きしない（コンディション完了が必須条件）
 
-        // 指示書・履歴
-        unlocked.push('directive');
-        unlocked.push('history');
-        unlocked.push('history_graph'); // 旧互換性
-        unlocked.push('history_analysis');
+        // 分析機能（コンディション完了が必須条件）
+        if (completionStatus.condition || completionStatus.analysis || checkConditionComplete(todayRecord)) {
+            unlocked.push('analysis');
+        }
 
-        // その他
-        unlocked.push('shortcut');
-        unlocked.push('community');
-        unlocked.push('community_view'); // 旧互換性
-        unlocked.push('community_post'); // 旧互換性
-        unlocked.push('detailed_nutrients'); // 詳細栄養素
+        // 分析完了後に開放される機能
+        if (completionStatus.idea) {
+            unlocked.push('idea');
+        }
+        if (completionStatus.history) {
+            unlocked.push('history');
+        }
+        if (completionStatus.pg_base) {
+            unlocked.push('pg_base');
+        }
+        if (completionStatus.community) {
+            unlocked.push('community');
+        }
+
+        // 詳細栄養素
+        unlocked.push('detailed_nutrients');
         unlocked.push('micronutrients'); // 旧互換性
     }
 

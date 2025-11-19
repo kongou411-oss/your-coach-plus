@@ -67,6 +67,9 @@ const SettingsView = ({
     // テンプレート関連
     const [mealTemplates, setMealTemplates] = useState([]);
     const [workoutTemplates, setWorkoutTemplates] = useState([]);
+    const [showTemplateEditModal, setShowTemplateEditModal] = useState(false);
+    const [templateEditType, setTemplateEditType] = useState(null);
+    const [selectedTemplate, setSelectedTemplate] = useState(null);
 
     // ルーティン関連
     const [localRoutines, setLocalRoutines] = useState(() => {
@@ -75,7 +78,7 @@ const SettingsView = ({
     });
 
     // 確認モーダル
-    const { confirmModal, setConfirmModal, showConfirm, hideConfirm } = useConfirmModal();
+    const { showConfirm, hideConfirm, ConfirmModalComponent } = useConfirmModal();
 
     // ===== 初期化・副作用 =====
     useEffect(() => {
@@ -128,12 +131,33 @@ const SettingsView = ({
         checkMFAEnrollment();
     }, [userProfile]);
 
+    // テンプレート読み込み
+    useEffect(() => {
+        loadTemplates();
+    }, [userId]);
+
     const checkMFAEnrollment = async () => {
         if (window.MFAService && typeof window.MFAService.checkMFAEnrollment === 'function') {
             const result = await window.MFAService.checkMFAEnrollment();
             if (result.success) {
                 setMfaEnrolled(result.enrolled);
             }
+        }
+    };
+
+    const loadTemplates = async () => {
+        if (!userId) return;
+
+        try {
+            // 食事テンプレート読み込み
+            const mealTemplatesData = await window.DataService.getMealTemplates(userId);
+            setMealTemplates(mealTemplatesData || []);
+
+            // 運動テンプレート読み込み
+            const workoutTemplatesData = await window.DataService.getWorkoutTemplates(userId);
+            setWorkoutTemplates(workoutTemplatesData || []);
+        } catch (error) {
+            console.error('[Settings] Failed to load templates:', error);
         }
     };
 
@@ -343,6 +367,13 @@ const SettingsView = ({
                             localRoutines={localRoutines}
                             setLocalRoutines={setLocalRoutines}
                             showConfirm={showConfirm}
+                            showTemplateEditModal={showTemplateEditModal}
+                            setShowTemplateEditModal={setShowTemplateEditModal}
+                            templateEditType={templateEditType}
+                            setTemplateEditType={setTemplateEditType}
+                            selectedTemplate={selectedTemplate}
+                            setSelectedTemplate={setSelectedTemplate}
+                            loadTemplates={loadTemplates}
                         />
                     )}
 
@@ -364,18 +395,11 @@ const SettingsView = ({
                             feedbackSending={feedbackSending}
                             feedbackSent={feedbackSent}
                             handleSendFeedback={handleSendFeedback}
-                            show2FASetup={show2FASetup}
-                            setShow2FASetup={setShow2FASetup}
-                            phoneNumber={phoneNumber}
-                            setPhoneNumber={setPhoneNumber}
-                            verificationId={verificationId}
-                            setVerificationId={setVerificationId}
-                            verificationCode={verificationCode}
-                            setVerificationCode={setVerificationCode}
-                            setMfaEnrolled={setMfaEnrolled}
                             userId={userId}
                             usageDays={usageDays}
                             userProfile={userProfile}
+                            showConfirm={showConfirm}
+                            onClose={onClose}
                         />
                     )}
                 </div>
@@ -383,7 +407,7 @@ const SettingsView = ({
         </div>
 
         {/* 確認モーダル */}
-        <ConfirmModal {...confirmModal} onClose={hideConfirm} />
+        <ConfirmModalComponent />
 
         {/* 情報モーダル */}
         {infoModal.show && (

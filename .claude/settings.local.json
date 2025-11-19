@@ -145,7 +145,8 @@
       "Bash(C:/Users/yourc/yourcoach_new/temp_features.txt)",
       "Bash(start home.html)",
       "Bash(if not exist scripts mkdir scripts)",
-      "Bash(cmd /c \"if not exist scripts mkdir scripts\")"
+      "Bash(cmd /c \"if not exist scripts mkdir scripts\")",
+      "Bash(/dev/null)"
     ],
     "deny": [],
     "ask": []

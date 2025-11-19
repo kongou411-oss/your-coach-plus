@@ -15,7 +15,14 @@ const FeaturesTab = ({
     onOpenAddView,
     localRoutines,
     setLocalRoutines,
-    showConfirm
+    showConfirm,
+    showTemplateEditModal,
+    setShowTemplateEditModal,
+    templateEditType,
+    setTemplateEditType,
+    selectedTemplate,
+    setSelectedTemplate,
+    loadTemplates
 }) => {
     const Icon = window.Icon;
 

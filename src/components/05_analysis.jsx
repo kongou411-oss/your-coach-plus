@@ -1263,47 +1263,30 @@ ${section2Prompt}
         // 分析完了をマーク
         await markFeatureCompleted(userId, 'analysis');
 
-        // 初回分析後：全機能を開放
-        // 注：isFirstAnalysisParamがfalseでも、未開放の機能は開放する
-        // 各機能が未開放なら開放する（初回分析かどうかに関わらず）
-        const directiveCompleted = isFeatureCompleted(userId, 'directive');
-        const templateCompleted = isFeatureCompleted(userId, 'template');
-        const routineCompleted = isFeatureCompleted(userId, 'routine');
-        const shortcutCompleted = isFeatureCompleted(userId, 'shortcut');
+        // 初回分析後：分析完了後に開放される4機能をマーク
+        // 閃き、履歴、PGBASE、コミュニティのみ
+        const ideaCompleted = isFeatureCompleted(userId, 'idea');
+        const historyCompleted = isFeatureCompleted(userId, 'history');
+        const pgBaseCompleted = isFeatureCompleted(userId, 'pg_base');
+        const communityCompleted = isFeatureCompleted(userId, 'community');
 
         // 未開放の機能を開放
-        if (!directiveCompleted || !templateCompleted || !routineCompleted || !shortcutCompleted) {
-            // モーダル①: 指示書・履歴
-            if (!directiveCompleted) {
-                await markFeatureCompleted(userId, 'directive');
-            }
-            if (!isFeatureCompleted(userId, 'idea')) {
+        if (!ideaCompleted || !historyCompleted || !pgBaseCompleted || !communityCompleted) {
+            // 閃き
+            if (!ideaCompleted) {
                 await markFeatureCompleted(userId, 'idea');
             }
-            if (!isFeatureCompleted(userId, 'history')) {
+            // 履歴
+            if (!historyCompleted) {
                 await markFeatureCompleted(userId, 'history');
             }
-
-            // モーダル②: PG BASE・COMY
-            if (!isFeatureCompleted(userId, 'pg_base')) {
+            // PG BASE
+            if (!pgBaseCompleted) {
                 await markFeatureCompleted(userId, 'pg_base');
             }
-            if (!isFeatureCompleted(userId, 'community')) {
+            // コミュニティ
+            if (!communityCompleted) {
                 await markFeatureCompleted(userId, 'community');
-            }
-
-            // モーダル③: テンプレート・ルーティン・ショートカット
-            if (!templateCompleted) {
-                await markFeatureCompleted(userId, 'template');
-            }
-            if (!routineCompleted) {
-                await markFeatureCompleted(userId, 'routine');
-            }
-            if (!shortcutCompleted) {
-                await markFeatureCompleted(userId, 'shortcut');
-            }
-            if (!isFeatureCompleted(userId, 'history_analysis')) {
-                await markFeatureCompleted(userId, 'history_analysis');
             }
 
             // 機能開放後、App.jsのunlockedFeaturesを即座に更新
@@ -1612,7 +1595,8 @@ ${conversationContext}
                     <button onClick={() => {
                         // スコアを再計算して渡す
                         const freshScores = calculateScores(userProfile, dailyRecord, targetPFC);
-                        generateAIAnalysis(analysis, historicalInsights, false, freshScores);
+                        // 初回分析フラグを渡す
+                        generateAIAnalysis(analysis, historicalInsights, isFirstAnalysis, freshScores);
                     }} className="text-sm px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md hover:shadow-lg transition">
                         生成
                     </button>

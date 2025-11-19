@@ -1,5 +1,10 @@
 import React from 'react';
 import toast from 'react-hot-toast';
+import { STORAGE_KEYS } from '../config.js';
+
+// グローバル関数を取得
+const getFeatureCompletionStatus = window.getFeatureCompletionStatus;
+const getRegistrationDate = window.getRegistrationDate;
 
 // ===== その他タブコンポーネント =====
 const OtherTab = ({
@@ -8,18 +13,11 @@ const OtherTab = ({
     feedbackSending,
     feedbackSent,
     handleSendFeedback,
-    show2FASetup,
-    setShow2FASetup,
-    phoneNumber,
-    setPhoneNumber,
-    verificationId,
-    setVerificationId,
-    verificationCode,
-    setVerificationCode,
-    setMfaEnrolled,
     userId,
     usageDays,
-    userProfile
+    userProfile,
+    showConfirm,
+    onClose
 }) => {
     const Icon = window.Icon;
 
@@ -568,6 +566,20 @@ const OtherTab = ({
                             </p>
                         </div>
                     </div>
+                    </div>
+                </div>
+            </details>
+
+            {/* アカウント管理 */}
+            <details className="border rounded-lg" id="account">
+                <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                    <Icon name="User" size={18} className="text-blue-600" />
+                    アカウント管理
+                    <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                </summary>
+                <div className="p-4 pt-0 border-t">
+                    <div className="text-sm text-gray-600">
+                        アカウント管理（ログアウト・アカウント削除）は、「基本」タブの「アカウント」セクションで行えます。
                     </div>
                 </div>
             </details>

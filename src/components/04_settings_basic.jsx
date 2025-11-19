@@ -723,6 +723,12 @@ const BasicTab = ({
                             </p>
                             <button
                                 onClick={() => {
+                                    console.log('[Account Delete] Button clicked');
+                                    console.log('[Account Delete] showConfirm:', typeof showConfirm, showConfirm);
+                                    if (!showConfirm) {
+                                        toast.error('確認モーダルが利用できません');
+                                        return;
+                                    }
                                     showConfirm(
                                         'アカウント削除の確認',
                                         '本当にアカウントを削除しますか？この操作は取り消せません。',

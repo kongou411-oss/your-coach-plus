@@ -822,14 +822,21 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
         const checkAndShowModal = () => {
             const shouldShow = localStorage.getItem('showFeatureUnlockModals');
+            console.log('[Dashboard] checkAndShowModal - shouldShow:', shouldShow);
             if (shouldShow === 'true') {
+                console.log('[Dashboard] モーダル表示タイマー開始');
                 timeoutId = setTimeout(() => {
                     if (isMounted) {
+                        console.log('[Dashboard] モーダルを表示します');
                         setCurrentModalPage(1); // ページ1から開始
                         setShowFeatureUnlockModal(true);
                         localStorage.removeItem('showFeatureUnlockModals');
+                    } else {
+                        console.log('[Dashboard] isMounted = false のためモーダル表示をスキップ');
                     }
                 }, 300); // 少し遅延させてスムーズに表示
+            } else {
+                console.log('[Dashboard] モーダル表示条件を満たしていません');
             }
         };
 
@@ -838,9 +845,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
         // カスタムイベントをリッスン（分析完了時に発火）
         const handleFeatureUnlock = () => {
+            console.log('[Dashboard] featureUnlockCompletedイベントを受信しました');
             checkAndShowModal();
         };
         window.addEventListener('featureUnlockCompleted', handleFeatureUnlock);
+        console.log('[Dashboard] featureUnlockCompletedイベントリスナーを登録しました');
 
         return () => {
             isMounted = false;
@@ -3918,34 +3927,27 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 </div>
                             </div>
 
-                            {/* ページ1: 指示書・履歴 */}
+                            {/* ページ1: 閃き・履歴 */}
                             {currentModalPage === 1 && (
                                 <>
                                     <h3 className="text-xl font-bold text-center text-gray-800">
                                         🎉 新機能が開放されました！
                                     </h3>
                                     <div className="text-sm text-gray-600 space-y-3">
-                                        <p className="text-center">分析完了おめでとうございます！</p>
-                                        <div className="bg-yellow-50 rounded-lg p-4 space-y-2 border border-amber-200">
+                                        <p className="text-center">分析完了おめでとうございます！<br/>新しい機能が使えるようになりました</p>
+                                        <div className="bg-yellow-50 rounded-lg p-4 space-y-3 border border-amber-200">
                                             <div className="flex items-start gap-2">
-                                                <Icon name="FileText" size={18} className="text-amber-600 mt-0.5" />
-                                                <div>
-                                                    <div className="font-bold text-gray-800">指示書</div>
-                                                    <div className="text-xs text-gray-600">明日の行動指針をAIが提案</div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-2">
-                                                <Icon name="Lightbulb" size={18} className="text-yellow-500 mt-0.5" />
+                                                <Icon name="Lightbulb" size={20} className="text-yellow-500 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">閃き</div>
-                                                    <div className="text-xs text-gray-600">今日の気づきやメモを記録</div>
+                                                    <div className="text-xs text-gray-600">今日の気づきやメモを記録できます</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-2">
-                                                <Icon name="History" size={18} className="text-amber-600 mt-0.5" />
+                                                <Icon name="History" size={20} className="text-blue-600 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">履歴</div>
-                                                    <div className="text-xs text-gray-600">グラフで進捗を確認</div>
+                                                    <div className="text-xs text-gray-600">グラフで進捗を確認できます</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -3957,62 +3959,28 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             {currentModalPage === 2 && (
                                 <>
                                     <h3 className="text-xl font-bold text-center text-gray-800">
-                                        🎉 さらに機能が開放！
+                                        📚 学習・交流機能も開放！
                                     </h3>
                                     <div className="text-sm text-gray-600 space-y-3">
-                                        <div className="bg-yellow-50 rounded-lg p-4 space-y-2 border border-amber-200">
+                                        <p className="text-center">さらに2つの機能が使えます</p>
+                                        <div className="bg-green-50 rounded-lg p-4 space-y-3 border border-green-200">
                                             <div className="flex items-start gap-2">
-                                                <Icon name="BookOpen" size={18} className="text-amber-600 mt-0.5" />
+                                                <Icon name="BookOpen" size={20} className="text-green-600 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">PG BASE</div>
-                                                    <div className="text-xs text-gray-600">ボディメイクの基礎知識</div>
+                                                    <div className="text-xs text-gray-600">ボディメイクの理論と知識を学べます</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-2">
-                                                <Icon name="Users" size={18} className="text-amber-600 mt-0.5" />
+                                                <Icon name="Users" size={20} className="text-pink-600 mt-0.5" />
                                                 <div>
-                                                    <div className="font-bold text-gray-800">COMY</div>
-                                                    <div className="text-xs text-gray-600">仲間と刺激し合う</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* ページ3: テンプレート・ルーティン・ショートカット */}
-                            {currentModalPage === 3 && (
-                                <>
-                                    <h3 className="text-xl font-bold text-center text-gray-800">
-                                        🎉 全機能開放完了！
-                                    </h3>
-                                    <div className="text-sm text-gray-600 space-y-3">
-                                        <p className="text-center">すべての機能が使えるようになりました！</p>
-                                        <div className="bg-yellow-50 rounded-lg p-4 space-y-2 border border-amber-200">
-                                            <div className="flex items-start gap-2">
-                                                <Icon name="BookTemplate" size={18} className="text-amber-600 mt-0.5" />
-                                                <div>
-                                                    <div className="font-bold text-gray-800">テンプレート</div>
-                                                    <div className="text-xs text-gray-600">食事・運動を保存</div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-2">
-                                                <Icon name="Calendar" size={18} className="text-amber-600 mt-0.5" />
-                                                <div>
-                                                    <div className="font-bold text-gray-800">ルーティン</div>
-                                                    <div className="text-xs text-gray-600">曜日別トレーニング計画</div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-2">
-                                                <Icon name="Zap" size={18} className="text-amber-600 mt-0.5" />
-                                                <div>
-                                                    <div className="font-bold text-gray-800">ショートカット</div>
-                                                    <div className="text-xs text-gray-600">素早い記録入力</div>
+                                                    <div className="font-bold text-gray-800">コミュニティ</div>
+                                                    <div className="text-xs text-gray-600">仲間と刺激し合い、モチベーション維持</div>
                                                 </div>
                                             </div>
                                         </div>
                                         <p className="text-center text-xs text-gray-600">
-                                            7日間はすべての機能が無料で使えます
+                                            7日間のトライアル期間中は全機能が使えます
                                         </p>
                                     </div>
                                 </>
@@ -4020,7 +3988,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                             {/* ページインジケーター */}
                             <div className="flex justify-center gap-2">
-                                {[1, 2, 3].map(page => (
+                                {[1, 2].map(page => (
                                     <div
                                         key={page}
                                         className={`w-2 h-2 rounded-full ${
@@ -4040,7 +4008,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         戻る
                                     </button>
                                 )}
-                                {currentModalPage < 3 ? (
+                                {currentModalPage < 2 ? (
                                     <button
                                         onClick={() => setCurrentModalPage(currentModalPage + 1)}
                                         className={`${currentModalPage === 1 ? 'w-full' : 'w-2/3'} bg-[#FFF59A] text-gray-800 py-3 rounded-lg font-bold hover:opacity-90 transition-colors shadow-md relative overflow-hidden`}

@@ -364,9 +364,13 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 const currentMinor = getMinorVersion(APP_VERSION);
                 const lastMinor = getMinorVersion(lastSeenVersion);
 
-                // 初回起動、またはマイナーバージョンが変わった場合にモーダルを表示
+                // 初回分析完了済みかチェック
+                const isAnalysisCompleted = window.isFeatureCompleted?.(user.uid, 'analysis') || false;
+
+                // マイナーバージョンが変わった場合、かつ初回分析完了済みの場合のみモーダルを表示
                 // （パッチバージョンの変更では表示しない）
-                if (!lastMinor || lastMinor !== currentMinor) {
+                // （初回登録直後は表示しない）
+                if (lastMinor && lastMinor !== currentMinor && isAnalysisCompleted) {
                     // 少し遅延させてからモーダルを表示（他のモーダルとの競合を避ける）
                     setTimeout(() => {
                         setShowWhatsNew(true);
