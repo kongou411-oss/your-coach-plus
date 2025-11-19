@@ -14,10 +14,11 @@ const DataTab = ({
         <details className="border rounded-lg">
             <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                 <Icon name="Database" size={18} className="text-blue-600" />
-                データ管理                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                データ管理
+                <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
             </summary>
             <div className="p-4 pt-0 border-t">
-            <div className="space-y-4">
+                <div className="space-y-4">
                                             {/* PWAインストール */}
                 {(() => {
                     const [deferredPrompt, setDeferredPrompt] = React.useState(null);
@@ -2536,3 +2537,4 @@ const DataTab = ({
 };
 
 export default DataTab;
+

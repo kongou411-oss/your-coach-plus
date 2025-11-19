@@ -211,7 +211,7 @@ const BasicTab = ({
             </details>
 
             {/* アカウント */}
-            <details className="border rounded-lg">
+            <details id="account" className="border rounded-lg">
                 <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                     <Icon name="UserCircle" size={18} className="text-blue-600" />
                     アカウント
@@ -243,6 +243,36 @@ const BasicTab = ({
                                             }
                                             // ISO文字列の場合
                                             return new Date(dateField).toLocaleDateString('ja-JP');
+                                        })()}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">ユーザーID</label>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm font-mono text-gray-800 flex-1 truncate">{userId || '不明'}</p>
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(userId || '');
+                                                toast.success('ユーザーIDをコピーしました');
+                                            }}
+                                            className="flex-shrink-0 p-1.5 hover:bg-gray-200 rounded transition"
+                                            title="コピー"
+                                        >
+                                            <Icon name="Copy" size={14} className="text-gray-600" />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">ログイン方法</label>
+                                    <p className="text-sm font-medium text-gray-800">
+                                        {(() => {
+                                            const user = firebase.auth().currentUser;
+                                            if (!user || !user.providerData || user.providerData.length === 0) return '不明';
+
+                                            const providerId = user.providerData[0].providerId;
+                                            if (providerId === 'password') return 'メールアドレス';
+                                            if (providerId === 'google.com') return 'Google';
+                                            return providerId;
                                         })()}
                                     </p>
                                 </div>
@@ -348,6 +378,220 @@ const BasicTab = ({
                                 </div>
                             </div>
                         )}
+
+                        {/* 同期状態確認 */}
+                        {(() => {
+                            const [syncStatus, setSyncStatus] = React.useState(null);
+                            const [isChecking, setIsChecking] = React.useState(false);
+                            const [isSyncing, setIsSyncing] = React.useState(false);
+                            const [showDebugInfo, setShowDebugInfo] = React.useState(false);
+
+                            const checkSyncStatus = async () => {
+                                setIsChecking(true);
+                                try {
+                                    const db = firebase.firestore();
+                                    const userDocRef = db.collection('users').doc(userId);
+                                    const userDoc = await userDocRef.get();
+
+                                    if (!userDoc.exists) {
+                                        setSyncStatus({
+                                            status: 'error',
+                                            message: 'ユーザーデータが見つかりません',
+                                            lastSync: null
+                                        });
+                                        return;
+                                    }
+
+                                    const userData = userDoc.data();
+                                    const lastModified = userData.lastModified || userData.updatedAt;
+
+                                    setSyncStatus({
+                                        status: 'success',
+                                        message: 'Firestoreと正常に接続されています',
+                                        lastSync: lastModified ? (lastModified.toDate ? lastModified.toDate() : new Date(lastModified)) : null
+                                    });
+                                } catch (error) {
+                                    console.error('Sync check error:', error);
+                                    setSyncStatus({
+                                        status: 'error',
+                                        message: `接続エラー: ${error.message}`,
+                                        lastSync: null
+                                    });
+                                } finally {
+                                    setIsChecking(false);
+                                }
+                            };
+
+                            const forceResync = async () => {
+                                setIsSyncing(true);
+                                try {
+                                    // Firestoreから最新データを取得
+                                    const db = firebase.firestore();
+                                    const userDocRef = db.collection('users').doc(userId);
+                                    const userDoc = await userDocRef.get();
+
+                                    if (!userDoc.exists) {
+                                        toast.error('ユーザーデータが見つかりません');
+                                        return;
+                                    }
+
+                                    // 強制的にページをリロードして最新データを反映
+                                    toast.success('データを再同期しています...');
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 1000);
+                                } catch (error) {
+                                    console.error('Force resync error:', error);
+                                    toast.error(`再同期エラー: ${error.message}`);
+                                } finally {
+                                    setIsSyncing(false);
+                                }
+                            };
+
+                            return (
+                                <div className="bg-purple-50 border-2 border-purple-200 p-4 rounded-lg">
+                                    <h4 className="text-xs font-bold text-gray-600 mb-3 flex items-center gap-1.5">
+                                        <Icon name="RefreshCw" size={14} className="text-purple-600" />
+                                        同期状態
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {syncStatus && (
+                                            <div className={`p-3 rounded-lg ${
+                                                syncStatus.status === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                                            }`}>
+                                                <div className="flex items-start gap-2">
+                                                    <Icon
+                                                        name={syncStatus.status === 'success' ? 'CheckCircle' : 'AlertCircle'}
+                                                        size={16}
+                                                        className={syncStatus.status === 'success' ? 'text-green-600' : 'text-red-600'}
+                                                    />
+                                                    <div className="flex-1">
+                                                        <p className={`text-xs font-medium ${
+                                                            syncStatus.status === 'success' ? 'text-green-800' : 'text-red-800'
+                                                        }`}>
+                                                            {syncStatus.message}
+                                                        </p>
+                                                        {syncStatus.lastSync && (
+                                                            <p className="text-xs text-gray-600 mt-1">
+                                                                最終更新: {syncStatus.lastSync.toLocaleString('ja-JP')}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <button
+                                                onClick={checkSyncStatus}
+                                                disabled={isChecking}
+                                                className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                            >
+                                                <Icon name={isChecking ? "Loader" : "Search"} size={14} className={isChecking ? "animate-spin" : ""} />
+                                                <span className="text-xs font-medium">
+                                                    {isChecking ? '確認中...' : '同期状態を確認'}
+                                                </span>
+                                            </button>
+                                            <button
+                                                onClick={forceResync}
+                                                disabled={isSyncing}
+                                                className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                            >
+                                                <Icon name={isSyncing ? "Loader" : "RotateCcw"} size={14} className={isSyncing ? "animate-spin" : ""} />
+                                                <span className="text-xs font-medium">
+                                                    {isSyncing ? '再同期中...' : '強制再同期'}
+                                                </span>
+                                            </button>
+                                        </div>
+
+                                        <div className="bg-white p-2 rounded border border-purple-200">
+                                            <p className="text-xs text-gray-600">
+                                                <Icon name="Info" size={12} className="inline mr-1" />
+                                                ブラウザとスマホPWAで異なるデータが表示される場合は、「同期状態を確認」→「強制再同期」をお試しください
+                                            </p>
+                                        </div>
+
+                                        {/* デバッグ情報表示 */}
+                                        <button
+                                            onClick={() => setShowDebugInfo(!showDebugInfo)}
+                                            className="w-full text-xs text-gray-600 hover:text-gray-800 underline flex items-center justify-center gap-1"
+                                        >
+                                            <Icon name={showDebugInfo ? "ChevronUp" : "ChevronDown"} size={12} />
+                                            {showDebugInfo ? 'デバッグ情報を閉じる' : 'デバッグ情報を表示'}
+                                        </button>
+
+                                        {showDebugInfo && (
+                                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-2">
+                                                <div className="text-xs space-y-1">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-600">ブラウザ:</span>
+                                                        <span className="font-mono text-gray-800 text-[10px]">
+                                                            {(() => {
+                                                                const ua = navigator.userAgent;
+                                                                if (ua.includes('Chrome')) return 'Chrome';
+                                                                if (ua.includes('Safari')) return 'Safari';
+                                                                if (ua.includes('Firefox')) return 'Firefox';
+                                                                if (ua.includes('Edge')) return 'Edge';
+                                                                return 'その他';
+                                                            })()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-600">PWAモード:</span>
+                                                        <span className="font-mono text-gray-800 text-[10px]">
+                                                            {window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone ? 'スタンドアロン' : 'ブラウザ'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-600">OS:</span>
+                                                        <span className="font-mono text-gray-800 text-[10px]">
+                                                            {(() => {
+                                                                const ua = navigator.userAgent;
+                                                                if (/iPad|iPhone|iPod/.test(ua)) return 'iOS';
+                                                                if (/Android/.test(ua)) return 'Android';
+                                                                if (/Win/.test(ua)) return 'Windows';
+                                                                if (/Mac/.test(ua)) return 'macOS';
+                                                                if (/Linux/.test(ua)) return 'Linux';
+                                                                return 'その他';
+                                                            })()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-600">ServiceWorker:</span>
+                                                        <span className="font-mono text-gray-800 text-[10px]">
+                                                            {navigator.serviceWorker?.controller ? '有効' : '無効'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-600">オンライン状態:</span>
+                                                        <span className={`font-mono text-[10px] ${navigator.onLine ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {navigator.onLine ? 'オンライン' : 'オフライン'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const debugInfo = {
+                                                            userId,
+                                                            userAgent: navigator.userAgent,
+                                                            pwaMode: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone,
+                                                            online: navigator.onLine,
+                                                            serviceWorker: !!navigator.serviceWorker?.controller,
+                                                            timestamp: new Date().toISOString()
+                                                        };
+                                                        navigator.clipboard.writeText(JSON.stringify(debugInfo, null, 2));
+                                                        toast.success('デバッグ情報をコピーしました');
+                                                    }}
+                                                    className="w-full px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 transition"
+                                                >
+                                                    デバッグ情報をコピー
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                         {/* パスワードリセット */}
                         <div className="border-l-4 border-blue-500 pl-4">
