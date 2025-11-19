@@ -615,6 +615,8 @@ const BasicTab = ({
                                                     onClick={() => {
                                                         const debugInfo = {
                                                             userId,
+                                                            subscriptionStatus: userProfile?.subscriptionStatus || 'none',
+                                                            isPremium: userProfile?.subscriptionStatus === 'active',
                                                             userAgent: navigator.userAgent,
                                                             pwaMode: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone,
                                                             online: navigator.onLine,

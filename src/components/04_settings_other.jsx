@@ -303,11 +303,25 @@ const OtherTab = ({
                             {/* モード切り替えボタン */}
                             <div className="grid grid-cols-2 gap-3">
                                 <button
-                                    onClick={() => {
-                                        const currentProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)) || {};
-                                        currentProfile.subscriptionStatus = 'none';
-                                        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(currentProfile));
-                                        window.location.reload();
+                                    onClick={async () => {
+                                        try {
+                                            // LocalStorageに保存
+                                            const currentProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)) || {};
+                                            currentProfile.subscriptionStatus = 'none';
+                                            localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(currentProfile));
+
+                                            // Firestoreにも保存（ブラウザ/PWA間で同期）
+                                            const db = firebase.firestore();
+                                            await db.collection('users').doc(userId).set({
+                                                subscriptionStatus: 'none'
+                                            }, { merge: true });
+
+                                            console.log('[開発モード] 無料会員に切り替え（Firestore + LocalStorage）');
+                                            window.location.reload();
+                                        } catch (error) {
+                                            console.error('プレミアムモード切り替えエラー:', error);
+                                            toast.error('切り替えに失敗しました');
+                                        }
                                     }}
                                     className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
                                 >
@@ -315,11 +329,25 @@ const OtherTab = ({
                                     無料会員にする
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        const currentProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)) || {};
-                                        currentProfile.subscriptionStatus = 'active';
-                                        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(currentProfile));
-                                        window.location.reload();
+                                    onClick={async () => {
+                                        try {
+                                            // LocalStorageに保存
+                                            const currentProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)) || {};
+                                            currentProfile.subscriptionStatus = 'active';
+                                            localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(currentProfile));
+
+                                            // Firestoreにも保存（ブラウザ/PWA間で同期）
+                                            const db = firebase.firestore();
+                                            await db.collection('users').doc(userId).set({
+                                                subscriptionStatus: 'active'
+                                            }, { merge: true });
+
+                                            console.log('[開発モード] Premium会員に切り替え（Firestore + LocalStorage）');
+                                            window.location.reload();
+                                        } catch (error) {
+                                            console.error('プレミアムモード切り替えエラー:', error);
+                                            toast.error('切り替えに失敗しました');
+                                        }
                                     }}
                                     className="px-4 py-3 bg-[#FFF59A] text-gray-800 rounded-lg hover:opacity-90 transition font-medium relative overflow-hidden"
                                 >
