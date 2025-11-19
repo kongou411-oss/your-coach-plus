@@ -8,6 +8,7 @@ const { execSync } = require('child_process');
 const CONFIG_PATH = path.join(__dirname, '../src/config.js');
 const HOME_PATH = path.join(__dirname, '../public/home.html');
 const INDEX_PATH = path.join(__dirname, '../index.html');
+const MANIFEST_PATH = path.join(__dirname, '../public/manifest.json');
 
 // 現在のバージョンを取得
 function getCurrentVersion() {
@@ -169,6 +170,18 @@ function updateIndexHtml(newVersion) {
     console.log(`✓ index.html updated`);
 }
 
+// manifest.json を更新
+function updateManifestJson(newVersion) {
+    const content = fs.readFileSync(MANIFEST_PATH, 'utf-8');
+    const manifest = JSON.parse(content);
+
+    // start_urlのバージョンパラメータを更新
+    manifest.start_url = `/?v=${newVersion}`;
+
+    fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + '\n', 'utf-8');
+    console.log(`✓ manifest.json updated`);
+}
+
 // メイン処理
 function main() {
     console.log('🚀 Auto Release Script\n');
@@ -193,6 +206,7 @@ function main() {
     updateConfigJs(newVersion, type, message);
     updateHomeHtml(newVersion, type, message);
     updateIndexHtml(newVersion);
+    updateManifestJson(newVersion);
 
     console.log('\n✅ 自動リリース完了！');
     console.log(`\n次のステップ:`);
