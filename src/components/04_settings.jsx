@@ -38,7 +38,7 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
     // 経験値・レベル・クレジット情報
     const [expData, setExpData] = useState(null);
     const [milestones, setMilestones] = useState([]);
-    const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'premium', 'account', 'data', 'advanced'
+    const [activeTab, setActiveTab] = useState('basic'); // 'basic', 'premium', 'features', 'data', 'other'
     const [showCustomMultiplierInput, setShowCustomMultiplierInput] = useState(false);
 
     // クレジット情報state
@@ -375,24 +375,54 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
         }
     };
 
+    // タブ定義
+    const TABS = [
+        { id: 'basic', label: '基本', icon: 'User' },
+        { id: 'features', label: '機能', icon: 'Zap' },
+        { id: 'data', label: 'データ', icon: 'Database' },
+        { id: 'other', label: 'その他', icon: 'MoreHorizontal' }
+    ];
+
     return (
         <>
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden slide-up">
                 {/* ヘッダー（固定） */}
-                <div className="flex-shrink-0 bg-white border-b p-4 flex justify-between items-center">
-                    <h3 className="text-lg font-bold">設定</h3>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-                        <Icon name="X" size={20} />
-                    </button>
+                <div className="flex-shrink-0 bg-white border-b">
+                    <div className="p-4 flex justify-between items-center">
+                        <h3 className="text-lg font-bold">設定</h3>
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+                            <Icon name="X" size={20} />
+                        </button>
+                    </div>
+
+                    {/* タブバー */}
+                    <div className="flex border-t overflow-x-auto">
+                        {TABS.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex-1 min-w-[80px] px-3 py-3 flex flex-col items-center gap-1 transition-colors border-b-2 ${
+                                    activeTab === tab.id
+                                        ? 'border-blue-600 bg-blue-50 text-blue-600'
+                                        : 'border-transparent hover:bg-gray-50 text-gray-600'
+                                }`}
+                            >
+                                <Icon name={tab.icon} size={18} />
+                                <span className="text-xs font-medium">{tab.label}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* スクロール可能なコンテンツエリア */}
                 <div className="flex-1 overflow-y-auto">
-                    {/* 設定メニュー）折りたたみ式一覧を*/}
                     <div className="p-6 space-y-3">
-                    {/* 使い方 */}
-                    <details className="border rounded-lg">
+
+                    {/* ========== 基本タブ ========== */}
+                    <div className={activeTab === 'basic' ? '' : 'hidden'}>
+                        {/* 使い方 */}
+                        <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
                             <Icon name="BookOpen" size={18} className="text-blue-600" />
                             使い方
@@ -1545,6 +1575,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                     </div>
                 </details>
+                    </div>
+
+                    {/* ========== 機能タブ ========== */}
+                    <div className={activeTab === 'features' ? '' : 'hidden'}>
                     {/* ショートカット - 初回分析後に開放 */}
                     {unlockedFeatures.includes('shortcut') && (
                     <details className="border rounded-lg">
@@ -3012,11 +3046,14 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                     </details>
                     )}
+                    </div>
 
                     {/* ========== 通知設定（凍結 2025-11-10）========== */}
                     {/* 通知機能は凍結されました。実装内容は NOTIFICATION_IMPLEMENTATION_ARCHIVE.md を参照してください */}
                     {/* ========== 通知設定ここまで ========== */}
 
+                    {/* ========== データタブ ========== */}
+                    <div className={activeTab === 'data' ? '' : 'hidden'}>
                     {/* データ管理*/}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
@@ -5539,7 +5576,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                         </div>
                     </details>
+                    </div>
 
+                    {/* ========== その他タブ ========== */}
+                    <div className={activeTab === 'other' ? '' : 'hidden'}>
                     {/* フィードバック */}
                     <details className="border rounded-lg">
                         <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
@@ -5965,9 +6005,10 @@ const SettingsView = ({ onClose, userProfile, onUpdateProfile, userId, usageDays
                         </div>
                         </div>
                     </details>
+                    </div>
 
-            </div>
-        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

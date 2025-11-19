@@ -2329,11 +2329,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 </div>
                             </div>
                         )}
-                    </div>
-                </details>
+                            </div>
+                        </details>
                     );
                 })()}
-                    </div>
+                </div>
                 )}
 
                 {/* タブコンテンツ（指示書） */}

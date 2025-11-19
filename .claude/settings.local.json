@@ -128,7 +128,9 @@
       "Bash(git rev-parse:*)",
       "Bash(time /t:*)",
       "Bash(ping:*)",
-      "Bash(start http://localhost:8001)"
+      "Bash(start http://localhost:8001)",
+      "Bash(C:Usersyourcyourcoach_newagent_approval.txt)",
+      "Bash(C:Usersyourcyourcoach_newagent_continue.txt)"
     ],
     "deny": [],
     "ask": []
