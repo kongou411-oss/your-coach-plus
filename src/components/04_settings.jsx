@@ -301,14 +301,14 @@ const SettingsView = ({
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex-1 min-w-[80px] px-4 py-3 flex items-center justify-center gap-2 transition ${
+                                className={`flex-1 min-w-[80px] px-4 py-3 flex flex-col items-center justify-center gap-1 transition ${
                                     activeTab === tab.id
                                         ? 'border-b-2 border-indigo-600 text-indigo-600 font-medium'
                                         : 'text-gray-600 hover:bg-gray-50'
                                 }`}
                             >
-                                <Icon name={tab.icon} size={18} />
-                                <span className="text-sm">{tab.label}</span>
+                                <Icon name={tab.icon} size={20} />
+                                <span className="text-xs">{tab.label}</span>
                             </button>
                         ))}
                     </div>
@@ -400,6 +400,7 @@ const SettingsView = ({
                             userProfile={userProfile}
                             showConfirm={showConfirm}
                             onClose={onClose}
+                            unlockedFeatures={unlockedFeatures}
                         />
                     )}
                 </div>

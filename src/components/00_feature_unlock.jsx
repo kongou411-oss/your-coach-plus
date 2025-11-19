@@ -216,12 +216,12 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
         unlocked.push('micronutrients'); // 旧互換性
     }
 
-    // console.log('[calculateUnlockedFeatures] ===== 機能開放状態 =====');
-    // console.log('[calculateUnlockedFeatures] 登録日数:', daysSinceReg, '日目');
-    // console.log('[calculateUnlockedFeatures] トライアル中:', isTrialActive);
-    // console.log('[calculateUnlockedFeatures] Premium会員:', isPremium);
-    // console.log('[calculateUnlockedFeatures] Premium機能アクセス:', hasPremiumAccess);
-    // console.log('[calculateUnlockedFeatures] 開放機能:', unlocked);
+    console.log('[calculateUnlockedFeatures] ===== 機能開放状態 =====');
+    console.log('[calculateUnlockedFeatures] 登録日数:', daysSinceReg, '日目');
+    console.log('[calculateUnlockedFeatures] トライアル中:', isTrialActive);
+    console.log('[calculateUnlockedFeatures] Premium会員:', isPremium);
+    console.log('[calculateUnlockedFeatures] Premium機能アクセス:', hasPremiumAccess);
+    console.log('[calculateUnlockedFeatures] 開放機能:', unlocked);
     // console.log('[calculateUnlockedFeatures] ===== 基本機能 =====');
     // console.log('[calculateUnlockedFeatures] - food:', unlocked.includes('food'));
     // console.log('[calculateUnlockedFeatures] - training:', unlocked.includes('training'));

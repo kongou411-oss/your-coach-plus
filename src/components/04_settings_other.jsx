@@ -17,6 +17,7 @@ const OtherTab = ({
     usageDays,
     userProfile,
     showConfirm,
+    unlockedFeatures,
     onClose
 }) => {
     const Icon = window.Icon;
@@ -210,25 +211,30 @@ const OtherTab = ({
                                 const currentDay = usageDays; // 0-6日目がトライアル期間（内部計算）
                                 const isPremium = userProfile?.subscriptionStatus === 'active';
                                 const isTrial = currentDay < 7; // 0-6日目がトライアル
+                                const hasPremiumAccess = isTrial || isPremium;
+
+                                // 実際のunlockedFeatures配列を使って開放状態を判定
+                                const isUnlocked = (featureId) => {
+                                    return Array.isArray(unlockedFeatures) && unlockedFeatures.includes(featureId);
+                                };
 
                                 const featureList = [
                                     // 無料機能（常に利用可能）
-                                    { id: 'food', name: '食事記録', unlocked: true, free: true },
-                                    { id: 'training', name: '運動記録', unlocked: true, free: true },
-                                    { id: 'condition', name: 'コンディション', unlocked: true, free: true },
-                                    { id: 'template', name: 'テンプレート（1枠）', unlocked: true, free: true },
-                                    { id: 'routine', name: 'ルーティン', unlocked: true, free: true },
-                                    { id: 'pg_base', name: 'PG BASE（初期教科書）', unlocked: true, free: true },
+                                    { id: 'food', name: '食事記録', unlocked: isUnlocked('food'), free: true },
+                                    { id: 'training', name: '運動記録', unlocked: isUnlocked('training'), free: true },
+                                    { id: 'condition', name: 'コンディション', unlocked: isUnlocked('condition'), free: true },
+                                    { id: 'template', name: 'テンプレート（1枠）', unlocked: isUnlocked('template'), free: true },
+                                    { id: 'routine', name: 'ルーティン', unlocked: isUnlocked('routine'), free: true },
+                                    { id: 'shortcut', name: 'ショートカット', unlocked: isUnlocked('shortcut'), free: true },
 
-                                    // Premium専用機能（8日目以降）
-                                    { id: 'ai_photo', name: 'AI食事認識', unlocked: false, premium: !isTrial && !isPremium },
-                                    { id: 'analysis', name: 'AI分析', unlocked: false, premium: !isTrial && !isPremium },
-                                    { id: 'directive', name: '指示書', unlocked: false, premium: !isTrial && !isPremium },
-                                    { id: 'history', name: '履歴', unlocked: false, premium: !isTrial && !isPremium },
-                                    { id: 'history_analysis', name: '履歴分析', unlocked: false, premium: !isTrial && !isPremium },
-                                    { id: 'shortcut', name: 'ショートカット', unlocked: false, premium: !isTrial && !isPremium },
-                                    { id: 'community', name: 'コミュニティ', unlocked: false, premium: !isTrial && !isPremium },
-                                    { id: 'detailed_nutrients', name: '詳細栄養素', unlocked: false, premium: !isTrial && !isPremium }
+                                    // Premium専用機能（トライアル期間 or Premium会員）
+                                    { id: 'ai_photo_recognition', name: 'AI食事認識', unlocked: isUnlocked('ai_photo_recognition'), premium: !hasPremiumAccess },
+                                    { id: 'analysis', name: 'AI分析', unlocked: isUnlocked('analysis'), premium: !hasPremiumAccess },
+                                    { id: 'idea', name: '閃き', unlocked: isUnlocked('idea'), premium: !hasPremiumAccess },
+                                    { id: 'history', name: '履歴', unlocked: isUnlocked('history'), premium: !hasPremiumAccess },
+                                    { id: 'pg_base', name: 'PG BASE', unlocked: isUnlocked('pg_base'), premium: !hasPremiumAccess },
+                                    { id: 'community', name: 'コミュニティ', unlocked: isUnlocked('community'), premium: !hasPremiumAccess },
+                                    { id: 'detailed_nutrients', name: '詳細栄養素', unlocked: isUnlocked('detailed_nutrients'), premium: !hasPremiumAccess }
                                 ];
 
                                 return (
@@ -566,20 +572,6 @@ const OtherTab = ({
                             </p>
                         </div>
                     </div>
-                    </div>
-                </div>
-            </details>
-
-            {/* アカウント管理 */}
-            <details className="border rounded-lg" id="account">
-                <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="User" size={18} className="text-blue-600" />
-                    アカウント管理
-                    <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
-                </summary>
-                <div className="p-4 pt-0 border-t">
-                    <div className="text-sm text-gray-600">
-                        アカウント管理（ログアウト・アカウント削除）は、「基本」タブの「アカウント」セクションで行えます。
                     </div>
                 </div>
             </details>
