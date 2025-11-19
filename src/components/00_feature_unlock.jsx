@@ -201,7 +201,7 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
     if (hasPremiumAccess) {
         // AI機能
         unlocked.push('ai_photo_recognition'); // AI食事認識
-        unlocked.push('analysis'); // 分析（上書き）
+        // 分析は上書きしない（コンディション完了が必須条件）
 
         // 指示書・履歴
         unlocked.push('directive');

@@ -185,10 +185,11 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     // BABの高さを監視して入力欄の位置を動的に調整
     useEffect(() => {
         const updateBabHeight = () => {
-            const babElement = document.querySelector('.fixed.bottom-0.z-\\[9999\\]');
+            const babElement = document.querySelector('.fixed.bottom-0.z-\\[10000\\]');
             if (babElement) {
                 const height = babElement.offsetHeight;
                 setBabHeight(height);
+                console.log('[Analysis] BAB高さ更新:', height);
             }
         };
 
@@ -196,7 +197,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         updateBabHeight();
 
         // ResizeObserverでBABの高さ変化を監視
-        const babElement = document.querySelector('.fixed.bottom-0.z-\\[9999\\]');
+        const babElement = document.querySelector('.fixed.bottom-0.z-\\[10000\\]');
         if (babElement) {
             const resizeObserver = new ResizeObserver(updateBabHeight);
             resizeObserver.observe(babElement);
@@ -1309,13 +1310,15 @@ ${section2Prompt}
             if (onFeatureUnlocked) {
                 onFeatureUnlocked();
             }
+        }
 
-            // 初回分析の場合のみ、ダッシュボードでモーダル表示
-            if (isFirstAnalysisParam) {
-                localStorage.setItem('showFeatureUnlockModals', 'true');
-                // ダッシュボードにイベントを通知
-                window.dispatchEvent(new CustomEvent('featureUnlockCompleted'));
-            }
+        // 初回分析の場合、モーダル表示フラグを設定（機能開放の有無に関わらず）
+        if (isFirstAnalysisParam) {
+            console.log('[Analysis] 初回分析完了 - モーダル表示フラグを設定');
+            localStorage.setItem('showFeatureUnlockModals', 'true');
+            // ダッシュボードにイベントを通知
+            window.dispatchEvent(new CustomEvent('featureUnlockCompleted'));
+            console.log('[Analysis] featureUnlockCompletedイベントを発火');
         }
 
         // Premium販促モーダル（初回分析後）
