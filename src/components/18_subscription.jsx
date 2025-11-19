@@ -109,10 +109,10 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                 {/* 価格 */}
                                 <div className="text-center my-6">
                                     <div className="flex items-baseline justify-center gap-2">
-                                        <span className="text-5xl font-bold text-amber-600">¥740</span>
+                                        <span className="text-5xl font-bold text-amber-600">¥940</span>
                                         <span className="text-gray-600">/月</span>
                                     </div>
-                                    <p className="text-sm text-gray-600 mt-2">1日あたり約24円</p>
+                                    <p className="text-sm text-gray-600 mt-2">1日あたり約31円</p>
                                 </div>
 
                                 {/* 特典リスト */}
@@ -251,7 +251,7 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                         Premium会員がお得！
                                     </h4>
                                     <p className="text-sm text-gray-600">
-                                        月額¥740のPremium会員なら、毎月100回分のクレジットに加えて、<br/>
+                                        月額¥940のPremium会員なら、毎月100回分のクレジットに加えて、<br/>
                                         すべてのPremium機能が使い放題です。
                                     </p>
                                 </div>

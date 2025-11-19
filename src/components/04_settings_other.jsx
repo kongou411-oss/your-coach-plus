@@ -208,9 +208,9 @@ const OtherTab = ({
                             {/* 進行状況に応じた機能一覧 */}
                             {(() => {
                                 const completionStatus = getFeatureCompletionStatus(userId);
-                                const currentDay = usageDays; // 0-6日目がトライアル期間（内部計算）
+                                const currentDay = usageDays; // usageDays: 登録からの経過日数（1日目=0, 2日目=1...）
                                 const isPremium = userProfile?.subscriptionStatus === 'active';
-                                const isTrial = currentDay < 7; // 0-6日目がトライアル
+                                const isTrial = currentDay < 7; // 0-6日目がトライアル（1-7日目）
                                 const hasPremiumAccess = isTrial || isPremium;
 
                                 // 実際のunlockedFeatures配列を使って開放状態を判定

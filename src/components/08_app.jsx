@@ -135,7 +135,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-10"
+                        className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-20"
                     >
                         <Icon name="X" size={20} />
                     </button>
@@ -174,8 +174,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     {/* 価格表示 */}
                     <div className="bg-[#FFF59A]/10 border-2 border-amber-300 rounded-lg p-4 text-center">
                         <p className="text-sm text-gray-600 mb-1">月額</p>
-                        <p className="text-4xl font-bold text-amber-600 mb-1">¥740</p>
-                        <p className="text-xs text-gray-600">1日あたり約24円</p>
+                        <p className="text-4xl font-bold text-amber-600 mb-1">¥940</p>
+                        <p className="text-xs text-gray-600">1日あたり約31円</p>
                     </div>
 
                     {/* CTA ボタン */}
@@ -351,31 +351,35 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             useEffect(() => {
                 if (!user) return;
 
-                const { APP_VERSION, STORAGE_KEYS } = window;
-                const lastSeenVersion = localStorage.getItem(STORAGE_KEYS.LAST_SEEN_VERSION);
+                const checkWhatsNew = async () => {
+                    const { APP_VERSION, STORAGE_KEYS } = window;
+                    const lastSeenVersion = localStorage.getItem(STORAGE_KEYS.LAST_SEEN_VERSION);
 
-                // バージョンからマイナーバージョンを取得（例: "1.2.15" → "1.2"）
-                const getMinorVersion = (version) => {
-                    if (!version) return null;
-                    const parts = version.split('.');
-                    return `${parts[0]}.${parts[1]}`;
+                    // バージョンからマイナーバージョンを取得（例: "1.2.15" → "1.2"）
+                    const getMinorVersion = (version) => {
+                        if (!version) return null;
+                        const parts = version.split('.');
+                        return `${parts[0]}.${parts[1]}`;
+                    };
+
+                    const currentMinor = getMinorVersion(APP_VERSION);
+                    const lastMinor = getMinorVersion(lastSeenVersion);
+
+                    // 初回分析完了済みかチェック
+                    const isAnalysisCompleted = window.isFeatureCompleted ? await window.isFeatureCompleted(user.uid, 'analysis') : false;
+
+                    // マイナーバージョンが変わった場合、かつ初回分析完了済みの場合のみモーダルを表示
+                    // （パッチバージョンの変更では表示しない）
+                    // （初回登録直後は表示しない）
+                    if (lastMinor && lastMinor !== currentMinor && isAnalysisCompleted) {
+                        // 少し遅延させてからモーダルを表示（他のモーダルとの競合を避ける）
+                        setTimeout(() => {
+                            setShowWhatsNew(true);
+                        }, 1000);
+                    }
                 };
 
-                const currentMinor = getMinorVersion(APP_VERSION);
-                const lastMinor = getMinorVersion(lastSeenVersion);
-
-                // 初回分析完了済みかチェック
-                const isAnalysisCompleted = window.isFeatureCompleted?.(user.uid, 'analysis') || false;
-
-                // マイナーバージョンが変わった場合、かつ初回分析完了済みの場合のみモーダルを表示
-                // （パッチバージョンの変更では表示しない）
-                // （初回登録直後は表示しない）
-                if (lastMinor && lastMinor !== currentMinor && isAnalysisCompleted) {
-                    // 少し遅延させてからモーダルを表示（他のモーダルとの競合を避ける）
-                    setTimeout(() => {
-                        setShowWhatsNew(true);
-                    }, 1000);
-                }
+                checkWhatsNew();
             }, [user]);
 
             // チュートリアル初回起動チェック
@@ -1799,8 +1803,10 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                         setLastUpdate(Date.now());
                                     }
 
-                                    // 新しい機能開放システム
+                                    // 新しい機能開放システム：記録追加後に完了チェックと機能開放状態を再計算
                                     const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
+
+                                    await checkAndCompleteFeatures(userId, updatedRecord);
                                     const isPremium = userProfile?.subscriptionStatus === 'active';
                                     const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
@@ -1842,6 +1848,21 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
                                     setDailyRecord(updatedRecord);
                                     setLastUpdate(Date.now());
+
+                                    // 新しい機能開放システム：記録追加後に完了チェックと機能開放状態を再計算
+                                    const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
+
+                                    await checkAndCompleteFeatures(userId, updatedRecord);
+                                    const isPremium = userProfile?.subscriptionStatus === 'active';
+                                    const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
+                                    setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
+
+                                    // 新しく開放された機能があれば誘導モーダルを表示
+                                    if (!oldUnlocked.includes('condition') && newUnlocked.includes('condition')) {
+                                        setShowConditionGuide(true);
+                                    } else if (!oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
+                                        setShowAnalysisGuide(true);
+                                    }
 
                                     setShowNewWorkoutModal(false);
                                 } catch (error) {
@@ -2097,7 +2118,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 console.log('[App] Updated unlocked features after analysis:', unlocked);
 
                                 // 初回分析の場合のみ、追加の処理
-                                if (!isFeatureCompleted(userId, 'analysis')) {
+                                const analysisCompleted = await isFeatureCompleted(userId, 'analysis');
+                                if (!analysisCompleted) {
                                     await markFeatureCompleted(userId, 'analysis');
                                 }
                             }}

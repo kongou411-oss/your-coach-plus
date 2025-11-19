@@ -4094,7 +4094,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                             <button
                                 onClick={() => setShowUpgradeModal(false)}
-                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-10"
+                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-20"
                             >
                                 <Icon name="X" size={20} />
                             </button>
@@ -4133,8 +4133,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             {/* 価格表示 */}
                             <div className="bg-[#FFF59A]/10 border-2 border-amber-300 rounded-lg p-4 text-center">
                                 <p className="text-sm text-gray-600 mb-1">月額</p>
-                                <p className="text-4xl font-bold text-amber-600 mb-1">¥740</p>
-                                <p className="text-xs text-gray-600">1日あたり約24円</p>
+                                <p className="text-4xl font-bold text-amber-600 mb-1">¥940</p>
+                                <p className="text-xs text-gray-600">1日あたり約31円</p>
                             </div>
 
                             {/* CTA ボタン */}
@@ -4352,7 +4352,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                             <button
                                 onClick={() => setShowSubscriptionModal(false)}
-                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-10"
+                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-20"
                             >
                                 <Icon name="X" size={20} />
                             </button>

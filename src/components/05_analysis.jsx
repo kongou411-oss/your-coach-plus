@@ -623,9 +623,10 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         }
 
         // 初回分析判定: analysisが完了済みかチェック
-        const isAnalysisCompleted = isFeatureCompleted(userId, 'analysis');
+        const isAnalysisCompleted = await isFeatureCompleted(userId, 'analysis');
         const firstAnalysisFlag = !isAnalysisCompleted; // analysis未完了なら初回
         setIsFirstAnalysis(firstAnalysisFlag);
+        console.log('[Analysis] isAnalysisCompleted:', isAnalysisCompleted, 'firstAnalysisFlag:', firstAnalysisFlag);
 
         // スコア計算（AI呼び出し前に実行）
         const scores = calculateScores(userProfile, dailyRecord, targetPFC);
@@ -1265,10 +1266,12 @@ ${section2Prompt}
 
         // 初回分析後：分析完了後に開放される4機能をマーク
         // 閃き、履歴、PGBASE、コミュニティのみ
-        const ideaCompleted = isFeatureCompleted(userId, 'idea');
-        const historyCompleted = isFeatureCompleted(userId, 'history');
-        const pgBaseCompleted = isFeatureCompleted(userId, 'pg_base');
-        const communityCompleted = isFeatureCompleted(userId, 'community');
+        const ideaCompleted = await isFeatureCompleted(userId, 'idea');
+        const historyCompleted = await isFeatureCompleted(userId, 'history');
+        const pgBaseCompleted = await isFeatureCompleted(userId, 'pg_base');
+        const communityCompleted = await isFeatureCompleted(userId, 'community');
+
+        console.log('[Analysis] 機能完了状況チェック:', { ideaCompleted, historyCompleted, pgBaseCompleted, communityCompleted });
 
         // 未開放の機能を開放
         if (!ideaCompleted || !historyCompleted || !pgBaseCompleted || !communityCompleted) {
@@ -2173,7 +2176,7 @@ ${conversationContext}
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                             <button
                                 onClick={() => setShowUpgradeModal(false)}
-                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-10"
+                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-20"
                             >
                                 <Icon name="X" size={20} />
                             </button>
@@ -2223,8 +2226,8 @@ ${conversationContext}
                             {/* 価格表示 */}
                             <div className="bg-[#FFF59A]/10 border-2 border-purple-200 rounded-lg p-4 text-center">
                                 <p className="text-sm text-gray-600 mb-1">月額</p>
-                                <p className="text-4xl font-bold text-purple-600 mb-1">¥740</p>
-                                <p className="text-xs text-gray-600">1日あたり約24円</p>
+                                <p className="text-4xl font-bold text-purple-600 mb-1">¥940</p>
+                                <p className="text-xs text-gray-600">1日あたり約31円</p>
                             </div>
 
                             {/* CTA ボタン */}

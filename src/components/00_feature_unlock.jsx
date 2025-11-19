@@ -4,14 +4,30 @@ import { FEATURES, STORAGE_KEYS } from '../config.js';
 // ===== Feature Unlock Utilities =====
 // 機能開放システムのユーティリティ関数
 
-// 機能完了状態を取得
-const getFeatureCompletionStatus = (userId) => {
-    // LocalStorage優先
+// 機能完了状態を取得（Firestore同期対応）
+const getFeatureCompletionStatus = async (userId) => {
+    // 1. LocalStorageを確認
     const key = STORAGE_KEYS.FEATURES_COMPLETED;
     const stored = localStorage.getItem(key);
 
     if (stored) {
         return JSON.parse(stored);
+    }
+
+    // 2. Firestoreから取得（デバイス間同期のため）
+    if (typeof db !== 'undefined' && userId) {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (userDoc.exists && userDoc.data().featuresCompleted) {
+                const features = userDoc.data().featuresCompleted;
+                // LocalStorageにキャッシュ
+                localStorage.setItem(key, JSON.stringify(features));
+                console.log('[FeatureUnlock] Fetched featuresCompleted from Firestore:', Object.keys(features).filter(k => features[k]));
+                return features;
+            }
+        } catch (error) {
+            console.warn('[FeatureUnlock] Failed to fetch featuresCompleted from Firestore:', error);
+        }
     }
 
     return {};
@@ -39,14 +55,14 @@ const saveFeatureCompletionStatus = async (userId, completionStatus) => {
 };
 
 // 特定の機能が完了しているかチェック
-const isFeatureCompleted = (userId, featureId) => {
-    const status = getFeatureCompletionStatus(userId);
+const isFeatureCompleted = async (userId, featureId) => {
+    const status = await getFeatureCompletionStatus(userId);
     return status[featureId] === true;
 };
 
 // 機能を完了としてマーク
 const markFeatureCompleted = async (userId, featureId) => {
-    const status = getFeatureCompletionStatus(userId);
+    const status = await getFeatureCompletionStatus(userId);
     status[featureId] = true;
     await saveFeatureCompletionStatus(userId, status);
     return status;
@@ -150,26 +166,31 @@ const calculateDaysSinceRegistration = async (userId) => {
 
 // 機能開放状態を計算
 const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false) => {
-    const completionStatus = getFeatureCompletionStatus(userId);
+    const completionStatus = await getFeatureCompletionStatus(userId);
     const daysSinceReg = await calculateDaysSinceRegistration(userId);
     const unlocked = [];
 
-    // console.log('[calculateUnlockedFeatures] userId:', userId);
-    // console.log('[calculateUnlockedFeatures] completionStatus:', completionStatus);
-    // console.log('[calculateUnlockedFeatures] todayRecord:', todayRecord);
-    // console.log('[calculateUnlockedFeatures] isPremium:', isPremium);
+    console.log('[calculateUnlockedFeatures] userId:', userId);
+    console.log('[calculateUnlockedFeatures] completionStatus:', JSON.stringify(completionStatus));
+    console.log('[calculateUnlockedFeatures] completionStatus keys:', Object.keys(completionStatus));
+    console.log('[calculateUnlockedFeatures] todayRecord meals:', todayRecord?.meals?.length || 0);
+    console.log('[calculateUnlockedFeatures] todayRecord workouts:', todayRecord?.workouts?.length || 0);
+    console.log('[calculateUnlockedFeatures] isPremium:', isPremium);
+
+    // 開放条件判定用（ループ開始時点のステータスのみを参照）
+    const initialStatus = { ...completionStatus };
 
     // 1日目（初日）：段階的開放
     // 1. 食事記録は常に開放
     unlocked.push('food');
 
-    // 2. 食事記録を1回完了したら運動記録を開放（一度完了したら永続）
-    if (completionStatus.food || completionStatus.training || checkMealComplete(todayRecord)) {
+    // 2. 食事記録を1回完了したら運動記録を開放
+    if (initialStatus.food) {
         unlocked.push('training');
     }
 
-    // 3. 運動記録を1回完了したらコンディション記録を開放（一度完了したら永続）
-    if (completionStatus.training || completionStatus.condition || checkTrainingComplete(todayRecord)) {
+    // 3. 運動記録を1回完了したらコンディション記録を開放
+    if (initialStatus.training) {
         unlocked.push('condition');
     }
 
@@ -177,7 +198,7 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
     const isTrialActive = daysSinceReg <= 7; // 1-7日目（7日間）はトライアル
     const hasPremiumAccess = isTrialActive || isPremium;
 
-    // 4. テンプレート機能 - 初日から全員に開放（無料会員は枠制限あり）
+    // 4. テンプレート機能 - 初日から全員に開放
     unlocked.push('template');
     unlocked.push('training_template'); // 旧互換性
 
@@ -193,21 +214,15 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
         unlocked.push('ai_photo_recognition'); // AI食事認識
 
         // 分析機能（コンディション完了が必須条件）
-        if (completionStatus.condition || completionStatus.analysis || checkConditionComplete(todayRecord)) {
+        if (initialStatus.condition) {
             unlocked.push('analysis');
         }
 
         // 分析完了後に開放される機能
-        if (completionStatus.idea) {
+        if (initialStatus.analysis) {
             unlocked.push('idea');
-        }
-        if (completionStatus.history) {
             unlocked.push('history');
-        }
-        if (completionStatus.pg_base) {
             unlocked.push('pg_base');
-        }
-        if (completionStatus.community) {
             unlocked.push('community');
         }
 
@@ -221,7 +236,7 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
     console.log('[calculateUnlockedFeatures] トライアル中:', isTrialActive);
     console.log('[calculateUnlockedFeatures] Premium会員:', isPremium);
     console.log('[calculateUnlockedFeatures] Premium機能アクセス:', hasPremiumAccess);
-    console.log('[calculateUnlockedFeatures] 開放機能:', unlocked);
+    console.log('[calculateUnlockedFeatures] 開放機能 (' + unlocked.length + '個):', unlocked.join(', '));
     // console.log('[calculateUnlockedFeatures] ===== 基本機能 =====');
     // console.log('[calculateUnlockedFeatures] - food:', unlocked.includes('food'));
     // console.log('[calculateUnlockedFeatures] - training:', unlocked.includes('training'));
@@ -241,7 +256,7 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
 
 // 次に開放される機能を取得
 const getNextFeatureToUnlock = async (userId, todayRecord) => {
-    const completionStatus = getFeatureCompletionStatus(userId);
+    const completionStatus = await getFeatureCompletionStatus(userId);
     const daysSinceReg = await calculateDaysSinceRegistration(userId);
 
     // 0日目の段階的開放
@@ -295,37 +310,52 @@ const getNextFeatureToUnlock = async (userId, todayRecord) => {
 
 // 機能完了チェック（記録追加時に自動呼び出し）
 const checkAndCompleteFeatures = async (userId, todayRecord) => {
-    const completionStatus = getFeatureCompletionStatus(userId);
+    console.log('[checkAndCompleteFeatures] 呼び出されました');
+    console.log('[checkAndCompleteFeatures] userId:', userId);
+    console.log('[checkAndCompleteFeatures] todayRecord:', todayRecord);
+
+    const completionStatus = await getFeatureCompletionStatus(userId);
+    console.log('[checkAndCompleteFeatures] completionStatus:', completionStatus);
     let updated = false;
 
     // 食事記録完了チェック
-    if (!completionStatus.food && checkMealComplete(todayRecord)) {
+    const mealComplete = checkMealComplete(todayRecord);
+    console.log('[checkAndCompleteFeatures] mealComplete:', mealComplete);
+    if (!completionStatus.food && mealComplete) {
+        console.log('[checkAndCompleteFeatures] ✅ 食事記録完了をマーク');
         await markFeatureCompleted(userId, 'food');
         updated = true;
     }
 
     // 運動記録完了チェック
-    if (!completionStatus.training && checkTrainingComplete(todayRecord)) {
+    const trainingComplete = checkTrainingComplete(todayRecord);
+    console.log('[checkAndCompleteFeatures] trainingComplete:', trainingComplete);
+    if (!completionStatus.training && trainingComplete) {
+        console.log('[checkAndCompleteFeatures] ✅ 運動記録完了をマーク');
         await markFeatureCompleted(userId, 'training');
         updated = true;
     }
 
     // コンディション記録完了チェック
-    if (!completionStatus.condition && checkConditionComplete(todayRecord)) {
+    const conditionComplete = checkConditionComplete(todayRecord);
+    console.log('[checkAndCompleteFeatures] conditionComplete:', conditionComplete);
+    if (!completionStatus.condition && conditionComplete) {
+        console.log('[checkAndCompleteFeatures] ✅ コンディション記録完了をマーク');
         await markFeatureCompleted(userId, 'condition');
         updated = true;
     }
 
+    console.log('[checkAndCompleteFeatures] updated:', updated);
     return updated;
 };
 
 // 8日目以降のPremium機能制限チェック
 const checkPremiumAccessRequired = async (userId, featureId, userProfile) => {
     const daysSinceReg = await calculateDaysSinceRegistration(userId);
-    const isPremium = userProfile?.subscriptionTier === 'premium';
+    const isPremium = userProfile?.subscriptionStatus === 'active';
 
-    // トライアル期間中（0-7日）は全機能アクセス可能
-    if (daysSinceReg < 7) {
+    // トライアル期間中（1-7日目）は全機能アクセス可能
+    if (daysSinceReg <= 7) {
         return { allowed: true, reason: 'trial' };
     }
 
@@ -371,8 +401,8 @@ const isTemplateLocked = async (template, userId, userProfile) => {
     // トライアル中に作成されたテンプレート
     if (template.isTrialCreated) {
         const daysSinceReg = await calculateDaysSinceRegistration(userId);
-        // 7日目以降はロック
-        return daysSinceReg >= 7;
+        // 8日目以降はロック
+        return daysSinceReg > 7;
     }
 
     return false;
@@ -385,10 +415,10 @@ const canCreateTemplate = async (type, templates, userId, userProfile) => {
 
     const daysSinceReg = await calculateDaysSinceRegistration(userId);
 
-    // トライアル中（0-6日目）は無制限
-    if (daysSinceReg < 7) return { canCreate: true, reason: 'trial' };
+    // トライアル中（1-7日目）は無制限
+    if (daysSinceReg <= 7) return { canCreate: true, reason: 'trial' };
 
-    // 7日目以降は各1枠のみ（ロックされていないテンプレートをカウント）
+    // 8日目以降は各1枠のみ（ロックされていないテンプレートをカウント）
     const activeTemplates = [];
     for (const template of templates) {
         if (template.type === type) {
@@ -413,7 +443,7 @@ const canCreateTemplate = async (type, templates, userId, userProfile) => {
 // テンプレート作成時のメタデータを取得
 const getTemplateMetadata = async (userId) => {
     const daysSinceReg = await calculateDaysSinceRegistration(userId);
-    const isTrialActive = daysSinceReg < 7;
+    const isTrialActive = daysSinceReg <= 7;
 
     return {
         createdAt: new Date(),
