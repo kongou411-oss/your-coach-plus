@@ -237,8 +237,15 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
                                                     {/* 重量入力 */}
                                                     <div>
                                                         <label className="block text-sm font-medium mb-1">重量（kg）</label>
+                                                        {/* 入力欄 */}
+                                                        <input
+                                                            type="number"
+                                                            value={editingSet.weight || 0}
+                                                            onChange={(e) => setEditingSet({...editingSet, weight: Number(e.target.value)})}
+                                                            className="w-full px-4 py-3 border rounded-lg"
+                                                        />
                                                         {/* スライダー */}
-                                                        <div className="mb-3">
+                                                        <div className="my-3">
                                                             <input
                                                                 type="range"
                                                                 min="0"
@@ -260,12 +267,6 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
                                                                 <span onClick={() => setEditingSet({...editingSet, weight: 500})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">500kg</span>
                                                             </div>
                                                         </div>
-                                                        <input
-                                                            type="number"
-                                                            value={editingSet.weight || 0}
-                                                            onChange={(e) => setEditingSet({...editingSet, weight: Number(e.target.value)})}
-                                                            className="w-full px-4 py-3 border rounded-lg"
-                                                        />
                                                         {/* 増減ボタン */}
                                                         <div className="grid grid-cols-6 gap-1 mt-2">
                                                             <button
@@ -316,8 +317,15 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
                                                     {/* 回数入力 */}
                                                     <div>
                                                         <label className="block text-sm font-medium mb-1">回数</label>
+                                                        {/* 入力欄 */}
+                                                        <input
+                                                            type="number"
+                                                            value={editingSet.reps || 0}
+                                                            onChange={(e) => setEditingSet({...editingSet, reps: Number(e.target.value)})}
+                                                            className="w-full px-4 py-3 border rounded-lg"
+                                                        />
                                                         {/* スライダー */}
-                                                        <div className="mb-3">
+                                                        <div className="my-3">
                                                             <input
                                                                 type="range"
                                                                 min="0"
@@ -339,12 +347,6 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
                                                                 <span onClick={() => setEditingSet({...editingSet, reps: 50})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">50回</span>
                                                             </div>
                                                         </div>
-                                                        <input
-                                                            type="number"
-                                                            value={editingSet.reps || 0}
-                                                            onChange={(e) => setEditingSet({...editingSet, reps: Number(e.target.value)})}
-                                                            className="w-full px-4 py-3 border rounded-lg"
-                                                        />
                                                         {/* 増減ボタン */}
                                                         <div className="grid grid-cols-4 gap-1 mt-2">
                                                             <button
@@ -2681,7 +2683,13 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
                                                 総時間 (分)
                                             </label>
-                                            <div className="mb-3">
+                                            <input
+                                                type="number"
+                                                value={currentSet.duration || 0}
+                                                onChange={(e) => setCurrentSet({...currentSet, duration: Number(e.target.value)})}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            />
+                                            <div className="my-3">
                                                 <input
                                                     type="range"
                                                     min="0"
@@ -2702,12 +2710,6 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                                     <span onClick={() => setCurrentSet({...currentSet, duration: 120})} className="cursor-pointer hover:text-blue-600 hover:font-bold transition">120分</span>
                                                 </div>
                                             </div>
-                                            <input
-                                                type="number"
-                                                value={currentSet.duration || 0}
-                                                onChange={(e) => setCurrentSet({...currentSet, duration: Number(e.target.value)})}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                            />
                                         </div>
 
                                         {/* セット追加ボタン */}
@@ -2756,8 +2758,21 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                         <label className="block text-sm font-medium mb-1 flex items-center gap-2">
                                             重量 (kg)
                                             </label>
+                                            {/* 入力欄 */}
+                                            <input
+                                                type="number"
+                                                value={currentSet.weight === '' ? '' : (currentSet.weight || 0)}
+                                                onChange={(e) => setCurrentSet({...currentSet, weight: e.target.value})}
+                                                onBlur={(e) => {
+                                                    // フォーカスが外れた際に空文字列なら0にする
+                                                    if (e.target.value === '') {
+                                                        setCurrentSet({...currentSet, weight: 0});
+                                                    }
+                                                }}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                            />
                                             {/* スライダー - 重量 */}
-                                            <div className="mb-3">
+                                            <div className="my-3">
                                                 <input
                                                     type="range"
                                                     min="0"
@@ -2779,18 +2794,6 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                                     <span onClick={() => setCurrentSet({...currentSet, weight: 500})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">500kg</span>
                                                 </div>
                                             </div>
-                                            <input
-                                                type="number"
-                                                value={currentSet.weight === '' ? '' : (currentSet.weight || 0)}
-                                                onChange={(e) => setCurrentSet({...currentSet, weight: e.target.value})}
-                                                onBlur={(e) => {
-                                                    // フォーカスが外れた際に空文字列なら0にする
-                                                    if (e.target.value === '') {
-                                                        setCurrentSet({...currentSet, weight: 0});
-                                                    }
-                                                }}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                                            />
                                             {/* 増減ボタン */}
                                             <div className="grid grid-cols-6 gap-1 mt-2">
                                                 <button
@@ -2843,8 +2846,22 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                         <label className="block text-sm font-medium mb-1">
                                             回数
                                         </label>
+                                            {/* 入力欄 */}
+                                            <input
+                                                type="number"
+                                                value={currentSet.reps === '' ? '' : (currentSet.reps || 1)}
+                                                onChange={(e) => setCurrentSet({...currentSet, reps: e.target.value})}
+                                                onBlur={(e) => {
+                                                    // フォーカスが外れた際に空文字列または0以下なら1にする
+                                                    const val = Number(e.target.value);
+                                                    if (e.target.value === '' || val < 1) {
+                                                        setCurrentSet({...currentSet, reps: 1});
+                                                    }
+                                                }}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                            />
                                             {/* スライダー - 回数 */}
-                                            <div className="mb-2">
+                                            <div className="my-2">
                                                 <input
                                                     type="range"
                                                     min="1"
@@ -2866,19 +2883,6 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                                     <span onClick={() => setCurrentSet({...currentSet, reps: 50})} className="cursor-pointer hover:text-orange-600 hover:font-bold transition">50回</span>
                                                 </div>
                                             </div>
-                                            <input
-                                                type="number"
-                                                value={currentSet.reps === '' ? '' : (currentSet.reps || 1)}
-                                                onChange={(e) => setCurrentSet({...currentSet, reps: e.target.value})}
-                                                onBlur={(e) => {
-                                                    // フォーカスが外れた際に空文字列または0以下なら1にする
-                                                    const val = Number(e.target.value);
-                                                    if (e.target.value === '' || val < 1) {
-                                                        setCurrentSet({...currentSet, reps: 1});
-                                                    }
-                                                }}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                                            />
                                             {/* 増減ボタン */}
                                             <div className="grid grid-cols-6 gap-1 mt-2">
                                                 <button

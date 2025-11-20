@@ -3131,7 +3131,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         ) : (
                             <div className="py-8 text-center">
                                 <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
-                                    <Icon name="Activity" size={28} className="text-orange-400" />
+                                    <Icon name="Dumbbell" size={28} className="text-orange-400" />
                                 </div>
                                 <p className="text-sm text-gray-600 font-medium mb-1">
                                     まだ運動の記録がありません

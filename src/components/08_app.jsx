@@ -1708,7 +1708,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             usageDays={usageDays}
                             currentRoutine={currentRoutine}
                             dailyRecord={dailyRecord}
-                            onUpdate={async (updatedWorkout) => {
+                            onUpdate={async (updatedWorkout, keepModalOpen = false) => {
                                 const userId = user?.uid;
                                 try {
                                     // 表示中の日付（currentDate）の記録を取得
