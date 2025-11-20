@@ -132,7 +132,7 @@ const NotificationSettings = ({ userId }) => {
                 setNotificationPermission(permission);
 
                 // 既に許可されている場合はFCMトークンを取得
-                if (permission === 'granted' && window.messaging) {
+                if (permission === 'granted' && window.messaging && userId) {
                     try {
                         const registration = await navigator.serviceWorker.ready;
                         const messaging = window.messaging;
@@ -144,6 +144,13 @@ const NotificationSettings = ({ userId }) => {
                         if (token) {
                             setFcmToken(token);
                             console.log('[Notification] FCM Token retrieved:', token);
+
+                            // 【重要】トークンをFirestoreに保存（配列で保存）
+                            await window.db.collection('users').doc(userId).set({
+                                fcmTokens: window.firebase.firestore.FieldValue.arrayUnion(token),
+                                fcmTokenUpdatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+                            }, { merge: true });
+                            console.log('[Notification] Token saved to Firestore');
                         }
                     } catch (error) {
                         console.error('[Notification] Failed to get FCM token:', error);
@@ -153,7 +160,7 @@ const NotificationSettings = ({ userId }) => {
         };
 
         checkAndGetToken();
-    }, []);
+    }, [userId]);
 
     // フォアグラウンドメッセージのハンドラーを設定
     // Android PWAを開いている時は、ここで通知を出さないと無音になる
