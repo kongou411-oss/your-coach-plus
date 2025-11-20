@@ -979,6 +979,31 @@ const OnboardingScreen = ({ user, onComplete }) => {
         // プロフィールを保存
         await DataService.saveUserProfile(user.uid, completeProfile);
 
+        // デフォルトルーティンを設定（7日間：①胸②背中③休養日④肩⑤腕⑥脚⑦休養日）
+        const defaultRoutine = {
+            name: '7日間分割（胸→背中→休→肩→腕→脚→休）',
+            days: [
+                { day: 1, name: '胸', is_rest_day: false },
+                { day: 2, name: '背中', is_rest_day: false },
+                { day: 3, name: '休養日', is_rest_day: true },
+                { day: 4, name: '肩', is_rest_day: false },
+                { day: 5, name: '腕', is_rest_day: false },
+                { day: 6, name: '脚', is_rest_day: false },
+                { day: 7, name: '休養日', is_rest_day: true }
+            ],
+            currentDay: 1,
+            createdAt: new Date().toISOString()
+        };
+
+        // ルーティンをFirestoreに保存
+        await db.collection('users')
+            .doc(user.uid)
+            .collection('settings')
+            .doc('routine')
+            .set(defaultRoutine);
+
+        console.log('[Auth] Default routine set:', defaultRoutine);
+
         // 初回dailyRecordを作成（体組成データを保存）
         const todayDate = new Date().toISOString().split('T')[0];
         const initialDailyRecord = {

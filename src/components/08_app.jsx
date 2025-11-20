@@ -246,6 +246,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 conditions: null
             });
             const [currentRoutine, setCurrentRoutine] = useState(null);
+            const [showRoutineGuideModal, setShowRoutineGuideModal] = useState(false); // ルーティンガイドモーダル
             // 写真解析機能は仕様書により削除（食事記録はテキスト入力のみ）
             const [infoModal, setInfoModal] = useState({ show: false, title: '', content: '' });
             const [predictedData, setPredictedData] = useState(null);
@@ -1442,6 +1443,16 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                                 return '1/7';
                                             })()}
                                         </span>
+                                        <button
+                                            onClick={() => setShowRoutineGuideModal(true)}
+                                            className="hover:bg-blue-50 rounded-full p-0.5 transition"
+                                            style={{ color: '#4A9EFF' }}
+                                            onMouseEnter={(e) => e.currentTarget.style.color = '#3b8fef'}
+                                            onMouseLeave={(e) => e.currentTarget.style.color = '#4A9EFF'}
+                                            title="ルーティンの使い方"
+                                        >
+                                            <Icon name="HelpCircle" size={18} />
+                                        </button>
                                     </div>
                                     <span className="text-xl font-bold text-purple-700">{currentRoutine.splitType}</span>
                                 </div>
@@ -1591,6 +1602,133 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                             </div>
                                         );
                                     })()}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ルーティンガイドモーダル */}
+                    {showRoutineGuideModal && (
+                        <div
+                            className="fixed inset-0 bg-black bg-opacity-30 z-50 flex items-center justify-center p-4"
+                            onClick={() => setShowRoutineGuideModal(false)}
+                        >
+                            <div
+                                className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* ヘッダー */}
+                                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Icon name="HelpCircle" size={24} />
+                                        <h3 className="font-bold text-lg">ルーティンの使い方</h3>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowRoutineGuideModal(false)}
+                                        className="hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition"
+                                    >
+                                        <Icon name="X" size={20} />
+                                    </button>
+                                </div>
+
+                                {/* コンテンツ */}
+                                <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                                            <Icon name="Info" size={18} className="text-blue-600" />
+                                            ルーティンとは？
+                                        </h4>
+                                        <p className="text-sm text-gray-600">
+                                            ルーティンは、あなたのトレーニングスケジュールを自動管理する機能です。
+                                            設定されたトレーニング部位を曜日ごとに巡回し、計画的なトレーニングをサポートします。
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                                            <Icon name="Calendar" size={18} className="text-purple-600" />
+                                            Day表記の見方
+                                        </h4>
+                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                            <p className="text-sm text-gray-600 mb-2">
+                                                <span className="font-bold text-blue-600">Day X/Y</span> の表示は以下を意味します：
+                                            </p>
+                                            <ul className="text-sm text-gray-600 space-y-1 ml-4">
+                                                <li>• <span className="font-bold">X</span>: 現在のトレーニング日（ルーティン開始からの日数）</li>
+                                                <li>• <span className="font-bold">Y</span>: ルーティンの総日数（1週間なら7、2週間なら14）</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                                            <Icon name="Repeat" size={18} className="text-green-600" />
+                                            デフォルトルーティン
+                                        </h4>
+                                        <p className="text-sm text-gray-600">
+                                            初回登録時に自動設定される7日間の分割法：
+                                        </p>
+                                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg">
+                                            <div className="grid grid-cols-1 gap-2 text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-blue-600">Day 1:</span>
+                                                    <span className="text-gray-700">胸</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-blue-600">Day 2:</span>
+                                                    <span className="text-gray-700">背中</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-blue-600">Day 3:</span>
+                                                    <span className="text-gray-700 font-bold text-green-600">休養日</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-blue-600">Day 4:</span>
+                                                    <span className="text-gray-700">肩</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-blue-600">Day 5:</span>
+                                                    <span className="text-gray-700">腕</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-blue-600">Day 6:</span>
+                                                    <span className="text-gray-700">脚</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-blue-600">Day 7:</span>
+                                                    <span className="text-gray-700 font-bold text-green-600">休養日</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                                            <Icon name="Settings" size={18} className="text-amber-600" />
+                                            ルーティンの変更方法
+                                        </h4>
+                                        <p className="text-sm text-gray-600">
+                                            ルーティンは「設定」→「機能」タブから自由にカスタマイズできます。
+                                            分割法の変更、休養日の追加、トレーニング部位の調整が可能です。
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-blue-50 border-l-4 border-blue-600 p-3 rounded">
+                                        <p className="text-xs text-blue-800">
+                                            <span className="font-bold">💡 ヒント:</span> ルーティンは登録時から自動的に開始されます。
+                                            設定を変更しない限り、7日間のサイクルが自動で繰り返されます。
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* フッター */}
+                                <div className="p-4 bg-gray-50 border-t flex justify-end">
+                                    <button
+                                        onClick={() => setShowRoutineGuideModal(false)}
+                                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                                    >
+                                        閉じる
+                                    </button>
                                 </div>
                             </div>
                         </div>
