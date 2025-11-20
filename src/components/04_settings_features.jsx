@@ -1038,8 +1038,93 @@ const FeaturesTab = ({
                             });
                         };
 
+                        const resetToDefaultRoutine = async () => {
+                            showConfirm(
+                                'デフォルトルーティンに戻す',
+                                'ルーティンをデフォルト（胸→背中→休→肩→腕→脚→休）に戻しますか？\n\n現在の設定は失われます。',
+                                async () => {
+                                    try {
+                                        // LocalStorageをクリア
+                                        localStorage.removeItem(STORAGE_KEYS.ROUTINES);
+                                        localStorage.removeItem(STORAGE_KEYS.ROUTINE_START_DATE);
+                                        localStorage.removeItem(STORAGE_KEYS.ROUTINE_ACTIVE);
+
+                                        // デフォルトルーティンを作成
+                                        const defaultRoutine = {
+                                            name: '7日間分割（胸→背中→休→肩→腕→脚→休）',
+                                            days: [
+                                                { day: 1, name: '胸', isRestDay: false },
+                                                { day: 2, name: '背中', isRestDay: false },
+                                                { day: 3, name: '休養日', isRestDay: true },
+                                                { day: 4, name: '肩', isRestDay: false },
+                                                { day: 5, name: '腕', isRestDay: false },
+                                                { day: 6, name: '脚', isRestDay: false },
+                                                { day: 7, name: '休養日', isRestDay: true }
+                                            ],
+                                            currentDay: 1,
+                                            startDate: new Date().toISOString().split('T')[0],
+                                            active: true,
+                                            createdAt: firebase.firestore.Timestamp.now()
+                                        };
+
+                                        // Firestoreに保存
+                                        await firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('settings')
+                                            .doc('routine')
+                                            .set(defaultRoutine);
+
+                                        // LocalStorageにも保存（互換性のため）
+                                        const localDefaultRoutines = [
+                                            { id: 1, name: '①胸', splitType: '胸', isRestDay: false },
+                                            { id: 2, name: '②背中', splitType: '背中', isRestDay: false },
+                                            { id: 3, name: '③休養日', splitType: '', isRestDay: true },
+                                            { id: 4, name: '④肩', splitType: '肩', isRestDay: false },
+                                            { id: 5, name: '⑤腕', splitType: '腕', isRestDay: false },
+                                            { id: 6, name: '⑥脚', splitType: '脚', isRestDay: false },
+                                            { id: 7, name: '⑦休養日', splitType: '', isRestDay: true }
+                                        ];
+                                        setLocalRoutines(localDefaultRoutines);
+
+                                        toast.success('デフォルトルーティンに戻しました');
+
+                                        // ページをリロードして反映
+                                        setTimeout(() => {
+                                            window.location.reload();
+                                        }, 1000);
+                                    } catch (error) {
+                                        console.error('[Settings] Failed to reset routine:', error);
+                                        toast.error('リセットに失敗しました');
+                                    }
+                                }
+                            );
+                        };
+
                         return (
                             <div className="space-y-6">
+                                {/* デフォルトルーティンに戻すボタン */}
+                                <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-blue-900 mb-1 flex items-center gap-2">
+                                                <Icon name="RotateCcw" size={18} />
+                                                デフォルトルーティンに戻す
+                                            </h4>
+                                            <p className="text-sm text-blue-800">
+                                                ルーティンを初期設定（胸→背中→休→肩→腕→脚→休）に戻します。
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={resetToDefaultRoutine}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm whitespace-nowrap flex items-center gap-2"
+                                        >
+                                            <Icon name="RotateCcw" size={16} />
+                                            リセット
+                                        </button>
+                                    </div>
+                                </div>
+
                                 {/* Day1~7 */}
                                 <div>
                                     <h3 className="font-semibold mb-3">Day1~7（デフォルト）</h3>
