@@ -95,24 +95,8 @@
                     <span class="text-gray-400 text-sm">最新の更新情報</span>
                 </summary>
                 <div class="px-6 pb-6 border-t">
-                    <div class="mt-4 space-y-6">
-
-                        <!-- Version 2.4.x -->
-                        <div class="border-l-4 border-indigo-500 pl-4">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="font-bold text-indigo-600">v2.4.x</span>
-                                <span class="text-sm text-gray-500">2025年11月20日 〜</span>
-                                <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">最新</span>
-                            </div>
-                            <p class="text-sm text-gray-600 mb-2">すべてのタグをtitle-time-typeに完全統一</p>
-                            <ul class="text-sm text-gray-600 space-y-1 ml-4">
-                                <li>• すべてのタグをtitle-time-typeに完全統一</li>
-                            </ul>
-                        </div>
-
-
-                        <!-- セマンティックバージョニングについて -->
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 sticky top-0 z-10">
+                    <!-- セマンティックバージョニングについて（最上部に固定） -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 my-4 sticky top-0 z-10">
                             <p class="text-sm text-blue-800 leading-relaxed">
                                 <strong>📌 バージョン表記:</strong> メジャー.マイナー.パッチ（例: v2.3.1）<br>
                                 • <strong>β版</strong>（v2.x.x）: 開発中のテスト版。新機能を追加・検証中<br>
@@ -120,6 +104,26 @@
                                 • <strong>マイナー更新</strong>: 新機能追加<br>
                                 • <strong>パッチ更新</strong>: バグ修正・小さな改善
                             </p>
+                        </div>
+
+                    <div class="mt-4 space-y-6">
+
+                        <!-- Version 2.4.x (Beta) -->
+                        <div class="border-l-4 border-indigo-500 pl-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="font-bold text-indigo-600">v2.4.x β版</span>
+                                <span class="text-sm text-gray-500">2025年11月20日 〜</span>
+                                <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">最新</span>
+                                <span class="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">β版</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2 font-semibold">通知システム完全実装</p>
+                            <ul class="text-sm text-gray-600 space-y-1 ml-4">
+                                <li>• カスタム通知システム - すべての通知でタイトル・本文を自由に設定可能</li>
+                                <li>• マルチデバイス対応 - PCブラウザとスマホ(PWA)に同時配信</li>
+                                <li>• フォア/バックグラウンド対応 - アプリを開いていても閉じていても通知</li>
+                                <li>• 重複通知の完全防止 - 3段階の防御で確実に1通のみ表示</li>
+                                <li>• 自動トークン登録 - 通知許可後、自動でトークンを保存</li>
+                            </ul>
                         </div>
 
                         <!-- Version 2.3.x (Beta) -->
