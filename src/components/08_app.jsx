@@ -354,9 +354,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                 const checkWhatsNew = async () => {
                     const { APP_VERSION, STORAGE_KEYS } = window;
-                    const lastSeenVersion = localStorage.getItem(STORAGE_KEYS.LAST_SEEN_VERSION);
 
-                    // バージョンからマイナーバージョンを取得（例: "1.2.15" → "1.2"）
+                    // バージョンからマイナーバージョンを取得（例: "2.4.15" → "2.4"）
                     const getMinorVersion = (version) => {
                         if (!version) return null;
                         const parts = version.split('.');
@@ -364,20 +363,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     };
 
                     const currentMinor = getMinorVersion(APP_VERSION);
-                    const lastMinor = getMinorVersion(lastSeenVersion);
+
+                    // 最後にWhat's Newモーダルを表示したマイナーバージョン
+                    const lastSeenWhatsNew = localStorage.getItem('yourCoachBeta_lastSeenWhatsNew');
 
                     // 初回分析完了済みかチェック
                     const isAnalysisCompleted = window.isFeatureCompleted ? await window.isFeatureCompleted(user.uid, 'analysis') : false;
 
                     // What's Newモーダル表示条件:
                     // 1. 初回分析が完了している（初回登録直後は表示しない）
-                    // 2. 以下のいずれか:
-                    //    - マイナーバージョンが変わった場合（v2.3.x → v2.4.x）
-                    //    - 初回ユーザー（lastSeenVersionがnull）の場合
-                    const shouldShowWhatsNew = isAnalysisCompleted && (
-                        (lastMinor && lastMinor !== currentMinor) || // バージョン変更
-                        (!lastSeenVersion) // 初回ユーザー
-                    );
+                    // 2. このマイナーバージョンのWhat's Newをまだ見ていない
+                    const shouldShowWhatsNew = isAnalysisCompleted && (lastSeenWhatsNew !== currentMinor);
 
                     if (shouldShowWhatsNew) {
                         // 少し遅延させてからモーダルを表示（他のモーダルとの競合を避ける）
@@ -1286,8 +1282,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             // What's Newモーダルを閉じる
             const handleCloseWhatsNew = () => {
                 const { APP_VERSION, STORAGE_KEYS } = window;
-                // バージョンをLocalStorageに保存
+
+                // フルバージョンを保存（従来の互換性のため）
                 localStorage.setItem(STORAGE_KEYS.LAST_SEEN_VERSION, APP_VERSION);
+
+                // マイナーバージョンを保存（What's Newモーダル表示制御用）
+                const getMinorVersion = (version) => {
+                    const parts = version.split('.');
+                    return `${parts[0]}.${parts[1]}`;
+                };
+                localStorage.setItem('yourCoachBeta_lastSeenWhatsNew', getMinorVersion(APP_VERSION));
+
                 setShowWhatsNew(false);
             };
 
