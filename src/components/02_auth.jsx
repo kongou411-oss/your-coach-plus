@@ -979,23 +979,38 @@ const OnboardingScreen = ({ user, onComplete }) => {
         // プロフィールを保存
         await DataService.saveUserProfile(user.uid, completeProfile);
 
+        // 既存のLocalStorageルーティン設定をクリア
+        localStorage.removeItem(STORAGE_KEYS.ROUTINES);
+        localStorage.removeItem(STORAGE_KEYS.ROUTINE_START_DATE);
+        localStorage.removeItem(STORAGE_KEYS.ROUTINE_ACTIVE);
+
         // デフォルトルーティンを設定（7日間：①胸②背中③休養日④肩⑤腕⑥脚⑦休養日）
-        const defaultRoutines = [
-            { splitType: '胸', isRestDay: false, mealTemplates: [], workoutTemplates: [] },
-            { splitType: '背中', isRestDay: false, mealTemplates: [], workoutTemplates: [] },
-            { splitType: '休養日', isRestDay: true, mealTemplates: [], workoutTemplates: [] },
-            { splitType: '肩', isRestDay: false, mealTemplates: [], workoutTemplates: [] },
-            { splitType: '腕', isRestDay: false, mealTemplates: [], workoutTemplates: [] },
-            { splitType: '脚', isRestDay: false, mealTemplates: [], workoutTemplates: [] },
-            { splitType: '休養日', isRestDay: true, mealTemplates: [], workoutTemplates: [] }
-        ];
+        const defaultRoutine = {
+            name: '7日間分割（胸→背中→休→肩→腕→脚→休）',
+            days: [
+                { day: 1, name: '胸', isRestDay: false },
+                { day: 2, name: '背中', isRestDay: false },
+                { day: 3, name: '休養日', isRestDay: true },
+                { day: 4, name: '肩', isRestDay: false },
+                { day: 5, name: '腕', isRestDay: false },
+                { day: 6, name: '脚', isRestDay: false },
+                { day: 7, name: '休養日', isRestDay: true }
+            ],
+            currentDay: 1,
+            startDate: new Date().toISOString().split('T')[0],
+            active: true,
+            createdAt: firebase.firestore.Timestamp.now()
+        };
 
-        // ルーティンをLocalStorageに保存
-        localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(defaultRoutines));
-        localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, new Date().toISOString().split('T')[0]);
-        localStorage.setItem(STORAGE_KEYS.ROUTINE_ACTIVE, 'true');
+        // ルーティンをFirestoreに保存
+        await firebase.firestore()
+            .collection('users')
+            .doc(user.uid)
+            .collection('settings')
+            .doc('routine')
+            .set(defaultRoutine);
 
-        console.log('[Auth] Default routine set:', defaultRoutines);
+        console.log('[Auth] Default routine set in Firestore:', defaultRoutine);
 
         // 初回dailyRecordを作成（体組成データを保存）
         const todayDate = new Date().toISOString().split('T')[0];

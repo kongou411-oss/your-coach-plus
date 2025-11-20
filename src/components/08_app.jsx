@@ -678,27 +678,67 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             //     return () => clearInterval(interval);
             // }, []); // 依存配列を空にして無限ループを防止
 
-            // 今日のルーティンを更新
+            // 今日のルーティンを更新（Firestore優先、フォールバックでLocalStorage）
             useEffect(() => {
-                if (Array.isArray(unlockedFeatures) && unlockedFeatures.includes(FEATURES.ROUTINE.id)) {
-                    const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
-                    const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
-                    const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
-                    const routineActive = localStorage.getItem(STORAGE_KEYS.ROUTINE_ACTIVE) === 'true';
+                const loadRoutine = async () => {
+                    if (!user || !Array.isArray(unlockedFeatures) || !unlockedFeatures.includes(FEATURES.ROUTINE.id)) {
+                        setCurrentRoutine(null);
+                        return;
+                    }
 
-                    if (routineActive && routineStartDate && routines.length > 0) {
-                        const startDate = new Date(routineStartDate);
-                        const today = new Date();
-                        const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                        const currentIndex = daysDiff % routines.length;
-                        setCurrentRoutine(routines[currentIndex]);
-                    } else {
+                    try {
+                        // Firestoreからルーティンを取得
+                        const routineDoc = await firebase.firestore()
+                            .collection('users')
+                            .doc(user.uid)
+                            .collection('settings')
+                            .doc('routine')
+                            .get();
+
+                        if (routineDoc.exists) {
+                            const routineData = routineDoc.data();
+
+                            if (routineData.active && routineData.startDate && routineData.days) {
+                                const startDate = new Date(routineData.startDate);
+                                const today = new Date();
+                                const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+                                const currentDayIndex = daysDiff % routineData.days.length;
+                                const currentDayData = routineData.days[currentDayIndex];
+
+                                setCurrentRoutine({
+                                    splitType: currentDayData.name,
+                                    isRestDay: currentDayData.isRestDay,
+                                    dayNumber: currentDayIndex + 1,
+                                    totalDays: routineData.days.length
+                                });
+                            } else {
+                                setCurrentRoutine(null);
+                            }
+                        } else {
+                            // Firestoreにない場合はLocalStorageをフォールバック
+                            const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+                            const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
+                            const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
+                            const routineActive = localStorage.getItem(STORAGE_KEYS.ROUTINE_ACTIVE) === 'true';
+
+                            if (routineActive && routineStartDate && routines.length > 0) {
+                                const startDate = new Date(routineStartDate);
+                                const today = new Date();
+                                const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+                                const currentIndex = daysDiff % routines.length;
+                                setCurrentRoutine(routines[currentIndex]);
+                            } else {
+                                setCurrentRoutine(null);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[Routine] Failed to load routine:', error);
                         setCurrentRoutine(null);
                     }
-                } else {
-                    setCurrentRoutine(null);
-                }
-            }, [unlockedFeatures]);
+                };
+
+                loadRoutine();
+            }, [unlockedFeatures, user]);
 
             // ショートカットの enabled を機能開放状態に連動
             useEffect(() => {
@@ -869,29 +909,6 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             }, [user, currentDate]); // userまたはcurrentDateが変わったら実行
 
             // This useEffect was moved to DashboardView to follow the moved function.
-
-            // 現在のルーティンを計算
-            useEffect(() => {
-                if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes(FEATURES.ROUTINE.id))) {
-                    setCurrentRoutine(null);
-                    return;
-                }
-
-                const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
-                const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
-                const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
-                const routineActive = localStorage.getItem(STORAGE_KEYS.ROUTINE_ACTIVE) === 'true';
-
-                if (routineActive && routineStartDate && routines.length > 0) {
-                    const startDate = new Date(routineStartDate);
-                    const today = new Date();
-                    const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                    const currentIndex = daysDiff % routines.length;
-                    setCurrentRoutine(routines[currentIndex]);
-                } else {
-                    setCurrentRoutine(null);
-                }
-            }, [unlockedFeatures, currentDate]);
 
             // ルーティンデータ読み込み関数
             const loadRoutineData = async () => {
@@ -1429,19 +1446,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     <div className="flex items-center gap-3">
                                         <Icon name="Repeat" size={20} className="text-blue-600" />
                                         <span className="text-xs text-gray-600">
-                                            Day {(() => {
-                                                const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
-                                                const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
-                                                const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
-                                                if (routineStartDate && routines.length > 0) {
-                                                    const startDate = new Date(routineStartDate);
-                                                    const today = new Date();
-                                                    const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                                                    const currentIndex = daysDiff % routines.length;
-                                                    return `${currentIndex + 1}/${routines.length}`;
-                                                }
-                                                return '1/7';
-                                            })()}
+                                            Day {currentRoutine.dayNumber || 1}/{currentRoutine.totalDays || 7}
                                         </span>
                                         <button
                                             onClick={() => setShowRoutineGuideModal(true)}
