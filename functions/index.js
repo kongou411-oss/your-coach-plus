@@ -256,8 +256,9 @@ exports.sendPushNotification = onRequest({
     }
 
     // 3. FCM通知送信（全端末に送信）
-    // ユニークなタグを生成（毎回違うタグにすることで、×で消した後も必ずポップアップする）
-    const uniqueTag = `${notificationType}-${Date.now()}`;
+    // タグをタイトルで固定（重複防止）
+    // 同じタイトルの通知は自動的に1つに統合される
+    const notificationTag = title;
 
     const message = {
       tokens: uniqueTokens, // ★ 重複削除済みのトークンを使用
@@ -270,7 +271,7 @@ exports.sendPushNotification = onRequest({
           Urgency: "high",
         },
         notification: {
-          tag: uniqueTag, // 毎回違うタグで「新しい通知」として認識させる
+          tag: notificationTag, // タイトルで固定（重複防止）
           icon: "/icons/icon-192.png",
           badge: "/icons/icon-72.png",
           vibrate: [200, 100, 200],
@@ -291,13 +292,13 @@ exports.sendPushNotification = onRequest({
           defaultSound: true,
           defaultVibrateTimings: true,
           visibility: "public",
-          tag: uniqueTag, // 毎回違うタグ
+          tag: notificationTag, // タイトルで固定（重複防止）
           notificationCount: 1,
         },
       },
       apns: {
         headers: {
-          "apns-collapse-id": uniqueTag, // iOS: 毎回違うIDで「新しい通知」として認識させる
+          "apns-collapse-id": notificationTag, // iOS: タイトルで固定（重複防止）
           "apns-priority": "10", // 即時配送
           "apns-push-type": "alert",
         },
