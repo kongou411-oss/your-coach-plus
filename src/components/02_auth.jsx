@@ -1039,6 +1039,16 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <p className="text-xs text-gray-600 mt-1">※アプリ内で表示される名前です</p>
                         </div>
                         <div className="border-l-4 border-[#4A9EFF] pl-4">
+                            <label className="block text-sm font-medium mb-2">年齢</label>
+                            <input
+                                type="number"
+                                value={profile.age}
+                                onChange={(e) => setProfile({...profile, age: e.target.value === '' ? '' : Number(e.target.value)})}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
+                                placeholder="例: 25"
+                            />
+                        </div>
+                        <div className="border-l-4 border-[#4A9EFF] pl-4">
                             <label className="block text-sm font-medium mb-2">性別</label>
                             <select
                                 value={profile.gender}
@@ -1052,24 +1062,34 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <p className="text-xs text-gray-600 mt-1">※性別に応じて体組成のデフォルト値が設定されます</p>
                         </div>
                         <div className="border-l-4 border-[#4A9EFF] pl-4">
-                            <label className="block text-sm font-medium mb-2">年齢</label>
-                            <input
-                                type="number"
-                                value={profile.age}
-                                onChange={(e) => setProfile({...profile, age: e.target.value === '' ? '' : Number(e.target.value)})}
+                            <label className="block text-sm font-medium mb-2">想定食事回数 / 日</label>
+                            <select
+                                value={profile.mealsPerDay || 4}
+                                onChange={(e) => setProfile({...profile, mealsPerDay: Number(e.target.value)})}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
-                                placeholder="例: 25"
-                            />
+                            >
+                                <option value={2}>2回</option>
+                                <option value={3}>3回</option>
+                                <option value={4}>4回（推奨）</option>
+                                <option value={5}>5回</option>
+                                <option value={6}>6回</option>
+                                <option value={7}>7回</option>
+                                <option value={8}>8回</option>
+                                <option value={9}>9回</option>
+                                <option value={10}>10回</option>
+                            </select>
+                            <p className="text-xs text-gray-600 mt-1">
+                                1食あたりのGL上限に影響します（間食・補食を含む）
+                            </p>
                         </div>
                         <div className="border-l-4 border-[#4A9EFF] pl-4">
                             <label className="block text-sm font-medium mb-2">理想の睡眠時間</label>
                             <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5">
                                 {[
-                                    { value: 1, label: '5h以下' },
                                     { value: 2, label: '6h' },
                                     { value: 3, label: '7h' },
                                     { value: 4, label: '8h' },
-                                    { value: 5, label: '9h以上' }
+                                    { value: 5, label: '9h↑' }
                                 ].map(item => (
                                     <button
                                         key={item.value}

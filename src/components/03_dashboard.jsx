@@ -3162,11 +3162,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             </div>
                             <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1.5">
                                 {[
-                                    { value: 1, label: '5h以下' },
+                                    { value: 1, label: '5h↓' },
                                     { value: 2, label: '6h' },
                                     { value: 3, label: '7h' },
                                     { value: 4, label: '8h' },
-                                    { value: 5, label: '9h以上' }
+                                    { value: 5, label: '9h↑' }
                                 ].map(item => (
                                     <button
                                         key={item.value}

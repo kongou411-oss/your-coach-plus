@@ -834,7 +834,7 @@ const BasicTab = ({
                 </summary>
                 <div className="p-4 border-t">
                     {/* プロフィール入力 */}
-                    <div className="space-y-3 max-h-[70vh] overflow-y-auto pb-4">
+                    <div className="space-y-3 max-h-[70vh] overflow-y-auto overflow-x-hidden pb-4">
 
                             {/* 計算ロジック解説 */}
                             <details className="bg-blue-50 border-2 border-blue-200 rounded-lg mb-4">
@@ -934,8 +934,8 @@ const BasicTab = ({
                             </details>
 
                             {/* STEP 1: 個人情報 */}
-                            <div className="border-l-4 border-blue-500 pl-4">
-                                <h4 className="text-xs font-bold text-blue-700 mb-2">STEP 1: 個人情報</h4>
+                            <div className="border-l-4 border-[#4A9EFF] pl-4">
+                                <h4 className="text-xs font-bold text-gray-800 mb-2">STEP 1: 個人情報</h4>
                                 <div className="space-y-2.5">
                                     <div>
                                         <label className="block text-sm font-medium mb-1.5">ニックネーム</label>
@@ -943,7 +943,7 @@ const BasicTab = ({
                                             type="text"
                                             value={profile.nickname}
                                             onChange={(e) => setProfile({...profile, nickname: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                                         />
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -953,7 +953,7 @@ const BasicTab = ({
                                                 type="number"
                                                 value={profile.age}
                                                 onChange={(e) => setProfile({...profile, age: e.target.value === '' ? '' : Number(e.target.value)})}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                                             />
                                         </div>
                                         <div>
@@ -961,7 +961,7 @@ const BasicTab = ({
                                             <select
                                                 value={profile.gender}
                                                 onChange={(e) => setProfile({...profile, gender: e.target.value})}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                                             >
                                                 <option value="男性">男性</option>
                                                 <option value="女性">女性</option>
@@ -973,7 +973,7 @@ const BasicTab = ({
                                             <select
                                                 value={profile.mealsPerDay || 4}
                                                 onChange={(e) => setProfile({...profile, mealsPerDay: Number(e.target.value)})}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                                             >
                                                 <option value={2}>2回</option>
                                                 <option value={3}>3回</option>
@@ -992,21 +992,20 @@ const BasicTab = ({
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-1.5">理想の睡眠時間</label>
-                                        <div className="flex w-full items-center justify-between space-x-2 rounded-full bg-gray-100 p-1.5">
+                                        <div className="flex w-full items-center justify-between gap-2 rounded-full bg-gray-100 p-1.5">
                                             {[
-                                                { value: 1, label: '5h以下' },
                                                 { value: 2, label: '6h' },
                                                 { value: 3, label: '7h' },
                                                 { value: 4, label: '8h' },
-                                                { value: 5, label: '9h以上' }
+                                                { value: 5, label: '9h↑' }
                                             ].map(item => (
                                                 <button
                                                     key={item.value}
                                                     type="button"
                                                     onClick={() => setProfile({...profile, idealSleepHours: item.value})}
-                                                    className={`flex-1 rounded-full py-2 text-center text-xs font-medium transition-colors duration-300 ${
+                                                    className={`flex-1 rounded-full py-2 px-1 text-center text-xs font-medium transition-colors duration-300 whitespace-nowrap ${
                                                         item.value === (profile.idealSleepHours || 4)
-                                                            ? 'bg-blue-500 text-white'
+                                                            ? 'bg-[#4A9EFF] text-white'
                                                             : 'text-gray-600 hover:text-gray-800'
                                                     }`}
                                                 >
@@ -1033,7 +1032,7 @@ const BasicTab = ({
                                                         : null
                                                 });
                                             }}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                                         />
                                     </div>
 
@@ -1053,17 +1052,17 @@ const BasicTab = ({
                                                         : null
                                                 });
                                             }}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                                         />
                                     </div>
 
                                     {profile.idealLBM && (
-                                        <div className="bg-teal-50 p-3 rounded-lg border border-teal-300">
-                                            <p className="text-xs font-medium text-teal-700">理想のLBMを自動計算！</p>
-                                            <p className="text-lg font-bold text-teal-600 mt-1">
+                                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                                            <p className="text-xs font-medium text-blue-700">理想のLBMを自動計算！</p>
+                                            <p className="text-lg font-bold text-blue-600 mt-1">
                                                 {profile.idealLBM.toFixed(1)} kg
                                             </p>
-                                            <p className="text-xs text-teal-600 mt-1">
+                                            <p className="text-xs text-blue-600 mt-1">
                                                 現在より {(profile.idealLBM - (profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15))).toFixed(1)} kg
                                             </p>
                                         </div>
@@ -1072,8 +1071,8 @@ const BasicTab = ({
                             </div>
 
                             {/* STEP 2: 活動量 */}
-                            <div className="border-l-4 border-green-500 pl-4">
-                                <h4 className="text-xs font-bold text-green-700 mb-2">STEP 2: 活動量</h4>
+                            <div className="border-l-4 border-[#4A9EFF] pl-4">
+                                <h4 className="text-xs font-bold text-gray-800 mb-2">STEP 2: 活動量</h4>
                                 <label className="block text-sm font-medium mb-1.5">
                                     活動レベル
                                 </label>
@@ -1081,7 +1080,7 @@ const BasicTab = ({
                                     <select
                                         value={profile.activityLevel}
                                         onChange={(e) => setProfile({...profile, activityLevel: e.target.value === '' ? '' : Number(e.target.value)})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                                         disabled={profile.customActivityMultiplier}
                                     >
                                         <option value={1}>デスクワーク中心- 1.05x</option>
@@ -1092,8 +1091,8 @@ const BasicTab = ({
                                     </select>
                                 )}
                                 {profile.customActivityMultiplier && (
-                                    <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
-                                        <p className="text-sm text-indigo-800">
+                                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <p className="text-sm text-blue-800">
                                             カスタム係数: <span className="font-bold">{profile.customActivityMultiplier}x</span>
                                         </p>
                                     </div>
@@ -1108,7 +1107,7 @@ const BasicTab = ({
                                             max="2.5"
                                             value={customMultiplierInputValue}
                                             onChange={(e) => setCustomMultiplierInputValue(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                                             placeholder="例 1.45"
                                         />
                                         <div className="flex gap-2">
@@ -1124,7 +1123,7 @@ const BasicTab = ({
                                                         toast('1.0から2.5の間の数値を入力してください');
                                                     }
                                                 }}
-                                                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                                                className="flex-1 px-4 py-2 bg-[#4A9EFF] text-white rounded-lg hover:bg-[#3b8fef]"
                                             >
                                                 設定
                                             </button>
@@ -1153,15 +1152,15 @@ const BasicTab = ({
                                             setShowCustomMultiplierInput(!showCustomMultiplierInput);
                                         }
                                     }}
-                                    className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 underline"
+                                    className="mt-2 text-sm text-[#4A9EFF] hover:text-[#3b8fef] underline"
                                 >
                                     {profile.customActivityMultiplier ? '5段階選択に戻す' : showCustomMultiplierInput ? '入力を閉じる' : 'または、活動レベル係数を直接入力する'}
                                 </button>
                             </div>
 
                             {/* STEP 3: 目的別カロリー設定*/}
-                            <div className="border-l-4 border-orange-500 pl-4">
-                                <h4 className="text-xs font-bold text-orange-700 mb-2">STEP 3: 目的別カロリー設定</h4>
+                            <div className="border-l-4 border-[#4A9EFF] pl-4">
+                                <h4 className="text-xs font-bold text-gray-800 mb-2">STEP 3: 目的別カロリー設定</h4>
                                 <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
                                     目的
                                     <button
@@ -1219,7 +1218,7 @@ const BasicTab = ({
 
 目的はいつでも変更できます。`
                                         })}
-                                        className="text-indigo-600 hover:text-indigo-800"
+                                        className="text-[#4A9EFF] hover:text-[#3b8fef]"
                                     >
                                         <Icon name="Info" size={14} />
                                     </button>
@@ -1244,8 +1243,8 @@ const BasicTab = ({
                                             }}
                                             className={`w-full p-2 rounded-lg border-2 transition flex items-center justify-between ${
                                                 profile.purpose === value
-                                                    ? 'border-orange-500 bg-orange-50 shadow-md'
-                                                    : 'border-gray-200 bg-white hover:border-orange-300 hover:shadow'
+                                                    ? 'border-[#4A9EFF] bg-blue-50 shadow-md'
+                                                    : 'border-gray-200 bg-white hover:border-[#4A9EFF] hover:shadow'
                                             }`}
                                         >
                                             <div className="text-left">
@@ -1279,15 +1278,15 @@ const BasicTab = ({
                                             const value = e.target.value === '' ? null : Number(e.target.value);
                                             setProfile({...profile, calorieAdjustment: value});
                                         }}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                                         placeholder="0"
                                     />
                                 </div>
                             </div>
 
                             {/* STEP 4: PFCバランス設定*/}
-                            <div className="border-l-4 border-blue-500 pl-4">
-                                <h4 className="text-xs font-bold text-blue-700 mb-2">STEP 4: PFCバランス設定</h4>
+                            <div className="border-l-4 border-[#4A9EFF] pl-4">
+                                <h4 className="text-xs font-bold text-gray-800 mb-2">STEP 4: PFCバランス設定</h4>
 
                                 {/* スタイル選択*/}
                                 <div className="mb-3">
@@ -1300,8 +1299,8 @@ const BasicTab = ({
                                             onClick={() => setProfile({...profile, style: '一般'})}
                                             className={`p-4 rounded-lg border-2 transition ${
                                                 profile.style === '一般'
-                                                    ? 'border-blue-500 bg-blue-50 shadow-md'
-                                                    : 'border-gray-200 bg-white hover:border-blue-300'
+                                                    ? 'border-[#4A9EFF] bg-blue-50 shadow-md'
+                                                    : 'border-gray-200 bg-white hover:border-[#4A9EFF]'
                                             }`}
                                         >
                                             <div className="font-bold text-base mb-1">一般</div>
@@ -1312,8 +1311,8 @@ const BasicTab = ({
                                             onClick={() => setProfile({...profile, style: 'ボディメイカー'})}
                                             className={`p-4 rounded-lg border-2 transition ${
                                                 profile.style === 'ボディメイカー'
-                                                    ? 'border-amber-500 bg-amber-50 shadow-md'
-                                                    : 'border-gray-200 bg-white hover:border-amber-300'
+                                                    ? 'border-[#4A9EFF] bg-blue-50 shadow-md'
+                                                    : 'border-gray-200 bg-white hover:border-[#4A9EFF]'
                                             }`}
                                         >
                                             <div className="font-bold text-base mb-1">ボディメイカー</div>
@@ -1344,7 +1343,7 @@ const BasicTab = ({
                                             }}
                                             className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition ${
                                                 advancedSettings.usePurposeBased === true
-                                                    ? 'bg-blue-600 text-white'
+                                                    ? 'bg-[#4A9EFF] text-white'
                                                     : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
                                             }`}
                                         >
@@ -1360,7 +1359,7 @@ const BasicTab = ({
                                             }}
                                             className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition ${
                                                 advancedSettings.usePurposeBased === false
-                                                    ? 'bg-indigo-600 text-white'
+                                                    ? 'bg-[#4A9EFF] text-white'
                                                     : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
                                             }`}
                                         >
@@ -1375,7 +1374,7 @@ const BasicTab = ({
                                     {/* タンパク質 */}
                                     <div>
                                         <div className="flex justify-between items-center mb-1">
-                                            <span className="text-sm font-medium text-green-700">タンパク質 (P)</span>
+                                            <span className="text-sm font-medium text-red-500">タンパク質 (P)</span>
                                             <span className="text-sm font-bold">
                                                 {advancedSettings.proteinRatio || 30}%
                                                 {(() => {
@@ -1409,7 +1408,7 @@ const BasicTab = ({
                                     {/* 脂質 */}
                                     <div>
                                         <div className="flex justify-between items-center mb-1">
-                                            <span className="text-sm font-medium text-yellow-700">脂質 (F)</span>
+                                            <span className="text-sm font-medium text-yellow-500">脂質 (F)</span>
                                             <span className="text-sm font-bold">
                                                 {advancedSettings.fatRatioPercent || 25}%
                                                 {(() => {
@@ -1443,7 +1442,7 @@ const BasicTab = ({
                                     {/* 炭水化物 */}
                                     <div>
                                         <div className="flex justify-between items-center mb-1">
-                                            <span className="text-sm font-medium text-orange-700">炭水化物 (C)</span>
+                                            <span className="text-sm font-medium text-green-500">炭水化物 (C)</span>
                                             <span className="text-sm font-bold">
                                                 {advancedSettings.carbRatio || 45}%
                                                 {(() => {
