@@ -126,40 +126,84 @@ const NotificationSettings = ({ userId }) => {
 
     // 通知権限の確認とFCMトークンの取得
     useEffect(() => {
+        let retryCount = 0;
+        const maxRetries = 3;
+
         const checkAndGetToken = async () => {
-            if ('Notification' in window) {
-                const permission = Notification.permission;
-                setNotificationPermission(permission);
+            console.log(`[Notification] checkAndGetToken called (attempt ${retryCount + 1}/${maxRetries + 1})`);
+            console.log('[Notification] userId:', userId);
+            console.log('[Notification] window.messaging:', !!window.messaging);
+            console.log('[Notification] window.db:', !!window.db);
 
-                // 既に許可されている場合はFCMトークンを取得
-                if (permission === 'granted' && window.messaging && userId) {
-                    try {
-                        const registration = await navigator.serviceWorker.ready;
-                        const messaging = window.messaging;
-                        const token = await messaging.getToken({
-                            vapidKey: 'BIifQg3P5w9Eb4JU4EDqx7bbNeAhveYPK2GCeEyi28A6-y04sm11TASGWBoI0Enewki1f7PFvQ6KjsQb5J5EMXU',
-                            serviceWorkerRegistration: registration
-                        });
+            if (!('Notification' in window)) {
+                console.warn('[Notification] Notification API not supported');
+                return;
+            }
 
-                        if (token) {
-                            setFcmToken(token);
-                            console.log('[Notification] FCM Token retrieved:', token);
+            const permission = Notification.permission;
+            setNotificationPermission(permission);
+            console.log('[Notification] Permission:', permission);
 
-                            // 【重要】トークンをFirestoreに保存（配列で保存）
-                            await window.db.collection('users').doc(userId).set({
-                                fcmTokens: window.firebase.firestore.FieldValue.arrayUnion(token),
-                                fcmTokenUpdatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
-                            }, { merge: true });
-                            console.log('[Notification] Token saved to Firestore');
-                        }
-                    } catch (error) {
-                        console.error('[Notification] Failed to get FCM token:', error);
+            // 既に許可されている場合はFCMトークンを取得
+            if (permission === 'granted' && userId) {
+                // window.messagingとwindow.dbの初期化を待つ
+                if (!window.messaging || !window.db) {
+                    console.warn('[Notification] Firebase not ready yet, will retry...');
+
+                    if (retryCount < maxRetries) {
+                        retryCount++;
+                        setTimeout(() => checkAndGetToken(), 1000); // 1秒後にリトライ
+                    } else {
+                        console.error('[Notification] Firebase initialization timeout');
+                    }
+                    return;
+                }
+
+                try {
+                    console.log('[Notification] Waiting for Service Worker...');
+                    const registration = await navigator.serviceWorker.ready;
+                    console.log('[Notification] Service Worker ready:', registration.scope);
+
+                    const messaging = window.messaging;
+                    console.log('[Notification] Getting FCM token...');
+
+                    const token = await messaging.getToken({
+                        vapidKey: 'BIifQg3P5w9Eb4JU4EDqx7bbNeAhveYPK2GCeEyi28A6-y04sm11TASGWBoI0Enewki1f7PFvQ6KjsQb5J5EMXU',
+                        serviceWorkerRegistration: registration
+                    });
+
+                    if (token) {
+                        setFcmToken(token);
+                        console.log('[Notification] ✅ FCM Token retrieved:', token.substring(0, 30) + '...');
+
+                        // 【重要】トークンをFirestoreに保存（配列で保存）
+                        console.log('[Notification] Saving token to Firestore...');
+                        await window.db.collection('users').doc(userId).set({
+                            fcmTokens: window.firebase.firestore.FieldValue.arrayUnion(token),
+                            fcmTokenUpdatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true });
+                        console.log('[Notification] ✅ Token saved to Firestore successfully');
+                    } else {
+                        console.warn('[Notification] Token is empty');
+                    }
+                } catch (error) {
+                    console.error('[Notification] ❌ Failed to get/save FCM token:', error);
+                    console.error('[Notification] Error details:', error.code, error.message);
+
+                    // リトライ
+                    if (retryCount < maxRetries && error.code !== 'messaging/permission-blocked') {
+                        retryCount++;
+                        console.log(`[Notification] Retrying in 2 seconds... (${retryCount}/${maxRetries})`);
+                        setTimeout(() => checkAndGetToken(), 2000);
                     }
                 }
             }
         };
 
-        checkAndGetToken();
+        // userIdが存在する場合のみ実行
+        if (userId) {
+            checkAndGetToken();
+        }
     }, [userId]);
 
     // フォアグラウンドメッセージのハンドラーを設定
@@ -167,7 +211,7 @@ const NotificationSettings = ({ userId }) => {
     useEffect(() => {
         if (!window.messaging) return;
 
-        const unsubscribe = window.messaging.onMessage((payload) => {
+        const unsubscribe = window.messaging.onMessage(async (payload) => {
             console.log('[Foreground] Message received:', payload);
 
             // Android PWAのフォアグラウンド時は手動で通知を出す必要がある
@@ -188,7 +232,21 @@ const NotificationSettings = ({ userId }) => {
                     requireInteraction: true
                 };
 
-                new Notification(title, options);
+                // PWA環境ではServiceWorkerRegistration.showNotification()を使う必要がある
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    await registration.showNotification(title, options);
+                    console.log('[Foreground] Notification shown via ServiceWorker');
+                } catch (error) {
+                    console.error('[Foreground] Failed to show notification:', error);
+                    // フォールバック: ブラウザ環境では new Notification() を使う
+                    try {
+                        new Notification(title, options);
+                        console.log('[Foreground] Notification shown via Notification API');
+                    } catch (fallbackError) {
+                        console.error('[Foreground] Fallback also failed:', fallbackError);
+                    }
+                }
             }
         });
 
