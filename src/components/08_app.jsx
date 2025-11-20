@@ -369,10 +369,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     // 初回分析完了済みかチェック
                     const isAnalysisCompleted = window.isFeatureCompleted ? await window.isFeatureCompleted(user.uid, 'analysis') : false;
 
-                    // マイナーバージョンが変わった場合、かつ初回分析完了済みの場合のみモーダルを表示
-                    // （パッチバージョンの変更では表示しない）
-                    // （初回登録直後は表示しない）
-                    if (lastMinor && lastMinor !== currentMinor && isAnalysisCompleted) {
+                    // What's Newモーダル表示条件:
+                    // 1. 初回分析が完了している（初回登録直後は表示しない）
+                    // 2. 以下のいずれか:
+                    //    - マイナーバージョンが変わった場合（v2.3.x → v2.4.x）
+                    //    - 初回ユーザー（lastSeenVersionがnull）の場合
+                    const shouldShowWhatsNew = isAnalysisCompleted && (
+                        (lastMinor && lastMinor !== currentMinor) || // バージョン変更
+                        (!lastSeenVersion) // 初回ユーザー
+                    );
+
+                    if (shouldShowWhatsNew) {
                         // 少し遅延させてからモーダルを表示（他のモーダルとの競合を避ける）
                         setTimeout(() => {
                             setShowWhatsNew(true);
