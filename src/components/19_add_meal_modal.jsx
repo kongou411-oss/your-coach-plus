@@ -646,7 +646,7 @@ const AddMealModal = ({
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4" onClick={(e) => {
-            // モーダル外をクリックした場合は閉じる
+            // モーダル外をタップした場合は閉じる
             if (e.target === e.currentTarget) {
                 onClose();
             }
@@ -2195,7 +2195,7 @@ const AddMealModal = ({
                                 <div className="mt-2 space-y-2">
                                     {customData.otherNutrients.length === 0 ? (
                                         <div className="text-xs text-gray-400 text-center py-2">
-                                            追加ボタンをクリックして栄養素を入力
+                                            追加ボタンをタップして栄養素を入力
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-2 gap-2">

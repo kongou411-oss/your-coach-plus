@@ -928,7 +928,7 @@ const BasicTab = ({
 
                                     <div className="bg-blue-100 p-3 rounded border border-blue-300 text-xs text-blue-800">
                                         <p className="font-bold mb-1">💡 ポイント</p>
-                                        <p>各STEPで設定を変更すると、リアルタイムで目標値が再計算されます。設定完了後、必ず「保存」ボタンをクリックしてください。</p>
+                                        <p>各STEPで設定を変更すると、リアルタイムで目標値が再計算されます。設定完了後、必ず「保存」ボタンをタップしてください。</p>
                                     </div>
                                 </div>
                             </details>

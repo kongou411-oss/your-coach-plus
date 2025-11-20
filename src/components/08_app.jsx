@@ -156,11 +156,11 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         </h3>
                         <div className="space-y-2">
                             {[
-                                { icon: 'BarChart3', text: '毎月100回の分析クレジット', color: 'text-sky-600' },
-                                { icon: 'BookOpen', text: 'PG BASE 教科書で理論を学習', color: 'text-green-600' },
+                                { icon: 'BarChart3', text: '毎月100回の分析クレジット', color: 'text-indigo-600' },
+                                { icon: 'BookOpen', text: 'PG BASE 教科書で理論を学習', color: 'text-cyan-600' },
                                 { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-blue-600' },
                                 { icon: 'BookTemplate', text: '無制限のテンプレート保存', color: 'text-blue-600' },
-                                { icon: 'Users', text: 'COMYで仲間と刺激し合う', color: 'text-rose-600' },
+                                { icon: 'Users', text: 'COMYで仲間と刺激し合う', color: 'text-fuchsia-600' },
                                 { icon: 'Zap', text: 'ショートカット機能で効率アップ', color: 'text-yellow-600' }
                             ].map((feature, idx) => (
                                 <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
@@ -1034,7 +1034,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 };
             }, []);
 
-            // FABメニュー項目クリック
+            // FABメニュー項目タップ
             const handleFABItemClick = async (type) => {
                 // 分析
                 if (type === 'analysis') {
@@ -2992,9 +2992,9 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarMenu(null);
                                         setBottomBarExpanded(false);
                                     }}
-                                    className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-sky-100 transition"
+                                    className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg hover:bg-indigo-100 transition"
                                 >
-                                    <Icon name="PieChart" size={18} className="text-sky-600" />
+                                    <Icon name="PieChart" size={18} className="text-indigo-600" />
                                     <span className="text-xs text-gray-600">分析</span>
                                 </button>
                             </div>
@@ -3026,7 +3026,7 @@ AIコーチなどの高度な機能が解放されます。
                                         (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history_graph')) ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 >
-                                    <Icon name="Calendar" size={18} className="text-blue-600" />
+                                    <Icon name="Calendar" size={18} className="text-indigo-600" />
                                     <span className="text-xs text-gray-600">履歴</span>
                                     {!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history_graph')) && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
@@ -3054,7 +3054,7 @@ AIコーチなどの高度な機能が解放されます。
                                         (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 >
-                                    <Icon name="BookOpen" size={18} className="text-blue-600" />
+                                    <Icon name="BookOpen" size={18} className="text-cyan-600" />
                                     <span className="text-xs text-gray-600">教科書</span>
                                     {!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
@@ -3082,7 +3082,7 @@ AIコーチなどの高度な機能が解放されます。
                                         (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community')) ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 >
-                                    <Icon name="Users" size={18} className="text-blue-600" />
+                                    <Icon name="Users" size={18} className="text-fuchsia-600" />
                                     <span className="text-xs text-gray-600">COMY</span>
                                     {!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community')) && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
@@ -3134,10 +3134,6 @@ AIコーチなどの高度な機能が解放されます。
                         {/* 折りたたみトグルボタン - 最上辺に配置 */}
                         <button
                             onClick={() => setBottomBarExpanded(!bottomBarExpanded)}
-                            onTouchStart={(e) => {
-                                e.preventDefault();
-                                setBottomBarExpanded(!bottomBarExpanded);
-                            }}
                             className="w-full py-1 flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 transition border-b border-gray-100"
                             style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                         >
@@ -3158,18 +3154,6 @@ AIコーチなどの高度な機能が解放されます。
                                 <button
                                     onClick={() => {
                                         // すべてのビューを閉じてダッシュボードに戻る
-                                        setShowHistoryV10(false);
-                                        setShowPGBaseView(false);
-                                        setShowCOMYView(false);
-                                        setShowSettings(false);
-                                        setShowAnalysisView(false);
-                                        setShowAddView(false);
-                                        setShowHistoryView(false);
-                                        setShowAIInput(false);
-                                        setBottomBarExpanded(false);
-                                    }}
-                                    onTouchStart={(e) => {
-                                        e.preventDefault();
                                         setShowHistoryV10(false);
                                         setShowPGBaseView(false);
                                         setShowCOMYView(false);
@@ -3204,24 +3188,13 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowHistoryV10(true);
                                         setBottomBarExpanded(false);
                                     }}
-                                    onTouchStart={(e) => {
-                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history'))) {
-                                            return;
-                                        }
-                                        e.preventDefault();
-                                        setShowPGBaseView(false);
-                                        setShowCOMYView(false);
-                                        setShowSettings(false);
-                                        setShowHistoryV10(true);
-                                        setBottomBarExpanded(false);
-                                    }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showHistoryV10 ? 'bg-blue-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history')) ? 'hover:bg-gray-50 active:bg-gray-100' : 'opacity-50')
+                                        showHistoryV10 ? 'bg-indigo-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history')) ? 'hover:bg-gray-50 active:bg-gray-100' : 'opacity-50')
                                     }`}
                                     style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                 >
-                                    <Icon name="TrendingUp" size={20} className={showHistoryV10 ? 'text-blue-700' : 'text-blue-600'} />
-                                    <span className={`text-xs font-medium ${showHistoryV10 ? 'text-blue-700' : 'text-gray-600'}`}>
+                                    <Icon name="TrendingUp" size={20} className={showHistoryV10 ? 'text-indigo-700' : 'text-indigo-600'} />
+                                    <span className={`text-xs font-medium ${showHistoryV10 ? 'text-indigo-700' : 'text-gray-600'}`}>
                                         履歴
                                     </span>
                                 </button>
@@ -3238,17 +3211,6 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowCOMYView(false);
                                         setShowSettings(false);
                                         // PGBASEを開く
-                                        setShowPGBaseView(true);
-                                        setBottomBarExpanded(false);
-                                    }}
-                                    onTouchStart={async (e) => {
-                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base'))) {
-                                            return;
-                                        }
-                                        e.preventDefault();
-                                        setShowHistoryV10(false);
-                                        setShowCOMYView(false);
-                                        setShowSettings(false);
                                         setShowPGBaseView(true);
                                         setBottomBarExpanded(false);
                                     }}
@@ -3278,17 +3240,6 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowCOMYView(true);
                                         setBottomBarExpanded(false);
                                     }}
-                                    onTouchStart={async (e) => {
-                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community'))) {
-                                            return;
-                                        }
-                                        e.preventDefault();
-                                        setShowHistoryV10(false);
-                                        setShowPGBaseView(false);
-                                        setShowSettings(false);
-                                        setShowCOMYView(true);
-                                        setBottomBarExpanded(false);
-                                    }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showCOMYView ? 'bg-fuchsia-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community')) ? 'hover:bg-gray-50 active:bg-gray-100' : 'opacity-50')
                                     }`}
@@ -3308,14 +3259,6 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowPGBaseView(false);
                                         setShowCOMYView(false);
                                         // 設定を開く
-                                        setShowSettings(true);
-                                        setBottomBarExpanded(false);
-                                    }}
-                                    onTouchStart={(e) => {
-                                        e.preventDefault();
-                                        setShowHistoryV10(false);
-                                        setShowPGBaseView(false);
-                                        setShowCOMYView(false);
                                         setShowSettings(true);
                                         setBottomBarExpanded(false);
                                     }}
@@ -3339,7 +3282,7 @@ AIコーチなどの高度な機能が解放されます。
                     <GuideModal
                         show={showMealGuide}
                         title="まずは食事を記録しましょう！"
-                        message="OKボタンをクリックすると食事記録セクションに遷移します。&#10;右上の「追加」ボタンから今日の食事を記録してください。"
+                        message="OKボタンをタップすると食事記録セクションに遷移します。&#10;右上の「追加」ボタンから今日の食事を記録してください。"
                         iconName="Utensils"
                         iconColor="bg-green-100"
                         targetSectionId="meal-section"
@@ -3348,7 +3291,7 @@ AIコーチなどの高度な機能が解放されます。
                     <GuideModal
                         show={showTrainingGuide}
                         title="次は運動を記録しましょう！"
-                        message="OKボタンをクリックすると運動記録セクションに遷移します。&#10;右上の「追加」ボタンから今日のトレーニングを記録してください。"
+                        message="OKボタンをタップすると運動記録セクションに遷移します。&#10;右上の「追加」ボタンから今日のトレーニングを記録してください。"
                         iconName="Dumbbell"
                         iconColor="bg-orange-100"
                         targetSectionId="workout-section"
@@ -3357,7 +3300,7 @@ AIコーチなどの高度な機能が解放されます。
                     <GuideModal
                         show={showConditionGuide}
                         title="コンディションを記録しましょう！"
-                        message="OKボタンをクリックするとコンディション記録セクションに遷移します。&#10;睡眠時間・睡眠の質・腸内環境・集中力・ストレスの5項目を記録してください。"
+                        message="OKボタンをタップするとコンディション記録セクションに遷移します。&#10;睡眠時間・睡眠の質・腸内環境・集中力・ストレスの5項目を記録してください。"
                         iconName="HeartPulse"
                         iconColor="bg-indigo-100"
                         targetSectionId="condition-section"
@@ -3408,7 +3351,7 @@ AIコーチなどの高度な機能が解放されます。
                                                 <span><strong>リワード</strong>：10/20/30...レベル到達で10クレジット</span>
                                             </li>
                                             <li className="flex items-start gap-2">
-                                                <Icon name="TrendingUp" size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                                                <Icon name="TrendingUp" size={16} className="text-indigo-600 flex-shrink-0 mt-0.5" />
                                                 <span><strong>経験値獲得</strong>：食事・運動・コンディションを記録して分析実行</span>
                                             </li>
                                         </ul>

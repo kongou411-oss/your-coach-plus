@@ -1330,7 +1330,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <div>
                                     <p className="text-sm font-medium text-blue-900 mb-1">理想の体型について</p>
                                     <p className="text-sm text-gray-600">
-                                        理想の体型目標を設定することで、より効果的な計画を立てられます。後からでも設定できるので、まだ決まっていない場合は「後で設定する」をクリックしてください。
+                                        理想の体型目標を設定することで、より効果的な計画を立てられます。後からでも設定できるので、まだ決まっていない場合は「後で設定する」をタップしてください。
                                     </p>
                                 </div>
                             </div>

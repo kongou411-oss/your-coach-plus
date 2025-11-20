@@ -4171,7 +4171,7 @@ RM回数と重量を別々に入力してください。`
                                                                         onClick={(e) => {
                                                                             e.preventDefault();
                                                                             e.stopPropagation();
-                                                                            console.log('[Template Edit] 編集ボタンがクリックされました');
+                                                                            console.log('[Template Edit] 編集ボタンがタップされました');
                                                                             console.log('[Template Edit] テンプレート:', template);
                                                                             loadTemplate(template);
                                                                             setShowTemplates(false);
@@ -4204,7 +4204,7 @@ RM回数と重量を別々に入力してください。`
                                                             onClick={async (e) => {
                                                                 e.preventDefault();
                                                                 e.stopPropagation();
-                                                                console.log('[Template Add] 追加ボタンがクリックされました');
+                                                                console.log('[Template Add] 追加ボタンがタップされました');
                                                                 console.log('[Template Add] テンプレートのアイテム:', template.items);
 
                                                                 // テンプレートの各アイテムを直接ダッシュボードに追加
@@ -4328,7 +4328,7 @@ RM回数と重量を別々に入力してください。`
                                                 <div
                                                     className="flex justify-between items-center mb-3 cursor-pointer"
                                                     onClick={() => {
-                                                        console.log('[Added Items] トグルクリック - 現在:', addedItemsExpanded);
+                                                        console.log('[Added Items] トグルタップ - 現在:', addedItemsExpanded);
                                                         setAddedItemsExpanded(!addedItemsExpanded);
                                                     }}
                                                 >

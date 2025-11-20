@@ -1795,7 +1795,7 @@ ${conversationContext}
                                             <div
                                                 className={isEditingReportTitle && selectedReport?.id === report.id ? "flex-1" : "flex-1 cursor-pointer"}
                                                 onClick={() => {
-                                                    // 編集モード中はクリック無効
+                                                    // 編集モード中はタップ無効
                                                     if (isEditingReportTitle && selectedReport?.id === report.id) {
                                                         return;
                                                     }
@@ -2692,7 +2692,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                 onClick={() => setInfoModal({
                                     show: true,
                                     title: 'カレンダーの使い方',
-                                    content: `カレンダーの日付をクリックして、履歴を表示したい期間を選択します。\n\n【期間選択の方法】\n1. 1回目のクリックで「開始日」を選択します。\n2. 2回目のクリックで「終了日」を選択します。\n3. 選択した期間のデータが自動で表示されます。\n\n【単一日付の選択】\n開始日を選択した後、もう一度同じ日付をクリックすると、その1日だけのデータが表示されます。\n\n【色の見方】\n• 黄色: 今日\n• 濃い紫: 選択した期間の開始日と終了日\n• 薄い紫: 選択した期間内の日\n• 緑の点: その日の総合分析スコアが80点以上だった日`
+                                    content: `カレンダーの日付をタップして、履歴を表示したい期間を選択します。\n\n【期間選択の方法】\n1. 1回目のタップで「開始日」を選択します。\n2. 2回目のタップで「終了日」を選択します。\n3. 選択した期間のデータが自動で表示されます。\n\n【単一日付の選択】\n開始日を選択した後、もう一度同じ日付をタップすると、その1日だけのデータが表示されます。\n\n【色の見方】\n• 黄色: 今日\n• 濃い紫: 選択した期間の開始日と終了日\n• 薄い紫: 選択した期間内の日\n• 緑の点: その日の総合分析スコアが80点以上だった日`
                                 })}
                                 className="text-indigo-600 hover:text-indigo-800"
                             >

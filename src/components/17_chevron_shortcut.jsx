@@ -34,10 +34,10 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
         setExpandedSide(null);
     };
 
-    // メニュー外クリック/タッチで閉じる（iOS対応）
+    // メニュー外タップ/タッチで閉じる（iOS対応）
     React.useEffect(() => {
         const handleClickOutside = (e) => {
-            // モーダルやダイアログのクリックは無視
+            // モーダルやダイアログのタップは無視
             if (e.target.closest('[role="dialog"]') || e.target.closest('.modal')) {
                 return;
             }
@@ -70,10 +70,10 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
             'open_meal_photo': 'text-green-600',
             'open_workout': 'text-orange-600',
             'open_idea': 'text-yellow-500',
-            'open_analysis': 'text-sky-600',
-            'open_history': 'text-sky-600',
+            'open_analysis': 'text-indigo-600',
+            'open_history': 'text-indigo-600',
             'open_pgbase': 'text-cyan-600',
-            'open_community': 'text-sky-600',
+            'open_community': 'text-fuchsia-600',
             'open_settings': 'text-gray-600'
         };
         return colorMap[action] || 'text-gray-600';
@@ -113,10 +113,6 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
             <div className={`chevron-shortcut-container fixed left-0 ${getPositionStyle(leftConfig.position)} -translate-y-1/2 z-[10000]`}>
                 <button
                     onClick={() => handleButtonClick('left')}
-                    onTouchStart={(e) => {
-                        e.preventDefault();
-                        handleButtonClick('left');
-                    }}
                     className={`${leftSize.width} ${leftSize.height} bg-white rounded-r-full shadow-lg
                                flex items-center justify-center
                                hover:bg-gray-50 active:bg-gray-100 transition-all hover:scale-110
@@ -142,10 +138,6 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
                                 <button
                                     key={index}
                                     onClick={() => handleShortcutItemClick(shortcut.action)}
-                                    onTouchStart={(e) => {
-                                        e.preventDefault();
-                                        handleShortcutItemClick(shortcut.action);
-                                    }}
                                     className="absolute left-0 bg-white bg-opacity-95 rounded-lg shadow-lg hover:bg-opacity-100 active:bg-opacity-100 transition flex items-center gap-2 px-3 py-2"
                                     style={{
                                         top: `${offset}px`,
@@ -171,10 +163,6 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
             <div className={`chevron-shortcut-container fixed right-0 ${getPositionStyle(rightConfig.position)} -translate-y-1/2 z-[10000]`}>
                 <button
                     onClick={() => handleButtonClick('right')}
-                    onTouchStart={(e) => {
-                        e.preventDefault();
-                        handleButtonClick('right');
-                    }}
                     className={`${rightSize.width} ${rightSize.height} bg-white rounded-l-full shadow-lg
                                flex items-center justify-center
                                hover:bg-gray-50 active:bg-gray-100 transition-all hover:scale-110
@@ -200,10 +188,6 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
                                 <button
                                     key={index}
                                     onClick={() => handleShortcutItemClick(shortcut.action)}
-                                    onTouchStart={(e) => {
-                                        e.preventDefault();
-                                        handleShortcutItemClick(shortcut.action);
-                                    }}
                                     className="absolute right-0 bg-white bg-opacity-95 rounded-lg shadow-lg hover:bg-opacity-100 active:bg-opacity-100 transition flex items-center gap-2 px-3 py-2"
                                     style={{
                                         top: `${offset}px`,

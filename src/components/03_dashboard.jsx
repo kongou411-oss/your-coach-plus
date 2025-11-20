@@ -19,7 +19,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
 
     // スコア再計算関数（当日のみ）
     const recalculateAllScores = async () => {
-        console.log('[再計算] ボタンがクリックされました');
+        console.log('[再計算] ボタンがタップされました');
         console.log('[再計算] user:', user?.uid);
         console.log('[再計算] currentDate:', currentDate);
         console.log('[再計算] profile:', profile);
@@ -2400,7 +2400,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         onClick={() => setInfoModal({
                             show: true,
                             title: '📝 記録について',
-                            content: `【通常の記録】\n＋ボタンから、食事・運動・サプリメントを記録できます。記録した内容は即座にダッシュボードに反映されます。\n\n【予測入力】\n前日のデータから今日の食事・運動を自動的に予測して入力します。\n・青背景で表示されます\n・予測データは編集可能です\n・そのまま分析に使用できます\n\n【ルーティン入力】\n設定したルーティンに紐づけたテンプレートを自動入力します。\n・紫背景で表示されます\n・ルーティンデータは編集可能です\n・そのまま分析に使用できます\n\n設定方法：設定 → ルーティン → 各日に食事・運動テンプレートを紐づけ`
+                            content: `【通常の記録】\n＋ボタンから、食事・運動・サプリメントを記録できます。記録した内容は即座にダッシュボードに反映されます。\n\n【予測入力（魔法の杖アイコン）】\n前日のデータから今日の食事・運動を自動的に予測して入力します。\n・青背景で表示されます\n・予測データは編集可能です\n・そのまま分析に使用できます\n・タップすると予測入力、再度タップでクリア\n\n【ルーティン入力（リピートアイコン）】\n設定したルーティンに紐づけたテンプレートを自動入力します。\n・紫背景で表示されます\n・ルーティンデータは編集可能です\n・そのまま分析に使用できます\n・タップするとルーティン入力、再度タップでクリア\n\n設定方法：設定 → 機能設定 → ルーティン設定 → 各日に食事・運動テンプレートを紐づけ`
                         })}
                         style={{color: '#4A9EFF'}}
                         onMouseEnter={(e) => e.currentTarget.style.color = '#3b8fef'}
@@ -2409,7 +2409,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         <Icon name="HelpCircle" size={18} />
                     </button>
                     <div className="ml-auto flex gap-2">
-                        {/* 予測入力ボタン（トグル） */}
+                        {/* 予測入力ボタン（アイコンのみ） */}
                         {yesterdayRecord && (
                             <button
                                 onClick={async () => {
@@ -2434,7 +2434,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         loadPredictedData();
                                     }
                                 }}
-                                className={`text-sm px-4 py-2 rounded-lg font-bold shadow-md hover:shadow-lg transition flex items-center gap-2 ${
+                                className={`p-2 rounded-lg font-bold shadow-md hover:shadow-lg transition ${
                                     dailyRecord.meals?.some(m => m.isPredicted) ||
                                     dailyRecord.workouts?.some(w => w.isPredicted) ||
                                     dailyRecord.bodyComposition?.isPredicted ||
@@ -2442,21 +2442,23 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         ? 'bg-red-600 text-white hover:bg-red-700'
                                         : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
                                 }`}
+                                title={dailyRecord.meals?.some(m => m.isPredicted) ||
+                                       dailyRecord.workouts?.some(w => w.isPredicted) ||
+                                       dailyRecord.bodyComposition?.isPredicted ||
+                                       dailyRecord.conditions?.isPredicted ? '予測入力をクリア' : '予測入力'}
                             >
-                                {!(dailyRecord.meals?.some(m => m.isPredicted) ||
-                                   dailyRecord.workouts?.some(w => w.isPredicted) ||
-                                   dailyRecord.bodyComposition?.isPredicted ||
-                                   dailyRecord.conditions?.isPredicted) && (
-                                    <Icon name="Sparkles" size={16} />
-                                )}
                                 {(dailyRecord.meals?.some(m => m.isPredicted) ||
                                   dailyRecord.workouts?.some(w => w.isPredicted) ||
                                   dailyRecord.bodyComposition?.isPredicted ||
-                                  dailyRecord.conditions?.isPredicted) ? 'クリア' : '予測'}
+                                  dailyRecord.conditions?.isPredicted) ? (
+                                    <Icon name="X" size={20} />
+                                ) : (
+                                    <Icon name="Wand2" size={20} />
+                                )}
                             </button>
                         )}
 
-                        {/* ルーティン入力ボタン（トグル） */}
+                        {/* ルーティン入力ボタン（アイコンのみ） */}
                         {currentRoutine && !currentRoutine.isRestDay && (
                             <button
                                 onClick={async () => {
@@ -2478,16 +2480,18 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         }
                                     }
                                 }}
-                                className={`text-sm px-4 py-2 rounded-lg font-bold shadow-md hover:shadow-lg transition flex items-center gap-2 ${
+                                className={`p-2 rounded-lg font-bold shadow-md hover:shadow-lg transition ${
                                     dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)
                                         ? 'bg-red-600 text-white hover:bg-red-700'
                                         : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
                                 }`}
+                                title={dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine) ? 'ルーティン入力をクリア' : 'ルーティン入力'}
                             >
-                                {!(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) && (
-                                    <Icon name="Repeat" size={16} />
+                                {(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? (
+                                    <Icon name="X" size={20} />
+                                ) : (
+                                    <Icon name="Repeat" size={20} />
                                 )}
-                                {(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? 'クリア' : 'ルーティン'}
                             </button>
                         )}
                     </div>
