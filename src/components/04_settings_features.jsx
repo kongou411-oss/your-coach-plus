@@ -1578,22 +1578,8 @@ const FeaturesTab = ({
                                 {localRoutines.length > 0 && (
                                     <div className="flex gap-3 pt-4 border-t">
                                         <button
-                                            onClick={() => {
-                                                showConfirm('ルーティンリセットの確認', 'ルーティンをリセットしますか？', () => {
-                                                    localStorage.removeItem(STORAGE_KEYS.ROUTINES);
-                                                    localStorage.removeItem(STORAGE_KEYS.ROUTINE_START_DATE);
-                                                    localStorage.removeItem(STORAGE_KEYS.ROUTINE_ACTIVE);
-                                                    window.location.reload();
-                                                });
-                                            }}
-                                            className="flex-1 px-4 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium border border-red-200"
-                                        >
-                                            <Icon name="Trash2" size={18} className="inline mr-2" />
-                                            リセット
-                                        </button>
-                                        <button
                                             onClick={() => setShowRestartModal(true)}
-                                            className="flex-1 px-4 py-3 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-medium border border-indigo-200"
+                                            className="w-full px-4 py-3 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-medium border border-indigo-200"
                                         >
                                             <Icon name="RotateCcw" size={18} className="inline mr-2" />
                                             任意の日から再開
