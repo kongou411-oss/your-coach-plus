@@ -223,7 +223,12 @@ exports.sendPushNotification = onRequest({
       tokens = [userData.fcmToken]; // 旧形式（単一）
     }
 
-    if (tokens.length === 0) {
+    // ★★★ 重複削除（最重要）★★★
+    // 配列をSetに変換して重複を削除し、また配列に戻す
+    const uniqueTokens = [...new Set(tokens)];
+    console.log(`[Push Notification] Tokens: ${tokens.length} → Unique: ${uniqueTokens.length}`);
+
+    if (uniqueTokens.length === 0) {
       console.log(`[Push Notification] No FCM tokens found for user ${userId}`);
       return res.status(200).send("No tokens");
     }
@@ -255,7 +260,7 @@ exports.sendPushNotification = onRequest({
     const uniqueTag = `${notificationType}-${Date.now()}`;
 
     const message = {
-      tokens: tokens, // 複数トークンに対応
+      tokens: uniqueTokens, // ★ 重複削除済みのトークンを使用
       notification: {
         title: title,
         body: body,

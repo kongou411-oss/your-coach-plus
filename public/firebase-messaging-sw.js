@@ -22,15 +22,27 @@ firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
 // バックグラウンド通知を受信
-messaging.onBackgroundMessage((payload) => {
+messaging.onBackgroundMessage(async (payload) => {
     console.log('[firebase-messaging-sw.js] バックグラウンド通知受信:', payload);
+
+    // フォアグラウンド時（ページが開いている時）は通知を表示しない
+    // onMessageハンドラが処理するため
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const hasVisibleClient = clients.some(client => client.visibilityState === 'visible');
+
+    if (hasVisibleClient) {
+        console.log('[firebase-messaging-sw.js] ページが開いているため、Service Workerは通知をスキップ');
+        return; // 通知を表示しない
+    }
+
+    console.log('[firebase-messaging-sw.js] バックグラウンド時のため、Service Workerが通知を表示');
 
     const notificationTitle = payload.notification?.title || 'Your Coach+';
     const notificationBody = payload.notification?.body || '新しい通知があります';
 
-    // ユニークなtagを生成（タイムスタンプ付き）
-    const baseTag = payload.data?.type || 'default';
-    const notificationTag = `${baseTag}_${Date.now()}`;
+    // タグをタイトルで固定（重複防止）
+    // タイトルが同じなら同じ通知とみなし、OS側で自動的に1つに統合される
+    const notificationTag = notificationTitle;
 
     const notificationOptions = {
         body: notificationBody,

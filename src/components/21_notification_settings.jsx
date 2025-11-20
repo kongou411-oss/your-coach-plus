@@ -219,9 +219,10 @@ const NotificationSettings = ({ userId }) => {
                 const title = payload.notification?.title || 'Your Coach+';
                 const body = payload.notification?.body || '新しい通知があります';
 
-                // タグをメッセージIDまたはタイトルで固定（重複防止）
-                // Date.now()を使うと、React StrictModeの2重実行で別物扱いされて重複する
-                const notificationTag = payload.messageId || `${payload.data?.type || 'notification'}-${title}`;
+                // タグをタイトルで固定（重複防止）
+                // タイトルが同じなら同じ通知とみなし、OS側で自動的に1つに統合される
+                // サーバーから誤って2通届いても、タイトルが同じなら1つになる
+                const notificationTag = title;
 
                 const options = {
                     body: body,
