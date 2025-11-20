@@ -4,6 +4,7 @@ const {defineSecret} = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const { VertexAI } = require("@google-cloud/vertexai");
 const nodemailer = require("nodemailer");
+const { CloudTasksClient } = require("@google-cloud/tasks");
 
 // シークレットを定義
 const gmailUser = defineSecret("GMAIL_USER");
@@ -110,182 +111,256 @@ exports.callGemini = onCall({
   }
 });
 
-// ===== スケジュール通知送信 =====
-exports.sendScheduledNotifications = onSchedule({
-  schedule: "every 1 minutes", // 毎分実行（秒単位のスケジュールは非対応）
-  region: "asia-northeast1",
-  timeZone: "Asia/Tokyo", // 日本時間で実行
-  memory: "512MiB", // Vertex AI SDKが読み込まれるためメモリを増やす
-}, async (event) => {
-  console.log("Checking scheduled notifications...");
+// ===== Cloud Tasks: 通知スケジュール登録 =====
+// ユーザーが通知設定を保存したときに呼び出される
+exports.scheduleNotification = onCall({
+  region: "asia-northeast2",
+  cors: true,
+  memory: "512MiB",
+}, async (request) => {
+  const { targetTime, fcmToken, title, body, notificationType, userId, scheduleTimeStr } = request.data;
+
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ユーザーはログインしている必要があります");
+  }
+
+  // パラメータチェック
+  if (!targetTime || !fcmToken || !title || !body || !notificationType || !scheduleTimeStr) {
+    throw new HttpsError("invalid-argument", "必須パラメータが不足しています");
+  }
 
   try {
-    // 日本時間(JST)で取得
-    const now = new Date();
-    const jstNow = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
-    const currentSeconds = jstNow.getSeconds();
-    const currentTime = `${String(jstNow.getHours()).padStart(2, "0")}:${String(jstNow.getMinutes()).padStart(2, "0")}`;
-    const today = `${jstNow.getFullYear()}-${String(jstNow.getMonth() + 1).padStart(2, "0")}-${String(jstNow.getDate()).padStart(2, "0")}`;
+    const tasksClient = new CloudTasksClient();
+    const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
+    const location = "asia-northeast2";
+    const queue = "notification-queue";
 
-    console.log(`[Scheduler] Current JST time: ${currentTime}:${String(currentSeconds).padStart(2, "0")}`);
+    // キューのパスを作成
+    const queuePath = tasksClient.queuePath(project, location, queue);
 
-    // 全ユーザーの通知スケジュールをチェック
-    // 注: where("notificationSchedules", "!=", null) はインデックスが必要で、
-    //     空配列の場合もマッチしないため、全ユーザーを取得してフィルタリング
-    const usersSnapshot = await admin.firestore()
-        .collection("users")
-        .get();
+    // 実行する関数のURL
+    const url = `https://${location}-${project}.cloudfunctions.net/sendPushNotification`;
 
-    const notifications = [];
+    // スケジュール時刻をUNIXタイムスタンプ（秒）に変換
+    const scheduleTimeSeconds = Math.floor(new Date(targetTime).getTime() / 1000);
 
-    for (const userDoc of usersSnapshot.docs) {
-      const userId = userDoc.id;
-      const userData = userDoc.data();
-      const schedules = userData.notificationSchedules || [];
-      let sentToday = userData.notificationsSentToday || {}; // 今日送信した通知を記録
-      const lastSentDate = userData.notificationsSentTodayDate;
+    // タスクの設定
+    const task = {
+      httpRequest: {
+        httpMethod: "POST",
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: Buffer.from(JSON.stringify({
+          title,
+          body,
+          notificationType,
+          userId,
+          scheduleTimeStr,  // 時刻文字列を追加
+        })).toString("base64"),
+        // セキュリティ: Cloud Tasksからの呼び出しであることを証明するトークン
+        oidcToken: {
+          serviceAccountEmail: `${project}@appspot.gserviceaccount.com`,
+        },
+      },
+      scheduleTime: {
+        seconds: scheduleTimeSeconds,
+      },
+    };
 
-      // 日付が変わったら送信記録をクリア
-      if (lastSentDate && lastSentDate !== today) {
-        console.log(`[Scheduler] Clearing sent notifications for user ${userId} (date changed from ${lastSentDate} to ${today})`);
-        sentToday = {};
-        try {
-          await admin.firestore()
-              .collection("users")
-              .doc(userId)
-              .update({
-                notificationsSentToday: {},
-                notificationsSentTodayDate: today,
-              });
-        } catch (error) {
-          console.error(`[Scheduler] Failed to clear sent notifications:`, error);
-        }
-      }
+    // タスクを作成
+    const [response] = await tasksClient.createTask({ parent: queuePath, task });
+    console.log(`[Cloud Tasks] Task created: ${response.name} for user ${userId} at ${targetTime}`);
 
-      // スケジュールがない、または空配列の場合はスキップ
-      if (!schedules || schedules.length === 0) {
-        continue;
-      }
-
-      console.log(`[Scheduler] Processing user ${userId} with ${schedules.length} schedules`);
-
-      const newSentToday = {}; // 今日送信する通知を記録
-
-      // 該当する通知を抽出
-      for (const schedule of schedules) {
-        console.log(`[Scheduler] Checking schedule:`, JSON.stringify(schedule));
-
-        if (!schedule.enabled) {
-          console.log(`[Scheduler] Schedule ${schedule.type} ${schedule.time} is disabled`);
-          continue;
-        }
-
-        // 通知の一意なID
-        const notificationId = `${today}_${schedule.type}_${schedule.time}`;
-
-        // 今日既に送信済みかチェック
-        if (sentToday[notificationId]) {
-          console.log(`[Scheduler] Already sent today: ${notificationId}`);
-          continue;
-        }
-
-        // 時刻チェック（分単位で完全一致）
-        // ユーザーは時:分のみ設定、実行は00〜03秒に制限済み
-        const [scheduleHours, scheduleMinutes] = schedule.time.split(":").map(Number);
-        const isMatch = jstNow.getHours() === scheduleHours && jstNow.getMinutes() === scheduleMinutes;
-
-        console.log(`[Scheduler] ${userId} - ${schedule.type} ${schedule.time}: match=${isMatch} (current: ${currentTime}:${String(currentSeconds).padStart(2, "0")})`);
-
-        if (isMatch) {
-          // FCMトークンを取得（ユーザードキュメント直下から）
-          const token = userData.fcmToken;
-
-          if (token) {
-            notifications.push({
-              token: token,
-              notification: {
-                title: schedule.title,
-                body: schedule.body,
-              },
-              webpush: {
-                headers: {
-                  Urgency: "high", // 優先度を高に設定
-                },
-                notification: {
-                  tag: `${schedule.type}_${schedule.time}`, // Web用tag
-                  icon: "/icons/icon-192.png",
-                  badge: "/icons/icon-72.png",
-                  vibrate: [200, 100, 200],
-                  requireInteraction: true, // ユーザーが操作するまで表示
-                  silent: false, // 音を鳴らす
-                },
-              },
-              data: {
-                type: schedule.type,
-                time: schedule.time,
-                tag: `${schedule.type}_${schedule.time}`,
-                userId: userId,
-              },
-              android: {
-                notification: {
-                  tag: `${schedule.type}_${schedule.time}`, // Android用tag
-                  notificationCount: 1,
-                },
-                collapseKey: schedule.type, // 同じタイプの通知をグループ化しない
-              },
-              apns: {
-                payload: {
-                  aps: {
-                    threadId: `${schedule.type}_${schedule.time}`, // iOS用
-                  },
-                },
-              },
-            });
-
-            // 送信予定としてマーク
-            newSentToday[notificationId] = true;
-          }
-        }
-      }
-
-      // Firestoreに送信記録を保存（送信予定があれば）
-      if (Object.keys(newSentToday).length > 0) {
-        try {
-          await admin.firestore()
-              .collection("users")
-              .doc(userId)
-              .update({
-                notificationsSentToday: {
-                  ...sentToday,
-                  ...newSentToday,
-                },
-                notificationsSentTodayDate: today, // 日付を記録（翌日にクリアする用）
-              });
-          console.log(`[Scheduler] Updated sent notifications for user ${userId}`);
-        } catch (error) {
-          console.error(`[Scheduler] Failed to update sent notifications:`, error);
-        }
-      }
-    }
-
-    // 通知を送信
-    if (notifications.length > 0) {
-      const messaging = admin.messaging();
-      for (const notification of notifications) {
-        try {
-          await messaging.send(notification);
-          console.log(`Notification sent to ${notification.data.userId}: ${notification.notification.title}`);
-        } catch (error) {
-          console.error(`Failed to send notification:`, error);
-        }
-      }
-    }
-
-    console.log(`Checked ${usersSnapshot.size} users, sent ${notifications.length} notifications`);
+    return {
+      success: true,
+      taskId: response.name,
+      scheduleTime: targetTime,
+    };
   } catch (error) {
-    console.error("Error in sendScheduledNotifications:", error);
+    console.error("[Cloud Tasks] Failed to create task:", error);
+    throw new HttpsError("internal", "通知タスクの作成に失敗しました", error.message);
   }
 });
+
+// ===== Cloud Tasks: 通知送信実行 =====
+// Cloud Tasksから呼ばれる関数（外部からは直接呼び出せないようにする）
+exports.sendPushNotification = onRequest({
+  region: "asia-northeast2",
+  memory: "512MiB",
+}, async (req, res) => {
+  try {
+    // scheduleTimeStr: "08:00" などの元の設定時刻文字列を受け取る
+    const { title, body, notificationType, userId, scheduleTimeStr } = req.body;
+
+    if (!title || !body || !userId || !scheduleTimeStr) {
+      console.error("[Push Notification] Missing required parameters");
+      res.status(400).send("Missing required parameters");
+      return;
+    }
+
+    // 1. Firestoreから最新情報（トークンと設定）を取得
+    const db = admin.firestore();
+    const userDoc = await db.collection("users").doc(userId).get();
+    const settingsDoc = await db.collection("users").doc(userId).collection("settings").doc("notifications").get();
+
+    // ユーザーまたは設定が存在しない場合（退会済みなど）
+    if (!userDoc.exists || !settingsDoc.exists) {
+      console.log(`[Stop] User or settings not found: ${userId}`);
+      return res.status(200).send("Stop chaining");
+    }
+
+    const fcmToken = userDoc.data().fcmToken;
+    const settings = settingsDoc.data();
+
+    // 2. まだこの通知設定が有効かチェック（パッシブ・キャンセル）
+    let isValid = false;
+    if (notificationType === "meal") {
+      // 食事通知: 配列の中に一致する時刻とタイトルがあるか
+      isValid = settings.meal && settings.meal.some((m) => m.time === scheduleTimeStr && m.title === title);
+    } else if (notificationType === "workout") {
+      // 運動通知: 配列の中に一致する時刻とタイトルがあるか
+      isValid = settings.workout && settings.workout.some((w) => w.time === scheduleTimeStr && w.title === title);
+    } else if (notificationType === "analysis") {
+      // 分析通知: 配列の中に一致する時刻とタイトルがあるか
+      isValid = settings.analysis && settings.analysis.some((a) => a.time === scheduleTimeStr && a.title === title);
+    } else if (notificationType === "custom") {
+      // カスタム通知: 配列の中に一致する時刻とタイトルがあるか
+      isValid = settings.custom && settings.custom.some((c) => c.time === scheduleTimeStr && c.title === title);
+    }
+
+    if (!isValid) {
+      console.log(`[Stop] Setting removed or changed for ${userId} ${notificationType}`);
+      // ここで終了することで、古い設定のタスク連鎖が消滅する
+      return res.status(200).send("Stop chaining");
+    }
+
+    // 3. FCM通知送信
+    if (fcmToken) {
+      // ユニークなタグを生成（毎回違うタグにすることで、×で消した後も必ずポップアップする）
+      const uniqueTag = `${notificationType}-${Date.now()}`;
+
+      const message = {
+        token: fcmToken,
+        notification: {
+          title: title,
+          body: body,
+        },
+        webpush: {
+          headers: {
+            Urgency: "high",
+          },
+          notification: {
+            tag: uniqueTag, // 毎回違うタグで「新しい通知」として認識させる
+            icon: "/icons/icon-192.png",
+            badge: "/icons/icon-72.png",
+            vibrate: [200, 100, 200],
+            requireInteraction: true, // ユーザーが操作するまで消えない
+            renotify: true, // 再通知フラグ
+            silent: false,
+          },
+        },
+        data: {
+          type: notificationType,
+          userId: userId,
+        },
+        android: {
+          priority: "high",
+          notification: {
+            channelId: "high_importance_channel", // 高重要度チャンネル
+            priority: "max", // ヘッドアップ通知を強制
+            defaultSound: true,
+            defaultVibrateTimings: true,
+            visibility: "public",
+            tag: uniqueTag, // 毎回違うタグ
+            notificationCount: 1,
+          },
+        },
+        apns: {
+          headers: {
+            "apns-collapse-id": uniqueTag, // iOS: 毎回違うIDで「新しい通知」として認識させる
+            "apns-priority": "10", // 即時配送
+            "apns-push-type": "alert",
+          },
+          payload: {
+            aps: {
+              alert: {
+                title: title,
+                body: body,
+              },
+              "interruption-level": "time-sensitive", // 集中モードでも通知（iOS15+）
+              sound: "default",
+              badge: 1,
+              "content-available": 1,
+              "mutable-content": 1,
+            },
+          },
+        },
+      };
+
+      await admin.messaging().send(message);
+      console.log(`[Push Notification] Notification sent successfully to user ${userId}: ${title}`);
+    } else {
+      console.log(`[Push Notification] No FCM token found for user ${userId}`);
+    }
+
+    // 4. 翌日のタスクをスケジュール（時間ズレ補正版）
+    await rescheduleNotification(title, body, notificationType, userId, scheduleTimeStr);
+
+    res.status(200).send("Notification sent and rescheduled");
+  } catch (error) {
+    console.error("[Push Notification] Error:", error);
+    // 500エラーを返すとCloud Tasksがリトライしてくれる（連鎖切れ防止）
+    res.status(500).send("Internal Error");
+  }
+});
+
+// ===== 翌日の通知を再スケジュール =====
+async function rescheduleNotification(title, body, notificationType, userId, scheduleTimeStr) {
+  const tasksClient = new CloudTasksClient();
+  const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
+  const location = "asia-northeast2";
+  const queue = "notification-queue";
+
+  const queuePath = tasksClient.queuePath(project, location, queue);
+  const url = `https://${location}-${project}.cloudfunctions.net/sendPushNotification`;
+
+  // 【重要】時間の計算ロジック修正
+  // new Date() + 24h ではなく、"明日の 08:00" を生成する
+  const now = new Date();
+  const [hours, minutes] = scheduleTimeStr.split(":").map(Number);
+
+  // 明日の日付を作成
+  const nextDate = new Date(now);
+  nextDate.setDate(now.getDate() + 1);
+  nextDate.setHours(hours, minutes, 0, 0);
+
+  const scheduleTimeSeconds = Math.floor(nextDate.getTime() / 1000);
+
+  const task = {
+    httpRequest: {
+      httpMethod: "POST",
+      url: url,
+      headers: {"Content-Type": "application/json"},
+      body: Buffer.from(JSON.stringify({
+        title,
+        body,
+        notificationType,
+        userId,
+        scheduleTimeStr, // 次回のために時刻文字列も引き継ぐ
+      })).toString("base64"),
+      oidcToken: {
+        serviceAccountEmail: `${project}@appspot.gserviceaccount.com`,
+      },
+    },
+    scheduleTime: {seconds: scheduleTimeSeconds},
+  };
+
+  await tasksClient.createTask({parent: queuePath, task});
+  console.log(`[Rescheduled] ${notificationType} at ${nextDate.toISOString()}`);
+}
 
 // ===== 管理者機能: ユーザー情報取得 =====
 exports.adminGetUser = onCall({

@@ -8,7 +8,7 @@ const { useState, useEffect, useRef, useCallback } = React;
 
 // ===== Firebase初期化 =====
 // Firebase設定はconfig.jsから読み込む（APIキーを一箇所で管理）
-let auth, db, storage, functions;
+let auth, db, storage, functions, messaging;
 
 // Firebase初期化関数
 const initializeFirebase = () => {
@@ -29,7 +29,9 @@ const initializeFirebase = () => {
 
         db = firebase.firestore();
         storage = firebase.storage();
-        functions = firebase.functions();
+        // Cloud Functions のリージョンを指定（asia-northeast2）
+        functions = firebase.app().functions('asia-northeast2');
+        messaging = firebase.messaging();
 
         console.log('✅ Firebase初期化成功');
 
@@ -38,6 +40,8 @@ const initializeFirebase = () => {
         window.db = db;
         window.storage = storage;
         window.functions = functions;
+        window.messaging = messaging;
+        window.firebase = firebase; // firebase オブジェクト全体も公開
     } catch (error) {
         console.error('❌ Firebase初期化失敗:', error);
         // エラー画面は errorHandler.js のグローバルエラーハンドラで表示される

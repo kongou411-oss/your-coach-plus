@@ -149,7 +149,11 @@
       "Bash(/dev/null)",
       "Bash(move home.html publichome.html)",
       "Bash(cmd /c move home.html publichome.html)",
-      "Bash(npm run auto-release:*)"
+      "Bash(npm run auto-release:*)",
+      "Bash(gcloud services:*)",
+      "Bash(firebase:*)",
+      "Bash(npm view:*)",
+      "Bash(gcloud tasks list:*)"
     ],
     "deny": [],
     "ask": []

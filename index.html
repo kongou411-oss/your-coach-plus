@@ -32,6 +32,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 
     <!-- Chart.js & Flatpickr (グローバル変数として必要) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -55,22 +56,17 @@
 
     <script type="module" src="/src/main.jsx"></script>
 
-    <!-- Service Worker自動解除スクリプト -->
+    <!-- Service Worker 登録スクリプト（通知機能に必要） -->
     <script>
-        // 既存のService Workerを自動的に解除
+        // Firebase Messaging用のService Workerを登録
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                if (registrations.length > 0) {
-                    console.log('[Cleanup] 古いService Workerを解除します...');
-                    for (let registration of registrations) {
-                        registration.unregister().then(function(success) {
-                            if (success) {
-                                console.log('[Cleanup] Service Workerを解除しました:', registration.scope);
-                            }
-                        });
-                    }
-                }
-            });
+            navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                .then(function(registration) {
+                    console.log('[Service Worker] Firebase Messaging SW登録成功:', registration.scope);
+                })
+                .catch(function(error) {
+                    console.error('[Service Worker] Firebase Messaging SW登録失敗:', error);
+                });
         }
     </script>
 </body>
