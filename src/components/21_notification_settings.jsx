@@ -156,14 +156,33 @@ const NotificationSettings = ({ userId }) => {
     }, []);
 
     // フォアグラウンドメッセージのハンドラーを設定
-    // 注意: FCMが自動で通知を表示するため、ここでは new Notification() を呼ばない
+    // Android PWAを開いている時は、ここで通知を出さないと無音になる
     useEffect(() => {
         if (!window.messaging) return;
 
         const unsubscribe = window.messaging.onMessage((payload) => {
             console.log('[Foreground] Message received:', payload);
-            // FCMが自動で通知を表示するため、ここでは何もしない
-            // new Notification() を呼ぶと重複する
+
+            // Android PWAのフォアグラウンド時は手動で通知を出す必要がある
+            if (Notification.permission === 'granted') {
+                const title = payload.notification?.title || 'Your Coach+';
+                const body = payload.notification?.body || '新しい通知があります';
+
+                // ユニークなタグで重複を防ぐ
+                const uniqueTag = `foreground-${Date.now()}`;
+
+                const options = {
+                    body: body,
+                    icon: '/icons/icon-192.png',
+                    badge: '/icons/icon-72.png',
+                    tag: uniqueTag, // 毎回違うタグで重複防止
+                    renotify: true,
+                    vibrate: [200, 100, 200],
+                    requireInteraction: true
+                };
+
+                new Notification(title, options);
+            }
         });
 
         return () => {
