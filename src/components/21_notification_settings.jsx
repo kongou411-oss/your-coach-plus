@@ -219,17 +219,26 @@ const NotificationSettings = ({ userId }) => {
                 const title = payload.notification?.title || 'Your Coach+';
                 const body = payload.notification?.body || '新しい通知があります';
 
-                // ユニークなタグで重複を防ぐ
-                const uniqueTag = `foreground-${Date.now()}`;
+                // タグをメッセージIDまたはタイトルで固定（重複防止）
+                // Date.now()を使うと、React StrictModeの2重実行で別物扱いされて重複する
+                const notificationTag = payload.messageId || `${payload.data?.type || 'notification'}-${title}`;
 
                 const options = {
                     body: body,
                     icon: '/icons/icon-192.png',
                     badge: '/icons/icon-72.png',
-                    tag: uniqueTag, // 毎回違うタグで重複防止
+                    tag: notificationTag, // メッセージIDで固定（同じメッセージは1つに統合）
                     renotify: true,
                     vibrate: [200, 100, 200],
-                    requireInteraction: true
+                    requireInteraction: true,
+                    data: {
+                        url: payload.data?.url || '/',
+                        ...payload.data
+                    },
+                    actions: [
+                        { action: 'open', title: '開く', icon: '/icons/icon-72.png' },
+                        { action: 'close', title: '閉じる' }
+                    ]
                 };
 
                 // PWA環境ではServiceWorkerRegistration.showNotification()を使う必要がある
