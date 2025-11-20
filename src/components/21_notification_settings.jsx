@@ -156,32 +156,14 @@ const NotificationSettings = ({ userId }) => {
     }, []);
 
     // フォアグラウンドメッセージのハンドラーを設定
+    // 注意: FCMが自動で通知を表示するため、ここでは new Notification() を呼ばない
     useEffect(() => {
         if (!window.messaging) return;
 
         const unsubscribe = window.messaging.onMessage((payload) => {
             console.log('[Foreground] Message received:', payload);
-
-            // 通知を表示
-            if (Notification.permission === 'granted') {
-                const title = payload.notification?.title || 'Your Coach+';
-
-                // ユニークなタグを生成（×で消した後も必ずポップアップする）
-                const baseTag = payload.data?.type || 'notification';
-                const uniqueTag = `${baseTag}-${Date.now()}`;
-
-                const options = {
-                    body: payload.notification?.body || '新しい通知があります',
-                    icon: payload.notification?.icon || '/icons/icon-192.png',
-                    badge: '/icons/icon-72.png',
-                    tag: uniqueTag, // 毎回違うタグ
-                    requireInteraction: true,
-                    renotify: true, // 再通知フラグ
-                    vibrate: [200, 100, 200]
-                };
-
-                new Notification(title, options);
-            }
+            // FCMが自動で通知を表示するため、ここでは何もしない
+            // new Notification() を呼ぶと重複する
         });
 
         return () => {
@@ -218,8 +200,9 @@ const NotificationSettings = ({ userId }) => {
                 setFcmToken(token);
                 toast.success('通知権限が許可されました');
 
+                // FCMトークンを配列で保存（複数端末対応）
                 await window.db.collection('users').doc(userId).set({
-                    fcmToken: token,
+                    fcmTokens: window.firebase.firestore.FieldValue.arrayUnion(token),
                     fcmTokenUpdatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
             } else {

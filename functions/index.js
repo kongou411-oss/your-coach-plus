@@ -212,8 +212,21 @@ exports.sendPushNotification = onRequest({
       return res.status(200).send("Stop chaining");
     }
 
-    const fcmToken = userDoc.data().fcmToken;
+    const userData = userDoc.data();
     const settings = settingsDoc.data();
+
+    // FCMトークンを取得（新旧両対応）
+    let tokens = [];
+    if (userData.fcmTokens && Array.isArray(userData.fcmTokens)) {
+      tokens = userData.fcmTokens; // 新形式（配列）
+    } else if (userData.fcmToken) {
+      tokens = [userData.fcmToken]; // 旧形式（単一）
+    }
+
+    if (tokens.length === 0) {
+      console.log(`[Push Notification] No FCM tokens found for user ${userId}`);
+      return res.status(200).send("No tokens");
+    }
 
     // 2. まだこの通知設定が有効かチェック（パッシブ・キャンセル）
     let isValid = false;
@@ -237,73 +250,89 @@ exports.sendPushNotification = onRequest({
       return res.status(200).send("Stop chaining");
     }
 
-    // 3. FCM通知送信
-    if (fcmToken) {
-      // ユニークなタグを生成（毎回違うタグにすることで、×で消した後も必ずポップアップする）
-      const uniqueTag = `${notificationType}-${Date.now()}`;
+    // 3. FCM通知送信（全端末に送信）
+    // ユニークなタグを生成（毎回違うタグにすることで、×で消した後も必ずポップアップする）
+    const uniqueTag = `${notificationType}-${Date.now()}`;
 
-      const message = {
-        token: fcmToken,
+    const message = {
+      tokens: tokens, // 複数トークンに対応
+      notification: {
+        title: title,
+        body: body,
+      },
+      webpush: {
+        headers: {
+          Urgency: "high",
+        },
         notification: {
-          title: title,
-          body: body,
+          tag: uniqueTag, // 毎回違うタグで「新しい通知」として認識させる
+          icon: "/icons/icon-192.png",
+          badge: "/icons/icon-72.png",
+          vibrate: [200, 100, 200],
+          requireInteraction: true, // ユーザーが操作するまで消えない
+          renotify: true, // 再通知フラグ
+          silent: false,
         },
-        webpush: {
-          headers: {
-            Urgency: "high",
-          },
-          notification: {
-            tag: uniqueTag, // 毎回違うタグで「新しい通知」として認識させる
-            icon: "/icons/icon-192.png",
-            badge: "/icons/icon-72.png",
-            vibrate: [200, 100, 200],
-            requireInteraction: true, // ユーザーが操作するまで消えない
-            renotify: true, // 再通知フラグ
-            silent: false,
-          },
+      },
+      data: {
+        type: notificationType,
+        userId: userId,
+      },
+      android: {
+        priority: "high",
+        notification: {
+          channelId: "high_importance_channel", // 高重要度チャンネル
+          priority: "max", // ヘッドアップ通知を強制
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          visibility: "public",
+          tag: uniqueTag, // 毎回違うタグ
+          notificationCount: 1,
         },
-        data: {
-          type: notificationType,
-          userId: userId,
+      },
+      apns: {
+        headers: {
+          "apns-collapse-id": uniqueTag, // iOS: 毎回違うIDで「新しい通知」として認識させる
+          "apns-priority": "10", // 即時配送
+          "apns-push-type": "alert",
         },
-        android: {
-          priority: "high",
-          notification: {
-            channelId: "high_importance_channel", // 高重要度チャンネル
-            priority: "max", // ヘッドアップ通知を強制
-            defaultSound: true,
-            defaultVibrateTimings: true,
-            visibility: "public",
-            tag: uniqueTag, // 毎回違うタグ
-            notificationCount: 1,
-          },
-        },
-        apns: {
-          headers: {
-            "apns-collapse-id": uniqueTag, // iOS: 毎回違うIDで「新しい通知」として認識させる
-            "apns-priority": "10", // 即時配送
-            "apns-push-type": "alert",
-          },
-          payload: {
-            aps: {
-              alert: {
-                title: title,
-                body: body,
-              },
-              "interruption-level": "time-sensitive", // 集中モードでも通知（iOS15+）
-              sound: "default",
-              badge: 1,
-              "content-available": 1,
-              "mutable-content": 1,
+        payload: {
+          aps: {
+            alert: {
+              title: title,
+              body: body,
             },
+            "interruption-level": "time-sensitive", // 集中モードでも通知（iOS15+）
+            sound: "default",
+            badge: 1,
+            "content-available": 1,
+            "mutable-content": 1,
           },
         },
-      };
+      },
+    };
 
-      await admin.messaging().send(message);
-      console.log(`[Push Notification] Notification sent successfully to user ${userId}: ${title}`);
-    } else {
-      console.log(`[Push Notification] No FCM token found for user ${userId}`);
+    // マルチキャスト送信（全トークンに送信）
+    const response = await admin.messaging().sendEachForMulticast(message);
+    console.log(`[Push Notification] Sent to ${response.successCount}/${tokens.length} devices for user ${userId}`);
+
+    // 4. 無効なトークン（削除された端末など）を配列から削除
+    if (response.failureCount > 0) {
+      const failedTokens = [];
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          failedTokens.push(tokens[idx]);
+          console.log(`[Push Notification] Failed token: ${tokens[idx].substring(0, 20)}...`);
+        }
+      });
+
+      if (failedTokens.length > 0 && userData.fcmTokens) {
+        // 無効なトークンを配列から削除
+        await db.collection("users").doc(userId).update({
+          fcmTokens: admin.firestore.FieldValue.arrayRemove(...failedTokens),
+        });
+        console.log(`[Push Notification] Removed ${failedTokens.length} invalid tokens`);
+      }
     }
 
     // 4. 翌日のタスクをスケジュール（時間ズレ補正版）
