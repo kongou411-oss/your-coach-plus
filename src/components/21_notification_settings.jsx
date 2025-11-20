@@ -219,11 +219,11 @@ const NotificationSettings = ({ userId }) => {
                 const title = payload.notification?.title || 'Your Coach+';
                 const body = payload.notification?.body || '新しい通知があります';
 
-                // タグをタイトル+タイプで固定（重複防止）
-                // 同じタイプの同じタイトルの通知のみ統合（異なる時刻の通知は別々に表示）
-                // サーバーから誤って2通届いても、タグが同じなら1つになる
+                // タグをタイトル+時刻+タイプで固定（重複防止）
+                // Cloud Functionsと完全に同じタグを使用
                 const notificationType = payload.data?.type || 'notification';
-                const notificationTag = `${title}-${notificationType}`;
+                const scheduleTime = payload.data?.scheduleTime || 'unknown';
+                const notificationTag = `${title}-${scheduleTime}-${notificationType}`;
 
                 const options = {
                     body: body,

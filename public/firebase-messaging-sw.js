@@ -40,10 +40,11 @@ messaging.onBackgroundMessage(async (payload) => {
     const notificationTitle = payload.notification?.title || 'Your Coach+';
     const notificationBody = payload.notification?.body || '新しい通知があります';
 
-    // タグをタイトル+タイプで固定（重複防止）
-    // 同じタイプの同じタイトルの通知のみ統合（異なる時刻の通知は別々に表示）
+    // タグをタイトル+時刻+タイプで固定（重複防止）
+    // Cloud Functionsと完全に同じタグを使用
     const notificationType = payload.data?.type || 'notification';
-    const notificationTag = `${notificationTitle}-${notificationType}`;
+    const scheduleTime = payload.data?.scheduleTime || 'unknown';
+    const notificationTag = `${notificationTitle}-${scheduleTime}-${notificationType}`;
 
     const notificationOptions = {
         body: notificationBody,
