@@ -256,9 +256,9 @@ exports.sendPushNotification = onRequest({
     }
 
     // 3. FCM通知送信（全端末に送信）
-    // タグをタイトルで固定（重複防止）
-    // 同じタイトルの通知は自動的に1つに統合される
-    const notificationTag = title;
+    // タグをタイトル+時刻で固定（重複防止）
+    // 同じ時刻の同じタイトルの通知のみ統合（異なる時刻の通知は別々に表示）
+    const notificationTag = `${title}-${scheduleTimeStr}`;
 
     const message = {
       tokens: uniqueTokens, // ★ 重複削除済みのトークンを使用

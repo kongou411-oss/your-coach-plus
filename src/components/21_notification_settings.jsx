@@ -219,10 +219,11 @@ const NotificationSettings = ({ userId }) => {
                 const title = payload.notification?.title || 'Your Coach+';
                 const body = payload.notification?.body || '新しい通知があります';
 
-                // タグをタイトルで固定（重複防止）
-                // タイトルが同じなら同じ通知とみなし、OS側で自動的に1つに統合される
-                // サーバーから誤って2通届いても、タイトルが同じなら1つになる
-                const notificationTag = title;
+                // タグをタイトル+タイプで固定（重複防止）
+                // 同じタイプの同じタイトルの通知のみ統合（異なる時刻の通知は別々に表示）
+                // サーバーから誤って2通届いても、タグが同じなら1つになる
+                const notificationType = payload.data?.type || 'notification';
+                const notificationTag = `${title}-${notificationType}`;
 
                 const options = {
                     body: body,
