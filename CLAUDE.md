@@ -55,7 +55,8 @@ C:\Users\yourc\yourcoach_new\
 │       ├── 17_chevron_shortcut.jsx # シェブロンショートカット
 │       ├── 18_subscription.jsx     # サブスクリプション
 │       ├── 19_add_meal_modal.jsx   # 食事・サプリ記録モーダル
-│       └── 20_add_workout_modal.jsx # 運動記録モーダル（運動専用）
+│       ├── 20_add_workout_modal.jsx # 運動記録モーダル（運動専用）
+│       └── 21_notification_settings.jsx # 通知設定
 ├── dist/                         # ビルド出力（デプロイ対象）
 │   ├── index.html               # ビルド済みHTML
 │   ├── assets/                  # ビルド済みJS/CSS
@@ -109,6 +110,57 @@ C:\Users\yourc\yourcoach_new\
 3. `firebase deploy --only hosting`で`dist/`をデプロイ
 
 **キャッシュバスターは不要**（Viteがハッシュ + タイムスタンプ付きファイル名を自動生成）
+
+## 🚨🚨🚨 超重要：services.jsの二重管理について
+
+**このプロジェクトには`services.js`が2つ存在します：**
+
+### 1. `src/services.js` - Viteビルド用（未使用）
+- ES Modules形式
+- `export const calculateScores = ...`
+- **現在は使用されていません**
+
+### 2. `public/services.js` - グローバル変数（実際に使用中）
+- グローバル変数形式（`const DataService = { ... }`）
+- `index.html`で`<script src="/services.js"></script>`として読み込まれる
+- **コンポーネントで`DataService.calculateScores()`として使用**
+
+### 🔥 絶対に守るべきルール
+
+**機能を修正する場合、必ず以下の手順で確認すること：**
+
+1. **コンポーネントでの使用箇所を確認**
+   ```javascript
+   // 例: 03_dashboard.jsx
+   DataService.calculateScores(profile, record, targetPFC);
+   ```
+
+2. **import文の有無を確認**
+   - ❌ **import文がない** → `DataService`はグローバル変数 → **`public/services.js`を編集**
+   - ✅ **import文がある** → ES Modules → `src/services.js`を編集
+
+3. **正しいファイルを編集**
+   - `DataService.xxx`を使っている → `public/services.js`
+   - `import { xxx } from '../services'` → `src/services.js`
+
+### 実例：糖質データ修正（2025年11月21日）
+
+**間違った手順（修正に時間がかかった）:**
+1. `src/services.js`を編集
+2. 変更が反映されない → キャッシュクリア・サーバー再起動を繰り返す
+3. ようやく`public/services.js`が正解だと気づく
+
+**正しい手順:**
+1. 03_dashboard.jsxで`DataService.calculateScores`を発見
+2. import文がない → `public/services.js`を確認
+3. 即座に`public/services.js`を編集 → 完了
+
+### チェックリスト（修正前に必ず確認）
+
+- [ ] 対象の関数・変数がどこで使われているか確認した
+- [ ] コンポーネントのimport文をチェックした
+- [ ] `DataService.xxx`ならpublic/services.jsを編集する
+- [ ] 変更後、ブラウザコンソールでログが出ることを確認した
 
 ## 開発コマンド
 
@@ -445,7 +497,7 @@ git push
 
 ### 設定（src/components/04_settings*.jsx）
 
-**構成**: 親コンポーネント + 4つのタブコンポーネントに分割
+**構成**: 親コンポーネント + 5つのタブコンポーネントに分割
 
 #### 04_settings.jsx（親コンポーネント）
 - タブ切り替え管理
@@ -462,6 +514,13 @@ git push
 - ルーティン設定（分割法）
 - カスタムアイテム管理（食材・料理・運動・サプリ）
 
+#### 04_settings_notification.jsx（通知設定タブ）⭐ v2.4.0
+- 通知許可の管理
+- FCMトークンの登録・削除
+- 通知スケジュール設定（朝・昼・夜）
+- カスタム通知の作成
+- テスト通知の送信
+
 #### 04_settings_data.jsx（データ管理タブ）
 - データエクスポート（JSON形式）
 - データインポート
@@ -473,6 +532,55 @@ git push
 - **リンク**: リリースノート、プライバシーポリシー、利用規約
 - **アカウント管理**: プレミアムモード切替（管理者のみ）
 - **ログアウト**
+
+### 通知システム（src/components/21_notification_settings.jsx）⭐ v2.4.0
+
+#### 主要機能
+- **通知許可管理**: ブラウザの通知許可を取得・管理
+- **FCMトークン**: 自動登録と手動削除機能
+- **定時通知**: 朝・昼・夜の記録リマインダー
+- **カスタム通知**: ユーザーが自由に設定できる通知
+- **重複防止**: タグ・スケジュール時刻・通知タイプで3段階防御
+- **デバイス対応**: PC・スマホ・タブレットに対応（通知音はモバイルのみ）
+- **フォア/バックグラウンド**: アプリを開いていても閉じていても通知
+
+#### 通知の種類
+1. **定時通知**: 朝（9:00）・昼（13:00）・夜（20:00）の記録リマインダー
+2. **カスタム通知**: ユーザーが自由に設定できる通知
+
+#### 技術仕様
+- **Firebase Cloud Messaging (FCM)**: プッシュ通知配信
+- **Service Worker**: バックグラウンド通知処理（`public/firebase-messaging-sw.js`）
+- **Cloud Functions**: スケジュール通知の自動送信
+  - `scheduledNotification`: 定時通知の送信
+  - `testNotification`: テスト通知の送信
+- **Cloud Scheduler**: 定時実行（毎日9:00, 13:00, 20:00 JST）
+- **重複防止タグ**: `${title}-${scheduleTime}-${type}` 形式
+- **通知音制御**: `src/notificationSound.js`（モバイルのみ再生）
+
+#### 🚨 重要な注意事項：通知凍結（2025年11月20日〜）
+**通知機能は実装完了し、安定稼働中です。今後の変更は慎重に行うこと。**
+
+**変更禁止事項**:
+- ❌ Service Workerの通知表示ロジック（重複防止機構）
+- ❌ Cloud Functionsの通知送信ロジック
+- ❌ 重複防止タグの生成ロジック
+- ❌ フォアグラウンド/バックグラウンド判定ロジック
+
+**変更可能事項**:
+- ✅ 通知のタイトル・本文（ユーザー設定）
+- ✅ 通知スケジュールの時刻設定
+- ✅ 通知音の変更（音声ファイルの差し替え）
+- ✅ UI/UXの改善（設定画面のデザインなど）
+
+**変更する場合の手順**:
+1. 必ずユーザーに変更内容を報告し、承認を得る
+2. 変更前にバックアップを作成
+3. 変更後、必ず以下を確認:
+   - PCブラウザでの通知（フォアグラウンド/バックグラウンド）
+   - スマホPWAでの通知（フォアグラウンド/バックグラウンド）
+   - 重複通知が発生していないか
+   - 通知音が正しく再生されるか（モバイルのみ）
 
 ### 履歴（src/components/16_history_v10.jsx）
 - 体重・体脂肪率の推移グラフ
@@ -487,6 +595,7 @@ git push
 - `users/{userId}/favorites` - お気に入り
 - `users/{userId}/routines` - ルーティン
 - `users/{userId}/templates` - テンプレート
+- `users/{userId}/fcmTokens/{tokenId}` - FCM通知トークン（v2.4.0〜）
 - `community/posts` - コミュニティ投稿
 
 ### 注意：DEV_MODE削除済み
@@ -639,9 +748,21 @@ npm run deploy:patch
 - **home.html**: 更新必須
 
 ### LocalStorage管理
+
+#### バージョン管理
 - **キー**: `yourCoachBeta_lastSeenVersion`
 - **保存形式**: フルバージョン（例: "1.0.0"）
 - **比較**: Minor版のみ比較（例: "1.0" と "1.1"）
+
+#### What's New モーダル表示制御（v2.4.0〜）
+- **キー**: `yourCoachBeta_lastSeenWhatsNew`
+- **保存形式**: マイナーバージョン（例: "2.4"）
+- **用途**: What's Newモーダルの表示制御（Minor版更新時のみ表示）
+- **動作**:
+  - `lastSeenWhatsNew !== currentMinor` の場合にモーダルを表示
+  - モーダル閉じた時に現在のマイナーバージョンを保存
+  - Patch更新（v2.4.0 → v2.4.1）ではモーダル非表示
+  - Minor更新（v2.4.x → v2.5.0）では全ユーザーにモーダル表示
 
 ## 開発フロー
 
@@ -847,8 +968,9 @@ npm run deploy:patch
 
 ---
 
-**最終更新**: 2025年11月19日
+**最終更新**: 2025年11月20日
 **プロジェクト開始**: 2025年10月12日
 **Vite化**: 2025年11月4日
 **バージョン管理自動化**: 2025年11月19日
 **home.html修正**: 2025年11月19日（public/に移動、firebase.jsonリライトルール修正）
+**通知システム実装完了**: 2025年11月20日（v2.4.0）

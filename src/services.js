@@ -718,6 +718,7 @@ const DataService = {
         let totalFat = 0;
         let totalCarbs = 0;
         let totalFiber = 0;
+        let totalSugar = 0;
         let totalSaturatedFat = 0;
         let totalMonounsaturatedFat = 0;
         let totalPolyunsaturatedFat = 0;
@@ -750,6 +751,8 @@ const DataService = {
                 totalFat += fat;
                 totalCarbs += carbs;
                 totalFiber += (item.fiber || 0) * ratio;
+                totalSugar += (item.sugar || 0);  // 既に実量換算済み
+                console.log('🔍 [services.js]', item.name, '- sugar:', item.sugar, '→ totalSugar:', totalSugar);
 
                 // 脂肪酸
                 totalSaturatedFat += (item.saturatedFat || 0) * ratio;
@@ -1056,6 +1059,7 @@ const DataService = {
                 totalFat: Math.round(totalFat * 10) / 10,
                 totalCarbs: Math.round(totalCarbs * 10) / 10,
                 totalFiber: Math.round(totalFiber * 10) / 10,
+                totalSugar: Math.round(totalSugar * 10) / 10,
                 totalGL: Math.round(totalGL * 10) / 10,
                 avgDIAAS: Math.round(avgDIAAS * 100) / 100,
                 // 脂肪酸詳細

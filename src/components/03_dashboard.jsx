@@ -65,7 +65,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
 
             // recordにスコアを追加して保存
             record.scores = {
-                food: calcScores.food.score,
+                food: calcScores.food,  // オブジェクト全体を保存（totalSugar含む）
                 exercise: calcScores.exercise.score,
                 condition: calcScores.condition.score
             };
@@ -96,7 +96,11 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
             if (!user || !currentDate || !dailyRecord) return;
 
             // 既に保存されているスコアと同じなら保存しない
-            if (dailyRecord.scores?.food === scores.food.score &&
+            const savedFoodScore = typeof dailyRecord.scores?.food === 'object'
+                ? dailyRecord.scores.food.score
+                : dailyRecord.scores?.food;
+
+            if (savedFoodScore === scores.food.score &&
                 dailyRecord.scores?.exercise === scores.exercise.score &&
                 dailyRecord.scores?.condition === scores.condition.score) {
                 return;
@@ -105,7 +109,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
             const updatedRecord = {
                 ...dailyRecord,
                 scores: {
-                    food: scores.food.score,
+                    food: scores.food,  // オブジェクト全体を保存（totalSugar含む）
                     exercise: scores.exercise.score,
                     condition: scores.condition.score
                 }

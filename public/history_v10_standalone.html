@@ -31,6 +31,8 @@
 
     <!-- App Services -->
     <script src="/config.js"></script>
+    <script src="/foodDatabase.js"></script>
+    <script src="/trainingDatabase.js"></script>
     <script src="/utils.js"></script>
     <script src="/services.js"></script>
     <!-- 目標ライン・メモ機能 -->
@@ -418,6 +420,21 @@
                 </button>
                 <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'mineral_score')">
                     ミネラル
+                </button>
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'gl')">
+                    GL
+                </button>
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'diaas')">
+                    DIAAS
+                </button>
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'saturatedFat')">
+                    飽和脂肪酸
+                </button>
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'monounsaturatedFat')">
+                    一価不飽和
+                </button>
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('nutrition', 'polyunsaturatedFat')">
+                    多価不飽和
                 </button>
                 </div>
             </div>
@@ -1451,6 +1468,11 @@
             solubleFiber: { name: '水溶性食物繊維', unit: 'g', category: 'nutrition' },
             insolubleFiber: { name: '不溶性食物繊維', unit: 'g', category: 'nutrition' },
             gi: { name: '平均GI値', unit: '', category: 'nutrition' },
+            gl: { name: 'GL（グリセミック負荷）', unit: '', category: 'nutrition' },
+            diaas: { name: 'DIAAS（タンパク質の質）', unit: '', category: 'nutrition' },
+            saturatedFat: { name: '飽和脂肪酸', unit: 'g', category: 'nutrition' },
+            monounsaturatedFat: { name: '一価不飽和脂肪酸', unit: 'g', category: 'nutrition' },
+            polyunsaturatedFat: { name: '多価不飽和脂肪酸', unit: 'g', category: 'nutrition' },
             vitamin_score: { name: 'ビタミン達成率', unit: '%', category: 'nutrition' },
             mineral_score: { name: 'ミネラル達成率', unit: '%', category: 'nutrition' },
 
@@ -1538,6 +1560,11 @@
                 solubleFiber: [],
                 insolubleFiber: [],
                 gi: [],
+                gl: [],
+                diaas: [],
+                saturatedFat: [],
+                monounsaturatedFat: [],
+                polyunsaturatedFat: [],
                 vitamin_score: [],
                 mineral_score: [],
                 // 運動
@@ -1620,81 +1647,53 @@
                 }
 
                 if (record) {
-                    // 食事データ - mealsから集計
-                    const meals = record.meals || [];
-                    let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalFiber = 0;
-                    let totalSolubleFiber = 0, totalInsolubleFiber = 0, totalGI = 0, totalCarbsForGI = 0;
-                    meals.forEach(meal => {
-                        totalCalories += meal.calories || 0;
-                        // meal.itemsから詳細な栄養素を集計（ratioを考慮）
-                        (meal.items || []).forEach(item => {
-                            // 個数単位と重量単位でratio計算を分岐（ダッシュボードと同じロジック）
-                            const isCountUnit = ['本', '個', '杯', '枚', '錠'].some(u => (item.unit || '').includes(u));
-                            const ratio = isCountUnit ? (item.amount || 0) : (item.amount || 0) / 100;
+                    // 食事データ - すべてscoresから取得（services.jsのcalculateScoresで計算済み）
+                    const scores = record.scores || {};
+                    const foodScores = scores.food || {};
 
-                            totalProtein += (item.protein || 0) * ratio;
-                            totalFat += (item.fat || 0) * ratio;
-                            totalCarbs += (item.carbs || 0) * ratio;
-                            totalSugar += (item.sugar || 0) * ratio;
-                            totalFiber += (item.fiber || 0) * ratio;
-                            totalSolubleFiber += (item.solubleFiber || 0) * ratio;
-                            totalInsolubleFiber += (item.insolubleFiber || 0) * ratio;
+                    // デバッグ：scores.foodの型を確認
+                    console.log(`🔍 [${dateStr}] scores.food の型:`, typeof scores.food, scores.food);
 
-                            // GI値の加重平均計算
-                            if (item.gi && item.carbs) {
-                                totalGI += (item.gi || 0) * (item.carbs || 0) * ratio;
-                                totalCarbsForGI += (item.carbs || 0) * ratio;
-                            }
+                    // デバッグ：今日のデータのみログ出力
+                    if (i === 0) {
+                        console.log(`[今日のデータ] ${dateStr}:`, {
+                            scores: scores,
+                            foodScores: foodScores,
+                            totalSugar: foodScores.totalSugar,
+                            totalGL: foodScores.totalGL,
+                            avgDIAAS: foodScores.avgDIAAS
                         });
-                    });
-                    allData.calories.push(totalCalories);
-                    allData.protein.push(totalProtein);
-                    allData.fat.push(totalFat);
-                    allData.carbs.push(totalCarbs);
-                    allData.sugar.push(totalSugar);
-                    allData.fiber.push(totalFiber);
-                    allData.solubleFiber.push(totalSolubleFiber);
-                    allData.insolubleFiber.push(totalInsolubleFiber);
-                    allData.gi.push(totalCarbsForGI > 0 ? totalGI / totalCarbsForGI : 0);
-
-                    // ビタミン・ミネラル達成率を計算
-                    let vitaminScore = 0;
-                    let mineralScore = 0;
-
-                    if (record.micronutrients) {
-                        // ビタミン達成率（13種類のビタミンの平均）
-                        const vitamins = ['A', 'D', 'E', 'K', 'B1', 'B2', 'B3', 'B5', 'B6', 'B7', 'B9', 'B12', 'C'];
-                        let vitaminCount = 0;
-                        let vitaminSum = 0;
-                        vitamins.forEach(v => {
-                            const key = `vitamin${v}`;
-                            if (record.micronutrients[key] !== undefined) {
-                                const target = record.micronutrients[`${key}Target`] || 1;
-                                const achievement = (record.micronutrients[key] / target) * 100;
-                                vitaminSum += Math.min(achievement, 100); // 100%を上限
-                                vitaminCount++;
-                            }
-                        });
-                        vitaminScore = vitaminCount > 0 ? vitaminSum / vitaminCount : 0;
-
-                        // ミネラル達成率（13種類のミネラルの平均）
-                        // ダッシュボードではフルネーム（sodium, potassium等）で保存されている
-                        const minerals = ['sodium', 'potassium', 'calcium', 'magnesium', 'phosphorus', 'iron', 'zinc', 'copper', 'manganese', 'iodine', 'selenium', 'chromium', 'molybdenum'];
-                        let mineralCount = 0;
-                        let mineralSum = 0;
-                        minerals.forEach(key => {
-                            if (record.micronutrients[key] !== undefined) {
-                                const target = record.micronutrients[`${key}Target`] || 1;
-                                const achievement = (record.micronutrients[key] / target) * 100;
-                                mineralSum += Math.min(achievement, 100); // 100%を上限
-                                mineralCount++;
-                            }
-                        });
-                        mineralScore = mineralCount > 0 ? mineralSum / mineralCount : 0;
                     }
 
-                    allData.vitamin_score.push(Math.round(vitaminScore));
-                    allData.mineral_score.push(Math.round(mineralScore));
+                    // 基本栄養素（scoresから取得）
+                    console.log(`🔍 [履歴] ${dateStr} foodScores:`, {
+                        totalCalories: foodScores.totalCalories,
+                        totalProtein: foodScores.totalProtein,
+                        totalFat: foodScores.totalFat,
+                        totalCarbs: foodScores.totalCarbs,
+                        totalFiber: foodScores.totalFiber,
+                        totalSugar: foodScores.totalSugar
+                    });
+                    allData.calories.push(foodScores.totalCalories || 0);
+                    allData.protein.push(foodScores.totalProtein || 0);
+                    allData.fat.push(foodScores.totalFat || 0);
+                    allData.carbs.push(foodScores.totalCarbs || 0);
+                    allData.fiber.push(foodScores.totalFiber || 0);
+                    allData.sugar.push(foodScores.totalSugar || 0);
+                    allData.solubleFiber.push(foodScores.totalSolubleFiber || 0);
+                    allData.insolubleFiber.push(foodScores.totalInsolubleFiber || 0);
+
+                    // GI、GL、DIAAS、脂肪酸（scoresから取得）
+                    allData.gi.push(foodScores.avgGI || 0);
+                    allData.gl.push(foodScores.totalGL || 0);
+                    allData.diaas.push(foodScores.avgDIAAS || 0);
+                    allData.saturatedFat.push(foodScores.totalSaturatedFat || 0);
+                    allData.monounsaturatedFat.push(foodScores.totalMonounsaturatedFat || 0);
+                    allData.polyunsaturatedFat.push(foodScores.totalPolyunsaturatedFat || 0);
+
+                    // ビタミン・ミネラルスコア（scoresから取得）
+                    allData.vitamin_score.push(foodScores.vitamin || 0);
+                    allData.mineral_score.push(foodScores.mineral || 0);
 
                     // 運動データ - workoutsから集計
                     const workouts = record.workouts || [];
@@ -1799,9 +1798,9 @@
                     allData.directive.push(record.directiveCompleted ? 1 : 0);
 
                     // スコアデータ（record.scoresから取得）
-                    allData.nutrition_score.push(record.scores?.food || 0);
-                    allData.training_score.push(record.scores?.exercise || 0);
-                    allData.condition_score.push(record.scores?.condition || 0);
+                    allData.nutrition_score.push(record.scores?.food?.score || 0);
+                    allData.training_score.push(record.scores?.exercise?.score || 0);
+                    allData.condition_score.push(record.scores?.condition?.score || 0);
 
                     // 閃きメモを保存
                     if (record.notes && record.notes.trim()) {
