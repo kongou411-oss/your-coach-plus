@@ -441,18 +441,40 @@ const OtherTab = ({
                                 <button
                                     onClick={async () => {
                                         try {
-                                            // LocalStorageに保存
-                                            const currentProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)) || {};
-                                            currentProfile.subscriptionStatus = 'active';
-                                            localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(currentProfile));
-
-                                            // Firestoreにも保存（ブラウザ/PWA間で同期）
+                                            // Firestoreから最新のプロフィールを取得
                                             const db = firebase.firestore();
-                                            await db.collection('users').doc(userId).set({
-                                                subscriptionStatus: 'active'
+                                            const docRef = db.collection('users').doc(userId);
+                                            const doc = await docRef.get();
+                                            const currentProfile = doc.exists ? doc.data() : {};
+
+                                            // Premium会員に設定
+                                            currentProfile.subscriptionStatus = 'active';
+
+                                            // クレジットが0または未設定の場合は100を付与（freeCreditsを使用）
+                                            const currentFreeCredits = currentProfile.freeCredits || 0;
+                                            if (currentFreeCredits === 0) {
+                                                currentProfile.freeCredits = 100;
+                                                console.log('[開発モード] 無料クレジットを100付与');
+                                            } else {
+                                                currentProfile.freeCredits = currentFreeCredits;
+                                            }
+
+                                            // paidCreditsも初期化
+                                            currentProfile.paidCredits = currentProfile.paidCredits || 0;
+
+                                            // Firestoreに保存
+                                            await docRef.set({
+                                                subscriptionStatus: currentProfile.subscriptionStatus,
+                                                freeCredits: currentProfile.freeCredits,
+                                                paidCredits: currentProfile.paidCredits
                                             }, { merge: true });
 
+                                            // LocalStorageにも保存
+                                            localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(currentProfile));
+
                                             console.log('[開発モード] Premium会員に切り替え（Firestore + LocalStorage）');
+                                            const totalCredits = currentProfile.freeCredits + currentProfile.paidCredits;
+                                            toast.success('Premium会員に切り替えました（クレジット: ' + totalCredits + '）');
                                             window.location.reload();
                                         } catch (error) {
                                             console.error('プレミアムモード切り替えエラー:', error);

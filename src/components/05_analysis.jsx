@@ -33,46 +33,14 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     const [reportTitle, setReportTitle] = useState('');
     const [savedReports, setSavedReports] = useState([]);
 
-    // 確認モーダル（カスタムHookとして直接実装）
-    const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', callback: null });
-
-    const showConfirm = useCallback((title, message, callback) => {
-        setConfirmState({ isOpen: true, title, message, callback });
-    }, []);
-
-    const ConfirmModalComponent = () => {
-        if (!confirmState.isOpen) return null;
-
-        return ReactDOM.createPortal(
-            <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-                    <h3 className="text-lg font-bold mb-3">{confirmState.title}</h3>
-                    <p className="text-gray-600 mb-6">{confirmState.message}</p>
-                    <div className="flex gap-3 justify-end">
-                        <button
-                            onClick={() => setConfirmState({ isOpen: false, title: '', message: '', callback: null })}
-                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                        >
-                            キャンセル
-                        </button>
-                        <button
-                            onClick={() => {
-                                confirmState.callback?.();
-                                setConfirmState({ isOpen: false, title: '', message: '', callback: null });
-                            }}
-                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                        >
-                            削除
-                        </button>
-                    </div>
-                </div>
-            </div>,
-            document.body
-        );
+    // 確認モーダル（グローバル確認関数を使用）
+    const showConfirm = (title, message, callback) => {
+        return window.showGlobalConfirm(title, message, callback);
     };
     const [showSavedReports, setShowSavedReports] = useState(false);
     const [selectedReport, setSelectedReport] = useState(null);
     const [isEditingReportTitle, setIsEditingReportTitle] = useState(false);
+    const [editingReportId, setEditingReportId] = useState(null); // 編集中のレポートID
     const [editedReportTitle, setEditedReportTitle] = useState('');
 
     // タブ管理state
@@ -118,6 +86,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             const report = {
                 title: reportTitle.trim(),
                 content: aiAnalysis,
+                conversationHistory: conversationHistory, // 会話履歴も保存
                 periodStart: getTodayDate(),
                 periodEnd: getTodayDate(),
                 reportType: 'daily'
@@ -142,19 +111,23 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
     // レポート削除ハンドラー
     const handleDeleteReport = async (reportId) => {
-        showConfirm('レポート削除の確認', 'このレポートを削除しますか？', async () => {
-            try {
-                await DataService.deleteAnalysisReport(userId, reportId);
-                toast.success('レポートを削除しました');
-                await loadSavedReports();
-                if (selectedReport?.id === reportId) {
-                    setSelectedReport(null);
+        try {
+            await showConfirm('レポート削除の確認', 'このレポートを削除しますか？', async () => {
+                try {
+                    await DataService.deleteAnalysisReport(userId, reportId);
+                    toast.success('レポートを削除しました');
+                    await loadSavedReports();
+                    if (selectedReport?.id === reportId) {
+                        setSelectedReport(null);
+                    }
+                } catch (error) {
+                    console.error('Failed to delete report:', error);
+                    toast.error('レポートの削除に失敗しました');
                 }
-            } catch (error) {
-                console.error('Failed to delete report:', error);
-                toast.error('レポートの削除に失敗しました');
-            }
-        });
+            });
+        } catch (error) {
+            console.error('[handleDeleteReport] showConfirmでエラー:', error);
+        }
     };
 
     const handleUpdateReportTitle = async () => {
@@ -164,18 +137,15 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         }
 
         try {
-            await DataService.updateAnalysisReport(userId, selectedReport.id, {
-                title: editedReportTitle.trim()
-            });
-
-            // ローカルstateを更新
-            setSelectedReport({
-                ...selectedReport,
+            await DataService.updateAnalysisReport(userId, editingReportId, {
                 title: editedReportTitle.trim()
             });
 
             setIsEditingReportTitle(false);
+            setEditingReportId(null);
+            setEditedReportTitle('');
             await loadSavedReports();
+            toast.success('タイトルを更新しました');
         } catch (error) {
             console.error('Failed to update report title:', error);
             toast.error('タイトルの更新に失敗しました');
@@ -1215,6 +1185,13 @@ ${section2Prompt}
         } catch (error) {
             console.error('AI分析エラー:', error);
 
+            // Service Worker関連のエラーは無視（通知機能は分析に必須ではない）
+            if (error.message && error.message.includes('Service Worker')) {
+                console.warn('[Analysis] Service Workerエラーを無視しました。通知機能は無効化されていますが、分析は続行できます。');
+                setAiLoading(false);
+                return;
+            }
+
             // エラーメッセージを分かりやすく
             let errorMessage = '申し訳ございません。AI分析の生成中に問題が発生しました。\n\n';
 
@@ -1349,6 +1326,9 @@ ${section2Prompt}
                 : 'まだ会話は始まっていません。';
 
             // 文脈を含むプロンプトを作成
+            // 保存済みレポート閲覧中はそのコンテンツを、それ以外は最新のaiAnalysisを使用
+            const reportContent = selectedReport ? selectedReport.content : (aiAnalysis || '（レポート生成中または未生成）');
+
             const contextPrompt = `## 役割
 あなたは、ユーザーの質問に答える、親身で優秀なAIパフォーマンスコーチです。
 
@@ -1357,7 +1337,7 @@ ${section2Prompt}
 レポートに書かれている情報と矛盾する回答や、独自に再計算・再評価した回答は絶対にしないでください。
 
 ### あなたが生成したレポート全文
-${aiAnalysis || '（レポート生成中または未生成）'}
+${reportContent}
 
 ## これまでの会話履歴
 ${conversationContext}
@@ -1408,11 +1388,41 @@ ${conversationContext}
 
             if (response.success) {
                 // AIの回答を会話履歴に追加
-                setConversationHistory([...newHistory, {
+                const updatedHistory = [...newHistory, {
                     type: 'ai',
                     content: response.text,
                     timestamp: new Date().toISOString()
-                }]);
+                }];
+                setConversationHistory(updatedHistory);
+
+                // 保存済みレポートに質問している場合、Firestoreに自動保存
+                if (selectedReport && selectedReport.id) {
+                    try {
+                        await DataService.updateAnalysisReport(userId, selectedReport.id, {
+                            conversationHistory: updatedHistory
+                        });
+
+                        // selectedReportの状態も更新（次回開いた時に最新の履歴が表示される）
+                        setSelectedReport({
+                            ...selectedReport,
+                            conversationHistory: updatedHistory
+                        });
+
+                        // savedReportsも更新（レポート一覧に反映）
+                        setSavedReports(prevReports =>
+                            prevReports.map(report =>
+                                report.id === selectedReport.id
+                                    ? { ...report, conversationHistory: updatedHistory }
+                                    : report
+                            )
+                        );
+
+                        console.log('[Analysis] 会話履歴をFirestoreに保存しました');
+                    } catch (error) {
+                        console.error('[Analysis] 会話履歴の保存に失敗:', error);
+                        // エラーが発生してもユーザーには表示しない（バックグラウンド処理）
+                    }
+                }
 
                 // 自動スクロール
                 setTimeout(() => {
@@ -1679,19 +1689,6 @@ ${conversationContext}
                             </div>
                         </div>
 
-                        {/* レポート保存ボタン */}
-                        <div className="flex justify-center mt-4">
-                            <button
-                                onClick={() => {
-                                    setReportTitle(`${getTodayDate()} デイリー分析`);
-                                    setShowSaveReportModal(true);
-                                }}
-                                className="flex items-center gap-2 px-4 py-2 bg-[#4A9EFF] text-white font-bold rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
-                            >
-                                <Icon name="Save" size={18} />
-                                <span>保存</span>
-                            </button>
-                        </div>
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center py-12">
@@ -1784,7 +1781,116 @@ ${conversationContext}
                                     分析タブでレポートを保存すると<br />ここに表示されます
                                 </p>
                             </div>
+                        ) : selectedReport ? (
+                            /* レポート詳細表示 */
+                            <>
+                                {/* 戻るボタン */}
+                                <button
+                                    onClick={() => {
+                                        setSelectedReport(null);
+                                        setConversationHistory([]);
+                                    }}
+                                    className="flex items-center gap-2 text-[#4A9EFF] hover:text-[#3b8fef] mb-3"
+                                >
+                                    <Icon name="ChevronLeft" size={20} />
+                                    <span className="text-sm font-medium">レポート一覧に戻る</span>
+                                </button>
+
+                                {/* レポートタイトル */}
+                                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 mb-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Icon name="FileText" size={20} className="text-[#4A9EFF]" />
+                                        <h2 className="text-lg font-bold text-gray-800">{selectedReport.title}</h2>
+                                    </div>
+                                    <p className="text-xs text-gray-600">
+                                        {(() => {
+                                            const date = selectedReport.createdAt?.toDate ?
+                                                selectedReport.createdAt.toDate() :
+                                                new Date(selectedReport.createdAt);
+                                            return date.toLocaleString('ja-JP', {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            });
+                                        })()}
+                                    </p>
+                                </div>
+
+                                {/* レポート本文 */}
+                                <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                        {selectedReport.content}
+                                    </p>
+                                </div>
+
+                                {/* 会話履歴の区切り線（会話がある場合のみ表示） */}
+                                {conversationHistory.length > 0 && (
+                                    <div className="flex items-center gap-3 my-4">
+                                        <div className="flex-1 h-px bg-gray-300"></div>
+                                        <span className="text-xs text-gray-600 font-medium">質問・相談</span>
+                                        <div className="flex-1 h-px bg-gray-300"></div>
+                                    </div>
+                                )}
+
+                                {/* 会話履歴の表示 */}
+                                {conversationHistory.map((msg, idx) => (
+                                    <div key={idx} className="mb-4">
+                                        {msg.type === 'user' ? (
+                                            /* ユーザーの質問（右側） */
+                                            <div className="flex items-start gap-3 justify-end">
+                                                <div className="flex-1 max-w-[85%]">
+                                                    <div className="bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl rounded-tr-none p-4 shadow-md text-white">
+                                                        <p className="text-sm leading-relaxed">
+                                                            {msg.content}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="bg-purple-600 rounded-full p-2 flex-shrink-0">
+                                                    <Icon name="User" size={20} className="text-white" />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* AIの回答（左側） */
+                                            <div className="flex items-start gap-3">
+                                                <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
+                                                    <Icon name="MessageCircle" size={20} className="text-white" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
+                                                        <div className="text-sm text-gray-800 leading-relaxed">
+                                                            <MarkdownRenderer text={msg.content} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {/* Q&A ローディング（履歴タブでも表示） */}
+                                {qaLoading && (
+                                    <div className="flex items-start gap-3 mb-4">
+                                        <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
+                                            <Icon name="MessageCircle" size={20} className="text-white" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+                                                    <span className="text-sm text-gray-600">考え中...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* スクロール用の参照（履歴タブ） */}
+                                <div ref={chatEndRef}></div>
+                            </>
                         ) : (
+                            /* レポート一覧表示 */
                             <div className="space-y-3">
                                 {savedReports.map((report) => (
                                     <div
@@ -1792,17 +1898,8 @@ ${conversationContext}
                                         className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition"
                                     >
                                         <div className="flex items-start justify-between gap-3">
-                                            <div
-                                                className={isEditingReportTitle && selectedReport?.id === report.id ? "flex-1" : "flex-1 cursor-pointer"}
-                                                onClick={() => {
-                                                    // 編集モード中はタップ無効
-                                                    if (isEditingReportTitle && selectedReport?.id === report.id) {
-                                                        return;
-                                                    }
-                                                    setSelectedReport(report);
-                                                }}
-                                            >
-                                                {isEditingReportTitle && selectedReport?.id === report.id ? (
+                                            <div className="flex-1">
+                                                {isEditingReportTitle && editingReportId === report.id ? (
                                                     <div className="flex items-center gap-2">
                                                         <input
                                                             type="text"
@@ -1838,7 +1935,7 @@ ${conversationContext}
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-1">
-                                                {isEditingReportTitle && selectedReport?.id === report.id ? (
+                                                {isEditingReportTitle && editingReportId === report.id ? (
                                                     <>
                                                         <button
                                                             onClick={(e) => {
@@ -1853,8 +1950,8 @@ ${conversationContext}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 setIsEditingReportTitle(false);
+                                                                setEditingReportId(null);
                                                                 setEditedReportTitle('');
-                                                                setSelectedReport(null);
                                                             }}
                                                             className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-gray-600 hover:bg-gray-100 transition border-2 border-gray-400"
                                                         >
@@ -1866,14 +1963,27 @@ ${conversationContext}
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                // 編集モードに入るときはモーダルを開かないように selectedReport を一時的に設定
+                                                                // レポート詳細を表示
                                                                 setSelectedReport(report);
-                                                                setEditedReportTitle(report.title);
+                                                                setConversationHistory(report.conversationHistory || []);
+                                                            }}
+                                                            className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-green-600 hover:bg-green-50 transition border-2 border-green-500"
+                                                            title="レポート詳細を表示"
+                                                        >
+                                                            <Icon name="Eye" size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                // 編集モードに入る（selectedReportは設定しない）
                                                                 setIsEditingReportTitle(true);
+                                                                setEditingReportId(report.id);
+                                                                setEditedReportTitle(report.title);
                                                             }}
                                                             className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
+                                                            title="タイトルを編集"
                                                         >
-                                                            <Icon name="Edit2" size={18} />
+                                                            <Icon name="Edit" size={18} />
                                                         </button>
                                                         <button
                                                             onClick={(e) => {
@@ -1881,6 +1991,7 @@ ${conversationContext}
                                                                 handleDeleteReport(report.id);
                                                             }}
                                                             className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                            title="レポートを削除"
                                                         >
                                                             <Icon name="Trash2" size={18} />
                                                         </button>
@@ -1897,8 +2008,8 @@ ${conversationContext}
 
             </div>
 
-            {/* 質問入力エリア（BAB連動固定） - 分析タブのみ表示 */}
-            {!aiLoading && aiAnalysis && activeTab === 'analysis' && (
+            {/* 質問入力エリア（BAB連動固定） - 分析タブまたは保存済みレポート閲覧時に表示 */}
+            {!aiLoading && (aiAnalysis || selectedReport) && (activeTab === 'analysis' || (activeTab === 'history' && selectedReport)) && (
                 <div
                     className="fixed left-0 right-0 border-t bg-white shadow-lg z-[9990]"
                     style={{ bottom: `${babHeight}px` }}
@@ -1916,8 +2027,8 @@ ${conversationContext}
                             value={userQuestion}
                             onChange={(e) => setUserQuestion(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleUserQuestion()}
-                            placeholder="レポートについて質問してください..."
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                            placeholder="質問..."
+                            className="flex-1 px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                             disabled={qaLoading}
                         />
                         <button
@@ -1927,6 +2038,19 @@ ${conversationContext}
                         >
                             <Icon name="Send" size={20} />
                         </button>
+                        {/* 保存ボタン（分析タブのみ表示） */}
+                        {activeTab === 'analysis' && aiAnalysis && !selectedReport && (
+                            <button
+                                onClick={() => {
+                                    setReportTitle('デイリー分析');
+                                    setShowSaveReportModal(true);
+                                }}
+                                className="bg-[#4A9EFF] text-white p-2 rounded-lg hover:bg-[#3b8fef] shadow-md transition flex-shrink-0"
+                                title="レポートを保存"
+                            >
+                                <Icon name="Save" size={20} />
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -2325,73 +2449,6 @@ ${conversationContext}
             ) : null}
 
             {/* レポート表示モーダル (Portalでbody直下にレンダリング) - 編集モード中は表示しない */}
-            {selectedReport && !isEditingReportTitle ? ReactDOM.createPortal(
-                <div
-                    className="fixed inset-0 flex items-center justify-center p-4"
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        zIndex: 999999,
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)'
-                    }}
-                    onClick={() => {
-                        setSelectedReport(null);
-                    }}
-                >
-                    <div
-                        className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-3xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                        }}
-                    >
-                        {/* ヘッダー */}
-                        <div className="p-4 border-b flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-gray-800">{selectedReport.title}</h2>
-                            <button
-                                onClick={() => setSelectedReport(null)}
-                                className="p-1 hover:bg-gray-100 rounded transition"
-                            >
-                                <Icon name="X" size={20} className="text-gray-600" />
-                            </button>
-                        </div>
-
-                        {/* コンテンツ */}
-                        <div className="flex-1 overflow-y-auto p-6">
-                            <div className="text-xs text-gray-600 mb-4">
-                                保存日時: {(() => {
-                                    const date = selectedReport.createdAt?.toDate ?
-                                        selectedReport.createdAt.toDate() :
-                                        new Date(selectedReport.createdAt);
-                                    return date.toLocaleString('ja-JP', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    });
-                                })()}
-                            </div>
-                            <div className="prose prose-sm max-w-none">
-                                <MarkdownRenderer text={selectedReport.content} />
-                            </div>
-                        </div>
-
-                        {/* フッター */}
-                        <div className="p-4 border-t flex justify-end">
-                            <button
-                                onClick={() => setSelectedReport(null)}
-                                className="px-6 py-2 bg-[#4A9EFF] text-white font-medium rounded-lg hover:bg-[#3b8fef] transition"
-                            >
-                                閉じる
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            ) : null}
         </div>
     );
 };
@@ -3326,9 +3383,6 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                     </div>
                 </div>
             )}
-
-            {/* 確認モーダル */}
-            <ConfirmModalComponent />
         </div>
     );
 };

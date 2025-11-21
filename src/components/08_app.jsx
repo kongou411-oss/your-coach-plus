@@ -1,6 +1,7 @@
 import React from 'react';
 import toast from 'react-hot-toast';
 import SettingsView from './04_settings';
+import { GlobalConfirmModal } from './00_confirm_modal.jsx';
 
 // ===== Welcome Guide Modal Component - REMOVED =====
 // オンボーディング完了後、直接食事誘導モーダルを表示するため削除
@@ -3555,6 +3556,9 @@ AIコーチなどの高度な機能が解放されます。
 
                     {/* Feedback Manager（グローバル） */}
                     <FeedbackManager />
+
+                    {/* Global Confirm Modal（グローバル） */}
+                    <GlobalConfirmModal />
                 </div>
             );
         };

@@ -4541,14 +4541,13 @@ const LevelBanner = ({ user, setInfoModal }) => {
 // ===== Directive Edit Modal Component =====
 const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryIcon, getCategoryLabel, getCategoryColor }) => {
     const [editedMessage, setEditedMessage] = useState(directive.message);
-    const [editedType, setEditedType] = useState(directive.type);
 
     const handleSave = () => {
         if (!editedMessage.trim()) {
             toast('指示内容を入力してください');
             return;
         }
-        onSave({ ...directive, message: editedMessage.trim(), type: editedType });
+        onSave({ ...directive, message: editedMessage.trim() });
     };
 
     return (
@@ -4566,27 +4565,6 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
 
                 {/* コンテンツ */}
                 <div className="p-6 space-y-4">
-                    {/* カテゴリー選択 */}
-                    <div>
-                        <label className="text-sm font-bold text-gray-600 block mb-2">カテゴリー</label>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            {['meal', 'exercise', 'condition'].map((type) => (
-                                <button
-                                    key={type}
-                                    onClick={() => setEditedType(type)}
-                                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition border-2 ${
-                                        editedType === type
-                                            ? `${getCategoryColor(type).bg} ${getCategoryColor(type).border} ${getCategoryColor(type).text}`
-                                            : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
-                                    }`}
-                                >
-                                    <Icon name={getCategoryIcon(type)} size={14} />
-                                    {getCategoryLabel(type)}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
                     {/* 指示内容 */}
                     <div>
                         <label className="text-sm font-bold text-gray-600 block mb-2">指示内容</label>
@@ -4603,17 +4581,17 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
                 {/* アクションボタン */}
                 <div className="p-4 border-t-2 border-gray-200 flex gap-2">
                     <button
-                        onClick={handleSave}
-                        className="flex-1 bg-[#4A9EFF] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#3b8fef] transition flex items-center justify-center gap-2"
-                    >
-                        <Icon name="Save" size={18} />
-                        保存
-                    </button>
-                    <button
                         onClick={onClose}
                         className="flex-1 bg-white border-2 border-gray-300 text-gray-600 font-semibold py-3 px-6 rounded-lg hover:bg-gray-50 transition"
                     >
                         キャンセル
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        className="flex-1 bg-[#4A9EFF] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#3b8fef] transition flex items-center justify-center gap-2"
+                    >
+                        <Icon name="Save" size={18} />
+                        更新
                     </button>
                 </div>
             </div>
