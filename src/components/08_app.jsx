@@ -82,9 +82,16 @@ const WhatsNewModal = ({ show, version, releaseNote, onClose }) => {
                 <div className="p-6 space-y-4">
                     {/* リリース情報 */}
                     <div className="border-l-4 border-indigo-500 pl-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="font-bold text-indigo-600">{releaseNote.title}</span>
-                            <span className="text-sm text-gray-500">{releaseNote.date}</span>
+                        <div className="mb-2">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="font-bold text-indigo-600">{releaseNote.title}</span>
+                                {releaseNote.badge && (
+                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+                                        {releaseNote.badge}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="text-sm text-gray-500">{releaseNote.date}</div>
                         </div>
                     </div>
 
