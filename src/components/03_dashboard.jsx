@@ -3186,19 +3186,28 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     sleepHours: item.value
                                                 }
                                             };
+                                            console.log('[睡眠時間変更] updated.conditions:', updated.conditions);
                                             // 即座にUIを更新
                                             setDailyRecord(updated);
 
                                             // 非同期処理はバックグラウンドで実行
                                             const userId = user?.uid;
                                             (async () => {
-                                                await DataService.saveDailyRecord(userId, currentDate, updated);
+                                                // スコアを再計算
+                                                console.log('[睡眠時間変更] スコア計算前 - updated.conditions:', updated.conditions);
+                                                const calcScores = DataService.calculateScores(profile, updated, targetPFC);
+                                                console.log('[睡眠時間変更] 計算後スコア:', calcScores.condition);
+                                                const updatedWithScores = {
+                                                    ...updated,
+                                                    scores: calcScores
+                                                };
+                                                await DataService.saveDailyRecord(userId, currentDate, updatedWithScores);
 
                                                 // 機能開放チェック
                                                 const oldUnlocked = [...unlockedFeatures];
-                                                await checkAndCompleteFeatures(userId, updated);
+                                                await checkAndCompleteFeatures(userId, updatedWithScores);
                                                 const isPremium = profile?.subscriptionStatus === 'active';
-                                                const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
+                                                const newUnlocked = await calculateUnlockedFeatures(userId, updatedWithScores, isPremium);
                                                 setUnlockedFeatures(newUnlocked);
 
                                                 // 新しく開放された機能があればコールバック
@@ -3248,13 +3257,19 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             // 非同期処理はバックグラウンドで実行
                                             const userId = user?.uid;
                                             (async () => {
-                                                await DataService.saveDailyRecord(userId, currentDate, updated);
+                                                // スコアを再計算
+                                                const calcScores = DataService.calculateScores(profile, updated, targetPFC);
+                                                const updatedWithScores = {
+                                                    ...updated,
+                                                    scores: calcScores
+                                                };
+                                                await DataService.saveDailyRecord(userId, currentDate, updatedWithScores);
 
                                                 // 機能開放チェック
                                                 const oldUnlocked = [...unlockedFeatures];
-                                                await checkAndCompleteFeatures(userId, updated);
+                                                await checkAndCompleteFeatures(userId, updatedWithScores);
                                                 const isPremium = profile?.subscriptionStatus === 'active';
-                                                const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
+                                                const newUnlocked = await calculateUnlockedFeatures(userId, updatedWithScores, isPremium);
                                                 setUnlockedFeatures(newUnlocked);
 
                                                 // 新しく開放された機能があればコールバック
@@ -3304,13 +3319,19 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             // 非同期処理はバックグラウンドで実行
                                             const userId = user?.uid;
                                             (async () => {
-                                                await DataService.saveDailyRecord(userId, currentDate, updated);
+                                                // スコアを再計算
+                                                const calcScores = DataService.calculateScores(profile, updated, targetPFC);
+                                                const updatedWithScores = {
+                                                    ...updated,
+                                                    scores: calcScores
+                                                };
+                                                await DataService.saveDailyRecord(userId, currentDate, updatedWithScores);
 
                                                 // 機能開放チェック
                                                 const oldUnlocked = [...unlockedFeatures];
-                                                await checkAndCompleteFeatures(userId, updated);
+                                                await checkAndCompleteFeatures(userId, updatedWithScores);
                                                 const isPremium = profile?.subscriptionStatus === 'active';
-                                                const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
+                                                const newUnlocked = await calculateUnlockedFeatures(userId, updatedWithScores, isPremium);
                                                 setUnlockedFeatures(newUnlocked);
 
                                                 // 新しく開放された機能があればコールバック
@@ -3360,13 +3381,19 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             // 非同期処理はバックグラウンドで実行
                                             const userId = user?.uid;
                                             (async () => {
-                                                await DataService.saveDailyRecord(userId, currentDate, updated);
+                                                // スコアを再計算
+                                                const calcScores = DataService.calculateScores(profile, updated, targetPFC);
+                                                const updatedWithScores = {
+                                                    ...updated,
+                                                    scores: calcScores
+                                                };
+                                                await DataService.saveDailyRecord(userId, currentDate, updatedWithScores);
 
                                                 // 機能開放チェック
                                                 const oldUnlocked = [...unlockedFeatures];
-                                                await checkAndCompleteFeatures(userId, updated);
+                                                await checkAndCompleteFeatures(userId, updatedWithScores);
                                                 const isPremium = profile?.subscriptionStatus === 'active';
-                                                const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
+                                                const newUnlocked = await calculateUnlockedFeatures(userId, updatedWithScores, isPremium);
                                                 setUnlockedFeatures(newUnlocked);
 
                                                 // 新しく開放された機能があればコールバック
@@ -3416,13 +3443,19 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             // 非同期処理はバックグラウンドで実行
                                             const userId = user?.uid;
                                             (async () => {
-                                                await DataService.saveDailyRecord(userId, currentDate, updated);
+                                                // スコアを再計算
+                                                const calcScores = DataService.calculateScores(profile, updated, targetPFC);
+                                                const updatedWithScores = {
+                                                    ...updated,
+                                                    scores: calcScores
+                                                };
+                                                await DataService.saveDailyRecord(userId, currentDate, updatedWithScores);
 
                                                 // 機能開放チェック
                                                 const oldUnlocked = [...unlockedFeatures];
-                                                await checkAndCompleteFeatures(userId, updated);
+                                                await checkAndCompleteFeatures(userId, updatedWithScores);
                                                 const isPremium = profile?.subscriptionStatus === 'active';
-                                                const newUnlocked = await calculateUnlockedFeatures(userId, updated, isPremium);
+                                                const newUnlocked = await calculateUnlockedFeatures(userId, updatedWithScores, isPremium);
                                                 setUnlockedFeatures(newUnlocked);
 
                                                 // 新しく開放された機能があればコールバック

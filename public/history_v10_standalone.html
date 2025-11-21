@@ -472,9 +472,6 @@
                 <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'sleep_quality')">
                     睡眠の質
                 </button>
-                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'appetite')">
-                    食欲
-                </button>
                 <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('condition', 'gut_health')">
                     腸内環境
                 </button>
@@ -1504,15 +1501,6 @@
                     return labels[value] || `${value}点`;
                 }
             },
-            appetite: {
-                name: '食欲',
-                unit: '',
-                category: 'condition',
-                getLabel: (value) => {
-                    const labels = ['未記録', 'なし', '少', '普通', '良好', '最高'];
-                    return labels[value] || `${value}点`;
-                }
-            },
             gut_health: {
                 name: '腸内環境',
                 unit: '',
@@ -1577,7 +1565,6 @@
                 condition_score: [],
                 sleep_duration: [],
                 sleep_quality: [],
-                appetite: [],
                 gut_health: [],
                 focus: [],
                 stress: []
@@ -1771,7 +1758,6 @@
                     const conditions = record.conditions || {};
                     allData.sleep_duration.push(conditions.sleepHours || 0);
                     allData.sleep_quality.push(conditions.sleepQuality || 0);
-                    allData.appetite.push(conditions.appetite || 0);
                     allData.gut_health.push(conditions.digestion || 0);
                     allData.focus.push(conditions.focus || 0);
                     allData.stress.push(conditions.stress || 0);
@@ -1800,7 +1786,11 @@
                     // スコアデータ（record.scoresから取得）
                     allData.nutrition_score.push(record.scores?.food?.score || 0);
                     allData.training_score.push(record.scores?.exercise?.score || 0);
-                    allData.condition_score.push(record.scores?.condition?.score || 0);
+                    // コンディションスコアは数値として直接保存されている場合と、オブジェクトのscoreプロパティとして保存されている場合がある
+                    const conditionScore = typeof record.scores?.condition === 'number'
+                        ? record.scores.condition
+                        : (record.scores?.condition?.score || 0);
+                    allData.condition_score.push(conditionScore);
 
                     // 閃きメモを保存
                     if (record.notes && record.notes.trim()) {
@@ -4797,8 +4787,7 @@ ${trainingStats.cardio_duration ? `- 有酸素運動時間平均: ${trainingStat
 ${conditionStats.sleep_duration ? `- 睡眠時間平均: ${conditionStats.sleep_duration.avgLabel}（最低${conditionStats.sleep_duration.min}～最高${conditionStats.sleep_duration.max}、記録日数: ${conditionStats.sleep_duration.count}日）` : '- 睡眠時間データなし'}
 ${conditionStats.sleep_quality ? `- 睡眠の質平均: ${conditionStats.sleep_quality.avgLabel}（最低${conditionStats.sleep_quality.min}～最高${conditionStats.sleep_quality.max}）` : '- 睡眠の質データなし'}
 
-### 消化・食欲
-${conditionStats.appetite ? `- 食欲平均: ${conditionStats.appetite.avgLabel}（最低${conditionStats.appetite.min}～最高${conditionStats.appetite.max}）` : '- 食欲データなし'}
+### 消化
 ${conditionStats.gut_health ? `- 腸内環境平均: ${conditionStats.gut_health.avgLabel}（最低${conditionStats.gut_health.min}～最高${conditionStats.gut_health.max}）` : '- 腸内環境データなし'}
 
 ### メンタル
@@ -4820,7 +4809,7 @@ ${conditionStats.stress ? `- ストレス平均: ${conditionStats.stress.avgLabe
 ② 傾向と特徴
 
 **睡眠**: [睡眠時間・質の傾向を1文で]
-**消化・食欲**: [食欲・腸内環境の傾向を1文で]
+**消化**: [腸内環境の傾向を1文で]
 **メンタル**: [集中力・ストレスの傾向を1文で]
 
 ---
@@ -5117,7 +5106,6 @@ ${stats.total_weight ? `- 総重量平均: ${stats.total_weight.avg}kg（記録�
 ### コンディションの推移
 ${stats.sleep_duration ? `- 睡眠時間平均: ${stats.sleep_duration.avgLabel || stats.sleep_duration.avg}（記録日数: ${stats.sleep_duration.count}日）` : '- データなし'}
 ${stats.sleep_quality ? `- 睡眠の質平均: ${stats.sleep_quality.avgLabel || stats.sleep_quality.avg}（記録日数: ${stats.sleep_quality.count}日）` : '- データなし'}
-${stats.appetite ? `- 食欲平均: ${stats.appetite.avgLabel || stats.appetite.avg}（記録日数: ${stats.appetite.count}日）` : '- データなし'}
 ${stats.gut_health ? `- 腸内環境平均: ${stats.gut_health.avgLabel || stats.gut_health.avg}（記録日数: ${stats.gut_health.count}日）` : '- データなし'}
 ${stats.focus ? `- 集中力平均: ${stats.focus.avgLabel || stats.focus.avg}（記録日数: ${stats.focus.count}日）` : '- データなし'}
 ${stats.stress ? `- ストレス平均: ${stats.stress.avgLabel || stats.stress.avg}（記録日数: ${stats.stress.count}日）` : '- データなし'}

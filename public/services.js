@@ -1094,6 +1094,7 @@ const DataService = {
         const conditionScore = Math.round(
             ((sleepHours + sleepQuality + digestion + focus + stress) / 5) * 20
         );
+        console.log('[calculateScores] コンディション:', { sleepHours, sleepQuality, digestion, focus, stress, conditionScore });
 
         return {
             food: {
