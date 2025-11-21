@@ -1032,11 +1032,27 @@ const DataService = {
             mineralScore * 0.05
         );
 
-        // 運動データ
-        const workouts = record.workouts || [];
-        const totalDuration = workouts.reduce((sum, w) => {
-            return sum + (w.sets || []).reduce((s, set) => s + (set.duration || 0), 0);
-        }, 0);
+        // 運動データ（予測データを除外）
+        const workouts = (record.workouts || []).filter(w => !w.isPredicted);
+        let totalDuration = 0;
+
+        workouts.forEach(workout => {
+            // exercisesプロパティがある場合（新形式）
+            if (workout.exercises) {
+                workout.exercises.forEach(exercise => {
+                    (exercise.sets || []).forEach(set => {
+                        totalDuration += set.duration || 0;
+                    });
+                });
+            }
+            // 旧形式（setsが直接workoutの下にある）
+            else {
+                (workout.sets || []).forEach(set => {
+                    totalDuration += set.duration || 0;
+                });
+            }
+        });
+
         const exerciseCount = workouts.length;
 
         // 休養日判定（ルーティンで明示的に設定されている場合）

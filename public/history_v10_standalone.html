@@ -451,6 +451,9 @@
                 <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'total_exercises')">
                     総種目数
                 </button>
+                <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'total_sets')">
+                    総セット数
+                </button>
                 <button type="button" class="sub-tab-button px-2 py-1 bg-white text-gray-700 rounded text-xs font-semibold border border-transparent hover:border-gray-300" onclick="selectSubCategory('training', 'total_weight')">
                     総重量
                 </button>
@@ -564,24 +567,15 @@
                     <!-- RM専用調整パネル -->
                     <div id="rm-control-panel" class="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200 hidden">
                         <div class="mb-2">
-                            <div class="text-xs font-semibold text-orange-900 mb-1">回数を選択</div>
-                            <div id="rm-reps-buttons" class="flex flex-wrap gap-1">
+                            <div class="text-xs font-semibold text-orange-900 mb-1">種目を選択</div>
+                            <div id="rm-exercise-buttons" class="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
                                 <!-- 動的に生成 -->
                             </div>
                         </div>
                         <div>
-                            <button
-                                type="button"
-                                onclick="document.getElementById('rm-exercise-list').classList.toggle('hidden'); lucide.createIcons();"
-                                class="w-full flex items-center justify-between text-xs font-semibold text-orange-900 mb-1 px-2 py-1 hover:bg-orange-100 rounded transition"
-                            >
-                                <span>種目を選択</span>
-                                <i data-lucide="chevron-down" class="w-3 h-3"></i>
-                            </button>
-                            <div id="rm-exercise-list" class="hidden">
-                                <div id="rm-exercise-buttons" class="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
-                                    <!-- 動的に生成 -->
-                                </div>
+                            <div class="text-xs font-semibold text-orange-900 mb-1">回数を選択</div>
+                            <div id="rm-reps-buttons" class="flex flex-wrap gap-1">
+                                <!-- 動的に生成 -->
                             </div>
                         </div>
                     </div>
@@ -1477,6 +1471,7 @@
             training_score: { name: '運動スコア', unit: '点', category: 'training' },
             total_time: { name: '総時間', unit: '分', category: 'training' },
             total_exercises: { name: '総種目数', unit: '種目', category: 'training' },
+            total_sets: { name: '総セット数', unit: 'セット', category: 'training' },
             total_weight: { name: '総重量', unit: 'kg', category: 'training' },
 
             // コンディション
@@ -1559,6 +1554,7 @@
                 training_score: [],
                 total_time: [],
                 total_exercises: [],
+                total_sets: [],
                 total_weight: [],
                 rm: {}, // 回数×種目別のRM記録
                 // コンディション
@@ -1634,9 +1630,26 @@
                 }
 
                 if (record) {
-                    // 食事データ - すべてscoresから取得（services.jsのcalculateScoresで計算済み）
-                    const scores = record.scores || {};
-                    const foodScores = scores.food || {};
+                    // スコアを再計算（最新のロジックで計算）
+                    let scores = {};
+                    let foodScores = {};
+
+                    if (typeof DataService !== 'undefined' && DataService.calculateScores && window.currentUserProfile) {
+                        // 目標PFCを計算
+                        const targetPFC = {
+                            calories: window.currentUserProfile.targetCalories || 0,
+                            protein: window.currentUserProfile.targetProtein || 0,
+                            fat: window.currentUserProfile.targetFat || 0,
+                            carbs: window.currentUserProfile.targetCarbs || 0
+                        };
+                        // 最新のロジックでスコアを再計算
+                        scores = DataService.calculateScores(window.currentUserProfile, record, targetPFC);
+                        foodScores = scores.food || {};
+                    } else {
+                        // calculateScoresが使えない場合は保存されたスコアを使用
+                        scores = record.scores || {};
+                        foodScores = scores.food || {};
+                    }
 
                     // デバッグ：scores.foodの型を確認
                     console.log(`🔍 [${dateStr}] scores.food の型:`, typeof scores.food, scores.food);
@@ -1682,33 +1695,29 @@
                     allData.vitamin_score.push(foodScores.vitamin || 0);
                     allData.mineral_score.push(foodScores.mineral || 0);
 
-                    // 運動データ - workoutsから集計
-                    const workouts = record.workouts || [];
-                    let totalTime = 0, totalExercises = workouts.length, totalWeight = 0;
+                    // 運動データ - workoutsから集計（予測データを除外）
+                    const workouts = (record.workouts || []).filter(w => !w.isPredicted);
+                    let totalTime = 0, totalExercises = workouts.length, totalSets = 0, totalWeight = 0;
                     const rmData = {}; // 回数×種目別のRMデータ
 
                     workouts.forEach(workout => {
-                        totalTime += workout.duration || 0;
-
                         // exercisesプロパティがある場合（新形式）
                         if (workout.exercises) {
                             workout.exercises.forEach(exercise => {
                                 const exerciseName = exercise.exercise?.name || exercise.name || 'unknown';
+                                const sets = exercise.sets || [];
+                                totalSets += sets.length; // セット数を加算
 
-                                (exercise.sets || []).forEach(set => {
+                                sets.forEach(set => {
                                     const weight = set.weight || 0;
                                     const reps = set.reps || 0;
                                     totalWeight += weight * reps;
+                                    totalTime += set.duration || 0; // セットごとの時間を加算
 
-                                    // RM記録があればそちらを使用（優先）
+                                    // RM記録（明示的にrmとrmWeightが設定されている場合のみ）
                                     if (set.rm && set.rmWeight) {
                                         const key = `${set.rm}_${exerciseName}`;
                                         rmData[key] = Math.max(rmData[key] || 0, set.rmWeight);
-                                    }
-                                    // RM記録がない場合は通常のセットデータから推定
-                                    else if (reps > 0 && weight > 0) {
-                                        const key = `${reps}_${exerciseName}`;
-                                        rmData[key] = Math.max(rmData[key] || 0, weight);
                                     }
                                 });
                             });
@@ -1716,42 +1725,46 @@
                         // 旧形式（setsが直接workoutの下にある）
                         else {
                             const exerciseName = workout.name || 'unknown';
+                            const sets = workout.sets || [];
+                            totalSets += sets.length; // セット数を加算
 
-                            (workout.sets || []).forEach(set => {
+                            sets.forEach(set => {
                                 const weight = set.weight || 0;
                                 const reps = set.reps || 0;
                                 totalWeight += weight * reps;
+                                totalTime += set.duration || 0; // セットごとの時間を加算
 
-                                // RM記録があればそちらを使用（優先）
+                                // RM記録（明示的にrmとrmWeightが設定されている場合のみ）
                                 if (set.rm && set.rmWeight) {
                                     const key = `${set.rm}_${exerciseName}`;
                                     rmData[key] = Math.max(rmData[key] || 0, set.rmWeight);
-                                }
-                                // RM記録がない場合は通常のセットデータから推定
-                                else if (reps > 0 && weight > 0) {
-                                    const key = `${reps}_${exerciseName}`;
-                                    rmData[key] = Math.max(rmData[key] || 0, weight);
                                 }
                             });
                         }
                     });
                     allData.total_time.push(totalTime);
                     allData.total_exercises.push(totalExercises);
+                    allData.total_sets.push(totalSets);
                     allData.total_weight.push(totalWeight);
 
+                    console.log(`[運動データ] ${dateStr}: time=${totalTime}分, exercises=${totalExercises}種目, sets=${totalSets}セット, weight=${totalWeight}kg`);
+
                     // RM記録を保存（すべての回数×種目の組み合わせ）
-                    for (const key in rmData) {
-                        if (!allData.rm) allData.rm = {};
-                        if (!allData.rm[key]) allData.rm[key] = [];
-                        allData.rm[key].push(rmData[key]);
-                    }
-                    // この日に記録がないRM種目には0を追加
+                    // まず既存のすべてのRM種目に0を追加（この日のデータがない種目用）
                     if (allData.rm) {
                         for (const key in allData.rm) {
-                            if (!rmData[key]) {
-                                allData.rm[key].push(0);
-                            }
+                            allData.rm[key].push(0);
                         }
+                    }
+                    // その後、この日に記録がある種目のデータで上書き
+                    for (const key in rmData) {
+                        if (!allData.rm) allData.rm = {};
+                        if (!allData.rm[key]) {
+                            // 新しい種目の場合、過去の日数分0で埋める
+                            allData.rm[key] = new Array(allData.calories.length).fill(0);
+                        }
+                        // 最後の要素（今日）を実データで上書き
+                        allData.rm[key][allData.rm[key].length - 1] = rmData[key];
                     }
 
                     // コンディションデータ - conditionsから取得
@@ -1783,13 +1796,15 @@
 
                     allData.directive.push(record.directiveCompleted ? 1 : 0);
 
-                    // スコアデータ（record.scoresから取得）
-                    allData.nutrition_score.push(record.scores?.food?.score || 0);
-                    allData.training_score.push(record.scores?.exercise?.score || 0);
-                    // コンディションスコアは数値として直接保存されている場合と、オブジェクトのscoreプロパティとして保存されている場合がある
-                    const conditionScore = typeof record.scores?.condition === 'number'
-                        ? record.scores.condition
-                        : (record.scores?.condition?.score || 0);
+                    // スコアデータ（再計算したscoresを使用）
+                    allData.nutrition_score.push(scores.food?.score || 0);
+                    const trainingScore = scores.exercise?.score || 0;
+                    console.log(`[運動スコア] ${dateStr}: score=${trainingScore}, exercise=`, scores.exercise);
+                    allData.training_score.push(trainingScore);
+                    // コンディションスコアは数値として直接保存されている場合と、オブジェクトのscoreプロパティとして保存されている場合がある（再計算したscoresを使用）
+                    const conditionScore = typeof scores.condition === 'number'
+                        ? scores.condition
+                        : (scores.condition?.score || 0);
                     allData.condition_score.push(conditionScore);
 
                     // 閃きメモを保存
@@ -1841,6 +1856,7 @@
             training_score: [],
             total_time: [],
             total_exercises: [],
+            total_sets: [],
             total_weight: [],
             rm: {}, // 回数×種目別のRM記録（動的に追加）
             // コンディション
@@ -3287,8 +3303,6 @@
 
         // 小カテゴリ選択
         function selectSubCategory(category, subCategory) {
-            currentSubCategory = subCategory;
-
             // RM選択時は調整パネルを表示
             const rmPanel = document.getElementById('rm-control-panel');
             if (subCategory === 'rm') {
@@ -3296,12 +3310,16 @@
                     rmPanel.classList.remove('hidden');
                     initializeRMPanel();
                 }
+                // currentSubCategoryは'rm'に設定しない（updateRMChartで動的に設定される）
                 return; // パネル表示のみで、グラフは表示しない
             } else {
                 if (rmPanel) rmPanel.classList.add('hidden');
                 currentRMReps = null;
                 currentRMExercise = null;
             }
+
+            // RM以外の場合のみcurrentSubCategoryを更新
+            currentSubCategory = subCategory;
 
             // 全期間の最低値・最大値を再計算
             globalMinMax = calculateGlobalMinMax(subCategory);
@@ -3374,18 +3392,62 @@
         // RMパネルの初期化
         function initializeRMPanel() {
             if (!allData.rm || Object.keys(allData.rm).length === 0) {
-                document.getElementById('rm-reps-buttons').innerHTML = '<span class="text-xs text-gray-500">RM記録がありません</span>';
-                document.getElementById('rm-exercise-buttons').innerHTML = '';
+                document.getElementById('rm-exercise-buttons').innerHTML = '<span class="text-xs text-gray-500">RM記録がありません</span>';
+                document.getElementById('rm-reps-buttons').innerHTML = '';
                 return;
             }
 
-            // 利用可能な回数を抽出
-            const repsSet = new Set();
+            // 利用可能な種目を抽出
+            const exerciseSet = new Set();
             Object.keys(allData.rm).forEach(key => {
                 const [reps, exercise] = key.split('_');
-                repsSet.add(parseInt(reps));
+                exerciseSet.add(exercise);
             });
-            const repsList = Array.from(repsSet).sort((a, b) => a - b);
+            const exerciseList = Array.from(exerciseSet).sort();
+
+            // デフォルト種目を決定（バーベルベンチプレスがあればそれ、なければ最初の種目）
+            let defaultExercise = exerciseList.find(ex => ex === 'バーベルベンチプレス') || exerciseList[0];
+
+            // 種目ボタンを生成
+            const exerciseContainer = document.getElementById('rm-exercise-buttons');
+            exerciseContainer.innerHTML = exerciseList.map((exercise) =>
+                `<button type="button"
+                    class="px-2 py-1 text-xs font-semibold rounded border ${exercise === defaultExercise ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-400'}"
+                    onclick="selectRMExercise('${exercise}')">
+                    ${exercise}
+                </button>`
+            ).join('');
+
+            // デフォルト種目を自動選択
+            if (exerciseList.length > 0) {
+                currentRMExercise = defaultExercise;
+                selectRMExercise(defaultExercise, true);
+            }
+        }
+
+        // RM種目を選択
+        function selectRMExercise(exercise, skipEventUpdate = false) {
+            currentRMExercise = exercise;
+
+            // ボタンのアクティブ状態を更新（初回呼び出し時はスキップ）
+            if (!skipEventUpdate && event && event.currentTarget) {
+                document.querySelectorAll('#rm-exercise-buttons button').forEach(btn => {
+                    btn.classList.remove('bg-orange-600', 'text-white', 'border-orange-600');
+                    btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+                });
+                event.currentTarget.classList.add('bg-orange-600', 'text-white', 'border-orange-600');
+                event.currentTarget.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+            }
+
+            // この種目で利用可能な回数を抽出
+            const repsList = [];
+            Object.keys(allData.rm).forEach(key => {
+                const [reps, keyExercise] = key.split('_');
+                if (keyExercise === exercise) {
+                    repsList.push(parseInt(reps));
+                }
+            });
+            repsList.sort((a, b) => a - b);
 
             // 回数ボタンを生成
             const repsContainer = document.getElementById('rm-reps-buttons');
@@ -3399,7 +3461,8 @@
 
             // 最初の回数を自動選択
             if (repsList.length > 0) {
-                selectRMReps(repsList[0]);
+                currentRMReps = repsList[0];
+                updateRMChart();
             }
         }
 
@@ -3408,58 +3471,33 @@
             currentRMReps = reps;
 
             // ボタンのアクティブ状態を更新
-            document.querySelectorAll('#rm-reps-buttons button').forEach(btn => {
-                btn.classList.remove('bg-orange-600', 'text-white', 'border-orange-600');
-                btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
-            });
-            event.currentTarget.classList.add('bg-orange-600', 'text-white', 'border-orange-600');
-            event.currentTarget.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
-
-            // この回数で利用可能な種目を抽出
-            const exercises = [];
-            Object.keys(allData.rm).forEach(key => {
-                const [keyReps, exercise] = key.split('_');
-                if (parseInt(keyReps) === reps) {
-                    exercises.push(exercise);
-                }
-            });
-
-            // 種目ボタンを生成
-            const exerciseContainer = document.getElementById('rm-exercise-buttons');
-            exerciseContainer.innerHTML = exercises.map((exercise, index) =>
-                `<button type="button"
-                    class="px-2 py-1 text-xs font-semibold rounded border ${index === 0 ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-400'}"
-                    onclick="selectRMExercise('${exercise}')">
-                    ${exercise}
-                </button>`
-            ).join('');
-
-            // 最初の種目を自動選択
-            if (exercises.length > 0) {
-                currentRMExercise = exercises[0];
-                updateRMChart();
+            if (event && event.currentTarget) {
+                document.querySelectorAll('#rm-reps-buttons button').forEach(btn => {
+                    btn.classList.remove('bg-orange-600', 'text-white', 'border-orange-600');
+                    btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+                });
+                event.currentTarget.classList.add('bg-orange-600', 'text-white', 'border-orange-600');
+                event.currentTarget.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
             }
-        }
-
-        // RM種目を選択
-        function selectRMExercise(exercise) {
-            currentRMExercise = exercise;
-
-            // ボタンのアクティブ状態を更新
-            document.querySelectorAll('#rm-exercise-buttons button').forEach(btn => {
-                btn.classList.remove('bg-orange-600', 'text-white', 'border-orange-600');
-                btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
-            });
-            event.currentTarget.classList.add('bg-orange-600', 'text-white', 'border-orange-600');
-            event.currentTarget.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
 
             updateRMChart();
         }
 
         // RMグラフを更新
         function updateRMChart() {
+            if (!currentRMReps || !currentRMExercise) {
+                console.warn('[updateRMChart] currentRMReps or currentRMExercise is not set');
+                return;
+            }
+
             const key = `${currentRMReps}_${currentRMExercise}`;
             currentSubCategory = `rm_${key}`;
+
+            // allDataにRMデータが存在するか確認
+            if (!allData.rm || !allData.rm[key]) {
+                console.warn(`[updateRMChart] RM data not found for key: ${key}`);
+                return;
+            }
 
             // metricInfoに動的に追加
             if (!metricInfo[currentSubCategory]) {
@@ -4167,6 +4205,8 @@
                     uid: event.data.userId,
                     profile: event.data.userProfile
                 };
+                // calculateScoresで使用するためにグローバル変数に保存
+                window.currentUserProfile = event.data.userProfile;
                 // ユーザー情報を受け取ったらデータを再読み込み
                 if (typeof loadRealData === 'function') {
                     loadRealData().then(data => {
@@ -5101,6 +5141,7 @@ ${stats.carbs ? `- 炭水化物平均: ${stats.carbs.avg}g（最低${stats.carbs
 ### 運動の推移
 ${stats.total_time ? `- 総時間平均: ${stats.total_time.avg}分（最低${stats.total_time.min}～最高${stats.total_time.max}分、記録日数: ${stats.total_time.count}日）` : '- データなし'}
 ${stats.total_exercises ? `- 実施種目数平均: ${stats.total_exercises.avg}種目（記録日数: ${stats.total_exercises.count}日）` : '- データなし'}
+${stats.total_sets ? `- 総セット数平均: ${stats.total_sets.avg}セット（最低${stats.total_sets.min}～最高${stats.total_sets.max}セット、記録日数: ${stats.total_sets.count}日）` : '- データなし'}
 ${stats.total_weight ? `- 総重量平均: ${stats.total_weight.avg}kg（記録日数: ${stats.total_weight.count}日）` : '- データなし'}
 
 ### コンディションの推移
