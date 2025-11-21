@@ -234,6 +234,11 @@ npm run auto-release
 - [ ] `src/config.js`のRELEASE_NOTESに新バージョンを追加した
 - [ ] featuresに変更内容を記載した（3-5項目）
 - [ ] titleとdateを正しく設定した
+- [ ] **titleに「（β版）」を付与した**（正式版リリースまで必須）
+- [ ] `public/home.html`のリリースノートを更新した
+  - [ ] バージョン表記に「β版」を追加（例: `v2.6.x β版`）
+  - [ ] β版バッジを追加（`<span class="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">β版</span>`）
+  - [ ] 見出し（`<p>`）と詳細リスト（`<ul>`）で異なる文章にした（重複禁止）
 - [ ] ビルド前に上記を確認した
 - [ ] デプロイ後にWhat's Newモーダルで内容を確認した
 
