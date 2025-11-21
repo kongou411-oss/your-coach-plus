@@ -6,31 +6,53 @@ import { FEATURES, STORAGE_KEYS } from '../config.js';
 
 // 機能完了状態を取得（Firestore同期対応）
 const getFeatureCompletionStatus = async (userId) => {
-    // 1. LocalStorageを確認
     const key = STORAGE_KEYS.FEATURES_COMPLETED;
-    const stored = localStorage.getItem(key);
 
+    // 1. LocalStorageを確認
+    let localData = {};
+    const stored = localStorage.getItem(key);
     if (stored) {
-        return JSON.parse(stored);
+        try {
+            localData = JSON.parse(stored);
+        } catch (error) {
+            console.warn('[FeatureUnlock] Failed to parse localStorage:', error);
+        }
     }
 
-    // 2. Firestoreから取得（デバイス間同期のため）
+    // 2. Firestoreからも取得（常に確認して最新データを保証）
+    let firestoreData = {};
     if (typeof db !== 'undefined' && userId) {
         try {
             const userDoc = await db.collection('users').doc(userId).get();
             if (userDoc.exists && userDoc.data().featuresCompleted) {
-                const features = userDoc.data().featuresCompleted;
-                // LocalStorageにキャッシュ
-                localStorage.setItem(key, JSON.stringify(features));
-                console.log('[FeatureUnlock] Fetched featuresCompleted from Firestore:', Object.keys(features).filter(k => features[k]));
-                return features;
+                firestoreData = userDoc.data().featuresCompleted;
             }
         } catch (error) {
             console.warn('[FeatureUnlock] Failed to fetch featuresCompleted from Firestore:', error);
         }
     }
 
-    return {};
+    // 3. LocalStorageとFirestoreをマージ（より多くのtrueフラグを持つ方を優先）
+    const localCount = Object.keys(localData).filter(k => localData[k]).length;
+    const firestoreCount = Object.keys(firestoreData).filter(k => firestoreData[k]).length;
+
+    // より完全なデータを使用（trueの数が多い方）
+    const mergedData = firestoreCount > localCount ? firestoreData : localData;
+
+    // さらにマージ（両方のtrueを保持）
+    const finalData = { ...localData, ...firestoreData };
+
+    // LocalStorageを更新（最新の完全なデータで）
+    if (Object.keys(finalData).length > 0) {
+        localStorage.setItem(key, JSON.stringify(finalData));
+
+        // ログ出力（デバッグ用）
+        if (localCount !== firestoreCount) {
+            console.log('[FeatureUnlock] Merged features - Local:', localCount, 'Firestore:', firestoreCount, 'Final:', Object.keys(finalData).filter(k => finalData[k]).length);
+        }
+    }
+
+    return finalData;
 };
 
 // 機能完了状態を保存

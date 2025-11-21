@@ -1238,6 +1238,15 @@
             </div>
         </div>
 
+
+    <!-- データ取得中のローディングオーバーレイ -->
+    <div id="data-loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-2xl p-8 flex flex-col items-center gap-4">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600"></div>
+            <p class="text-lg font-semibold text-gray-700">データ取得中...</p>
+        </div>
+    </div>
+
     </div>
 
     <!-- ドリルダウンモーダル -->
@@ -1527,6 +1536,10 @@
 
         // 実際のデータを読み込む関数
         async function loadRealData() {
+            // ローディング表示
+            const loadingOverlay = document.getElementById('data-loading-overlay');
+            if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+
             const userId = window.currentUser?.uid || 'demo_user';
             const allData = {
                 // パフォーマンス
@@ -1634,16 +1647,44 @@
                     let scores = {};
                     let foodScores = {};
 
-                    if (typeof DataService !== 'undefined' && DataService.calculateScores && window.currentUserProfile) {
-                        // 目標PFCを計算
-                        const targetPFC = {
-                            calories: window.currentUserProfile.targetCalories || 0,
-                            protein: window.currentUserProfile.targetProtein || 0,
-                            fat: window.currentUserProfile.targetFat || 0,
-                            carbs: window.currentUserProfile.targetCarbs || 0
-                        };
+                    if (typeof DataService !== 'undefined' && DataService.calculateScores && window.currentUserProfile && typeof LBMUtils !== 'undefined') {
+                        // LBMとTDEEを計算
+                        const profile = window.currentUserProfile;
+                        const lbm = LBMUtils.calculateLBM(
+                            profile.weight || 0,
+                            profile.bodyFatPercentage || 0,
+                            profile.height || 0,
+                            profile.age || 0,
+                            profile.gender || '男性'
+                        );
+                        const fatMass = (profile.weight || 0) - lbm;
+                        const tdee = LBMUtils.calculateTDEE(
+                            lbm,
+                            profile.activityLevel || '軽い活動',
+                            profile.customActivityMultiplier,
+                            fatMass
+                        );
+
+                        const customPFCParam = profile.proteinRatio && profile.fatRatioPercent && profile.carbRatio ? {
+                            P: profile.proteinRatio,
+                            F: profile.fatRatioPercent,
+                            C: profile.carbRatio
+                        } : null;
+
+                        // 目標PFCを正しく計算（LBMUtilsを使用）
+                        const targetPFC = LBMUtils.calculateTargetPFC(
+                            tdee,
+                            profile.weightChangePace || 0,
+                            lbm,
+                            profile.style || '一般',
+                            profile.purpose || 'メンテナンス',
+                            profile.dietStyle || 'バランス',
+                            profile.calorieAdjustment,
+                            customPFCParam
+                        );
+
                         // 最新のロジックでスコアを再計算
-                        scores = DataService.calculateScores(window.currentUserProfile, record, targetPFC);
+                        scores = DataService.calculateScores(profile, record, targetPFC);
                         foodScores = scores.food || {};
                     } else {
                         // calculateScoresが使えない場合は保存されたスコアを使用
@@ -1830,6 +1871,9 @@
             console.log('[履歴データ取得] 完了 - カロリーデータ数:', allData.calories.length);
             console.log('[履歴データ取得] 最後の7日分のカロリー:', allData.calories.slice(-7));
             console.log('[履歴データ取得] 最後の7日分の運動時間:', allData.total_time.slice(-7));
+
+            // ローディング非表示
+            if (loadingOverlay) loadingOverlay.classList.add('hidden');
 
             return allData;
         }
@@ -4295,6 +4339,11 @@
                     selectDataPoint(1, lastIndex);
                 }
             }, 100);
+
+            // 初回ロード時に食事カテゴリを自動選択
+            setTimeout(() => {
+                selectMainCategory('nutrition');
+            }, 200);
         }
 
         // データポイント選択機能
@@ -4438,25 +4487,25 @@
             const tabConfig = {
                 nutrition: {
                     icon: 'utensils',
-                    label: '個別分析',
+                    label: '食事を個別分析',
                     bgColor: 'bg-green-500 hover:bg-green-600',
                     textColor: 'text-white'
                 },
                 training: {
                     icon: 'dumbbell',
-                    label: '個別分析',
+                    label: '運動を個別分析',
                     bgColor: 'bg-orange-500 hover:bg-orange-600',
                     textColor: 'text-white'
                 },
                 condition: {
                     icon: 'heart-pulse',
-                    label: '個別分析',
+                    label: 'コンディションを個別分析',
                     bgColor: 'bg-red-500 hover:bg-red-600',
                     textColor: 'text-white'
                 },
                 performance: {
                     icon: 'trending-up',
-                    label: '個別分析',
+                    label: 'パフォーマンスを個別分析',
                     bgColor: 'bg-purple-500 hover:bg-purple-600',
                     textColor: 'text-white'
                 }

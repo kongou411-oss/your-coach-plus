@@ -11,9 +11,11 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
 
     // useMemoでdailyRecordが変更されたときにスコアを再計算
     const scores = React.useMemo(() => {
+        console.log('[ScoreDoughnutChart] targetPFC:', targetPFC);
+        console.log('[ScoreDoughnutChart] dailyRecord:', dailyRecord);
         const calculatedScores = DataService.calculateScores(profile, dailyRecord, targetPFC);
-        // console.log('[ScoreDoughnutChart] スコアを計算:', calculatedScores);
-        // console.log('[ScoreDoughnutChart] 食事スコア詳細:', JSON.stringify(calculatedScores.food, null, 2));
+        console.log('[ScoreDoughnutChart] スコアを計算:', calculatedScores);
+        console.log('[ScoreDoughnutChart] 食事スコア詳細:', JSON.stringify(calculatedScores.food, null, 2));
         return calculatedScores;
     }, [profile, dailyRecord, targetPFC]);
 
