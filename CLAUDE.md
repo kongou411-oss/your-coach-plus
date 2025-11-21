@@ -196,6 +196,47 @@ npm run auto-release
 # Claude Codeが「デプロイして」の指示で自動実行
 ```
 
+**🚨 重要: Minor/Major版リリース時の必須作業**
+
+`npm run auto-release` は **config.jsのAPP_VERSIONのみ更新** します。**RELEASE_NOTESは自動更新されません**。
+
+**Minor/Major版の場合、必ず以下を手動で実施すること:**
+
+1. **src/config.jsにリリースノートを追加**
+   ```javascript
+   const RELEASE_NOTES = {
+       '2.6': {  // 新バージョン
+           date: '2025年11月21日',
+           title: '機能名（β版）',
+           features: [
+               '変更内容1',
+               '変更内容2',
+               '変更内容3'
+           ]
+       },
+       '2.5': {  // 既存バージョン
+           ...
+       }
+   }
+   ```
+
+2. **デプロイ前に確認**
+   - `src/config.js`のRELEASE_NOTESに新バージョンのエントリがあるか
+   - featuresが空配列でないか
+   - titleとdateが正しいか
+
+3. **デプロイ後にWhat's Newモーダルで確認**
+   - ブラウザで本番環境を開く
+   - What's Newモーダルが表示されるか
+   - 内容が正しく表示されるか
+
+**チェックリスト（Minor/Major版デプロイ時）:**
+- [ ] `src/config.js`のRELEASE_NOTESに新バージョンを追加した
+- [ ] featuresに変更内容を記載した（3-5項目）
+- [ ] titleとdateを正しく設定した
+- [ ] ビルド前に上記を確認した
+- [ ] デプロイ後にWhat's Newモーダルで内容を確認した
+
 #### パターン2: インタラクティブリリース（手動）
 ```bash
 npm run release
