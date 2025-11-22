@@ -192,11 +192,32 @@ exports.sendPushNotification = onRequest({
   memory: "512MiB",
 }, async (req, res) => {
   try {
-    // scheduleTimeStr: "08:00" などの元の設定時刻文字列を受け取る
-    const { title, body, notificationType, userId, scheduleTimeStr } = req.body;
+    // Cloud Tasksからのリクエストボディをパース
+    // Cloud Tasksはリクエストをそのまま送信するため、req.bodyが既にオブジェクトになっている
+    let requestData = req.body;
 
-    if (!title || !body || !userId || !scheduleTimeStr) {
+    // デバッグ: リクエスト全体をログ出力
+    console.log("[Debug] req.body type:", typeof req.body);
+    console.log("[Debug] req.body:", JSON.stringify(req.body, null, 2));
+    console.log("[Debug] req.rawBody:", req.rawBody ? req.rawBody.toString() : 'undefined');
+
+    // scheduleTimeStr: "08:00" などの元の設定時刻文字列を受け取る
+    let { title, body, notificationType, userId, scheduleTimeStr } = requestData;
+
+    // 古いタスク（scheduleTimeStrなし）への後方互換性
+    // scheduleTimeStrがない場合、現在時刻から生成
+    if (!scheduleTimeStr) {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      scheduleTimeStr = `${hours}:${minutes}`;
+      console.warn(`[Push Notification] scheduleTimeStr missing, generated from current time: ${scheduleTimeStr}`);
+    }
+
+    if (!title || !body || !userId) {
       console.error("[Push Notification] Missing required parameters");
+      console.error("[Push Notification] Received:", { title, body, notificationType, userId, scheduleTimeStr });
+      console.error("[Push Notification] Full requestData:", JSON.stringify(requestData, null, 2));
       res.status(400).send("Missing required parameters");
       return;
     }
