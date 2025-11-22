@@ -154,7 +154,10 @@
       "Bash(firebase:*)",
       "Bash(npm view:*)",
       "Bash(gcloud tasks list:*)",
-      "Bash(cmd /c \"if exist node_modules\\.vite (rmdir /s /q node_modules\\.vite) & taskkill /F /IM node.exe 2>nul & npm run dev\")"
+      "Bash(cmd /c \"if exist node_modules\\.vite (rmdir /s /q node_modules\\.vite) & taskkill /F /IM node.exe 2>nul & npm run dev\")",
+      "Bash(npm uninstall:*)",
+      "Bash(del C:Usersyourcyourcoach_newsrckuroshiroService.js)",
+      "Bash(cmd /c \"if exist C:\\Users\\yourc\\yourcoach_new\\src\\kuroshiroService.js del C:\\Users\\yourc\\yourcoach_new\\src\\kuroshiroService.js\")"
     ],
     "deny": [],
     "ask": []

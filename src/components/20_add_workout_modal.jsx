@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { STORAGE_KEYS } from '../config.js';
+import { normalizeForSearch } from '../kanjiReadingMap.js';
 
 // ===== Edit Workout Modal (運動編集専用モーダル) =====
 const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
@@ -902,15 +903,11 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
             const renderSupplementInput = () => {
                 const fuzzyMatch = (text, query) => {
                     if (!query || query.trim() === '') return true;
-                    const normalize = (str) => {
-                        return str
-                            .toLowerCase()
-                            .replace(/[（）\(\)]/g, '') // 括弧を削除
-                            .replace(/[\u3041-\u3096]/g, (m) => String.fromCharCode(m.charCodeAt(0) + 0x60)) // ひらがな→カタカナ
-                            .replace(/\s+/g, ''); // 空白削除
-                    };
-                    const normalizedText = normalize(text);
-                    const normalizedQuery = normalize(query);
+                    const normalizedQuery = query
+                        .toLowerCase()
+                        .replace(/[\u30a1-\u30f6]/g, (m) => String.fromCharCode(m.charCodeAt(0) - 0x60))
+                        .replace(/\s+/g, '');
+                    const normalizedText = normalizeForSearch(text);
                     return normalizedText.includes(normalizedQuery);
                 };
 
@@ -1590,15 +1587,11 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
 
                 const fuzzyMatch = (text, query) => {
                     if (!query || query.trim() === '') return true;
-                    const normalize = (str) => {
-                        return str
-                            .toLowerCase()
-                            .replace(/[（）\(\)]/g, '') // 括弧を削除
-                            .replace(/[\u3041-\u3096]/g, (m) => String.fromCharCode(m.charCodeAt(0) + 0x60)) // ひらがな→カタカナ
-                            .replace(/\s+/g, ''); // 空白削除
-                    };
-                    const normalizedText = normalize(text);
-                    const normalizedQuery = normalize(query);
+                    const normalizedQuery = query
+                        .toLowerCase()
+                        .replace(/[\u30a1-\u30f6]/g, (m) => String.fromCharCode(m.charCodeAt(0) - 0x60))
+                        .replace(/\s+/g, '');
+                    const normalizedText = normalizeForSearch(text);
                     return normalizedText.includes(normalizedQuery);
                 };
 
@@ -3379,15 +3372,11 @@ RM回数と重量を別々に入力してください。`
                 const fuzzyMatch = (text, query) => {
                     if (!query || query.trim() === '') return true;
                     // ひらがな、カタカナ、漢字の正規化
-                    const normalize = (str) => {
-                        return str
-                            .toLowerCase()
-                            .replace(/[（）\(\)]/g, '') // 括弧を削除
-                            .replace(/[\u3041-\u3096]/g, (m) => String.fromCharCode(m.charCodeAt(0) + 0x60)) // ひらがな→カタカナ
-                            .replace(/\s+/g, ''); // 空白削除
-                    };
-                    const normalizedText = normalize(text);
-                    const normalizedQuery = normalize(query);
+                    const normalizedQuery = query
+                        .toLowerCase()
+                        .replace(/[\u30a1-\u30f6]/g, (m) => String.fromCharCode(m.charCodeAt(0) - 0x60))
+                        .replace(/\s+/g, '');
+                    const normalizedText = normalizeForSearch(text);
                     return normalizedText.includes(normalizedQuery);
                 };
 

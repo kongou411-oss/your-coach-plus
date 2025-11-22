@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { STORAGE_KEYS } from '../config.js';
+import { normalizeForSearch } from '../kanjiReadingMap.js';
 
 // 個数単位の定義（全箇所で統一使用）
 const COUNT_UNITS = ['本', '個', '杯', '枚', '錠', '包', '粒'];
@@ -58,6 +59,8 @@ const AddMealModal = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [foodTab, setFoodTab] = useState(initialTab); // 初期タブを反映
     const [selectedCategory, setSelectedCategory] = useState('肉類'); // デフォルトで肉類を表示
+    const [filteredSearchItems, setFilteredSearchItems] = useState([]); // 検索結果（非同期処理用）
+    const [isSearching, setIsSearching] = useState(false); // 検索中フラグ
 
     // 量調整UI用のstate
     const [selectedItemIndex, setSelectedItemIndex] = useState(null); // 選択中のアイテム
@@ -335,6 +338,112 @@ const AddMealModal = ({
             setAddedItems(reconstructedItems);
         }
     }, [isEditMode, editingMeal]);
+
+    // ===== 検索結果を更新（searchTerm, foodTab, selectedCategoryが変わったとき） =====
+    useEffect(() => {
+        // 検索モーダルが開いていない場合は何もしない
+        if (!showSearchModal) return;
+
+        const updateSearchResults = () => {
+            setIsSearching(true);
+            try {
+                const foodDB = window.foodDB || {};
+                let items = [];
+
+                // 検索ヘルパー関数：漢字読み仮名マッピングを使った検索
+                const searchMatch = (itemName, searchTerm) => {
+                    if (!searchTerm) return true;
+
+                    // 検索語を正規化（カタカナ→ひらがな、空白削除など）
+                    const normalizedQuery = searchTerm
+                        .toLowerCase()
+                        .replace(/[\u30a1-\u30f6]/g, (m) => String.fromCharCode(m.charCodeAt(0) - 0x60))
+                        .replace(/\s+/g, '');
+
+                    // アイテム名を正規化（漢字→読み仮名を含む）
+                    const normalizedItemName = normalizeForSearch(itemName);
+
+                    // 部分一致検索
+                    return normalizedItemName.includes(normalizedQuery);
+                };
+
+                // カスタムアイテムを取得
+                const customItems = customFoods.filter(item => {
+                    if (foodTab === 'food' && (!item.itemType || item.itemType === 'food')) return true;
+                    if (foodTab === 'supplement' && item.itemType === 'supplement') return true;
+                    return false;
+                });
+
+                // タブに応じてカテゴリを決定
+                let targetCategory = selectedCategory;
+                if (foodTab === 'supplement') {
+                    if (selectedCategory !== 'カスタム') {
+                        targetCategory = 'サプリメント';
+                    }
+                } else if (!targetCategory || targetCategory === '') {
+                    targetCategory = Object.keys(foodDB).filter(cat => cat !== 'サプリメント')[0] || '肉類';
+                }
+
+                // 「カスタム」カテゴリが選択された場合
+                if (targetCategory === 'カスタム') {
+                    for (const item of customItems) {
+                        if (item.hidden) continue;
+                        if (searchMatch(item.name, searchTerm)) {
+                            items.push({ ...item, isCustom: true });
+                        }
+                    }
+                } else {
+                    // 全カテゴリ横断検索：すべてのカテゴリをループ
+                    for (const category of Object.keys(foodDB)) {
+                        // サプリメントは別タブなのでスキップ（foodタブの場合）
+                        if (foodTab === 'food' && category === 'サプリメント') continue;
+                        // foodタブの場合、サプリメント以外のカテゴリのみ対象
+                        if (foodTab === 'supplement' && category !== 'サプリメント') continue;
+
+                        for (const name of Object.keys(foodDB[category])) {
+                            const itemData = foodDB[category][name];
+
+                            if (hiddenStandardItems.includes(name)) continue;
+
+                            // サプリメントタブの場合、サブカテゴリでフィルタ
+                            if (foodTab === 'supplement') {
+                                const targetSubcategory = selectedCategory || 'プロテイン';
+                                if (itemData.subcategory !== targetSubcategory) continue;
+                            }
+
+                            if (searchMatch(name, searchTerm)) {
+                                items.push({
+                                    name,
+                                    ...itemData,
+                                    category: category, // カテゴリ名を保持
+                                    isCustom: false
+                                });
+                            }
+                        }
+                    }
+
+                    // カスタムアイテムを追加（全カテゴリから）
+                    for (const item of customItems) {
+                        if (item.hidden) continue;
+
+                        // foodタブとsupplementタブで適切にフィルタ
+                        if (searchMatch(item.name, searchTerm)) {
+                            items.push({ ...item, isCustom: true });
+                        }
+                    }
+                }
+
+                setFilteredSearchItems(items);
+            } catch (error) {
+                console.error('[UpdateSearchResults] エラー:', error);
+                setFilteredSearchItems([]);
+            } finally {
+                setIsSearching(false);
+            }
+        };
+
+        updateSearchResults();
+    }, [searchTerm, foodTab, selectedCategory, showSearchModal, customFoods, hiddenStandardItems]);
 
     // ===== 現在時刻から食事名を推測 =====
     const getDefaultMealName = () => {
@@ -1052,99 +1161,8 @@ const AddMealModal = ({
                 // 非表示カテゴリを除外
                 const categories = [...Object.keys(foodDB).filter(cat => cat !== 'サプリメント' && !hiddenCategories.includes(cat)), 'カスタム'];
 
-                // 検索結果のフィルタリング
-                const getFilteredItems = () => {
-                    let items = [];
-                    const db = foodDB;
-
-                    // カスタムアイテムを取得（Firestoreから読み込んだcustomFoods stateを使用）
-                    // itemTypeが未設定の古いデータはデフォルトで'food'として扱う
-                    const customItems = customFoods.filter(item => {
-                        if (foodTab === 'food' && (!item.itemType || item.itemType === 'food')) return true;
-                        if (foodTab === 'supplement' && item.itemType === 'supplement') return true;
-                        return false;
-                    });
-
-                    // タブに応じてカテゴリを決定（food, supplementのみ）
-                    let targetCategory = selectedCategory;
-                    if (foodTab === 'supplement') {
-                        // サプリタブで「カスタム」が選択されている場合はそのまま使用
-                        if (selectedCategory !== 'カスタム') {
-                            targetCategory = 'サプリメント';
-                        }
-                    } else if (!targetCategory || targetCategory === '') {
-                        // デフォルトカテゴリ（foodタブで未選択の場合）
-                        targetCategory = Object.keys(db).filter(cat => cat !== 'サプリメント')[0] || '肉類';
-                    }
-
-                    // 「カスタム」カテゴリが選択された場合はカスタムアイテムのみを表示
-                    if (targetCategory === 'カスタム') {
-                        customItems.forEach(item => {
-                            // 非表示設定されているアイテムをスキップ
-                            if (item.hidden) return;
-
-                            if (!searchTerm || item.name.includes(searchTerm)) {
-                                items.push({
-                                    ...item,
-                                    isCustom: true
-                                });
-                            }
-                        });
-                    } else {
-                        // 通常のカテゴリの場合：データベースアイテムとカスタムアイテムの両方を表示
-                        if (db && targetCategory && db[targetCategory]) {
-                            Object.keys(db[targetCategory]).forEach(name => {
-                                const itemData = db[targetCategory][name];
-
-                                // 非表示アイテムをスキップ
-                                if (hiddenStandardItems.includes(name)) {
-                                    return;
-                                }
-
-                                // サプリメントの場合、サブカテゴリでフィルタ
-                                if (foodTab === 'supplement') {
-                                    const targetSubcategory = selectedCategory || 'プロテイン';
-                                    if (itemData.subcategory !== targetSubcategory) {
-                                        return; // このアイテムをスキップ
-                                    }
-                                }
-
-                                // 検索語でフィルタ
-                                if (!searchTerm || name.includes(searchTerm)) {
-                                    items.push({
-                                        name,
-                                        ...itemData,
-                                        category: targetCategory,
-                                        isCustom: false
-                                    });
-                                }
-                            });
-                        }
-
-                        // カスタムアイテムを追加（カテゴリが一致するもののみ）
-                        customItems.forEach(item => {
-                            // 非表示設定されているアイテムをスキップ
-                            if (item.hidden) return;
-
-                            const itemCategory = item.category || '穀類';
-                            // 選択中のカテゴリと一致するか、またはサプリメントタブの場合はサブカテゴリをチェック
-                            const categoryMatches = foodTab === 'supplement'
-                                ? itemCategory === selectedCategory
-                                : itemCategory === targetCategory;
-
-                            if (categoryMatches && (!searchTerm || item.name.includes(searchTerm))) {
-                                items.push({
-                                    ...item,
-                                    isCustom: true
-                                });
-                            }
-                        });
-                    }
-
-                    return items;
-                };
-
-                const filteredItems = getFilteredItems();
+                // 検索結果はuseEffectで更新されたfilteredSearchItemsを使用
+                const filteredItems = filteredSearchItems;
 
                 // アイテムを選択して追加
                 const handleSelectItem = (item) => {
@@ -1384,7 +1402,12 @@ const AddMealModal = ({
 
                             {/* アイテム一覧 */}
                             <div className="flex-1 overflow-y-auto p-4">
-                                {filteredItems.length === 0 ? (
+                                {isSearching ? (
+                                    <div className="text-center py-12 text-gray-600">
+                                        <Icon name="Loader" size={48} className="mx-auto mb-3 opacity-30 animate-spin" />
+                                        <p>検索中...</p>
+                                    </div>
+                                ) : filteredItems.length === 0 ? (
                                     <div className="text-center py-12 text-gray-600">
                                         <Icon name="Search" size={48} className="mx-auto mb-3 opacity-30" />
                                         <p>該当する食材が見つかりません</p>
@@ -1399,8 +1422,13 @@ const AddMealModal = ({
                                             >
                                                 <div className="flex justify-between items-start">
                                                     <div className="flex-1">
-                                                        <div className="font-semibold text-gray-800 flex items-center gap-2">
+                                                        <div className="font-semibold text-gray-800 flex items-center gap-2 flex-wrap">
                                                             {item.name}
+                                                            {item.category && (
+                                                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                                                    {item.category}
+                                                                </span>
+                                                            )}
                                                             {item.isCustom && (
                                                                 <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
                                                                     {item.customLabel || 'カスタム'}
