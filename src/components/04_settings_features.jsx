@@ -995,7 +995,10 @@ const FeaturesTab = ({
                                     { id: 7, name: '⑦日曜日', splitType: '休み', isRestDay: true }
                                 ];
                                 localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(defaultRoutines));
-                                localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, new Date().toISOString());
+
+                                // 開始日は登録日を使用（登録日がない場合は現在日時）
+                                const registrationDate = localStorage.getItem(STORAGE_KEYS.REGISTRATION_DATE) || new Date().toISOString();
+                                localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, registrationDate);
                                 localStorage.setItem(STORAGE_KEYS.ROUTINE_ACTIVE, 'true');
                                 setLocalRoutines(defaultRoutines);
                             }
@@ -1151,8 +1154,8 @@ const FeaturesTab = ({
                                                         休養日
                                                     </label>
                                                 </div>
-                                                {!routine.isRestDay && (
-                                                    <div className="space-y-3">
+                                                <div className="space-y-3">
+                                                    {!routine.isRestDay && (
                                                         <div>
                                                             <label className="font-medium text-sm">分類</label>
                                                             {(() => {
@@ -1200,8 +1203,9 @@ const FeaturesTab = ({
                                                                 );
                                                             })()}
                                                         </div>
+                                                    )}
 
-                                                        {/* テンプレート紐づけ*/}
+                                                    {/* テンプレート紐づけ*/}
                                                         <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                                             <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
                                                                 <Icon name="BookTemplate" size={14} />
@@ -1332,8 +1336,7 @@ const FeaturesTab = ({
                                                                 ✨ 同じテンプレートを何回でも追加できます
                                                             </p>
                                                         </details>
-                                                    </div>
-                                                )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -1374,8 +1377,8 @@ const FeaturesTab = ({
                                                             休養日
                                                         </label>
                                                     </div>
-                                                    {!routine.isRestDay && (
-                                                        <div className="space-y-3">
+                                                    <div className="space-y-3">
+                                                        {!routine.isRestDay && (
                                                             <div>
                                                                 <label className="font-medium text-sm">分類</label>
                                                                 {(() => {
@@ -1423,8 +1426,9 @@ const FeaturesTab = ({
                                                                     );
                                                                 })()}
                                                             </div>
+                                                        )}
 
-                                                            {/* テンプレート紐づけ */}
+                                                        {/* テンプレート紐づけ */}
                                                             <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                                                 <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
                                                                     <Icon name="BookTemplate" size={14} />
@@ -1555,8 +1559,7 @@ const FeaturesTab = ({
                                                                     ✨ 同じテンプレートを何回でも追加できます
                                                                 </p>
                                                             </details>
-                                                        </div>
-                                                    )}
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>

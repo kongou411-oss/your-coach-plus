@@ -692,7 +692,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             // 今日のルーティンを更新（Firestore優先、フォールバックでLocalStorage）
             useEffect(() => {
                 const loadRoutine = async () => {
-                    if (!user || !Array.isArray(unlockedFeatures) || !unlockedFeatures.includes(FEATURES.ROUTINE.id)) {
+                    if (!user) {
                         setCurrentRoutine(null);
                         return;
                     }
@@ -1460,11 +1460,11 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                         </div>
 
                         {/* ルーティンバナー */}
-                        {(Array.isArray(unlockedFeatures) && unlockedFeatures.includes(FEATURES.ROUTINE.id)) && currentRoutine && !currentRoutine.isRestDay && (
-                            <div className="px-4 py-3 bg-white border-b">
+                        {currentRoutine && (
+                            <div className={`px-4 py-3 border-b ${currentRoutine.isRestDay ? 'bg-gray-50' : 'bg-white'}`}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <Icon name="Repeat" size={20} className="text-blue-600" />
+                                        <Icon name={currentRoutine.isRestDay ? "Moon" : "Repeat"} size={20} className={currentRoutine.isRestDay ? "text-gray-600" : "text-blue-600"} />
                                         <span className="text-xs text-gray-600">
                                             Day {currentRoutine.dayNumber || 1}/{currentRoutine.totalDays || 7}
                                         </span>
@@ -1479,7 +1479,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                             <Icon name="HelpCircle" size={18} />
                                         </button>
                                     </div>
-                                    <span className="text-xl font-bold text-purple-700">{currentRoutine.splitType}</span>
+                                    <span className={`text-xl font-bold ${currentRoutine.isRestDay ? 'text-gray-700' : 'text-purple-700'}`}>{currentRoutine.splitType}</span>
                                 </div>
                             </div>
                         )}

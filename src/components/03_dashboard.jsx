@@ -2567,7 +2567,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         )}
 
                         {/* ルーティン入力ボタン（アイコンのみ） */}
-                        {currentRoutine && !currentRoutine.isRestDay && (
+                        {currentRoutine && (
                             <button
                                 onClick={async () => {
                                     const hasRoutine = dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine);
@@ -2591,12 +2591,22 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 className={`p-2 rounded-lg font-bold shadow-md hover:shadow-lg transition ${
                                     dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)
                                         ? 'bg-red-600 text-white hover:bg-red-700'
+                                        : currentRoutine.isRestDay
+                                        ? 'bg-gray-500 text-white hover:bg-gray-600'
                                         : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
                                 }`}
-                                title={dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine) ? 'ルーティン入力をクリア' : 'ルーティン入力'}
+                                title={
+                                    dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)
+                                        ? 'ルーティン入力をクリア'
+                                        : currentRoutine.isRestDay
+                                        ? 'ルーティン入力（休養日）'
+                                        : 'ルーティン入力'
+                                }
                             >
                                 {(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? (
                                     <Icon name="X" size={20} />
+                                ) : currentRoutine.isRestDay ? (
+                                    <Icon name="Moon" size={20} />
                                 ) : (
                                     <Icon name="Repeat" size={20} />
                                 )}

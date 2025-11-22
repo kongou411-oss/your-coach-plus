@@ -575,38 +575,6 @@ const OtherTab = ({
                         </div>
                     </div>
 
-                    {/* 管理者ツール */}
-                    <div className="border rounded-lg p-6 bg-red-50 border-red-300">
-                        <h4 className="font-bold mb-4 flex items-center gap-2">
-                            <Icon name="Shield" size={18} className="text-red-600" />
-                            管理者ツール
-                        </h4>
-                        <div className="space-y-3">
-                            <p className="text-sm text-red-700 mb-3">
-                                🔒 管理者パネルへのアクセスには認証が必須です
-                            </p>
-                            <button
-                                onClick={() => {
-                                    const password = prompt('管理者パスワードを入力してください:');
-                                    if (password === 'admin2024') {
-                                        onClose();
-                                        setTimeout(() => {
-                                            document.dispatchEvent(new CustomEvent('openAdminPanel'));
-                                        }, 100);
-                                    } else if (password !== null) {
-                                        toast('パスワードが間違っています');
-                                    }
-                                }}
-                                className="w-full py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold flex items-center justify-center gap-2"
-                            >
-                                <Icon name="Shield" size={18} />
-                                COMY投稿承認パネルを開く
-                            </button>
-                            <p className="text-xs text-gray-600 mt-2">
-                                ※ 本番環境では、Firebase Authenticationのカスタムクレームでadminロールを付与してください
-                            </p>
-                        </div>
-                    </div>
                     </div>
                 </div>
             </details>
