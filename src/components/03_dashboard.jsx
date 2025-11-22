@@ -1557,7 +1557,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     >
                         <div className="flex items-center justify-center gap-1">
                             <Icon name="BarChart3" size={16} />
-                            <span>今日の摂取状況</span>
+                            <span>サマリー</span>
                         </div>
                     </button>
                     <button
@@ -2348,6 +2348,108 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         </details>
                     );
                 })()}
+
+                {/* 運動サマリー */}
+                {(() => {
+                    const workouts = dailyRecord.workouts || [];
+
+                    // 全運動（予測含む）の集計
+                    let totalExercises = 0;
+                    let totalSets = 0;
+                    let warmupSets = 0;
+                    let mainSets = 0;
+                    let totalVolume = 0;
+                    let totalTime = 0;
+
+                    workouts.forEach(workout => {
+                        workout.exercises?.forEach(exercise => {
+                            totalExercises++;
+                            const isCardioOrStretch = exercise.exerciseType === 'aerobic' || exercise.exerciseType === 'stretch';
+
+                            if (exercise.sets) {
+                                totalSets += exercise.sets.length;
+
+                                // アップセットとメインセットの集計
+                                exercise.sets.forEach(set => {
+                                    if (set.setType === 'warmup') {
+                                        warmupSets++;
+                                    } else if (set.setType === 'main') {
+                                        mainSets++;
+                                    }
+                                });
+                            }
+
+                            if (!isCardioOrStretch && exercise.sets) {
+                                totalVolume += exercise.sets.reduce((sum, set) => {
+                                    return sum + (set.weight || 0) * (set.reps || 0);
+                                }, 0);
+                            }
+
+                            // 時間の集計（運動カードと同じロジック）
+                            if (exercise.duration) {
+                                totalTime += exercise.duration;
+                            } else if (exercise.sets) {
+                                exercise.sets.forEach(set => {
+                                    totalTime += set.duration || 0;
+                                });
+                            }
+                        });
+                    });
+
+                    return (
+                        <details className="mt-4">
+                            <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{color: '#4A9EFF'}}>
+                                <Icon name="ChevronDown" size={16} />
+                                運動＋
+                            </summary>
+                            <div className="mt-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="bg-gray-50 p-2 rounded">
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="font-medium">総種目</span>
+                                            <span>
+                                                <span className="text-orange-600 font-semibold">{totalExercises}</span>
+                                                <span className="text-gray-500"> 種目</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-50 p-2 rounded">
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="font-medium">総セット</span>
+                                            <span>
+                                                <span className="text-orange-600 font-semibold">{totalSets}</span>
+                                                <span className="text-gray-500"> セット</span>
+                                            </span>
+                                        </div>
+                                        {(warmupSets > 0 || mainSets > 0) && (
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                アップ: {warmupSets} / メイン: {mainSets}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="bg-gray-50 p-2 rounded">
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="font-medium">総重量</span>
+                                            <span>
+                                                <span className="text-orange-600 font-semibold">{Math.round(totalVolume).toLocaleString()}</span>
+                                                <span className="text-gray-500"> kg</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-50 p-2 rounded">
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="font-medium">総時間</span>
+                                            <span>
+                                                <span className="text-orange-600 font-semibold">{totalTime}</span>
+                                                <span className="text-gray-500"> 分</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+                    );
+                })()}
                 </div>
                 )}
 
@@ -2844,6 +2946,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         <div className="text-right ml-4">
                                             <div className="text-xl font-bold text-blue-600">{Math.floor(meal.totalCalories || meal.calories || 0)}</div>
                                             <div className="text-xs text-gray-600">kcal</div>
+                                            <div className="flex items-center gap-1 mt-1 text-xs">
+                                                <span className="font-bold text-red-500">P{Math.round(meal.totalProtein || meal.protein || 0)}</span>
+                                                <span className="text-gray-400">/</span>
+                                                <span className="font-bold text-yellow-500">F{Math.round(meal.totalFat || meal.fat || 0)}</span>
+                                                <span className="text-gray-400">/</span>
+                                                <span className="font-bold text-green-500">C{Math.round(meal.totalCarbs || meal.carbs || 0)}</span>
+                                            </div>
                                         </div>
                                     </div>
 
