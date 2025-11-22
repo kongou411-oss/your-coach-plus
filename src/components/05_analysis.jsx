@@ -58,8 +58,21 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         // 基本分析（スコア計算・クレジットチェック）のみ実行
         // AI分析は手動で「生成」ボタンを押したときのみ実行
         performAnalysis();
-        loadSavedReports();
+        // 注: レポート読み込みは履歴タブを開いた時に遅延読み込み（初回マウント時は不要）
     }, []);
+
+    // 履歴タブ切り替え時にレポート読み込み（遅延読み込み）
+    const [reportsLoaded, setReportsLoaded] = useState(false);
+    const [reportsLoading, setReportsLoading] = useState(false);
+    useEffect(() => {
+        if (activeTab === 'history' && !reportsLoaded) {
+            setReportsLoading(true);
+            loadSavedReports().finally(() => {
+                setReportsLoading(false);
+                setReportsLoaded(true);
+            });
+        }
+    }, [activeTab]);
 
     // 保存済みレポート読み込み
     const loadSavedReports = async () => {
@@ -99,7 +112,10 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             setReportTitle('');
 
             // レポート一覧を再読み込み
+            setReportsLoading(true);
             await loadSavedReports();
+            setReportsLoaded(true); // フラグをセット
+            setReportsLoading(false);
 
             // 履歴タブに自動切り替え
             setActiveTab('history');
@@ -116,7 +132,10 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
                 try {
                     await DataService.deleteAnalysisReport(userId, reportId);
                     toast.success('レポートを削除しました');
+                    setReportsLoading(true);
                     await loadSavedReports();
+                    setReportsLoaded(true); // フラグをセット
+                    setReportsLoading(false);
                     if (selectedReport?.id === reportId) {
                         setSelectedReport(null);
                     }
@@ -144,7 +163,10 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             setIsEditingReportTitle(false);
             setEditingReportId(null);
             setEditedReportTitle('');
+            setReportsLoading(true);
             await loadSavedReports();
+            setReportsLoaded(true); // フラグをセット
+            setReportsLoading(false);
             toast.success('タイトルを更新しました');
         } catch (error) {
             console.error('Failed to update report title:', error);
@@ -495,6 +517,100 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         const currentLBM = LBMUtils.calculateLBM(userProfile.weight, userProfile.bodyFatPercentage);
         const lbmGap = idealLBM - currentLBM;
 
+        // ビタミン・ミネラルの総合達成率計算
+        const calculateMicronutrientAchievement = (nutrients, targets) => {
+            if (!nutrients || !targets) return 0;
+            const rates = Object.keys(targets).map(key => {
+                const actual = nutrients[key] || 0;
+                const target = targets[key];
+                return target > 0 ? Math.min((actual / target) * 100, 150) : 0; // 上限150%
+            });
+            return rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0;
+        };
+
+        // ビタミン・ミネラルの目標値（services.jsから取得）
+        const vitaminTargets = {
+            vitaminA: 800, vitaminD: 8.5, vitaminE: 6.0, vitaminK: 150,
+            vitaminB1: 1.4, vitaminB2: 1.6, niacin: 15, pantothenicAcid: 5,
+            vitaminB6: 1.4, biotin: 50, folicAcid: 240, vitaminB12: 2.4, vitaminC: 100
+        };
+        const mineralTargets = {
+            calcium: 800, iron: 10, magnesium: 340, phosphorus: 1000,
+            potassium: 2500, sodium: 2000, zinc: 10, copper: 0.9,
+            manganese: 3.5, selenium: 30, iodine: 130, chromium: 30, molybdenum: 25
+        };
+
+        const vitaminAchievement = scores ? calculateMicronutrientAchievement(scores.food.vitamins, vitaminTargets) : 0;
+        const mineralAchievement = scores ? calculateMicronutrientAchievement(scores.food.minerals, mineralTargets) : 0;
+
+        // 脂肪酸の詳細データ
+        const fattyAcidDetails = scores ? (() => {
+            const totalFattyAcid = (scores.food.totalSaturatedFat || 0) +
+                                   (scores.food.totalMonounsaturatedFat || 0) +
+                                   (scores.food.totalPolyunsaturatedFat || 0);
+            if (totalFattyAcid === 0) return null;
+
+            return {
+                saturated: Math.round((scores.food.totalSaturatedFat / totalFattyAcid) * 100),
+                monounsaturated: Math.round((scores.food.totalMonounsaturatedFat / totalFattyAcid) * 100),
+                polyunsaturated: Math.round((scores.food.totalPolyunsaturatedFat / totalFattyAcid) * 100)
+            };
+        })() : null;
+
+        // 1か月後の予測計算
+        // TDEEとカロリー調整値を取得
+        const tdee = LBMUtils.calculateTDEE(currentLBM, userProfile.activityLevel || 1.2);
+
+        // カロリー調整値を取得（カスタム値がある場合はそれを優先、なければ目的別デフォルト）
+        let calorieAdjustment = 0;
+        if (userProfile.calorieAdjustment !== null && userProfile.calorieAdjustment !== undefined) {
+            calorieAdjustment = userProfile.calorieAdjustment; // カスタム値を使用
+        } else {
+            // デフォルト値（utils.jsと同じロジック）
+            if (currentPurpose === 'ダイエット') calorieAdjustment = -300;
+            else if (currentPurpose === 'バルクアップ') calorieAdjustment = +300;
+        }
+
+        // 実際のカロリー収支（TDEE基準）
+        const actualCalorieBalance = totalCalories - tdee; // 本当の収支
+        const targetCalorieBalance = totalCalories - targetPFC.calories; // 目標に対する収支
+
+        const monthlyCalorieBalance = actualCalorieBalance * 30; // 30日間の累積（TDEE基準）
+        const weightChange = monthlyCalorieBalance / 7200; // 脂肪1kg = 7200kcal
+
+        // タンパク質充足率によるLBM変化予測
+        const proteinRate = targetPFC.protein > 0 ? totalProtein / targetPFC.protein : 0;
+        let lbmChange = 0;
+        if (currentPurpose === '増量') {
+            // 増量時: タンパク質十分 + オーバーカロリー（TDEE基準）でLBM増加
+            if (proteinRate >= 0.9 && actualCalorieBalance > 0) {
+                lbmChange = Math.min(weightChange * 0.3, 1.0); // 最大1kg/月
+            } else if (proteinRate < 0.8) {
+                lbmChange = -0.3; // タンパク質不足でLBM微減
+            }
+        } else if (currentPurpose === '減量') {
+            // 減量時: タンパク質十分ならLBM維持、不足なら減少
+            if (proteinRate >= 0.9) {
+                lbmChange = 0; // 維持
+            } else if (proteinRate >= 0.7) {
+                lbmChange = weightChange * 0.2; // 軽度減少
+            } else {
+                lbmChange = weightChange * 0.4; // 中程度減少
+            }
+        } else {
+            // メンテナンス: タンパク質十分ならLBM維持
+            if (proteinRate >= 0.9) {
+                lbmChange = 0;
+            } else {
+                lbmChange = -0.2; // 微減
+            }
+        }
+
+        const predictedWeight = userProfile.weight + weightChange;
+        const predictedLBM = currentLBM + lbmChange;
+        const predictedFatMass = predictedWeight - predictedLBM;
+        const predictedBodyFat = (predictedFatMass / predictedWeight) * 100;
+
         // セクション1: パフォーマンスレポート
         const section1Prompt = `## 役割
 
@@ -558,11 +674,11 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
 **栄養品質（配点30%）:**
 - DIAAS（タンパク質の質）: 平均${scores ? scores.food.avgDIAAS : 0}（スコア${scores ? scores.food.diaas : 0}/100）
-- 脂肪酸バランス: スコア${scores ? scores.food.fattyAcid : 0}/100（理想比率: 飽和30% / 一価40% / 多価25%）
-- GL値（血糖管理）: ${scores ? scores.food.totalGL : 0}（スコア${scores ? scores.food.gl : 0}/100）
+- 脂肪酸バランス: スコア${scores ? scores.food.fattyAcid : 0}/100${fattyAcidDetails ? `（実測: 飽和${fattyAcidDetails.saturated}% / 一価${fattyAcidDetails.monounsaturated}% / 多価${fattyAcidDetails.polyunsaturated}%、理想: 飽和30% / 一価40% / 多価25%）` : '（理想比率: 飽和30% / 一価40% / 多価25%）'}
+- GL値（血糖管理）: ${scores ? scores.food.totalGL : 0}（スコア${scores ? scores.food.gl : 0}/100、目標120以下）
 - 食物繊維: ${scores ? scores.food.totalFiber : 0}g / 推奨20g（スコア${scores ? scores.food.fiber : 0}/100）
-- ビタミン13種平均: スコア${scores ? scores.food.vitamin : 0}/100
-- ミネラル13種平均: スコア${scores ? scores.food.mineral : 0}/100
+- ビタミン13種: 総合達成率${vitaminAchievement}%（スコア${scores ? scores.food.vitamin : 0}/100）
+- ミネラル13種: 総合達成率${mineralAchievement}%（スコア${scores ? scores.food.mineral : 0}/100）
 
 ### 運動スコア: ${scores ? scores.exercise.score : 0}/100
 - 種目数: ${scores ? scores.exercise.count : 0}種目
@@ -576,6 +692,32 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 - 集中力: ${todayRecord.conditions?.focus || 0}/5（スコア${scores ? scores.condition.focus : 0}/100）
 - ストレス: ${todayRecord.conditions?.stress || 0}/5（スコア${scores ? scores.condition.stress : 0}/100）
 - 総合: 上記5項目の平均×20
+
+## 1か月後の予測（本日のペースを継続した場合）
+
+**現在の体組成:**
+- 体重: ${userProfile.weight.toFixed(1)}kg
+- LBM（除脂肪体重）: ${currentLBM.toFixed(1)}kg
+- 体脂肪率: ${userProfile.bodyFatPercentage.toFixed(1)}%
+
+**カロリー収支の詳細:**
+- TDEE（消費カロリー）: ${Math.round(tdee)}kcal
+- 目標カロリー（TDEE ${calorieAdjustment >= 0 ? '+' : ''}${Math.round(calorieAdjustment)}kcal）: ${Math.round(targetPFC.calories)}kcal
+- 本日の摂取: ${Math.round(totalCalories)}kcal
+- **実際の収支（TDEE基準）**: ${actualCalorieBalance >= 0 ? '+' : ''}${Math.round(actualCalorieBalance)}kcal/日
+- 目標に対する過不足: ${targetCalorieBalance >= 0 ? '+' : ''}${Math.round(targetCalorieBalance)}kcal/日
+
+**1か月後の予測:**
+- 体重: ${predictedWeight.toFixed(1)}kg（${weightChange >= 0 ? '+' : ''}${weightChange.toFixed(1)}kg）
+- LBM: ${predictedLBM.toFixed(1)}kg（${lbmChange >= 0 ? '+' : ''}${lbmChange.toFixed(1)}kg）
+- 体脂肪率: ${predictedBodyFat.toFixed(1)}%（${(predictedBodyFat - userProfile.bodyFatPercentage) >= 0 ? '+' : ''}${(predictedBodyFat - userProfile.bodyFatPercentage).toFixed(1)}%）
+
+**予測の根拠:**
+- 実際の収支: ${actualCalorieBalance >= 0 ? '+' : ''}${Math.round(actualCalorieBalance)}kcal/日（TDEE基準）
+- タンパク質充足率: ${Math.round(proteinRate * 100)}%
+- 30日間このペースを継続した場合
+
+**重要**: 体重変化の予測は「実際の収支（TDEE基準）」で計算されます。目的が${currentPurpose}の場合、目標カロリーは${Math.round(targetPFC.calories)}kcalですが、実際の体脂肪増減はTDEE ${Math.round(tdee)}kcalとの差で決まります。
 
 ## 出力形式（厳守）
 
@@ -608,6 +750,18 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
 [上記3項目の評価理由を2-3文で簡潔に説明。データを根拠に示す]
 
+---
+
+③ 1か月後の変化予測
+
+**このペースを継続した場合:**
+- 体重: [現在→1か月後の変化を1文で]
+- LBM: [現在→1か月後の変化を1文で]
+- 体脂肪率: [現在→1か月後の変化を1文で]
+
+**評価:**
+[目的（${currentPurpose}）に対して、この予測が適切か・改善が必要かを1-2文で評価]
+
 ルール:
 - 冒頭は必ず「本日もお疲れ様でした！」から開始
 - スコアは計算済みの値をそのまま表示（計算不要）
@@ -616,7 +770,9 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 - 各項目1文で完結
 - 「良い」「悪い」等の抽象表現禁止
 - 食材名・運動種目名を具体的に記載
-- LBMの言及は不要（結果指標のため）
+- **1か月後予測**: 計算済みの数値をそのまま使用し、目的に対する適切性を評価
+- **ビタミン・ミネラル**: 総合達成率が70%未満の場合のみ、野菜・果物・サプリの追加を簡潔に提案（個別栄養素名は不要）
+- **脂肪酸**: スコアが60点未満の場合のみ、オリーブオイル・魚・ナッツ類を簡潔に提案（詳細な比率は不要）
 - **重要**: 必ず「本日」「今日」のみ使用し、「昨日」は絶対に使わない（このレポートは本日の分析です）
 - **書式統一**: リスト表記は必ず「-」を使用（他の記号は使わない）
 - **参考文献禁止**: 参考文献、注釈、アスタリスク（*）による補足説明は一切記載しない
@@ -648,11 +804,11 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
 
 **栄養品質:**
 - DIAAS: ${scores ? scores.food.diaas : 0}/100
-- 脂肪酸バランス: ${scores ? scores.food.fattyAcid : 0}/100
+- 脂肪酸バランス: ${scores ? scores.food.fattyAcid : 0}/100${fattyAcidDetails ? `（実測: 飽和${fattyAcidDetails.saturated}% / 一価${fattyAcidDetails.monounsaturated}% / 多価${fattyAcidDetails.polyunsaturated}%）` : ''}
 - GL値: ${scores ? scores.food.gl : 0}/100
 - 食物繊維: ${scores ? scores.food.fiber : 0}/100
-- ビタミン: ${scores ? scores.food.vitamin : 0}/100
-- ミネラル: ${scores ? scores.food.mineral : 0}/100
+- ビタミン13種: 達成率${vitaminAchievement}%（スコア${scores ? scores.food.vitamin : 0}/100）
+- ミネラル13種: 達成率${mineralAchievement}%（スコア${scores ? scores.food.mineral : 0}/100）
 
 ### 運動スコア: ${scores ? scores.exercise.score : 0}/100
 - ルーティン: ${todayRecord.routine?.is_rest_day ? '休養日（計画的な休息）' : (todayRecord.routine?.type || 'なし')}
@@ -709,33 +865,37 @@ ${currentPurpose === '増量' ? `
 
 ---
 
-③ 明日の指示書
+④ 明日の指示書
 
 **結論**
-- [具体的な行動1（食材名/運動種目名 + 数値）]
-- [具体的な行動2（食材名/運動種目名 + 数値）]
-- [具体的な行動3（食材名/運動種目名 + 数値）]
+- [具体的な行動1（食材名/運動種目名 + 数値のみ）]
+- [具体的な行動2（食材名/運動種目名 + 数値のみ）]
+- [具体的な行動3（食材名/運動種目名 + 数値のみ）]
 
 **根拠**
-[上記指示書の理由を1-2文で簡潔に説明。${currentPurpose}の目的達成のために必要な理由を記載]
+[上記指示書の理由を1-2文で簡潔に説明。${currentPurpose}の目的達成のために必要な理由を記載。必要に応じて1か月後予測に言及]
 
 例:
 **結論**
-- 22時30分に就寝する
-- 8時間の睡眠を確保する
+- 22時30分に就寝
+- 8時間の睡眠を確保
+- 鶏胸肉300gを摂取
 
 **根拠**
 本日の睡眠時間は6時間で理想8時間に対して75%でした。${currentPurpose}のために筋肉回復を最大化する必要があり、明日は8時間睡眠を確保してください。
 
 ルール:
-- 必ず「---」の区切り線の後に「③ 明日の指示書」見出しを表示
+- 必ず「---」の区切り線の後に「④ 明日の指示書」見出しを表示（③は1か月後予測のため）
 - ${currentPurpose}の目的達成に最も重要な改善点を1つ選択
 - 結論と根拠の両方を記載
-- **結論は箇条書き形式（「-」で始まる）で記載**: 「1日で鶏胸肉300gを摂取する」「白米500gを摂取する」など、シンプルな箇条書きで記載
+- **結論は箇条書き形式（「-」で始まる）で記載**:
+  - ✅ 良い例: 「鶏胸肉300gを摂取」「白米500gを摂取」「22時30分に就寝」
+  - ❌ 悪い例: 「タンパク質を摂取するため鶏胸肉300gを食べる」「睡眠を確保するため22時に就寝する」
+  - **重要**: 「○○するため」「○○を目的に」などの理由は結論に含めず、根拠セクションに記載
 - 【カテゴリー】は使用しない（箇条書き形式に変更したため）
 - 数値必須（g、kg、回数、時間）
-- 各項目は簡潔に1文で完結
-- LBMの言及は不要（結果指標のため）
+- 各項目は簡潔に1文で完結（5-10語程度）
+- **1か月後予測を考慮**: セクション①の予測データを参照し、目的達成のために軌道修正が必要か判断
 - **重要**: 「本日」のデータを基に「明日」の指示を出す（「昨日」は絶対に使わない）
 - **書式統一**: リスト表記は必ず「-」を使用（他の記号は使わない）
 - **参考文献禁止**: 参考文献、注釈、アスタリスク（*）による補足説明は一切記載しない
@@ -790,8 +950,8 @@ ${section2Prompt}
 
                 // 指示書プランを翌日の指示書として保存（fullAnalysisから抽出）
                 const directiveText = fullAnalysis;
-                // 「③ 明日の指示書」セクションから箇条書きを抽出
-                const directiveSection = directiveText.match(/③ 明日の指示書[\s\S]*?\*\*結論\*\*([\s\S]*?)\*\*根拠\*\*/);
+                // 「④ 明日の指示書」セクションから箇条書きを抽出
+                const directiveSection = directiveText.match(/④ 明日の指示書[\s\S]*?\*\*結論\*\*([\s\S]*?)\*\*根拠\*\*/);
                 if (directiveSection) {
                     // 箇条書き（「- 」で始まる行）を抽出
                     const bulletPoints = directiveSection[1].match(/^- (.+)$/gm);
@@ -1427,7 +1587,14 @@ ${conversationContext}
                 {/* 履歴タブ */}
                 {activeTab === 'history' && (
                     <>
-                        {savedReports.length === 0 ? (
+                        {reportsLoading ? (
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4A9EFF] mb-4"></div>
+                                <p className="text-gray-600 text-center">
+                                    レポートを読み込んでいます...
+                                </p>
+                            </div>
+                        ) : savedReports.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-12">
                                 <Icon name="FolderOpen" size={64} className="text-gray-300 mb-4" />
                                 <p className="text-gray-600 text-center">
@@ -1617,11 +1784,17 @@ ${conversationContext}
                                                 ) : (
                                                     <>
                                                         <button
-                                                            onClick={(e) => {
+                                                            onClick={async (e) => {
                                                                 e.stopPropagation();
-                                                                // レポート詳細を表示
-                                                                setSelectedReport(report);
-                                                                setConversationHistory(report.conversationHistory || []);
+                                                                // レポート詳細を読み込み
+                                                                try {
+                                                                    const fullReport = await DataService.getAnalysisReport(userId, report.id);
+                                                                    setSelectedReport(fullReport);
+                                                                    setConversationHistory(fullReport.conversationHistory || []);
+                                                                } catch (error) {
+                                                                    console.error('Failed to load report detail:', error);
+                                                                    toast.error('レポートの読み込みに失敗しました');
+                                                                }
                                                             }}
                                                             className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-green-600 hover:bg-green-50 transition border-2 border-green-500"
                                                             title="レポート詳細を表示"

@@ -363,6 +363,7 @@ const DataService = {
     },
 
     // 分析レポート取得
+    // 分析レポート一覧取得（リストのみ、詳細なし）
     getAnalysisReports: async (userId) => {
         try {
             const snapshot = await db
@@ -371,10 +372,43 @@ const DataService = {
                 .collection('analysisReports')
                 .orderBy('createdAt', 'desc')
                 .get();
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // リスト表示に必要な最小限のデータのみ返す（content, conversationHistoryは除外）
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    title: data.title,
+                    createdAt: data.createdAt,
+                    periodStart: data.periodStart,
+                    periodEnd: data.periodEnd,
+                    reportType: data.reportType
+                };
+            });
         } catch (error) {
             console.error('Error getting analysis reports:', error);
             return [];
+        }
+    },
+
+    // 分析レポート詳細取得（1件のみ）
+    getAnalysisReport: async (userId, reportId) => {
+        try {
+            const doc = await db
+                .collection('users')
+                .doc(userId)
+                .collection('analysisReports')
+                .doc(reportId)
+                .get();
+
+            if (!doc.exists) {
+                throw new Error('レポートが見つかりません');
+            }
+
+            return { id: doc.id, ...doc.data() };
+        } catch (error) {
+            console.error('Error getting analysis report:', error);
+            throw error;
         }
     },
 
