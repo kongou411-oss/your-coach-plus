@@ -1,16 +1,37 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import toast from 'react-hot-toast';
 // ===== Community Components =====
 const PGBaseView = ({ onClose, userId, userProfile }) => {
     const [selectedModule, setSelectedModule] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('all');
-    const [viewMode, setViewMode] = useState('modules'); // 'modules' | 'ai'
+    const [viewMode, setViewMode] = useState('modules'); // 'modules' | 'ai' | 'history'
     const [aiChatHistory, setAiChatHistory] = useState([]);
     const [aiInputMessage, setAiInputMessage] = useState('');
     const [aiLoading, setAiLoading] = useState(false);
     const aiChatContainerRef = useRef(null);
-    const [babHeight, setBabHeight] = useState(60); // BAB高さ（デフォルト: 格納時）
+    const [babHeight, setBabHeight] = useState(64); // BAB高さ（デフォルト: 格納時）
     const aiInputContainerRef = useRef(null);
+
+    // 確認モーダル（グローバル確認関数を使用）
+    const showConfirm = (title, message, callback) => {
+        return window.showGlobalConfirm(title, message, callback);
+    };
+
+    // 履歴タブ用のstate
+    const [savedChats, setSavedChats] = useState([]);
+    const [selectedChat, setSelectedChat] = useState(null);
+    const [chatsLoaded, setChatsLoaded] = useState(false);
+    const [chatsLoading, setChatsLoading] = useState(false);
+
+    // チャット保存用のstate
+    const [showSaveChatModal, setShowSaveChatModal] = useState(false);
+    const [chatTitle, setChatTitle] = useState('');
+
+    // チャット編集・削除用のstate
+    const [isEditingChatTitle, setIsEditingChatTitle] = useState(false);
+    const [editingChatId, setEditingChatId] = useState(null);
+    const [editedChatTitle, setEditedChatTitle] = useState('');
 
     // Textbookモジュール一覧
     const textbookModules = [
@@ -74,6 +95,114 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
         setAiChatHistory(history);
     };
 
+    // チャット保存処理
+    const handleSaveChat = async () => {
+        if (!chatTitle.trim()) {
+            toast('チャットタイトルを入力してください');
+            return;
+        }
+        if (!aiChatHistory || aiChatHistory.length === 0) {
+            toast('保存するチャットがありません');
+            return;
+        }
+
+        try {
+            const chat = {
+                title: chatTitle.trim(),
+                conversationHistory: aiChatHistory,
+                createdAt: new Date()
+            };
+
+            await DataService.savePGBaseChat(userId, chat);
+
+            toast.success('チャットを保存しました');
+            setShowSaveChatModal(false);
+            setChatTitle('');
+
+            // チャット一覧を再読み込み
+            setChatsLoading(true);
+            await loadSavedChats();
+            setChatsLoaded(true);
+            setChatsLoading(false);
+
+            // 履歴タブに自動切り替え
+            setViewMode('history');
+        } catch (error) {
+            console.error('チャット保存エラー:', error);
+            toast.error('チャットの保存に失敗しました');
+        }
+    };
+
+    // チャット削除ハンドラー
+    const handleDeleteChat = async (chatId) => {
+        try {
+            await showConfirm('チャット削除の確認', 'このチャットを削除しますか？', async () => {
+                try {
+                    await DataService.deletePGBaseChat(userId, chatId);
+                    toast.success('チャットを削除しました');
+                    setChatsLoading(true);
+                    await loadSavedChats();
+                    setChatsLoaded(true);
+                    setChatsLoading(false);
+                    if (selectedChat?.id === chatId) {
+                        setSelectedChat(null);
+                    }
+                } catch (error) {
+                    console.error('チャット削除エラー:', error);
+                    toast.error('チャットの削除に失敗しました');
+                }
+            });
+        } catch (error) {
+            console.error('[handleDeleteChat] showConfirmでエラー:', error);
+        }
+    };
+
+    const handleUpdateChatTitle = async () => {
+        if (!editedChatTitle.trim()) {
+            toast('タイトルを入力してください');
+            return;
+        }
+
+        try {
+            await DataService.updatePGBaseChat(userId, editingChatId, {
+                title: editedChatTitle.trim()
+            });
+
+            setIsEditingChatTitle(false);
+            setEditingChatId(null);
+            setEditedChatTitle('');
+            setChatsLoading(true);
+            await loadSavedChats();
+            setChatsLoaded(true);
+            setChatsLoading(false);
+            toast.success('タイトルを更新しました');
+        } catch (error) {
+            console.error('チャットタイトル更新エラー:', error);
+            toast.error('タイトルの更新に失敗しました');
+        }
+    };
+
+    // 履歴タブの遅延読み込み
+    useEffect(() => {
+        if (viewMode === 'history' && !chatsLoaded) {
+            setChatsLoading(true);
+            loadSavedChats().finally(() => {
+                setChatsLoading(false);
+                setChatsLoaded(true);
+            });
+        }
+    }, [viewMode]);
+
+    const loadSavedChats = async () => {
+        try {
+            const chats = await DataService.getPGBaseChats(userId);
+            setSavedChats(chats);
+        } catch (error) {
+            console.error('チャット履歴の読み込みエラー:', error);
+            toast.error('チャット履歴の読み込みに失敗しました');
+        }
+    };
+
     // チャットコンテナの自動スクロール
     useEffect(() => {
         if (aiChatContainerRef.current) {
@@ -81,60 +210,36 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
         }
     }, [aiChatHistory]);
 
-    // BAB高さ監視（AIモード時のみ）
+    // BAB高さ監視（常に監視）
     useEffect(() => {
-        if (viewMode !== 'ai') return;
-
-        let isMounted = true;
-
         const updateBabHeight = () => {
-            if (!isMounted) return;
-
-            // BABを取得（z-indexが9999の固定要素）
-            const babs = document.querySelectorAll('.fixed.bottom-0.z-\\[9999\\]');
-            let babElement = null;
-
-            // BABを特定（border-tとbg-whiteを持つ要素）
-            for (let el of babs) {
-                if (el.classList.contains('border-t') && el.classList.contains('bg-white')) {
-                    babElement = el;
-                    break;
-                }
-            }
-
-            if (babElement && isMounted) {
+            // BABを取得（z-indexが10000の固定要素）
+            const babElement = document.querySelector('.fixed.bottom-0.z-\\[10000\\]');
+            if (babElement) {
                 const height = babElement.offsetHeight;
-                setBabHeight(height + 8); // 余白8px追加
+                setBabHeight(height);
+                console.log('[PGBASE] BAB高さ更新:', height);
             }
         };
 
         // 初回計測
         updateBabHeight();
 
-        // ResizeObserverでBAB高さ変化を監視
-        let observer = null;
-        const babs = document.querySelectorAll('.fixed.bottom-0.z-\\[9999\\]');
-        for (let el of babs) {
-            if (el.classList.contains('border-t') && el.classList.contains('bg-white')) {
-                observer = new ResizeObserver(() => {
-                    if (isMounted) updateBabHeight();
-                });
-                observer.observe(el);
-                break;
-            }
+        // ResizeObserverでBABの高さ変化を監視
+        const babElement = document.querySelector('.fixed.bottom-0.z-\\[10000\\]');
+        if (babElement) {
+            const resizeObserver = new ResizeObserver(updateBabHeight);
+            resizeObserver.observe(babElement);
+
+            return () => {
+                resizeObserver.disconnect();
+            };
         }
 
-        // 500ms後にも再計測（DOM構築遅延対策）
-        const timer = setTimeout(() => {
-            if (isMounted) updateBabHeight();
-        }, 500);
-
-        return () => {
-            isMounted = false;
-            if (observer) observer.disconnect();
-            clearTimeout(timer);
-        };
-    }, [viewMode]);
+        // BAB要素が見つからない場合のフォールバック
+        const intervalId = setInterval(updateBabHeight, 500);
+        return () => clearInterval(intervalId);
+    }, []);
 
     // iframe内の教科書からのメッセージ受信
     useEffect(() => {
@@ -183,8 +288,27 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             }, 0);
         }, 0) / historicalData.length;
 
-        const workoutDays = historicalData.filter(d => (d.record.workouts || []).length > 0).length;
-        const workoutFrequency = ((workoutDays / historicalData.length) * 7).toFixed(1);
+        // 休養日を除外してトレーニング日をカウント
+        // ルーティン未設定の場合も休養日扱い
+        const workoutDays = historicalData.filter(d => {
+            const hasWorkouts = (d.record.workouts || []).length > 0;
+            const hasRoutine = d.record.routine && Object.keys(d.record.routine).length > 0;
+            const isRestDay = d.record.routine?.is_rest_day === true;
+
+            // ルーティン未設定 or 休養日フラグ = 休養日扱い
+            const isActualRestDay = !hasRoutine || isRestDay;
+            const includeDay = hasWorkouts && !isActualRestDay;
+
+            // デバッグログ
+            if (hasWorkouts) {
+                console.log(`[PGBASE] ${d.date}: workouts=${hasWorkouts}, hasRoutine=${hasRoutine}, isRestDay=${isRestDay}, isActualRestDay=${isActualRestDay}, include=${includeDay}, routine=`, d.record.routine);
+            }
+
+            return includeDay;
+        }).length;
+        const workoutFrequency = historicalData.length > 0 ? ((workoutDays / historicalData.length) * 7).toFixed(1) : '0.0';
+
+        console.log(`[PGBASE] トレーニング頻度計算: workoutDays=${workoutDays}, totalDays=${historicalData.length}, frequency=週${workoutFrequency}回`);
 
         return `
 【ユーザープロフィール】
@@ -227,13 +351,16 @@ ${context}
 
 【利用可能なモジュール】
 1. 「メンタルの教科書」: モチベーション、習慣形成、ストレス管理
-2. 「タンパク質の教科書」: タンパク質の役割、アミノ酸スコア、摂取タイミング
-3. 「炭水化物の教科書」: 炭水化物の種類、GI値、糖質制限
-4. 「脂質の教科書」: 脂質の種類、オメガ3/6/9、ケトジェニック
-5. 「ビタミン・ミネラルの教科書」: 微量栄養素の役割、欠乏症
-6. 「アミノ酸の教科書」: BCAA、EAA、グルタミン
-7. 「クレアチンの教科書」: クレアチンの効果、摂取方法
-8. 「応用サプリメントの教科書」: ベータアラニン、HMB、カルニチン
+2. 「タンパク質の教科書」: タンパク質の役割、アミノ酸スコア、DIAAS、摂取タイミング
+3. 「炭水化物の教科書」: 炭水化物の種類、GI値、タイミング、糖質制限の科学
+4. 「脂質の教科書」: 脂質の種類、オメガ3/6/9、トランス脂肪酸、ケトジェニック
+5. 「ビタミン・ミネラルの教科書」: 微量栄養素の役割、欠乏症、過剰症、サプリメント
+6. 「基礎サプリメントの教科書」: クレアチン、アミノ酸、ベータアラニン、HMB
+
+## データ解釈の重要ルール
+- **トレーニング頻度**: 休養日（is_rest_day=true）は除外して計算されています。提供された頻度は実際にトレーニングした日のみです。
+- **LBM比**: すべての栄養素評価はLBM（除脂肪体重）を基準にします。
+- **記録継続**: ユーザーの努力の証として、記録継続日数を必ず評価します。
 
 ## 思考の原則
 1. **ボトルネックの特定**: 提供されたデータから、ユーザーの目標達成を最も妨げている要因（ボトルネック）を一つ見つけ出します。
@@ -242,13 +369,13 @@ ${context}
 
 【回答形式】※簡潔かつ、温かみのある言葉で
 ### ✅ 素晴らしい点と、さらに良くなる点
-[ユーザーの努力を具体的に褒め（例：記録継続）、データに基づいた改善点を1つ指摘]
+[ユーザーの努力を具体的に褒め（例：「${context.split('記録継続日数:')[1]?.split('日')[0] || 'N'}日間の記録継続、素晴らしいです！」）、データに基づいた改善点を1つ指摘]
 
 ### 💡 今、学ぶべきこと
 [推奨モジュール名を「」で提示。「なぜなら〜」の形で、理由をデータと目標に結びつけて説明]
 
 ### 💪 期待できる未来
-[この学びを通じて、ユーザーがどう変化できるかを具体的に描写]
+[この学びを通じて、ユーザーがどう変化できるかを具体的に描写。数値目標や期間を含めるとより良い]
 
 ### 🚀 次のステップ
 [「まずは『〇〇の教科書』を読んでみませんか？」のように、具体的な次のアクションを問いかける形で締めくくる]
@@ -257,6 +384,7 @@ ${context}
 - LBM至上主義: すべての評価はLBMを基準に
 - ユーザー主権: 押し付けではなく提案として
 - 必ずモジュール名を「」で囲んで明記
+- データは正確に解釈する（休養日除外済み、LBM比計算済み）
 `;
 
         const fullMessage = systemPrompt + '\n\n【ユーザーの質問】\n' + userMessage;
@@ -342,7 +470,7 @@ ${context}
                 </button>
             </div>
 
-            {/* タブ切り替え（モジュール/AIモード/コミュニティ） */}
+            {/* タブ切り替え（モジュール/AIモード/履歴） */}
             <div className="bg-white border-b border-gray-200 px-4 pt-3">
                 <div className="flex gap-2 mb-3">
                     <button
@@ -366,6 +494,17 @@ ${context}
                     >
                         <Icon name="Sparkles" size={16} className="inline mr-1" />
                         AIモード
+                    </button>
+                    <button
+                        onClick={() => setViewMode('history')}
+                        className={`px-5 py-2 rounded-t-lg font-medium text-sm transition ${
+                            viewMode === 'history'
+                                ? 'bg-cyan-600 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                    >
+                        <Icon name="Clock" size={16} className="inline mr-1" />
+                        履歴
                     </button>
                 </div>
             </div>
@@ -496,7 +635,7 @@ ${context}
                     {/* 入力欄（BABの上に固定配置） */}
                     <div
                         ref={aiInputContainerRef}
-                        className="fixed left-0 right-0 border-t border-gray-200 bg-white p-4 shadow-lg z-[9998]"
+                        className="fixed left-0 right-0 border-t border-gray-200 bg-white p-4 shadow-lg z-[9990]"
                         style={{bottom: `${babHeight}px`}}
                     >
                         <div className="flex gap-2">
@@ -512,14 +651,286 @@ ${context}
                             <button
                                 onClick={sendAIMessage}
                                 disabled={!aiInputMessage.trim() || aiLoading}
-                                className="px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                                className="bg-cyan-600 text-white p-2 rounded-lg hover:bg-cyan-700 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                             >
                                 <Icon name="Send" size={20} />
+                            </button>
+                            {/* 保存ボタン */}
+                            <button
+                                onClick={() => {
+                                    if (aiChatHistory.length === 0) {
+                                        toast('保存するチャットがありません');
+                                        return;
+                                    }
+                                    setChatTitle('PGBASEチャット');
+                                    setShowSaveChatModal(true);
+                                }}
+                                className="bg-cyan-600 text-white p-2 rounded-lg hover:bg-cyan-700 shadow-md transition flex-shrink-0"
+                                title="チャットを保存"
+                            >
+                                <Icon name="Save" size={20} />
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* 履歴タブ */}
+            {viewMode === 'history' && (
+                <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                    {chatsLoading ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600 mb-4"></div>
+                            <p className="text-gray-600 text-center">
+                                チャット履歴を読み込んでいます...
+                            </p>
+                        </div>
+                    ) : savedChats.length === 0 ? (
+                        <div className="text-center py-12">
+                            <Icon name="Clock" size={48} className="mx-auto mb-4 text-gray-300" />
+                            <p className="text-gray-600 font-medium mb-2">保存されたチャットはありません</p>
+                            <p className="text-sm text-gray-600">
+                                AIモードでチャットを保存すると<br />ここに表示されます
+                            </p>
+                        </div>
+                    ) : selectedChat ? (
+                        /* チャット詳細表示 */
+                        <>
+                            {/* 戻るボタン */}
+                            <button
+                                onClick={() => setSelectedChat(null)}
+                                className="flex items-center gap-2 text-cyan-600 hover:text-cyan-700 mb-3"
+                            >
+                                <Icon name="ChevronLeft" size={20} />
+                                <span className="text-sm font-medium">チャット一覧に戻る</span>
+                            </button>
+
+                            {/* チャットタイトル */}
+                            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 mb-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="MessageCircle" size={20} className="text-cyan-600" />
+                                    <h2 className="text-lg font-bold text-gray-800">{selectedChat.title}</h2>
+                                </div>
+                                <p className="text-xs text-gray-600">
+                                    {(() => {
+                                        const date = selectedChat.createdAt?.toDate ?
+                                            selectedChat.createdAt.toDate() :
+                                            new Date(selectedChat.createdAt);
+                                        return date.toLocaleString('ja-JP', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                    })()}
+                                </p>
+                            </div>
+
+                            {/* チャット内容 */}
+                            <div className="space-y-4">
+                                {(selectedChat.conversationHistory || []).map((msg, idx) => (
+                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[80%] rounded-lg p-3 ${
+                                            msg.role === 'user'
+                                                ? 'bg-cyan-600 text-white'
+                                                : 'bg-white border border-gray-200 text-gray-800'
+                                        }`}>
+                                            <div className="text-sm leading-relaxed"><MarkdownRenderer text={msg.content} /></div>
+                                            <p className="text-xs mt-2 opacity-70">
+                                                {new Date(msg.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        /* チャット一覧表示 */
+                        <div className="space-y-3">
+                            {savedChats.map((chat) => (
+                                <div
+                                    key={chat.id}
+                                    className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex-1">
+                                            {isEditingChatTitle && editingChatId === chat.id ? (
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={editedChatTitle}
+                                                        onChange={(e) => setEditedChatTitle(e.target.value)}
+                                                        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                        placeholder="チャットタイトル"
+                                                        autoFocus
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="flex items-center gap-2">
+                                                        <Icon name="MessageCircle" size={16} className="text-cyan-600" />
+                                                        <h3 className="font-medium text-gray-800">{chat.title}</h3>
+                                                    </div>
+                                                    <p className="text-xs text-gray-600 mt-1">
+                                                        {(() => {
+                                                            const date = chat.createdAt?.toDate ?
+                                                                chat.createdAt.toDate() :
+                                                                new Date(chat.createdAt);
+                                                            return date.toLocaleString('ja-JP', {
+                                                                year: 'numeric',
+                                                                month: 'long',
+                                                                day: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            });
+                                                        })()}
+                                                    </p>
+                                                </>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            {isEditingChatTitle && editingChatId === chat.id ? (
+                                                <>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleUpdateChatTitle();
+                                                        }}
+                                                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-green-600 hover:bg-green-50 transition border-2 border-green-500"
+                                                    >
+                                                        <Icon name="Check" size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setIsEditingChatTitle(false);
+                                                            setEditingChatId(null);
+                                                            setEditedChatTitle('');
+                                                        }}
+                                                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-gray-600 hover:bg-gray-100 transition border-2 border-gray-400"
+                                                    >
+                                                        <Icon name="X" size={18} />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            // チャット詳細を読み込み
+                                                            try {
+                                                                const fullChat = await DataService.getPGBaseChat(userId, chat.id);
+                                                                setSelectedChat(fullChat);
+                                                            } catch (error) {
+                                                                console.error('チャット詳細の読み込みエラー:', error);
+                                                                toast.error('チャットの読み込みに失敗しました');
+                                                            }
+                                                        }}
+                                                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-green-600 hover:bg-green-50 transition border-2 border-green-500"
+                                                        title="チャット詳細を表示"
+                                                    >
+                                                        <Icon name="Eye" size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            // 編集モードに入る（selectedChatは設定しない）
+                                                            setIsEditingChatTitle(true);
+                                                            setEditingChatId(chat.id);
+                                                            setEditedChatTitle(chat.title);
+                                                        }}
+                                                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-cyan-600 hover:bg-cyan-50 transition border-2 border-cyan-500"
+                                                        title="タイトルを編集"
+                                                    >
+                                                        <Icon name="Edit" size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteChat(chat.id);
+                                                        }}
+                                                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                        title="チャットを削除"
+                                                    >
+                                                        <Icon name="Trash2" size={18} />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* チャット保存モーダル */}
+            {showSaveChatModal ? ReactDOM.createPortal(
+                <div
+                    className="fixed inset-0 flex items-center justify-center p-4"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 999999,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)'
+                    }}
+                    onClick={() => {
+                        setShowSaveChatModal(false);
+                        setChatTitle('');
+                    }}
+                >
+                    <div
+                        className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-md p-6 shadow-2xl"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                        }}
+                    >
+                        <h2 className="text-xl font-bold mb-4 text-gray-800">チャットを保存</h2>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-600 mb-2">
+                                チャットタイトル
+                            </label>
+                            <input
+                                type="text"
+                                value={chatTitle}
+                                onChange={(e) => setChatTitle(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                placeholder="例: 2025-01-15 タンパク質相談"
+                            />
+                        </div>
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowSaveChatModal(false);
+                                    setChatTitle('');
+                                }}
+                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSaveChat();
+                                }}
+                                className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition"
+                            >
+                                保存
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            ) : null}
         </div>
     );
 };
@@ -2433,7 +2844,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
     const [selectedPostId, setSelectedPostId] = useState(null);
     const [showThemeSpaceSelector, setShowThemeSpaceSelector] = useState(false);
     const [showMentorApplication, setShowMentorApplication] = useState(false);
-    const [babHeight, setBabHeight] = useState(60); // BAB高さ（デフォルト: 格納時）
+    const [babHeight, setBabHeight] = useState(64); // BAB高さ（デフォルト: 格納時）
 
     useEffect(() => {
         loadPosts();

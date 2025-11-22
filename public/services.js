@@ -598,6 +598,74 @@ const DataService = {
         return true;
     },
 
+    // PG BASE チャット履歴一覧取得（リストのみ、詳細なし）
+    getPGBaseChats: async (userId) => {
+        const snapshot = await db
+            .collection('users')
+            .doc(userId)
+            .collection('pgbaseChats')
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                title: data.title,
+                createdAt: data.createdAt
+                // conversationHistory は除外
+            };
+        });
+    },
+
+    // PG BASE チャット詳細取得（1件のみ）
+    getPGBaseChat: async (userId, chatId) => {
+        const doc = await db
+            .collection('users')
+            .doc(userId)
+            .collection('pgbaseChats')
+            .doc(chatId)
+            .get();
+
+        if (!doc.exists) {
+            throw new Error('チャットが見つかりません');
+        }
+
+        return { id: doc.id, ...doc.data() };
+    },
+
+    // PG BASE チャット保存
+    savePGBaseChat: async (userId, chat) => {
+        await db
+            .collection('users')
+            .doc(userId)
+            .collection('pgbaseChats')
+            .add({
+                ...chat,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+    },
+
+    // PG BASE チャット削除
+    deletePGBaseChat: async (userId, chatId) => {
+        await db
+            .collection('users')
+            .doc(userId)
+            .collection('pgbaseChats')
+            .doc(chatId)
+            .delete();
+    },
+
+    // PG BASE チャット更新
+    updatePGBaseChat: async (userId, chatId, updates) => {
+        await db
+            .collection('users')
+            .doc(userId)
+            .collection('pgbaseChats')
+            .doc(chatId)
+            .update(updates);
+    },
+
 
     // コミュニティ投稿取得
     // コミュニティ投稿取得（承認済みのみ）

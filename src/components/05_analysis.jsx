@@ -1108,7 +1108,7 @@ ${section2Prompt}
         }
     };
 
-    // 対話型Q&A機能
+    // レポートQ&A機能（対話型）
     const handleUserQuestion = async () => {
         if (!userQuestion.trim() || qaLoading) return;
 
@@ -1146,7 +1146,7 @@ ${section2Prompt}
             const reportContent = selectedReport ? selectedReport.content : (aiAnalysis || '（レポート生成中または未生成）');
 
             const contextPrompt = `## 役割
-あなたは、ユーザーの質問に答える、親身で優秀なAIパフォーマンスコーチです。
+あなたは、ユーザーの質問に答える、エビデンスベースのパフォーマンスコーチです。
 
 ## 重要な前提
 あなたは既に以下のレポートを生成しています。このレポートの内容を**絶対的な前提**として、ユーザーの質問に回答してください。
@@ -1166,13 +1166,23 @@ ${conversationContext}
 
 - ✅ レポートに書かれている評価やスコアをそのまま引用する
 - ✅ これまでの会話の文脈を踏まえて回答する（過去の質問で既に説明した内容は「先ほどお伝えした通り...」と参照可能）
-- ✅ レポートの分析結果を基に、質問に対する補足説明や深堀りをする
+- ✅ レポートの分析結果を基に、科学的根拠や詳細なメカニズムを説明する
+- ✅ 必要に応じて専門用語を使い、より深い理解を提供する
 - ✅ レポートで言及されていない内容は「レポートには記載がありませんが...」と前置きする
 - ❌ レポートと異なる評価や数値を提示しない
 - ❌ レポートや会話履歴を無視して独自に分析しない
 - ❌ 同じ説明を何度も繰り返さない（会話履歴を参照して簡潔に）
 
-専門用語を避け、高校生にも理解できるような言葉で、簡潔かつ丁寧に回答してください。
+## デイリー分析との差別化
+デイリー分析は「今日の評価と明日の指示」を提供します。
+あなた（レポートQ&A）は、それに対する**「なぜ？」「どうやって？」「科学的根拠は？」**といった深掘り質問に答えます。
+
+- 専門的な説明や科学的根拠を積極的に提供
+- メカニズム・原理・エビデンスレベルの詳細な解説
+- 実践的な応用方法や個別最適化のヒント
+- 簡潔さよりも、正確性と深さを重視
+
+回答は簡潔かつ丁寧に、必要に応じて専門用語を使って深く説明してください。
 `;
 
             // 質問1回につき1クレジット消費
@@ -1252,7 +1262,7 @@ ${conversationContext}
                 }]);
             }
         } catch (error) {
-            console.error('Q&Aエラー:', error);
+            console.error('レポートQ&Aエラー:', error);
             setConversationHistory([...newHistory, {
                 type: 'ai',
                 content: '申し訳ございません。エラーが発生しました。ネットワーク接続を確認の上、もう一度お試しください。',
@@ -1291,9 +1301,15 @@ ${conversationContext}
         const proteinStatus = avgProtein >= profile.leanBodyMass * 2 ? '十分' : avgProtein >= profile.leanBodyMass * 1.5 ? 'やや不足' : '不足';
         insights.push(`タンパク質摂取: ${proteinStatus}（平均${Math.round(avgProtein)}g/日、LBM比${(avgProtein / profile.leanBodyMass).toFixed(2)}g/kg）`);
 
-        const workoutDays = historicalData.filter(d => (d.record.workouts || []).length > 0).length;
-        const workoutFrequency = (workoutDays / recordCount * 100).toFixed(0);
-        insights.push(`トレーニング頻度: 週${((workoutDays / recordCount) * 7).toFixed(1)}回（過去${recordCount}日中${workoutDays}日、${workoutFrequency}%）`);
+        // 休養日を除外してトレーニング日をカウント
+        const workoutDays = historicalData.filter(d => {
+            const hasWorkouts = (d.record.workouts || []).length > 0;
+            const isRestDay = d.record.routine?.is_rest_day === true;
+            return hasWorkouts && !isRestDay; // トレーニングがあり、かつ休養日でない
+        }).length;
+        const workoutFrequency = recordCount > 0 ? (workoutDays / recordCount * 100).toFixed(0) : 0;
+        const weeklyWorkouts = recordCount > 0 ? ((workoutDays / recordCount) * 7).toFixed(1) : 0;
+        insights.push(`トレーニング頻度: 週${weeklyWorkouts}回（過去${recordCount}日中${workoutDays}日、${workoutFrequency}%）`);
 
         const conditionData = historicalData.filter(d => d.record.conditions).map(d => ({ sleep: d.record.conditions.sleepHours || 0, fatigue: d.record.conditions.fatigue || '普通', protein: (d.record.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0) }));
 
@@ -1518,7 +1534,7 @@ ${conversationContext}
                     </div>
                 )}
 
-                        {/* 区切り線: Q&Aセクション */}
+                        {/* 区切り線: レポートQ&Aセクション */}
                         {!aiLoading && aiAnalysis && (
                             <div className="flex items-center gap-3 py-2">
                                 <div className="flex-1 h-px bg-gray-300"></div>
@@ -1527,7 +1543,7 @@ ${conversationContext}
                             </div>
                         )}
 
-                        {/* 対話型Q&A: 会話履歴 */}
+                        {/* レポートQ&A: 会話履歴 */}
                         {conversationHistory.map((msg, idx) => (
                             <div key={idx}>
                                 {msg.type === 'user' ? (
@@ -1562,7 +1578,7 @@ ${conversationContext}
                             </div>
                         ))}
 
-                        {/* Q&A ローディング */}
+                        {/* レポートQ&A ローディング */}
                         {qaLoading && (
                             <div className="flex items-start gap-3">
                                 <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
@@ -1692,7 +1708,7 @@ ${conversationContext}
                                     </div>
                                 ))}
 
-                                {/* Q&A ローディング（履歴タブでも表示） */}
+                                {/* レポートQ&A ローディング（履歴タブでも表示） */}
                                 {qaLoading && (
                                     <div className="flex items-start gap-3 mb-4">
                                         <div className="bg-indigo-600 rounded-full p-2 flex-shrink-0">
