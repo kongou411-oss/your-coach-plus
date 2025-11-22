@@ -1032,8 +1032,8 @@ const DataService = {
             mineralScore * 0.05
         );
 
-        // 運動データ（予測データを除外）
-        const workouts = (record.workouts || []).filter(w => !w.isPredicted);
+        // 運動データ（予測データも含める）
+        const workouts = (record.workouts || []);
         let totalDuration = 0;
 
         workouts.forEach(workout => {
