@@ -787,11 +787,36 @@ npm run deploy:patch
 - **RELEASE_NOTES**: 更新必須
 - **home.html**: 更新推奨
 
+**🚨 重要: Minor版リリース時の必須チェックリスト**
+
+Minor版（v2.8.0など）をリリースする際は、以下を**必ず確認**すること：
+
+- [ ] `src/config.js`のRELEASE_NOTESに新バージョンのエントリを追加した
+  - [ ] キーは「メジャー.マイナー」形式（例: '2.8'）
+  - [ ] `date`, `title`, `badge`, `features`を記載
+  - [ ] titleに「（β版）」を付与した
+- [ ] `public/home.html`のリリースノートセクションに新バージョンを追加した
+  - [ ] バージョン表記に「β版」を追加（例: `v2.8.x β版`）
+  - [ ] β版バッジを追加（`<span class="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">β版</span>`）
+  - [ ] 見出し（`<p>`）と詳細リスト（`<ul>`）で異なる文章にした
+- [ ] ビルド前に上記をすべて確認した
+- [ ] デプロイ後にWhat's Newモーダルで内容を確認した
+
+**再発防止**: `npm run auto-release`はconfig.jsのAPP_VERSIONのみ更新します。**RELEASE_NOTESは自動更新されません**。Minor/Major版の場合は手動で追加が必要です。
+
 #### Major更新（年1-2回）
 - **タイミング**: 破壊的変更、大規模リニューアル
 - **What's New**: 表示する
 - **RELEASE_NOTES**: 更新必須
 - **home.html**: 更新必須
+
+**🚨 重要: Major版リリース時の必須チェックリスト**
+
+Major版をリリースする際は、Minor版と同じチェックリストに加えて：
+
+- [ ] 破壊的変更の影響範囲を確認した
+- [ ] ユーザーへの移行ガイドを準備した
+- [ ] 既存データの互換性を確認した
 
 ### LocalStorage管理
 
