@@ -242,6 +242,119 @@ npm run auto-release
 - [ ] ビルド前に上記を確認した
 - [ ] デプロイ後にWhat's Newモーダルで内容を確認した
 
+---
+
+### 🚨🚨🚨 再発防止策：リリースノート更新忘れ防止（2025年11月24日追加）
+
+**問題**: Minor版デプロイ時に `src/config.js` の RELEASE_NOTES と `public/home.html` のリリースノート更新を忘れてしまう
+
+**原因**: `npm run auto-release` は APP_VERSION のみ更新し、RELEASE_NOTES は自動更新されない
+
+#### 必須フロー（Minor/Major版デプロイ時）
+
+**デプロイ前に必ず以下の順序で実施すること:**
+
+1. **src/config.js の RELEASE_NOTES を更新**
+   ```javascript
+   const RELEASE_NOTES = {
+       '3.4': {  // 新バージョン（メジャー.マイナー形式）
+           date: '2025年11月24日',
+           title: 'カスタムPFC比率保存機能の修正（β版）',
+           badge: 'β版',
+           features: [
+               '変更内容1',
+               '変更内容2',
+               '変更内容3'
+           ]
+       },
+       // 既存バージョン...
+   }
+   ```
+
+2. **public/home.html のリリースノートを更新**
+   ```html
+   <!-- Version 3.4.x -->
+   <div class="border-l-4 border-indigo-500 pl-4">
+       <div class="flex items-center gap-2 mb-2">
+           <span class="font-bold text-indigo-600">v3.4.x β版</span>
+           <span class="text-sm text-gray-500">2025年11月24日 〜</span>
+           <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">最新</span>
+           <span class="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">β版</span>
+       </div>
+       <p class="text-sm text-gray-600 mb-2 font-semibold">カスタムPFC比率保存機能の修正</p>
+       <ul class="text-sm text-gray-600 space-y-1 ml-4">
+           <li>• 変更内容1</li>
+           <li>• 変更内容2</li>
+           <li>• 変更内容3</li>
+       </ul>
+   </div>
+   ```
+
+3. **npm run auto-release を実行**
+   - APP_VERSION が自動更新される
+   - home.html の既存バージョンが自動更新される（新バージョンは手動追加済み）
+
+4. **npm run build でビルド**
+
+5. **git add + commit + push でGit更新**
+
+6. **firebase deploy --only hosting でデプロイ**
+
+7. **デプロイ後、本番環境でWhat's Newモーダルを確認**
+   - ブラウザで https://your-coach-plus.web.app を開く
+   - Ctrl+Shift+R でキャッシュクリア
+   - What's Newモーダルが表示されることを確認
+   - 内容が正しいことを確認
+
+#### 実例（v3.4.0のケース：2025年11月24日）
+
+**修正前の状態:**
+- `npm run auto-release` → v3.4.0に更新
+- ビルド → デプロイ
+- **RELEASE_NOTES未更新** → What's Newモーダルが表示されない ❌
+
+**修正後の正しいフロー:**
+1. `src/config.js` に RELEASE_NOTES['3.4'] を追加 ✅
+2. `public/home.html` に v3.4.x のセクションを追加 ✅
+3. `npm run build` → デプロイ
+4. What's Newモーダルが表示される ✅
+
+#### Claude Codeへの指示
+
+**Claude Codeは以下を100%実施すること:**
+
+1. **Minor/Major版デプロイ時は必ず確認**
+   - ユーザーから「デプロイして」と指示された際、`git log` でコミットメッセージを確認
+   - "Feature:", "Release:", "Breaking:" など、Minor/Major版の兆候があれば、RELEASE_NOTES更新を確認
+
+2. **RELEASE_NOTES未更新の場合は警告**
+   ```
+   ⚠️ Minor版デプロイですが、RELEASE_NOTESが未更新です。
+
+   以下を実施してからデプロイしますか？
+   1. src/config.js の RELEASE_NOTES に v3.4 を追加
+   2. public/home.html のリリースノートに v3.4.x を追加
+   ```
+
+3. **デプロイ後は必ず確認を促す**
+   ```
+   ✅ デプロイ完了
+
+   📋 What's Newモーダルの確認をお願いします:
+   1. https://your-coach-plus.web.app を開く
+   2. Ctrl+Shift+R でキャッシュクリア
+   3. What's Newモーダルが表示されるか確認
+   ```
+
+#### Patch版の場合
+
+**Patch版（バグ修正）の場合はRELEASE_NOTES更新不要**
+- What's Newモーダルは表示されない（仕様）
+- `npm run auto-release` のみでOK
+- home.html は自動更新される
+
+---
+
 #### パターン2: インタラクティブリリース（手動）
 ```bash
 npm run release
