@@ -573,30 +573,19 @@ const FeaturesTab = ({
                                                 </div>
                                             </summary>
                                             <div className="mt-3 space-y-2 border-t pt-3">
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-white p-2 rounded">
-                                                    <div className="text-center">
-                                                        <div className="font-medium text-gray-600">カロリー</div>
-                                                        <div className="font-bold">{Math.round(totalCals)}</div>
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <div className="font-medium text-gray-600">P</div>
-                                                        <div className="font-bold">{totalProtein.toFixed(1)}g</div>
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <div className="font-medium text-gray-600">F</div>
-                                                        <div className="font-bold">{totalFat.toFixed(1)}g</div>
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <div className="font-medium text-gray-600">C</div>
-                                                        <div className="font-bold">{totalCarbs.toFixed(1)}g</div>
-                                                    </div>
+                                                <div className="text-xs bg-white p-2 rounded flex items-center justify-end gap-2">
+                                                    <span className="text-blue-600 font-bold">{Math.round(totalCals)}kcal</span>
+                                                    <span className="text-gray-400">|</span>
+                                                    <span className="text-red-500 font-bold">P {totalProtein.toFixed(1)}g</span>
+                                                    <span className="text-yellow-500 font-bold">F {totalFat.toFixed(1)}g</span>
+                                                    <span className="text-green-500 font-bold">C {totalCarbs.toFixed(1)}g</span>
                                                 </div>
                                                 {(template.items || []).map((item, idx) => (
-                                                    <div key={idx} className="text-xs bg-white p-2 rounded flex justify-between">
-                                                        <span className="font-medium">{item.name} ({item.amount}g)</span>
-                                                        <span className="text-gray-600">
-                                                            {Math.round(item.calories)}kcal | P{item.protein.toFixed(1)} F{item.fat.toFixed(1)} C{item.carbs.toFixed(1)}
-                                                        </span>
+                                                    <div key={idx} className="text-xs bg-white p-2 rounded">
+                                                        <div className="font-medium mb-1">{item.name} ({item.amount}g)</div>
+                                                        <div className="text-gray-600">
+                                                            <span className="text-blue-600 font-semibold">{Math.round(item.calories)}kcal</span> | <span className="text-red-500 font-semibold">P{item.protein.toFixed(1)}</span> <span className="text-yellow-500 font-semibold">F{item.fat.toFixed(1)}</span> <span className="text-green-500 font-semibold">C{item.carbs.toFixed(1)}</span>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -712,21 +701,70 @@ const FeaturesTab = ({
                                                 </div>
                                             </summary>
                                             <div className="mt-3 space-y-2 border-t pt-3">
-                                                {(template.sets || []).map((set, idx) => (
-                                                    <div key={idx} className="text-xs bg-white p-2 rounded">
-                                                        <div className="flex justify-between mb-1">
-                                                            <span className="font-medium">セット{idx + 1}</span>
-                                                            <span className="text-gray-600">{Math.round(set.calories || 0)}kcal</span>
+                                                {/* 集計情報 */}
+                                                {(() => {
+                                                    const totalWeight = exercises.reduce((sum, ex) =>
+                                                        sum + (ex.sets || []).reduce((s, set) => s + (set.weight || 0), 0), 0
+                                                    );
+                                                    const warmupSets = exercises.reduce((sum, ex) =>
+                                                        sum + (ex.sets || []).filter(set => set.isWarmup).length, 0
+                                                    );
+                                                    const mainSets = exercises.reduce((sum, ex) =>
+                                                        sum + (ex.sets || []).filter(set => !set.isWarmup).length, 0
+                                                    );
+
+                                                    return (
+                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-white p-2 rounded mb-2">
+                                                            <div className="text-center">
+                                                                <div className="font-medium text-gray-600">総目</div>
+                                                                <div className="font-bold text-orange-600">{exerciseCount}種目</div>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <div className="font-medium text-gray-600">総セット</div>
+                                                                <div className="font-bold text-orange-600">
+                                                                    {totalSets}セット
+                                                                    <div className="text-xs text-gray-500">アップ: {warmupSets} / メイン: {mainSets}</div>
+                                                                </div>
+                                                            </div>
+                                                            {totalWeight > 0 && (
+                                                                <div className="text-center">
+                                                                    <div className="font-medium text-gray-600">総重量</div>
+                                                                    <div className="font-bold text-orange-600">{Math.round(totalWeight)} kg</div>
+                                                                </div>
+                                                            )}
+                                                            {totalDuration > 0 && (
+                                                                <div className="text-center">
+                                                                    <div className="font-medium text-gray-600">総時間</div>
+                                                                    <div className="font-bold text-orange-600">{totalDuration} 分</div>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <div className="text-gray-600 space-x-2">
-                                                            <span>{set.weight}kg</span>
-                                                            <span>×{set.reps}回</span>
-                                                            <span>| {set.distance}m</span>
-                                                            <span>| TUT {set.tut}秒</span>
-                                                            <span>| Rest {set.restInterval}秒</span>
+                                                    );
+                                                })()}
+
+                                                {/* 種目ごとの詳細 */}
+                                                {exercises.map((ex, exIdx) => {
+                                                    const exerciseName = typeof ex.exercise === 'string' ? ex.exercise : (ex.exercise?.name || '運動');
+                                                    return (
+                                                        <div key={exIdx} className="space-y-2">
+                                                            <div className="text-xs font-semibold text-orange-600 bg-orange-50 p-2 rounded">
+                                                                {exerciseName}
+                                                            </div>
+                                                            {(ex.sets || []).map((set, setIdx) => (
+                                                                <div key={setIdx} className="text-xs bg-white p-2 rounded ml-2">
+                                                                    <div className="font-medium mb-1">
+                                                                        {set.isWarmup ? 'アップ' : 'メイン'}セット{setIdx + 1}
+                                                                    </div>
+                                                                    <div className="text-gray-600 text-xs flex flex-wrap gap-2">
+                                                                        {set.weight > 0 && <span>{set.weight}kg</span>}
+                                                                        {set.reps > 0 && <span>×{set.reps}回</span>}
+                                                                        {set.duration > 0 && <span>{set.duration}分</span>}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </details>
                                     );
@@ -843,7 +881,7 @@ const FeaturesTab = ({
                                                                     <div className="flex-1">
                                                                         <p className="font-medium text-sm">{item.name}</p>
                                                                         <p className="text-xs text-gray-600">
-                                                                            {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                            {item.servingSize}{item.servingUnit}あたり | <span className="text-blue-600 font-semibold">{item.calories}kcal</span> | <span className="text-red-500 font-semibold">P:{item.protein}g</span> <span className="text-yellow-500 font-semibold">F:{item.fat}g</span> <span className="text-green-500 font-semibold">C:{item.carbs}g</span>
                                                                         </p>
                                                                     </div>
                                                                     <div className="flex gap-1">
@@ -889,7 +927,7 @@ const FeaturesTab = ({
                                                                     <div className="flex-1">
                                                                         <p className="font-medium text-sm">{item.name}</p>
                                                                         <p className="text-xs text-gray-600">
-                                                                            {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                            {item.servingSize}{item.servingUnit}あたり | <span className="text-blue-600 font-semibold">{item.calories}kcal</span> | <span className="text-red-500 font-semibold">P:{item.protein}g</span> <span className="text-yellow-500 font-semibold">F:{item.fat}g</span> <span className="text-green-500 font-semibold">C:{item.carbs}g</span>
                                                                         </p>
                                                                     </div>
                                                                     <div className="flex gap-1">
@@ -935,7 +973,7 @@ const FeaturesTab = ({
                                                                     <div className="flex-1">
                                                                         <p className="font-medium text-sm">{item.name}</p>
                                                                         <p className="text-xs text-gray-600">
-                                                                            {item.servingSize}{item.servingUnit}あたり | {item.calories}kcal | P:{item.protein}g F:{item.fat}g C:{item.carbs}g
+                                                                            {item.servingSize}{item.servingUnit}あたり | <span className="text-blue-600 font-semibold">{item.calories}kcal</span> | <span className="text-red-500 font-semibold">P:{item.protein}g</span> <span className="text-yellow-500 font-semibold">F:{item.fat}g</span> <span className="text-green-500 font-semibold">C:{item.carbs}g</span>
                                                                         </p>
                                                                     </div>
                                                                     <div className="flex gap-1">
@@ -1028,14 +1066,13 @@ const FeaturesTab = ({
 
                         const addRoutine = () => {
                             if (localRoutines.length >= 12) {
-                                toast('ルーティンは最大12個（Day7 + 追加5枠）まで設定できます');
+                                toast('ルーティンは最大12個（Day 1～7 + 追加5枠）まで設定できます');
                                 return;
                             }
                             const nextId = Math.max(...localRoutines.map(r => r.id), 0) + 1;
-                            const dayNumber = ['', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫'][nextId] || `⑧${nextId - 7}`;
                             const updated = [...localRoutines, {
                                 id: nextId,
-                                name: `${dayNumber}追加日`,
+                                name: `Day ${nextId}`,
                                 splitType: '',
                                 isRestDay: false
                             }];
@@ -1044,7 +1081,7 @@ const FeaturesTab = ({
 
                         const deleteRoutine = (id) => {
                             if (id <= 7) {
-                                toast.error('Day1~7は削除できません');
+                                toast.error('Day 1～7は削除できません');
                                 return;
                             }
                             showConfirm('追加枠削除の確認', 'この追加枠を削除しますか？', () => {
@@ -1056,7 +1093,7 @@ const FeaturesTab = ({
                         const resetToDefaultRoutine = async () => {
                             showConfirm(
                                 'デフォルトルーティンに戻す',
-                                'ルーティンをデフォルト（胸→背中→休→肩→腕→脚→休）に戻しますか？\n\n現在の設定は失われます。',
+                                'ルーティンをデフォルト（胸→背中→休み→肩→腕→脚→休み）に戻しますか？\n\n現在の設定は失われます。',
                                 async () => {
                                     try {
                                         // Firestoreの既存ルーティンをすべて削除
@@ -1074,13 +1111,13 @@ const FeaturesTab = ({
 
                                         // デフォルトルーティンを作成
                                         const defaultRoutines = [
-                                            { id: 1, name: '①胸', splitType: '胸', isRestDay: false },
-                                            { id: 2, name: '②背中', splitType: '背中', isRestDay: false },
-                                            { id: 3, name: '③休養日', splitType: '', isRestDay: true },
-                                            { id: 4, name: '④肩', splitType: '肩', isRestDay: false },
-                                            { id: 5, name: '⑤腕', splitType: '腕', isRestDay: false },
-                                            { id: 6, name: '⑥脚', splitType: '脚', isRestDay: false },
-                                            { id: 7, name: '⑦休養日', splitType: '', isRestDay: true }
+                                            { id: 1, name: 'Day 1', splitType: '胸', isRestDay: false },
+                                            { id: 2, name: 'Day 2', splitType: '背中', isRestDay: false },
+                                            { id: 3, name: 'Day 3', splitType: '休み', isRestDay: true },
+                                            { id: 4, name: 'Day 4', splitType: '肩', isRestDay: false },
+                                            { id: 5, name: 'Day 5', splitType: '腕', isRestDay: false },
+                                            { id: 6, name: 'Day 6', splitType: '脚', isRestDay: false },
+                                            { id: 7, name: 'Day 7', splitType: '休み', isRestDay: true }
                                         ];
 
                                         // Firestoreに保存
@@ -1127,7 +1164,7 @@ const FeaturesTab = ({
                                                 デフォルトルーティンに戻す
                                             </h4>
                                             <p className="text-sm text-blue-800">
-                                                ルーティンを初期設定（胸→背中→休→肩→腕→脚→休）に戻します。
+                                                ルーティンを初期設定（胸→背中→休み→肩→腕→脚→休み）に戻します。
                                             </p>
                                         </div>
                                         <button
@@ -1142,10 +1179,10 @@ const FeaturesTab = ({
 
                                 {/* Day1~7 */}
                                 <div>
-                                    <h3 className="font-semibold mb-3">Day1~7（デフォルト）</h3>
+                                    <h3 className="font-semibold mb-3">Day 1～7（デフォルト）</h3>
                                     <div className="space-y-3">
-                                        {localRoutines.filter(r => r.id <= 7).map(routine => (
-                                            <div key={routine.id} className="border rounded-lg p-4 bg-white">
+                                        {localRoutines.filter(r => r.id <= 7).map((routine, index) => (
+                                            <div key={`routine-${routine.id}-${routine.firestoreId || index}`} className="border rounded-lg p-4 bg-white">
                                                 <div className="flex items-center gap-3 mb-3">
                                                     <input
                                                         type="text"
@@ -1218,8 +1255,8 @@ const FeaturesTab = ({
                                                     )}
 
                                                     {/* テンプレート紐づけ*/}
-                                                        <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                                                            <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
+                                                        <details className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                                            <summary className="font-medium text-sm text-purple-900 cursor-pointer flex items-center gap-2 hover:text-purple-700">
                                                                 <Icon name="BookTemplate" size={14} />
                                                                 テンプレート紐づけ
                                                                 <Icon name="ChevronDown" size={14} className="ml-auto" />
@@ -1359,8 +1396,8 @@ const FeaturesTab = ({
                                     <div>
                                         <h3 className="font-semibold mb-3">追加枠（最大5つ）</h3>
                                         <div className="space-y-3">
-                                            {localRoutines.filter(r => r.id > 7).map(routine => (
-                                                <div key={routine.id} className="border rounded-lg p-4 bg-gray-50">
+                                            {localRoutines.filter(r => r.id > 7).map((routine, index) => (
+                                                <div key={`routine-custom-${routine.id}-${routine.firestoreId || index}`} className="border rounded-lg p-4 bg-gray-50">
                                                     <div className="flex justify-between items-center mb-3">
                                                         <input
                                                             type="text"
@@ -1441,8 +1478,8 @@ const FeaturesTab = ({
                                                         )}
 
                                                         {/* テンプレート紐づけ */}
-                                                            <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                                                                <summary className="font-medium text-sm text-yellow-900 cursor-pointer flex items-center gap-2 hover:text-yellow-700">
+                                                            <details className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                                                <summary className="font-medium text-sm text-purple-900 cursor-pointer flex items-center gap-2 hover:text-purple-700">
                                                                     <Icon name="BookTemplate" size={14} />
                                                                     テンプレート紐づけ
                                                                     <Icon name="ChevronDown" size={14} className="ml-auto" />

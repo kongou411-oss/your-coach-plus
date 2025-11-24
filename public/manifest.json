@@ -2,7 +2,7 @@
   "name": "Your Coach+ - パーソナルフィットネスコーチ",
   "short_name": "Your Coach+",
   "description": "AI搭載のパーソナルフィットネスコーチングアプリ。食事管理、トレーニング記録、体組成分析を統合管理。",
-  "start_url": "/?v=3.4.0",
+  "start_url": "/?v=4.0.0",
   "display": "standalone",
   "theme_color": "#4F46E5",
   "background_color": "#FFFFFF",

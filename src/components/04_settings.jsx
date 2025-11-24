@@ -180,13 +180,13 @@ const SettingsView = ({
             } else {
                 // Firestoreにルーティンがない場合、デフォルトルーティンを作成
                 const defaultRoutines = [
-                    { id: 1, name: '①月曜日', splitType: '胸', isRestDay: false },
-                    { id: 2, name: '②火曜日', splitType: '背中', isRestDay: false },
-                    { id: 3, name: '③水曜日', splitType: '脚', isRestDay: false },
-                    { id: 4, name: '④木曜日', splitType: '休み', isRestDay: true },
-                    { id: 5, name: '⑤金曜日', splitType: '肩・腕', isRestDay: false },
-                    { id: 6, name: '⑥土曜日', splitType: '全身', isRestDay: false },
-                    { id: 7, name: '⑦日曜日', splitType: '休み', isRestDay: true }
+                    { id: 1, name: 'Day 1', splitType: '胸', isRestDay: false },
+                    { id: 2, name: 'Day 2', splitType: '背中', isRestDay: false },
+                    { id: 3, name: 'Day 3', splitType: '休み', isRestDay: true },
+                    { id: 4, name: 'Day 4', splitType: '肩', isRestDay: false },
+                    { id: 5, name: 'Day 5', splitType: '腕', isRestDay: false },
+                    { id: 6, name: 'Day 6', splitType: '脚', isRestDay: false },
+                    { id: 7, name: 'Day 7', splitType: '休み', isRestDay: true }
                 ];
 
                 // Firestoreに保存
