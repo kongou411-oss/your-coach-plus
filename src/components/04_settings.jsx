@@ -21,13 +21,14 @@ const SettingsView = ({
     onToggleDarkMode,
     reopenTemplateEditModal = false,
     reopenTemplateEditType = null,
-    onTemplateEditModalOpened
+    onTemplateEditModalOpened,
+    initialTab = 'basic' // 初期タブ（デフォルトは基本設定）
 }) => {
     const Icon = window.Icon;
     const LBMUtils = window.LBMUtils;
 
     // ===== State管理 =====
-    const [activeTab, setActiveTab] = useState('basic');
+    const [activeTab, setActiveTab] = useState(initialTab);
     const [profile, setProfile] = useState({ ...userProfile });
     const [advancedSettings, setAdvancedSettings] = useState({
         usePurposeBased: userProfile.usePurposeBased !== false,

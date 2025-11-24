@@ -4139,7 +4139,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-2">
-                                                <Icon name="History" size={20} className="text-blue-600 mt-0.5" />
+                                                <Icon name="TrendingUp" size={20} className="text-indigo-600 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">履歴</div>
                                                     <div className="text-xs text-gray-600">グラフで進捗を確認できます</div>
@@ -4158,9 +4158,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     </h3>
                                     <div className="text-sm text-gray-600 space-y-3">
                                         <p className="text-center">さらに2つの機能が使えます</p>
-                                        <div className="bg-green-50 rounded-lg p-4 space-y-3 border border-green-200">
+                                        <div className="bg-cyan-50 rounded-lg p-4 space-y-3 border border-cyan-200">
                                             <div className="flex items-start gap-2">
-                                                <Icon name="BookOpen" size={20} className="text-green-600 mt-0.5" />
+                                                <Icon name="BookOpen" size={20} className="text-cyan-600 mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">PG BASE</div>
                                                     <div className="text-xs text-gray-600">ボディメイクの理論と知識を学べます</div>
@@ -4242,40 +4242,51 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             {/* テンプレート＋ルーティンTipモーダル */}
             {showTemplateRoutineTip && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden animate-slide-up">
+                    <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden animate-slide-up relative">
                         {/* ヘッダー */}
-                        <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white text-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                        <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4 flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-white">テンプレ×ルーティンで最速入力！</h2>
                             <button
                                 onClick={() => {
                                     setShowTemplateRoutineTip(false);
                                     localStorage.setItem('templateRoutineTipShown', 'true');
                                 }}
-                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-20"
+                                className="p-1 hover:bg-white/20 rounded-full transition"
                             >
-                                <Icon name="X" size={20} />
+                                <Icon name="X" size={20} className="text-white" />
                             </button>
-                            <div className="mb-3 relative z-10">
-                                <Icon name="Zap" size={48} className="mx-auto mb-2" />
-                            </div>
-                            <h2 className="text-2xl font-bold mb-2 relative z-10">⚡ 記録効率を劇的UP！</h2>
-                            <p className="text-sm opacity-90 relative z-10">テンプレート × ルーティンで最速入力</p>
                         </div>
 
                         {/* コンテンツ */}
                         <div className="p-6 space-y-4">
+                            {/* 3ステップ */}
+                            <ol className="space-y-3 text-sm text-gray-700">
+                                <li className="flex items-start gap-3">
+                                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">1</span>
+                                    <span className="font-medium">設定 → 機能タブ → ルーティン</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">2</span>
+                                    <span className="font-medium">分割法ごとにテンプレを紐づけ</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">3</span>
+                                    <span className="font-medium">デイリー記録のルーティンボタンから1タップ記録！</span>
+                                </li>
+                            </ol>
+
                             {/* 利便性の説明 */}
-                            <div className="space-y-3">
+                            <div className="space-y-3 pt-2">
                                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
                                     <Icon name="Lightbulb" size={18} className="text-amber-600" />
                                     こんなに便利になります
                                 </h3>
                                 <div className="space-y-2">
                                     {[
-                                        { icon: 'BookTemplate', text: 'よく食べる食事をテンプレートに保存', color: 'text-blue-600' },
+                                        { icon: 'BookTemplate', text: '普段の食事・運動をテンプレートに保存', color: 'text-blue-600' },
                                         { icon: 'Calendar', text: '曜日ごとのトレーニングをルーティンに設定', color: 'text-purple-600' },
-                                        { icon: 'MousePointerClick', text: 'ワンタップで該当テンプレートが自動表示', color: 'text-green-600' },
-                                        { icon: 'Clock', text: '毎回の検索が不要で記録時間が1/3に', color: 'text-sky-600' }
+                                        { icon: 'MousePointerClick', text: 'ワンタップでテンプレートをすべて記録', color: 'text-green-600' },
+                                        { icon: 'Clock', text: '毎回の検索が不要で最速1秒に！', color: 'text-sky-600' }
                                     ].map((feature, idx) => (
                                         <div key={idx} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
                                             <Icon name={feature.icon} size={18} className={`${feature.color} flex-shrink-0 mt-0.5`} />
@@ -4283,28 +4294,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-
-                            {/* 使い方の流れ */}
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                    <Icon name="Info" size={16} className="text-blue-600" />
-                                    設定方法
-                                </h4>
-                                <ol className="space-y-2 text-sm text-gray-600">
-                                    <li className="flex items-start gap-2">
-                                        <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">1</span>
-                                        <span><strong>設定 → 機能設定</strong>でテンプレートを作成</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                        <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">2</span>
-                                        <span>ルーティン（分割法）を設定</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                        <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">3</span>
-                                        <span>記録時に自動で候補表示！</span>
-                                    </li>
-                                </ol>
                             </div>
 
                             {/* ボタン */}
@@ -4315,7 +4304,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     // 設定画面の機能設定タブへ遷移
                                     window.dispatchEvent(new CustomEvent('navigateToSettings', { detail: { tab: 'features' } }));
                                 }}
-                                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2"
+                                className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2"
                             >
                                 <Icon name="Settings" size={20} />
                                 <span>設定を見る</span>

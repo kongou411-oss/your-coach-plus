@@ -979,8 +979,10 @@ ${section2Prompt}
             console.error('AI分析エラー:', error);
 
             // Service Worker関連のエラーは無視（通知機能は分析に必須ではない）
-            if (error.message && error.message.includes('Service Worker')) {
+            const errorStr = error.message || error.toString();
+            if (errorStr.includes('Service Worker') || errorStr.includes('PushManager') || errorStr.includes('subscribe')) {
                 console.warn('[Analysis] Service Workerエラーを無視しました。通知機能は無効化されていますが、分析は続行できます。');
+                toast.error('通知機能のエラーが発生しましたが、分析は正常に実行されます。\n\nもう一度「生成」ボタンをタップしてください。');
                 setAiLoading(false);
                 return;
             }
@@ -988,14 +990,14 @@ ${section2Prompt}
             // エラーメッセージを分かりやすく
             let errorMessage = '申し訳ございません。AI分析の生成中に問題が発生しました。\n\n';
 
-            if (error.message && error.message.includes('AIの呼び出し中にサーバーエラー')) {
+            if (errorStr.includes('AIの呼び出し中にサーバーエラー')) {
                 errorMessage += '【原因】\nVertex AI (Gemini API) のレート制限に達しました。\n\n';
                 errorMessage += '【対処法】\n';
                 errorMessage += '1. 5〜10分程度お待ちください\n';
                 errorMessage += '2. 右上の「生成」ボタンを再度タップしてお試しください\n\n';
                 errorMessage += '※ 短時間に何度も生成すると、APIの制限に引っかかります。';
             } else {
-                errorMessage += 'エラー内容: ' + error.message + '\n\n';
+                errorMessage += 'エラー内容: ' + errorStr + '\n\n';
                 errorMessage += 'しばらく時間をおいて、右上の「生成」ボタンをタップしてお試しください。';
             }
 

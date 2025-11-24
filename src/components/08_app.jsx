@@ -287,6 +287,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [showPGBaseView, setShowPGBaseView] = useState(false);
             const [showCOMYView, setShowCOMYView] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
+            const [settingsInitialTab, setSettingsInitialTab] = useState('basic'); // 設定画面の初期タブ
             const [showSubscriptionView, setShowSubscriptionView] = useState(false);
             const [showStageInfo, setShowStageInfo] = useState(false);
             const [showContinuitySupport, setShowContinuitySupport] = useState(false); // 継続支援システム
@@ -592,6 +593,21 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 };
                 document.addEventListener('openAdminPanel', handleOpenAdminPanel);
                 return () => document.removeEventListener('openAdminPanel', handleOpenAdminPanel);
+            }, []);
+
+            // 設定画面への遷移イベントリスナー
+            useEffect(() => {
+                const handleNavigateToSettings = (event) => {
+                    // タブ指定がある場合は設定
+                    if (event.detail && event.detail.tab) {
+                        setSettingsInitialTab(event.detail.tab);
+                    } else {
+                        setSettingsInitialTab('basic'); // デフォルトは基本設定
+                    }
+                    setShowSettings(true);
+                };
+                window.addEventListener('navigateToSettings', handleNavigateToSettings);
+                return () => window.removeEventListener('navigateToSettings', handleNavigateToSettings);
             }, []);
 
             // 食事編集用グローバル関数を定義
@@ -3235,6 +3251,7 @@ AIコーチなどの高度な機能が解放されます。
                     {showSettings && (
                         <SettingsView
                             onClose={() => setShowSettings(false)}
+                            initialTab={settingsInitialTab}
                             userProfile={userProfile}
                             onUpdateProfile={async (updatedProfile) => {
                                 console.log('[App] onUpdateProfile受信:', updatedProfile);
