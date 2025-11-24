@@ -559,6 +559,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     // Premium誘導モーダル
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+    // テンプレート＋ルーティンTipモーダル
+    const [showTemplateRoutineTip, setShowTemplateRoutineTip] = useState(false);
+
     // 採点基準説明モーダル
     const [showScoringGuideModal, setShowScoringGuideModal] = useState(false);
 
@@ -864,26 +867,26 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         };
     }, []); // 空の依存配列：コンポーネントマウント時に一度だけ実行
 
-    // 新機能開放モーダル完了後、Premium誘導モーダルを表示
+    // 新機能開放モーダル完了後、テンプレートTipモーダルを表示
     useEffect(() => {
         let isMounted = true;
 
-        const checkUpgradeModalFlag = () => {
+        const checkModalFlags = () => {
             const featureUnlockCompleted = localStorage.getItem('featureUnlockModalsCompleted');
-            const upgradeModalPending = localStorage.getItem('showUpgradeModalPending');
+            const templateTipShown = localStorage.getItem('templateRoutineTipShown');
 
-            if (featureUnlockCompleted === 'true' && upgradeModalPending === 'true' && isMounted) {
-                setShowUpgradeModal(true);
+            // 機能開放完了後、テンプレートTipを表示（まだ表示していない場合）
+            if (featureUnlockCompleted === 'true' && templateTipShown !== 'true' && isMounted) {
+                setShowTemplateRoutineTip(true);
                 localStorage.removeItem('featureUnlockModalsCompleted');
-                localStorage.removeItem('showUpgradeModalPending');
             }
         };
 
         // 初回チェック
-        checkUpgradeModalFlag();
+        checkModalFlags();
 
         // 定期的にチェック（500ms間隔）
-        const intervalId = setInterval(checkUpgradeModalFlag, 500);
+        const intervalId = setInterval(checkModalFlags, 500);
 
         return () => {
             isMounted = false;
@@ -4236,73 +4239,94 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             )}
 
             {/* 初回分析完了＋Premium誘導モーダル */}
-            {showUpgradeModal && (
+            {/* テンプレート＋ルーティンTipモーダル */}
+            {showTemplateRoutineTip && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fade-in">
                     <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden animate-slide-up">
-                        {/* ヘッダー（プレミアムグラデーション） */}
-                        <div className="bg-[#FFF59A] p-6 text-gray-800 text-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                        {/* ヘッダー */}
+                        <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white text-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                             <button
-                                onClick={() => setShowUpgradeModal(false)}
+                                onClick={() => {
+                                    setShowTemplateRoutineTip(false);
+                                    localStorage.setItem('templateRoutineTipShown', 'true');
+                                }}
                                 className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-20"
                             >
                                 <Icon name="X" size={20} />
                             </button>
                             <div className="mb-3 relative z-10">
-                                <Icon name="Crown" size={48} className="mx-auto mb-2 text-yellow-600" />
+                                <Icon name="Zap" size={48} className="mx-auto mb-2" />
                             </div>
-                            <h2 className="text-2xl font-bold mb-2 text-gray-800 relative z-10">🎉 初回分析完了！</h2>
-                            <p className="text-sm opacity-90 text-gray-600 relative z-10">AIがあなた専用の分析レポートを作成しました</p>
+                            <h2 className="text-2xl font-bold mb-2 relative z-10">⚡ 記録効率を劇的UP！</h2>
+                            <p className="text-sm opacity-90 relative z-10">テンプレート × ルーティンで最速入力</p>
                         </div>
 
                         {/* コンテンツ */}
                         <div className="p-6 space-y-4">
-                            {/* Premium会員の特典 */}
+                            {/* 利便性の説明 */}
                             <div className="space-y-3">
                                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                                    <Icon name="Sparkles" size={18} className="text-amber-600" />
-                                    Premium会員になると...
+                                    <Icon name="Lightbulb" size={18} className="text-amber-600" />
+                                    こんなに便利になります
                                 </h3>
                                 <div className="space-y-2">
                                     {[
-                                        { icon: 'BarChart3', text: '毎月100回の分析クレジット', color: 'text-sky-600' },
-                                        { icon: 'BookOpen', text: 'PG BASE 教科書で理論を学習', color: 'text-green-600' },
-                                        { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-amber-600' },
-                                        { icon: 'BookTemplate', text: '無制限のテンプレート保存', color: 'text-blue-600' },
-                                        { icon: 'Users', text: 'COMYで仲間と刺激し合う', color: 'text-pink-600' },
-                                        { icon: 'Zap', text: 'ショートカット機能で効率アップ', color: 'text-yellow-600' }
+                                        { icon: 'BookTemplate', text: 'よく食べる食事をテンプレートに保存', color: 'text-blue-600' },
+                                        { icon: 'Calendar', text: '曜日ごとのトレーニングをルーティンに設定', color: 'text-purple-600' },
+                                        { icon: 'MousePointerClick', text: 'ワンタップで該当テンプレートが自動表示', color: 'text-green-600' },
+                                        { icon: 'Clock', text: '毎回の検索が不要で記録時間が1/3に', color: 'text-sky-600' }
                                     ].map((feature, idx) => (
-                                        <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
-                                            <Icon name={feature.icon} size={18} className={feature.color} />
+                                        <div key={idx} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                                            <Icon name={feature.icon} size={18} className={`${feature.color} flex-shrink-0 mt-0.5`} />
                                             <span className="text-sm text-gray-600">{feature.text}</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
-                            {/* 価格表示 */}
-                            <div className="bg-[#FFF59A]/10 border-2 border-amber-300 rounded-lg p-4 text-center">
-                                <p className="text-sm text-gray-600 mb-1">月額</p>
-                                <p className="text-4xl font-bold text-amber-600 mb-1">¥940</p>
-                                <p className="text-xs text-gray-600">1日あたり約31円</p>
+                            {/* 使い方の流れ */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                    <Icon name="Info" size={16} className="text-blue-600" />
+                                    設定方法
+                                </h4>
+                                <ol className="space-y-2 text-sm text-gray-600">
+                                    <li className="flex items-start gap-2">
+                                        <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">1</span>
+                                        <span><strong>設定 → 機能設定</strong>でテンプレートを作成</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">2</span>
+                                        <span>ルーティン（分割法）を設定</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">3</span>
+                                        <span>記録時に自動で候補表示！</span>
+                                    </li>
+                                </ol>
                             </div>
 
-                            {/* CTA ボタン */}
+                            {/* ボタン */}
                             <button
                                 onClick={() => {
-                                    setShowUpgradeModal(false);
-                                    toast('サブスクリプション画面は準備中です');
+                                    setShowTemplateRoutineTip(false);
+                                    localStorage.setItem('templateRoutineTipShown', 'true');
+                                    // 設定画面の機能設定タブへ遷移
+                                    window.dispatchEvent(new CustomEvent('navigateToSettings', { detail: { tab: 'features' } }));
                                 }}
-                                className="w-full bg-[#FFF59A] text-gray-800 font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2 relative overflow-hidden"
+                                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-4 rounded-lg hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
-                                <Icon name="Crown" size={20} className="relative z-10" />
-                                <span className="relative z-10">Premium会員に登録する</span>
+                                <Icon name="Settings" size={20} />
+                                <span>設定を見る</span>
                             </button>
 
                             {/* 後で */}
                             <button
-                                onClick={() => setShowUpgradeModal(false)}
+                                onClick={() => {
+                                    setShowTemplateRoutineTip(false);
+                                    localStorage.setItem('templateRoutineTipShown', 'true');
+                                }}
                                 className="w-full text-gray-600 text-sm hover:text-gray-800 transition"
                             >
                                 後で確認する

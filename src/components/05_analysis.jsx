@@ -204,28 +204,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         return () => clearInterval(intervalId);
     }, []);
 
-    // 新機能開放モーダル完了後、Premium誘導モーダルを表示
-    useEffect(() => {
-        const checkUpgradeModalFlag = () => {
-            const featureUnlockCompleted = localStorage.getItem('featureUnlockModalsCompleted');
-            const upgradeModalPending = localStorage.getItem('showUpgradeModalPending');
-
-            if (featureUnlockCompleted === 'true' && upgradeModalPending === 'true') {
-                setShowUpgradeModal(true);
-                localStorage.removeItem('featureUnlockModalsCompleted');
-                localStorage.removeItem('showUpgradeModalPending');
-            }
-        };
-
-        // 初回チェック
-        checkUpgradeModalFlag();
-
-        // 定期的にチェック（500ms間隔）
-        const intervalId = setInterval(checkUpgradeModalFlag, 500);
-
-        return () => clearInterval(intervalId);
-    }, []);
-
     const handleClose = () => {
         if (aiLoading) {
             toast.success('AI分析が完了するまでお待ちください。');
@@ -356,7 +334,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
     };
 
     const saveDirective = async () => {
-        if (!suggestedDirective || !user) return;
+        if (!suggestedDirective || !userId) return;
 
         try {
             const today = getTodayDate();
@@ -371,7 +349,7 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
             // Firestoreに保存
             await firebase.firestore()
                 .collection('users')
-                .doc(user.uid)
+                .doc(userId)
                 .collection('directives')
                 .doc(today)
                 .set(newDirective);
@@ -985,7 +963,7 @@ ${section2Prompt}
 
                         await firebase.firestore()
                             .collection('users')
-                            .doc(user.uid)
+                            .doc(userId)
                             .collection('directives')
                             .doc(tomorrowStr)
                             .set(newDirective);
@@ -1097,13 +1075,6 @@ ${section2Prompt}
             // ダッシュボードにイベントを通知
             window.dispatchEvent(new CustomEvent('featureUnlockCompleted'));
             console.log('[Analysis] featureUnlockCompletedイベントを発火');
-        }
-
-        // Premium販促モーダル（初回分析後）
-        // 新機能開放モーダルが完了した後に表示するためのフラグを設定
-        const isPremium = userProfile?.subscriptionStatus === 'active';
-        if (isFirstAnalysisParam && !isPremium) {
-            localStorage.setItem('showUpgradeModalPending', 'true');
         }
     };
 

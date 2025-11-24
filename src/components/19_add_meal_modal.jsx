@@ -393,31 +393,46 @@ const AddMealModal = ({
                         }
                     }
                 } else {
-                    // 全カテゴリ横断検索：すべてのカテゴリをループ
-                    for (const category of Object.keys(foodDB)) {
-                        // サプリメントは別タブなのでスキップ（foodタブの場合）
-                        if (foodTab === 'food' && category === 'サプリメント') continue;
-                        // foodタブの場合、サプリメント以外のカテゴリのみ対象
-                        if (foodTab === 'supplement' && category !== 'サプリメント') continue;
+                    // 選択されたカテゴリのみを処理（全カテゴリ横断検索ではない）
+                    if (foodTab === 'supplement') {
+                        // サプリメントタブの場合：サプリメントカテゴリからサブカテゴリでフィルタ
+                        const category = 'サプリメント';
+                        if (foodDB[category]) {
+                            for (const name of Object.keys(foodDB[category])) {
+                                const itemData = foodDB[category][name];
 
-                        for (const name of Object.keys(foodDB[category])) {
-                            const itemData = foodDB[category][name];
+                                if (hiddenStandardItems.includes(name)) continue;
 
-                            if (hiddenStandardItems.includes(name)) continue;
-
-                            // サプリメントタブの場合、サブカテゴリでフィルタ
-                            if (foodTab === 'supplement') {
+                                // サブカテゴリでフィルタ
                                 const targetSubcategory = selectedCategory || 'プロテイン';
                                 if (itemData.subcategory !== targetSubcategory) continue;
-                            }
 
-                            if (searchMatch(name, searchTerm)) {
-                                items.push({
-                                    name,
-                                    ...itemData,
-                                    category: category, // カテゴリ名を保持
-                                    isCustom: false
-                                });
+                                if (searchMatch(name, searchTerm)) {
+                                    items.push({
+                                        name,
+                                        ...itemData,
+                                        category: category,
+                                        isCustom: false
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        // 食材タブの場合：選択されたカテゴリのみを処理
+                        if (foodDB[targetCategory]) {
+                            for (const name of Object.keys(foodDB[targetCategory])) {
+                                const itemData = foodDB[targetCategory][name];
+
+                                if (hiddenStandardItems.includes(name)) continue;
+
+                                if (searchMatch(name, searchTerm)) {
+                                    items.push({
+                                        name,
+                                        ...itemData,
+                                        category: targetCategory,
+                                        isCustom: false
+                                    });
+                                }
                             }
                         }
                     }
