@@ -314,12 +314,6 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         };
 
         setAnalysis(analysisData);
-
-        const today = getTodayDate();
-        const analyses = JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_ANALYSES) || '{}');
-        analyses[today] = { ...(analyses[today] || {}), ...analysisData };
-        localStorage.setItem(STORAGE_KEYS.DAILY_ANALYSES, JSON.stringify(analyses));
-
         setHistoricalInsights(insights);
         setLoading(false);
 
@@ -361,24 +355,34 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         return { type: 'condition', text: `今日の習慣を継続` };
     };
 
-    const saveDirective = () => {
-        if (!suggestedDirective) return;
-        const today = getTodayDate();
-        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
-        const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
-        const newDirective = {
-            date: today,
-            message: suggestedDirective.text,
-            type: suggestedDirective.type,
-            completed: false,
-            createdAt: new Date().toISOString()
-        };
-        const updatedDirectives = directives.filter(d => d.date !== today);
-        updatedDirectives.push(newDirective);
-        localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updatedDirectives));
-        setLastUpdate(Date.now()); // Appを再レンダリングさせる
-        toast('指示書をダッシュボードに反映しました。');
-        onClose();
+    const saveDirective = async () => {
+        if (!suggestedDirective || !user) return;
+
+        try {
+            const today = getTodayDate();
+            const newDirective = {
+                date: today,
+                message: suggestedDirective.text,
+                type: suggestedDirective.type,
+                completed: false,
+                createdAt: new Date().toISOString()
+            };
+
+            // Firestoreに保存
+            await firebase.firestore()
+                .collection('users')
+                .doc(user.uid)
+                .collection('directives')
+                .doc(today)
+                .set(newDirective);
+
+            setLastUpdate(Date.now()); // Appを再レンダリングさせる
+            toast('指示書をダッシュボードに反映しました。');
+            onClose();
+        } catch (error) {
+            console.error('[Analysis] Failed to save directive:', error);
+            toast.error('指示書の保存に失敗しました');
+        }
     };
 
     // AI分析生成
@@ -940,14 +944,6 @@ ${section2Prompt}
                     });
                 }
 
-                // AI分析の結果をLocalStorageに永続化
-                const today = getTodayDate();
-                const analyses = JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_ANALYSES) || '{}');
-                if (analyses[today]) {
-                    analyses[today].aiComment = fullAnalysis;
-                    localStorage.setItem(STORAGE_KEYS.DAILY_ANALYSES, JSON.stringify(analyses));
-                }
-
                 // 指示書プランを翌日の指示書として保存（fullAnalysisから抽出）
                 const directiveText = fullAnalysis;
                 // 「④ 明日の指示書」セクションから箇条書きを抽出
@@ -977,19 +973,22 @@ ${section2Prompt}
                         const deadline = new Date(tomorrow);
                         deadline.setHours(23, 59, 59, 999);
 
-                        // 指示書を保存
-                        const directives = JSON.parse(localStorage.getItem(STORAGE_KEYS.DIRECTIVES) || '[]');
-                        // 翌日の既存指示書を削除
-                        const filteredDirectives = directives.filter(d => d.date !== tomorrowStr);
-                        filteredDirectives.push({
+                        // 指示書をFirestoreに保存
+                        const newDirective = {
                             date: tomorrowStr,
                             message: message,
                             type: type,
                             completed: false,
                             deadline: deadline.toISOString(),
                             createdAt: new Date().toISOString()
-                        });
-                        localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(filteredDirectives));
+                        };
+
+                        await firebase.firestore()
+                            .collection('users')
+                            .doc(user.uid)
+                            .collection('directives')
+                            .doc(tomorrowStr)
+                            .set(newDirective);
 
                         // directiveUpdatedイベントを発火してダッシュボードを更新
                         window.dispatchEvent(new Event('directiveUpdated'));
@@ -2469,11 +2468,25 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
         const effectiveEndDate = endDate || startDate;
         const data = [];
 
-        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
-        const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
+        // Firestoreから指示書とFirestore分析データを取得
+        const directivesSnapshot = await firebase.firestore()
+            .collection('users')
+            .doc(userId)
+            .collection('directives')
+            .get();
 
-        const savedAnalyses = localStorage.getItem(STORAGE_KEYS.DAILY_ANALYSES);
-        const loadedAnalyses = savedAnalyses ? JSON.parse(savedAnalyses) : {};
+        const directives = directivesSnapshot.docs.map(doc => doc.data());
+
+        const analysesSnapshot = await firebase.firestore()
+            .collection('users')
+            .doc(userId)
+            .collection('analyses')
+            .get();
+
+        const loadedAnalyses = {};
+        analysesSnapshot.docs.forEach(doc => {
+            loadedAnalyses[doc.id] = doc.data();
+        });
         setAnalyses(loadedAnalyses);
 
         for (let d = new Date(startDate); d <= effectiveEndDate; d.setDate(d.getDate() + 1)) {

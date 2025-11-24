@@ -1,0 +1,746 @@
+2025-11-21T20:25:02.207553Z ? sendpushnotification: [Push Notification] Tokens: 5 → Unique: 5
+
+2025-11-21T20:25:02.207770Z ? sendpushnotification: [Stop] Setting removed or changed for 0AbLFoVePLVj51FLZe8TGGuW61V2 meal
+
+2025-11-21T20:26:00.157202Z I sendpushnotification: 
+2025-11-21T20:26:00.255896Z ? sendpushnotification: [Push Notification] Tokens: 5 → Unique: 5
+
+2025-11-21T20:26:00.256172Z ? sendpushnotification: [Stop] Setting removed or changed for 0AbLFoVePLVj51FLZe8TGGuW61V2 workout
+
+2025-11-21T20:27:00.111843Z I sendpushnotification: 
+2025-11-21T20:27:00.186076Z ? sendpushnotification: [Push Notification] Tokens: 5 → Unique: 5
+
+2025-11-21T20:27:00.186295Z ? sendpushnotification: [Stop] Setting removed or changed for 0AbLFoVePLVj51FLZe8TGGuW61V2 analysis
+
+2025-11-21T20:28:00.151831Z I sendpushnotification: 
+2025-11-21T20:28:00.219033Z ? sendpushnotification: [Push Notification] Tokens: 5 → Unique: 5
+
+2025-11-21T20:28:00.219214Z ? sendpushnotification: [Stop] Setting removed or changed for 0AbLFoVePLVj51FLZe8TGGuW61V2 custom
+
+2025-11-21T20:35:00.136132Z I sendpushnotification: 
+2025-11-21T20:35:00.251336Z ? sendpushnotification: [Push Notification] Tokens: 5 → Unique: 5
+
+2025-11-21T20:35:00.447754Z ? sendpushnotification: [Push Notification] Sent to 1/5 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-21T20:35:00.447860Z ? sendpushnotification: [Push Notification] Failed token: fCMvY9Eh8d3Z6sNenffW...
+
+2025-11-21T20:35:00.447942Z ? sendpushnotification: [Push Notification] Failed token: fCMvY9Eh8d3Z6sNenffW...
+
+2025-11-21T20:35:00.448087Z ? sendpushnotification: [Push Notification] Failed token: cMX302vgfUf71anD3ZcH...
+
+2025-11-21T20:35:00.448137Z ? sendpushnotification: [Push Notification] Failed token: cMX302vgfUf71anD3ZcH...
+
+2025-11-21T20:35:00.502729Z ? sendpushnotification: [Push Notification] Removed 4 invalid tokens
+
+2025-11-21T20:35:01.108840Z ? sendpushnotification: [Rescheduled] meal at 2025-11-22T20:35:00.000Z
+
+2025-11-21T20:36:00.161795Z I sendpushnotification: 
+2025-11-21T20:36:00.219614Z ? sendpushnotification: [Push Notification] Tokens: 1 → Unique: 1
+
+2025-11-21T20:36:00.389320Z ? sendpushnotification: [Push Notification] Sent to 1/1 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-21T20:36:00.729616Z ? sendpushnotification: [Rescheduled] workout at 2025-11-22T20:36:00.000Z
+
+2025-11-21T20:37:00.115447Z I sendpushnotification: 
+2025-11-21T20:37:00.178578Z ? sendpushnotification: [Push Notification] Tokens: 1 → Unique: 1
+
+2025-11-21T20:37:00.342321Z ? sendpushnotification: [Push Notification] Sent to 1/1 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-21T20:37:00.704606Z ? sendpushnotification: [Rescheduled] analysis at 2025-11-22T20:37:00.000Z
+
+2025-11-21T20:38:00.147683Z I sendpushnotification: 
+2025-11-21T20:38:00.197609Z ? sendpushnotification: [Push Notification] Tokens: 1 → Unique: 1
+
+2025-11-21T20:38:00.385682Z ? sendpushnotification: [Push Notification] Sent to 1/1 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-21T20:38:00.763355Z ? sendpushnotification: [Rescheduled] custom at 2025-11-22T20:38:00.000Z
+
+2025-11-21T20:50:10.799291Z W sendpushnotification: 
+2025-11-21T20:50:10.808164Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-21T21:50:11.002353Z W sendpushnotification: 
+2025-11-21T21:50:11.018592Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-21T21:50:12.507258Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-21T21:50:12.584858Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-21T22:50:12.799300Z W sendpushnotification: 
+2025-11-21T22:50:12.815548Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-21T22:50:14.557625Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-21T22:50:14.609851Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-21T23:50:14.816950Z W sendpushnotification: 
+2025-11-21T23:50:14.832229Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-21T23:50:16.228422Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-21T23:50:16.284478Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T00:50:16.491356Z W sendpushnotification: 
+2025-11-22T00:50:16.509205Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T00:50:18.152950Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T00:50:18.269720Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T01:50:18.439018Z W sendpushnotification: 
+2025-11-22T01:50:18.457487Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T01:50:19.906183Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T01:50:20.015999Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T02:50:20.223228Z W sendpushnotification: 
+2025-11-22T02:50:20.244217Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T02:50:21.628062Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T02:50:21.691042Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T03:50:21.863289Z W sendpushnotification: 
+2025-11-22T03:50:21.877880Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T03:50:23.290Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T03:50:23.340715Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T04:50:23.557235Z W sendpushnotification: 
+2025-11-22T04:50:23.574942Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T04:50:25.097683Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T04:50:25.136867Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T05:00:25.174659Z I sendfeedback: 
+2025-11-22T05:00:25.214309Z I sendfeedback: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T05:00:28.154101Z I sendfeedback: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T05:00:28.319669Z I sendfeedback: 
+2025-11-22T05:00:28.482708Z D sendfeedback: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T05:00:31.101877Z ? sendfeedback: [Feedback] Sent from 0AbLFoVePLVj51FLZe8TGGuW61V2 (kongou411@gmail.com)
+
+2025-11-22T05:02:03.453133Z I callgemini: 
+2025-11-22T05:02:03.468286Z I callgemini: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T05:02:05.690258Z I callgemini: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T05:02:05.832050Z I callgemini: 
+2025-11-22T05:02:05.992Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T05:15:53.123156Z I sendfeedback: 
+2025-11-22T05:15:53.132195Z I sendfeedback: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T05:15:54.820085Z I sendfeedback: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T05:15:54.965665Z I sendfeedback: 
+2025-11-22T05:15:55.148677Z D sendfeedback: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T05:15:57.543670Z ? sendfeedback: [Feedback] Sent from 0AbLFoVePLVj51FLZe8TGGuW61V2 (kongou411@gmail.com)
+
+2025-11-22T05:46:58.946932Z I callgemini: 
+2025-11-22T05:46:58.959290Z I callgemini: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T05:47:00.758525Z I callgemini: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T05:47:00.828688Z I callgemini: 
+2025-11-22T05:47:01.039778Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T05:50:25.341482Z W sendpushnotification: 
+2025-11-22T05:50:25.359381Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T05:50:26.821873Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T05:50:26.908834Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T05:51:00.215934Z I callgemini: 
+2025-11-22T05:51:00.262744Z I callgemini: 
+2025-11-22T05:51:00.272165Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T06:00:25.812754Z I callgemini: 
+2025-11-22T06:00:25.850194Z I callgemini: 
+2025-11-22T06:00:25.859007Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T06:50:27.114387Z W sendpushnotification: 
+2025-11-22T06:50:27.127517Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T06:50:28.638967Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T06:50:28.687925Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T07:06:21.282574Z I callgemini: 
+2025-11-22T07:06:21.295325Z I callgemini: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T07:06:23.054380Z I callgemini: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T07:06:23.148646Z I callgemini: 
+2025-11-22T07:06:23.311819Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T07:21:50.100437Z I callgemini: 
+2025-11-22T07:21:50.109415Z I callgemini: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T07:21:51.496529Z I callgemini: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T07:21:51.575781Z I callgemini: 
+2025-11-22T07:21:51.721437Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T07:22:37.754244Z I sendfeedback: 
+2025-11-22T07:22:37.774506Z I sendfeedback: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T07:22:39.606847Z I sendfeedback: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T07:22:39.682832Z I sendfeedback: 
+2025-11-22T07:22:39.842262Z D sendfeedback: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T07:22:42.428200Z ? sendfeedback: [Feedback] Sent from 0AbLFoVePLVj51FLZe8TGGuW61V2 (kongou411@gmail.com)
+
+2025-11-22T07:23:43.681640Z I callgemini: 
+2025-11-22T07:23:43.720161Z I callgemini: 
+2025-11-22T07:23:43.727526Z D callgemini: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2025-11-22T07:50:28.888642Z W sendpushnotification: 
+2025-11-22T07:50:28.901185Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T07:50:30.348697Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T07:50:30.453478Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T08:50:30.653087Z W sendpushnotification: 
+2025-11-22T08:50:30.666048Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T08:50:32.117074Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T08:50:32.219472Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T09:50:32.415617Z W sendpushnotification: 
+2025-11-22T09:50:32.431082Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T09:50:33.988511Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T09:50:34.092804Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T10:18:12.526654319Z N adminGetUser: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:18:11.362515281Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","request":{"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]},"function":{"name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","service_config":{"max_instance_request_concurrency":80,"available_memory":"512Mi","available_cpu":"1"},"build_config":{"runtime":"nodejs20","entry_point":"adminGetUser","source":{}},"labels":{"firebase-functions-hash":"8da994789389617c21a238226eea9a7894042a36","deployment-callable":"true","deployment-tool":"cli-firebase"}},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest"},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:18:12.552778699Z N sendFeedback: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:18:11.215333641Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","request":{"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","function":{"build_config":{"runtime":"nodejs20","entry_point":"sendFeedback","source":{}},"name":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","service_config":{"max_instance_request_concurrency":80,"secret_environment_variables":[{"secret":"GMAIL_USER","project_id":"your-coach-plus","version":"1","key":"GMAIL_USER"},{"project_id":"your-coach-plus","version":"1","secret":"GMAIL_APP_PASSWORD","key":"GMAIL_APP_PASSWORD"}],"available_memory":"256Mi","available_cpu":"1"},"labels":{"deployment-callable":"true","firebase-functions-hash":"dc2ab5507f51704093f50d619cb6fe5ddd74e451","deployment-tool":"cli-firebase"}},"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.secret_environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:18:12.637813310Z N callGemini: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:18:11.281008914Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","request":{"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","function":{"service_config":{"available_memory":"512Mi","available_cpu":"1","max_instance_request_concurrency":80},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","labels":{"deployment-callable":"true","firebase-functions-hash":"8da994789389617c21a238226eea9a7894042a36","deployment-tool":"cli-firebase"},"build_config":{"runtime":"nodejs20","source":{},"entry_point":"callGemini"}},"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:19:12.116383296Z N adminAddCredits: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:19:11.088325214Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","request":{"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]},"function":{"labels":{"firebase-functions-hash":"8da994789389617c21a238226eea9a7894042a36","deployment-tool":"cli-firebase","deployment-callable":"true"},"name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","build_config":{"runtime":"nodejs20","source":{},"entry_point":"adminAddCredits","source_token":"Cltwcm9qZWN0cy82NTQ1MzQ2NDI0MzEvbG9jYXRpb25zL2FzaWEtbm9ydGhlYXN0MS9idWlsZHMvYzQwYjBlNjItZTYxNS00OTNjLWJmNzEtMDFiNTdkMGUxZGM1Enphc2lhLW5vcnRoZWFzdDEtZG9ja2VyLnBrZy5kZXYveW91ci1jb2FjaC1wbHVzL2djZi1hcnRpZmFjdHMveW91ci0tY29hY2gtLXBsdXNfX2FzaWEtLW5vcnRoZWFzdDFfX2FkbWluX2dldF91c2VyOnZlcnNpb25fMRj/lbiqhhMiSXByb2plY3RzL3lvdXItY29hY2gtcGx1cy9sb2NhdGlvbnMvYXNpYS1ub3J0aGVhc3QxL2Z1bmN0aW9ucy9hZG1pbkdldFVzZXIqDAienIbJBhCIuO24ATIIbm9kZWpzMjA6egojZ2NyLmlvL2dhZS1ydW50aW1lcy9ub2RlanMyMDpzdGFibGUSU2FzaWEtbm9ydGhlYXN0MS1kb2NrZXIucGtnLmRldi9zZXJ2ZXJsZXNzLXJ1bnRpbWVzL2dvb2dsZS0yMi1mdWxsL3J1bnRpbWVzL25vZGVqczIwQAE="},"service_config":{"available_memory":"512Mi","available_cpu":"1","max_instance_request_concurrency":80}}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:19:12.566290629Z N sendPushNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:19:11.634001619Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","request":{"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","function":{"service_config":{"max_instance_request_concurrency":80,"available_memory":"512Mi","available_cpu":"1"},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","build_config":{"entry_point":"sendPushNotification","source_token":"Cltwcm9qZWN0cy82NTQ1MzQ2NDI0MzEvbG9jYXRpb25zL2FzaWEtbm9ydGhlYXN0Mi9idWlsZHMvZTM2MmNjNGEtODJlOC00YTBiLThlZGYtODQ5ODlhNzJjYjE0Endhc2lhLW5vcnRoZWFzdDItZG9ja2VyLnBrZy5kZXYveW91ci1jb2FjaC1wbHVzL2djZi1hcnRpZmFjdHMveW91ci0tY29hY2gtLXBsdXNfX2FzaWEtLW5vcnRoZWFzdDJfX2NhbGxfZ2VtaW5pOnZlcnNpb25fMRj/lbiqhhMiR3Byb2plY3RzL3lvdXItY29hY2gtcGx1cy9sb2NhdGlvbnMvYXNpYS1ub3J0aGVhc3QyL2Z1bmN0aW9ucy9jYWxsR2VtaW5pKgwIm5yGyQYQqOiW2wMyCG5vZGVqczIwOnoKI2djci5pby9nYWUtcnVudGltZXMvbm9kZWpzMjA6c3RhYmxlElNhc2lhLW5vcnRoZWFzdDItZG9ja2VyLnBrZy5kZXYvc2VydmVybGVzcy1ydW50aW1lcy9nb29nbGUtMjItZnVsbC9ydW50aW1lcy9ub2RlanMyMEAB","runtime":"nodejs20","source":{}},"labels":{"firebase-functions-hash":"8da994789389617c21a238226eea9a7894042a36","deployment-tool":"cli-firebase"}}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:19:12.611964953Z N scheduleNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:19:11.477056263Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","request":{"function":{"labels":{"deployment-tool":"cli-firebase","deployment-callable":"true","firebase-functions-hash":"8da994789389617c21a238226eea9a7894042a36"},"build_config":{"source_token":"Cltwcm9qZWN0cy82NTQ1MzQ2NDI0MzEvbG9jYXRpb25zL2FzaWEtbm9ydGhlYXN0Mi9idWlsZHMvZTM2MmNjNGEtODJlOC00YTBiLThlZGYtODQ5ODlhNzJjYjE0Endhc2lhLW5vcnRoZWFzdDItZG9ja2VyLnBrZy5kZXYveW91ci1jb2FjaC1wbHVzL2djZi1hcnRpZmFjdHMveW91ci0tY29hY2gtLXBsdXNfX2FzaWEtLW5vcnRoZWFzdDJfX2NhbGxfZ2VtaW5pOnZlcnNpb25fMRj/lbiqhhMiR3Byb2plY3RzL3lvdXItY29hY2gtcGx1cy9sb2NhdGlvbnMvYXNpYS1ub3J0aGVhc3QyL2Z1bmN0aW9ucy9jYWxsR2VtaW5pKgwIm5yGyQYQqOiW2wMyCG5vZGVqczIwOnoKI2djci5pby9nYWUtcnVudGltZXMvbm9kZWpzMjA6c3RhYmxlElNhc2lhLW5vcnRoZWFzdDItZG9ja2VyLnBrZy5kZXYvc2VydmVybGVzcy1ydW50aW1lcy9nb29nbGUtMjItZnVsbC9ydW50aW1lcy9ub2RlanMyMEAB","source":{},"runtime":"nodejs20","entry_point":"scheduleNotification"},"service_config":{"available_cpu":"1","max_instance_request_concurrency":80,"available_memory":"512Mi"},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification"},"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest"},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:19:15.590308Z I sendpushnotification: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:19:15.682856Z I callgemini: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:19:15.944877Z I admingetuser: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:19:15.979959Z I schedulenotification: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:19:16.827407Z I adminaddcredits: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:19:17.570059Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:19:17.807807Z I schedulenotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:19:17.852558Z I admingetuser: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:19:18.078450Z I callgemini: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:19:18.729968Z I sendfeedback: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:19:18.950886Z I adminaddcredits: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:19:19.203102948Z N sendPushNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","response":{"buildConfig":{"entryPoint":"sendPushNotification","source":{},"dockerRepository":"projects/your-coach-plus/locations/asia-northeast2/repositories/gcf-artifacts","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","runtime":"nodejs20"},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","createTime":"2025-11-20T07:51:02.705030172Z","environment":"GEN_2","updateTime":"2025-11-22T10:19:12.556473561Z","@type":"type.googleapis.com/google.cloud.functions.v2.Function","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"8da994789389617c21a238226eea9a7894042a36"},"state":"ACTIVE","url":"https://asia-northeast2-your-coach-plus.cloudfunctions.net/sendPushNotification","serviceConfig":{"serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","maxInstanceRequestConcurrency":80,"timeoutSeconds":60,"availableMemory":"512Mi","availableCpu":"1","allTrafficOnLatestRevision":true,"revision":"sendpushnotification-00011-cup","uri":"https://sendpushnotification-7jjwqogvna-dt.a.run.app","ingressSettings":"ALLOW_ALL"}},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:19:19.351933266Z N scheduleNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","response":{"environment":"GEN_2","state":"ACTIVE","@type":"type.googleapis.com/google.cloud.functions.v2.Function","updateTime":"2025-11-22T10:19:12.602764923Z","serviceConfig":{"revision":"schedulenotification-00008-win","maxInstanceRequestConcurrency":80,"availableMemory":"512Mi","timeoutSeconds":60,"uri":"https://schedulenotification-7jjwqogvna-dt.a.run.app","allTrafficOnLatestRevision":true,"availableCpu":"1","serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","ingressSettings":"ALLOW_ALL"},"buildConfig":{"dockerRegistry":"ARTIFACT_REGISTRY","source":{},"entryPoint":"scheduleNotification","runtime":"nodejs20","automaticUpdatePolicy":{},"dockerRepository":"projects/your-coach-plus/locations/asia-northeast2/repositories/gcf-artifacts","serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com"},"createTime":"2025-11-20T07:50:13.430656559Z","labels":{"deployment-callable":"true","firebase-functions-hash":"8da994789389617c21a238226eea9a7894042a36","deployment-tool":"cli-firebase"},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","url":"https://asia-northeast2-your-coach-plus.cloudfunctions.net/scheduleNotification"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:19:19.711905971Z N callGemini: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","response":{"serviceConfig":{"maxInstanceRequestConcurrency":80,"timeoutSeconds":60,"uri":"https://callgemini-7jjwqogvna-dt.a.run.app","revision":"callgemini-00013-gel","availableCpu":"1","allTrafficOnLatestRevision":true,"serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","availableMemory":"512Mi","ingressSettings":"ALLOW_ALL"},"@type":"type.googleapis.com/google.cloud.functions.v2.Function","state":"ACTIVE","createTime":"2025-11-01T01:47:03.320924059Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"8da994789389617c21a238226eea9a7894042a36","deployment-callable":"true"},"buildConfig":{"entryPoint":"callGemini","automaticUpdatePolicy":{},"dockerRegistry":"ARTIFACT_REGISTRY","runtime":"nodejs20","dockerRepository":"projects/your-coach-plus/locations/asia-northeast2/repositories/gcf-artifacts","source":{},"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com"},"environment":"GEN_2","url":"https://asia-northeast2-your-coach-plus.cloudfunctions.net/callGemini","updateTime":"2025-11-22T10:18:12.627081749Z","name":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:19:20.606241039Z N adminGetUser: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","response":{"labels":{"firebase-functions-hash":"8da994789389617c21a238226eea9a7894042a36","deployment-callable":"true","deployment-tool":"cli-firebase"},"environment":"GEN_2","updateTime":"2025-11-22T10:18:12.510136989Z","satisfiesPzi":true,"buildConfig":{"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","dockerRegistry":"ARTIFACT_REGISTRY","dockerRepository":"projects/your-coach-plus/locations/asia-northeast1/repositories/gcf-artifacts","runtime":"nodejs20","source":{},"automaticUpdatePolicy":{},"entryPoint":"adminGetUser"},"state":"ACTIVE","url":"https://asia-northeast1-your-coach-plus.cloudfunctions.net/adminGetUser","serviceConfig":{"uri":"https://admingetuser-7jjwqogvna-an.a.run.app","timeoutSeconds":60,"revision":"admingetuser-00021-qoy","availableCpu":"1","serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","maxInstanceRequestConcurrency":80,"availableMemory":"512Mi","ingressSettings":"ALLOW_ALL","allTrafficOnLatestRevision":true},"@type":"type.googleapis.com/google.cloud.functions.v2.Function","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","createTime":"2025-10-31T15:43:15.719608044Z"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:19:20.666945805Z N adminAddCredits: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","response":{"url":"https://asia-northeast1-your-coach-plus.cloudfunctions.net/adminAddCredits","satisfiesPzi":true,"@type":"type.googleapis.com/google.cloud.functions.v2.Function","state":"ACTIVE","updateTime":"2025-11-22T10:19:12.104227546Z","buildConfig":{"dockerRepository":"projects/your-coach-plus/locations/asia-northeast1/repositories/gcf-artifacts","source":{},"entryPoint":"adminAddCredits","runtime":"nodejs20","automaticUpdatePolicy":{},"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","dockerRegistry":"ARTIFACT_REGISTRY"},"createTime":"2025-10-31T15:43:15.720433444Z","labels":{"deployment-tool":"cli-firebase","deployment-callable":"true","firebase-functions-hash":"8da994789389617c21a238226eea9a7894042a36"},"serviceConfig":{"availableMemory":"512Mi","serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","allTrafficOnLatestRevision":true,"availableCpu":"1","revision":"adminaddcredits-00022-yov","ingressSettings":"ALLOW_ALL","uri":"https://adminaddcredits-7jjwqogvna-an.a.run.app","maxInstanceRequestConcurrency":80,"timeoutSeconds":60},"environment":"GEN_2","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:19:20.974270Z I sendfeedback: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:19:23.751051950Z N sendFeedback: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","response":{"satisfiesPzi":true,"labels":{"firebase-functions-hash":"dc2ab5507f51704093f50d619cb6fe5ddd74e451","deployment-tool":"cli-firebase","deployment-callable":"true"},"state":"ACTIVE","environment":"GEN_2","createTime":"2025-11-01T14:20:44.652447567Z","name":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","serviceConfig":{"availableCpu":"1","ingressSettings":"ALLOW_ALL","revision":"sendfeedback-00014-zav","timeoutSeconds":60,"serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","secretEnvironmentVariables":[{"version":"1","secret":"GMAIL_USER","projectId":"your-coach-plus","key":"GMAIL_USER"},{"version":"1","key":"GMAIL_APP_PASSWORD","secret":"GMAIL_APP_PASSWORD","projectId":"your-coach-plus"}],"availableMemory":"256Mi","maxInstanceRequestConcurrency":80,"allTrafficOnLatestRevision":true,"uri":"https://sendfeedback-7jjwqogvna-an.a.run.app"},"updateTime":"2025-11-22T10:18:12.538720800Z","url":"https://asia-northeast1-your-coach-plus.cloudfunctions.net/sendFeedback","buildConfig":{"automaticUpdatePolicy":{},"runtime":"nodejs20","source":{},"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","entryPoint":"sendFeedback","dockerRepository":"projects/your-coach-plus/locations/asia-northeast1/repositories/gcf-artifacts","dockerRegistry":"ARTIFACT_REGISTRY"},"@type":"type.googleapis.com/google.cloud.functions.v2.Function"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:23:00.888532570Z N callGemini: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:22:59.874336798Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","request":{"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","function":{"service_config":{"max_instance_request_concurrency":80,"available_cpu":"1","available_memory":"512Mi"},"build_config":{"source":{},"entry_point":"callGemini","runtime":"nodejs20"},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"66fe147c066b6cdeebd048df8d915a8bfc8d54eb","deployment-callable":"true"}}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:23:01.013698339Z N sendFeedback: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:22:59.921342864Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","request":{"function":{"service_config":{"available_cpu":"1","available_memory":"256Mi","max_instance_request_concurrency":80,"secret_environment_variables":[{"key":"GMAIL_USER","version":"1","secret":"GMAIL_USER","project_id":"your-coach-plus"},{"version":"1","project_id":"your-coach-plus","key":"GMAIL_APP_PASSWORD","secret":"GMAIL_APP_PASSWORD"}]},"name":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","build_config":{"source":{},"runtime":"nodejs20","entry_point":"sendFeedback"},"labels":{"deployment-callable":"true","deployment-tool":"cli-firebase","firebase-functions-hash":"2cf68a80ff600599d3a956818943772aabaaabbc"}},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.secret_environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:23:01.134634759Z N adminGetUser: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:23:00.058793320Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","request":{"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","function":{"build_config":{"source":{},"entry_point":"adminGetUser","runtime":"nodejs20"},"service_config":{"available_cpu":"1","max_instance_request_concurrency":80,"available_memory":"512Mi"},"name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","labels":{"deployment-callable":"true","firebase-functions-hash":"66fe147c066b6cdeebd048df8d915a8bfc8d54eb","deployment-tool":"cli-firebase"}},"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:23:50.463842Z I admingetuser: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:23:50.570568577Z N sendPushNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:23:49.565812994Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","request":{"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]},"function":{"labels":{"firebase-functions-hash":"66fe147c066b6cdeebd048df8d915a8bfc8d54eb","deployment-tool":"cli-firebase"},"build_config":{"source_token":"Cltwcm9qZWN0cy82NTQ1MzQ2NDI0MzEvbG9jYXRpb25zL2FzaWEtbm9ydGhlYXN0Mi9idWlsZHMvN2FiZTg5NTMtNmYzNi00MGE5LTliYTktM2M2YTA0YjRjMzkyEndhc2lhLW5vcnRoZWFzdDItZG9ja2VyLnBrZy5kZXYveW91ci1jb2FjaC1wbHVzL2djZi1hcnRpZmFjdHMveW91ci0tY29hY2gtLXBsdXNfX2FzaWEtLW5vcnRoZWFzdDJfX2NhbGxfZ2VtaW5pOnZlcnNpb25fMRj/lbiqhhMiR3Byb2plY3RzL3lvdXItY29hY2gtcGx1cy9sb2NhdGlvbnMvYXNpYS1ub3J0aGVhc3QyL2Z1bmN0aW9ucy9jYWxsR2VtaW5pKgsIsZ6GyQYQiNyrTTIIbm9kZWpzMjA6egojZ2NyLmlvL2dhZS1ydW50aW1lcy9ub2RlanMyMDpzdGFibGUSU2FzaWEtbm9ydGhlYXN0Mi1kb2NrZXIucGtnLmRldi9zZXJ2ZXJsZXNzLXJ1bnRpbWVzL2dvb2dsZS0yMi1mdWxsL3J1bnRpbWVzL25vZGVqczIwQAE=","entry_point":"sendPushNotification","source":{},"runtime":"nodejs20"},"service_config":{"available_cpu":"1","available_memory":"512Mi","max_instance_request_concurrency":80},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification"},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest"},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:23:50.604633323Z N scheduleNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:23:49.665136685Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","request":{"function":{"labels":{"deployment-callable":"true","deployment-tool":"cli-firebase","firebase-functions-hash":"66fe147c066b6cdeebd048df8d915a8bfc8d54eb"},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","service_config":{"max_instance_request_concurrency":80,"available_cpu":"1","available_memory":"512Mi"},"build_config":{"source":{},"runtime":"nodejs20","source_token":"Cltwcm9qZWN0cy82NTQ1MzQ2NDI0MzEvbG9jYXRpb25zL2FzaWEtbm9ydGhlYXN0Mi9idWlsZHMvN2FiZTg5NTMtNmYzNi00MGE5LTliYTktM2M2YTA0YjRjMzkyEndhc2lhLW5vcnRoZWFzdDItZG9ja2VyLnBrZy5kZXYveW91ci1jb2FjaC1wbHVzL2djZi1hcnRpZmFjdHMveW91ci0tY29hY2gtLXBsdXNfX2FzaWEtLW5vcnRoZWFzdDJfX2NhbGxfZ2VtaW5pOnZlcnNpb25fMRj/lbiqhhMiR3Byb2plY3RzL3lvdXItY29hY2gtcGx1cy9sb2NhdGlvbnMvYXNpYS1ub3J0aGVhc3QyL2Z1bmN0aW9ucy9jYWxsR2VtaW5pKgsIsZ6GyQYQiNyrTTIIbm9kZWpzMjA6egojZ2NyLmlvL2dhZS1ydW50aW1lcy9ub2RlanMyMDpzdGFibGUSU2FzaWEtbm9ydGhlYXN0Mi1kb2NrZXIucGtnLmRldi9zZXJ2ZXJsZXNzLXJ1bnRpbWVzL2dvb2dsZS0yMi1mdWxsL3J1bnRpbWVzL25vZGVqczIwQAE=","entry_point":"scheduleNotification"}},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:23:51.025231053Z N adminAddCredits: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T10:23:49.824087109Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","request":{"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","function":{"build_config":{"source_token":"Cltwcm9qZWN0cy82NTQ1MzQ2NDI0MzEvbG9jYXRpb25zL2FzaWEtbm9ydGhlYXN0MS9idWlsZHMvM2UyYTIyZjItOTdlYy00NGIyLThiMzQtNDhhNTFjOWMyNTA5Enphc2lhLW5vcnRoZWFzdDEtZG9ja2VyLnBrZy5kZXYveW91ci1jb2FjaC1wbHVzL2djZi1hcnRpZmFjdHMveW91ci0tY29hY2gtLXBsdXNfX2FzaWEtLW5vcnRoZWFzdDFfX2FkbWluX2dldF91c2VyOnZlcnNpb25fMRj/lbiqhhMiSXByb2plY3RzL3lvdXItY29hY2gtcGx1cy9sb2NhdGlvbnMvYXNpYS1ub3J0aGVhc3QxL2Z1bmN0aW9ucy9hZG1pbkdldFVzZXIqDAivnobJBhCI9KvuAjIIbm9kZWpzMjA6egojZ2NyLmlvL2dhZS1ydW50aW1lcy9ub2RlanMyMDpzdGFibGUSU2FzaWEtbm9ydGhlYXN0MS1kb2NrZXIucGtnLmRldi9zZXJ2ZXJsZXNzLXJ1bnRpbWVzL2dvb2dsZS0yMi1mdWxsL3J1bnRpbWVzL25vZGVqczIwQAE=","source":{},"runtime":"nodejs20","entry_point":"adminAddCredits"},"labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"66fe147c066b6cdeebd048df8d915a8bfc8d54eb","deployment-callable":"true"},"service_config":{"available_cpu":"1","max_instance_request_concurrency":80,"available_memory":"512Mi"},"name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits"}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:23:52.279621Z I callgemini: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:23:52.523211Z I admingetuser: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:23:52.606046Z I sendfeedback: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:23:54.081707Z I sendpushnotification: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:23:54.081712Z I schedulenotification: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:23:54.138679Z I callgemini: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:23:54.141670142Z N adminGetUser: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","response":{"@type":"type.googleapis.com/google.cloud.functions.v2.Function","labels":{"firebase-functions-hash":"66fe147c066b6cdeebd048df8d915a8bfc8d54eb","deployment-tool":"cli-firebase","deployment-callable":"true"},"createTime":"2025-10-31T15:43:15.719608044Z","buildConfig":{"runtime":"nodejs20","serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","automaticUpdatePolicy":{},"dockerRepository":"projects/your-coach-plus/locations/asia-northeast1/repositories/gcf-artifacts","entryPoint":"adminGetUser","dockerRegistry":"ARTIFACT_REGISTRY","source":{}},"environment":"GEN_2","state":"ACTIVE","serviceConfig":{"availableMemory":"512Mi","revision":"admingetuser-00022-das","uri":"https://admingetuser-7jjwqogvna-an.a.run.app","ingressSettings":"ALLOW_ALL","timeoutSeconds":60,"availableCpu":"1","maxInstanceRequestConcurrency":80,"serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","allTrafficOnLatestRevision":true},"updateTime":"2025-11-22T10:23:01.120441509Z","satisfiesPzi":true,"url":"https://asia-northeast1-your-coach-plus.cloudfunctions.net/adminGetUser","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:23:54.848850Z I sendfeedback: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:23:55.718541Z I adminaddcredits: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T10:23:55.776687Z I schedulenotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:23:56.131794828Z N callGemini: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","response":{"environment":"GEN_2","updateTime":"2025-11-22T10:23:00.880501413Z","state":"ACTIVE","buildConfig":{"source":{},"dockerRepository":"projects/your-coach-plus/locations/asia-northeast2/repositories/gcf-artifacts","entryPoint":"callGemini","automaticUpdatePolicy":{},"dockerRegistry":"ARTIFACT_REGISTRY","serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","runtime":"nodejs20"},"serviceConfig":{"availableCpu":"1","allTrafficOnLatestRevision":true,"availableMemory":"512Mi","revision":"callgemini-00014-tab","serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","maxInstanceRequestConcurrency":80,"timeoutSeconds":60,"uri":"https://callgemini-7jjwqogvna-dt.a.run.app","ingressSettings":"ALLOW_ALL"},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","@type":"type.googleapis.com/google.cloud.functions.v2.Function","createTime":"2025-11-01T01:47:03.320924059Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"66fe147c066b6cdeebd048df8d915a8bfc8d54eb","deployment-callable":"true"},"url":"https://asia-northeast2-your-coach-plus.cloudfunctions.net/callGemini"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:23:56.135078Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:23:56.567654804Z N sendFeedback: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","response":{"serviceConfig":{"timeoutSeconds":60,"revision":"sendfeedback-00015-mew","availableMemory":"256Mi","serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","allTrafficOnLatestRevision":true,"availableCpu":"1","maxInstanceRequestConcurrency":80,"secretEnvironmentVariables":[{"secret":"GMAIL_USER","version":"1","projectId":"your-coach-plus","key":"GMAIL_USER"},{"projectId":"your-coach-plus","key":"GMAIL_APP_PASSWORD","version":"1","secret":"GMAIL_APP_PASSWORD"}],"uri":"https://sendfeedback-7jjwqogvna-an.a.run.app","ingressSettings":"ALLOW_ALL"},"environment":"GEN_2","state":"ACTIVE","labels":{"firebase-functions-hash":"2cf68a80ff600599d3a956818943772aabaaabbc","deployment-tool":"cli-firebase","deployment-callable":"true"},"@type":"type.googleapis.com/google.cloud.functions.v2.Function","satisfiesPzi":true,"url":"https://asia-northeast1-your-coach-plus.cloudfunctions.net/sendFeedback","name":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","buildConfig":{"automaticUpdatePolicy":{},"dockerRepository":"projects/your-coach-plus/locations/asia-northeast1/repositories/gcf-artifacts","entryPoint":"sendFeedback","dockerRegistry":"ARTIFACT_REGISTRY","runtime":"nodejs20","source":{},"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com"},"updateTime":"2025-11-22T10:23:00.994799279Z","createTime":"2025-11-01T14:20:44.652447567Z"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:23:57.706123809Z N sendPushNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","response":{"@type":"type.googleapis.com/google.cloud.functions.v2.Function","url":"https://asia-northeast2-your-coach-plus.cloudfunctions.net/sendPushNotification","createTime":"2025-11-20T07:51:02.705030172Z","name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","state":"ACTIVE","serviceConfig":{"uri":"https://sendpushnotification-7jjwqogvna-dt.a.run.app","availableMemory":"512Mi","ingressSettings":"ALLOW_ALL","allTrafficOnLatestRevision":true,"timeoutSeconds":60,"revision":"sendpushnotification-00012-nen","maxInstanceRequestConcurrency":80,"availableCpu":"1","serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com"},"buildConfig":{"runtime":"nodejs20","source":{},"entryPoint":"sendPushNotification","automaticUpdatePolicy":{},"dockerRegistry":"ARTIFACT_REGISTRY","serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","dockerRepository":"projects/your-coach-plus/locations/asia-northeast2/repositories/gcf-artifacts"},"labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"66fe147c066b6cdeebd048df8d915a8bfc8d54eb"},"environment":"GEN_2","updateTime":"2025-11-22T10:23:50.562634574Z"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:23:58.084224Z I adminaddcredits: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:23:58.631383228Z N scheduleNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","response":{"createTime":"2025-11-20T07:50:13.430656559Z","url":"https://asia-northeast2-your-coach-plus.cloudfunctions.net/scheduleNotification","name":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","serviceConfig":{"uri":"https://schedulenotification-7jjwqogvna-dt.a.run.app","availableMemory":"512Mi","ingressSettings":"ALLOW_ALL","maxInstanceRequestConcurrency":80,"allTrafficOnLatestRevision":true,"timeoutSeconds":60,"availableCpu":"1","serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","revision":"schedulenotification-00009-xac"},"state":"ACTIVE","updateTime":"2025-11-22T10:23:50.595437892Z","buildConfig":{"dockerRepository":"projects/your-coach-plus/locations/asia-northeast2/repositories/gcf-artifacts","automaticUpdatePolicy":{},"source":{},"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","runtime":"nodejs20","entryPoint":"scheduleNotification","dockerRegistry":"ARTIFACT_REGISTRY"},"@type":"type.googleapis.com/google.cloud.functions.v2.Function","labels":{"firebase-functions-hash":"66fe147c066b6cdeebd048df8d915a8bfc8d54eb","deployment-tool":"cli-firebase","deployment-callable":"true"},"environment":"GEN_2"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T10:24:00.839133003Z N adminAddCredits: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","response":{"@type":"type.googleapis.com/google.cloud.functions.v2.Function","serviceConfig":{"serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","availableCpu":"1","timeoutSeconds":60,"allTrafficOnLatestRevision":true,"availableMemory":"512Mi","uri":"https://adminaddcredits-7jjwqogvna-an.a.run.app","revision":"adminaddcredits-00023-sis","ingressSettings":"ALLOW_ALL","maxInstanceRequestConcurrency":80},"url":"https://asia-northeast1-your-coach-plus.cloudfunctions.net/adminAddCredits","environment":"GEN_2","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","labels":{"firebase-functions-hash":"66fe147c066b6cdeebd048df8d915a8bfc8d54eb","deployment-callable":"true","deployment-tool":"cli-firebase"},"updateTime":"2025-11-22T10:23:51.012713632Z","satisfiesPzi":true,"createTime":"2025-10-31T15:43:15.720433444Z","state":"ACTIVE","buildConfig":{"dockerRepository":"projects/your-coach-plus/locations/asia-northeast1/repositories/gcf-artifacts","entryPoint":"adminAddCredits","automaticUpdatePolicy":{},"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","dockerRegistry":"ARTIFACT_REGISTRY","source":{},"runtime":"nodejs20"}},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T10:50:34.302340Z W sendpushnotification: 
+2025-11-22T10:50:34.311030Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T10:50:35.431215Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T10:50:35.452532Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-22T10:50:35.452874Z ? sendpushnotification: [Debug] req.body: {
+  "fcmToken": "dYekjVTr7FoQO3pMzds55t:APA91bFz_V8GOFMv3_zFwCHSWKzSb7DSE5oYwsTDp0wwXJUw_FltVFJaZGHAsafMoKTOBrhq5cJN3HwBAAbujFYngT93Cu_FjYmKM5ScAQx-W3pKGnGRZnc",
+  "title": "トレーニングの時間です",
+  "body": "今日のトレーニングを始めましょう！",
+  "notificationType": "workout",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2"
+}
+
+2025-11-22T10:50:35.452944Z ? sendpushnotification: [Debug] req.rawBody: {"fcmToken":"dYekjVTr7FoQO3pMzds55t:APA91bFz_V8GOFMv3_zFwCHSWKzSb7DSE5oYwsTDp0wwXJUw_FltVFJaZGHAsafMoKTOBrhq5cJN3HwBAAbujFYngT93Cu_FjYmKM5ScAQx-W3pKGnGRZnc","title":"トレーニングの時間です","body":"今日のトレーニングを始めましょう！","notificationType":"workout","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2"}
+
+2025-11-22T10:50:35.453135Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T10:50:35.454666Z ? sendpushnotification: [Push Notification] Received: {
+  title: 'トレーニングの時間です',
+  body: '今日のトレーニングを始めましょう！',
+  notificationType: 'workout',
+  userId: '0AbLFoVePLVj51FLZe8TGGuW61V2',
+  scheduleTimeStr: undefined
+}
+
+2025-11-22T10:50:35.454742Z ? sendpushnotification: [Push Notification] Full requestData: {
+  "fcmToken": "dYekjVTr7FoQO3pMzds55t:APA91bFz_V8GOFMv3_zFwCHSWKzSb7DSE5oYwsTDp0wwXJUw_FltVFJaZGHAsafMoKTOBrhq5cJN3HwBAAbujFYngT93Cu_FjYmKM5ScAQx-W3pKGnGRZnc",
+  "title": "トレーニングの時間です",
+  "body": "今日のトレーニングを始めましょう！",
+  "notificationType": "workout",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2"
+}
+
+2025-11-22T11:37:56.289254Z I callgemini: 
+2025-11-22T11:37:56.306562Z I callgemini: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T11:37:57.637382Z I callgemini: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T11:38:02.931067Z I callgemini: 
+2025-11-22T11:38:03.122112Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:38:41.932836Z I callgemini: 
+2025-11-22T11:38:41.969266Z I callgemini: 
+2025-11-22T11:38:41.975263Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:39:14.938266Z I callgemini: 
+2025-11-22T11:39:14.979972Z I callgemini: 
+2025-11-22T11:39:14.986489Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:39:50.956263Z I callgemini: 
+2025-11-22T11:39:50.991905Z I callgemini: 
+2025-11-22T11:39:50.996976Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:39:57.886197Z I callgemini: 
+2025-11-22T11:39:57.914915Z I callgemini: 
+2025-11-22T11:39:57.920166Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T11:40:23.716780Z I callgemini: 
+2025-11-22T11:40:23.745370Z I callgemini: 
+2025-11-22T11:40:23.750455Z D callgemini: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2025-11-22T11:40:32.946755Z I callgemini: 
+2025-11-22T11:40:32.984123Z I callgemini: 
+2025-11-22T11:40:32.989197Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T11:40:56.714079Z I callgemini: 
+2025-11-22T11:40:56.747236Z I callgemini: 
+2025-11-22T11:40:56.752398Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:41:26.944405Z I callgemini: 
+2025-11-22T11:41:26.983815Z I callgemini: 
+2025-11-22T11:41:26.989987Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T11:41:32.760410Z I callgemini: 
+2025-11-22T11:41:32.798402Z I callgemini: 
+2025-11-22T11:41:32.803332Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:42:04.058156Z I callgemini: 
+2025-11-22T11:42:04.094975Z I callgemini: 
+2025-11-22T11:42:04.099824Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:42:35.218442Z I callgemini: 
+2025-11-22T11:42:35.258080Z I callgemini: 
+2025-11-22T11:42:35.263281Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T11:42:37.071387Z I callgemini: 
+2025-11-22T11:42:37.076506Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:42:37.384591Z I callgemini: 
+2025-11-22T11:42:37.397501Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:42:44.947791Z I callgemini: 
+2025-11-22T11:42:44.983416Z I callgemini: 
+2025-11-22T11:42:44.988898Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:42:54.537370Z I callgemini: 
+2025-11-22T11:42:54.573532Z I callgemini: 
+2025-11-22T11:42:54.578233Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:43:06.211716Z I callgemini: 
+2025-11-22T11:43:06.238492Z I callgemini: 
+2025-11-22T11:43:06.247083Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T11:43:08.211886Z I callgemini: 
+2025-11-22T11:43:08.216785Z D callgemini: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2025-11-22T11:43:10.365218Z I callgemini: 
+2025-11-22T11:43:10.371624Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:43:13.290912Z I callgemini: 
+2025-11-22T11:43:13.331335Z I callgemini: 
+2025-11-22T11:43:13.336214Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T11:43:23.940518Z I callgemini: 
+2025-11-22T11:43:23.979301Z I callgemini: 
+2025-11-22T11:43:23.984009Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T11:43:36.215844Z I callgemini: 
+2025-11-22T11:43:36.244292Z I callgemini: 
+2025-11-22T11:43:36.249098Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:43:39.270167Z I callgemini: 
+2025-11-22T11:43:39.276550Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T11:43:43.655681Z I callgemini: 
+2025-11-22T11:43:43.701221Z I callgemini: 
+2025-11-22T11:43:43.705922Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:43:56.964156Z I callgemini: 
+2025-11-22T11:43:57.003978Z I callgemini: 
+2025-11-22T11:43:57.009876Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:44:08.161328Z I callgemini: 
+2025-11-22T11:44:08.196006Z I callgemini: 
+2025-11-22T11:44:08.201907Z D callgemini: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2025-11-22T11:44:14.379679Z I callgemini: 
+2025-11-22T11:44:14.410385Z I callgemini: 
+2025-11-22T11:44:14.415048Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:44:32.973930Z I callgemini: 
+2025-11-22T11:44:33.009029Z I callgemini: 
+2025-11-22T11:44:33.014270Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:44:37.871792Z I callgemini: 
+2025-11-22T11:44:37.876454Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T11:44:47.373775Z I callgemini: 
+2025-11-22T11:44:47.400958Z I callgemini: 
+2025-11-22T11:44:47.405743Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:45:06.175258Z I callgemini: 
+2025-11-22T11:45:06.215211Z I callgemini: 
+2025-11-22T11:45:06.219483Z D callgemini: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2025-11-22T11:45:14.965879Z I callgemini: 
+2025-11-22T11:45:15.001642Z I callgemini: 
+2025-11-22T11:45:15.006406Z D callgemini: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2025-11-22T11:45:23.346232Z I callgemini: 
+2025-11-22T11:45:23.385429Z I callgemini: 
+2025-11-22T11:45:23.392440Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:45:39.138434Z I callgemini: 
+2025-11-22T11:45:39.174132Z I callgemini: 
+2025-11-22T11:45:39.178615Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:45:40.313455Z I callgemini: 
+2025-11-22T11:45:40.319115Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:45:47.729371Z I callgemini: 
+2025-11-22T11:45:47.759902Z I callgemini: 
+2025-11-22T11:45:47.764553Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:46:04.705156Z I callgemini: 
+2025-11-22T11:46:04.733182Z I callgemini: 
+2025-11-22T11:46:04.737713Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:46:05.340Z I callgemini: 
+2025-11-22T11:46:05.344899Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:46:08.914074Z I callgemini: 
+2025-11-22T11:46:08.919068Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:46:09.365260Z I callgemini: 
+2025-11-22T11:46:09.369885Z D callgemini: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2025-11-22T11:46:10.542259Z I callgemini: 
+2025-11-22T11:46:10.573406Z I callgemini: 
+2025-11-22T11:46:10.578049Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:46:33.803955Z I callgemini: 
+2025-11-22T11:46:33.830856Z I callgemini: 
+2025-11-22T11:46:33.835499Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:46:37.166074Z I callgemini: 
+2025-11-22T11:46:37.171050Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:46:41.868400Z I callgemini: 
+2025-11-22T11:46:41.907776Z I callgemini: 
+2025-11-22T11:46:41.915812Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:46:59.342874Z I callgemini: 
+2025-11-22T11:46:59.378411Z I callgemini: 
+2025-11-22T11:46:59.384670Z D callgemini: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2025-11-22T11:47:05.658469Z I callgemini: 
+2025-11-22T11:47:05.701439Z I callgemini: 
+2025-11-22T11:47:05.706379Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T11:47:14.854124Z I callgemini: 
+2025-11-22T11:47:14.895555Z I callgemini: 
+2025-11-22T11:47:14.900005Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:47:26.950016Z I callgemini: 
+2025-11-22T11:47:26.996769Z I callgemini: 
+2025-11-22T11:47:27.001665Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:47:29.029736Z I callgemini: 
+2025-11-22T11:47:29.034219Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:47:38.597957Z I callgemini: 
+2025-11-22T11:47:38.641377Z I callgemini: 
+2025-11-22T11:47:38.645924Z D callgemini: {"verifications":{"auth":"VALID","app":"MISSING"},"message":"Callable request verification passed"}
+2025-11-22T11:47:50.926639Z I callgemini: 
+2025-11-22T11:47:51.006921Z I callgemini: 
+2025-11-22T11:47:51.011323Z D callgemini: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2025-11-22T11:47:57.680533Z I callgemini: 
+2025-11-22T11:47:57.737217Z I callgemini: 
+2025-11-22T11:47:57.743071Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T11:47:59.689416Z I callgemini: 
+2025-11-22T11:47:59.694413Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:50:35.614374Z W sendpushnotification: 
+2025-11-22T11:50:35.627989Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T11:50:37.055469Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T11:50:37.088623Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-22T11:50:37.089130Z ? sendpushnotification: [Debug] req.body: {
+  "fcmToken": "dYekjVTr7FoQO3pMzds55t:APA91bFz_V8GOFMv3_zFwCHSWKzSb7DSE5oYwsTDp0wwXJUw_FltVFJaZGHAsafMoKTOBrhq5cJN3HwBAAbujFYngT93Cu_FjYmKM5ScAQx-W3pKGnGRZnc",
+  "title": "トレーニングの時間です",
+  "body": "今日のトレーニングを始めましょう！",
+  "notificationType": "workout",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2"
+}
+
+2025-11-22T11:50:37.089262Z ? sendpushnotification: [Debug] req.rawBody: {"fcmToken":"dYekjVTr7FoQO3pMzds55t:APA91bFz_V8GOFMv3_zFwCHSWKzSb7DSE5oYwsTDp0wwXJUw_FltVFJaZGHAsafMoKTOBrhq5cJN3HwBAAbujFYngT93Cu_FjYmKM5ScAQx-W3pKGnGRZnc","title":"トレーニングの時間です","body":"今日のトレーニングを始めましょう！","notificationType":"workout","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2"}
+
+2025-11-22T11:50:37.089526Z ? sendpushnotification: [Push Notification] Missing required parameters
+
+2025-11-22T11:50:37.091390Z ? sendpushnotification: [Push Notification] Received: {
+  title: 'トレーニングの時間です',
+  body: '今日のトレーニングを始めましょう！',
+  notificationType: 'workout',
+  userId: '0AbLFoVePLVj51FLZe8TGGuW61V2',
+  scheduleTimeStr: undefined
+}
+
+2025-11-22T11:50:37.091544Z ? sendpushnotification: [Push Notification] Full requestData: {
+  "fcmToken": "dYekjVTr7FoQO3pMzds55t:APA91bFz_V8GOFMv3_zFwCHSWKzSb7DSE5oYwsTDp0wwXJUw_FltVFJaZGHAsafMoKTOBrhq5cJN3HwBAAbujFYngT93Cu_FjYmKM5ScAQx-W3pKGnGRZnc",
+  "title": "トレーニングの時間です",
+  "body": "今日のトレーニングを始めましょう！",
+  "notificationType": "workout",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2"
+}
+
+2025-11-22T11:52:39.758104869Z N callGemini: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T11:52:38.720181289Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","request":{"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]},"function":{"labels":{"firebase-functions-hash":"3b6372a50c4685cc5d3a554954ca6041446237db","deployment-callable":"true","deployment-tool":"cli-firebase"},"service_config":{"available_cpu":"1","max_instance_request_concurrency":80,"available_memory":"512Mi"},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","build_config":{"runtime":"nodejs20","source":{},"entry_point":"callGemini"}}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T11:52:39.997865787Z N sendFeedback: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T11:52:38.778048269Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","request":{"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","function":{"build_config":{"runtime":"nodejs20","source":{},"entry_point":"sendFeedback"},"name":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","service_config":{"available_cpu":"1","max_instance_request_concurrency":80,"available_memory":"256Mi","secret_environment_variables":[{"secret":"GMAIL_USER","project_id":"your-coach-plus","version":"1","key":"GMAIL_USER"},{"secret":"GMAIL_APP_PASSWORD","project_id":"your-coach-plus","key":"GMAIL_APP_PASSWORD","version":"1"}]},"labels":{"firebase-functions-hash":"63a04e14f4e684889f93da88686e8e7b5e78ca05","deployment-callable":"true","deployment-tool":"cli-firebase"}},"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.secret_environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T11:52:40.082904343Z N adminGetUser: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T11:52:38.923223771Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","request":{"function":{"service_config":{"max_instance_request_concurrency":80,"available_cpu":"1","available_memory":"512Mi"},"name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","build_config":{"source":{},"entry_point":"adminGetUser","runtime":"nodejs20"},"labels":{"deployment-callable":"true","firebase-functions-hash":"3b6372a50c4685cc5d3a554954ca6041446237db","deployment-tool":"cli-firebase"}},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T11:53:27.368551Z I sendfeedback: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T11:53:28.445779Z I callgemini: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T11:53:28.527637Z I admingetuser: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T11:53:29.438468420Z N scheduleNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T11:53:28.409185013Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","request":{"function":{"service_config":{"max_instance_request_concurrency":80,"available_memory":"512Mi","available_cpu":"1"},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"3b6372a50c4685cc5d3a554954ca6041446237db","deployment-callable":"true"},"build_config":{"runtime":"nodejs20","source_token":"Cltwcm9qZWN0cy82NTQ1MzQ2NDI0MzEvbG9jYXRpb25zL2FzaWEtbm9ydGhlYXN0Mi9idWlsZHMvM2U4ZWNjZmItMzdjYy00MTliLWE4M2UtMDhkODNhYTRhZDNiEndhc2lhLW5vcnRoZWFzdDItZG9ja2VyLnBrZy5kZXYveW91ci1jb2FjaC1wbHVzL2djZi1hcnRpZmFjdHMveW91ci0tY29hY2gtLXBsdXNfX2FzaWEtLW5vcnRoZWFzdDJfX2NhbGxfZ2VtaW5pOnZlcnNpb25fMRj/lbiqhhMiR3Byb2plY3RzL3lvdXItY29hY2gtcGx1cy9sb2NhdGlvbnMvYXNpYS1ub3J0aGVhc3QyL2Z1bmN0aW9ucy9jYWxsR2VtaW5pKgwIsciGyQYQ0OnRzwMyCG5vZGVqczIwOnoKI2djci5pby9nYWUtcnVudGltZXMvbm9kZWpzMjA6c3RhYmxlElNhc2lhLW5vcnRoZWFzdDItZG9ja2VyLnBrZy5kZXYvc2VydmVybGVzcy1ydW50aW1lcy9nb29nbGUtMjItZnVsbC9ydW50aW1lcy9ub2RlanMyMEAB","entry_point":"scheduleNotification","source":{}}},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T11:53:29.473921749Z N sendPushNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T11:53:28.568716992Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","request":{"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]},"function":{"name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","service_config":{"available_memory":"512Mi","available_cpu":"1","max_instance_request_concurrency":80},"build_config":{"source":{},"runtime":"nodejs20","source_token":"Cltwcm9qZWN0cy82NTQ1MzQ2NDI0MzEvbG9jYXRpb25zL2FzaWEtbm9ydGhlYXN0Mi9idWlsZHMvM2U4ZWNjZmItMzdjYy00MTliLWE4M2UtMDhkODNhYTRhZDNiEndhc2lhLW5vcnRoZWFzdDItZG9ja2VyLnBrZy5kZXYveW91ci1jb2FjaC1wbHVzL2djZi1hcnRpZmFjdHMveW91ci0tY29hY2gtLXBsdXNfX2FzaWEtLW5vcnRoZWFzdDJfX2NhbGxfZ2VtaW5pOnZlcnNpb25fMRj/lbiqhhMiR3Byb2plY3RzL3lvdXItY29hY2gtcGx1cy9sb2NhdGlvbnMvYXNpYS1ub3J0aGVhc3QyL2Z1bmN0aW9ucy9jYWxsR2VtaW5pKgwIsciGyQYQ0OnRzwMyCG5vZGVqczIwOnoKI2djci5pby9nYWUtcnVudGltZXMvbm9kZWpzMjA6c3RhYmxlElNhc2lhLW5vcnRoZWFzdDItZG9ja2VyLnBrZy5kZXYvc2VydmVybGVzcy1ydW50aW1lcy9nb29nbGUtMjItZnVsbC9ydW50aW1lcy9ub2RlanMyMEAB","entry_point":"sendPushNotification"},"labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"3b6372a50c4685cc5d3a554954ca6041446237db"}},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest"},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T11:53:29.653356641Z N adminAddCredits: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-22T11:53:28.575015193Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","request":{"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","function":{"service_config":{"max_instance_request_concurrency":80,"available_memory":"512Mi","available_cpu":"1"},"name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","labels":{"firebase-functions-hash":"3b6372a50c4685cc5d3a554954ca6041446237db","deployment-callable":"true","deployment-tool":"cli-firebase"},"build_config":{"entry_point":"adminAddCredits","runtime":"nodejs20","source_token":"Cltwcm9qZWN0cy82NTQ1MzQ2NDI0MzEvbG9jYXRpb25zL2FzaWEtbm9ydGhlYXN0MS9idWlsZHMvOGZmYjI3YzgtNjc0Yi00ZjViLWE3MGItYTQyYTRkNDQ0ZTRjEnphc2lhLW5vcnRoZWFzdDEtZG9ja2VyLnBrZy5kZXYveW91ci1jb2FjaC1wbHVzL2djZi1hcnRpZmFjdHMveW91ci0tY29hY2gtLXBsdXNfX2FzaWEtLW5vcnRoZWFzdDFfX2FkbWluX2dldF91c2VyOnZlcnNpb25fMRj/lbiqhhMiSXByb2plY3RzL3lvdXItY29hY2gtcGx1cy9sb2NhdGlvbnMvYXNpYS1ub3J0aGVhc3QxL2Z1bmN0aW9ucy9hZG1pbkdldFVzZXIqDAiyyIbJBhC4lJHFAzIIbm9kZWpzMjA6egojZ2NyLmlvL2dhZS1ydW50aW1lcy9ub2RlanMyMDpzdGFibGUSU2FzaWEtbm9ydGhlYXN0MS1kb2NrZXIucGtnLmRldi9zZXJ2ZXJsZXNzLXJ1bnRpbWVzL2dvb2dsZS0yMi1mdWxsL3J1bnRpbWVzL25vZGVqczIwQAE=","source":{}}},"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T11:53:29.739458Z I sendfeedback: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T11:53:30.333545Z I callgemini: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T11:53:30.515225Z I admingetuser: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T11:53:31.502147912Z N sendFeedback: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","response":{"environment":"GEN_2","buildConfig":{"dockerRegistry":"ARTIFACT_REGISTRY","dockerRepository":"projects/your-coach-plus/locations/asia-northeast1/repositories/gcf-artifacts","source":{},"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","entryPoint":"sendFeedback","automaticUpdatePolicy":{},"runtime":"nodejs20"},"labels":{"deployment-tool":"cli-firebase","deployment-callable":"true","firebase-functions-hash":"63a04e14f4e684889f93da88686e8e7b5e78ca05"},"satisfiesPzi":true,"url":"https://asia-northeast1-your-coach-plus.cloudfunctions.net/sendFeedback","state":"ACTIVE","name":"projects/your-coach-plus/locations/asia-northeast1/functions/sendFeedback","serviceConfig":{"availableMemory":"256Mi","secretEnvironmentVariables":[{"version":"1","secret":"GMAIL_USER","key":"GMAIL_USER","projectId":"your-coach-plus"},{"version":"1","secret":"GMAIL_APP_PASSWORD","projectId":"your-coach-plus","key":"GMAIL_APP_PASSWORD"}],"timeoutSeconds":60,"availableCpu":"1","revision":"sendfeedback-00016-gax","ingressSettings":"ALLOW_ALL","allTrafficOnLatestRevision":true,"serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","maxInstanceRequestConcurrency":80,"uri":"https://sendfeedback-7jjwqogvna-an.a.run.app"},"createTime":"2025-11-01T14:20:44.652447567Z","updateTime":"2025-11-22T11:52:39.985222177Z","@type":"type.googleapis.com/google.cloud.functions.v2.Function"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T11:53:31.977597123Z N callGemini: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","response":{"url":"https://asia-northeast2-your-coach-plus.cloudfunctions.net/callGemini","buildConfig":{"automaticUpdatePolicy":{},"runtime":"nodejs20","dockerRepository":"projects/your-coach-plus/locations/asia-northeast2/repositories/gcf-artifacts","entryPoint":"callGemini","serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","dockerRegistry":"ARTIFACT_REGISTRY","source":{}},"serviceConfig":{"maxInstanceRequestConcurrency":80,"availableMemory":"512Mi","availableCpu":"1","serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","timeoutSeconds":60,"uri":"https://callgemini-7jjwqogvna-dt.a.run.app","revision":"callgemini-00015-pax","allTrafficOnLatestRevision":true,"ingressSettings":"ALLOW_ALL"},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/callGemini","state":"ACTIVE","updateTime":"2025-11-22T11:52:39.749981569Z","createTime":"2025-11-01T01:47:03.320924059Z","@type":"type.googleapis.com/google.cloud.functions.v2.Function","environment":"GEN_2","labels":{"deployment-callable":"true","deployment-tool":"cli-firebase","firebase-functions-hash":"3b6372a50c4685cc5d3a554954ca6041446237db"}},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T11:53:32.180065816Z N adminGetUser: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","response":{"environment":"GEN_2","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminGetUser","createTime":"2025-10-31T15:43:15.719608044Z","buildConfig":{"source":{},"runtime":"nodejs20","automaticUpdatePolicy":{},"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","dockerRepository":"projects/your-coach-plus/locations/asia-northeast1/repositories/gcf-artifacts","dockerRegistry":"ARTIFACT_REGISTRY","entryPoint":"adminGetUser"},"labels":{"firebase-functions-hash":"3b6372a50c4685cc5d3a554954ca6041446237db","deployment-tool":"cli-firebase","deployment-callable":"true"},"state":"ACTIVE","url":"https://asia-northeast1-your-coach-plus.cloudfunctions.net/adminGetUser","updateTime":"2025-11-22T11:52:40.071080672Z","@type":"type.googleapis.com/google.cloud.functions.v2.Function","serviceConfig":{"availableMemory":"512Mi","timeoutSeconds":60,"revision":"admingetuser-00023-ler","availableCpu":"1","ingressSettings":"ALLOW_ALL","allTrafficOnLatestRevision":true,"uri":"https://admingetuser-7jjwqogvna-an.a.run.app","maxInstanceRequestConcurrency":80,"serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com"},"satisfiesPzi":true},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T11:53:32.506326Z I schedulenotification: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T11:53:32.515601Z I sendpushnotification: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T11:53:33.212770Z I adminaddcredits: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-22T11:53:34.189373Z I schedulenotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T11:53:34.397905Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T11:53:35.045838Z I adminaddcredits: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T11:53:35.880175652Z N scheduleNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","response":{"updateTime":"2025-11-22T11:53:29.427273232Z","createTime":"2025-11-20T07:50:13.430656559Z","environment":"GEN_2","state":"ACTIVE","labels":{"deployment-tool":"cli-firebase","deployment-callable":"true","firebase-functions-hash":"3b6372a50c4685cc5d3a554954ca6041446237db"},"@type":"type.googleapis.com/google.cloud.functions.v2.Function","name":"projects/your-coach-plus/locations/asia-northeast2/functions/scheduleNotification","url":"https://asia-northeast2-your-coach-plus.cloudfunctions.net/scheduleNotification","buildConfig":{"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","entryPoint":"scheduleNotification","runtime":"nodejs20","dockerRegistry":"ARTIFACT_REGISTRY","source":{},"dockerRepository":"projects/your-coach-plus/locations/asia-northeast2/repositories/gcf-artifacts","automaticUpdatePolicy":{}},"serviceConfig":{"maxInstanceRequestConcurrency":80,"allTrafficOnLatestRevision":true,"uri":"https://schedulenotification-7jjwqogvna-dt.a.run.app","timeoutSeconds":60,"availableCpu":"1","revision":"schedulenotification-00010-vev","ingressSettings":"ALLOW_ALL","serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","availableMemory":"512Mi"}},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T11:53:36.146324697Z N sendPushNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","response":{"buildConfig":{"automaticUpdatePolicy":{},"dockerRepository":"projects/your-coach-plus/locations/asia-northeast2/repositories/gcf-artifacts","dockerRegistry":"ARTIFACT_REGISTRY","source":{},"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","runtime":"nodejs20","entryPoint":"sendPushNotification"},"updateTime":"2025-11-22T11:53:29.465938992Z","url":"https://asia-northeast2-your-coach-plus.cloudfunctions.net/sendPushNotification","@type":"type.googleapis.com/google.cloud.functions.v2.Function","createTime":"2025-11-20T07:51:02.705030172Z","name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","labels":{"firebase-functions-hash":"3b6372a50c4685cc5d3a554954ca6041446237db","deployment-tool":"cli-firebase"},"environment":"GEN_2","serviceConfig":{"availableMemory":"512Mi","maxInstanceRequestConcurrency":80,"serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","uri":"https://sendpushnotification-7jjwqogvna-dt.a.run.app","timeoutSeconds":60,"ingressSettings":"ALLOW_ALL","availableCpu":"1","allTrafficOnLatestRevision":true,"revision":"sendpushnotification-00013-fum"},"state":"ACTIVE"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-22T11:53:37.831706356Z N adminAddCredits: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","response":{"labels":{"firebase-functions-hash":"3b6372a50c4685cc5d3a554954ca6041446237db","deployment-tool":"cli-firebase","deployment-callable":"true"},"createTime":"2025-10-31T15:43:15.720433444Z","buildConfig":{"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","dockerRepository":"projects/your-coach-plus/locations/asia-northeast1/repositories/gcf-artifacts","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"runtime":"nodejs20","source":{},"entryPoint":"adminAddCredits"},"serviceConfig":{"maxInstanceRequestConcurrency":80,"timeoutSeconds":60,"uri":"https://adminaddcredits-7jjwqogvna-an.a.run.app","availableCpu":"1","availableMemory":"512Mi","revision":"adminaddcredits-00024-vof","serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","allTrafficOnLatestRevision":true,"ingressSettings":"ALLOW_ALL"},"state":"ACTIVE","updateTime":"2025-11-22T11:53:29.642035301Z","environment":"GEN_2","name":"projects/your-coach-plus/locations/asia-northeast1/functions/adminAddCredits","url":"https://asia-northeast1-your-coach-plus.cloudfunctions.net/adminAddCredits","satisfiesPzi":true,"@type":"type.googleapis.com/google.cloud.functions.v2.Function"},"resourceLocation":{"currentLocations":["asia-northeast1"]}}
+2025-11-22T11:57:45.802892Z I schedulenotification: 
+2025-11-22T11:57:45.857911Z I schedulenotification: 
+2025-11-22T11:57:45.975091Z D schedulenotification: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:57:46.742556Z ? schedulenotification: [Cloud Tasks] Task created: projects/your-coach-plus/locations/asia-northeast2/queues/notification-queue/tasks/5317691757643309414 for user 0AbLFoVePLVj51FLZe8TGGuW61V2 at 2025-11-22T12:00:00.000Z
+
+2025-11-22T11:57:51.509258Z I schedulenotification: 
+2025-11-22T11:57:51.538896Z I schedulenotification: 
+2025-11-22T11:57:51.543473Z D schedulenotification: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T11:57:51.912690Z ? schedulenotification: [Cloud Tasks] Task created: projects/your-coach-plus/locations/asia-northeast2/queues/notification-queue/tasks/44075231279523479021 for user 0AbLFoVePLVj51FLZe8TGGuW61V2 at 2025-11-22T12:00:00.000Z
+
+2025-11-22T11:57:56.925202Z I schedulenotification: 
+2025-11-22T11:57:56.956600Z I schedulenotification: 
+2025-11-22T11:57:56.962560Z D schedulenotification: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2025-11-22T11:57:57.353837Z ? schedulenotification: [Cloud Tasks] Task created: projects/your-coach-plus/locations/asia-northeast2/queues/notification-queue/tasks/684646511523149862 for user 0AbLFoVePLVj51FLZe8TGGuW61V2 at 2025-11-22T12:00:00.000Z
+
+2025-11-22T11:58:15.258874Z I schedulenotification: 
+2025-11-22T11:58:15.286934Z I schedulenotification: 
+2025-11-22T11:58:15.291521Z D schedulenotification: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2025-11-22T11:58:15.701782Z ? schedulenotification: [Cloud Tasks] Task created: projects/your-coach-plus/locations/asia-northeast2/queues/notification-queue/tasks/05153127053588179251 for user 0AbLFoVePLVj51FLZe8TGGuW61V2 at 2025-11-22T12:00:00.000Z
+
+2025-11-22T12:00:00.213528Z I sendpushnotification: 
+2025-11-22T12:00:00.249447Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-22T12:00:00.249959Z ? sendpushnotification: [Debug] req.body: {
+  "title": "食事の時間です",
+  "body": "記録を忘れずに！",
+  "notificationType": "meal",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "21:00"
+}
+
+2025-11-22T12:00:00.250598Z ? sendpushnotification: [Debug] req.rawBody: {"title":"食事の時間です","body":"記録を忘れずに！","notificationType":"meal","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"21:00"}
+
+2025-11-22T12:00:01.086116Z ? sendpushnotification: [Push Notification] Tokens: 2 → Unique: 2
+
+2025-11-22T12:00:01.089101Z I sendpushnotification: 
+2025-11-22T12:00:01.115740Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-22T12:00:01.115953Z ? sendpushnotification: [Debug] req.body: {
+  "title": "今日の振り返りの時間です",
+  "body": "AI分析で今日の栄養状態を確認しましょう",
+  "notificationType": "analysis",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "21:00"
+}
+
+2025-11-22T12:00:01.116077Z ? sendpushnotification: [Debug] req.rawBody: {"title":"今日の振り返りの時間です","body":"AI分析で今日の栄養状態を確認しましょう","notificationType":"analysis","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"21:00"}
+
+2025-11-22T12:00:01.218116Z ? sendpushnotification: [Push Notification] Tokens: 2 → Unique: 2
+
+2025-11-22T12:00:01.329761Z ? sendpushnotification: [Push Notification] Sent to 2/2 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-22T12:00:01.434015Z ? sendpushnotification: [Push Notification] Sent to 2/2 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-22T12:00:01.992892Z ? sendpushnotification: [Rescheduled] analysis at 2025-11-23T21:00:00.000Z
+
+2025-11-22T12:00:02.027323Z ? sendpushnotification: [Rescheduled] meal at 2025-11-23T21:00:00.000Z
+
+2025-11-22T12:00:02.089012Z I sendpushnotification: 
+2025-11-22T12:00:02.092904Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-22T12:00:02.093018Z ? sendpushnotification: [Debug] req.body: {
+  "title": "トレーニングの時間です",
+  "body": "今日のトレーニングを始めましょう！",
+  "notificationType": "workout",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "21:00"
+}
+
+2025-11-22T12:00:02.093217Z ? sendpushnotification: [Debug] req.rawBody: {"title":"トレーニングの時間です","body":"今日のトレーニングを始めましょう！","notificationType":"workout","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"21:00"}
+
+2025-11-22T12:00:02.179225Z ? sendpushnotification: [Push Notification] Tokens: 2 → Unique: 2
+
+2025-11-22T12:00:02.382973Z ? sendpushnotification: [Push Notification] Sent to 2/2 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-22T12:00:02.829948Z ? sendpushnotification: [Rescheduled] workout at 2025-11-23T21:00:00.000Z
+
+2025-11-22T12:00:03.089643Z I sendpushnotification: 
+2025-11-22T12:00:03.093691Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-22T12:00:03.093791Z ? sendpushnotification: [Debug] req.body: {
+  "title": "テスト",
+  "body": "テスト",
+  "notificationType": "custom",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "21:00"
+}
+
+2025-11-22T12:00:03.093906Z ? sendpushnotification: [Debug] req.rawBody: {"title":"テスト","body":"テスト","notificationType":"custom","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"21:00"}
+
+2025-11-22T12:00:03.165611Z ? sendpushnotification: [Push Notification] Tokens: 2 → Unique: 2
+
+2025-11-22T12:00:03.373274Z ? sendpushnotification: [Push Notification] Sent to 2/2 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-22T12:00:03.672793Z ? sendpushnotification: [Rescheduled] custom at 2025-11-23T21:00:00.000Z
+
+2025-11-22T12:50:37.307937Z I sendpushnotification: 
+2025-11-22T12:50:37.318769Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T12:50:38.706081Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T12:50:38.745759Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-22T12:50:38.746275Z ? sendpushnotification: [Debug] req.body: {
+  "fcmToken": "dYekjVTr7FoQO3pMzds55t:APA91bFz_V8GOFMv3_zFwCHSWKzSb7DSE5oYwsTDp0wwXJUw_FltVFJaZGHAsafMoKTOBrhq5cJN3HwBAAbujFYngT93Cu_FjYmKM5ScAQx-W3pKGnGRZnc",
+  "title": "トレーニングの時間です",
+  "body": "今日のトレーニングを始めましょう！",
+  "notificationType": "workout",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2"
+}
+
+2025-11-22T12:50:38.746450Z ? sendpushnotification: [Debug] req.rawBody: {"fcmToken":"dYekjVTr7FoQO3pMzds55t:APA91bFz_V8GOFMv3_zFwCHSWKzSb7DSE5oYwsTDp0wwXJUw_FltVFJaZGHAsafMoKTOBrhq5cJN3HwBAAbujFYngT93Cu_FjYmKM5ScAQx-W3pKGnGRZnc","title":"トレーニングの時間です","body":"今日のトレーニングを始めましょう！","notificationType":"workout","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2"}
+
+2025-11-22T12:50:38.747498Z ? sendpushnotification: [Push Notification] scheduleTimeStr missing, generated from current time: 12:50
+
+2025-11-22T12:50:39.326552Z ? sendpushnotification: [Push Notification] Tokens: 2 → Unique: 2
+
+2025-11-22T12:50:39.326730Z ? sendpushnotification: [Stop] Setting removed or changed for 0AbLFoVePLVj51FLZe8TGGuW61V2 workout
+
+2025-11-22T17:31:35.356098Z I callgemini: 
+2025-11-22T17:31:35.369986Z I callgemini: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T17:31:36.920649Z I callgemini: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T17:31:37.375853Z I callgemini: 
+2025-11-22T17:31:37.551719Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T17:32:36.707849Z I callgemini: 
+2025-11-22T17:32:36.993500Z I callgemini: 
+2025-11-22T17:32:37.044608Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-22T17:33:44.128438Z I callgemini: 
+2025-11-22T17:33:44.684053Z I callgemini: 
+2025-11-22T17:33:44.779719Z D callgemini: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2025-11-22T20:35:00.153114Z I sendpushnotification: 
+2025-11-22T20:35:00.166471Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-22T20:35:01.558544Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-22T20:35:01.606873Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-22T20:35:01.607287Z ? sendpushnotification: [Debug] req.body: {
+  "title": "食事の時間です",
+  "body": "記録を忘れずに！",
+  "notificationType": "meal",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "20:35"
+}
+
+2025-11-22T20:35:01.607427Z ? sendpushnotification: [Debug] req.rawBody: {"title":"食事の時間です","body":"記録を忘れずに！","notificationType":"meal","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"20:35"}
+
+2025-11-22T20:35:02.160154Z ? sendpushnotification: [Push Notification] Tokens: 2 → Unique: 2
+
+2025-11-22T20:35:02.160380Z ? sendpushnotification: [Stop] Setting removed or changed for 0AbLFoVePLVj51FLZe8TGGuW61V2 meal
+
+2025-11-22T20:36:00.138216Z I sendpushnotification: 
+2025-11-22T20:36:00.147964Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-22T20:36:00.148189Z ? sendpushnotification: [Debug] req.body: {
+  "title": "トレーニングの時間です",
+  "body": "今日のトレーニングを始めましょう！",
+  "notificationType": "workout",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "20:36"
+}
+
+2025-11-22T20:36:00.148471Z ? sendpushnotification: [Debug] req.rawBody: {"title":"トレーニングの時間です","body":"今日のトレーニングを始めましょう！","notificationType":"workout","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"20:36"}
+
+2025-11-22T20:36:00.240982Z ? sendpushnotification: [Push Notification] Tokens: 2 → Unique: 2
+
+2025-11-22T20:36:00.241290Z ? sendpushnotification: [Stop] Setting removed or changed for 0AbLFoVePLVj51FLZe8TGGuW61V2 workout
+
+2025-11-22T20:37:00.133801Z I sendpushnotification: 
+2025-11-22T20:37:00.142264Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-22T20:37:00.142421Z ? sendpushnotification: [Debug] req.body: {
+  "title": "今日の振り返りの時間です",
+  "body": "AI分析で今日の栄養状態を確認しましょう",
+  "notificationType": "analysis",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "20:37"
+}
+
+2025-11-22T20:37:00.142671Z ? sendpushnotification: [Debug] req.rawBody: {"title":"今日の振り返りの時間です","body":"AI分析で今日の栄養状態を確認しましょう","notificationType":"analysis","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"20:37"}
+
+2025-11-22T20:37:00.201746Z ? sendpushnotification: [Push Notification] Tokens: 2 → Unique: 2
+
+2025-11-22T20:37:00.202007Z ? sendpushnotification: [Stop] Setting removed or changed for 0AbLFoVePLVj51FLZe8TGGuW61V2 analysis
+
+2025-11-22T20:38:00.131599Z I sendpushnotification: 
+2025-11-22T20:38:00.139365Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-22T20:38:00.139596Z ? sendpushnotification: [Debug] req.body: {
+  "title": "テスト",
+  "body": "テスト",
+  "notificationType": "custom",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "20:38"
+}
+
+2025-11-22T20:38:00.139693Z ? sendpushnotification: [Debug] req.rawBody: {"title":"テスト","body":"テスト","notificationType":"custom","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"20:38"}
+
+2025-11-22T20:38:00.204369Z ? sendpushnotification: [Push Notification] Tokens: 2 → Unique: 2
+
+2025-11-22T20:38:00.204551Z ? sendpushnotification: [Stop] Setting removed or changed for 0AbLFoVePLVj51FLZe8TGGuW61V2 custom
+
+2025-11-23T06:21:25.429254Z I callgemini: 
+2025-11-23T06:21:25.442364Z I callgemini: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-23T06:21:27.050353Z I callgemini: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-23T06:21:27.247790Z I callgemini: 
+2025-11-23T06:21:27.395929Z D callgemini: {"message":"Callable request verification passed","verifications":{"auth":"VALID","app":"MISSING"}}
+2025-11-23T21:00:00.155792Z I sendpushnotification: 
+2025-11-23T21:00:00.173397Z I sendpushnotification: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2025-11-23T21:00:01.094240Z I sendpushnotification: 
+2025-11-23T21:00:01.532323Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-23T21:00:01.588725Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-23T21:00:01.589158Z ? sendpushnotification: [Debug] req.body: {
+  "title": "今日の振り返りの時間です",
+  "body": "AI分析で今日の栄養状態を確認しましょう",
+  "notificationType": "analysis",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "21:00"
+}
+
+2025-11-23T21:00:01.589286Z ? sendpushnotification: [Debug] req.rawBody: {"title":"今日の振り返りの時間です","body":"AI分析で今日の栄養状態を確認しましょう","notificationType":"analysis","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"21:00"}
+
+2025-11-23T21:00:02.092453Z I sendpushnotification: 
+2025-11-23T21:00:02.096466Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-23T21:00:02.096663Z ? sendpushnotification: [Debug] req.body: {
+  "title": "テスト",
+  "body": "テスト",
+  "notificationType": "custom",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "21:00"
+}
+
+2025-11-23T21:00:02.096801Z ? sendpushnotification: [Debug] req.rawBody: {"title":"テスト","body":"テスト","notificationType":"custom","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"21:00"}
+
+2025-11-23T21:00:02.099493Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-23T21:00:02.099659Z ? sendpushnotification: [Debug] req.body: {
+  "title": "食事の時間です",
+  "body": "記録を忘れずに！",
+  "notificationType": "meal",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "21:00"
+}
+
+2025-11-23T21:00:02.099782Z ? sendpushnotification: [Debug] req.rawBody: {"title":"食事の時間です","body":"記録を忘れずに！","notificationType":"meal","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"21:00"}
+
+2025-11-23T21:00:02.171431Z ? sendpushnotification: [Push Notification] Tokens: 3 → Unique: 3
+
+2025-11-23T21:00:02.194966Z ? sendpushnotification: [Push Notification] Tokens: 3 → Unique: 3
+
+2025-11-23T21:00:02.201674Z ? sendpushnotification: [Push Notification] Tokens: 3 → Unique: 3
+
+2025-11-23T21:00:02.405677Z ? sendpushnotification: [Push Notification] Sent to 3/3 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-23T21:00:02.492620Z ? sendpushnotification: [Push Notification] Sent to 3/3 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-23T21:00:02.498025Z ? sendpushnotification: [Push Notification] Sent to 3/3 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-23T21:00:03.010370Z ? sendpushnotification: [Rescheduled] custom at 2025-11-24T21:00:00.000Z
+
+2025-11-23T21:00:03.018167Z ? sendpushnotification: [Rescheduled] meal at 2025-11-24T21:00:00.000Z
+
+2025-11-23T21:00:03.032419Z ? sendpushnotification: [Rescheduled] analysis at 2025-11-24T21:00:00.000Z
+
+2025-11-23T21:00:03.081832Z I sendpushnotification: 
+2025-11-23T21:00:03.085408Z ? sendpushnotification: [Debug] req.body type: object
+
+2025-11-23T21:00:03.085514Z ? sendpushnotification: [Debug] req.body: {
+  "title": "トレーニングの時間です",
+  "body": "今日のトレーニングを始めましょう！",
+  "notificationType": "workout",
+  "userId": "0AbLFoVePLVj51FLZe8TGGuW61V2",
+  "scheduleTimeStr": "21:00"
+}
+
+2025-11-23T21:00:03.085622Z ? sendpushnotification: [Debug] req.rawBody: {"title":"トレーニングの時間です","body":"今日のトレーニングを始めましょう！","notificationType":"workout","userId":"0AbLFoVePLVj51FLZe8TGGuW61V2","scheduleTimeStr":"21:00"}
+
+2025-11-23T21:00:03.122718Z ? sendpushnotification: [Push Notification] Tokens: 3 → Unique: 3
+
+2025-11-23T21:00:03.312726Z ? sendpushnotification: [Push Notification] Sent to 3/3 devices for user 0AbLFoVePLVj51FLZe8TGGuW61V2
+
+2025-11-23T21:00:03.661888Z ? sendpushnotification: [Rescheduled] workout at 2025-11-24T21:00:00.000Z
+
+2025-11-24T05:06:12.787593246Z N sendPushNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"111.67.167.160","callerSuppliedUserAgent":"FirebaseCLI/14.19.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2025-11-24T05:06:11.603078314Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","request":{"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","function":{"labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1dcab6ea7dd69941ad554e43c43084f45313543b"},"name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","service_config":{"available_cpu":"1","max_instance_request_concurrency":80,"available_memory":"512Mi"},"build_config":{"source":{},"entry_point":"sendPushNotification","runtime":"nodejs20"}}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}
+2025-11-24T05:07:17.001386Z I sendpushnotification: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2025-11-24T05:07:18.969954Z I sendpushnotification: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2025-11-24T05:07:21.757952103Z N sendPushNotification: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"kongou411@gmail.com","principalSubject":"user:kongou411@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","response":{"updateTime":"2025-11-24T05:06:12.775045456Z","environment":"GEN_2","state":"ACTIVE","name":"projects/your-coach-plus/locations/asia-northeast2/functions/sendPushNotification","buildConfig":{"entryPoint":"sendPushNotification","runtime":"nodejs20","dockerRegistry":"ARTIFACT_REGISTRY","source":{},"serviceAccount":"projects/your-coach-plus/serviceAccounts/654534642431-compute@developer.gserviceaccount.com","dockerRepository":"projects/your-coach-plus/locations/asia-northeast2/repositories/gcf-artifacts","automaticUpdatePolicy":{}},"url":"https://asia-northeast2-your-coach-plus.cloudfunctions.net/sendPushNotification","serviceConfig":{"availableCpu":"1","serviceAccountEmail":"654534642431-compute@developer.gserviceaccount.com","availableMemory":"512Mi","revision":"sendpushnotification-00014-vol","allTrafficOnLatestRevision":true,"timeoutSeconds":60,"ingressSettings":"ALLOW_ALL","uri":"https://sendpushnotification-7jjwqogvna-dt.a.run.app","maxInstanceRequestConcurrency":80},"@type":"type.googleapis.com/google.cloud.functions.v2.Function","labels":{"firebase-functions-hash":"1dcab6ea7dd69941ad554e43c43084f45313543b","deployment-tool":"cli-firebase"},"createTime":"2025-11-20T07:51:02.705030172Z"},"resourceLocation":{"currentLocations":["asia-northeast2"]}}

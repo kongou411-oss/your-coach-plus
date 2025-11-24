@@ -535,10 +535,19 @@ const AddMealModal = ({
 
     // ===== テンプレート削除 =====
     const deleteTemplate = async (templateId) => {
-        // ルーティンでの使用状況をチェック
-        const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
-        if (savedRoutines) {
-            const routines = JSON.parse(savedRoutines);
+        try {
+            // Firestoreからルーティンを取得
+            const routinesSnapshot = await firebase.firestore()
+                .collection('users')
+                .doc(user.uid)
+                .collection('routines')
+                .get();
+
+            const routines = routinesSnapshot.docs.map(doc => ({
+                ...doc.data(),
+                firestoreId: doc.id
+            }));
+
             const usingRoutines = routines.filter(routine =>
                 (routine.mealTemplates || []).includes(templateId)
             );
@@ -553,25 +562,31 @@ const AddMealModal = ({
                     return; // キャンセルされた場合は削除しない
                 }
 
-                // ルーティンからテンプレートIDを削除
-                const updatedRoutines = routines.map(routine => {
-                    if ((routine.mealTemplates || []).includes(templateId)) {
-                        return {
-                            ...routine,
-                            mealTemplates: routine.mealTemplates.filter(id => id !== templateId)
-                        };
-                    }
-                    return routine;
-                });
-                localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(updatedRoutines));
-            }
-        }
+                // Firestoreのルーティンからテンプレートを削除
+                const batch = firebase.firestore().batch();
+                usingRoutines.forEach(routine => {
+                    const docRef = firebase.firestore()
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('routines')
+                        .doc(routine.firestoreId);
 
-        // テンプレートを削除
-        await DataService.deleteMealTemplate(user.uid, templateId);
-        const templates = await DataService.getMealTemplates(user.uid);
-        setMealTemplates(templates);
-        toast.success('テンプレートを削除しました');
+                    batch.update(docRef, {
+                        mealTemplates: (routine.mealTemplates || []).filter(id => id !== templateId)
+                    });
+                });
+                await batch.commit();
+            }
+
+            // テンプレートを削除
+            await DataService.deleteMealTemplate(user.uid, templateId);
+            const templates = await DataService.getMealTemplates(user.uid);
+            setMealTemplates(templates);
+            toast.success('テンプレートを削除しました');
+        } catch (error) {
+            console.error('[AddMealModal] Failed to delete template:', error);
+            toast.error('テンプレートの削除に失敗しました');
+        }
     };
 
     // ===== AI食事認識からのコールバック =====

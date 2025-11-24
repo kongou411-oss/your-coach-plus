@@ -158,7 +158,10 @@
       "Bash(npm uninstall:*)",
       "Bash(del C:Usersyourcyourcoach_newsrckuroshiroService.js)",
       "Bash(cmd /c \"if exist C:\\Users\\yourc\\yourcoach_new\\src\\kuroshiroService.js del C:\\Users\\yourc\\yourcoach_new\\src\\kuroshiroService.js\")",
-      "Bash(npm run deploy:*)"
+      "Bash(npm run deploy:*)",
+      "Bash(functions_log.txt)",
+      "Bash(del:*)",
+      "Bash(gcloud functions logs read:*)"
     ],
     "deny": [],
     "ask": []

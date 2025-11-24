@@ -71,11 +71,8 @@ const SettingsView = ({
     const [templateEditType, setTemplateEditType] = useState(null);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
 
-    // ルーティン関連
-    const [localRoutines, setLocalRoutines] = useState(() => {
-        const saved = localStorage.getItem(STORAGE_KEYS.ROUTINES);
-        return saved ? JSON.parse(saved) : [];
-    });
+    // ルーティン関連（Firestoreから読み込み）
+    const [localRoutines, setLocalRoutines] = useState([]);
 
     // 確認モーダル
     const { showConfirm, hideConfirm, ConfirmModalComponent } = useConfirmModal();
@@ -134,6 +131,7 @@ const SettingsView = ({
     // テンプレート読み込み
     useEffect(() => {
         loadTemplates();
+        loadRoutines();
     }, [userId]);
 
     const checkMFAEnrollment = async () => {
@@ -158,6 +156,64 @@ const SettingsView = ({
             setWorkoutTemplates(workoutTemplatesData || []);
         } catch (error) {
             console.error('[Settings] Failed to load templates:', error);
+        }
+    };
+
+    const loadRoutines = async () => {
+        if (!userId) return;
+
+        try {
+            // Firestoreからルーティンを読み込み
+            const routinesSnapshot = await firebase.firestore()
+                .collection('users')
+                .doc(userId)
+                .collection('routines')
+                .orderBy('id', 'asc')
+                .get();
+
+            if (!routinesSnapshot.empty) {
+                const routinesData = routinesSnapshot.docs.map(doc => ({
+                    ...doc.data(),
+                    firestoreId: doc.id
+                }));
+                setLocalRoutines(routinesData);
+            } else {
+                // Firestoreにルーティンがない場合、デフォルトルーティンを作成
+                const defaultRoutines = [
+                    { id: 1, name: '①月曜日', splitType: '胸', isRestDay: false },
+                    { id: 2, name: '②火曜日', splitType: '背中', isRestDay: false },
+                    { id: 3, name: '③水曜日', splitType: '脚', isRestDay: false },
+                    { id: 4, name: '④木曜日', splitType: '休み', isRestDay: true },
+                    { id: 5, name: '⑤金曜日', splitType: '肩・腕', isRestDay: false },
+                    { id: 6, name: '⑥土曜日', splitType: '全身', isRestDay: false },
+                    { id: 7, name: '⑦日曜日', splitType: '休み', isRestDay: true }
+                ];
+
+                // Firestoreに保存
+                const batch = firebase.firestore().batch();
+                defaultRoutines.forEach(routine => {
+                    const docRef = firebase.firestore()
+                        .collection('users')
+                        .doc(userId)
+                        .collection('routines')
+                        .doc();
+                    batch.set(docRef, routine);
+                });
+                await batch.commit();
+
+                // ルーティン設定をユーザードキュメントに保存
+                await firebase.firestore()
+                    .collection('users')
+                    .doc(userId)
+                    .set({
+                        routineStartDate: new Date().toISOString(),
+                        routineActive: true
+                    }, { merge: true });
+
+                setLocalRoutines(defaultRoutines);
+            }
+        } catch (error) {
+            console.error('[Settings] Failed to load routines:', error);
         }
     };
 
@@ -374,6 +430,7 @@ const SettingsView = ({
                             selectedTemplate={selectedTemplate}
                             setSelectedTemplate={setSelectedTemplate}
                             loadTemplates={loadTemplates}
+                            loadRoutines={loadRoutines}
                         />
                     )}
 

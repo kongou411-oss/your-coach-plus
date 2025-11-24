@@ -22,7 +22,8 @@ const FeaturesTab = ({
     setTemplateEditType,
     selectedTemplate,
     setSelectedTemplate,
-    loadTemplates
+    loadTemplates,
+    loadRoutines
 }) => {
     const Icon = window.Icon;
 
@@ -522,44 +523,47 @@ const FeaturesTab = ({
                                                         <Icon name="Edit" size={18} />
                                                     </button>
                                                     <button
-                                                        onClick={(e) => {
+                                                        onClick={async (e) => {
                                                             e.preventDefault();
 
                                                             // ルーティンでの使用状況をチェック
-                                                            const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+                                                            const usingRoutines = localRoutines.filter(routine =>
+                                                                (routine.mealTemplates || []).includes(template.id)
+                                                            );
+
                                                             let confirmMessage = 'このテンプレートを削除しますか？';
-
-                                                            if (savedRoutines) {
-                                                                const routines = JSON.parse(savedRoutines);
-                                                                const usingRoutines = routines.filter(routine =>
-                                                                    (routine.mealTemplates || []).includes(template.id)
-                                                                );
-
-                                                                if (usingRoutines.length > 0) {
-                                                                    const routineNames = usingRoutines.map(r => r.name).join('、');
-                                                                    confirmMessage = `このテンプレートは以下のルーティンで使用されています：\n${routineNames}\n\n削除すると、これらのルーティンからも削除されます。よろしいですか？`;
-                                                                }
+                                                            if (usingRoutines.length > 0) {
+                                                                const routineNames = usingRoutines.map(r => r.name).join('、');
+                                                                confirmMessage = `このテンプレートは以下のルーティンで使用されています：\n${routineNames}\n\n削除すると、これらのルーティンからも削除されます。よろしいですか？`;
                                                             }
 
                                                             showConfirm('テンプレート削除の確認', confirmMessage, async () => {
-                                                                // ルーティンからテンプレートIDを削除
-                                                                if (savedRoutines) {
-                                                                    const routines = JSON.parse(savedRoutines);
-                                                                    const updatedRoutines = routines.map(routine => {
-                                                                        if ((routine.mealTemplates || []).includes(template.id)) {
-                                                                            return {
-                                                                                ...routine,
-                                                                                mealTemplates: routine.mealTemplates.filter(id => id !== template.id)
-                                                                            };
-                                                                        }
-                                                                        return routine;
-                                                                    });
-                                                                    localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(updatedRoutines));
-                                                                }
+                                                                try {
+                                                                    // ルーティンからテンプレートIDを削除（Firestore）
+                                                                    if (usingRoutines.length > 0) {
+                                                                        const batch = firebase.firestore().batch();
+                                                                        usingRoutines.forEach(routine => {
+                                                                            const docRef = firebase.firestore()
+                                                                                .collection('users')
+                                                                                .doc(userId)
+                                                                                .collection('routines')
+                                                                                .doc(routine.firestoreId);
 
-                                                                // テンプレートを削除
-                                                                await window.DataService.deleteMealTemplate(userId, template.id);
-                                                                await loadTemplates();
+                                                                            batch.update(docRef, {
+                                                                                mealTemplates: (routine.mealTemplates || []).filter(id => id !== template.id)
+                                                                            });
+                                                                        });
+                                                                        await batch.commit();
+                                                                    }
+
+                                                                    // テンプレートを削除
+                                                                    await window.DataService.deleteMealTemplate(userId, template.id);
+                                                                    await loadTemplates();
+                                                                    await loadRoutines();
+                                                                } catch (error) {
+                                                                    console.error('[FeaturesTab] Failed to delete meal template:', error);
+                                                                    toast.error('削除に失敗しました');
+                                                                }
                                                             });
                                                         }}
                                                         className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
@@ -658,44 +662,47 @@ const FeaturesTab = ({
                                                         <Icon name="Edit" size={18} />
                                                     </button>
                                                     <button
-                                                        onClick={(e) => {
+                                                        onClick={async (e) => {
                                                             e.preventDefault();
 
                                                             // ルーティンでの使用状況をチェック
-                                                            const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+                                                            const usingRoutines = localRoutines.filter(routine =>
+                                                                (routine.workoutTemplates || []).includes(template.id)
+                                                            );
+
                                                             let confirmMessage = 'このテンプレートを削除しますか？';
-
-                                                            if (savedRoutines) {
-                                                                const routines = JSON.parse(savedRoutines);
-                                                                const usingRoutines = routines.filter(routine =>
-                                                                    (routine.workoutTemplates || []).includes(template.id)
-                                                                );
-
-                                                                if (usingRoutines.length > 0) {
-                                                                    const routineNames = usingRoutines.map(r => r.name).join('、');
-                                                                    confirmMessage = `このテンプレートは以下のルーティンで使用されています：\n${routineNames}\n\n削除すると、これらのルーティンからも削除されます。よろしいですか？`;
-                                                                }
+                                                            if (usingRoutines.length > 0) {
+                                                                const routineNames = usingRoutines.map(r => r.name).join('、');
+                                                                confirmMessage = `このテンプレートは以下のルーティンで使用されています：\n${routineNames}\n\n削除すると、これらのルーティンからも削除されます。よろしいですか？`;
                                                             }
 
                                                             showConfirm('テンプレート削除の確認', confirmMessage, async () => {
-                                                                // ルーティンからテンプレートIDを削除
-                                                                if (savedRoutines) {
-                                                                    const routines = JSON.parse(savedRoutines);
-                                                                    const updatedRoutines = routines.map(routine => {
-                                                                        if ((routine.workoutTemplates || []).includes(template.id)) {
-                                                                            return {
-                                                                                ...routine,
-                                                                                workoutTemplates: routine.workoutTemplates.filter(id => id !== template.id)
-                                                                            };
-                                                                        }
-                                                                        return routine;
-                                                                    });
-                                                                    localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(updatedRoutines));
-                                                                }
+                                                                try {
+                                                                    // ルーティンからテンプレートIDを削除（Firestore）
+                                                                    if (usingRoutines.length > 0) {
+                                                                        const batch = firebase.firestore().batch();
+                                                                        usingRoutines.forEach(routine => {
+                                                                            const docRef = firebase.firestore()
+                                                                                .collection('users')
+                                                                                .doc(userId)
+                                                                                .collection('routines')
+                                                                                .doc(routine.firestoreId);
 
-                                                                // テンプレートを削除
-                                                                await window.DataService.deleteWorkoutTemplate(userId, template.id);
-                                                                await loadTemplates();
+                                                                            batch.update(docRef, {
+                                                                                workoutTemplates: (routine.workoutTemplates || []).filter(id => id !== template.id)
+                                                                            });
+                                                                        });
+                                                                        await batch.commit();
+                                                                    }
+
+                                                                    // テンプレートを削除
+                                                                    await window.DataService.deleteWorkoutTemplate(userId, template.id);
+                                                                    await loadTemplates();
+                                                                    await loadRoutines();
+                                                                } catch (error) {
+                                                                    console.error('[FeaturesTab] Failed to delete workout template:', error);
+                                                                    toast.error('削除に失敗しました');
+                                                                }
                                                             });
                                                         }}
                                                         className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
@@ -982,31 +989,36 @@ const FeaturesTab = ({
                         const [showRestartModal, setShowRestartModal] = React.useState(false);
                         const [selectedRestartDay, setSelectedRestartDay] = React.useState(1);
 
-                        // 初回アクセス時にデフォルトルーティンを自動作成
-                        React.useEffect(() => {
-                            if (localRoutines.length === 0) {
-                                const defaultRoutines = [
-                                    { id: 1, name: '①月曜日', splitType: '胸', isRestDay: false },
-                                    { id: 2, name: '②火曜日', splitType: '背中', isRestDay: false },
-                                    { id: 3, name: '③水曜日', splitType: '脚', isRestDay: false },
-                                    { id: 4, name: '④木曜日', splitType: '休み', isRestDay: true },
-                                    { id: 5, name: '⑤金曜日', splitType: '肩・腕', isRestDay: false },
-                                    { id: 6, name: '⑥土曜日', splitType: '全身', isRestDay: false },
-                                    { id: 7, name: '⑦日曜日', splitType: '休み', isRestDay: true }
-                                ];
-                                localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(defaultRoutines));
-
-                                // 開始日は登録日を使用（登録日がない場合は現在日時）
-                                const registrationDate = localStorage.getItem(STORAGE_KEYS.REGISTRATION_DATE) || new Date().toISOString();
-                                localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, registrationDate);
-                                localStorage.setItem(STORAGE_KEYS.ROUTINE_ACTIVE, 'true');
-                                setLocalRoutines(defaultRoutines);
+                        const saveRoutines = async (updated) => {
+                            try {
+                                // Firestoreに保存
+                                const batch = firebase.firestore().batch();
+                                updated.forEach(routine => {
+                                    if (routine.firestoreId) {
+                                        // 既存のルーティンを更新
+                                        const docRef = firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('routines')
+                                            .doc(routine.firestoreId);
+                                        const { firestoreId, ...data } = routine;
+                                        batch.set(docRef, data, { merge: true });
+                                    } else {
+                                        // 新規ルーティンを作成
+                                        const docRef = firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('routines')
+                                            .doc();
+                                        batch.set(docRef, routine);
+                                    }
+                                });
+                                await batch.commit();
+                                await loadRoutines();
+                            } catch (error) {
+                                console.error('[FeaturesTab] Failed to save routines:', error);
+                                toast.error('ルーティンの保存に失敗しました');
                             }
-                        }, []);
-
-                        const saveRoutines = (updated) => {
-                            setLocalRoutines(updated);
-                            localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(updated));
                         };
 
                         const updateRoutine = (id, updates) => {
@@ -1047,39 +1059,21 @@ const FeaturesTab = ({
                                 'ルーティンをデフォルト（胸→背中→休→肩→腕→脚→休）に戻しますか？\n\n現在の設定は失われます。',
                                 async () => {
                                     try {
-                                        // LocalStorageをクリア
-                                        localStorage.removeItem(STORAGE_KEYS.ROUTINES);
-                                        localStorage.removeItem(STORAGE_KEYS.ROUTINE_START_DATE);
-                                        localStorage.removeItem(STORAGE_KEYS.ROUTINE_ACTIVE);
-
-                                        // デフォルトルーティンを作成
-                                        const defaultRoutine = {
-                                            name: '7日間分割（胸→背中→休→肩→腕→脚→休）',
-                                            days: [
-                                                { day: 1, name: '胸', isRestDay: false },
-                                                { day: 2, name: '背中', isRestDay: false },
-                                                { day: 3, name: '休養日', isRestDay: true },
-                                                { day: 4, name: '肩', isRestDay: false },
-                                                { day: 5, name: '腕', isRestDay: false },
-                                                { day: 6, name: '脚', isRestDay: false },
-                                                { day: 7, name: '休養日', isRestDay: true }
-                                            ],
-                                            currentDay: 1,
-                                            startDate: new Date().toISOString().split('T')[0],
-                                            active: true,
-                                            createdAt: firebase.firestore.Timestamp.now()
-                                        };
-
-                                        // Firestoreに保存
-                                        await firebase.firestore()
+                                        // Firestoreの既存ルーティンをすべて削除
+                                        const routinesSnapshot = await firebase.firestore()
                                             .collection('users')
                                             .doc(userId)
-                                            .collection('settings')
-                                            .doc('routine')
-                                            .set(defaultRoutine);
+                                            .collection('routines')
+                                            .get();
 
-                                        // LocalStorageにも保存（互換性のため）
-                                        const localDefaultRoutines = [
+                                        const batch = firebase.firestore().batch();
+                                        routinesSnapshot.docs.forEach(doc => {
+                                            batch.delete(doc.ref);
+                                        });
+                                        await batch.commit();
+
+                                        // デフォルトルーティンを作成
+                                        const defaultRoutines = [
                                             { id: 1, name: '①胸', splitType: '胸', isRestDay: false },
                                             { id: 2, name: '②背中', splitType: '背中', isRestDay: false },
                                             { id: 3, name: '③休養日', splitType: '', isRestDay: true },
@@ -1088,14 +1082,32 @@ const FeaturesTab = ({
                                             { id: 6, name: '⑥脚', splitType: '脚', isRestDay: false },
                                             { id: 7, name: '⑦休養日', splitType: '', isRestDay: true }
                                         ];
-                                        setLocalRoutines(localDefaultRoutines);
+
+                                        // Firestoreに保存
+                                        const batch2 = firebase.firestore().batch();
+                                        defaultRoutines.forEach(routine => {
+                                            const docRef = firebase.firestore()
+                                                .collection('users')
+                                                .doc(userId)
+                                                .collection('routines')
+                                                .doc();
+                                            batch2.set(docRef, routine);
+                                        });
+                                        await batch2.commit();
+
+                                        // ルーティン設定を更新
+                                        await firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .set({
+                                                routineStartDate: new Date().toISOString(),
+                                                routineActive: true
+                                            }, { merge: true });
 
                                         toast.success('デフォルトルーティンに戻しました');
 
-                                        // ページをリロードして反映
-                                        setTimeout(() => {
-                                            window.location.reload();
-                                        }, 1000);
+                                        // ルーティンを再読み込み
+                                        await loadRoutines();
                                     } catch (error) {
                                         console.error('[Settings] Failed to reset routine:', error);
                                         toast.error('リセットに失敗しました');
@@ -1612,11 +1624,25 @@ const FeaturesTab = ({
                                                             キャンセル
                                                         </button>
                                                         <button
-                                                            onClick={() => {
-                                                                const today = new Date();
-                                                                today.setDate(today.getDate() - (selectedRestartDay - 1));
-                                                                localStorage.setItem(STORAGE_KEYS.ROUTINE_START_DATE, today.toISOString());
-                                                                window.location.reload();
+                                                            onClick={async () => {
+                                                                try {
+                                                                    const today = new Date();
+                                                                    today.setDate(today.getDate() - (selectedRestartDay - 1));
+
+                                                                    // Firestoreに保存
+                                                                    await firebase.firestore()
+                                                                        .collection('users')
+                                                                        .doc(userId)
+                                                                        .set({
+                                                                            routineStartDate: today.toISOString()
+                                                                        }, { merge: true });
+
+                                                                    toast.success('ルーティンを再開しました');
+                                                                    setShowRestartModal(false);
+                                                                } catch (error) {
+                                                                    console.error('[FeaturesTab] Failed to restart routine:', error);
+                                                                    toast.error('再開に失敗しました');
+                                                                }
                                                             }}
                                                             className="flex-1 px-4 py-2 bg-[#4A9EFF] text-white rounded-lg hover:bg-[#3b8fef] transition font-bold"
                                                         >

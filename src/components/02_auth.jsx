@@ -979,12 +979,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
         // プロフィールを保存
         await DataService.saveUserProfile(user.uid, completeProfile);
 
-        // 既存のLocalStorageルーティン設定をクリア
-        localStorage.removeItem(STORAGE_KEYS.ROUTINES);
-        localStorage.removeItem(STORAGE_KEYS.ROUTINE_START_DATE);
-        localStorage.removeItem(STORAGE_KEYS.ROUTINE_ACTIVE);
-
         // デフォルトルーティンを設定（7日間：①胸②背中③休養日④肩⑤腕⑥脚⑦休養日）
+        // ※ルーティンはFirestoreで管理されるため、04_settings.jsxのloadRoutines()で自動作成される
         const defaultRoutine = {
             name: '7日間分割（胸→背中→休→肩→腕→脚→休）',
             days: [

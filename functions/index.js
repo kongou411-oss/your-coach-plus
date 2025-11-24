@@ -376,47 +376,88 @@ exports.sendPushNotification = onRequest({
 
 // ===== 翌日の通知を再スケジュール =====
 async function rescheduleNotification(title, body, notificationType, userId, scheduleTimeStr) {
-  const tasksClient = new CloudTasksClient();
-  const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
-  const location = "asia-northeast2";
-  const queue = "notification-queue";
+  try {
+    const tasksClient = new CloudTasksClient();
+    const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
+    const location = "asia-northeast2";
+    const queue = "notification-queue";
 
-  const queuePath = tasksClient.queuePath(project, location, queue);
-  const url = `https://${location}-${project}.cloudfunctions.net/sendPushNotification`;
+    const queuePath = tasksClient.queuePath(project, location, queue);
+    const url = `https://${location}-${project}.cloudfunctions.net/sendPushNotification`;
 
-  // 【重要】時間の計算ロジック修正
-  // new Date() + 24h ではなく、"明日の 08:00" を生成する
-  const now = new Date();
-  const [hours, minutes] = scheduleTimeStr.split(":").map(Number);
+    // 【重要】時間の計算ロジック修正（タイムゾーン対応）
+    // 日本時間（JST = UTC+9）で明日の指定時刻を計算
+    const [hours, minutes] = scheduleTimeStr.split(":").map(Number);
 
-  // 明日の日付を作成
-  const nextDate = new Date(now);
-  nextDate.setDate(now.getDate() + 1);
-  nextDate.setHours(hours, minutes, 0, 0);
+    // 現在のUTC時刻を取得
+    const nowUTC = new Date();
 
-  const scheduleTimeSeconds = Math.floor(nextDate.getTime() / 1000);
+    // 明日の日付を取得（UTC基準）
+    const tomorrow = new Date(nowUTC);
+    tomorrow.setUTCDate(nowUTC.getUTCDate() + 1);
 
-  const task = {
-    httpRequest: {
-      httpMethod: "POST",
-      url: url,
-      headers: {"Content-Type": "application/json"},
-      body: Buffer.from(JSON.stringify({
-        title,
-        body,
-        notificationType,
-        userId,
-        scheduleTimeStr, // 次回のために時刻文字列も引き継ぐ
-      })).toString("base64"),
-      oidcToken: {
-        serviceAccountEmail: `${project}@appspot.gserviceaccount.com`,
+    // 指定時刻をJSTで設定するため、UTC時刻に変換
+    // JST = UTC + 9時間 なので、UTC = JST - 9時間
+    let utcHours = hours - 9;
+    let utcDate = tomorrow.getUTCDate();
+
+    // 時刻が負になった場合（例: JST 08:00 = UTC -01:00 = 前日の23:00）
+    if (utcHours < 0) {
+      utcHours += 24;
+      utcDate -= 1;
+    }
+
+    tomorrow.setUTCDate(utcDate);
+    tomorrow.setUTCHours(utcHours);
+    tomorrow.setUTCMinutes(minutes);
+    tomorrow.setUTCSeconds(0);
+    tomorrow.setUTCMilliseconds(0);
+
+    const scheduleTimeSeconds = Math.floor(tomorrow.getTime() / 1000);
+
+    // デバッグログ（JST表示のため+9時間）
+    const tomorrowJST = new Date(tomorrow.getTime() + 9 * 60 * 60 * 1000);
+    console.log(`[Reschedule] Current UTC: ${nowUTC.toISOString()}`);
+    console.log(`[Reschedule] Target JST time: ${scheduleTimeStr}`);
+    console.log(`[Reschedule] Next execution (UTC): ${tomorrow.toISOString()}`);
+    console.log(`[Reschedule] Next execution (JST): ${tomorrowJST.toISOString().replace('T', ' ').replace('Z', ' JST')}`);
+    console.log(`[Reschedule] Timestamp: ${scheduleTimeSeconds}`);
+
+    const task = {
+      httpRequest: {
+        httpMethod: "POST",
+        url: url,
+        headers: {"Content-Type": "application/json"},
+        body: Buffer.from(JSON.stringify({
+          title,
+          body,
+          notificationType,
+          userId,
+          scheduleTimeStr, // 次回のために時刻文字列も引き継ぐ
+        })).toString("base64"),
+        oidcToken: {
+          serviceAccountEmail: `${project}@appspot.gserviceaccount.com`,
+        },
       },
-    },
-    scheduleTime: {seconds: scheduleTimeSeconds},
-  };
+      scheduleTime: {seconds: scheduleTimeSeconds},
+    };
 
-  await tasksClient.createTask({parent: queuePath, task});
-  console.log(`[Rescheduled] ${notificationType} at ${nextDate.toISOString()}`);
+    const [response] = await tasksClient.createTask({parent: queuePath, task});
+    console.log(`[Rescheduled] ${notificationType} at ${nextDateJST.toLocaleString("ja-JP", {timeZone: "Asia/Tokyo"})} (Task: ${response.name})`);
+  } catch (error) {
+    console.error(`[Reschedule Error] Failed to reschedule ${notificationType}:`, error);
+    console.error(`[Reschedule Error] Details:`, {
+      title,
+      body,
+      notificationType,
+      userId,
+      scheduleTimeStr,
+      errorMessage: error.message,
+      errorCode: error.code,
+    });
+    // エラーが発生しても親関数にエラーを伝播させない（通知送信は成功しているため）
+    // ただし、エラーログを出力して原因を特定できるようにする
+  }
 }
 
 // ===== 管理者機能: ユーザー情報取得 =====

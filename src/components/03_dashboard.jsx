@@ -930,16 +930,29 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         }
     };
 
-    // 指示書を読み込む関数
-    const loadDirective = React.useCallback(() => {
-        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
-        if (savedDirectives) {
-            const directives = JSON.parse(savedDirectives);
+    // 指示書を読み込む関数（Firestoreから）
+    const loadDirective = React.useCallback(async () => {
+        if (!user) return;
+
+        try {
             const today = currentDate || getTodayDate();
-            const directive = directives.find(d => d.date === today);
-            setTodayDirective(directive || null);
+            const directiveDoc = await firebase.firestore()
+                .collection('users')
+                .doc(user.uid)
+                .collection('directives')
+                .doc(today)
+                .get();
+
+            if (directiveDoc.exists) {
+                setTodayDirective(directiveDoc.data());
+            } else {
+                setTodayDirective(null);
+            }
+        } catch (error) {
+            console.error('[Dashboard] Failed to load directive:', error);
+            setTodayDirective(null);
         }
-    }, [currentDate]);
+    }, [currentDate, user]);
 
     // 指示書を読み込む
     useEffect(() => {
@@ -986,17 +999,22 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // 指示書を完了にする
     const handleCompleteDirective = async () => {
-        if (!todayDirective) return;
-        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
-        const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
-        const updated = directives.map(d =>
-            d.date === todayDirective.date ? { ...d, completed: true } : d
-        );
-        localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updated));
-        setTodayDirective({ ...todayDirective, completed: true });
+        if (!todayDirective || !user) return;
 
-        // dailyRecordにも保存
         try {
+            const updatedDirective = { ...todayDirective, completed: true };
+
+            // Firestoreに保存
+            await firebase.firestore()
+                .collection('users')
+                .doc(user.uid)
+                .collection('directives')
+                .doc(todayDirective.date)
+                .set(updatedDirective, { merge: true });
+
+            setTodayDirective(updatedDirective);
+
+            // dailyRecordにも保存
             const updatedRecord = {
                 ...dailyRecord,
                 directiveCompleted: true
@@ -3710,23 +3728,43 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 <DirectiveEditModal
                     directive={todayDirective}
                     onClose={() => setShowDirectiveEdit(false)}
-                    onSave={(updatedDirective) => {
-                        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
-                        const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
-                        const updated = directives.map(d =>
-                            d.date === updatedDirective.date ? updatedDirective : d
-                        );
-                        localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updated));
-                        setTodayDirective(updatedDirective);
-                        setShowDirectiveEdit(false);
+                    onSave={async (updatedDirective) => {
+                        if (!user) return;
+
+                        try {
+                            // Firestoreに保存
+                            await firebase.firestore()
+                                .collection('users')
+                                .doc(user.uid)
+                                .collection('directives')
+                                .doc(updatedDirective.date)
+                                .set(updatedDirective, { merge: true });
+
+                            setTodayDirective(updatedDirective);
+                            setShowDirectiveEdit(false);
+                        } catch (error) {
+                            console.error('[Dashboard] Failed to save directive:', error);
+                            toast.error('指示書の保存に失敗しました');
+                        }
                     }}
-                    onDelete={() => {
-                        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
-                        const directives = savedDirectives ? JSON.parse(savedDirectives) : [];
-                        const updated = directives.filter(d => d.date !== todayDirective.date);
-                        localStorage.setItem(STORAGE_KEYS.DIRECTIVES, JSON.stringify(updated));
-                        setTodayDirective(null);
-                        setShowDirectiveEdit(false);
+                    onDelete={async () => {
+                        if (!user || !todayDirective) return;
+
+                        try {
+                            // Firestoreから削除
+                            await firebase.firestore()
+                                .collection('users')
+                                .doc(user.uid)
+                                .collection('directives')
+                                .doc(todayDirective.date)
+                                .delete();
+
+                            setTodayDirective(null);
+                            setShowDirectiveEdit(false);
+                        } catch (error) {
+                            console.error('[Dashboard] Failed to delete directive:', error);
+                            toast.error('指示書の削除に失敗しました');
+                        }
                     }}
                     getCategoryIcon={getCategoryIcon}
                     getCategoryLabel={getCategoryLabel}

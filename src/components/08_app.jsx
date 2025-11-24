@@ -394,6 +394,186 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                 checkWhatsNew();
             }, [user]);
 
+            // localStorage → Firestore 自動移行（既存ユーザー対応）
+            useEffect(() => {
+                if (!user) return;
+
+                const migrateLocalStorageToFirestore = async () => {
+                    try {
+                        const { STORAGE_KEYS } = window;
+                        const migrationKey = 'yourCoachBeta_dataM migrated';
+
+                        // すでに移行済みの場合はスキップ
+                        if (localStorage.getItem(migrationKey) === 'true') {
+                            return;
+                        }
+
+                        console.log('[Migration] localStorageからFirestoreへの移行を開始します...');
+
+                        // 1. ルーティンデータの移行
+                        const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+                        const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
+                        const routineActive = localStorage.getItem(STORAGE_KEYS.ROUTINE_ACTIVE);
+
+                        if (savedRoutines) {
+                            const routines = JSON.parse(savedRoutines);
+                            if (routines.length > 0) {
+                                // Firestoreにルーティンが既に存在するか確認
+                                const routinesSnapshot = await firebase.firestore()
+                                    .collection('users')
+                                    .doc(user.uid)
+                                    .collection('routines')
+                                    .limit(1)
+                                    .get();
+
+                                if (routinesSnapshot.empty) {
+                                    // Firestoreに保存
+                                    const batch = firebase.firestore().batch();
+                                    routines.forEach(routine => {
+                                        const docRef = firebase.firestore()
+                                            .collection('users')
+                                            .doc(user.uid)
+                                            .collection('routines')
+                                            .doc();
+                                        batch.set(docRef, routine);
+                                    });
+                                    await batch.commit();
+                                    console.log('[Migration] ルーティンを移行しました:', routines.length, '件');
+                                }
+                            }
+                        }
+
+                        // ルーティン設定を移行
+                        if (routineStartDate || routineActive) {
+                            const routineData = {};
+                            if (routineStartDate) routineData.routineStartDate = routineStartDate;
+                            if (routineActive) routineData.routineActive = routineActive === 'true';
+
+                            await firebase.firestore()
+                                .collection('users')
+                                .doc(user.uid)
+                                .set(routineData, { merge: true });
+                            console.log('[Migration] ルーティン設定を移行しました');
+                        }
+
+                        // 2. 指示書の移行
+                        const savedDirectives = localStorage.getItem(STORAGE_KEYS.DIRECTIVES);
+                        if (savedDirectives) {
+                            const directives = JSON.parse(savedDirectives);
+                            if (Array.isArray(directives) && directives.length > 0) {
+                                // Firestoreに指示書が既に存在するか確認
+                                const directivesSnapshot = await firebase.firestore()
+                                    .collection('users')
+                                    .doc(user.uid)
+                                    .collection('directives')
+                                    .limit(1)
+                                    .get();
+
+                                if (directivesSnapshot.empty) {
+                                    const batch = firebase.firestore().batch();
+                                    directives.forEach(directive => {
+                                        if (directive.date) {
+                                            const docRef = firebase.firestore()
+                                                .collection('users')
+                                                .doc(user.uid)
+                                                .collection('directives')
+                                                .doc(directive.date);
+                                            batch.set(docRef, directive);
+                                        }
+                                    });
+                                    await batch.commit();
+                                    console.log('[Migration] 指示書を移行しました:', directives.length, '件');
+                                }
+                            }
+                        }
+
+                        // 3. カスタム運動の移行
+                        const savedExercises = localStorage.getItem('customExercises');
+                        if (savedExercises) {
+                            const exercises = JSON.parse(savedExercises);
+                            if (Array.isArray(exercises) && exercises.length > 0) {
+                                // Firestoreにカスタム運動が既に存在するか確認
+                                const exercisesSnapshot = await firebase.firestore()
+                                    .collection('users')
+                                    .doc(user.uid)
+                                    .collection('customExercises')
+                                    .limit(1)
+                                    .get();
+
+                                if (exercisesSnapshot.empty) {
+                                    const batch = firebase.firestore().batch();
+                                    exercises.forEach(exercise => {
+                                        const docRef = firebase.firestore()
+                                            .collection('users')
+                                            .doc(user.uid)
+                                            .collection('customExercises')
+                                            .doc();
+                                        batch.set(docRef, exercise);
+                                    });
+                                    await batch.commit();
+                                    console.log('[Migration] カスタム運動を移行しました:', exercises.length, '件');
+                                }
+                            }
+                        }
+
+                        // 4. 分析キャッシュの移行（analysesコレクションに既にデータがある場合はスキップ）
+                        const savedAnalyses = localStorage.getItem(STORAGE_KEYS.DAILY_ANALYSES);
+                        if (savedAnalyses) {
+                            const analyses = JSON.parse(savedAnalyses);
+                            const dates = Object.keys(analyses);
+                            if (dates.length > 0) {
+                                // Firestoreに分析データが既に存在するか確認
+                                const analysesSnapshot = await firebase.firestore()
+                                    .collection('users')
+                                    .doc(user.uid)
+                                    .collection('analyses')
+                                    .limit(1)
+                                    .get();
+
+                                if (analysesSnapshot.empty) {
+                                    const batch = firebase.firestore().batch();
+                                    let count = 0;
+                                    dates.forEach(date => {
+                                        if (analyses[date] && Object.keys(analyses[date]).length > 0) {
+                                            const docRef = firebase.firestore()
+                                                .collection('users')
+                                                .doc(user.uid)
+                                                .collection('analyses')
+                                                .doc(date);
+                                            batch.set(docRef, analyses[date]);
+                                            count++;
+                                        }
+                                    });
+                                    if (count > 0) {
+                                        await batch.commit();
+                                        console.log('[Migration] 分析データを移行しました:', count, '件');
+                                    }
+                                }
+                            }
+                        }
+
+                        // 移行完了フラグを設定
+                        localStorage.setItem(migrationKey, 'true');
+                        console.log('[Migration] すべてのデータ移行が完了しました');
+
+                        // 移行後、localStorageの古いデータを削除
+                        localStorage.removeItem(STORAGE_KEYS.ROUTINES);
+                        localStorage.removeItem(STORAGE_KEYS.ROUTINE_START_DATE);
+                        localStorage.removeItem(STORAGE_KEYS.ROUTINE_ACTIVE);
+                        localStorage.removeItem(STORAGE_KEYS.DIRECTIVES);
+                        localStorage.removeItem(STORAGE_KEYS.DAILY_ANALYSES);
+                        localStorage.removeItem('customExercises');
+                        console.log('[Migration] localStorageの古いデータを削除しました');
+
+                    } catch (error) {
+                        console.error('[Migration] データ移行エラー:', error);
+                        // エラーが発生しても処理は続行（ユーザー体験を損なわない）
+                    }
+                };
+
+                migrateLocalStorageToFirestore();
+            }, [user]);
+
             // チュートリアル初回起動チェック
             useEffect(() => {
                 // チュートリアル機能は削除されました
@@ -726,21 +906,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                 setCurrentRoutine(null);
                             }
                         } else {
-                            // Firestoreにない場合はLocalStorageをフォールバック
-                            const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
-                            const routines = savedRoutines ? JSON.parse(savedRoutines) : [];
-                            const routineStartDate = localStorage.getItem(STORAGE_KEYS.ROUTINE_START_DATE);
-                            const routineActive = localStorage.getItem(STORAGE_KEYS.ROUTINE_ACTIVE) === 'true';
-
-                            if (routineActive && routineStartDate && routines.length > 0) {
-                                const startDate = new Date(routineStartDate);
-                                const today = new Date();
-                                const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                                const currentIndex = daysDiff % routines.length;
-                                setCurrentRoutine(routines[currentIndex]);
-                            } else {
-                                setCurrentRoutine(null);
-                            }
+                            // Firestoreにルーティンがない場合
+                            setCurrentRoutine(null);
                         }
                     } catch (error) {
                         console.error('[Routine] Failed to load routine:', error);

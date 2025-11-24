@@ -1727,42 +1727,60 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                 };
 
                 const deleteTemplate = async (templateId) => {
-                    // ルーティンでの使用状況をチェック
-                    const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
-                    let confirmMessage = 'このテンプレートを削除しますか？';
+                    try {
+                        // Firestoreからルーティンを取得
+                        const routinesSnapshot = await firebase.firestore()
+                            .collection('users')
+                            .doc(user.uid)
+                            .collection('routines')
+                            .get();
 
-                    if (savedRoutines) {
-                        const routines = JSON.parse(savedRoutines);
+                        const routines = routinesSnapshot.docs.map(doc => ({
+                            ...doc.data(),
+                            firestoreId: doc.id
+                        }));
+
                         const usingRoutines = routines.filter(routine =>
                             (routine.workoutTemplates || []).includes(templateId)
                         );
 
+                        let confirmMessage = 'このテンプレートを削除しますか？';
                         if (usingRoutines.length > 0) {
                             const routineNames = usingRoutines.map(r => r.name).join('、');
                             confirmMessage = `このテンプレートは以下のルーティンで使用されています：\n${routineNames}\n\n削除すると、これらのルーティンからも削除されます。よろしいですか？`;
                         }
-                    }
 
-                    window.showGlobalConfirm('テンプレート削除の確認', confirmMessage, async () => {
-                        // ルーティンからテンプレートIDを削除
-                        if (savedRoutines) {
-                            const routines = JSON.parse(savedRoutines);
-                            const updatedRoutines = routines.map(routine => {
-                                if ((routine.workoutTemplates || []).includes(templateId)) {
-                                    return {
-                                        ...routine,
-                                        workoutTemplates: routine.workoutTemplates.filter(id => id !== templateId)
-                                    };
+                        window.showGlobalConfirm('テンプレート削除の確認', confirmMessage, async () => {
+                            try {
+                                // Firestoreのルーティンからテンプレートを削除
+                                if (usingRoutines.length > 0) {
+                                    const batch = firebase.firestore().batch();
+                                    usingRoutines.forEach(routine => {
+                                        const docRef = firebase.firestore()
+                                            .collection('users')
+                                            .doc(user.uid)
+                                            .collection('routines')
+                                            .doc(routine.firestoreId);
+
+                                        batch.update(docRef, {
+                                            workoutTemplates: (routine.workoutTemplates || []).filter(id => id !== templateId)
+                                        });
+                                    });
+                                    await batch.commit();
                                 }
-                                return routine;
-                            });
-                            localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(updatedRoutines));
-                        }
 
-                        // テンプレートを削除
-                        await DataService.deleteWorkoutTemplate(user.uid, templateId);
-                        loadTemplates();
-                    });
+                                // テンプレートを削除
+                                await DataService.deleteWorkoutTemplate(user.uid, templateId);
+                                loadTemplates();
+                            } catch (error) {
+                                console.error('[AddWorkoutModal] Failed to delete template:', error);
+                                toast.error('テンプレートの削除に失敗しました');
+                            }
+                        });
+                    } catch (error) {
+                        console.error('[AddWorkoutModal] Failed to load routines:', error);
+                        toast.error('ルーティンの取得に失敗しました');
+                    }
                 };
 
                 const handleWorkoutSave = async () => {
@@ -1842,8 +1860,32 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                     onClose();
                 };
 
-                // LocalStorageからカスタム種目を読み込み
-                const customExercises = JSON.parse(localStorage.getItem('customExercises') || '[]');
+                // Firestoreからカスタム種目を読み込み（stateで管理）
+                const [customExercises, setCustomExercises] = React.useState([]);
+
+                React.useEffect(() => {
+                    const loadCustomExercises = async () => {
+                        if (!user) return;
+
+                        try {
+                            const customExercisesSnapshot = await firebase.firestore()
+                                .collection('users')
+                                .doc(user.uid)
+                                .collection('customExercises')
+                                .get();
+
+                            const exercises = customExercisesSnapshot.docs.map(doc => ({
+                                ...doc.data(),
+                                firestoreId: doc.id
+                            }));
+                            setCustomExercises(exercises);
+                        } catch (error) {
+                            console.error('[AddWorkoutModal] Failed to load custom exercises:', error);
+                        }
+                    };
+
+                    loadCustomExercises();
+                }, [user]);
 
                 // exerciseDBとカスタム種目をマージ
                 const allExercises = [...exerciseDB, ...customExercises];
@@ -2558,14 +2600,27 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                                     isCustom: true
                                                 };
 
-                                                // LocalStorageにカスタム種目を保存
+                                                // Firestoreにカスタム種目を保存
                                                 try {
-                                                    const savedExercises = JSON.parse(localStorage.getItem('customExercises') || '[]');
-                                                    savedExercises.push(customExercise);
-                                                    localStorage.setItem('customExercises', JSON.stringify(savedExercises));
+                                                    if (!user) {
+                                                        toast.error('ユーザー情報が見つかりません');
+                                                        return;
+                                                    }
+
+                                                    const docRef = await firebase.firestore()
+                                                        .collection('users')
+                                                        .doc(user.uid)
+                                                        .collection('customExercises')
+                                                        .add(customExercise);
+
+                                                    // カスタム運動をstateに追加
+                                                    setCustomExercises(prev => [...prev, { ...customExercise, firestoreId: docRef.id }]);
+
                                                     console.log('カスタム種目を保存:', customExercise);
                                                 } catch (error) {
                                                     console.error('カスタム種目の保存に失敗:', error);
+                                                    toast.error('カスタム種目の保存に失敗しました');
+                                                    return;
                                                 }
 
                                                 // 保存方法に応じて処理を分岐
