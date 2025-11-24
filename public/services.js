@@ -274,6 +274,14 @@ const DataService = {
                 }
             });
 
+            console.log('[DataService] saveUserProfile:', userId, cleanProfile);
+            console.log('[DataService] PFC比率:', {
+                proteinRatio: cleanProfile.proteinRatio,
+                fatRatioPercent: cleanProfile.fatRatioPercent,
+                carbRatio: cleanProfile.carbRatio,
+                usePurposeBased: cleanProfile.usePurposeBased
+            });
+
             await db.collection('users').doc(userId).set(cleanProfile, { merge: true });
             return true;
         } catch (error) {

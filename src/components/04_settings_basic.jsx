@@ -1431,6 +1431,7 @@ const BasicTab = ({
                                                 if (newC >= 15 && newC <= 60) {
                                                     setAdvancedSettings({
                                                         ...advancedSettings,
+                                                        proteinRatio: currentP, // proteinRatioも明示的に保存
                                                         fatRatioPercent: newF,
                                                         carbRatio: newC
                                                     });
@@ -1465,6 +1466,7 @@ const BasicTab = ({
                                                 if (newF >= 15 && newF <= 40) {
                                                     setAdvancedSettings({
                                                         ...advancedSettings,
+                                                        proteinRatio: currentP, // proteinRatioも明示的に保存
                                                         carbRatio: newC,
                                                         fatRatioPercent: newF
                                                     });

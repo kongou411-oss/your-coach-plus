@@ -3237,7 +3237,9 @@ AIコーチなどの高度な機能が解放されます。
                             onClose={() => setShowSettings(false)}
                             userProfile={userProfile}
                             onUpdateProfile={async (updatedProfile) => {
+                                console.log('[App] onUpdateProfile受信:', updatedProfile);
                                 await DataService.saveUserProfile(user.uid, updatedProfile);
+                                console.log('[App] Firestore保存完了');
                                 setUserProfile(updatedProfile);
                                 setLastUpdate(Date.now()); // 強制的に再レンダリング
                             }}

@@ -31,9 +31,9 @@ const SettingsView = ({
     const [profile, setProfile] = useState({ ...userProfile });
     const [advancedSettings, setAdvancedSettings] = useState({
         usePurposeBased: userProfile.usePurposeBased !== false,
-        proteinRatio: userProfile.proteinRatio,
-        fatRatioPercent: userProfile.fatRatioPercent,
-        carbRatio: userProfile.carbRatio
+        proteinRatio: userProfile.proteinRatio ?? 30,
+        fatRatioPercent: userProfile.fatRatioPercent ?? 25,
+        carbRatio: userProfile.carbRatio ?? 45
     });
 
     // カスタムactivityMultiplier関連
@@ -219,26 +219,28 @@ const SettingsView = ({
 
     // ===== 共通関数 =====
     const handleSave = () => {
+        console.log('[Settings] handleSave開始');
+        console.log('[Settings] advancedSettings:', advancedSettings);
+        console.log('[Settings] profile:', profile);
+
         // LBM再計算
         const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
         const fatMass = profile.weight - lbm;
         const bmr = LBMUtils.calculateBMR(lbm, fatMass);
         const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass);
 
-        // 目的別モードの場合はカスタムPFC比率をクリア、カスタムモードの場合は保持
-        const pfcSettings = advancedSettings.usePurposeBased !== false
+        // カスタムモードの場合はカスタムPFC比率を保存、目的別モードの場合は既存値を保持
+        const pfcSettings = advancedSettings.usePurposeBased === false
             ? {
-                // 目的別モード：カスタムPFC比率をクリア
-                proteinRatio: undefined,
-                fatRatioPercent: undefined,
-                carbRatio: undefined
-            }
-            : {
-                // カスタムモード：カスタムPFC比率を保持
+                // カスタムモード：カスタムPFC比率を明示的に保存
                 proteinRatio: advancedSettings.proteinRatio,
                 fatRatioPercent: advancedSettings.fatRatioPercent,
                 carbRatio: advancedSettings.carbRatio
-            };
+            }
+            : {}; // 目的別モード：PFC比率は触らない（既存値を保持）
+
+        console.log('[Settings] pfcSettings:', pfcSettings);
+        console.log('[Settings] usePurposeBased:', advancedSettings.usePurposeBased);
 
         const updatedProfile = {
             ...profile,
@@ -256,6 +258,8 @@ const SettingsView = ({
                 delete updatedProfile[key];
             }
         });
+
+        console.log('[Settings] updatedProfile (Firestore保存前):', updatedProfile);
 
         onUpdateProfile(updatedProfile);
         onClose();
