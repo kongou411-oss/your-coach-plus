@@ -228,6 +228,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const SettingsView = window.SettingsView;
             const SubscriptionView = window.SubscriptionView;
             const ChevronShortcut = window.ChevronShortcut;
+            const TemplateGuideModal = window.TemplateGuideModal; // テンプレートガイドモーダル
 
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
@@ -333,7 +334,8 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             // 誘導モーダルの状態管理
             // showWelcomeGuide - 削除済み（オンボーディング完了後、直接食事誘導モーダルを表示）
             const [showMealGuide, setShowMealGuide] = useState(false);           // オンボーディング後（旧：互換性のため残す）
-            const [showTrainingGuide, setShowTrainingGuide] = useState(false); // 食事記録後
+            const [showTemplateGuide, setShowTemplateGuide] = useState(false);   // 食事記録後（テンプレート機能説明）
+            const [showTrainingGuide, setShowTrainingGuide] = useState(false); // テンプレートガイド後
             const [showConditionGuide, setShowConditionGuide] = useState(false); // 運動記録後
             const [showAnalysisGuide, setShowAnalysisGuide] = useState(false);   // コンディション完了後
 
@@ -2143,7 +2145,13 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                                     // 新しく開放された機能があれば誘導モーダルを表示
                                     if (!oldUnlocked.includes('training') && newUnlocked.includes('training')) {
-                                        setShowTrainingGuide(true);
+                                        // 初回のみテンプレートガイドモーダルを表示
+                                        const hasSeenTemplateGuide = localStorage.getItem('yourCoachBeta_templateGuideShown');
+                                        if (!hasSeenTemplateGuide) {
+                                            setShowTemplateGuide(true);
+                                        } else {
+                                            setShowTrainingGuide(true);
+                                        }
                                     } else if (!oldUnlocked.includes('condition') && newUnlocked.includes('condition')) {
                                         setShowConditionGuide(true);
                                     } else if (!oldUnlocked.includes('analysis') && newUnlocked.includes('analysis')) {
@@ -3618,6 +3626,19 @@ AIコーチなどの高度な機能が解放されます。
                         targetSectionId="meal-section"
                         onClose={() => setShowMealGuide(false)}
                     />
+                    {/* テンプレートガイドモーダル（初回食事記録後に表示） */}
+                    {TemplateGuideModal && (
+                        <TemplateGuideModal
+                            show={showTemplateGuide}
+                            onClose={() => {
+                                setShowTemplateGuide(false);
+                                // LocalStorageに表示済みフラグを保存
+                                localStorage.setItem('yourCoachBeta_templateGuideShown', 'true');
+                                // テンプレートガイド後、運動記録誘導モーダルを表示
+                                setShowTrainingGuide(true);
+                            }}
+                        />
+                    )}
                     <GuideModal
                         show={showTrainingGuide}
                         title="次は運動を記録しましょう！"

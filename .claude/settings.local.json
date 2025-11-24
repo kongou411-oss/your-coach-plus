@@ -161,7 +161,12 @@
       "Bash(npm run deploy:*)",
       "Bash(functions_log.txt)",
       "Bash(del:*)",
-      "Bash(gcloud functions logs read:*)"
+      "Bash(gcloud functions logs read:*)",
+      "Bash(if not exist \"public\\guide-images\" mkdir \"public\\guide-images\")",
+      "Bash(cmd /c \"if not exist public\\guide-images mkdir public\\guide-images\")",
+      "Bash(cmd /c \"dir public\\guide-images\")",
+      "Bash(cmd /c \"if exist public\\guide-images (dir public\\guide-images) else (echo Directory does not exist)\")",
+      "Bash(cmd /c \"dir /b public\\guide-images\")"
     ],
     "deny": [],
     "ask": []

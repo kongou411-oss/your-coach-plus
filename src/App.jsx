@@ -23,6 +23,7 @@ import './components/17_chevron_shortcut.jsx'
 import './components/18_subscription.jsx'
 import './components/19_add_meal_modal.jsx'
 import './components/20_add_workout_modal.jsx'
+import './components/22_template_guide_modal.jsx'
 import './components/08_app.jsx'
 
 // Appコンポーネントはwindow.Appとして公開されている
