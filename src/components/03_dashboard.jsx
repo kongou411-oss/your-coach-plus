@@ -1653,7 +1653,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                 {/* 詳細栄養素（Premium専用） */}
                 {(() => {
-                    const isPremium = profile?.subscriptionStatus === 'active';
+                    const isPremium = profile?.subscription?.status === 'active';
                     const isTrial = usageDays < 7;
                     const hasAccess = isPremium || isTrial;
 
@@ -3348,7 +3348,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 // 機能開放チェック
                                                 const oldUnlocked = [...unlockedFeatures];
                                                 await checkAndCompleteFeatures(userId, updatedWithScores);
-                                                const isPremium = profile?.subscriptionStatus === 'active';
+                                                const isPremium = profile?.subscription?.status === 'active';
                                                 const newUnlocked = await calculateUnlockedFeatures(userId, updatedWithScores, isPremium);
                                                 setUnlockedFeatures(newUnlocked);
 
@@ -3410,7 +3410,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 // 機能開放チェック
                                                 const oldUnlocked = [...unlockedFeatures];
                                                 await checkAndCompleteFeatures(userId, updatedWithScores);
-                                                const isPremium = profile?.subscriptionStatus === 'active';
+                                                const isPremium = profile?.subscription?.status === 'active';
                                                 const newUnlocked = await calculateUnlockedFeatures(userId, updatedWithScores, isPremium);
                                                 setUnlockedFeatures(newUnlocked);
 
@@ -3472,7 +3472,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 // 機能開放チェック
                                                 const oldUnlocked = [...unlockedFeatures];
                                                 await checkAndCompleteFeatures(userId, updatedWithScores);
-                                                const isPremium = profile?.subscriptionStatus === 'active';
+                                                const isPremium = profile?.subscription?.status === 'active';
                                                 const newUnlocked = await calculateUnlockedFeatures(userId, updatedWithScores, isPremium);
                                                 setUnlockedFeatures(newUnlocked);
 
@@ -3534,7 +3534,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 // 機能開放チェック
                                                 const oldUnlocked = [...unlockedFeatures];
                                                 await checkAndCompleteFeatures(userId, updatedWithScores);
-                                                const isPremium = profile?.subscriptionStatus === 'active';
+                                                const isPremium = profile?.subscription?.status === 'active';
                                                 const newUnlocked = await calculateUnlockedFeatures(userId, updatedWithScores, isPremium);
                                                 setUnlockedFeatures(newUnlocked);
 
@@ -3596,7 +3596,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 // 機能開放チェック
                                                 const oldUnlocked = [...unlockedFeatures];
                                                 await checkAndCompleteFeatures(userId, updatedWithScores);
-                                                const isPremium = profile?.subscriptionStatus === 'active';
+                                                const isPremium = profile?.subscription?.status === 'active';
                                                 const newUnlocked = await calculateUnlockedFeatures(userId, updatedWithScores, isPremium);
                                                 setUnlockedFeatures(newUnlocked);
 
@@ -3660,7 +3660,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                 {/* 分析ボタン - コンディション完了後に開放（Premium制限あり） */}
                 {(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('analysis')) && (() => {
-                    const isPremium = profile?.subscriptionStatus === 'active';
+                    const isPremium = profile?.subscription?.status === 'active';
                     const isTrial = usageDays < 7;
                     const hasAccess = isPremium || isTrial;
 
