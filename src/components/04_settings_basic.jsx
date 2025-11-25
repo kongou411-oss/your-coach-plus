@@ -163,25 +163,25 @@ const BasicTab = ({
                                             <button
                                                 className="w-full bg-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-300"
                                                 onClick={() => showConfirm(
-                                                'サブスクリプション解約の確認',
-                                                'サブスクリプションを解約しますか？解約後も現在の課金期間終了まで利用できます。',
-                                                async () => {
-                                                    try {
-                                                        const functions = window.firebase.app().functions('asia-northeast2');
-                                                        const cancelSubscription = functions.httpsCallable('cancelSubscription');
-                                                        await cancelSubscription();
-                                                        toast.success('サブスクリプションを解約しました');
-                                                        // ページリロードでデータを更新
-                                                        setTimeout(() => window.location.reload(), 1500);
-                                                    } catch (error) {
-                                                        console.error('[Subscription] Cancel error:', error);
-                                                        toast.error('解約処理中にエラーが発生しました: ' + error.message);
+                                                    'サブスクリプション解約の確認',
+                                                    'サブスクリプションを解約しますか？解約後も現在の課金期間終了まで利用できます。',
+                                                    async () => {
+                                                        try {
+                                                            const functions = window.firebase.app().functions('asia-northeast2');
+                                                            const cancelSubscription = functions.httpsCallable('cancelSubscription');
+                                                            await cancelSubscription();
+                                                            toast.success('サブスクリプションを解約しました');
+                                                            // ページリロードでデータを更新
+                                                            setTimeout(() => window.location.reload(), 1500);
+                                                        } catch (error) {
+                                                            console.error('[Subscription] Cancel error:', error);
+                                                            toast.error('解約処理中にエラーが発生しました: ' + error.message);
+                                                        }
                                                     }
-                                                }
-                                            )}
-                                        >
-                                            サブスクリプション解約
-                                        </button>
+                                                )}
+                                            >
+                                                サブスクリプション解約
+                                            </button>
                                         )}
                                     </div>
                                 );
@@ -763,68 +763,50 @@ const BasicTab = ({
                                         toast.error('確認モーダルが利用できません');
                                         return;
                                     }
+                                    const isPremium = userProfile?.subscription?.status === 'active';
+                                    const warningMessage = isPremium
+                                        ? 'アカウントを削除すると、有料プランの有効期限が残っていても即座に無効になり、すべてのデータが完全に削除されます。日割り等の返金は行われません。この操作は取り消せません。本当に削除しますか？'
+                                        : 'アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。本当に削除しますか？';
+
                                     showConfirm(
                                         'アカウント削除の確認',
-                                        '本当にアカウントを削除しますか？この操作は取り消せません。',
+                                        warningMessage,
                                         () => {
                                             showConfirm(
                                                 '最終確認',
-                                                'すべてのデータが完全に削除されます。本当によろしいですか？',
+                                                'この操作は取り消せません。本当によろしいですか？',
                                                 async () => {
                                                     try {
                                                         const user = firebase.auth().currentUser;
-                                                        if (user) {
-                                                            // 先に再認証を実行（Google認証の場合）
-                                                            try {
-                                                                console.log('[Account Delete] Re-authenticating user...');
-                                                                const provider = new firebase.auth.GoogleAuthProvider();
-                                                                await user.reauthenticateWithPopup(provider);
-                                                                console.log('[Account Delete] Re-authentication successful');
-                                                            } catch (reauthError) {
-                                                                console.error('[Account Delete] Re-authentication failed:', reauthError);
-                                                                if (reauthError.code === 'auth/popup-closed-by-user') {
-                                                                    toast('再認証がキャンセルされました。アカウント削除を中止します。');
-                                                                    return;
-                                                                }
-                                                                // 再認証エラーでも続行を試みる
-                                                            }
-
-                                                            // Firestoreユーザーデータを削除
-                                                            try {
-                                                                await firebase.firestore().collection('users').doc(user.uid).delete();
-                                                                console.log('[Account Delete] Firestore user data deleted');
-                                                            } catch (firestoreError) {
-                                                                console.warn('[Account Delete] Firestore deletion failed:', firestoreError);
-                                                                // Firestoreエラーは無視して続行
-                                                            }
-
-                                                            // Firebase認証アカウントを削除
-                                                            try {
-                                                                await user.delete();
-                                                                console.log('[Account Delete] Firebase auth account deleted');
-                                                            } catch (authError) {
-                                                                if (authError.code === 'auth/requires-recent-login') {
-                                                                    // それでも再認証が必要な場合
-                                                                    console.log('[Account Delete] Still requires re-authentication');
-                                                                    localStorage.clear();
-                                                                    await firebase.auth().signOut();
-                                                                    toast.error('再認証に失敗しました。ログアウトして再度ログイン後、アカウント削除を実行してください。');
-                                                                    window.location.reload();
-                                                                    return;
-                                                                }
-                                                                throw authError;
-                                                            }
-
-                                                            // すべて成功したら、LocalStorageをクリア
-                                                            console.log('[Account Delete] Clearing all localStorage data');
-                                                            localStorage.clear();
-                                                            toast.success('アカウントを削除しました');
-                                                            // ページをリロードして状態をリセット
-                                                            window.location.reload();
+                                                        if (!user) {
+                                                            toast.error('ログインしていません');
+                                                            return;
                                                         }
+
+                                                        console.log('[Account Delete] Starting account deletion...');
+
+                                                        // Cloud Functionを呼び出して完全削除（Stripe + Firestore + Auth）
+                                                        const functions = window.firebase.app().functions('asia-northeast2');
+                                                        const deleteAccount = functions.httpsCallable('deleteAccount');
+
+                                                        await deleteAccount();
+                                                        console.log('[Account Delete] Account deletion completed');
+
+                                                        // LocalStorageをクリア
+                                                        console.log('[Account Delete] Clearing all localStorage data');
+                                                        localStorage.clear();
+
+                                                        // 削除成功メッセージを表示
+                                                        toast.success('アカウントを完全に削除しました。ご利用ありがとうございました。');
+
+                                                        // ログイン画面にリダイレクト
+                                                        setTimeout(() => {
+                                                            window.location.reload();
+                                                        }, 2000);
                                                     } catch (error) {
                                                         console.error('[Account Delete] Error:', error);
-                                                        toast.error('アカウント削除中にエラーが発生しました: ' + error.message);
+                                                        const errorMessage = error.message || 'アカウント削除中にエラーが発生しました';
+                                                        toast.error(errorMessage);
                                                     }
                                                 }
                                             );

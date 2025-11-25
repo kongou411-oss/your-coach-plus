@@ -625,37 +625,16 @@ exports.createCheckoutSession = onCall({
     let customerId = userData.stripeCustomerId;
     const userEmail = request.auth.token.email || '';
 
-    // Stripe Customerがない場合
+    // Stripe Customerがない場合は新規作成（GDPR対応：削除済みアカウントは引き継がない）
     if (!customerId) {
-      // メールアドレスで既存Customerを検索（アカウント削除→再登録対策）
-      const existingCustomers = await stripe.customers.list({
+      const customer = await stripe.customers.create({
         email: userEmail,
-        limit: 1,
+        metadata: {
+          firebaseUID: userId,
+        },
       });
-
-      if (existingCustomers.data.length > 0) {
-        // 既存Customerが見つかった場合、そのCustomerを使用
-        customerId = existingCustomers.data[0].id;
-        console.log(`[Stripe] Found existing customer for ${userEmail}: ${customerId}`);
-
-        // metadata の firebaseUID を新しいUIDに更新
-        await stripe.customers.update(customerId, {
-          metadata: {
-            firebaseUID: userId,
-            previousUID: existingCustomers.data[0].metadata?.firebaseUID || '',
-          },
-        });
-      } else {
-        // 既存Customerがない場合は新規作成
-        const customer = await stripe.customers.create({
-          email: userEmail,
-          metadata: {
-            firebaseUID: userId,
-          },
-        });
-        customerId = customer.id;
-        console.log(`[Stripe] Created new customer for ${userEmail}: ${customerId}`);
-      }
+      customerId = customer.id;
+      console.log(`[Stripe] Created new customer for ${userEmail}: ${customerId}`);
 
       // FirestoreにCustomer IDを保存
       await admin.firestore().collection('users').doc(userId).update({
@@ -952,5 +931,67 @@ exports.cancelSubscription = onCall({
   } catch (error) {
     console.error("[Stripe] Cancel subscription failed:", error);
     throw new HttpsError("internal", "サブスクリプションの解約に失敗しました", error.message);
+  }
+});
+
+// ===== アカウント削除（即時サブスクリプションキャンセル） =====
+exports.deleteAccount = onCall({
+  region: "asia-northeast2",
+  cors: true,
+  secrets: [stripeSecretKey],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    console.log(`[Account Delete] Starting account deletion for user ${userId}`);
+
+    // 1. Firestoreからユーザーデータを取得
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      console.log(`[Account Delete] User ${userId} not found in Firestore`);
+      throw new HttpsError("not-found", "ユーザーが見つかりません");
+    }
+
+    const userData = userDoc.data();
+    const subscriptionId = userData?.subscription?.stripeSubscriptionId;
+
+    // 2. Stripeサブスクリプションを即時キャンセル（prorate: falseで日割り返金なし）
+    if (subscriptionId) {
+      console.log(`[Account Delete] Cancelling Stripe subscription ${subscriptionId} immediately`);
+      const stripe = require('stripe')(stripeSecretKey.value().trim());
+
+      try {
+        await stripe.subscriptions.cancel(subscriptionId, {
+          prorate: false, // 日割り返金なし
+        });
+        console.log(`[Account Delete] Stripe subscription ${subscriptionId} cancelled immediately`);
+      } catch (stripeError) {
+        console.error(`[Account Delete] Stripe cancellation failed:`, stripeError);
+        // Stripeキャンセル失敗時はFirestoreデータを残す
+        throw new HttpsError("internal", "サブスクリプションのキャンセルに失敗しました", stripeError.message);
+      }
+    } else {
+      console.log(`[Account Delete] No active subscription found for user ${userId}`);
+    }
+
+    // 3. Firestoreユーザーデータを完全削除
+    console.log(`[Account Delete] Deleting Firestore data for user ${userId}`);
+    await admin.firestore().collection('users').doc(userId).delete();
+    console.log(`[Account Delete] Firestore data deleted for user ${userId}`);
+
+    // 4. Firebase Authenticationアカウントを削除
+    console.log(`[Account Delete] Deleting Firebase Auth account for user ${userId}`);
+    await admin.auth().deleteUser(userId);
+    console.log(`[Account Delete] Firebase Auth account deleted for user ${userId}`);
+
+    console.log(`[Account Delete] Account deletion completed successfully for user ${userId}`);
+    return { success: true, message: "アカウントを完全に削除しました" };
+  } catch (error) {
+    console.error(`[Account Delete] Account deletion failed for user ${userId}:`, error);
+    throw new HttpsError("internal", "アカウント削除に失敗しました", error.message);
   }
 });
