@@ -801,6 +801,12 @@ async function handleSubscriptionUpdate(subscription) {
 
   const status = subscription.status;
 
+  // incompleteステータスは無視（決済完了前の一時的な状態）
+  if (status === 'incomplete' || status === 'incomplete_expired') {
+    console.log(`[Stripe] Ignoring incomplete subscription for user ${userId}`);
+    return;
+  }
+
   // current_period_endが存在する場合のみTimestampに変換
   const updateData = {
     'subscription.status': status,
