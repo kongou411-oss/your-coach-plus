@@ -28,6 +28,7 @@ const BasicTab = ({
     verificationId,
     setVerificationId,
     verificationCode,
+    onOpenSubscription,
     setVerificationCode,
     showConfirm,
     handleSave,
@@ -171,7 +172,7 @@ const BasicTab = ({
 
                                         <button
                                             className="w-full bg-[#FFF59A] text-gray-800 font-bold py-3 rounded-lg hover:opacity-90 relative overflow-hidden"
-                                            onClick={() => toast('サブスクリプション画面は実装予定！')}
+                                            onClick={() => onOpenSubscription && onOpenSubscription()}
                                         >
                                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                                             <span className="relative z-10">月額940円でPremium登録</span>
@@ -197,7 +198,7 @@ const BasicTab = ({
 
                                         <button
                                             className="w-full bg-[#FFF59A] text-gray-800 font-bold py-3 rounded-lg hover:opacity-90 relative overflow-hidden"
-                                            onClick={() => toast('サブスクリプション画面は実装予定！')}
+                                            onClick={() => onOpenSubscription && onOpenSubscription()}
                                         >
                                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                                             <span className="relative z-10">月額940円でPremium登録</span>

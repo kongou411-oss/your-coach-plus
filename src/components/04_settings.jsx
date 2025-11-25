@@ -22,7 +22,8 @@ const SettingsView = ({
     reopenTemplateEditModal = false,
     reopenTemplateEditType = null,
     onTemplateEditModalOpened,
-    initialTab = 'basic' // 初期タブ（デフォルトは基本設定）
+    initialTab = 'basic', // 初期タブ（デフォルトは基本設定）
+    onOpenSubscription // Subscription画面を開く関数
 }) => {
     const Icon = window.Icon;
     const LBMUtils = window.LBMUtils;
@@ -410,6 +411,7 @@ const SettingsView = ({
                             handleSave={handleSave}
                             userId={userId}
                             unlockedFeatures={unlockedFeatures}
+                            onOpenSubscription={onOpenSubscription}
                         />
                     )}
 

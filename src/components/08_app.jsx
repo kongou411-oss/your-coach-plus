@@ -3285,6 +3285,10 @@ AIコーチなどの高度な機能が解放されます。
                                 setReopenTemplateEditModal(false);
                                 setReopenTemplateEditType(null);
                             }}
+                            onOpenSubscription={() => {
+                                setShowSubscriptionView(true);
+                                setShowSettings(false);
+                            }}
                         />
                     )}
 

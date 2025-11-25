@@ -4511,81 +4511,12 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             )}
 
             {/* Premium会員登録モーダル */}
-            {showSubscriptionModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
-                        {/* ヘッダー */}
-                        <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white text-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
-                            <button
-                                onClick={() => setShowSubscriptionModal(false)}
-                                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-20"
-                            >
-                                <Icon name="X" size={20} />
-                            </button>
-                            <div className="relative z-10">
-                                <Icon name="Crown" size={48} className="mx-auto mb-3 text-yellow-200" />
-                                <h3 className="text-2xl font-bold mb-2">Premium会員</h3>
-                                <p className="text-sm opacity-90">すべての機能を制限なく利用できます</p>
-                            </div>
-                        </div>
-
-                        {/* コンテンツ */}
-                        <div className="p-6 space-y-6">
-                            {/* 料金 */}
-                            <div className="text-center">
-                                <div className="text-4xl font-bold text-gray-800">
-                                    ¥940
-                                    <span className="text-lg text-gray-500 font-normal">/月</span>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">税込み</p>
-                            </div>
-
-                            {/* Premium機能一覧 */}
-                            <div className="space-y-3">
-                                <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                    <Icon name="CheckCircle" size={18} className="text-green-500" />
-                                    Premium特典
-                                </h4>
-                                <div className="space-y-2">
-                                    {[
-                                        { icon: 'Camera', text: 'AI食事認識（写真解析）', color: 'text-purple-600' },
-                                        { icon: 'BarChart3', text: 'AI分析 100回/月', color: 'text-blue-600' },
-                                        { icon: 'FileText', text: '指示書・閃き機能', color: 'text-indigo-600' },
-                                        { icon: 'History', text: '履歴・履歴分析', color: 'text-amber-600' },
-                                        { icon: 'Droplets', text: '詳細栄養素（ビタミン・ミネラル）', color: 'text-teal-600' },
-                                        { icon: 'Zap', text: 'ショートカット機能', color: 'text-yellow-600' },
-                                        { icon: 'Users', text: 'コミュニティアクセス', color: 'text-pink-600' },
-                                        { icon: 'BookOpen', text: 'PG BASE全教科書', color: 'text-orange-600' },
-                                        { icon: 'Download', text: 'データエクスポート', color: 'text-gray-600' }
-                                    ].map((feature, index) => (
-                                        <div key={index} className="flex items-center gap-3 text-sm">
-                                            <Icon name={feature.icon} size={16} className={`flex-shrink-0 ${feature.color}`} />
-                                            <span className="text-gray-700">{feature.text}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* 登録ボタン */}
-                            <button
-                                onClick={() => {
-                                    toast('サブスクリプション機能は準備中です', { icon: '🚧', duration: 3000 });
-                                    setShowSubscriptionModal(false);
-                                }}
-                                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3.5 rounded-lg font-bold hover:from-amber-600 hover:to-orange-600 transition shadow-lg relative overflow-hidden"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
-                                <span className="relative z-10">今すぐPremium会員になる</span>
-                            </button>
-
-                            {/* 注意事項 */}
-                            <p className="text-xs text-gray-500 text-center">
-                                7日間の無料トライアル中は、すべてのPremium機能を無料でお試しいただけます
-                            </p>
-                        </div>
-                    </div>
-                </div>
+            {showSubscriptionModal && window.SubscriptionView && (
+                <window.SubscriptionView
+                    onClose={() => setShowSubscriptionModal(false)}
+                    userId={userId}
+                    userProfile={userProfile}
+                />
             )}
         </div>
     );
