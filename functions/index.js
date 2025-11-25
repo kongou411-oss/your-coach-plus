@@ -652,6 +652,7 @@ exports.createCheckoutSession = onCall({
       ],
       success_url: successUrl,
       cancel_url: cancelUrl,
+      locale: 'ja', // 日本語メール・UI強制
       metadata: {
         firebaseUID: userId,
         priceId: priceId,
