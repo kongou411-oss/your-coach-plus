@@ -1,5 +1,6 @@
 import React from 'react';
 import toast from 'react-hot-toast';
+import { SUBSCRIPTION_PLAN } from '../config';
 
 // ===== Subscription View Component =====
 const SubscriptionView = ({ onClose, userId, userProfile }) => {
@@ -7,24 +8,34 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
     const [selectedPlan, setSelectedPlan] = useState('premium'); // 'premium' or 'credit_pack'
     const [selectedCreditPack, setSelectedCreditPack] = useState(null);
 
-    // クレジットパックオプション
-    const creditPacks = [
-        { credits: 50, price: 400, name: '50回パック' },
-        { credits: 150, price: 1000, name: '150回パック', badge: '人気' },
-        { credits: 300, price: 1800, name: '300回パック', badge: 'お得' }
-    ];
+    // クレジットパックオプション（config.jsから取得）
+    const creditPacks = SUBSCRIPTION_PLAN.aiCredits.purchaseOptions.map(option => ({
+        ...option,
+        badge: option.credits === 150 ? '人気' : option.credits === 300 ? 'お得' : undefined
+    }));
 
     const handleSubscribe = async () => {
         if (loading) return;
         setLoading(true);
 
         try {
-            // TODO: Stripe Checkoutセッション作成
-            toast('Stripe統合は実装中です。\n\n本番環境では、ここでStripe Checkoutにリダイレクトされます。');
+            // Cloud Function経由でStripe Checkoutセッション作成
+            const createCheckoutSession = window.firebase.functions().httpsCallable('createCheckoutSession');
+
+            const result = await createCheckoutSession({
+                priceId: SUBSCRIPTION_PLAN.stripePriceId,
+                mode: 'subscription',
+                successUrl: `${window.location.origin}/?payment=success`,
+                cancelUrl: `${window.location.origin}/?payment=cancel`,
+            });
+
+            if (result.data.url) {
+                // Stripe Checkoutページにリダイレクト
+                window.location.href = result.data.url;
+            }
         } catch (error) {
             console.error('[Subscription] Error:', error);
-            toast.error('エラーが発生しました。もう一度お試しください。');
-        } finally {
+            toast.error(`エラーが発生しました: ${error.message}`);
             setLoading(false);
         }
     };
@@ -34,12 +45,23 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
         setLoading(true);
 
         try {
-            // TODO: Stripe Checkoutセッション作成（単発購入）
-            toast(`${selectedCreditPack.name}の購入処理は実装中です。\n\n本番環境では、ここでStripe Checkoutにリダイレクトされます。`);
+            // Cloud Function経由でStripe Checkoutセッション作成（単発購入）
+            const createCheckoutSession = window.firebase.functions().httpsCallable('createCheckoutSession');
+
+            const result = await createCheckoutSession({
+                priceId: selectedCreditPack.stripePriceId,
+                mode: 'payment',
+                successUrl: `${window.location.origin}/?payment=success&type=credits&amount=${selectedCreditPack.credits}`,
+                cancelUrl: `${window.location.origin}/?payment=cancel`,
+            });
+
+            if (result.data.url) {
+                // Stripe Checkoutページにリダイレクト
+                window.location.href = result.data.url;
+            }
         } catch (error) {
             console.error('[Subscription] Error:', error);
-            toast.error('エラーが発生しました。もう一度お試しください。');
-        } finally {
+            toast.error(`エラーが発生しました: ${error.message}`);
             setLoading(false);
         }
     };
