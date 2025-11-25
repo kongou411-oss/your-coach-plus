@@ -20,7 +20,8 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
 
         try {
             // Cloud Function経由でStripe Checkoutセッション作成
-            const createCheckoutSession = window.firebase.functions().httpsCallable('createCheckoutSession');
+            const functions = window.firebase.app().functions('asia-northeast2');
+            const createCheckoutSession = functions.httpsCallable('createCheckoutSession');
 
             const result = await createCheckoutSession({
                 priceId: SUBSCRIPTION_PLAN.stripePriceId,
@@ -46,7 +47,8 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
 
         try {
             // Cloud Function経由でStripe Checkoutセッション作成（単発購入）
-            const createCheckoutSession = window.firebase.functions().httpsCallable('createCheckoutSession');
+            const functions = window.firebase.app().functions('asia-northeast2');
+            const createCheckoutSession = functions.httpsCallable('createCheckoutSession');
 
             const result = await createCheckoutSession({
                 priceId: selectedCreditPack.stripePriceId,
