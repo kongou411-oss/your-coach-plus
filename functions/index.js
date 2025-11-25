@@ -613,7 +613,7 @@ exports.createCheckoutSession = onCall({
 
   try {
     // Stripeインスタンス初期化
-    const stripe = require('stripe')(stripeSecretKey.value());
+    const stripe = require('stripe')(stripeSecretKey.value().trim());
 
     // ユーザー情報取得
     const userDoc = await admin.firestore().collection('users').doc(userId).get();
@@ -684,7 +684,7 @@ exports.handleStripeWebhook = onRequest({
   region: "asia-northeast2",
   secrets: [stripeSecretKey],
 }, async (req, res) => {
-  const stripe = require('stripe')(stripeSecretKey.value());
+  const stripe = require('stripe')(stripeSecretKey.value().trim());
   const webhookSecret = 'whsec_aEmcIkxZi3UBOMbDv8BLIv5BdJYBceNA';
 
   let event;
@@ -893,7 +893,7 @@ exports.cancelSubscription = onCall({
   const userId = request.auth.uid;
 
   try {
-    const stripe = require('stripe')(stripeSecretKey.value());
+    const stripe = require('stripe')(stripeSecretKey.value().trim());
 
     const userDoc = await admin.firestore().collection('users').doc(userId).get();
     if (!userDoc.exists) {
