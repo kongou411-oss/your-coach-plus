@@ -146,7 +146,23 @@ const BasicTab = ({
 
                                         <button
                                             className="w-full bg-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-300"
-                                            onClick={() => showConfirm('サブスクリプション解約の確認', 'サブスクリプションを解約しますか？', () => toast('解約処理は実装予定！'))}
+                                            onClick={() => showConfirm(
+                                                'サブスクリプション解約の確認',
+                                                'サブスクリプションを解約しますか？解約後も現在の課金期間終了まで利用できます。',
+                                                async () => {
+                                                    try {
+                                                        const functions = window.firebase.app().functions('asia-northeast2');
+                                                        const cancelSubscription = functions.httpsCallable('cancelSubscription');
+                                                        await cancelSubscription();
+                                                        toast.success('サブスクリプションを解約しました');
+                                                        // ページリロードでデータを更新
+                                                        setTimeout(() => window.location.reload(), 1500);
+                                                    } catch (error) {
+                                                        console.error('[Subscription] Cancel error:', error);
+                                                        toast.error('解約処理中にエラーが発生しました: ' + error.message);
+                                                    }
+                                                }
+                                            )}
                                         >
                                             サブスクリプション解約
                                         </button>
