@@ -160,7 +160,30 @@ const BasicTab = ({
                                         </div>
 
                                         <div className="space-y-2">
-                                            {!willCancel && (
+                                            {willCancel ? (
+                                                <button
+                                                    className="w-full bg-[#FFF59A] text-gray-800 font-bold py-2 rounded-lg hover:opacity-90"
+                                                    onClick={() => showConfirm(
+                                                        'サブスクリプション再開の確認',
+                                                        'サブスクリプションを再開しますか？解約予定をキャンセルして、継続利用が可能になります。',
+                                                        async () => {
+                                                            try {
+                                                                const functions = window.firebase.app().functions('asia-northeast2');
+                                                                const resumeSubscription = functions.httpsCallable('resumeSubscription');
+                                                                await resumeSubscription();
+                                                                toast.success('サブスクリプションを再開しました');
+                                                                // ページリロードでデータを更新
+                                                                setTimeout(() => window.location.reload(), 1500);
+                                                            } catch (error) {
+                                                                console.error('[Subscription] Resume error:', error);
+                                                                toast.error('再開処理中にエラーが発生しました: ' + error.message);
+                                                            }
+                                                        }
+                                                    )}
+                                                >
+                                                    サブスクリプション再開
+                                                </button>
+                                            ) : (
                                                 <button
                                                     className="w-full bg-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-300"
                                                     onClick={() => showConfirm(
@@ -276,6 +299,39 @@ const BasicTab = ({
                                 );
                             }
                         })()}
+                    </div>
+                </div>
+            </details>
+
+            {/* 友達紹介 */}
+            <details id="referral" className="border rounded-lg">
+                <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                    <Icon name="Gift" size={18} className="text-pink-600" />
+                    友達紹介で特典ゲット
+                    <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                </summary>
+                <div className="p-4 pt-0 border-t border-pink-200">
+                    <div className="space-y-4">
+                        {/* 紹介特典の説明 */}
+                        <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 rounded-lg border border-pink-200">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Icon name="Sparkles" size={20} className="text-pink-600" />
+                                <h3 className="font-bold text-gray-800">紹介特典</h3>
+                            </div>
+                            <div className="space-y-2 text-sm text-gray-600">
+                                <div className="flex items-start gap-2">
+                                    <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                    <span><strong>友達:</strong> 1ヶ月無料 + 50回分の分析クレジット</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                    <span><strong>あなた:</strong> 50回分の分析クレジット</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 紹介コード表示・生成 */}
+                        <ReferralCodeSection userProfile={userProfile} userId={userId} />
                     </div>
                 </div>
             </details>
@@ -1542,6 +1598,149 @@ const BasicTab = ({
                 </div>
             </div>
         </details>
+        </div>
+    );
+};
+
+// ===== 紹介コードセクション =====
+const ReferralCodeSection = ({ userProfile, userId }) => {
+    const Icon = window.Icon;
+    const [referralCode, setReferralCode] = useState(userProfile?.referralCode || null);
+    const [loading, setLoading] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const generateReferralCode = async () => {
+        setLoading(true);
+        try {
+            const functions = window.firebase.app().functions('asia-northeast2');
+            const generateCode = functions.httpsCallable('generateReferralCode');
+            const result = await generateCode();
+            setReferralCode(result.data.referralCode);
+            toast.success('紹介コードを生成しました！');
+        } catch (error) {
+            console.error('[Referral] Code generation failed:', error);
+            toast.error('紹介コードの生成に失敗しました: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const copyReferralLink = () => {
+        const referralLink = `${window.location.origin}/?ref=${referralCode}`;
+        navigator.clipboard.writeText(referralLink);
+        setCopied(true);
+        toast.success('リンクをコピーしました！');
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const shareReferralLink = async () => {
+        const referralLink = `${window.location.origin}/?ref=${referralCode}`;
+        const shareText = `Your Coach+ を一緒に始めませんか？\n\n私の紹介コード「${referralCode}」を使うと、1ヶ月無料 + 50回分の分析クレジットがもらえます！\n\n${referralLink}`;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Your Coach+ 友達紹介',
+                    text: shareText,
+                });
+                toast.success('シェアしました！');
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error('[Referral] Share failed:', error);
+                }
+            }
+        } else {
+            // Web Share API非対応の場合はコピー
+            navigator.clipboard.writeText(shareText);
+            toast.success('紹介文をコピーしました！');
+        }
+    };
+
+    if (!referralCode) {
+        return (
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600 mb-3">
+                    友達にYour Coach+を紹介して、お互いに特典をゲットしましょう！
+                </p>
+                <button
+                    onClick={generateReferralCode}
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold py-3 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                    {loading ? (
+                        <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            <span>生成中...</span>
+                        </>
+                    ) : (
+                        <>
+                            <Icon name="Gift" size={20} />
+                            <span>紹介コードを生成</span>
+                        </>
+                    )}
+                </button>
+            </div>
+        );
+    }
+
+    const referralLink = `${window.location.origin}/?ref=${referralCode}`;
+
+    return (
+        <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
+            {/* 紹介コード表示 */}
+            <div className="bg-gradient-to-r from-pink-100 to-purple-100 p-4 rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">あなたの紹介コード</p>
+                <div className="flex items-center justify-between">
+                    <p className="text-2xl font-bold text-gray-800 tracking-wider">{referralCode}</p>
+                    <button
+                        onClick={copyReferralLink}
+                        className="p-2 hover:bg-white/50 rounded transition"
+                    >
+                        <Icon name={copied ? "Check" : "Copy"} size={20} className={copied ? "text-green-600" : "text-gray-600"} />
+                    </button>
+                </div>
+            </div>
+
+            {/* 紹介リンク */}
+            <div>
+                <p className="text-xs text-gray-600 mb-1">紹介リンク</p>
+                <div className="flex items-center gap-2">
+                    <input
+                        type="text"
+                        value={referralLink}
+                        readOnly
+                        className="flex-1 px-3 py-2 text-sm border rounded-lg bg-gray-50"
+                        onClick={(e) => e.target.select()}
+                    />
+                    <button
+                        onClick={copyReferralLink}
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium"
+                    >
+                        {copied ? 'コピー済み' : 'コピー'}
+                    </button>
+                </div>
+            </div>
+
+            {/* シェアボタン */}
+            <button
+                onClick={shareReferralLink}
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2"
+            >
+                <Icon name="Share2" size={18} />
+                <span>友達に紹介する</span>
+            </button>
+
+            {/* 紹介実績 */}
+            {userProfile?.referralCreditsEarned > 0 && (
+                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-2">
+                        <Icon name="TrendingUp" size={16} className="text-green-600" />
+                        <p className="text-sm text-gray-600">
+                            紹介で獲得したクレジット: <strong className="text-green-600">{userProfile.referralCreditsEarned}回</strong>
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

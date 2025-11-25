@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { STORAGE_KEYS } from '../config.js';
 import NotificationSettings from './21_notification_settings.jsx';
@@ -6,6 +6,172 @@ import NotificationSettings from './21_notification_settings.jsx';
 // グローバル関数を取得
 const getFeatureCompletionStatus = window.getFeatureCompletionStatus;
 const getRegistrationDate = window.getRegistrationDate;
+
+// ===== B2B2C企業コードセクション =====
+const EnterpriseCodeSection = ({ userId, userProfile }) => {
+    const Icon = window.Icon;
+    const [enterpriseCode, setEnterpriseCode] = useState('');
+    const [validating, setValidating] = useState(false);
+    const [hasEnterpriseAccess, setHasEnterpriseAccess] = useState(false);
+    const [enterpriseInfo, setEnterpriseInfo] = useState(null);
+
+    // 企業コードアクセスの確認
+    useEffect(() => {
+        if (userProfile?.enterpriseAccess) {
+            setHasEnterpriseAccess(true);
+            // Firestoreから企業情報を取得
+            const db = firebase.firestore();
+            db.collection('users').doc(userId).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.enterpriseInfo) {
+                        setEnterpriseInfo(data.enterpriseInfo);
+                    }
+                }
+            });
+        }
+    }, [userProfile, userId]);
+
+    // B2B2Cコード検証
+    const validateB2B2CCode = async () => {
+        if (!enterpriseCode.trim()) {
+            toast.error('企業コードを入力してください');
+            return false;
+        }
+
+        setValidating(true);
+
+        try {
+            const validateCode = firebase.functions().httpsCallable('validateB2B2CCode');
+            const result = await validateCode({
+                code: enterpriseCode.trim(),
+                userId: userId
+            });
+
+            if (result.data.valid) {
+                toast.success('企業コードが認証されました！Premium機能が利用可能になります。');
+                setHasEnterpriseAccess(true);
+                setEnterpriseInfo(result.data.enterpriseInfo || null);
+                setEnterpriseCode('');
+                return true;
+            } else {
+                toast.error(result.data.message || '無効な企業コードです');
+                return false;
+            }
+        } catch (error) {
+            console.error('[B2B2C] Code validation error:', error);
+            toast.error('企業コードの検証中にエラーが発生しました');
+            return false;
+        } finally {
+            setValidating(false);
+        }
+    };
+
+    if (hasEnterpriseAccess) {
+        // 既に企業アクセス権がある場合
+        return (
+            <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                        <Icon name="CheckCircle" size={20} className="text-green-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                            <h4 className="font-bold text-green-800 mb-1">企業プラン有効</h4>
+                            <p className="text-sm text-green-700">
+                                法人・ジム向けプランでPremium機能をご利用いただけます。
+                            </p>
+                            {enterpriseInfo && (
+                                <div className="mt-3 pt-3 border-t border-green-200">
+                                    <div className="text-sm space-y-1">
+                                        <p className="text-gray-700">
+                                            <span className="font-medium">企業名:</span> {enterpriseInfo.companyName || '不明'}
+                                        </p>
+                                        <p className="text-gray-700">
+                                            <span className="font-medium">プラン:</span> {enterpriseInfo.planName || '不明'}
+                                        </p>
+                                        {enterpriseInfo.expiresAt && (
+                                            <p className="text-gray-700">
+                                                <span className="font-medium">有効期限:</span>{' '}
+                                                {new Date(enterpriseInfo.expiresAt).toLocaleDateString('ja-JP')}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 企業コード未入力の場合
+    return (
+        <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+                    <Icon name="Building" size={18} />
+                    法人・ジム向けプラン
+                </h4>
+                <p className="text-sm text-blue-700 mb-3">
+                    法人・ジム向けプランにご加入の企業様から発行された企業コードを入力すると、
+                    Premium機能を無制限でご利用いただけます。
+                </p>
+                <a
+                    href="/b2b2c.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                    法人・ジム向けプランの詳細
+                    <Icon name="ExternalLink" size={14} />
+                </a>
+            </div>
+
+            <div className="space-y-3">
+                <label className="block">
+                    <span className="text-sm font-medium text-gray-700 mb-2 block">
+                        企業コード
+                    </span>
+                    <input
+                        type="text"
+                        value={enterpriseCode}
+                        onChange={(e) => setEnterpriseCode(e.target.value.toUpperCase())}
+                        placeholder="B2B-XXXX-XXXX-XXXX"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
+                        disabled={validating}
+                        maxLength={19}
+                    />
+                </label>
+
+                <button
+                    onClick={validateB2B2CCode}
+                    disabled={validating || !enterpriseCode.trim()}
+                    className={`w-full px-4 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+                        validating || !enterpriseCode.trim()
+                            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                >
+                    {validating ? (
+                        <>
+                            <Icon name="Loader" size={18} className="animate-spin" />
+                            検証中...
+                        </>
+                    ) : (
+                        <>
+                            <Icon name="Key" size={18} />
+                            コードを認証
+                        </>
+                    )}
+                </button>
+
+                <p className="text-xs text-gray-600 text-center">
+                    企業コードは、ご契約いただいた企業・ジム様よりメールで通知されます。
+                </p>
+            </div>
+        </div>
+    );
+};
 
 // ===== その他タブコンポーネント =====
 const OtherTab = ({
@@ -115,6 +281,18 @@ const OtherTab = ({
                             </a>
                         </div>
                     </div>
+                </div>
+            </details>
+
+            {/* B2B2C企業コード */}
+            <details className="border rounded-lg">
+                <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                    <Icon name="Building" size={18} className="text-blue-600" />
+                    企業コード入力
+                    <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                </summary>
+                <div className="p-4 pt-0 border-t">
+                    <EnterpriseCodeSection userId={userId} userProfile={userProfile} />
                 </div>
             </details>
 

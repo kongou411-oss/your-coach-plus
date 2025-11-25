@@ -655,6 +655,7 @@ exports.createCheckoutSession = onCall({
       success_url: successUrl,
       cancel_url: cancelUrl,
       locale: 'ja', // 日本語メール・UI強制
+      allow_promotion_codes: true, // プロモーションコード入力を許可
       metadata: {
         firebaseUID: userId,
         priceId: priceId,
@@ -668,6 +669,13 @@ exports.createCheckoutSession = onCall({
           firebaseUID: userId,
         },
       };
+
+      // 紹介経由の場合、30日間のトライアル期間を付与
+      const userData = userDoc.data();
+      if (userData.referredBy && !userData.subscription) {
+        sessionParams.subscription_data.trial_period_days = 30;
+        console.log(`[Stripe] Applying 30-day trial for referred user ${userId}`);
+      }
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
@@ -741,6 +749,12 @@ exports.handleStripeWebhook = onRequest({
 
 // Checkoutセッション完了時の処理
 async function handleCheckoutSessionCompleted(session) {
+  // B2B2C企業向けプランの場合
+  if (session.metadata.type === 'b2b2c') {
+    await handleB2B2CCheckout(session);
+    return;
+  }
+
   const userId = session.metadata.firebaseUID;
   if (!userId) {
     console.error('[Stripe] No firebaseUID in session metadata');
@@ -763,11 +777,58 @@ async function handleCheckoutSessionCompleted(session) {
     // 初回100クレジット付与
     const userRef = admin.firestore().collection('users').doc(userId);
     const userDoc = await userRef.get();
-    const currentFreeCredits = userDoc.data()?.freeCredits || 0;
+    const userData = userDoc.data();
+    const currentFreeCredits = userData?.freeCredits || 0;
 
     await userRef.update({
       freeCredits: currentFreeCredits + 100,
     });
+
+    // 紹介経由の場合、紹介者と被紹介者にクレジット付与
+    if (userData?.referredBy) {
+      const referrerId = userData.referredBy;
+      console.log(`[Referral] Processing referral credits for user ${userId} (referred by ${referrerId})`);
+
+      try {
+        // 被紹介者に50回クレジット付与
+        await userRef.update({
+          freeCredits: currentFreeCredits + 100 + 50, // 初回100 + 紹介特典50
+        });
+
+        // 紹介者に50回クレジット付与
+        const referrerRef = admin.firestore().collection('users').doc(referrerId);
+        const referrerDoc = await referrerRef.get();
+        if (referrerDoc.exists) {
+          const referrerCredits = referrerDoc.data()?.freeCredits || 0;
+          const referrerEarnedCredits = referrerDoc.data()?.referralCreditsEarned || 0;
+
+          await referrerRef.update({
+            freeCredits: referrerCredits + 50,
+            referralCreditsEarned: referrerEarnedCredits + 50,
+          });
+
+          console.log(`[Referral] Granted 50 credits to referrer ${referrerId}`);
+        }
+
+        // 紹介レコードをcompletedに更新
+        const referralQuery = await admin.firestore().collection('referrals')
+          .where('referredUserId', '==', userId)
+          .where('status', '==', 'pending')
+          .limit(1)
+          .get();
+
+        if (!referralQuery.empty) {
+          await referralQuery.docs[0].ref.update({
+            status: 'completed',
+            completedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          console.log(`[Referral] Marked referral as completed for user ${userId}`);
+        }
+      } catch (referralError) {
+        console.error(`[Referral] Failed to process referral credits:`, referralError);
+        // 紹介クレジット付与に失敗してもサブスクリプション登録は継続
+      }
+    }
   }
 
   // 単発購入（クレジットパック）の場合
@@ -934,6 +995,54 @@ exports.cancelSubscription = onCall({
   }
 });
 
+// サブスクリプション再開（解約予定をキャンセル）
+exports.resumeSubscription = onCall({
+  region: "asia-northeast2",
+  cors: true,
+  secrets: [stripeSecretKey],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    const stripe = require('stripe')(stripeSecretKey.value().trim());
+
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "ユーザーが見つかりません");
+    }
+
+    const userData = userDoc.data();
+    const subscriptionId = userData?.subscription?.stripeSubscriptionId;
+    if (!subscriptionId) {
+      throw new HttpsError("failed-precondition", "有効なサブスクリプションが見つかりません");
+    }
+
+    // 解約予定でない場合はエラー
+    if (!userData?.subscription?.cancelAtPeriodEnd) {
+      throw new HttpsError("failed-precondition", "解約予定のサブスクリプションではありません");
+    }
+
+    // Stripeで解約予定をキャンセル
+    await stripe.subscriptions.update(subscriptionId, {
+      cancel_at_period_end: false,
+    });
+
+    // Firestoreを更新
+    await admin.firestore().collection('users').doc(userId).update({
+      'subscription.cancelAtPeriodEnd': false,
+    });
+
+    return { success: true, message: "サブスクリプションを再開しました" };
+  } catch (error) {
+    console.error("[Stripe] Resume subscription failed:", error);
+    throw new HttpsError("internal", "サブスクリプションの再開に失敗しました", error.message);
+  }
+});
+
 // ===== アカウント削除（即時サブスクリプションキャンセル） =====
 exports.deleteAccount = onCall({
   region: "asia-northeast2",
@@ -993,5 +1102,447 @@ exports.deleteAccount = onCall({
   } catch (error) {
     console.error(`[Account Delete] Account deletion failed for user ${userId}:`, error);
     throw new HttpsError("internal", "アカウント削除に失敗しました", error.message);
+  }
+});
+
+// ===== 紹介コード生成 =====
+exports.generateReferralCode = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    console.log(`[Referral] Generating referral code for user ${userId}`);
+
+    // 既存の紹介コードをチェック
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    if (userDoc.exists && userDoc.data().referralCode) {
+      console.log(`[Referral] User ${userId} already has referral code: ${userDoc.data().referralCode}`);
+      return { referralCode: userDoc.data().referralCode };
+    }
+
+    // 新しい紹介コードを生成（USER-XXXXXX形式、6桁のランダム英数字）
+    const generateCode = () => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字を除外（I,O,0,1など）
+      let code = 'USER-';
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    };
+
+    // ユニーク性を保証（既存コードと重複しないまで試行）
+    let referralCode;
+    let isUnique = false;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (!isUnique && attempts < maxAttempts) {
+      referralCode = generateCode();
+      const existingUsers = await admin.firestore().collection('users')
+        .where('referralCode', '==', referralCode)
+        .limit(1)
+        .get();
+      isUnique = existingUsers.empty;
+      attempts++;
+    }
+
+    if (!isUnique) {
+      throw new HttpsError("internal", "紹介コードの生成に失敗しました");
+    }
+
+    // Firestoreに保存
+    await admin.firestore().collection('users').doc(userId).update({
+      referralCode: referralCode,
+      referralCodeCreatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`[Referral] Generated referral code ${referralCode} for user ${userId}`);
+    return { referralCode };
+  } catch (error) {
+    console.error(`[Referral] Code generation failed for user ${userId}:`, error);
+    throw new HttpsError("internal", "紹介コードの生成に失敗しました", error.message);
+  }
+});
+
+// ===== 紹介登録処理（不正チェック付き） =====
+exports.applyReferralCode = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+  const { referralCode, userMetadata } = request.data;
+
+  // バリデーション
+  if (!referralCode || !userMetadata || !userMetadata.email || !userMetadata.name || !userMetadata.phoneNumber) {
+    throw new HttpsError("invalid-argument", "紹介コードとユーザー情報（メールアドレス、氏名、電話番号）が必要です");
+  }
+
+  try {
+    console.log(`[Referral] Applying referral code ${referralCode} for user ${userId}`);
+
+    // 1. 紹介コードの存在確認
+    const referrerQuery = await admin.firestore().collection('users')
+      .where('referralCode', '==', referralCode)
+      .limit(1)
+      .get();
+
+    if (referrerQuery.empty) {
+      throw new HttpsError("not-found", "紹介コードが見つかりません");
+    }
+
+    const referrerId = referrerQuery.docs[0].id;
+
+    // 自己紹介チェック
+    if (referrerId === userId) {
+      throw new HttpsError("invalid-argument", "自分自身を紹介することはできません");
+    }
+
+    // 2. 既に紹介コードを使用済みかチェック
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    if (userDoc.exists && userDoc.data().referredBy) {
+      throw new HttpsError("already-exists", "既に紹介コードを使用済みです");
+    }
+
+    // 3. 不正チェック（メールアドレス、氏名、電話番号の重複）
+    const fraudChecks = await Promise.all([
+      admin.firestore().collection('users')
+        .where('referralMetadata.email', '==', userMetadata.email)
+        .limit(1)
+        .get(),
+      admin.firestore().collection('users')
+        .where('referralMetadata.phoneNumber', '==', userMetadata.phoneNumber)
+        .limit(1)
+        .get(),
+    ]);
+
+    const emailExists = !fraudChecks[0].empty && fraudChecks[0].docs[0].id !== userId;
+    const phoneExists = !fraudChecks[1].empty && fraudChecks[1].docs[0].id !== userId;
+
+    let fraudReason = null;
+    if (emailExists && phoneExists) {
+      fraudReason = 'メールアドレスと電話番号が既存ユーザーと一致';
+    } else if (emailExists) {
+      fraudReason = 'メールアドレスが既存ユーザーと一致';
+    } else if (phoneExists) {
+      fraudReason = '電話番号が既存ユーザーと一致';
+    }
+
+    if (fraudReason) {
+      console.warn(`[Referral] Fraud detected for user ${userId}: ${fraudReason}`);
+
+      // 不正として記録
+      await admin.firestore().collection('referrals').add({
+        referrerId: referrerId,
+        referredUserId: userId,
+        referralCode: referralCode,
+        status: 'fraud',
+        fraudReason: fraudReason,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        referredUserMetadata: userMetadata,
+      });
+
+      throw new HttpsError("permission-denied", "紹介コードを適用できません。サポートにお問い合わせください。");
+    }
+
+    // 4. 紹介情報を保存
+    await admin.firestore().collection('users').doc(userId).update({
+      referredBy: referrerId,
+      referralMetadata: userMetadata,
+      referralAppliedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // 5. 紹介レコードを作成（pending状態）
+    const referralDoc = await admin.firestore().collection('referrals').add({
+      referrerId: referrerId,
+      referredUserId: userId,
+      referralCode: referralCode,
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      referredUserMetadata: userMetadata,
+    });
+
+    console.log(`[Referral] Referral code ${referralCode} applied for user ${userId}, referral ID: ${referralDoc.id}`);
+
+    return {
+      success: true,
+      message: "紹介コードを適用しました。Premium登録完了後、50回分の分析クレジットが付与されます。",
+      referralId: referralDoc.id,
+    };
+  } catch (error) {
+    console.error(`[Referral] Apply code failed for user ${userId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "紹介コードの適用に失敗しました", error.message);
+  }
+});
+
+// ===== B2B2C企業向けプラン =====
+
+// B2B2C企業向けCheckoutセッション作成
+exports.createB2B2CCheckoutSession = onCall({
+  region: "asia-northeast2",
+  secrets: [stripeSecretKey],
+}, async (request) => {
+  const {planId, companyName, companyEmail} = request.data;
+
+  if (!planId || !companyName || !companyEmail) {
+    throw new HttpsError("invalid-argument", "プランID、企業名、企業メールは必須です");
+  }
+
+  // 認証チェック（企業担当者がログインしている場合）
+  const userId = request.auth ? request.auth.uid : null;
+
+  try {
+    const stripe = require("stripe")(stripeSecretKey.value());
+
+    // config.jsからプラン情報を取得（ハードコード）
+    const plans = {
+      'beginner': {
+        stripePriceId: 'price_1SXKzH0l4euKovIjn199zOey',
+        name: 'ビギナープラン',
+        licenses: 10,
+        price: 107160
+      },
+      'pro': {
+        stripePriceId: 'price_1SXL080l4euKovIjfd3Ta2ji',
+        name: 'プロプラン',
+        licenses: 30,
+        price: 304560
+      },
+      'max': {
+        stripePriceId: 'price_1SXL1h0l4euKovIjo6HYZLsU',
+        name: 'MAXプラン',
+        licenses: -1,
+        price: 600000
+      },
+      'custom_beginner': {
+        stripePriceId: 'price_1SXL4x0l4euKovIjpXt16kpD',
+        name: 'カスタムビギナー',
+        licenses: 10,
+        price: 78960
+      },
+      'custom_pro': {
+        stripePriceId: 'price_1SXL5x0l4euKovIjCNo9bqRp',
+        name: 'カスタムプロ',
+        licenses: 30,
+        price: 236880
+      },
+      'custom_max': {
+        stripePriceId: 'price_1SXL7U0l4euKovIjC97PopcE',
+        name: 'カスタムMAX',
+        licenses: -1,
+        price: 500000
+      }
+    };
+
+    const plan = plans[planId];
+    if (!plan) {
+      throw new HttpsError("invalid-argument", "無効なプランIDです");
+    }
+
+    console.log(`[B2B2C] Creating checkout session for company: ${companyName}, plan: ${planId}`);
+
+    // Stripe Checkoutセッション作成
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{
+        price: plan.stripePriceId,
+        quantity: 1,
+      }],
+      success_url: `${request.data.successUrl || 'https://your-coach-plus.web.app'}?b2b2c_payment=success`,
+      cancel_url: `${request.data.cancelUrl || 'https://your-coach-plus.web.app'}?b2b2c_payment=cancel`,
+      customer_email: companyEmail,
+      metadata: {
+        type: 'b2b2c',
+        planId: planId,
+        companyName: companyName,
+        companyEmail: companyEmail,
+        licenses: plan.licenses.toString(),
+        price: plan.price.toString(),
+        userId: userId || 'none'
+      }
+    });
+
+    console.log(`[B2B2C] Checkout session created: ${session.id}`);
+
+    return {
+      url: session.url,
+      sessionId: session.id
+    };
+
+  } catch (error) {
+    console.error('[B2B2C] Checkout session creation failed:', error);
+    throw new HttpsError("internal", "決済セッションの作成に失敗しました", error.message);
+  }
+});
+
+// B2B2Cアクセスコード生成（内部関数）
+function generateB2B2CAccessCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = 'B2B-';
+  for (let i = 0; i < 12; i++) {
+    if (i === 4 || i === 8) {
+      code += '-';
+    }
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code; // 例: B2B-A1B2-C3D4-E5F6
+}
+
+// B2B2C Webhookハンドラ（Stripe決済完了時の処理）
+async function handleB2B2CCheckout(session) {
+  const {planId, companyName, companyEmail, licenses, price} = session.metadata;
+
+  console.log(`[B2B2C] Processing checkout for company: ${companyName}, plan: ${planId}`);
+
+  try {
+    // アクセスコード生成
+    const accessCode = generateB2B2CAccessCode();
+
+    // 有効期限（1年後）
+    const validUntil = new Date();
+    validUntil.setFullYear(validUntil.getFullYear() + 1);
+
+    // 企業アカウント作成
+    const orgData = {
+      name: companyName,
+      email: companyEmail,
+      planId: planId,
+      stripePriceId: session.line_items?.data[0]?.price?.id || '',
+      stripeSubscriptionId: session.subscription,
+      stripeCustomerId: session.customer,
+      accessCode: accessCode,
+      licenses: parseInt(licenses),
+      usedLicenses: 0,
+      users: [],
+      status: 'active',
+      price: parseInt(price),
+      validUntil: admin.firestore.Timestamp.fromDate(validUntil),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    const orgRef = await admin.firestore().collection('b2b2cOrganizations').add(orgData);
+
+    console.log(`[B2B2C] Organization created: ${orgRef.id}, Access Code: ${accessCode}`);
+
+    // TODO: メール送信（将来実装）
+    // 企業にアクセスコードをメールで送信
+
+    return {
+      success: true,
+      organizationId: orgRef.id,
+      accessCode: accessCode
+    };
+
+  } catch (error) {
+    console.error('[B2B2C] Failed to process checkout:', error);
+    throw error;
+  }
+}
+
+// B2B2Cコード検証機能
+exports.validateB2B2CCode = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+  const {accessCode} = request.data;
+
+  if (!accessCode) {
+    throw new HttpsError("invalid-argument", "アクセスコードは必須です");
+  }
+
+  try {
+    console.log(`[B2B2C] Validating code ${accessCode} for user ${userId}`);
+
+    // 1. コードが存在するか確認
+    const orgSnapshot = await admin.firestore()
+      .collection('b2b2cOrganizations')
+      .where('accessCode', '==', accessCode)
+      .limit(1)
+      .get();
+
+    if (orgSnapshot.empty) {
+      throw new HttpsError("not-found", "無効なアクセスコードです");
+    }
+
+    const orgDoc = orgSnapshot.docs[0];
+    const org = orgDoc.data();
+
+    // 2. サブスクが有効か確認
+    if (org.status !== 'active') {
+      throw new HttpsError("permission-denied", "このコードは無効です（サブスク終了）");
+    }
+
+    // 3. 有効期限チェック
+    if (org.validUntil && org.validUntil.toDate() < new Date()) {
+      throw new HttpsError("permission-denied", "このコードは期限切れです");
+    }
+
+    // 4. ライセンス数チェック（無制限プランの場合はスキップ）
+    if (org.licenses !== -1) {
+      const usedLicenses = org.usedLicenses || 0;
+      if (usedLicenses >= org.licenses) {
+        throw new HttpsError("resource-exhausted", "ライセンス上限に達しています");
+      }
+    }
+
+    // 5. ユーザーが既に別の企業コードを使用していないかチェック
+    const userDoc = await admin.firestore()
+      .collection('users')
+      .doc(userId)
+      .get();
+
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      if (userData.b2b2cOrgId && userData.b2b2cOrgId !== orgDoc.id) {
+        throw new HttpsError("already-exists", "既に別の企業コードを使用しています");
+      }
+    }
+
+    // 6. ユーザーアカウントを更新
+    await admin.firestore().collection('users').doc(userId).update({
+      isPremium: true,
+      b2b2cOrgId: orgDoc.id,
+      b2b2cAccessCode: accessCode,
+      b2b2cJoinedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // 7. 使用ライセンス数をインクリメント
+    await orgDoc.ref.update({
+      usedLicenses: admin.firestore.FieldValue.increment(1),
+      users: admin.firestore.FieldValue.arrayUnion(userId),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    console.log(`[B2B2C] Code ${accessCode} validated for user ${userId}`);
+
+    return {
+      success: true,
+      message: "企業コードを適用しました。Premium機能が利用可能になりました。",
+      organizationName: org.name,
+      planName: org.planId
+    };
+
+  } catch (error) {
+    console.error(`[B2B2C] Code validation failed for user ${userId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "コードの検証に失敗しました", error.message);
   }
 });

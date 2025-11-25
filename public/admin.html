@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B2B2C管理画面 - Your Coach+</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #667eea;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-info {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: #e0e0e0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+
+        .section-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header h2 {
+            font-size: 20px;
+        }
+
+        .section-content {
+            padding: 24px;
+        }
+
+        .org-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .org-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            transition: border-color 0.2s;
+        }
+
+        .org-card:hover {
+            border-color: #667eea;
+        }
+
+        .org-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .org-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .org-email {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .org-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .org-status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .org-status.cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .org-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .org-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .org-info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .org-info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .code-display {
+            background: #f5f5f5;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: #667eea;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            padding: 8px 16px;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏢 B2B2C管理画面</h1>
+        <div class="header-right">
+            <span class="user-info" id="user-info">読み込み中...</span>
+            <button class="btn-logout" onclick="logout()">ログアウト</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 統計情報 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>契約企業数</h3>
+                <div class="value" id="total-orgs">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>総ライセンス数</h3>
+                <div class="value" id="total-licenses">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>使用中ライセンス</h3>
+                <div class="value" id="used-licenses">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>月間収益</h3>
+                <div class="value" id="monthly-revenue">-</div>
+            </div>
+        </div>
+
+        <!-- 企業一覧 -->
+        <div class="section">
+            <div class="section-header">
+                <h2>契約企業一覧</h2>
+            </div>
+            <div class="section-content">
+                <div id="loading" class="loading">
+                    企業情報を読み込んでいます...
+                </div>
+                <div id="org-list" class="org-list" style="display:none;"></div>
+                <div id="empty-state" class="empty-state" style="display:none;">
+                    <div class="empty-state-icon">📭</div>
+                    <p>まだ契約企業がありません</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    <script src="/config.js"></script>
+
+    <script>
+        // Firebase初期化
+        firebase.initializeApp(FIREBASE_CONFIG);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const functions = firebase.app().functions('asia-northeast2');
+
+        // 管理者メールアドレスのホワイトリスト
+        const ADMIN_EMAILS = [
+            'kongou411@gmail.com'
+        ];
+
+        // 認証チェック
+        auth.onAuthStateChanged(async (user) => {
+            if (!user || !ADMIN_EMAILS.includes(user.email)) {
+                // 未ログインまたは管理者でない場合はログイン画面へ
+                window.location.href = '/admin-login.html';
+                return;
+            }
+
+            // ユーザー情報表示
+            document.getElementById('user-info').textContent = user.email;
+
+            // データ読み込み
+            await loadOrganizations();
+        });
+
+        // ログアウト
+        function logout() {
+            auth.signOut().then(() => {
+                window.location.href = '/admin-login.html';
+            });
+        }
+
+        // 企業一覧読み込み
+        async function loadOrganizations() {
+            try {
+                const snapshot = await db.collection('b2b2cOrganizations').get();
+
+                const loading = document.getElementById('loading');
+                const orgList = document.getElementById('org-list');
+                const emptyState = document.getElementById('empty-state');
+
+                loading.style.display = 'none';
+
+                if (snapshot.empty) {
+                    emptyState.style.display = 'block';
+                    updateStats([], 0, 0);
+                    return;
+                }
+
+                orgList.style.display = 'flex';
+
+                const organizations = [];
+                let totalLicenses = 0;
+                let usedLicenses = 0;
+
+                snapshot.forEach(doc => {
+                    const org = { id: doc.id, ...doc.data() };
+                    organizations.push(org);
+
+                    if (org.licenses !== -1) {
+                        totalLicenses += org.licenses;
+                    }
+                    usedLicenses += org.usedLicenses || 0;
+                });
+
+                // 統計情報更新
+                updateStats(organizations, totalLicenses, usedLicenses);
+
+                // 企業カード表示
+                orgList.innerHTML = organizations.map(org => createOrgCard(org)).join('');
+
+            } catch (error) {
+                console.error('Error loading organizations:', error);
+                document.getElementById('loading').innerHTML =
+                    '<p style="color: red;">エラーが発生しました: ' + error.message + '</p>';
+            }
+        }
+
+        // 統計情報更新
+        function updateStats(organizations, totalLicenses, usedLicenses) {
+            document.getElementById('total-orgs').textContent = organizations.length;
+            document.getElementById('total-licenses').textContent =
+                totalLicenses > 0 ? totalLicenses : '無制限含む';
+            document.getElementById('used-licenses').textContent = usedLicenses;
+
+            // 月間収益計算（年間プランを12で割る）
+            const monthlyRevenue = organizations.reduce((sum, org) => {
+                return sum + (org.price || 0) / 12;
+            }, 0);
+            document.getElementById('monthly-revenue').textContent =
+                '¥' + Math.round(monthlyRevenue).toLocaleString();
+        }
+
+        // 企業カード生成
+        function createOrgCard(org) {
+            const usagePercent = org.licenses === -1
+                ? 0
+                : Math.round((org.usedLicenses / org.licenses) * 100);
+
+            const planName = getPlanName(org.planId);
+            const statusClass = org.status === 'active' ? 'active' : 'cancelled';
+            const statusText = org.status === 'active' ? '✅ 有効' : '❌ 無効';
+
+            return `
+                <div class="org-card">
+                    <div class="org-header">
+                        <div>
+                            <div class="org-name">${org.name || '企業名未設定'}</div>
+                            <div class="org-email">${org.email || 'メール未設定'}</div>
+                        </div>
+                        <div class="org-status ${statusClass}">${statusText}</div>
+                    </div>
+
+                    <div class="org-info">
+                        <div class="org-info-item">
+                            <div class="org-info-label">プラン</div>
+                            <div class="org-info-value">${planName}</div>
+                        </div>
+                        <div class="org-info-item">
+                            <div class="org-info-label">年間料金</div>
+                            <div class="org-info-value">¥${(org.price || 0).toLocaleString()}</div>
+                        </div>
+                        <div class="org-info-item">
+                            <div class="org-info-label">ライセンス使用状況</div>
+                            <div class="org-info-value">
+                                ${org.usedLicenses || 0} / ${org.licenses === -1 ? '無制限' : org.licenses}
+                                ${org.licenses !== -1 ? `(${usagePercent}%)` : ''}
+                            </div>
+                            ${org.licenses !== -1 ? `
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${usagePercent}%"></div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="org-info-item">
+                            <div class="org-info-label">有効期限</div>
+                            <div class="org-info-value">
+                                ${org.validUntil ? formatDate(org.validUntil.toDate()) : '未設定'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="org-info-item">
+                        <div class="org-info-label">アクセスコード</div>
+                        <div class="code-display">${org.accessCode || 'コード未発行'}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // プラン名取得
+        function getPlanName(planId) {
+            const planNames = {
+                'beginner': 'ビギナープラン（10人）',
+                'pro': 'プロプラン（30人）',
+                'max': 'MAXプラン（無制限）',
+                'custom_beginner': 'カスタムビギナー（10人・30%OFF）',
+                'custom_pro': 'カスタムプロ（30人・30%OFF）',
+                'custom_max': 'カスタムMAX（無制限・30%OFF）'
+            };
+            return planNames[planId] || planId;
+        }
+
+        // 日付フォーマット
+        function formatDate(date) {
+            return date.toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        }
+    </script>
+</body>
+</html>

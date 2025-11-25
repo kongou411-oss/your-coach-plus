@@ -785,6 +785,11 @@ const OnboardingScreen = ({ user, onComplete }) => {
         carbRatioPercent: 45 // PFCカスタム比率（%）- 炭水化物
     });
 
+    // B2B2C企業コード入力
+    const [b2b2cCode, setB2b2cCode] = useState('');
+    const [isValidatingCode, setIsValidatingCode] = useState(false);
+    const [codeError, setCodeError] = useState('');
+
     // 性別変更時にデフォルト値を更新
     const handleGenderChange = (newGender) => {
         const genderDefaults = {
@@ -896,6 +901,45 @@ const OnboardingScreen = ({ user, onComplete }) => {
 
             default:
                 return true;
+        }
+    };
+
+    // B2B2Cコード検証
+    const validateB2B2CCode = async () => {
+        if (!b2b2cCode.trim()) {
+            setCodeError('');
+            return false;
+        }
+
+        setIsValidatingCode(true);
+        setCodeError('');
+
+        try {
+            const validateCode = firebase.functions().httpsCallable('validateB2B2CCode');
+            const result = await validateCode({ accessCode: b2b2cCode.trim() });
+
+            if (result.data.success) {
+                toast.success('企業コードが認証されました！Premium機能が利用可能になります。');
+                return true;
+            }
+        } catch (error) {
+            console.error('[B2B2C] Code validation error:', error);
+
+            let errorMessage = 'コードの検証に失敗しました';
+            if (error.code === 'not-found') {
+                errorMessage = 'このコードは無効です';
+            } else if (error.code === 'resource-exhausted') {
+                errorMessage = 'ライセンス上限に達しています';
+            } else if (error.code === 'failed-precondition') {
+                errorMessage = 'このコードの有効期限が切れています';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            setCodeError(errorMessage);
+            return false;
+        } finally {
+            setIsValidatingCode(false);
         }
     };
 
@@ -1036,13 +1080,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     {step === 3 && '理想の体型を設定'}
                     {step === 4 && '活動レベルを設定'}
                     {step === 5 && '実際に記録してみる'}
+                    {step === 6 && '企業コードをお持ちですか？'}
                 </h2>
-                <p className="text-sm text-gray-600 mb-2">ステップ {step + 1}/6</p>
+                <p className="text-sm text-gray-600 mb-2">ステップ {step + 1}/{step === 6 ? '7 (任意)' : '7'}</p>
 
                 {/* プログレスバー */}
                 <div className="mb-6">
                     <div className="flex gap-1">
-                        {[0, 1, 2, 3, 4, 5].map((i) => (
+                        {[0, 1, 2, 3, 4, 5, 6].map((i) => (
                             <div
                                 key={i}
                                 className={`flex-1 h-2 rounded-full transition-all duration-300 ${
@@ -1793,6 +1838,74 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     </div>
                 )}
 
+                {/* ステップ6: B2B2C企業コード入力（任意） */}
+                {step === 6 && (
+                    <div className="space-y-6">
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-12 h-12 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white text-2xl">
+                                    🏢
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-900">企業プランをご利用の方へ</h3>
+                                    <p className="text-sm text-gray-600">ジム・企業から配布されたコードをお持ちですか？</p>
+                                </div>
+                            </div>
+
+                            <p className="text-sm text-gray-700 mb-4">
+                                企業アクセスコードを入力すると、<strong className="text-orange-600">全Premium機能が無料</strong>でご利用いただけます。
+                            </p>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        企業アクセスコード（任意）
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={b2b2cCode}
+                                        onChange={(e) => {
+                                            setB2b2cCode(e.target.value.toUpperCase());
+                                            setCodeError('');
+                                        }}
+                                        placeholder="B2B-XXXX-XXXX-XXXX"
+                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-center font-mono text-lg tracking-wider focus:outline-none focus:border-amber-500"
+                                        maxLength={19}
+                                        disabled={isValidatingCode}
+                                    />
+                                    {codeError && (
+                                        <div className="mt-2 flex items-start gap-2 text-red-600">
+                                            <Icon name="AlertCircle" size={18} className="flex-shrink-0 mt-0.5" />
+                                            <p className="text-sm">{codeError}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <p className="text-sm text-blue-800 font-semibold mb-2 flex items-center gap-2">
+                                        <Icon name="Info" size={16} />
+                                        Premium機能について
+                                    </p>
+                                    <ul className="text-sm text-blue-700 space-y-1 ml-5">
+                                        <li>• AI分析機能（月100回）</li>
+                                        <li>• 無制限の記録と履歴</li>
+                                        <li>• PG BASE教科書</li>
+                                        <li>• COMYコミュニティ</li>
+                                    </ul>
+                                </div>
+
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                    <p className="text-xs text-gray-600">
+                                        <strong>ℹ️ コードをお持ちでない方へ</strong><br/>
+                                        このステップはスキップできます。後から「設定」画面でいつでもコードを入力できます。<br/>
+                                        7日間の無料トライアル後、Premium機能をご利用いただけます。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* バリデーションエラーメッセージ */}
                 {validationError && (
                     <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
@@ -1841,11 +1954,41 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         </button>
                     ) : step === 5 ? (
                         <button
-                            onClick={handleComplete}
+                            onClick={() => {
+                                // ステップ6（B2B2Cコード入力）へ進む
+                                setStep(6);
+                                window.scrollTo(0, 0);
+                            }}
                             className="flex-1 bg-[#4A9EFF] hover:bg-[#3b8fef] text-white font-bold py-3 rounded-lg transition"
                         >
-                            開始
+                            次へ
                         </button>
+                    ) : step === 6 ? (
+                        <>
+                            <button
+                                onClick={async () => {
+                                    // B2B2Cコードをスキップして開始
+                                    await handleComplete();
+                                }}
+                                className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
+                            >
+                                スキップして開始
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    // B2B2Cコードがある場合は検証してから開始
+                                    if (b2b2cCode.trim()) {
+                                        const isValid = await validateB2B2CCode();
+                                        if (!isValid) return; // 検証失敗時は中断
+                                    }
+                                    await handleComplete();
+                                }}
+                                className="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-3 rounded-lg hover:from-amber-500 hover:to-orange-600 transition disabled:opacity-50"
+                                disabled={isValidatingCode}
+                            >
+                                {isValidatingCode ? '確認中...' : (b2b2cCode.trim() ? 'コードを確認して開始' : '開始')}
+                            </button>
+                        </>
                     ) : null}
                 </div>
             </div>
