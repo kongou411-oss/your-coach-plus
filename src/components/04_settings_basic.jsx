@@ -128,15 +128,30 @@ const BasicTab = ({
 
                             if (isPremium) {
                                 // Premium会員
+                                const willCancel = userProfile?.subscription?.cancelAtPeriodEnd;
+                                const periodEnd = userProfile?.subscription?.currentPeriodEnd;
+
                                 return (
                                     <div className="bg-white p-4 rounded-lg border border-amber-200">
                                         <div className="flex items-center gap-3 mb-3">
                                             <Icon name="Crown" size={24} className="text-amber-600" />
                                             <div>
                                                 <p className="font-bold text-gray-800">Premium会員</p>
-                                                <p className="text-sm text-gray-600">すべての機能が利用可能</p>
+                                                <p className="text-sm text-gray-600">
+                                                    {willCancel ? '解約予定（期間終了まで利用可能）' : 'すべての機能が利用可能'}
+                                                </p>
                                             </div>
                                         </div>
+
+                                        {willCancel && periodEnd && (
+                                            <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 mb-3">
+                                                <p className="text-sm font-medium text-gray-600 mb-1">利用可能期限</p>
+                                                <p className="text-lg font-bold text-orange-600">
+                                                    {periodEnd.toDate().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                </p>
+                                                <p className="text-xs text-gray-600 mt-1">この日まで利用可能です</p>
+                                            </div>
+                                        )}
 
                                         <div className="bg-[#FFF59A]/10 p-4 rounded-lg border border-amber-200 mb-3">
                                             <p className="text-sm font-medium text-gray-600 mb-1">月額料金</p>
@@ -144,9 +159,10 @@ const BasicTab = ({
                                             <p className="text-xs text-gray-600 mt-1">税込</p>
                                         </div>
 
-                                        <button
-                                            className="w-full bg-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-300"
-                                            onClick={() => showConfirm(
+                                        {!willCancel && (
+                                            <button
+                                                className="w-full bg-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-300"
+                                                onClick={() => showConfirm(
                                                 'サブスクリプション解約の確認',
                                                 'サブスクリプションを解約しますか？解約後も現在の課金期間終了まで利用できます。',
                                                 async () => {
@@ -166,6 +182,7 @@ const BasicTab = ({
                                         >
                                             サブスクリプション解約
                                         </button>
+                                        )}
                                     </div>
                                 );
                             } else if (isTrial) {
