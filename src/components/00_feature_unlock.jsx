@@ -227,11 +227,14 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
     // 5. ルーティン - 初日から全員に開放
     unlocked.push('routine');
 
-    // 6. ショートカット - 初日から全員に開放
-    unlocked.push('shortcut');
+    // 6. PGBASE - 常に全員に開放（現在公開分は無料）
+    unlocked.push('pg_base');
 
     // ===== 8日目以降はPremium専用の機能 =====
     if (hasPremiumAccess) {
+        // ショートカット
+        unlocked.push('shortcut');
+
         // AI機能
         unlocked.push('ai_photo_recognition'); // AI食事認識
 
@@ -244,7 +247,6 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
         if (initialStatus.analysis) {
             unlocked.push('idea');
             unlocked.push('history');
-            unlocked.push('pg_base');
             unlocked.push('community');
         }
 

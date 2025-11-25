@@ -4105,8 +4105,12 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 </div>
             )}
 
-            {/* ショートカット */}
-            {shortcuts && shortcuts.length > 0 && onShortcutClick && (
+            {/* ショートカット（Premium専用：8日目以降） */}
+            {shortcuts && shortcuts.length > 0 && onShortcutClick && (() => {
+                const PremiumService = window.PremiumService;
+                const isPremium = PremiumService ? PremiumService.isPremiumUser(profile, usageDays) : false;
+                return isPremium;
+            })() && (
                 <ChevronShortcut shortcuts={shortcuts} onShortcutClick={onShortcutClick} />
             )}
 

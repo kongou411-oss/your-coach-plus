@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import ReactDOM from 'react-dom';
 import { MicroLearningPopup, MicroLearningLibrary } from './14_microlearning.jsx';
 // ===== Analysis Components =====
-const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, setLastUpdate, onUpgradeClick, onFeatureUnlocked }) => {
+const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, targetPFC, setLastUpdate, onUpgradeClick, onFeatureUnlocked }) => {
     const [loading, setLoading] = useState(true);
     const [analysis, setAnalysis] = useState(null);
     const [historicalInsights, setHistoricalInsights] = useState(null);
@@ -218,10 +218,11 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
         // ローディング表示を維持（データ取得が完了するまで）
         // setLoading(true); // 既にtrueなので不要
 
-        // クレジットチェック（新システム） - 最優先で実行
+        // Premium判定とクレジットチェック（新システム） - 最優先で実行
         try {
             const expInfo = await ExperienceService.getUserExperience(userId);
-            const isPremium = userProfile?.subscriptionStatus === 'active';
+            const PremiumService = window.PremiumService;
+            const isPremium = PremiumService.isPremiumUser(userProfile, usageDays);
 
             setCreditInfo({
                 tier: isPremium ? 'premium' : 'free',
@@ -229,7 +230,8 @@ const AnalysisView = ({ onClose, userId, userProfile, dailyRecord, targetPFC, se
                 freeCredits: expInfo.freeCredits,
                 paidCredits: expInfo.paidCredits,
                 remainingCredits: expInfo.totalCredits,
-                
+                isPremium: isPremium,
+                usageDays: usageDays,
                 allowed: expInfo.totalCredits > 0
             });
 

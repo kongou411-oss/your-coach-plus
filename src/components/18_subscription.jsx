@@ -120,8 +120,8 @@ const SubscriptionView = ({ onClose, userId, userProfile }) => {
                                     {[
                                         { icon: 'BarChart3', text: '毎月100回の分析クレジット', color: 'text-indigo-600' },
                                         { icon: 'Infinity', text: '無制限の記録と履歴', color: 'text-blue-600' },
-                                        { icon: 'BookOpen', text: 'PG BASE 教科書で理論を学習', color: 'text-green-600' },
-                                        { icon: 'Calendar', text: 'ルーティン機能で計画的に管理', color: 'text-purple-600' },
+                                        { icon: 'BookOpen', text: 'PG BASE 教科書（今後追加分）', color: 'text-green-600' },
+                                        { icon: 'Calendar', text: 'ルーティン機能（無料でも利用可）', color: 'text-purple-600' },
                                         { icon: 'BookTemplate', text: '無制限のテンプレート保存', color: 'text-cyan-600' },
                                         { icon: 'Users', text: 'COMYで仲間と刺激し合う', color: 'text-pink-600' },
                                         { icon: 'Zap', text: 'ショートカット機能で効率アップ', color: 'text-yellow-600' },

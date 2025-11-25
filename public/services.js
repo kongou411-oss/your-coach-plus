@@ -2048,6 +2048,154 @@ const ExperienceService = {
 // 通知サービス - 凍結のため削除
 // ========================================
 
+// ===== Premium Service =====
+// Premium機能の判定とアクセス制御を行うサービス
+const PremiumService = {
+    // 7日間の無料トライアル期間
+    FREE_TRIAL_DAYS: 7,
+
+    /**
+     * Premium判定（7日以内の無料トライアル or サブスク有効）
+     * @param {Object} userProfile - ユーザープロフィール
+     * @param {number} usageDays - 利用日数
+     * @returns {boolean} Premium利用可能かどうか
+     */
+    isPremiumUser: (userProfile, usageDays) => {
+        // 7日以内の無料トライアル期間
+        if (usageDays <= PremiumService.FREE_TRIAL_DAYS) {
+            return true;
+        }
+
+        // サブスクリプションステータスチェック
+        if (!userProfile) return false;
+
+        // subscriptionStatus が 'active' の場合
+        if (userProfile.subscriptionStatus === 'active') {
+            return true;
+        }
+
+        // 終了日チェック（互換性のため）
+        if (userProfile.subscriptionEndDate) {
+            const endDate = new Date(userProfile.subscriptionEndDate);
+            const now = new Date();
+            return now <= endDate;
+        }
+
+        return false;
+    },
+
+    /**
+     * 特定機能の利用可否を判定
+     * @param {string} featureId - 機能ID（config.jsのFEATURESキーに対応）
+     * @param {Object} userProfile - ユーザープロフィール
+     * @param {number} usageDays - 利用日数
+     * @returns {boolean} 機能利用可能かどうか
+     */
+    canUseFeature: (featureId, userProfile, usageDays) => {
+        // config.jsからFREE_PLAN_LIMITSを取得
+        const FREE_PLAN_LIMITS = window.FREE_PLAN_LIMITS || {};
+
+        // Premium判定
+        const isPremium = PremiumService.isPremiumUser(userProfile, usageDays);
+
+        // 無料プランで利用可能な機能かチェック
+        const featureKey = featureId.replace(/-/g, ''); // 'ai-photo-recognition' → 'aiphotorecognition'
+
+        // 無料プランで利用可能な機能
+        if (FREE_PLAN_LIMITS[featureKey] === true) {
+            return true;
+        }
+
+        // Premium専用機能の場合
+        if (FREE_PLAN_LIMITS[featureKey] === false) {
+            return isPremium;
+        }
+
+        // デフォルトはPremiumユーザーのみ利用可能
+        return isPremium;
+    },
+
+    /**
+     * テンプレート数制限チェック
+     * @param {string} type - 'meal' or 'workout'
+     * @param {number} currentCount - 現在のテンプレート数
+     * @param {Object} userProfile - ユーザープロフィール
+     * @param {number} usageDays - 利用日数
+     * @returns {boolean} 追加可能かどうか
+     */
+    canAddTemplate: (type, currentCount, userProfile, usageDays) => {
+        const isPremium = PremiumService.isPremiumUser(userProfile, usageDays);
+
+        if (isPremium) {
+            return true; // Premiumは無制限
+        }
+
+        const FREE_PLAN_LIMITS = window.FREE_PLAN_LIMITS || {};
+        const limit = type === 'meal'
+            ? (FREE_PLAN_LIMITS.mealTemplates || 1)
+            : (FREE_PLAN_LIMITS.workoutTemplates || 1);
+
+        return currentCount < limit;
+    },
+
+    /**
+     * Premium状態を更新（管理者用）
+     * @param {string} userId - ユーザーID
+     * @param {boolean} isPremium - Premium状態
+     * @returns {Promise<boolean>} 成功/失敗
+     */
+    setPremiumStatus: async (userId, isPremium) => {
+        try {
+            const profile = await DataService.getUserProfile(userId);
+
+            const updates = {
+                subscriptionStatus: isPremium ? 'active' : 'inactive'
+            };
+
+            // Premium有効化の場合、終了日を1年後に設定
+            if (isPremium) {
+                const endDate = new Date();
+                endDate.setFullYear(endDate.getFullYear() + 1);
+                updates.subscriptionEndDate = endDate.toISOString();
+                updates.subscriptionStartDate = new Date().toISOString();
+            } else {
+                // Premium無効化の場合、終了日を現在に設定
+                updates.subscriptionEndDate = new Date().toISOString();
+            }
+
+            await DataService.saveUserProfile(userId, {
+                ...profile,
+                ...updates
+            });
+
+            console.log(`[Premium] User ${userId} premium status set to:`, isPremium);
+            return true;
+        } catch (error) {
+            console.error('[Premium] Failed to set premium status:', error);
+            return false;
+        }
+    },
+
+    /**
+     * 利用日数を計算
+     * @param {Object} userProfile - ユーザープロフィール
+     * @returns {number} 利用日数
+     */
+    getUsageDays: (userProfile) => {
+        if (!userProfile) return 0;
+
+        const registrationDate = userProfile.registrationDate || userProfile.createdAt || userProfile.joinDate;
+        if (!registrationDate) return 0;
+
+        const regDate = new Date(registrationDate);
+        const today = new Date();
+        const diffTime = Math.abs(today - regDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        return diffDays;
+    }
+};
+
 // ===== MFA/2FA Service =====
 const MFAService = {
     // SMS認証を登録（ステップ1: 電話番号入力）
@@ -2230,4 +2378,5 @@ window.DataService = DataService;
 window.GeminiAPI = GeminiAPI;
 window.CreditService = CreditService;
 window.ExperienceService = ExperienceService;
+window.PremiumService = PremiumService;
 window.MFAService = MFAService;

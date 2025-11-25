@@ -415,19 +415,15 @@ const OtherTab = ({
                                 <button
                                     onClick={async () => {
                                         try {
-                                            // LocalStorageに保存
-                                            const currentProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)) || {};
-                                            currentProfile.subscriptionStatus = 'none';
-                                            localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(currentProfile));
-
-                                            // Firestoreにも保存（ブラウザ/PWA間で同期）
-                                            const db = firebase.firestore();
-                                            await db.collection('users').doc(userId).set({
-                                                subscriptionStatus: 'none'
-                                            }, { merge: true });
-
-                                            console.log('[開発モード] 無料会員に切り替え（Firestore + LocalStorage）');
-                                            window.location.reload();
+                                            // PremiumServiceを使用してPremium状態を無効化
+                                            const success = await window.PremiumService.setPremiumStatus(userId, false);
+                                            if (success) {
+                                                console.log('[開発モード] 無料会員に切り替え（PremiumService）');
+                                                toast.success('無料会員に切り替えました');
+                                                window.location.reload();
+                                            } else {
+                                                throw new Error('setPremiumStatus failed');
+                                            }
                                         } catch (error) {
                                             console.error('プレミアムモード切り替えエラー:', error);
                                             toast.error('切り替えに失敗しました');
@@ -441,41 +437,23 @@ const OtherTab = ({
                                 <button
                                     onClick={async () => {
                                         try {
-                                            // Firestoreから最新のプロフィールを取得
-                                            const db = firebase.firestore();
-                                            const docRef = db.collection('users').doc(userId);
-                                            const doc = await docRef.get();
-                                            const currentProfile = doc.exists ? doc.data() : {};
+                                            // PremiumServiceを使用してPremium状態を有効化
+                                            const success = await window.PremiumService.setPremiumStatus(userId, true);
+                                            if (success) {
+                                                // クレジットが0または未設定の場合は100を付与
+                                                const expInfo = await window.ExperienceService.getUserExperience(userId);
+                                                if (expInfo.totalCredits === 0) {
+                                                    await window.ExperienceService.addFreeCredits(userId, 100);
+                                                    console.log('[開発モード] 無料クレジットを100付与');
+                                                }
 
-                                            // Premium会員に設定
-                                            currentProfile.subscriptionStatus = 'active';
-
-                                            // クレジットが0または未設定の場合は100を付与（freeCreditsを使用）
-                                            const currentFreeCredits = currentProfile.freeCredits || 0;
-                                            if (currentFreeCredits === 0) {
-                                                currentProfile.freeCredits = 100;
-                                                console.log('[開発モード] 無料クレジットを100付与');
+                                                const updatedExpInfo = await window.ExperienceService.getUserExperience(userId);
+                                                console.log('[開発モード] Premium会員に切り替え（PremiumService）');
+                                                toast.success(`Premium会員に切り替えました（クレジット: ${updatedExpInfo.totalCredits}）`);
+                                                window.location.reload();
                                             } else {
-                                                currentProfile.freeCredits = currentFreeCredits;
+                                                throw new Error('setPremiumStatus failed');
                                             }
-
-                                            // paidCreditsも初期化
-                                            currentProfile.paidCredits = currentProfile.paidCredits || 0;
-
-                                            // Firestoreに保存
-                                            await docRef.set({
-                                                subscriptionStatus: currentProfile.subscriptionStatus,
-                                                freeCredits: currentProfile.freeCredits,
-                                                paidCredits: currentProfile.paidCredits
-                                            }, { merge: true });
-
-                                            // LocalStorageにも保存
-                                            localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(currentProfile));
-
-                                            console.log('[開発モード] Premium会員に切り替え（Firestore + LocalStorage）');
-                                            const totalCredits = currentProfile.freeCredits + currentProfile.paidCredits;
-                                            toast.success('Premium会員に切り替えました（クレジット: ' + totalCredits + '）');
-                                            window.location.reload();
                                         } catch (error) {
                                             console.error('プレミアムモード切り替えエラー:', error);
                                             toast.error('切り替えに失敗しました');

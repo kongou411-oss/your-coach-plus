@@ -2487,6 +2487,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             }}
                             userId={user.uid}
                             userProfile={userProfile}
+                            usageDays={usageDays}
                             dailyRecord={dailyRecord}
                             targetPFC={targetPFC}
                             setLastUpdate={setLastUpdate}
