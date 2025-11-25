@@ -4514,8 +4514,8 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             {showSubscriptionModal && window.SubscriptionView && (
                 <window.SubscriptionView
                     onClose={() => setShowSubscriptionModal(false)}
-                    userId={userId}
-                    userProfile={userProfile}
+                    userId={user?.uid}
+                    userProfile={profile}
                 />
             )}
         </div>
