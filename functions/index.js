@@ -685,7 +685,7 @@ exports.handleStripeWebhook = onRequest({
   secrets: [stripeSecretKey],
 }, async (req, res) => {
   const stripe = require('stripe')(stripeSecretKey.value());
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = 'whsec_aEmcIkxZi3UBOMbDv8BLIv5BdJYBceNA';
 
   let event;
 
