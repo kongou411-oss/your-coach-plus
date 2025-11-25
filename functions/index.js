@@ -800,13 +800,18 @@ async function handleSubscriptionUpdate(subscription) {
   }
 
   const status = subscription.status;
-  const currentPeriodEnd = admin.firestore.Timestamp.fromMillis(subscription.current_period_end * 1000);
 
-  await admin.firestore().collection('users').doc(userId).update({
+  // current_period_endが存在する場合のみTimestampに変換
+  const updateData = {
     'subscription.status': status,
-    'subscription.currentPeriodEnd': currentPeriodEnd,
     'subscription.stripeSubscriptionId': subscription.id,
-  });
+  };
+
+  if (subscription.current_period_end) {
+    updateData['subscription.currentPeriodEnd'] = admin.firestore.Timestamp.fromMillis(subscription.current_period_end * 1000);
+  }
+
+  await admin.firestore().collection('users').doc(userId).update(updateData);
 
   console.log(`[Stripe] Subscription updated for user ${userId}: ${status}`);
 }
