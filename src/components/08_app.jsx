@@ -289,6 +289,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
             const [showSettings, setShowSettings] = useState(false);
             const [settingsInitialTab, setSettingsInitialTab] = useState('basic'); // 設定画面の初期タブ
             const [showSubscriptionView, setShowSubscriptionView] = useState(false);
+            const [subscriptionInitialTab, setSubscriptionInitialTab] = useState('premium'); // Subscription画面の初期タブ
             const [showStageInfo, setShowStageInfo] = useState(false);
             const [showContinuitySupport, setShowContinuitySupport] = useState(false); // 継続支援システム
             const [aiSuggestion, setAiSuggestion] = useState(null); // オートパイロットのAI提案
@@ -3285,7 +3286,8 @@ AIコーチなどの高度な機能が解放されます。
                                 setReopenTemplateEditModal(false);
                                 setReopenTemplateEditType(null);
                             }}
-                            onOpenSubscription={() => {
+                            onOpenSubscription={(initialTab = 'premium') => {
+                                setSubscriptionInitialTab(initialTab);
                                 setShowSubscriptionView(true);
                                 setShowSettings(false);
                             }}
@@ -3751,6 +3753,7 @@ AIコーチなどの高度な機能が解放されます。
                             onClose={() => setShowSubscriptionView(false)}
                             userId={user.uid}
                             userProfile={userProfile}
+                            initialTab={subscriptionInitialTab}
                         />
                     )}
 

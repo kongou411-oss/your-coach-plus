@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { SUBSCRIPTION_PLAN } from '../config';
 
 // ===== Subscription View Component =====
-const SubscriptionView = ({ onClose, userId, userProfile }) => {
+const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium' }) => {
     const [loading, setLoading] = useState(false);
-    const [selectedPlan, setSelectedPlan] = useState('premium'); // 'premium' or 'credit_pack'
+    const [selectedPlan, setSelectedPlan] = useState(initialTab); // 'premium' or 'credit_pack'
     const [selectedCreditPack, setSelectedCreditPack] = useState(null);
 
     // クレジットパックオプション（config.jsから取得）

@@ -159,30 +159,40 @@ const BasicTab = ({
                                             <p className="text-xs text-gray-600 mt-1">税込</p>
                                         </div>
 
-                                        {!willCancel && (
-                                            <button
-                                                className="w-full bg-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-300"
-                                                onClick={() => showConfirm(
-                                                    'サブスクリプション解約の確認',
-                                                    'サブスクリプションを解約しますか？解約後も現在の課金期間終了まで利用できます。',
-                                                    async () => {
-                                                        try {
-                                                            const functions = window.firebase.app().functions('asia-northeast2');
-                                                            const cancelSubscription = functions.httpsCallable('cancelSubscription');
-                                                            await cancelSubscription();
-                                                            toast.success('サブスクリプションを解約しました');
-                                                            // ページリロードでデータを更新
-                                                            setTimeout(() => window.location.reload(), 1500);
-                                                        } catch (error) {
-                                                            console.error('[Subscription] Cancel error:', error);
-                                                            toast.error('解約処理中にエラーが発生しました: ' + error.message);
+                                        <div className="space-y-2">
+                                            {!willCancel && (
+                                                <button
+                                                    className="w-full bg-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-300"
+                                                    onClick={() => showConfirm(
+                                                        'サブスクリプション解約の確認',
+                                                        'サブスクリプションを解約しますか？解約後も現在の課金期間終了まで利用できます。',
+                                                        async () => {
+                                                            try {
+                                                                const functions = window.firebase.app().functions('asia-northeast2');
+                                                                const cancelSubscription = functions.httpsCallable('cancelSubscription');
+                                                                await cancelSubscription();
+                                                                toast.success('サブスクリプションを解約しました');
+                                                                // ページリロードでデータを更新
+                                                                setTimeout(() => window.location.reload(), 1500);
+                                                            } catch (error) {
+                                                                console.error('[Subscription] Cancel error:', error);
+                                                                toast.error('解約処理中にエラーが発生しました: ' + error.message);
+                                                            }
                                                         }
-                                                    }
-                                                )}
+                                                    )}
+                                                >
+                                                    サブスクリプション解約
+                                                </button>
+                                            )}
+
+                                            <button
+                                                className="w-full bg-[#FFF59A] text-gray-800 font-bold py-2 rounded-lg hover:opacity-90 flex items-center justify-center gap-2"
+                                                onClick={() => onOpenSubscription('credit_pack')}
                                             >
-                                                サブスクリプション解約
+                                                <Icon name="ShoppingCart" size={18} />
+                                                クレジット追加購入
                                             </button>
-                                        )}
+                                        </div>
                                     </div>
                                 );
                             } else if (isTrial) {
@@ -203,13 +213,26 @@ const BasicTab = ({
                                             <p className="text-xs text-gray-600 mt-1">8日目以降はPremium登録が必要です</p>
                                         </div>
 
-                                        <button
-                                            className="w-full bg-[#FFF59A] text-gray-800 font-bold py-3 rounded-lg hover:opacity-90 relative overflow-hidden"
-                                            onClick={() => onOpenSubscription && onOpenSubscription()}
-                                        >
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
-                                            <span className="relative z-10">月額940円でPremium登録</span>
-                                        </button>
+                                        <div className="space-y-2">
+                                            <button
+                                                className="w-full bg-[#FFF59A] text-gray-800 font-bold py-3 rounded-lg hover:opacity-90 relative overflow-hidden"
+                                                onClick={() => onOpenSubscription && onOpenSubscription('premium')}
+                                            >
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                                <span className="relative z-10 flex items-center justify-center gap-2">
+                                                    <Icon name="Crown" size={18} />
+                                                    月額940円でPremium登録
+                                                </span>
+                                            </button>
+
+                                            <button
+                                                className="w-full bg-white text-gray-800 font-bold py-2 rounded-lg hover:bg-gray-50 border-2 border-[#FFF59A] flex items-center justify-center gap-2"
+                                                onClick={() => onOpenSubscription && onOpenSubscription('credit_pack')}
+                                            >
+                                                <Icon name="ShoppingCart" size={18} />
+                                                クレジット追加購入
+                                            </button>
+                                        </div>
                                     </div>
                                 );
                             } else {
@@ -229,13 +252,26 @@ const BasicTab = ({
                                             <p className="text-2xl font-bold text-red-600">{usageDays + 1} 日目</p>
                                         </div>
 
-                                        <button
-                                            className="w-full bg-[#FFF59A] text-gray-800 font-bold py-3 rounded-lg hover:opacity-90 relative overflow-hidden"
-                                            onClick={() => onOpenSubscription && onOpenSubscription()}
-                                        >
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
-                                            <span className="relative z-10">月額940円でPremium登録</span>
-                                        </button>
+                                        <div className="space-y-2">
+                                            <button
+                                                className="w-full bg-[#FFF59A] text-gray-800 font-bold py-3 rounded-lg hover:opacity-90 relative overflow-hidden"
+                                                onClick={() => onOpenSubscription && onOpenSubscription('premium')}
+                                            >
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
+                                                <span className="relative z-10 flex items-center justify-center gap-2">
+                                                    <Icon name="Crown" size={18} />
+                                                    月額940円でPremium登録
+                                                </span>
+                                            </button>
+
+                                            <button
+                                                className="w-full bg-white text-gray-800 font-bold py-2 rounded-lg hover:bg-gray-50 border-2 border-[#FFF59A] flex items-center justify-center gap-2"
+                                                onClick={() => onOpenSubscription && onOpenSubscription('credit_pack')}
+                                            >
+                                                <Icon name="ShoppingCart" size={18} />
+                                                クレジット追加購入
+                                            </button>
+                                        </div>
                                     </div>
                                 );
                             }
