@@ -111,7 +111,7 @@ const BasicTab = ({
                 <summary className="cursor-pointer p-4 hover:bg-amber-100 font-medium flex items-center gap-2">
                     <Icon name="Crown" size={18} className="text-amber-600" />
                     プレミアム
-                    {(userProfile?.subscriptionStatus === 'active') && (
+                    {(userProfile?.subscription?.status === 'active') && (
                         <span className="ml-2 px-2 py-0.5 bg-[#FFF59A] text-gray-800 text-xs rounded-full relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                             <span className="relative z-10">Premium会員</span>
@@ -122,7 +122,7 @@ const BasicTab = ({
                 <div className="p-4 pt-0 border-t border-amber-200">
                     <div className="space-y-4">
                         {(() => {
-                            const isPremium = userProfile?.subscriptionStatus === 'active';
+                            const isPremium = userProfile?.subscription?.status === 'active';
                             const isTrial = usageDays < 7; // 0-6日目がトライアル
                             const daysRemaining = isTrial ? Math.max(0, 7 - usageDays) : 0;
 
@@ -616,8 +616,8 @@ const BasicTab = ({
                                                     onClick={() => {
                                                         const debugInfo = {
                                                             userId,
-                                                            subscriptionStatus: userProfile?.subscriptionStatus || 'none',
-                                                            isPremium: userProfile?.subscriptionStatus === 'active',
+                                                            subscriptionStatus: userProfile?.subscription?.status || 'none',
+                                                            isPremium: userProfile?.subscription?.status === 'active',
                                                             userAgent: navigator.userAgent,
                                                             pwaMode: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone,
                                                             online: navigator.onLine,
