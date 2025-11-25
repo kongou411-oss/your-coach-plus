@@ -623,16 +623,39 @@ exports.createCheckoutSession = onCall({
 
     const userData = userDoc.data();
     let customerId = userData.stripeCustomerId;
+    const userEmail = request.auth.token.email || '';
 
-    // Stripe Customerがない場合は作成
+    // Stripe Customerがない場合
     if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: request.auth.token.email || '',
-        metadata: {
-          firebaseUID: userId,
-        },
+      // メールアドレスで既存Customerを検索（アカウント削除→再登録対策）
+      const existingCustomers = await stripe.customers.list({
+        email: userEmail,
+        limit: 1,
       });
-      customerId = customer.id;
+
+      if (existingCustomers.data.length > 0) {
+        // 既存Customerが見つかった場合、そのCustomerを使用
+        customerId = existingCustomers.data[0].id;
+        console.log(`[Stripe] Found existing customer for ${userEmail}: ${customerId}`);
+
+        // metadata の firebaseUID を新しいUIDに更新
+        await stripe.customers.update(customerId, {
+          metadata: {
+            firebaseUID: userId,
+            previousUID: existingCustomers.data[0].metadata?.firebaseUID || '',
+          },
+        });
+      } else {
+        // 既存Customerがない場合は新規作成
+        const customer = await stripe.customers.create({
+          email: userEmail,
+          metadata: {
+            firebaseUID: userId,
+          },
+        });
+        customerId = customer.id;
+        console.log(`[Stripe] Created new customer for ${userEmail}: ${customerId}`);
+      }
 
       // FirestoreにCustomer IDを保存
       await admin.firestore().collection('users').doc(userId).update({
