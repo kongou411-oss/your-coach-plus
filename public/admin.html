@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理画面 - Your Coach+</title>
+    <title>管理画面 - Your Coach+ v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * {
@@ -622,6 +622,22 @@
                     usedLicenses += org.usedLicenses || 0;
                 });
 
+                // 各企業の使用者を取得
+                for (const org of organizations) {
+                    const usersSnapshot = await db.collection('users')
+                        .where('b2b2cOrgId', '==', org.id)
+                        .get();
+                    org.users = [];
+                    usersSnapshot.forEach(userDoc => {
+                        const userData = userDoc.data();
+                        org.users.push({
+                            id: userDoc.id,
+                            email: userData.email || '不明',
+                            displayName: userData.displayName || userData.nickname || '名前未設定'
+                        });
+                    });
+                }
+
                 // 統計情報更新
                 updateStats(organizations, totalLicenses, usedLicenses);
 
@@ -703,6 +719,25 @@
                         <div class="org-info-label">アクセスコード</div>
                         <div class="code-display">${org.accessCode || 'コード未発行'}</div>
                     </div>
+
+                    ${org.users && org.users.length > 0 ? `
+                        <details class="mt-4">
+                            <summary class="text-sm text-blue-600 cursor-pointer hover:underline font-medium">
+                                👥 使用者一覧 (${org.users.length}人)
+                            </summary>
+                            <div class="mt-2 bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-200">
+                                ${org.users.map((user, i) => `
+                                    <div class="text-sm flex items-center gap-2 ${i > 0 ? 'pt-2 border-t border-gray-100' : ''}">
+                                        <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">${i + 1}</span>
+                                        <div>
+                                            <span class="text-gray-800 font-medium">${user.displayName}</span>
+                                            <span class="text-gray-400 text-xs ml-2">${user.email}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </details>
+                    ` : '<p class="text-sm text-gray-400 mt-4">👥 使用者なし</p>'}
                 </div>
             `;
         }
@@ -901,11 +936,21 @@
 
             try {
                 // Cloud Functionから Firebase Auth 情報を含むユーザー一覧を取得
+                console.log('[Admin] Calling getAdminUserList...');
                 const getAdminUserList = functions.httpsCallable('getAdminUserList');
                 const result = await getAdminUserList();
+                console.log('[Admin] Result:', result.data);
 
                 if (!result.data.success) {
                     throw new Error('データ取得に失敗しました');
+                }
+
+                // 最初のユーザーの日付を確認
+                if (result.data.users.length > 0) {
+                    console.log('[Admin] First user dates:', {
+                        createdAt: result.data.users[0].createdAt,
+                        lastLoginAt: result.data.users[0].lastLoginAt
+                    });
                 }
 
                 allUsers = [];

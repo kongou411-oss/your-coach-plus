@@ -1881,36 +1881,32 @@ exports.getGiftCodes = onCall({
     const codes = [];
     for (const doc of snapshot.docs) {
       const data = doc.data();
+      const giftCode = data.code;
 
-      // 使用者の詳細情報を取得
+      // usersコレクションからギフトコード使用者を直接検索
       const usedByDetails = [];
-      if (data.usedBy && data.usedBy.length > 0) {
-        for (const uid of data.usedBy) {
-          try {
-            const userDoc = await admin.firestore().collection('users').doc(uid).get();
-            if (userDoc.exists) {
-              const userData = userDoc.data();
-              usedByDetails.push({
-                userId: uid,
-                email: userData.email || 'unknown',
-                displayName: userData.displayName || userData.profile?.name || 'unknown'
-              });
-            }
-          } catch (e) {
-            usedByDetails.push({
-              userId: uid,
-              email: 'error',
-              displayName: 'error'
-            });
-          }
-        }
+      try {
+        const usersSnapshot = await admin.firestore().collection('users')
+          .where('subscription.giftCode', '==', giftCode)
+          .get();
+
+        usersSnapshot.forEach(userDoc => {
+          const userData = userDoc.data();
+          usedByDetails.push({
+            userId: userDoc.id,
+            email: userData.email || 'unknown',
+            displayName: userData.displayName || userData.nickname || 'unknown'
+          });
+        });
+      } catch (e) {
+        console.error(`[GiftCode] Error fetching users for code ${giftCode}:`, e);
       }
 
       codes.push({
         id: doc.id,
-        code: data.code,
+        code: giftCode,
         isActive: data.isActive,
-        usedCount: data.usedBy?.length || 0,
+        usedCount: usedByDetails.length || data.usedBy?.length || 0,
         usedBy: data.usedBy || [],
         usedByDetails: usedByDetails,
         note: data.note || '',
