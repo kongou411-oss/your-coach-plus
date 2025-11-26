@@ -438,6 +438,7 @@
                                         <th class="px-4 py-3 text-left font-medium text-gray-600">ユーザー</th>
                                         <th class="px-4 py-3 text-left font-medium text-gray-600">ステータス</th>
                                         <th class="px-4 py-3 text-left font-medium text-gray-600">登録日</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">最終ログイン</th>
                                         <th class="px-4 py-3 text-left font-medium text-gray-600">クレジット</th>
                                         <th class="px-4 py-3 text-left font-medium text-gray-600">詳細</th>
                                     </tr>
@@ -899,45 +900,42 @@
             empty.style.display = 'none';
 
             try {
-                const snapshot = await db.collection('users').get();
-                allUsers = [];
+                // Cloud Functionから Firebase Auth 情報を含むユーザー一覧を取得
+                const getAdminUserList = functions.httpsCallable('getAdminUserList');
+                const result = await getAdminUserList();
 
+                if (!result.data.success) {
+                    throw new Error('データ取得に失敗しました');
+                }
+
+                allUsers = [];
                 const now = new Date();
                 let premiumCount = 0;
                 let codeCount = 0;
                 let trialCount = 0;
 
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const user = { id: doc.id, ...data };
-
+                result.data.users.forEach(user => {
                     // Premium判定
-                    const isPremium = data.subscription?.status === 'active' ||
-                                      data.b2b2cOrgId ||
-                                      data.subscription?.giftCodeActive === true;
+                    const isPremium = user.subscription?.status === 'active' ||
+                                      user.b2b2cOrgId ||
+                                      user.subscription?.giftCodeActive === true;
 
-                    // 登録日取得（ISO文字列またはTimestamp両対応）
-                    let regDate = new Date();
-                    const regField = data.registrationDate || data.createdAt || data.joinDate;
-                    if (regField) {
-                        if (typeof regField === 'string') {
-                            regDate = new Date(regField);
-                        } else if (regField.toDate) {
-                            regDate = regField.toDate();
-                        }
-                    }
+                    // 登録日・ログイン日（Firebase Authから取得済み）
+                    const regDate = user.createdAt ? new Date(user.createdAt) : new Date();
+                    const lastLogin = user.lastLoginAt ? new Date(user.lastLoginAt) : null;
                     const daysSinceReg = Math.floor((now - regDate) / (1000 * 60 * 60 * 24));
                     const isTrialActive = !isPremium && daysSinceReg <= 7;
 
                     user._isPremium = isPremium;
                     user._isTrialActive = isTrialActive;
                     user._regDate = regDate;
+                    user._lastLogin = lastLogin;
                     user._daysSinceReg = daysSinceReg;
 
                     allUsers.push(user);
 
                     if (isPremium) premiumCount++;
-                    if (data.b2b2cOrgId || data.subscription?.giftCodeActive) codeCount++;
+                    if (user.b2b2cOrgId || user.subscription?.giftCodeActive) codeCount++;
                     if (isTrialActive) trialCount++;
                 });
 
@@ -1027,6 +1025,9 @@
                         <td class="px-4 py-3 text-gray-600">
                             ${user._regDate.toLocaleDateString('ja-JP')}
                             <div class="text-xs text-gray-400">${user._daysSinceReg}日目</div>
+                        </td>
+                        <td class="px-4 py-3 text-gray-600">
+                            ${user._lastLogin ? user._lastLogin.toLocaleDateString('ja-JP') : '-'}
                         </td>
                         <td class="px-4 py-3">
                             <div class="text-xs">

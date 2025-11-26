@@ -1360,6 +1360,61 @@ exports.applyReferralCode = onCall({
   }
 });
 
+// ===== 管理者用ユーザー一覧取得（Firebase Auth情報含む） =====
+exports.getAdminUserList = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  // 管理者メールチェック
+  const ADMIN_EMAILS = ['kongou411@gmail.com'];
+  if (!request.auth || !ADMIN_EMAILS.includes(request.auth.token.email)) {
+    throw new HttpsError("permission-denied", "管理者権限が必要です");
+  }
+
+  try {
+    // Firebase Authから全ユーザーを取得
+    const listUsersResult = await admin.auth().listUsers(1000);
+    const authUsers = {};
+    listUsersResult.users.forEach(user => {
+      authUsers[user.uid] = {
+        email: user.email,
+        displayName: user.displayName,
+        creationTime: user.metadata.creationTime,
+        lastSignInTime: user.metadata.lastSignInTime,
+      };
+    });
+
+    // Firestoreからユーザー情報を取得
+    const snapshot = await admin.firestore().collection('users').get();
+    const users = [];
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const authInfo = authUsers[doc.id] || {};
+
+      users.push({
+        id: doc.id,
+        email: data.email || authInfo.email || null,
+        displayName: data.displayName || data.nickname || authInfo.displayName || null,
+        // Firebase Authの日付を優先
+        createdAt: authInfo.creationTime || data.createdAt || data.registrationDate || null,
+        lastLoginAt: authInfo.lastSignInTime || data.lastLoginAt || null,
+        // Firestoreデータ
+        freeCredits: data.freeCredits || 0,
+        paidCredits: data.paidCredits || 0,
+        subscription: data.subscription || null,
+        b2b2cOrgId: data.b2b2cOrgId || null,
+        referralCode: data.referralCode || null,
+        referredBy: data.referredBy || null,
+      });
+    });
+
+    return { success: true, users };
+  } catch (error) {
+    console.error('[Admin] Get user list error:', error);
+    throw new HttpsError("internal", "ユーザー一覧の取得に失敗しました", error.message);
+  }
+});
+
 // ===== B2B2C企業向けプラン =====
 
 // B2B2C企業向けCheckoutセッション作成
