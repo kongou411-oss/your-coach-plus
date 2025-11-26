@@ -1310,7 +1310,7 @@ exports.applyReferralCode = onCall({
       throw new HttpsError("already-exists", "既に紹介コードを使用済みです");
     }
 
-    // 4. 被紹介者に50クレジット付与
+    // 4. 被紹介者に50無料クレジット付与
     await admin.firestore().collection('users').doc(userId).set({
       referredBy: referrerId,
       referrerInfo: {
@@ -1319,16 +1319,16 @@ exports.applyReferralCode = onCall({
       },
       referralAppliedAt: admin.firestore.FieldValue.serverTimestamp(),
       referralBonusApplied: true,
-      paidCredits: (userDoc.exists && userDoc.data().paidCredits ? userDoc.data().paidCredits : 0) + 50,
+      freeCredits: (userDoc.exists && userDoc.data().freeCredits ? userDoc.data().freeCredits : 0) + 50,
     }, { merge: true });
 
-    // 5. 紹介者にも50クレジット付与 + コードを使用済みにマーク
-    const referrerCredits = referrerData.paidCredits || 0;
+    // 5. 紹介者にも50無料クレジット付与 + コードを使用済みにマーク
+    const referrerCredits = referrerData.freeCredits || 0;
     await admin.firestore().collection('users').doc(referrerId).set({
       referralCodeUsed: true,
       referralCodeUsedBy: userId,
       referralCodeUsedAt: admin.firestore.FieldValue.serverTimestamp(),
-      paidCredits: referrerCredits + 50,
+      freeCredits: referrerCredits + 50,
     }, { merge: true });
 
     // 6. 紹介レコードを作成
