@@ -40,13 +40,25 @@ npm run dev  # http://localhost:8000 でホットリロード
 3. ユーザーに報告
 
 ### デプロイ時（指示された場合のみ）
+
+⚠️ **「デプロイして」と言われたら必ず以下を全て実行**:
+1. `firebase deploy --only functions` （Cloud Functions変更時）
+2. `npm run build && firebase deploy --only hosting` （フロント変更時）
+3. `git add -A && git commit && git push`
+
 ```bash
-npm run auto-release && npm run build && git add -A && git commit -m "変更内容" && git push && firebase deploy --only hosting
+# フルデプロイコマンド
+npm run auto-release && npm run build && git add -A && git commit -m "変更内容" && git push && firebase deploy
 ```
 
 **Minor/Major版の場合**: デプロイ前に以下を手動更新
 - `src/config.js` の RELEASE_NOTES
 - `public/home.html` のリリースノートセクション
+
+#### 過去のデプロイ漏れ（再発防止）
+| 日付 | ミス | 原因 | 対策 |
+|------|------|------|------|
+| 2025/11/26 | hostingデプロイ漏れ | functions のみデプロイしてhostingを忘れた | 「デプロイして」=functions+hosting+git全て実行 |
 
 ---
 
