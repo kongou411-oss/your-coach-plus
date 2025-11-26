@@ -26,12 +26,18 @@ const CodeInputSection = ({ userId, userProfile }) => {
         phoneNumber: ''
     });
 
+    // ギフトコード関連
+    const [hasGiftCode, setHasGiftCode] = useState(false);
+    const [giftCodeInfo, setGiftCodeInfo] = useState(null);
+
     // コード種別を判定
     const getCodeType = (inputCode) => {
         if (!inputCode) return null;
         const trimmed = inputCode.trim().toUpperCase();
         if (trimmed.startsWith('B2B-')) return 'enterprise';
         if (trimmed.startsWith('USER-')) return 'referral';
+        // それ以外で3文字以上ならギフトコードとして扱う
+        if (trimmed.length >= 3) return 'gift';
         return null;
     };
 
@@ -55,6 +61,14 @@ const CodeInputSection = ({ userId, userProfile }) => {
             setHasReferral(true);
             setReferralInfo({
                 appliedAt: userProfile.referralAppliedAt
+            });
+        }
+        // ギフトコード適用済みチェック
+        if (userProfile?.subscription?.giftCodeActive) {
+            setHasGiftCode(true);
+            setGiftCodeInfo({
+                code: userProfile.subscription.giftCode,
+                activatedAt: userProfile.subscription.giftCodeActivatedAt
             });
         }
     }, [userProfile, userId]);
@@ -143,6 +157,30 @@ const CodeInputSection = ({ userId, userProfile }) => {
         }
     };
 
+    // ギフトコード検証
+    const validateGiftCode = async () => {
+        setValidating(true);
+        try {
+            const result = await window.GiftCodeService.redeemCode(code.trim());
+            if (result.success) {
+                toast.success(result.message || 'Premium会員になりました！');
+                setHasGiftCode(true);
+                setGiftCodeInfo({ code: code.trim().toUpperCase(), activatedAt: new Date() });
+                setCode('');
+                // ページリロードで状態を更新
+                setTimeout(() => window.location.reload(), 1500);
+                return true;
+            }
+        } catch (error) {
+            console.error('[GiftCode] Error:', error);
+            const errorMessage = error.message || error.details?.message || 'コードの適用に失敗しました';
+            toast.error(errorMessage);
+            return false;
+        } finally {
+            setValidating(false);
+        }
+    };
+
     // コード認証ボタン押下時
     const handleSubmit = () => {
         if (!code.trim()) {
@@ -154,8 +192,10 @@ const CodeInputSection = ({ userId, userProfile }) => {
             validateEnterpriseCode();
         } else if (codeType === 'referral') {
             setShowReferralForm(true);
+        } else if (codeType === 'gift') {
+            validateGiftCode();
         } else {
-            toast.error('無効なコード形式です。B2B-またはUSER-で始まるコードを入力してください。');
+            toast.error('無効なコード形式です');
         }
     };
 
@@ -202,6 +242,27 @@ const CodeInputSection = ({ userId, userProfile }) => {
                             <p className="text-sm text-pink-700">
                                 Premium登録完了後、50回分の分析クレジットが付与されます。
                             </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (hasGiftCode) {
+            items.push(
+                <div key="giftcode" className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                        <Icon name="Crown" size={20} className="text-purple-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                            <h4 className="font-bold text-purple-800 mb-1">ギフトコード適用済み</h4>
+                            <p className="text-sm text-purple-700">
+                                Premium機能が有効になっています。
+                            </p>
+                            {giftCodeInfo?.code && (
+                                <p className="text-xs text-gray-600 mt-1">
+                                    コード: {giftCodeInfo.code}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -329,11 +390,15 @@ const CodeInputSection = ({ userId, userProfile }) => {
                         <Icon name="Gift" size={14} className="text-pink-600 mt-0.5 flex-shrink-0" />
                         <span><strong>紹介コード</strong>（USER-XXXX）: 友達紹介の50回クレジット特典</span>
                     </div>
+                    <div className="flex items-start gap-2">
+                        <Icon name="Crown" size={14} className="text-purple-600 mt-0.5 flex-shrink-0" />
+                        <span><strong>ギフトコード</strong>: Premium無料招待コード</span>
+                    </div>
                 </div>
             </div>
 
             {/* コード入力フォーム */}
-            {(!hasEnterpriseAccess || !hasReferral) && (
+            {(!hasEnterpriseAccess || !hasReferral || !hasGiftCode) && (
                 <div className="space-y-3">
                     <label className="block">
                         <span className="text-sm font-medium text-gray-700 mb-2 block">
@@ -343,19 +408,25 @@ const CodeInputSection = ({ userId, userProfile }) => {
                             type="text"
                             value={code}
                             onChange={(e) => setCode(e.target.value.toUpperCase())}
-                            placeholder="B2B-XXXX または USER-XXXXXX"
+                            placeholder="コードを入力"
                             className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:outline-none font-mono ${
                                 codeType === 'enterprise'
                                     ? 'border-blue-300 focus:ring-blue-500 bg-blue-50/30'
                                     : codeType === 'referral'
                                     ? 'border-pink-300 focus:ring-pink-500 bg-pink-50/30'
+                                    : codeType === 'gift'
+                                    ? 'border-purple-300 focus:ring-purple-500 bg-purple-50/30'
                                     : 'border-gray-300 focus:ring-gray-500'
                             }`}
                             disabled={validating}
                         />
                         {codeType && (
-                            <p className={`text-xs mt-1 ${codeType === 'enterprise' ? 'text-blue-600' : 'text-pink-600'}`}>
-                                {codeType === 'enterprise' ? '企業コード' : '紹介コード'}として認識されました
+                            <p className={`text-xs mt-1 ${
+                                codeType === 'enterprise' ? 'text-blue-600'
+                                : codeType === 'referral' ? 'text-pink-600'
+                                : 'text-purple-600'
+                            }`}>
+                                {codeType === 'enterprise' ? '企業コード' : codeType === 'referral' ? '紹介コード' : 'ギフトコード'}として認識されました
                             </p>
                         )}
                     </label>
@@ -368,6 +439,8 @@ const CodeInputSection = ({ userId, userProfile }) => {
                                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
                                 : codeType === 'referral'
                                 ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:opacity-90'
+                                : codeType === 'gift'
+                                ? 'bg-purple-600 text-white hover:bg-purple-700'
                                 : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                     >
@@ -378,7 +451,7 @@ const CodeInputSection = ({ userId, userProfile }) => {
                             </>
                         ) : (
                             <>
-                                <Icon name="Key" size={18} />
+                                <Icon name={codeType === 'gift' ? 'Crown' : 'Key'} size={18} />
                                 コードを認証
                             </>
                         )}
@@ -387,7 +460,7 @@ const CodeInputSection = ({ userId, userProfile }) => {
             )}
 
             {/* 全て適用済みの場合 */}
-            {hasEnterpriseAccess && hasReferral && (
+            {hasEnterpriseAccess && hasReferral && hasGiftCode && (
                 <p className="text-sm text-gray-600 text-center py-2">
                     すべてのコードが適用済みです
                 </p>

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B2B2C管理画面 - Your Coach+</title>
+    <title>管理画面 - Your Coach+</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * {
             margin: 0;
@@ -269,7 +270,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>🏢 B2B2C管理画面</h1>
+        <h1>🔧 Your Coach+ 管理画面</h1>
         <div class="header-right">
             <span class="user-info" id="user-info">読み込み中...</span>
             <button class="btn-logout" onclick="logout()">ログアウト</button>
@@ -277,8 +278,66 @@
     </div>
 
     <div class="container">
-        <!-- 統計情報 -->
-        <div class="stats-grid">
+        <!-- タブ切り替え -->
+        <div class="flex gap-2 mb-6">
+            <button id="tab-giftcode" onclick="switchTab('giftcode')" class="px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white">
+                🎁 ギフトコード
+            </button>
+            <button id="tab-b2b2c" onclick="switchTab('b2b2c')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
+                🏢 B2B2C企業
+            </button>
+        </div>
+
+        <!-- ギフトコード管理セクション -->
+        <div id="giftcode-section">
+            <!-- 新規コード作成 -->
+            <div class="section mb-6">
+                <div class="section-header">
+                    <h2>➕ 新規ギフトコード作成</h2>
+                </div>
+                <div class="section-content">
+                    <div class="grid md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">コード</label>
+                            <input type="text" id="new-code"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 uppercase font-mono"
+                                placeholder="例: FAMILYPLUS2025"
+                                oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">メモ（任意）</label>
+                            <input type="text" id="new-note"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                placeholder="例: 家族配布用">
+                        </div>
+                    </div>
+                    <button onclick="createGiftCode()" id="create-btn" class="btn-primary">
+                        ✨ コードを作成
+                    </button>
+                </div>
+            </div>
+
+            <!-- ギフトコード一覧 -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>📋 ギフトコード一覧</h2>
+                    <button onclick="loadGiftCodes()" class="btn-secondary">🔄 更新</button>
+                </div>
+                <div class="section-content">
+                    <div id="giftcode-loading" class="loading">コードを読み込んでいます...</div>
+                    <div id="giftcode-list" class="space-y-4" style="display:none;"></div>
+                    <div id="giftcode-empty" class="empty-state" style="display:none;">
+                        <div class="empty-state-icon">📭</div>
+                        <p>まだギフトコードがありません</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- B2B2Cセクション（既存） -->
+        <div id="b2b2c-section" style="display:none;">
+            <!-- 統計情報 -->
+            <div class="stats-grid">
             <div class="stat-card">
                 <h3>契約企業数</h3>
                 <div class="value" id="total-orgs">-</div>
@@ -313,6 +372,7 @@
                 </div>
             </div>
         </div>
+        </div><!-- B2B2Cセクション終了 -->
     </div>
 
     <!-- Firebase SDK -->
@@ -334,6 +394,9 @@
             'kongou411@gmail.com'
         ];
 
+        // 管理者パスワード（環境変数から取得するのが理想だが、ここではメモリに保持）
+        let adminPassword = '';
+
         // 認証チェック
         auth.onAuthStateChanged(async (user) => {
             if (!user || !ADMIN_EMAILS.includes(user.email)) {
@@ -345,9 +408,36 @@
             // ユーザー情報表示
             document.getElementById('user-info').textContent = user.email;
 
+            // 管理者パスワードを取得（プロンプト）
+            adminPassword = prompt('管理者パスワードを入力してください（ギフトコード管理用）');
+            if (!adminPassword) {
+                alert('パスワードが必要です');
+            }
+
             // データ読み込み
+            await loadGiftCodes();
             await loadOrganizations();
         });
+
+        // タブ切り替え
+        function switchTab(tab) {
+            const giftcodeSection = document.getElementById('giftcode-section');
+            const b2b2cSection = document.getElementById('b2b2c-section');
+            const tabGiftcode = document.getElementById('tab-giftcode');
+            const tabB2b2c = document.getElementById('tab-b2b2c');
+
+            if (tab === 'giftcode') {
+                giftcodeSection.style.display = 'block';
+                b2b2cSection.style.display = 'none';
+                tabGiftcode.className = 'px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white';
+                tabB2b2c.className = 'px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300';
+            } else {
+                giftcodeSection.style.display = 'none';
+                b2b2cSection.style.display = 'block';
+                tabGiftcode.className = 'px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300';
+                tabB2b2c.className = 'px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white';
+            }
+        }
 
         // ログアウト
         function logout() {
@@ -494,6 +584,163 @@
                 month: '2-digit',
                 day: '2-digit'
             });
+        }
+
+        // ===== ギフトコード管理機能 =====
+
+        // ギフトコード一覧読み込み
+        async function loadGiftCodes() {
+            if (!adminPassword) {
+                document.getElementById('giftcode-loading').innerHTML = '<p style="color: orange;">パスワードが設定されていません</p>';
+                return;
+            }
+
+            try {
+                const getGiftCodes = functions.httpsCallable('getGiftCodes');
+                const result = await getGiftCodes({ adminPassword });
+
+                const loading = document.getElementById('giftcode-loading');
+                const list = document.getElementById('giftcode-list');
+                const empty = document.getElementById('giftcode-empty');
+
+                loading.style.display = 'none';
+
+                if (!result.data.success || result.data.codes.length === 0) {
+                    empty.style.display = 'block';
+                    list.style.display = 'none';
+                    return;
+                }
+
+                empty.style.display = 'none';
+                list.style.display = 'block';
+                renderGiftCodes(result.data.codes);
+
+            } catch (error) {
+                console.error('Load gift codes error:', error);
+                document.getElementById('giftcode-loading').innerHTML =
+                    '<p style="color: red;">エラー: ' + (error.message || 'パスワードが正しくない可能性があります') + '</p>';
+            }
+        }
+
+        // ギフトコード一覧表示
+        function renderGiftCodes(codes) {
+            const container = document.getElementById('giftcode-list');
+            container.innerHTML = codes.map(code => `
+                <div class="border-2 rounded-xl p-4 transition-all ${code.isActive ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-100'}">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono font-bold text-xl ${code.isActive ? 'text-green-700' : 'text-gray-400'}">${code.code}</span>
+                            <span class="px-2 py-1 text-xs rounded-full font-medium ${code.isActive ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-600'}">
+                                ${code.isActive ? '✅ 有効' : '❌ 無効'}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleGiftCode('${code.code}', ${!code.isActive})"
+                                class="px-3 py-1.5 text-sm rounded-lg font-medium transition ${code.isActive ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}">
+                                ${code.isActive ? '🔒 無効化' : '🔓 有効化'}
+                            </button>
+                            <button onclick="deleteGiftCode('${code.code}')"
+                                class="px-3 py-1.5 text-sm rounded-lg font-medium bg-red-100 text-red-700 hover:bg-red-200 transition">
+                                🗑️ 削除
+                            </button>
+                        </div>
+                    </div>
+
+                    ${code.note ? `<p class="text-sm text-gray-600 mb-3">📝 ${code.note}</p>` : ''}
+
+                    <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                        <span>👥 使用者: <strong class="text-gray-800">${code.usedCount}人</strong></span>
+                        ${code.createdAt ? `<span>📅 作成: ${new Date(code.createdAt).toLocaleDateString('ja-JP')}</span>` : ''}
+                        ${code.lastUsedAt ? `<span>🕐 最終使用: ${new Date(code.lastUsedAt).toLocaleDateString('ja-JP')}</span>` : ''}
+                    </div>
+
+                    ${code.usedByDetails && code.usedByDetails.length > 0 ? `
+                        <details class="mt-3">
+                            <summary class="text-sm text-purple-600 cursor-pointer hover:underline font-medium">
+                                👤 使用者詳細 (${code.usedByDetails.length}人)
+                            </summary>
+                            <div class="mt-2 bg-white rounded-lg p-3 space-y-2 border border-gray-200">
+                                ${code.usedByDetails.map((user, i) => `
+                                    <div class="text-sm flex items-center gap-2 ${i > 0 ? 'pt-2 border-t border-gray-100' : ''}">
+                                        <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">${i + 1}</span>
+                                        <span class="text-gray-800 font-medium">${user.email || 'メール未取得'}</span>
+                                        ${user.displayName ? `<span class="text-gray-400 text-xs">(${user.displayName})</span>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </details>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // ギフトコード作成
+        async function createGiftCode() {
+            const code = document.getElementById('new-code').value.trim().toUpperCase();
+            const note = document.getElementById('new-note').value.trim();
+            const btn = document.getElementById('create-btn');
+
+            if (!code) {
+                alert('コードを入力してください');
+                return;
+            }
+            if (code.length < 3) {
+                alert('コードは3文字以上で入力してください');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ 作成中...';
+
+            try {
+                const createGiftCodeFn = functions.httpsCallable('createGiftCode');
+                const result = await createGiftCodeFn({ code, note, adminPassword });
+
+                if (result.data.success) {
+                    alert('✅ コードを作成しました\n\nコード: ' + code);
+                    document.getElementById('new-code').value = '';
+                    document.getElementById('new-note').value = '';
+                    await loadGiftCodes();
+                }
+            } catch (error) {
+                console.error('Create code error:', error);
+                alert('❌ ' + (error.message || '作成に失敗しました'));
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✨ コードを作成';
+            }
+        }
+
+        // ギフトコード有効/無効切り替え
+        async function toggleGiftCode(code, isActive) {
+            if (!confirm(`コード「${code}」を${isActive ? '有効化' : '無効化'}しますか？`)) return;
+
+            try {
+                const toggleGiftCodeFn = functions.httpsCallable('toggleGiftCode');
+                const result = await toggleGiftCodeFn({ code, isActive, adminPassword });
+                if (result.data.success) {
+                    await loadGiftCodes();
+                }
+            } catch (error) {
+                console.error('Toggle code error:', error);
+                alert('❌ 更新に失敗しました: ' + (error.message || error));
+            }
+        }
+
+        // ギフトコード削除
+        async function deleteGiftCode(code) {
+            if (!confirm(`⚠️ コード「${code}」を削除しますか？\n\nこの操作は取り消せません。`)) return;
+
+            try {
+                const deleteGiftCodeFn = functions.httpsCallable('deleteGiftCode');
+                const result = await deleteGiftCodeFn({ code, adminPassword });
+                if (result.data.success) {
+                    await loadGiftCodes();
+                }
+            } catch (error) {
+                console.error('Delete code error:', error);
+                alert('❌ 削除に失敗しました: ' + (error.message || error));
+            }
         }
     </script>
 </body>

@@ -2505,6 +2505,74 @@ const MFAService = {
     }
 };
 
+// ===== ギフトコードサービス =====
+const GiftCodeService = {
+    // ギフトコードを適用（ユーザー用）
+    redeemCode: async (code) => {
+        try {
+            const functions = firebase.app().functions('asia-northeast2');
+            const redeemGiftCode = functions.httpsCallable('redeemGiftCode');
+            const result = await redeemGiftCode({ code: code });
+            return result.data;
+        } catch (error) {
+            console.error('[GiftCode] Redeem error:', error);
+            throw error;
+        }
+    },
+
+    // ギフトコード作成（管理者用）
+    createCode: async (code, note, adminPassword) => {
+        try {
+            const functions = firebase.app().functions('asia-northeast2');
+            const createGiftCode = functions.httpsCallable('createGiftCode');
+            const result = await createGiftCode({ code, note, adminPassword });
+            return result.data;
+        } catch (error) {
+            console.error('[GiftCode] Create error:', error);
+            throw error;
+        }
+    },
+
+    // ギフトコード一覧取得（管理者用）
+    getCodes: async (adminPassword) => {
+        try {
+            const functions = firebase.app().functions('asia-northeast2');
+            const getGiftCodes = functions.httpsCallable('getGiftCodes');
+            const result = await getGiftCodes({ adminPassword });
+            return result.data;
+        } catch (error) {
+            console.error('[GiftCode] Get codes error:', error);
+            throw error;
+        }
+    },
+
+    // ギフトコード有効/無効切り替え（管理者用）
+    toggleCode: async (code, isActive, adminPassword) => {
+        try {
+            const functions = firebase.app().functions('asia-northeast2');
+            const toggleGiftCode = functions.httpsCallable('toggleGiftCode');
+            const result = await toggleGiftCode({ code, isActive, adminPassword });
+            return result.data;
+        } catch (error) {
+            console.error('[GiftCode] Toggle error:', error);
+            throw error;
+        }
+    },
+
+    // ギフトコード削除（管理者用）
+    deleteCode: async (code, adminPassword) => {
+        try {
+            const functions = firebase.app().functions('asia-northeast2');
+            const deleteGiftCode = functions.httpsCallable('deleteGiftCode');
+            const result = await deleteGiftCode({ code, adminPassword });
+            return result.data;
+        } catch (error) {
+            console.error('[GiftCode] Delete error:', error);
+            throw error;
+        }
+    }
+};
+
 // ===== グローバルに公開 =====
 window.DataService = DataService;
 window.GeminiAPI = GeminiAPI;
@@ -2513,3 +2581,4 @@ window.ExperienceService = ExperienceService;
 window.PremiumService = PremiumService;
 window.MFAService = MFAService;
 window.TextbookPurchaseService = TextbookPurchaseService;
+window.GiftCodeService = GiftCodeService;

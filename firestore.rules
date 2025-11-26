@@ -1,6 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // giftCodesコレクション：クライアントからのアクセス禁止（Cloud Functionsのみ）
+    match /giftCodes/{codeId} {
+      allow read, write: if false;
+    }
+
     // 🚨 テストモード：認証済みユーザーに全てアクセス許可（一時的）
     match /{document=**} {
       allow read, write: if request.auth != null;

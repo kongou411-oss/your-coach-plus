@@ -1630,3 +1630,275 @@ exports.validateB2B2CCode = onCall({
     throw new HttpsError("internal", "コードの検証に失敗しました", error.message);
   }
 });
+
+// ===== ギフトコード機能 =====
+
+// ギフトコード適用（ユーザー用）
+exports.redeemGiftCode = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+  const code = request.data.code?.trim()?.toUpperCase();
+
+  if (!code) {
+    throw new HttpsError("invalid-argument", "コードを入力してください");
+  }
+
+  try {
+    return await admin.firestore().runTransaction(async (t) => {
+      const codeRef = admin.firestore().collection('giftCodes').doc(code);
+      const codeDoc = await t.get(codeRef);
+
+      if (!codeDoc.exists || !codeDoc.data().isActive) {
+        throw new HttpsError("not-found", "無効なコードです");
+      }
+
+      const codeData = codeDoc.data();
+
+      // 重複使用チェック
+      if (codeData.usedBy?.includes(userId)) {
+        throw new HttpsError("already-exists", "このコードは既に使用済みです");
+      }
+
+      // ユーザー情報を取得
+      const userRef = admin.firestore().collection('users').doc(userId);
+      const userDoc = await t.get(userRef);
+      const userData = userDoc.exists ? userDoc.data() : {};
+      const userEmail = userData.email || request.auth.token.email || 'unknown';
+
+      // コードの使用記録を更新
+      t.update(codeRef, {
+        usedBy: admin.firestore.FieldValue.arrayUnion(userId),
+        usedByDetails: admin.firestore.FieldValue.arrayUnion({
+          userId: userId,
+          email: userEmail,
+          usedAt: new Date().toISOString()
+        }),
+        lastUsedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // ユーザーのサブスクリプション情報を更新
+      const subscriptionUpdate = {
+        'subscription.giftCodeActive': true,
+        'subscription.giftCode': code,
+        'subscription.giftCodeActivatedAt': admin.firestore.FieldValue.serverTimestamp(),
+        'subscription.status': 'active',
+        'subscription.aiCredits': {
+          monthly: 100,
+          remaining: 100,
+          used: 0,
+          purchased: 0,
+          lastReset: new Date().toISOString().split('T')[0]
+        }
+      };
+
+      if (userDoc.exists) {
+        t.update(userRef, subscriptionUpdate);
+      } else {
+        t.set(userRef, subscriptionUpdate);
+      }
+
+      console.log(`[GiftCode] Code ${code} redeemed by user ${userId} (${userEmail})`);
+
+      return { success: true, message: 'Premium会員になりました！' };
+    });
+  } catch (error) {
+    console.error(`[GiftCode] Redeem failed for user ${userId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "コードの適用に失敗しました", error.message);
+  }
+});
+
+// ギフトコード作成（管理者用）
+exports.createGiftCode = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  const { code, note, adminPassword } = request.data;
+
+  // 管理者パスワードチェック
+  if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    throw new HttpsError("permission-denied", "管理者権限がありません");
+  }
+
+  const codeUpper = code?.trim()?.toUpperCase();
+  if (!codeUpper || codeUpper.length < 3) {
+    throw new HttpsError("invalid-argument", "コードは3文字以上で入力してください");
+  }
+
+  try {
+    const codeRef = admin.firestore().collection('giftCodes').doc(codeUpper);
+    const existing = await codeRef.get();
+
+    if (existing.exists) {
+      throw new HttpsError("already-exists", "このコードは既に存在します");
+    }
+
+    await codeRef.set({
+      code: codeUpper,
+      isActive: true,
+      usedBy: [],
+      usedByDetails: [],
+      note: note || '',
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    console.log(`[GiftCode] Code ${codeUpper} created`);
+
+    return { success: true, message: 'ギフトコードを作成しました' };
+  } catch (error) {
+    console.error(`[GiftCode] Create failed:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "コードの作成に失敗しました", error.message);
+  }
+});
+
+// ギフトコード一覧取得（管理者用）
+exports.getGiftCodes = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  const { adminPassword } = request.data;
+
+  // 管理者パスワードチェック
+  if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    throw new HttpsError("permission-denied", "管理者権限がありません");
+  }
+
+  try {
+    const snapshot = await admin.firestore()
+      .collection('giftCodes')
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    const codes = [];
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+
+      // 使用者の詳細情報を取得
+      const usedByDetails = [];
+      if (data.usedBy && data.usedBy.length > 0) {
+        for (const uid of data.usedBy) {
+          try {
+            const userDoc = await admin.firestore().collection('users').doc(uid).get();
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              usedByDetails.push({
+                userId: uid,
+                email: userData.email || 'unknown',
+                displayName: userData.displayName || userData.profile?.name || 'unknown'
+              });
+            }
+          } catch (e) {
+            usedByDetails.push({
+              userId: uid,
+              email: 'error',
+              displayName: 'error'
+            });
+          }
+        }
+      }
+
+      codes.push({
+        id: doc.id,
+        code: data.code,
+        isActive: data.isActive,
+        usedCount: data.usedBy?.length || 0,
+        usedBy: data.usedBy || [],
+        usedByDetails: usedByDetails,
+        note: data.note || '',
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+        lastUsedAt: data.lastUsedAt?.toDate?.()?.toISOString() || null
+      });
+    }
+
+    return { success: true, codes };
+  } catch (error) {
+    console.error(`[GiftCode] Get codes failed:`, error);
+    throw new HttpsError("internal", "コード一覧の取得に失敗しました", error.message);
+  }
+});
+
+// ギフトコード有効/無効切り替え（管理者用）
+exports.toggleGiftCode = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  const { code, isActive, adminPassword } = request.data;
+
+  // 管理者パスワードチェック
+  if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    throw new HttpsError("permission-denied", "管理者権限がありません");
+  }
+
+  const codeUpper = code?.trim()?.toUpperCase();
+  if (!codeUpper) {
+    throw new HttpsError("invalid-argument", "コードを指定してください");
+  }
+
+  try {
+    const codeRef = admin.firestore().collection('giftCodes').doc(codeUpper);
+    const codeDoc = await codeRef.get();
+
+    if (!codeDoc.exists) {
+      throw new HttpsError("not-found", "コードが見つかりません");
+    }
+
+    await codeRef.update({
+      isActive: isActive
+    });
+
+    console.log(`[GiftCode] Code ${codeUpper} toggled to ${isActive ? 'active' : 'inactive'}`);
+
+    return { success: true, message: isActive ? 'コードを有効化しました' : 'コードを無効化しました' };
+  } catch (error) {
+    console.error(`[GiftCode] Toggle failed:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "コードの更新に失敗しました", error.message);
+  }
+});
+
+// ギフトコード削除（管理者用）
+exports.deleteGiftCode = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  const { code, adminPassword } = request.data;
+
+  // 管理者パスワードチェック
+  if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    throw new HttpsError("permission-denied", "管理者権限がありません");
+  }
+
+  const codeUpper = code?.trim()?.toUpperCase();
+  if (!codeUpper) {
+    throw new HttpsError("invalid-argument", "コードを指定してください");
+  }
+
+  try {
+    const codeRef = admin.firestore().collection('giftCodes').doc(codeUpper);
+    const codeDoc = await codeRef.get();
+
+    if (!codeDoc.exists) {
+      throw new HttpsError("not-found", "コードが見つかりません");
+    }
+
+    await codeRef.delete();
+
+    console.log(`[GiftCode] Code ${codeUpper} deleted`);
+
+    return { success: true, message: 'コードを削除しました' };
+  } catch (error) {
+    console.error(`[GiftCode] Delete failed:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "コードの削除に失敗しました", error.message);
+  }
+});

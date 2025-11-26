@@ -329,6 +329,9 @@ const BasicTab = ({
                                                 クレジット追加購入
                                             </button>
                                         </div>
+
+                                        {/* ギフトコード入力 */}
+                                        <GiftCodeInput />
                                     </div>
                                 );
                             } else {
@@ -368,6 +371,9 @@ const BasicTab = ({
                                                 クレジット追加購入
                                             </button>
                                         </div>
+
+                                        {/* ギフトコード入力 */}
+                                        <GiftCodeInput />
                                     </div>
                                 );
                             }
