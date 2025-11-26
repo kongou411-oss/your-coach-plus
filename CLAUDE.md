@@ -100,12 +100,22 @@ dist/                 ← ビルド出力（デプロイ対象）
 - FABとは呼ばない（削除済み）
 - 実装: `08_app.jsx`
 
-### 通知システム（バグあり・開発中）
-- 実装: `21_notification_settings.jsx`
+### 通知システム
+- 実装: `21_notification_settings.jsx` + `functions/index.js`
 - 4タブ構成: 食事・運動・分析・カスタム
 - 各タブでタイトル・本文・時刻をカスタマイズ可能
 - FCMトークンは `users/{userId}.fcmTokens` に配列で保存
-- 既知のバグがあるため、修正作業が必要
+- **連鎖スケジューリング方式**: Cloud Tasks で翌日タスクを自動作成して毎日繰り返し
+
+#### 過去のバグ（再発防止）
+| 日付 | バグ | 原因 | 修正 |
+|------|------|------|------|
+| 2025/11/26 | 2回目以降の通知が来ない | `rescheduleNotification()` Line 447 で未定義変数 `nextDateJST` を参照 | `tomorrowJST` に修正（Line 420で定義済み）|
+
+#### 通知システム実装時の注意
+- 変数名は定義箇所と使用箇所で必ず一致させる
+- try-catch でエラーが隠蔽されるため、ログを必ず確認する
+- Cloud Functions のログ確認: `firebase functions:log --only sendPushNotification`
 
 ---
 
