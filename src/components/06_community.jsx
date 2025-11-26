@@ -59,8 +59,8 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             path: '/module/mental_textbook_new.html',
             description: 'モチベーション、習慣形成、ストレス管理などメンタル面の科学的アプローチ',
             icon: 'Brain',
-            isFree: true,
-            price: 0
+            isFree: false,
+            price: 50
         },
         {
             id: 'protein_textbook',
@@ -99,8 +99,8 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             path: '/module/basic_supplements_textbook_new.html',
             description: 'クレアチン、アミノ酸、ベータアラニン、HMBなど基礎サプリメントの科学',
             icon: 'Apple',
-            isFree: true,
-            price: 0
+            isFree: false,
+            price: 50
         },
         {
             id: 'vitamin_mineral_textbook',
@@ -109,8 +109,8 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             path: '/module/Nutrition/micro/vitamin_mineral_textbook_new.html',
             description: '微量栄養素の役割、欠乏症、過剰症、サプリメント摂取の考え方',
             icon: 'Apple',
-            isFree: true,
-            price: 0
+            isFree: false,
+            price: 50
         },
         {
             id: 'sleep_textbook',
@@ -569,6 +569,7 @@ ${context}
                     <div className="flex gap-3 flex-wrap">
                         {[
                             { value: 'all', label: 'すべて', icon: 'LayoutGrid', color: 'cyan' },
+                            { value: '公式ガイド', label: '公式ガイド', icon: 'BookOpen', color: 'sky' },
                             { value: '心理学', label: '心理学', icon: 'Brain', color: 'pink' },
                             { value: '栄養学', label: '栄養学', icon: 'Apple', color: 'green' },
                             { value: '運動科学', label: '運動科学', icon: 'Zap', color: 'orange' },
@@ -579,10 +580,12 @@ ${context}
                                 onClick={() => setSelectedCategory(cat.value)}
                                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium text-sm transition ${
                                     selectedCategory === cat.value
-                                        ? cat.color === 'purple' ? 'bg-cyan-600 text-white' :
+                                        ? cat.color === 'sky' ? 'bg-[#4A9EFF] text-white' :
                                           cat.color === 'pink' ? 'bg-sky-600 text-white' :
                                           cat.color === 'green' ? 'bg-green-600 text-white' :
-                                          'bg-orange-600 text-white'
+                                          cat.color === 'orange' ? 'bg-orange-600 text-white' :
+                                          cat.color === 'indigo' ? 'bg-indigo-600 text-white' :
+                                          'bg-cyan-600 text-white'
                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                             >
@@ -624,6 +627,7 @@ ${context}
                             >
                                 <div className="flex items-start gap-3 mb-3">
                                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                        module.category === '公式ガイド' ? 'bg-[#4A9EFF]' :
                                         module.category === '心理学' ? 'bg-gradient-to-br from-pink-500 to-rose-500' :
                                         module.category === '運動科学' ? 'bg-gradient-to-br from-orange-500 to-red-500' :
                                         module.category === 'リカバリー' ? 'bg-gradient-to-br from-indigo-500 to-purple-500' :
@@ -646,6 +650,7 @@ ${context}
                                             )}
                                         </div>
                                         <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                            module.category === '公式ガイド' ? 'bg-sky-100 text-[#4A9EFF]' :
                                             module.category === '心理学' ? 'bg-sky-100 text-sky-700' :
                                             module.category === '運動科学' ? 'bg-orange-100 text-orange-700' :
                                             module.category === 'リカバリー' ? 'bg-indigo-100 text-indigo-700' :
