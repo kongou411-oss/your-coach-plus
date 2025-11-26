@@ -1697,7 +1697,7 @@ const ExperienceService = {
     INITIAL_CREDITS: 14,
     LEVEL_UP_CREDITS: 3,
     MILESTONE_INTERVAL: 10,
-    MILESTONE_CREDITS: 10,
+    MILESTONE_CREDITS: 5,
 
     // レベルアップに必要な累計経験値を計算
     // LvN到達に必要な累計経験値 = 100 * N * (N-1) / 2

@@ -444,7 +444,7 @@ async function rescheduleNotification(title, body, notificationType, userId, sch
     };
 
     const [response] = await tasksClient.createTask({parent: queuePath, task});
-    console.log(`[Rescheduled] ${notificationType} at ${nextDateJST.toLocaleString("ja-JP", {timeZone: "Asia/Tokyo"})} (Task: ${response.name})`);
+    console.log(`[Rescheduled] ${notificationType} at ${tomorrowJST.toLocaleString("ja-JP", {timeZone: "Asia/Tokyo"})} (Task: ${response.name})`);
   } catch (error) {
     console.error(`[Reschedule Error] Failed to reschedule ${notificationType}:`, error);
     console.error(`[Reschedule Error] Details:`, {
@@ -778,10 +778,10 @@ async function handleCheckoutSessionCompleted(session) {
     const userRef = admin.firestore().collection('users').doc(userId);
     const userDoc = await userRef.get();
     const userData = userDoc.data();
-    const currentFreeCredits = userData?.freeCredits || 0;
+    const currentPaidCredits = userData?.paidCredits || 0;
 
     await userRef.update({
-      freeCredits: currentFreeCredits + 100,
+      paidCredits: currentPaidCredits + 100,
     });
 
     // 紹介経由の場合、紹介者と被紹介者にクレジット付与
@@ -792,18 +792,18 @@ async function handleCheckoutSessionCompleted(session) {
       try {
         // 被紹介者に50回クレジット付与
         await userRef.update({
-          freeCredits: currentFreeCredits + 100 + 50, // 初回100 + 紹介特典50
+          paidCredits: currentPaidCredits + 100 + 50, // 初回100 + 紹介特典50
         });
 
         // 紹介者に50回クレジット付与
         const referrerRef = admin.firestore().collection('users').doc(referrerId);
         const referrerDoc = await referrerRef.get();
         if (referrerDoc.exists) {
-          const referrerCredits = referrerDoc.data()?.freeCredits || 0;
+          const referrerCredits = referrerDoc.data()?.paidCredits || 0;
           const referrerEarnedCredits = referrerDoc.data()?.referralCreditsEarned || 0;
 
           await referrerRef.update({
-            freeCredits: referrerCredits + 50,
+            paidCredits: referrerCredits + 50,
             referralCreditsEarned: referrerEarnedCredits + 50,
           });
 
@@ -923,10 +923,10 @@ async function handleInvoicePaymentSucceeded(invoice) {
   const userId = usersSnapshot.docs[0].id;
   const userRef = admin.firestore().collection('users').doc(userId);
   const userDoc = await userRef.get();
-  const currentFreeCredits = userDoc.data()?.freeCredits || 0;
+  const currentPaidCredits = userDoc.data()?.paidCredits || 0;
 
   await userRef.update({
-    freeCredits: currentFreeCredits + 100,
+    paidCredits: currentPaidCredits + 100,
     'subscription.status': 'active',
     'subscription.lastPaymentDate': admin.firestore.FieldValue.serverTimestamp(),
   });

@@ -123,7 +123,7 @@ const SettingsView = ({
                 const targetLevel = i * 10;
                 calculatedMilestones.push({
                     level: targetLevel,
-                    reward: targetLevel * 10,
+                    reward: 5,
                     achieved: level >= targetLevel
                 });
             }
