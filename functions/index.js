@@ -1789,18 +1789,22 @@ exports.redeemGiftCode = onCall({
 
       // ユーザーのサブスクリプション情報を更新
       // ギフトユーザーはpaidCreditsを無制限（999999999）に設定
-      const subscriptionUpdate = {
-        'subscription.giftCodeActive': true,
-        'subscription.giftCode': code,
-        'subscription.giftCodeActivatedAt': admin.firestore.FieldValue.serverTimestamp(),
-        'subscription.status': 'active',
-        'paidCredits': 999999999,  // 無制限（実質∞）
+      // 【重要】ネストされたオブジェクトとして保存（ドット記法ではなく）
+      const subscriptionData = {
+        subscription: {
+          giftCodeActive: true,
+          giftCode: code,
+          giftCodeActivatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          status: 'active'
+        },
+        paidCredits: 999999999,  // 無制限（実質∞）
       };
 
       if (userDoc.exists) {
-        t.update(userRef, subscriptionUpdate);
+        // 既存ドキュメントの場合はmergeでsubscriptionをマージ
+        t.set(userRef, subscriptionData, { merge: true });
       } else {
-        t.set(userRef, subscriptionUpdate);
+        t.set(userRef, subscriptionData);
       }
 
       console.log(`[GiftCode] Code ${code} redeemed by user ${userId} (${userEmail})`);
@@ -2161,5 +2165,61 @@ exports.adminDeletePost = onCall({
   } catch (error) {
     console.error('[COMY Admin] Delete failed:', error);
     throw new HttpsError("internal", "削除に失敗しました", error.message);
+  }
+});
+
+// ギフトコードユーザーのsubscription構造を修正（管理者用・一回限り）
+exports.fixGiftCodeUsers = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  const { adminPassword } = request.data;
+
+  if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    throw new HttpsError("permission-denied", "管理者権限がありません");
+  }
+
+  try {
+    const usersSnapshot = await admin.firestore().collection('users').get();
+
+    let fixedCount = 0;
+    let alreadyFixedCount = 0;
+    const fixedUsers = [];
+
+    for (const doc of usersSnapshot.docs) {
+      const data = doc.data();
+
+      // フラットキーで保存されている場合
+      const hasFlat = data['subscription.giftCodeActive'] === true;
+      const hasNested = data.subscription?.giftCodeActive === true;
+
+      if (hasFlat && !hasNested) {
+        console.log(`[FixGift] Fixing user: ${doc.id} (${data.email})`);
+
+        // ネストされたオブジェクトとして保存
+        await admin.firestore().collection('users').doc(doc.id).set({
+          subscription: {
+            giftCodeActive: true,
+            giftCode: data['subscription.giftCode'] || 'UNKNOWN',
+            giftCodeActivatedAt: data['subscription.giftCodeActivatedAt'] || admin.firestore.FieldValue.serverTimestamp(),
+            status: 'active'
+          }
+        }, { merge: true });
+
+        fixedUsers.push({ id: doc.id, email: data.email });
+        fixedCount++;
+      } else if (hasNested) {
+        alreadyFixedCount++;
+      }
+    }
+
+    console.log(`[FixGift] Done! Fixed: ${fixedCount}, Already OK: ${alreadyFixedCount}`);
+    return {
+      success: true,
+      message: `修正完了: ${fixedCount}件, 既にOK: ${alreadyFixedCount}件`,
+      fixedUsers
+    };
+  } catch (error) {
+    console.error('[FixGift] Error:', error);
+    throw new HttpsError("internal", "修正に失敗しました", error.message);
   }
 });
