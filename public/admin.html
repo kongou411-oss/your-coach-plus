@@ -916,8 +916,16 @@
                                       data.b2b2cOrgId ||
                                       data.subscription?.giftCodeActive === true;
 
-                    // トライアル判定
-                    const regDate = data.registeredAt?.toDate?.() || data.createdAt?.toDate?.() || new Date();
+                    // 登録日取得（ISO文字列またはTimestamp両対応）
+                    let regDate = new Date();
+                    const regField = data.registrationDate || data.createdAt || data.joinDate;
+                    if (regField) {
+                        if (typeof regField === 'string') {
+                            regDate = new Date(regField);
+                        } else if (regField.toDate) {
+                            regDate = regField.toDate();
+                        }
+                    }
                     const daysSinceReg = Math.floor((now - regDate) / (1000 * 60 * 60 * 24));
                     const isTrialActive = !isPremium && daysSinceReg <= 7;
 
