@@ -217,7 +217,8 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
     }
 
     // ===== 有料・無料の判定 =====
-    const isTrialActive = daysSinceReg <= 7; // 1-7日目（7日間）はトライアル
+    // コードユーザー（B2B/ギフト/紹介）はトライアルではない
+    const isTrialActive = !isPremium && daysSinceReg <= 7; // 1-7日目（7日間）はトライアル（Premium除外）
     const hasPremiumAccess = isTrialActive || isPremium;
 
     // 4. テンプレート機能 - 初日から全員に開放
