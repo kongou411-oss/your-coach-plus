@@ -1253,7 +1253,7 @@ exports.generateReferralCode = onCall({
   }
 });
 
-// ===== 紹介登録処理（不正チェック付き） =====
+// ===== 紹介登録処理（1ユーザー限定・紹介者情報で検証） =====
 exports.applyReferralCode = onCall({
   region: "asia-northeast2",
 }, async (request) => {
@@ -1262,11 +1262,11 @@ exports.applyReferralCode = onCall({
   }
 
   const userId = request.auth.uid;
-  const { referralCode, userMetadata } = request.data;
+  const { referralCode } = request.data;
 
   // バリデーション
-  if (!referralCode || !userMetadata || !userMetadata.email || !userMetadata.name || !userMetadata.phoneNumber) {
-    throw new HttpsError("invalid-argument", "紹介コードとユーザー情報（メールアドレス、氏名、電話番号）が必要です");
+  if (!referralCode) {
+    throw new HttpsError("invalid-argument", "紹介コードが必要です");
   }
 
   try {
@@ -1282,84 +1282,63 @@ exports.applyReferralCode = onCall({
       throw new HttpsError("not-found", "紹介コードが見つかりません");
     }
 
-    const referrerId = referrerQuery.docs[0].id;
+    const referrerDoc = referrerQuery.docs[0];
+    const referrerId = referrerDoc.id;
+    const referrerData = referrerDoc.data();
 
     // 自己紹介チェック
     if (referrerId === userId) {
       throw new HttpsError("invalid-argument", "自分自身を紹介することはできません");
     }
 
-    // 2. 既に紹介コードを使用済みかチェック
+    // 2. このコードが既に使用済みかチェック（1ユーザー限定）
+    if (referrerData.referralCodeUsed === true) {
+      throw new HttpsError("already-exists", "この紹介コードは既に使用済みです");
+    }
+
+    // 3. 被紹介者が既に紹介コードを使用済みかチェック
     const userDoc = await admin.firestore().collection('users').doc(userId).get();
     if (userDoc.exists && userDoc.data().referredBy) {
       throw new HttpsError("already-exists", "既に紹介コードを使用済みです");
     }
 
-    // 3. 不正チェック（メールアドレス、氏名、電話番号の重複）
-    const fraudChecks = await Promise.all([
-      admin.firestore().collection('users')
-        .where('referralMetadata.email', '==', userMetadata.email)
-        .limit(1)
-        .get(),
-      admin.firestore().collection('users')
-        .where('referralMetadata.phoneNumber', '==', userMetadata.phoneNumber)
-        .limit(1)
-        .get(),
-    ]);
-
-    const emailExists = !fraudChecks[0].empty && fraudChecks[0].docs[0].id !== userId;
-    const phoneExists = !fraudChecks[1].empty && fraudChecks[1].docs[0].id !== userId;
-
-    let fraudReason = null;
-    if (emailExists && phoneExists) {
-      fraudReason = 'メールアドレスと電話番号が既存ユーザーと一致';
-    } else if (emailExists) {
-      fraudReason = 'メールアドレスが既存ユーザーと一致';
-    } else if (phoneExists) {
-      fraudReason = '電話番号が既存ユーザーと一致';
-    }
-
-    if (fraudReason) {
-      console.warn(`[Referral] Fraud detected for user ${userId}: ${fraudReason}`);
-
-      // 不正として記録
-      await admin.firestore().collection('referrals').add({
-        referrerId: referrerId,
-        referredUserId: userId,
-        referralCode: referralCode,
-        status: 'fraud',
-        fraudReason: fraudReason,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        referredUserMetadata: userMetadata,
-      });
-
-      throw new HttpsError("permission-denied", "紹介コードを適用できません。サポートにお問い合わせください。");
-    }
-
-    // 4. 紹介情報を保存 + 100クレジット付与
+    // 4. 紹介情報を保存 + 100クレジット付与（被紹介者）
     await admin.firestore().collection('users').doc(userId).set({
       referredBy: referrerId,
-      referralMetadata: userMetadata,
+      referrerInfo: {
+        displayName: referrerData.displayName || referrerData.nickname || '不明',
+        email: referrerData.email || '不明',
+      },
       referralAppliedAt: admin.firestore.FieldValue.serverTimestamp(),
       referralBonusApplied: true,
       paidCredits: (userDoc.exists && userDoc.data().paidCredits ? userDoc.data().paidCredits : 0) + 100,
     }, { merge: true });
 
-    // 5. 紹介レコードを作成（pending状態）
+    // 5. 紹介コードを使用済みにマーク（紹介者側）
+    await admin.firestore().collection('users').doc(referrerId).set({
+      referralCodeUsed: true,
+      referralCodeUsedBy: userId,
+      referralCodeUsedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    // 6. 紹介レコードを作成
     const referralDoc = await admin.firestore().collection('referrals').add({
       referrerId: referrerId,
       referredUserId: userId,
       referralCode: referralCode,
-      status: 'pending',
+      status: 'completed',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      referredUserMetadata: userMetadata,
+      referrerInfo: {
+        displayName: referrerData.displayName || referrerData.nickname || '不明',
+        email: referrerData.email || '不明',
+      },
     });
 
     console.log(`[Referral] Referral code ${referralCode} applied for user ${userId}, referral ID: ${referralDoc.id}`);
 
     return {
       success: true,
-      message: "紹介コードを適用しました。Premium登録完了後、50回分の分析クレジットが付与されます。",
+      message: `${referrerData.displayName || '紹介者'}さんの紹介コードを適用しました！100クレジットが付与されました。`,
       referralId: referralDoc.id,
     };
   } catch (error) {
