@@ -523,7 +523,7 @@ const BasicTab = ({
                             <div className="space-y-2 text-sm text-gray-600">
                                 <div className="flex items-start gap-2">
                                     <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
-                                    <span><strong>友達:</strong> 1ヶ月無料 + 50回分の分析クレジット</span>
+                                    <span><strong>友達:</strong> 50回分の分析クレジット</span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
@@ -1867,7 +1867,7 @@ const ReferralCodeSection = ({ userProfile, userId }) => {
 
     const shareReferralLink = async () => {
         const referralLink = `${window.location.origin}/?ref=${referralCode}`;
-        const shareText = `Your Coach+ を一緒に始めませんか？\n\n私の紹介コード「${referralCode}」を使うと、1ヶ月無料 + 50回分の分析クレジットがもらえます！\n\n${referralLink}`;
+        const shareText = `Your Coach+ を一緒に始めませんか？\n\n私の紹介コード「${referralCode}」を使うと、50回分の分析クレジットがもらえます！\n\n${referralLink}`;
 
         if (navigator.share) {
             try {

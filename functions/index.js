@@ -1310,7 +1310,7 @@ exports.applyReferralCode = onCall({
       throw new HttpsError("already-exists", "既に紹介コードを使用済みです");
     }
 
-    // 4. 紹介情報を保存 + 100クレジット付与（被紹介者）
+    // 4. 被紹介者に50クレジット付与
     await admin.firestore().collection('users').doc(userId).set({
       referredBy: referrerId,
       referrerInfo: {
@@ -1319,14 +1319,16 @@ exports.applyReferralCode = onCall({
       },
       referralAppliedAt: admin.firestore.FieldValue.serverTimestamp(),
       referralBonusApplied: true,
-      paidCredits: (userDoc.exists && userDoc.data().paidCredits ? userDoc.data().paidCredits : 0) + 100,
+      paidCredits: (userDoc.exists && userDoc.data().paidCredits ? userDoc.data().paidCredits : 0) + 50,
     }, { merge: true });
 
-    // 5. 紹介コードを使用済みにマーク（紹介者側）
+    // 5. 紹介者にも50クレジット付与 + コードを使用済みにマーク
+    const referrerCredits = referrerData.paidCredits || 0;
     await admin.firestore().collection('users').doc(referrerId).set({
       referralCodeUsed: true,
       referralCodeUsedBy: userId,
       referralCodeUsedAt: admin.firestore.FieldValue.serverTimestamp(),
+      paidCredits: referrerCredits + 50,
     }, { merge: true });
 
     // 6. 紹介レコードを作成
@@ -1346,7 +1348,7 @@ exports.applyReferralCode = onCall({
 
     return {
       success: true,
-      message: `${referrerData.displayName || '紹介者'}さんの紹介コードを適用しました！100クレジットが付与されました。`,
+      message: `紹介コードを適用しました！50クレジットが付与されました。`,
       referralId: referralDoc.id,
     };
   } catch (error) {
