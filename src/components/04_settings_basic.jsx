@@ -123,11 +123,138 @@ const BasicTab = ({
                     <div className="space-y-4">
                         {(() => {
                             const isPremium = userProfile?.subscription?.status === 'active';
-                            const isTrial = usageDays < 7; // 0-6日目がトライアル
+                            const isGiftPremium = userProfile?.subscription?.giftCodeActive === true;
+                            const isB2BPremium = userProfile?.b2b2cOrgId ? true : false;
+                            const hasReferralBonus = userProfile?.referralBonusApplied === true;
+                            
+                            // コード利用者はトライアル対象外
+                            const hasCodeAccess = isGiftPremium || isB2BPremium || hasReferralBonus;
+                            const isTrial = !hasCodeAccess && usageDays < 7; // 0-6日目がトライアル（コード利用者除外）
                             const daysRemaining = isTrial ? Math.max(0, 7 - usageDays) : 0;
 
+                            // 企業コード（B2B）でプレミアムの場合
+                            if (isB2BPremium) {
+                                const orgName = userProfile?.b2b2cOrgName || '企業';
+                                const accessCode = userProfile?.b2b2cAccessCode || '-';
+                                const joinedAt = userProfile?.b2b2cJoinedAt;
+
+                                const formatDate = (timestamp) => {
+                                    if (!timestamp) return '-';
+                                    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+                                    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+                                };
+
+                                return (
+                                    <div className="bg-white p-4 rounded-lg border border-blue-200">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <Icon name="Building2" size={24} className="text-blue-600" />
+                                            <div>
+                                                <p className="font-bold text-gray-800">Premium会員</p>
+                                                <p className="text-sm text-blue-600 font-medium">企業プラン</p>
+                                            </div>
+                                        </div>
+
+                                        {/* 企業情報 */}
+                                        <div className="bg-blue-50 p-3 rounded-lg mb-3 space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">プラン</span>
+                                                <span className="text-sm font-medium text-blue-700">企業（福利厚生）</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">適用コード</span>
+                                                <span className="text-sm font-medium text-gray-800">{accessCode}</span>
+                                            </div>
+                                            {joinedAt && (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600">適用日</span>
+                                                    <span className="text-sm font-medium text-gray-800">{formatDate(joinedAt)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="bg-gradient-to-r from-blue-100 to-cyan-100 p-4 rounded-lg border border-blue-200 mb-3">
+                                            <p className="text-sm font-medium text-gray-600 mb-1">料金</p>
+                                            <p className="text-3xl font-bold text-blue-600">¥0</p>
+                                            <p className="text-xs text-gray-600 mt-1">企業負担</p>
+                                        </div>
+
+                                        <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Icon name="CheckCircle" size={16} className="text-green-600" />
+                                                <p className="text-sm font-medium text-green-800">全機能利用可能</p>
+                                            </div>
+                                            <p className="text-xs text-gray-600">
+                                                Premium機能をご利用いただけます。
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // ギフトコードでプレミアムの場合
+                            if (isGiftPremium) {
+                                const giftCode = userProfile?.subscription?.giftCode || '-';
+                                const activatedAt = userProfile?.subscription?.giftCodeActivatedAt;
+
+                                const formatDate = (timestamp) => {
+                                    if (!timestamp) return '-';
+                                    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+                                    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+                                };
+
+                                return (
+                                    <div className="bg-white p-4 rounded-lg border border-purple-200">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <Icon name="Gift" size={24} className="text-purple-600" />
+                                            <div>
+                                                <p className="font-bold text-gray-800">Premium会員</p>
+                                                <p className="text-sm text-purple-600 font-medium">ギフトコード特典</p>
+                                            </div>
+                                        </div>
+
+                                        {/* ギフト情報 */}
+                                        <div className="bg-purple-50 p-3 rounded-lg mb-3 space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">プラン</span>
+                                                <span className="text-sm font-medium text-purple-700">ギフト（無料）</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">適用コード</span>
+                                                <span className="text-sm font-medium text-gray-800">{giftCode}</span>
+                                            </div>
+                                            {activatedAt && (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600">適用日</span>
+                                                    <span className="text-sm font-medium text-gray-800">{formatDate(activatedAt)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">有効期限</span>
+                                                <span className="text-sm font-medium text-green-600">無期限</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gradient-to-r from-purple-100 to-pink-100 p-4 rounded-lg border border-purple-200 mb-3">
+                                            <p className="text-sm font-medium text-gray-600 mb-1">料金</p>
+                                            <p className="text-3xl font-bold text-purple-600">¥0</p>
+                                            <p className="text-xs text-gray-600 mt-1">ギフト特典</p>
+                                        </div>
+
+                                        <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Icon name="Infinity" size={16} className="text-green-600" />
+                                                <p className="text-sm font-medium text-green-800">無制限特典</p>
+                                            </div>
+                                            <p className="text-xs text-gray-600">
+                                                AI分析クレジットが無制限でご利用いただけます。
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
                             if (isPremium) {
-                                // Premium会員
+                                // Premium会員（有料）
                                 const willCancel = userProfile?.subscription?.cancelAtPeriodEnd;
                                 const periodEnd = userProfile?.subscription?.currentPeriodEnd;
                                 const periodStart = userProfile?.subscription?.currentPeriodStart;
@@ -330,8 +457,6 @@ const BasicTab = ({
                                             </button>
                                         </div>
 
-                                        {/* ギフトコード入力 */}
-                                        <GiftCodeInput />
                                     </div>
                                 );
                             } else {
@@ -372,8 +497,6 @@ const BasicTab = ({
                                             </button>
                                         </div>
 
-                                        {/* ギフトコード入力 */}
-                                        <GiftCodeInput />
                                     </div>
                                 );
                             }
@@ -528,25 +651,46 @@ const BasicTab = ({
                                     <Icon name="Coins" size={14} className="text-blue-600" />
                                     クレジット残高
                                 </h4>
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-gray-600">合計</span>
-                                        <span className="text-2xl font-bold text-blue-600">{expData.totalCredits}</span>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-blue-200">
-                                        <div className="bg-white p-2 rounded">
-                                            <p className="text-xs text-gray-600 mb-0.5">無料付与</p>
-                                            <p className="font-bold text-green-600">{expData.freeCredits}</p>
+                                {userProfile?.subscription?.giftCodeActive ? (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-gray-600">合計</span>
+                                            <div className="flex items-center gap-1">
+                                                <Icon name="Infinity" size={24} className="text-purple-600" />
+                                                <span className="text-sm text-purple-600 font-medium">無制限</span>
+                                            </div>
                                         </div>
-                                        <div className="bg-white p-2 rounded">
-                                            <p className="text-xs text-gray-600 mb-0.5">有料購入</p>
-                                            <p className="font-bold text-amber-600">{expData.paidCredits}</p>
+                                        <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                                            <div className="flex items-center gap-2">
+                                                <Icon name="Gift" size={16} className="text-purple-600" />
+                                                <p className="text-sm text-purple-700 font-medium">ギフト特典: 無制限</p>
+                                            </div>
+                                            <p className="text-xs text-gray-600 mt-1">
+                                                AI分析を無制限でご利用いただけます
+                                            </p>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-gray-600 pt-2">
-                                        ※ Gemini API利用1回につきクレジット消費
-                                    </p>
-                                </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-gray-600">合計</span>
+                                            <span className="text-2xl font-bold text-blue-600">{expData.totalCredits}</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-blue-200">
+                                            <div className="bg-white p-2 rounded">
+                                                <p className="text-xs text-gray-600 mb-0.5">無料付与</p>
+                                                <p className="font-bold text-green-600">{expData.freeCredits}</p>
+                                            </div>
+                                            <div className="bg-white p-2 rounded">
+                                                <p className="text-xs text-gray-600 mb-0.5">有料購入</p>
+                                                <p className="font-bold text-amber-600">{expData.paidCredits}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-gray-600 pt-2">
+                                            ※ Gemini API利用1回につきクレジット消費
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
 

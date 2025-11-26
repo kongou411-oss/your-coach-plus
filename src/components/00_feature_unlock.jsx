@@ -376,7 +376,8 @@ const checkAndCompleteFeatures = async (userId, todayRecord) => {
 // 8日目以降のPremium機能制限チェック
 const checkPremiumAccessRequired = async (userId, featureId, userProfile) => {
     const daysSinceReg = await calculateDaysSinceRegistration(userId);
-    const isPremium = userProfile?.subscriptionStatus === 'active';
+    // プレミアム判定：Stripe契約、B2B企業コード、ギフトコード、紹介ボーナスのいずれか
+    const isPremium = userProfile?.subscriptionStatus === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true || userProfile?.referralBonusApplied === true;
 
     // トライアル期間中（1-7日目）は全機能アクセス可能
     if (daysSinceReg <= 7) {

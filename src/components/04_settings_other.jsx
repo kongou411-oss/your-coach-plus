@@ -80,8 +80,7 @@ const CodeInputSection = ({ userId, userProfile }) => {
             const functions = window.firebase.app().functions('asia-northeast2');
             const validateCode = functions.httpsCallable('validateB2B2CCode');
             const result = await validateCode({
-                code: code.trim(),
-                userId: userId
+                accessCode: code.trim()
             });
 
             if (result.data.valid) {

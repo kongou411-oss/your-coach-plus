@@ -818,7 +818,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             const todayRecord = await DataService.getDailyRecord(firebaseUser.uid, today);
 
                             // 新しい機能開放システムで開放状態を計算
-                            const isPremium = profile.subscription?.status === 'active';
+                            const isPremium = profile.subscription?.status === 'active' || profile.b2b2cOrgId || profile.subscription?.giftCodeActive === true || profile.referralBonusApplied === true;
                             const unlocked = await calculateUnlockedFeatures(firebaseUser.uid, todayRecord, isPremium);
                             
                             setUnlockedFeatures(Array.isArray(unlocked) ? unlocked : []);
@@ -2156,7 +2156,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
-                                    const isPremium = userProfile?.subscription?.status === 'active';
+                                    const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true || userProfile?.referralBonusApplied === true;
                                     const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
 
@@ -2208,7 +2208,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
-                                    const isPremium = userProfile?.subscription?.status === 'active';
+                                    const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true || userProfile?.referralBonusApplied === true;
                                     const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
 
@@ -2303,7 +2303,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
-                                    const isPremium = userProfile?.subscription?.status === 'active';
+                                    const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true || userProfile?.referralBonusApplied === true;
                                     const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
 
@@ -2428,7 +2428,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                                     const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
-                                    const isPremium = userProfile?.subscription?.status === 'active';
+                                    const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true || userProfile?.referralBonusApplied === true;
                                     const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
 
@@ -2465,7 +2465,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
                                 // 新しい機能開放システム：分析を閲覧したら完了マーク
                                 const userId = user?.uid;
-                                const isPremium = userProfile?.subscription?.status === 'active';
+                                const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true || userProfile?.referralBonusApplied === true;
 
                                 // 常にunlockedFeaturesを再計算（機能開放状態を最新に保つ）
                                 const unlocked = await calculateUnlockedFeatures(userId, dailyRecord, isPremium);
@@ -2481,7 +2481,7 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                             onFeatureUnlocked={async () => {
                                 // 分析実行後すぐにunlockedFeaturesを再計算
                                 const userId = user?.uid;
-                                const isPremium = userProfile?.subscription?.status === 'active';
+                                const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true || userProfile?.referralBonusApplied === true;
                                 const unlocked = await calculateUnlockedFeatures(userId, dailyRecord, isPremium);
                                 setUnlockedFeatures(unlocked);
                                 console.log('[App] Features unlocked, updated unlocked features:', unlocked);

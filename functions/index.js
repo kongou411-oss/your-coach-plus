@@ -693,7 +693,7 @@ exports.createCheckoutSession = onCall({
 // Stripe Webhook処理
 exports.handleStripeWebhook = onRequest({
   region: "asia-northeast2",
-  secrets: [stripeSecretKey],
+  secrets: [stripeSecretKey, gmailUser, gmailAppPassword],
 }, async (req, res) => {
   const stripe = require('stripe')(stripeSecretKey.value().trim());
   const webhookSecret = 'whsec_aEmcIkxZi3UBOMbDv8BLIv5BdJYBceNA';
@@ -1336,12 +1336,14 @@ exports.applyReferralCode = onCall({
       throw new HttpsError("permission-denied", "紹介コードを適用できません。サポートにお問い合わせください。");
     }
 
-    // 4. 紹介情報を保存
-    await admin.firestore().collection('users').doc(userId).update({
+    // 4. 紹介情報を保存 + 100クレジット付与
+    await admin.firestore().collection('users').doc(userId).set({
       referredBy: referrerId,
       referralMetadata: userMetadata,
       referralAppliedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+      referralBonusApplied: true,
+      paidCredits: (userDoc.exists && userDoc.data().paidCredits ? userDoc.data().paidCredits : 0) + 100,
+    }, { merge: true });
 
     // 5. 紹介レコードを作成（pending状態）
     const referralDoc = await admin.firestore().collection('referrals').add({
@@ -1386,7 +1388,7 @@ exports.createB2B2CCheckoutSession = onCall({
   const userId = request.auth ? request.auth.uid : null;
 
   try {
-    const stripe = require("stripe")(stripeSecretKey.value());
+    const stripe = require("stripe")(stripeSecretKey.value().trim());
 
     // config.jsからプラン情報を取得（ハードコード）
     const plans = {
@@ -1520,8 +1522,58 @@ async function handleB2B2CCheckout(session) {
 
     console.log(`[B2B2C] Organization created: ${orgRef.id}, Access Code: ${accessCode}`);
 
-    // TODO: メール送信（将来実装）
-    // 企業にアクセスコードをメールで送信
+    // 企業にアクセスコードをメール送信
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser.value(),
+          pass: gmailAppPassword.value(),
+        },
+      });
+
+      const mailOptions = {
+        from: gmailUser.value(),
+        to: companyEmail,
+        subject: '[Your Coach+] 企業プランのご登録ありがとうございます',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #f59e0b;">Your Coach+ 企業プラン</h2>
+            <p>${companyName} 様</p>
+            <p>この度は Your Coach+ 企業プランにご登録いただき、誠にありがとうございます。</p>
+            
+            <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #92400e;">アクセスコード</h3>
+              <p style="font-size: 24px; font-weight: bold; color: #1f2937; letter-spacing: 2px;">${accessCode}</p>
+            </div>
+            
+            <h3>ご利用方法</h3>
+            <ol>
+              <li>従業員・会員の方に上記アクセスコードを共有してください</li>
+              <li>従業員・会員は Your Coach+ アプリの「設定」→「その他」→「コード入力」でコードを入力</li>
+              <li>Premium機能がご利用いただけます</li>
+            </ol>
+            
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0;"><strong>プラン:</strong> ${planId}</p>
+              <p style="margin: 5px 0;"><strong>ライセンス数:</strong> ${licenses}名</p>
+              <p style="margin: 0;"><strong>有効期限:</strong> ${validUntil.toLocaleDateString('ja-JP')}</p>
+            </div>
+            
+            <p>ご不明な点がございましたら、アプリ内のフィードバック機能よりお問い合わせください。</p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            <p style="color: #6b7280; font-size: 12px;">Your Coach+ サポートチーム</p>
+          </div>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`[B2B2C] Access code email sent to ${companyEmail}`);
+    } catch (emailError) {
+      // メール送信失敗してもアカウント作成は成功とする
+      console.error('[B2B2C] Failed to send email:', emailError);
+    }
 
     return {
       success: true,
@@ -1598,13 +1650,16 @@ exports.validateB2B2CCode = onCall({
       }
     }
 
-    // 6. ユーザーアカウントを更新
-    await admin.firestore().collection('users').doc(userId).update({
+    // 6. ユーザーアカウントを更新（存在しない場合は作成）
+    // B2Bユーザーはクレジット100付与
+    await admin.firestore().collection('users').doc(userId).set({
       isPremium: true,
       b2b2cOrgId: orgDoc.id,
+      b2b2cOrgName: org.name,
       b2b2cAccessCode: accessCode,
-      b2b2cJoinedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+      b2b2cJoinedAt: admin.firestore.FieldValue.serverTimestamp(),
+      paidCredits: (userDoc.exists && userDoc.data().paidCredits ? userDoc.data().paidCredits : 0) + 100,
+    }, { merge: true });
 
     // 7. 使用ライセンス数をインクリメント
     await orgDoc.ref.update({
@@ -1682,18 +1737,13 @@ exports.redeemGiftCode = onCall({
       });
 
       // ユーザーのサブスクリプション情報を更新
+      // ギフトユーザーはpaidCreditsを無制限（999999999）に設定
       const subscriptionUpdate = {
         'subscription.giftCodeActive': true,
         'subscription.giftCode': code,
         'subscription.giftCodeActivatedAt': admin.firestore.FieldValue.serverTimestamp(),
         'subscription.status': 'active',
-        'subscription.aiCredits': {
-          monthly: 100,
-          remaining: 100,
-          used: 0,
-          purchased: 0,
-          lastReset: new Date().toISOString().split('T')[0]
-        }
+        'paidCredits': 999999999,  // 無制限（実質∞）
       };
 
       if (userDoc.exists) {

@@ -789,6 +789,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
     const [b2b2cCode, setB2b2cCode] = useState('');
     const [isValidatingCode, setIsValidatingCode] = useState(false);
     const [codeError, setCodeError] = useState('');
+    const [codeValidated, setCodeValidated] = useState(false); // コード検証成功フラグ
 
     // 性別変更時にデフォルト値を更新
     const handleGenderChange = (newGender) => {
@@ -904,9 +905,10 @@ const OnboardingScreen = ({ user, onComplete }) => {
         }
     };
 
-    // B2B2Cコード検証
+    // コード検証（企業・紹介・ギフト全対応）
     const validateB2B2CCode = async () => {
-        if (!b2b2cCode.trim()) {
+        const code = b2b2cCode.trim().toUpperCase();
+        if (!code) {
             setCodeError('');
             return false;
         }
@@ -915,23 +917,50 @@ const OnboardingScreen = ({ user, onComplete }) => {
         setCodeError('');
 
         try {
-            const validateCode = firebase.functions().httpsCallable('validateB2B2CCode');
-            const result = await validateCode({ accessCode: b2b2cCode.trim() });
+            const functions = firebase.app().functions('asia-northeast2');
 
-            if (result.data.success) {
-                toast.success('企業コードが認証されました！Premium機能が利用可能になります。');
-                return true;
+            // コードタイプを判定
+            if (code.startsWith('B2B-')) {
+                // 企業コード
+                const validateCode = functions.httpsCallable('validateB2B2CCode');
+                const result = await validateCode({ accessCode: code });
+                if (result.data.success) {
+                    toast.success('企業コードが認証されました！Premium機能が利用可能になります。');
+                    setCodeValidated(true);
+                    return true;
+                }
+            } else if (code.startsWith('USER-')) {
+                // 紹介コード
+                const applyCode = functions.httpsCallable('applyReferralCode');
+                const result = await applyCode({ referralCode: code });
+                if (result.data.success) {
+                    toast.success('紹介コードが適用されました！特典が付与されます。');
+                    setCodeValidated(true);
+                    return true;
+                }
+            } else {
+                // ギフトコード
+                const redeemCode = functions.httpsCallable('redeemGiftCode');
+                const result = await redeemCode({ code: code });
+                if (result.data.success) {
+                    toast.success('ギフトコードが適用されました！Premium機能が利用可能になります。');
+                    setCodeValidated(true);
+                    return true;
+                }
             }
+            return false;
         } catch (error) {
-            console.error('[B2B2C] Code validation error:', error);
+            console.error('[Code] Validation error:', error);
 
             let errorMessage = 'コードの検証に失敗しました';
             if (error.code === 'not-found') {
                 errorMessage = 'このコードは無効です';
+            } else if (error.code === 'already-exists') {
+                errorMessage = 'このコードは既に使用済みです';
             } else if (error.code === 'resource-exhausted') {
                 errorMessage = 'ライセンス上限に達しています';
-            } else if (error.code === 'failed-precondition') {
-                errorMessage = 'このコードの有効期限が切れています';
+            } else if (error.code === 'failed-precondition' || error.code === 'permission-denied') {
+                errorMessage = 'このコードは使用できません';
             } else if (error.message) {
                 errorMessage = error.message;
             }
@@ -943,7 +972,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
         }
     };
 
-    const handleComplete = async () => {
+    const handleComplete = async (wasCodeValidated = false) => {
         // 無料トライアル終了日（7日後）
         const now = new Date();
         const trialEndDate = new Date();
@@ -997,14 +1026,20 @@ const OnboardingScreen = ({ user, onComplete }) => {
             // 経験値・レベル・クレジットシステム（新）
             experience: 0,
             level: 1,
-            freeCredits: 14, // 初回クレジット
-            paidCredits: 0,
+            // freeCreditsは常に設定（ExperienceServiceの初期化トリガー防止）
+            freeCredits: 14,
+            // コード検証済みの場合、paidCreditsはCloud Functionで設定済みなので上書きしない
+            ...((codeValidated || wasCodeValidated) ? {} : {
+                paidCredits: 0,
+            }),
             processedScoreDates: [],
             processedDirectiveDates: [],
 
-            // 無料トライアル
-            freeTrialStartDate: firebase.firestore.Timestamp.fromDate(now),
-            freeTrialEndDate: firebase.firestore.Timestamp.fromDate(trialEndDate),
+            // 無料トライアル（コード検証済みの場合はトライアル日付を設定しない）
+            ...((codeValidated || wasCodeValidated) ? {} : {
+                freeTrialStartDate: firebase.firestore.Timestamp.fromDate(now),
+                freeTrialEndDate: firebase.firestore.Timestamp.fromDate(trialEndDate),
+            }),
             freeTrialCreditsUsed: 0,
             isFreeTrialExpired: false,
 
@@ -1013,7 +1048,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
             registrationDate: firebase.firestore.Timestamp.fromDate(now),
         };
 
-        console.log('[Auth] Creating new user profile:', {
+        console.log('[Auth] Creating new user profile:', { codeValidated, wasCodeValidated, skipCredits: (codeValidated || wasCodeValidated),
             activityLevel: profile.activityLevel,
             customActivityMultiplier: profile.customActivityMultiplier,
             calorieAdjustment: profile.calorieAdjustment,
@@ -1067,7 +1102,19 @@ const OnboardingScreen = ({ user, onComplete }) => {
         };
         await DataService.saveDailyRecord(user.uid, todayDate, initialDailyRecord);
 
-        if (onComplete) onComplete(completeProfile);
+        // コード検証済みの場合、Cloud Functionで設定された最新情報（b2b2cOrgId等）を取得
+        if (codeValidated || wasCodeValidated) {
+            console.log('[Auth] Code validated - fetching latest profile from Firestore');
+            const latestProfile = await DataService.getUserProfile(user.uid);
+            console.log('[Auth] Latest profile with code info:', {
+                b2b2cOrgId: latestProfile?.b2b2cOrgId,
+                paidCredits: latestProfile?.paidCredits,
+                referralBonusApplied: latestProfile?.referralBonusApplied
+            });
+            if (onComplete) onComplete(latestProfile);
+        } else {
+            if (onComplete) onComplete(completeProfile);
+        }
     };
 
     return (
@@ -1080,7 +1127,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     {step === 3 && '理想の体型を設定'}
                     {step === 4 && '活動レベルを設定'}
                     {step === 5 && '実際に記録してみる'}
-                    {step === 6 && '企業コードをお持ちですか？'}
+                    {step === 6 && 'コードをお持ちですか？'}
                 </h2>
                 <p className="text-sm text-gray-600 mb-2">ステップ {step + 1}/{step === 6 ? '7 (任意)' : '7'}</p>
 
@@ -1844,22 +1891,22 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-12 h-12 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white text-2xl">
-                                    🏢
+                                    🎁
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900">企業プランをご利用の方へ</h3>
-                                    <p className="text-sm text-gray-600">ジム・企業から配布されたコードをお持ちですか？</p>
+                                    <h3 className="text-lg font-bold text-gray-900">コードをお持ちの方へ</h3>
+                                    <p className="text-sm text-gray-600">企業・紹介・ギフトコードを入力できます</p>
                                 </div>
                             </div>
 
                             <p className="text-sm text-gray-700 mb-4">
-                                企業アクセスコードを入力すると、<strong className="text-orange-600">全Premium機能が無料</strong>でご利用いただけます。
+                                コードを入力すると、<strong className="text-orange-600">Premium機能</strong>が利用可能になります。
                             </p>
 
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        企業アクセスコード（任意）
+                                        コード入力（任意）
                                     </label>
                                     <input
                                         type="text"
@@ -1868,9 +1915,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                             setB2b2cCode(e.target.value.toUpperCase());
                                             setCodeError('');
                                         }}
-                                        placeholder="B2B-XXXX-XXXX-XXXX"
+                                        placeholder="コードを入力"
                                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-center font-mono text-lg tracking-wider focus:outline-none focus:border-amber-500"
-                                        maxLength={19}
+                                        
                                         disabled={isValidatingCode}
                                     />
                                     {codeError && (
@@ -1897,7 +1944,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                                     <p className="text-xs text-gray-600">
                                         <strong>ℹ️ コードをお持ちでない方へ</strong><br/>
-                                        このステップはスキップできます。後から「設定」画面でいつでもコードを入力できます。<br/>
+                                        このステップはスキップできます。後から「設定」→「その他」→「コード入力」でいつでも入力できます。<br/>
                                         7日間の無料トライアル後、Premium機能をご利用いただけます。
                                     </p>
                                 </div>
@@ -1977,11 +2024,13 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <button
                                 onClick={async () => {
                                     // B2B2Cコードがある場合は検証してから開始
+                                    let validated = false;
                                     if (b2b2cCode.trim()) {
                                         const isValid = await validateB2B2CCode();
                                         if (!isValid) return; // 検証失敗時は中断
+                                        validated = true;
                                     }
-                                    await handleComplete();
+                                    await handleComplete(validated);
                                 }}
                                 className="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-3 rounded-lg hover:from-amber-500 hover:to-orange-600 transition disabled:opacity-50"
                                 disabled={isValidatingCode}

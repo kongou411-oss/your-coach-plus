@@ -169,7 +169,8 @@
       "Bash(cmd /c \"dir /b public\\guide-images\")",
       "Bash(functions/index.js)",
       "Bash(gcloud secrets versions access:*)",
-      "Bash(start http://localhost:8000/home.html)"
+      "Bash(start http://localhost:8000/home.html)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe 2>nul\")"
     ],
     "deny": [],
     "ask": []
