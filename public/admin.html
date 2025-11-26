@@ -279,12 +279,18 @@
 
     <div class="container">
         <!-- タブ切り替え -->
-        <div class="flex gap-2 mb-6">
+        <div class="flex flex-wrap gap-2 mb-6">
             <button id="tab-giftcode" onclick="switchTab('giftcode')" class="px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white">
                 🎁 ギフトコード
             </button>
             <button id="tab-b2b2c" onclick="switchTab('b2b2c')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
                 🏢 B2B2C企業
+            </button>
+            <button id="tab-users" onclick="switchTab('users')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
+                👥 ユーザー管理
+            </button>
+            <button id="tab-referrals" onclick="switchTab('referrals')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
+                🤝 紹介コード
             </button>
         </div>
 
@@ -373,6 +379,144 @@
             </div>
         </div>
         </div><!-- B2B2Cセクション終了 -->
+
+        <!-- ユーザー管理セクション -->
+        <div id="users-section" style="display:none;">
+            <!-- 統計 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>総ユーザー数</h3>
+                    <div class="value" id="total-users">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Premium会員</h3>
+                    <div class="value" id="premium-users">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>B2B/ギフトコード利用</h3>
+                    <div class="value" id="code-users">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>トライアル中</h3>
+                    <div class="value" id="trial-users">-</div>
+                </div>
+            </div>
+
+            <!-- フィルター -->
+            <div class="section mb-6">
+                <div class="section-content">
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <label class="flex items-center gap-2">
+                            <span class="text-sm font-medium">表示:</span>
+                            <select id="user-filter" onchange="loadUsers()" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="all">全ユーザー</option>
+                                <option value="premium">Premium会員のみ</option>
+                                <option value="b2b">B2Bコード利用者</option>
+                                <option value="gift">ギフトコード利用者</option>
+                                <option value="stripe">Stripe課金者</option>
+                                <option value="trial">トライアル中</option>
+                            </select>
+                        </label>
+                        <button onclick="loadUsers()" class="btn-secondary">🔄 更新</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ユーザー一覧 -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>📋 ユーザー一覧</h2>
+                    <span id="user-count" class="text-sm text-gray-500"></span>
+                </div>
+                <div class="section-content">
+                    <div id="users-loading" class="loading">ユーザーを読み込んでいます...</div>
+                    <div id="users-list" style="display:none;">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">ユーザー</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">ステータス</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">登録日</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">クレジット</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">詳細</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-tbody" class="divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="users-empty" class="empty-state" style="display:none;">
+                        <div class="empty-state-icon">👤</div>
+                        <p>該当するユーザーがいません</p>
+                    </div>
+                </div>
+            </div>
+        </div><!-- ユーザー管理セクション終了 -->
+
+        <!-- 紹介コードセクション -->
+        <div id="referrals-section" style="display:none;">
+            <!-- 統計 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>総紹介数</h3>
+                    <div class="value" id="total-referrals">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>紹介者数（コード発行）</h3>
+                    <div class="value" id="referrer-count">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>被紹介者数</h3>
+                    <div class="value" id="referee-count">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>付与クレジット合計</h3>
+                    <div class="value" id="total-referral-credits">-</div>
+                </div>
+            </div>
+
+            <!-- 紹介コード一覧 -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>🤝 紹介コード利用状況</h2>
+                    <button onclick="loadReferrals()" class="btn-secondary">🔄 更新</button>
+                </div>
+                <div class="section-content">
+                    <div id="referrals-loading" class="loading">紹介データを読み込んでいます...</div>
+                    <div id="referrals-list" style="display:none;">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">紹介者</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">紹介コード</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">被紹介者</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">適用日時</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">ステータス</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="referrals-tbody" class="divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="referrals-empty" class="empty-state" style="display:none;">
+                        <div class="empty-state-icon">🤝</div>
+                        <p>まだ紹介コードが使用されていません</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 紹介者別詳細 -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>👤 紹介者別サマリー</h2>
+                </div>
+                <div class="section-content">
+                    <div id="referrer-summary" class="space-y-4"></div>
+                </div>
+            </div>
+        </div><!-- 紹介コードセクション終了 -->
     </div>
 
     <!-- Firebase SDK -->
@@ -421,22 +565,20 @@
 
         // タブ切り替え
         function switchTab(tab) {
-            const giftcodeSection = document.getElementById('giftcode-section');
-            const b2b2cSection = document.getElementById('b2b2c-section');
-            const tabGiftcode = document.getElementById('tab-giftcode');
-            const tabB2b2c = document.getElementById('tab-b2b2c');
+            const sections = ['giftcode', 'b2b2c', 'users', 'referrals'];
+            const activeClass = 'px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white';
+            const inactiveClass = 'px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300';
 
-            if (tab === 'giftcode') {
-                giftcodeSection.style.display = 'block';
-                b2b2cSection.style.display = 'none';
-                tabGiftcode.className = 'px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white';
-                tabB2b2c.className = 'px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300';
-            } else {
-                giftcodeSection.style.display = 'none';
-                b2b2cSection.style.display = 'block';
-                tabGiftcode.className = 'px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300';
-                tabB2b2c.className = 'px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white';
-            }
+            sections.forEach(s => {
+                const section = document.getElementById(s + '-section');
+                const tabBtn = document.getElementById('tab-' + s);
+                if (section) section.style.display = s === tab ? 'block' : 'none';
+                if (tabBtn) tabBtn.className = s === tab ? activeClass : inactiveClass;
+            });
+
+            // データ読み込み
+            if (tab === 'users') loadUsers();
+            if (tab === 'referrals') loadReferrals();
         }
 
         // ログアウト
@@ -741,6 +883,295 @@
                 console.error('Delete code error:', error);
                 alert('❌ 削除に失敗しました: ' + (error.message || error));
             }
+        }
+
+        // ===== ユーザー管理機能 =====
+        let allUsers = [];
+
+        async function loadUsers() {
+            const loading = document.getElementById('users-loading');
+            const list = document.getElementById('users-list');
+            const empty = document.getElementById('users-empty');
+            const filter = document.getElementById('user-filter').value;
+
+            loading.style.display = 'block';
+            list.style.display = 'none';
+            empty.style.display = 'none';
+
+            try {
+                const snapshot = await db.collection('users').get();
+                allUsers = [];
+
+                const now = new Date();
+                let premiumCount = 0;
+                let codeCount = 0;
+                let trialCount = 0;
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const user = { id: doc.id, ...data };
+
+                    // Premium判定
+                    const isPremium = data.subscription?.status === 'active' ||
+                                      data.b2b2cOrgId ||
+                                      data.subscription?.giftCodeActive === true;
+
+                    // トライアル判定
+                    const regDate = data.registeredAt?.toDate?.() || data.createdAt?.toDate?.() || new Date();
+                    const daysSinceReg = Math.floor((now - regDate) / (1000 * 60 * 60 * 24));
+                    const isTrialActive = !isPremium && daysSinceReg <= 7;
+
+                    user._isPremium = isPremium;
+                    user._isTrialActive = isTrialActive;
+                    user._regDate = regDate;
+                    user._daysSinceReg = daysSinceReg;
+
+                    allUsers.push(user);
+
+                    if (isPremium) premiumCount++;
+                    if (data.b2b2cOrgId || data.subscription?.giftCodeActive) codeCount++;
+                    if (isTrialActive) trialCount++;
+                });
+
+                // 統計更新
+                document.getElementById('total-users').textContent = allUsers.length;
+                document.getElementById('premium-users').textContent = premiumCount;
+                document.getElementById('code-users').textContent = codeCount;
+                document.getElementById('trial-users').textContent = trialCount;
+
+                // フィルター適用
+                let filtered = allUsers;
+                switch (filter) {
+                    case 'premium':
+                        filtered = allUsers.filter(u => u._isPremium);
+                        break;
+                    case 'b2b':
+                        filtered = allUsers.filter(u => u.b2b2cOrgId);
+                        break;
+                    case 'gift':
+                        filtered = allUsers.filter(u => u.subscription?.giftCodeActive);
+                        break;
+                    case 'stripe':
+                        filtered = allUsers.filter(u => u.subscription?.status === 'active' && !u.b2b2cOrgId && !u.subscription?.giftCodeActive);
+                        break;
+                    case 'trial':
+                        filtered = allUsers.filter(u => u._isTrialActive);
+                        break;
+                }
+
+                // 登録日でソート（新しい順）
+                filtered.sort((a, b) => b._regDate - a._regDate);
+
+                loading.style.display = 'none';
+
+                if (filtered.length === 0) {
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                list.style.display = 'block';
+                document.getElementById('user-count').textContent = `${filtered.length}人`;
+                renderUsers(filtered);
+
+            } catch (error) {
+                console.error('Load users error:', error);
+                loading.innerHTML = '<p style="color: red;">エラー: ' + error.message + '</p>';
+            }
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('users-tbody');
+            tbody.innerHTML = users.map(user => {
+                const status = [];
+                if (user.subscription?.status === 'active' && !user.b2b2cOrgId && !user.subscription?.giftCodeActive) {
+                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">💳 Stripe</span>');
+                }
+                if (user.b2b2cOrgId) {
+                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">🏢 B2B</span>');
+                }
+                if (user.subscription?.giftCodeActive) {
+                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">🎁 ギフト</span>');
+                }
+                if (user._isTrialActive) {
+                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">🆓 トライアル</span>');
+                }
+                if (user.referredBy) {
+                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-pink-100 text-pink-800">🤝 紹介</span>');
+                }
+                if (status.length === 0) {
+                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">無料</span>');
+                }
+
+                const freeCredits = user.freeCredits || 0;
+                const paidCredits = user.paidCredits || 0;
+
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <div class="font-medium text-gray-900">${user.displayName || user.nickname || '名前未設定'}</div>
+                            <div class="text-xs text-gray-500">${user.email || 'メール未設定'}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex flex-wrap gap-1">
+                                ${status.join('')}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-gray-600">
+                            ${user._regDate.toLocaleDateString('ja-JP')}
+                            <div class="text-xs text-gray-400">${user._daysSinceReg}日目</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="text-xs">
+                                <span class="text-green-600">無料: ${freeCredits}</span> /
+                                <span class="text-blue-600">有償: ${paidCredits}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <button onclick="showUserDetail('${user.id}')" class="text-purple-600 hover:underline text-sm">
+                                詳細
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function showUserDetail(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            const details = [
+                `ID: ${user.id}`,
+                `メール: ${user.email || '未設定'}`,
+                `名前: ${user.displayName || user.nickname || '未設定'}`,
+                `登録日: ${user._regDate.toLocaleDateString('ja-JP')}`,
+                `---`,
+                `無料クレジット: ${user.freeCredits || 0}`,
+                `有償クレジット: ${user.paidCredits || 0}`,
+                `---`,
+                `Stripeステータス: ${user.subscription?.status || 'なし'}`,
+                `B2B組織ID: ${user.b2b2cOrgId || 'なし'}`,
+                `ギフトコード: ${user.subscription?.giftCodeActive ? '有効' : 'なし'}`,
+                `---`,
+                `紹介コード: ${user.referralCode || '未発行'}`,
+                `紹介者ID: ${user.referredBy || 'なし'}`,
+            ];
+
+            alert(details.join('\n'));
+        }
+
+        // ===== 紹介コード管理機能 =====
+        let allReferrals = [];
+
+        async function loadReferrals() {
+            const loading = document.getElementById('referrals-loading');
+            const list = document.getElementById('referrals-list');
+            const empty = document.getElementById('referrals-empty');
+
+            loading.style.display = 'block';
+            list.style.display = 'none';
+            empty.style.display = 'none';
+
+            try {
+                // referralsコレクションを取得
+                const snapshot = await db.collection('referrals').orderBy('createdAt', 'desc').get();
+                allReferrals = [];
+
+                const referrerMap = {};
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    allReferrals.push({ id: doc.id, ...data });
+
+                    // 紹介者別集計
+                    const referrerId = data.referrerId;
+                    if (!referrerMap[referrerId]) {
+                        referrerMap[referrerId] = {
+                            referrerId,
+                            referrerName: data.referrerInfo?.displayName || '不明',
+                            referrerEmail: data.referrerInfo?.email || '不明',
+                            referees: []
+                        };
+                    }
+                    referrerMap[referrerId].referees.push(data);
+                });
+
+                // 統計更新
+                const uniqueReferrers = Object.keys(referrerMap).length;
+                document.getElementById('total-referrals').textContent = allReferrals.length;
+                document.getElementById('referrer-count').textContent = uniqueReferrers;
+                document.getElementById('referee-count').textContent = allReferrals.length;
+                document.getElementById('total-referral-credits').textContent = (allReferrals.length * 100) + '回'; // 双方50ずつ
+
+                loading.style.display = 'none';
+
+                if (allReferrals.length === 0) {
+                    empty.style.display = 'block';
+                    document.getElementById('referrer-summary').innerHTML = '<p class="text-gray-500 text-center">データがありません</p>';
+                    return;
+                }
+
+                list.style.display = 'block';
+                renderReferrals(allReferrals);
+                renderReferrerSummary(Object.values(referrerMap));
+
+            } catch (error) {
+                console.error('Load referrals error:', error);
+                loading.innerHTML = '<p style="color: red;">エラー: ' + error.message + '</p>';
+            }
+        }
+
+        function renderReferrals(referrals) {
+            const tbody = document.getElementById('referrals-tbody');
+            tbody.innerHTML = referrals.map(ref => {
+                const createdAt = ref.createdAt?.toDate?.() || new Date();
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <div class="font-medium text-gray-900">${ref.referrerInfo?.displayName || '不明'}</div>
+                            <div class="text-xs text-gray-500">${ref.referrerInfo?.email || ''}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="font-mono text-pink-600 font-medium">${ref.referralCode || '-'}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="text-xs text-gray-500">${ref.referredUserId || '-'}</div>
+                        </td>
+                        <td class="px-4 py-3 text-gray-600 text-sm">
+                            ${createdAt.toLocaleDateString('ja-JP')} ${createdAt.toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'})}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full ${ref.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${ref.status === 'completed' ? '✅ 完了' : '⏳ ' + (ref.status || '不明')}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderReferrerSummary(referrers) {
+            const container = document.getElementById('referrer-summary');
+            // 紹介人数でソート
+            referrers.sort((a, b) => b.referees.length - a.referees.length);
+
+            container.innerHTML = referrers.map(r => `
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <div class="font-medium text-gray-900">${r.referrerName}</div>
+                            <div class="text-sm text-gray-500">${r.referrerEmail}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-pink-600">${r.referees.length}人</div>
+                            <div class="text-xs text-gray-500">紹介</div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        獲得クレジット: <span class="font-medium text-green-600">${r.referees.length * 50}回</span>
+                    </div>
+                </div>
+            `).join('');
         }
     </script>
 </body>
