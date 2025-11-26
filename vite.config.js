@@ -9,6 +9,13 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,  // console.log, console.warn, console.debug を削除
+        drop_debugger: true, // debugger文を削除
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'] // これらの関数呼び出しを削除
+      }
+    },
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {

@@ -145,7 +145,10 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
                         <input
                             type="number"
                             value={totalDurationInput}
-                            onChange={(e) => setTotalDurationInput(Number(e.target.value))}
+                            onChange={(e) => {
+                                const val = Number(e.target.value);
+                                setTotalDurationInput(isNaN(val) ? 0 : val);
+                            }}
                             className="w-full px-4 py-2 border rounded-lg"
                             min="0"
                         />
@@ -242,7 +245,10 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
                                                         <input
                                                             type="number"
                                                             value={editingSet.weight || 0}
-                                                            onChange={(e) => setEditingSet({...editingSet, weight: Number(e.target.value)})}
+                                                            onChange={(e) => {
+                                                                const val = Number(e.target.value);
+                                                                setEditingSet({...editingSet, weight: isNaN(val) ? 0 : val});
+                                                            }}
                                                             className="w-full px-4 py-3 border rounded-lg"
                                                         />
                                                         {/* スライダー */}
@@ -253,7 +259,10 @@ const EditWorkoutModal = ({ workout, onClose, onUpdate }) => {
                                                                 max="500"
                                                                 step="2.5"
                                                                 value={editingSet.weight || 0}
-                                                                onChange={(e) => setEditingSet({...editingSet, weight: Number(e.target.value)})}
+                                                                onChange={(e) => {
+                                                                    const val = Number(e.target.value);
+                                                                    setEditingSet({...editingSet, weight: isNaN(val) ? 0 : val});
+                                                                }}
                                                                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                                                                 style={{
                                                                     background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((editingSet.weight || 0)/500)*100}%, #e5e7eb ${((editingSet.weight || 0)/500)*100}%, #e5e7eb 100%)`

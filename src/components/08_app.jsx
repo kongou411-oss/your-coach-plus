@@ -209,6 +209,38 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
     );
 };
 
+// ===== Cookie Consent Banner Component =====
+const CookieConsentBanner = ({ show, onAccept }) => {
+    const Icon = window.Icon;
+    if (!show) return null;
+
+    return (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 text-white p-4 z-[10002] shadow-lg">
+            <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1">
+                    <Icon name="Cookie" size={24} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <p className="text-sm">
+                            当サービスでは、サービス向上のためCookieおよびLocalStorageを使用しています。
+                            続行することで、
+                            <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="text-[#4A9EFF] underline hover:text-[#3b8fef]">
+                                プライバシーポリシー
+                            </a>
+                            に同意したものとみなされます。
+                        </p>
+                    </div>
+                </div>
+                <button
+                    onClick={onAccept}
+                    className="bg-[#4A9EFF] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#3b8fef] transition flex-shrink-0"
+                >
+                    同意する
+                </button>
+            </div>
+        </div>
+    );
+};
+
 // ===== Main App Component =====
         const App = () => {
             // window経由で公開されているコンポーネントをローカル参照
@@ -359,6 +391,44 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
 
             // クレジット0警告モーダル
             const [showCreditWarning, setShowCreditWarning] = useState(false);
+
+            // Cookie同意バナー
+            const [showCookieConsent, setShowCookieConsent] = useState(false);
+
+            // Cookie同意状態チェック
+            useEffect(() => {
+                if (!user || !userProfile) return;
+
+                // Firestoreのユーザープロフィールで同意済みかチェック
+                if (!userProfile.cookieConsentAccepted) {
+                    setShowCookieConsent(true);
+                }
+            }, [user, userProfile]);
+
+            // Cookie同意処理
+            const handleCookieConsent = async () => {
+                if (!user) return;
+
+                try {
+                    const db = firebase.firestore();
+                    await db.collection('users').doc(user.uid).update({
+                        cookieConsentAccepted: true,
+                        cookieConsentAcceptedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    // ローカルのuserProfileも更新
+                    setUserProfile(prev => ({
+                        ...prev,
+                        cookieConsentAccepted: true
+                    }));
+
+                    setShowCookieConsent(false);
+                } catch (error) {
+                    console.error('[Cookie Consent] Failed to save:', error);
+                    // エラーでも閉じる（次回ログイン時に再表示）
+                    setShowCookieConsent(false);
+                }
+            };
 
             // What's Newモーダル表示チェック（マイナーバージョン比較）
             useEffect(() => {
@@ -1518,13 +1588,18 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     // Firestoreに保存
                     await DataService.saveUserProfile(user.uid, completedProfile);
 
-                    setUserProfile(completedProfile);
+                    // 【重要】Cloud Functionsでギフト/B2Bコードが適用された場合、
+                    // Firestoreから最新のプロフィールを再取得して subscription 情報を反映
+                    const latestProfile = await DataService.getUserProfile(user.uid);
+                    const finalProfile = latestProfile || completedProfile;
+
+                    setUserProfile(finalProfile);
 
                     // 機能開放状態を計算（B2B/ギフトコードのみPremium扱い、紹介コードはクレジットのみ）
-                    const isPremium = completedProfile.subscription?.status === 'active'
-                        || completedProfile.b2b2cOrgId
-                        || completedProfile.subscription?.giftCodeActive === true;
-                    console.log('[Onboarding] Calculating features with isPremium:', isPremium, 'b2b2cOrgId:', completedProfile.b2b2cOrgId);
+                    const isPremium = finalProfile.subscription?.status === 'active'
+                        || finalProfile.b2b2cOrgId
+                        || finalProfile.subscription?.giftCodeActive === true;
+                    console.log('[Onboarding] Calculating features with isPremium:', isPremium, 'b2b2cOrgId:', finalProfile.b2b2cOrgId, 'giftCodeActive:', finalProfile.subscription?.giftCodeActive);
 
                     const today = getTodayDate();
                     const todayRecord = await DataService.getDailyRecord(user.uid, today);
@@ -3787,6 +3862,9 @@ AIコーチなどの高度な機能が解放されます。
 
                     {/* Global Confirm Modal（グローバル） */}
                     <GlobalConfirmModal />
+
+                    {/* Cookie Consent Banner（グローバル） */}
+                    <CookieConsentBanner show={showCookieConsent} onAccept={handleCookieConsent} />
                 </div>
             );
         };

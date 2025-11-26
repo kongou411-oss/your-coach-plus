@@ -1,14 +1,126 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // giftCodesコレクション：クライアントからのアクセス禁止（Cloud Functionsのみ）
+
+    // ============================================
+    // ヘルパー関数
+    // ============================================
+
+    // 認証済みユーザーかどうか
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 本人かどうか
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // giftCodes: クライアントアクセス禁止（Cloud Functionsのみ）
+    // ============================================
     match /giftCodes/{codeId} {
       allow read, write: if false;
     }
 
-    // 🚨 テストモード：認証済みユーザーに全てアクセス許可（一時的）
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    // ============================================
+    // b2b2cOrganizations: クライアントアクセス禁止（Cloud Functionsのみ）
+    // ============================================
+    match /b2b2cOrganizations/{orgId} {
+      allow read, write: if false;
+    }
+
+    // ============================================
+    // referrals: クライアントアクセス禁止（Cloud Functionsのみ）
+    // ============================================
+    match /referrals/{referralId} {
+      allow read, write: if false;
+    }
+
+    // ============================================
+    // users: ユーザープロフィール（本人のみ）
+    // ============================================
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // サブコレクション: settings
+      match /settings/{settingId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: pgbaseChats
+      match /pgbaseChats/{chatId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: analysisReports
+      match /analysisReports/{reportId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: templates (食事・運動テンプレート)
+      match /templates/{templateId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: routines
+      match /routines/{routineId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: customFoods
+      match /customFoods/{foodId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: customExercises
+      match /customExercises/{exerciseId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: purchasedTextbooks
+      match /purchasedTextbooks/{textbookId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ============================================
+    // dailyRecords: 日次記録（本人のみ）
+    // ============================================
+    match /dailyRecords/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /records/{date} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ============================================
+    // communityPosts: コミュニティ投稿
+    // - 読み取り: 認証済みユーザー全員
+    // - 作成: 認証済みユーザー（自分のuserIdで）
+    // - 更新・削除: 作成者本人のみ
+    // ============================================
+    match /communityPosts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated()
+                            && resource.data.userId == request.auth.uid;
+    }
+
+    // ============================================
+    // notifications: 通知スケジュール（Cloud Functionsのみ）
+    // ============================================
+    match /notifications/{notificationId} {
+      allow read, write: if false;
+    }
+
+    // ============================================
+    // stripeCustomers: Stripe顧客情報（Cloud Functionsのみ）
+    // ============================================
+    match /stripeCustomers/{customerId} {
+      allow read, write: if false;
     }
   }
 }

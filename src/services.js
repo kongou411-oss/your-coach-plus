@@ -1762,13 +1762,14 @@ const ExperienceService = {
     processDirectiveCompletion: async (userId, date) => {
         try {
             const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
 
-            let userData;
-
-            if (!userData) {
+            if (!userDoc.exists) {
                 console.error('[Experience] User not found');
                 return { success: false, error: 'User not found' };
             }
+
+            const userData = userDoc.data();
 
             // 既に処理済みかチェック
             const processedDates = userData.processedDirectiveDates || [];
@@ -1804,13 +1805,14 @@ const ExperienceService = {
     addFreeCredits: async (userId, amount) => {
         try {
             const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
 
-            let userData;
-
-            if (!userData) {
+            if (!userDoc.exists) {
                 console.error('[Experience] User not found');
                 return { success: false, error: 'User not found' };
             }
+
+            const userData = userDoc.data();
 
             const newFreeCredits = (userData.freeCredits || 0) + amount;
 
