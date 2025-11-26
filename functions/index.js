@@ -1882,14 +1882,35 @@ exports.getGiftCodes = onCall({
     for (const doc of snapshot.docs) {
       const data = doc.data();
 
-      // giftCodesドキュメントに保存されているusedByDetailsをそのまま使用
+      // usedByからユーザー情報を取得して名前を追加
+      const usedByDetails = [];
+      if (data.usedBy && data.usedBy.length > 0) {
+        for (const uid of data.usedBy) {
+          try {
+            const userDoc = await admin.firestore().collection('users').doc(uid).get();
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              usedByDetails.push({
+                userId: uid,
+                email: userData.email || 'unknown',
+                displayName: userData.displayName || userData.nickname || '名前未設定'
+              });
+            } else {
+              usedByDetails.push({ userId: uid, email: 'unknown', displayName: '削除済みユーザー' });
+            }
+          } catch (e) {
+            usedByDetails.push({ userId: uid, email: 'error', displayName: 'エラー' });
+          }
+        }
+      }
+
       codes.push({
         id: doc.id,
         code: data.code,
         isActive: data.isActive,
         usedCount: data.usedBy?.length || 0,
         usedBy: data.usedBy || [],
-        usedByDetails: data.usedByDetails || [],
+        usedByDetails: usedByDetails,
         note: data.note || '',
         createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
         lastUsedAt: data.lastUsedAt?.toDate?.()?.toISOString() || null

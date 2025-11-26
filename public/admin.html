@@ -539,7 +539,7 @@
             'kongou411@gmail.com'
         ];
 
-        // 管理者パスワード（環境変数から取得するのが理想だが、ここではメモリに保持）
+        // 管理者PIN
         let adminPassword = '';
 
         // 認証チェック
@@ -553,10 +553,10 @@
             // ユーザー情報表示
             document.getElementById('user-info').textContent = user.email;
 
-            // 管理者パスワードを取得（プロンプト）
-            adminPassword = prompt('管理者パスワードを入力してください（ギフトコード管理用）');
+            // 管理者PINを取得（プロンプト）
+            adminPassword = prompt('4桁の管理者PINを入力してください');
             if (!adminPassword) {
-                alert('パスワードが必要です');
+                alert('PINが必要です');
             }
 
             // データ読み込み
