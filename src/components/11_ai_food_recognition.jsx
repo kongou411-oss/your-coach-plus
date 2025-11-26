@@ -2612,8 +2612,8 @@ JSON形式のみ出力、説明文不要`;
                     {/* 認識結果 */}
                     {recognizedFoods.length > 0 && (
                         <div className="space-y-4">
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                <p className="text-green-800 font-medium flex items-center gap-2">
+                            <div className="rounded-lg p-4 border-2" style={{ borderColor: '#4A9EFF', backgroundColor: 'rgba(74, 158, 255, 0.1)' }}>
+                                <p className="font-medium flex items-center gap-2" style={{ color: '#4A9EFF' }}>
                                     <Icon name="CheckCircle" size={18} />
                                     {recognizedFoods.length}個の食品を認識しました
                                 </p>

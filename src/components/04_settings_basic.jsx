@@ -130,6 +130,15 @@ const BasicTab = ({
                                 // Premium会員
                                 const willCancel = userProfile?.subscription?.cancelAtPeriodEnd;
                                 const periodEnd = userProfile?.subscription?.currentPeriodEnd;
+                                const periodStart = userProfile?.subscription?.currentPeriodStart;
+                                const interval = userProfile?.subscription?.interval || 'month';
+
+                                // 日付フォーマット関数
+                                const formatDate = (timestamp) => {
+                                    if (!timestamp) return '-';
+                                    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+                                    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+                                };
 
                                 return (
                                     <div className="bg-white p-4 rounded-lg border border-amber-200">
@@ -143,19 +152,63 @@ const BasicTab = ({
                                             </div>
                                         </div>
 
+                                        {/* 契約情報 */}
+                                        <div className="bg-gray-50 p-3 rounded-lg mb-3 space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">プラン</span>
+                                                <span className="text-sm font-medium text-gray-800">
+                                                    {interval === 'year' ? '年額プラン' : '月額プラン'}
+                                                </span>
+                                            </div>
+                                            {periodStart && (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600">開始日</span>
+                                                    <span className="text-sm font-medium text-gray-800">{formatDate(periodStart)}</span>
+                                                </div>
+                                            )}
+                                            {periodEnd && (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600">終了日</span>
+                                                    <span className="text-sm font-medium text-gray-800">{formatDate(periodEnd)}</span>
+                                                </div>
+                                            )}
+                                            {!willCancel ? (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600">次回請求日</span>
+                                                    <span className="text-sm font-medium text-gray-800">
+                                                        {periodEnd ? formatDate(periodEnd) : '-'}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600">解約予定</span>
+                                                    <span className="text-sm font-medium text-orange-600">
+                                                        {periodEnd ? formatDate(periodEnd) : '-'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+
                                         {willCancel && periodEnd && (
                                             <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 mb-3">
-                                                <p className="text-sm font-medium text-gray-600 mb-1">利用可能期限</p>
-                                                <p className="text-lg font-bold text-orange-600">
-                                                    {periodEnd.toDate().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <Icon name="AlertCircle" size={16} className="text-orange-600" />
+                                                    <p className="text-sm font-medium text-orange-800">解約予定</p>
+                                                </div>
+                                                <p className="text-xs text-gray-600">
+                                                    {formatDate(periodEnd)} までプレミアム機能をご利用いただけます。
+                                                    その後は無料プランに移行します。
                                                 </p>
-                                                <p className="text-xs text-gray-600 mt-1">この日まで利用可能です</p>
                                             </div>
                                         )}
 
                                         <div className="bg-[#FFF59A]/10 p-4 rounded-lg border border-amber-200 mb-3">
-                                            <p className="text-sm font-medium text-gray-600 mb-1">月額料金</p>
-                                            <p className="text-3xl font-bold text-amber-600">¥940</p>
+                                            <p className="text-sm font-medium text-gray-600 mb-1">
+                                                {interval === 'year' ? '年額料金' : '月額料金'}
+                                            </p>
+                                            <p className="text-3xl font-bold text-amber-600">
+                                                {interval === 'year' ? '¥9,400' : '¥940'}
+                                            </p>
                                             <p className="text-xs text-gray-600 mt-1">税込</p>
                                         </div>
 
@@ -214,6 +267,26 @@ const BasicTab = ({
                                             >
                                                 <Icon name="ShoppingCart" size={18} />
                                                 クレジット追加購入
+                                            </button>
+
+                                            <button
+                                                className="w-full bg-white text-gray-600 py-2 rounded-lg hover:bg-gray-50 border border-gray-200 flex items-center justify-center gap-2 text-sm"
+                                                onClick={async () => {
+                                                    try {
+                                                        const functions = window.firebase.app().functions('asia-northeast2');
+                                                        const syncSubscriptionInfo = functions.httpsCallable('syncSubscriptionInfo');
+                                                        toast.loading('同期中...', { id: 'sync' });
+                                                        await syncSubscriptionInfo();
+                                                        toast.success('サブスクリプション情報を同期しました', { id: 'sync' });
+                                                        setTimeout(() => window.location.reload(), 1000);
+                                                    } catch (error) {
+                                                        console.error('[Subscription] Sync error:', error);
+                                                        toast.error('同期に失敗しました: ' + error.message, { id: 'sync' });
+                                                    }
+                                                }}
+                                            >
+                                                <Icon name="RefreshCw" size={14} />
+                                                契約情報を更新
                                             </button>
                                         </div>
                                     </div>

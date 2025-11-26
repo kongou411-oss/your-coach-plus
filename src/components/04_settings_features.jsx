@@ -1,6 +1,7 @@
 import React from 'react';
 import toast from 'react-hot-toast';
 import { STORAGE_KEYS } from '../config.js';
+import NotificationSettings from './21_notification_settings.jsx';
 
 // ===== 機能タブコンポーネント =====
 const FeaturesTab = ({
@@ -1698,6 +1699,18 @@ const FeaturesTab = ({
                 </div>
             </details>
             )}
+
+            {/* 通知設定 */}
+            <details className="border rounded-lg">
+                <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                    <Icon name="Bell" size={18} className="text-blue-600" />
+                    通知設定
+                    <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                </summary>
+                <div className="p-4 pt-0 border-t">
+                    <NotificationSettings userId={userId} />
+                </div>
+            </details>
         </div>
     );
 };

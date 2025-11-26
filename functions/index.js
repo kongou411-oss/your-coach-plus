@@ -871,14 +871,29 @@ async function handleSubscriptionUpdate(subscription) {
     return;
   }
 
-  // current_period_endが存在する場合のみTimestampに変換
+  // サブスクリプション情報を更新
   const updateData = {
     'subscription.status': status,
     'subscription.stripeSubscriptionId': subscription.id,
+    'subscription.cancelAtPeriodEnd': subscription.cancel_at_period_end || false,
   };
 
+  // 期間情報
   if (subscription.current_period_end) {
     updateData['subscription.currentPeriodEnd'] = admin.firestore.Timestamp.fromMillis(subscription.current_period_end * 1000);
+  }
+  if (subscription.current_period_start) {
+    updateData['subscription.currentPeriodStart'] = admin.firestore.Timestamp.fromMillis(subscription.current_period_start * 1000);
+  }
+
+  // プラン情報（月額/年額）
+  if (subscription.items?.data?.[0]?.price?.recurring?.interval) {
+    updateData['subscription.interval'] = subscription.items.data[0].price.recurring.interval; // 'month' or 'year'
+  }
+
+  // 契約開始日（初回作成時のみ）
+  if (subscription.created) {
+    updateData['subscription.createdAt'] = admin.firestore.Timestamp.fromMillis(subscription.created * 1000);
   }
 
   await admin.firestore().collection('users').doc(userId).update(updateData);
@@ -1040,6 +1055,75 @@ exports.resumeSubscription = onCall({
   } catch (error) {
     console.error("[Stripe] Resume subscription failed:", error);
     throw new HttpsError("internal", "サブスクリプションの再開に失敗しました", error.message);
+  }
+});
+
+// ===== サブスクリプション情報同期 =====
+exports.syncSubscriptionInfo = onCall({
+  region: "asia-northeast2",
+  cors: true,
+  secrets: [stripeSecretKey],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    const stripe = require('stripe')(stripeSecretKey.value().trim());
+
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "ユーザーが見つかりません");
+    }
+
+    const subscriptionId = userDoc.data()?.subscription?.stripeSubscriptionId;
+    if (!subscriptionId) {
+      throw new HttpsError("failed-precondition", "有効なサブスクリプションが見つかりません");
+    }
+
+    // Stripeから最新のサブスクリプション情報を取得
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+    // Firestoreに保存
+    const updateData = {
+      'subscription.status': subscription.status,
+      'subscription.cancelAtPeriodEnd': subscription.cancel_at_period_end || false,
+    };
+
+    if (subscription.current_period_end) {
+      updateData['subscription.currentPeriodEnd'] = admin.firestore.Timestamp.fromMillis(subscription.current_period_end * 1000);
+    }
+    if (subscription.current_period_start) {
+      updateData['subscription.currentPeriodStart'] = admin.firestore.Timestamp.fromMillis(subscription.current_period_start * 1000);
+    }
+    if (subscription.items?.data?.[0]?.price?.recurring?.interval) {
+      updateData['subscription.interval'] = subscription.items.data[0].price.recurring.interval;
+    }
+    if (subscription.created) {
+      updateData['subscription.createdAt'] = admin.firestore.Timestamp.fromMillis(subscription.created * 1000);
+    }
+
+    await admin.firestore().collection('users').doc(userId).update(updateData);
+
+    console.log(`[Stripe] Subscription info synced for user ${userId}`);
+
+    return {
+      success: true,
+      message: "サブスクリプション情報を同期しました",
+      data: {
+        status: subscription.status,
+        interval: subscription.items?.data?.[0]?.price?.recurring?.interval || 'month',
+        currentPeriodEnd: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
+        currentPeriodStart: subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : null,
+        createdAt: subscription.created ? new Date(subscription.created * 1000).toISOString() : null,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+      }
+    };
+  } catch (error) {
+    console.error("[Stripe] Sync subscription info failed:", error);
+    throw new HttpsError("internal", "サブスクリプション情報の同期に失敗しました", error.message);
   }
 });
 
