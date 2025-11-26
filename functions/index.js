@@ -1286,8 +1286,16 @@ exports.applyReferralCode = onCall({
     const referrerId = referrerDoc.id;
     const referrerData = referrerDoc.data();
 
-    // 自己紹介チェック
+    // 自己紹介チェック（userIdベース）
     if (referrerId === userId) {
+      throw new HttpsError("invalid-argument", "自分自身を紹介することはできません");
+    }
+
+    // 自己紹介チェック（メールアドレスベース - アカウント再作成対策）
+    const userEmail = request.auth.token.email;
+    const referrerEmail = referrerData.email;
+    if (userEmail && referrerEmail && userEmail.toLowerCase() === referrerEmail.toLowerCase()) {
+      console.warn(`[Referral] Self-referral attempt detected: ${userEmail}`);
       throw new HttpsError("invalid-argument", "自分自身を紹介することはできません");
     }
 
