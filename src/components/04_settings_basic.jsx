@@ -1107,17 +1107,18 @@ const BasicTab = ({
                                                         await deleteAccount();
                                                         console.log('[Account Delete] Account deletion completed');
 
-                                                        // LocalStorageをクリア
-                                                        console.log('[Account Delete] Clearing all localStorage data');
+                                                        // LocalStorage・SessionStorageをクリア
+                                                        console.log('[Account Delete] Clearing all storage data');
                                                         localStorage.clear();
+                                                        sessionStorage.clear();
 
                                                         // 削除成功メッセージを表示
                                                         toast.success('アカウントを完全に削除しました。ご利用ありがとうございました。');
 
-                                                        // ログイン画面にリダイレクト
+                                                        // ログイン画面にリダイレクト（即座にリロード）
                                                         setTimeout(() => {
-                                                            window.location.reload();
-                                                        }, 2000);
+                                                            window.location.href = '/';
+                                                        }, 1500);
                                                     } catch (error) {
                                                         console.error('[Account Delete] Error:', error);
                                                         const errorMessage = error.message || 'アカウント削除中にエラーが発生しました';
@@ -1140,12 +1141,15 @@ const BasicTab = ({
                                 showConfirm(
                                     'ログアウトの確認',
                                     '本当にログアウトしますか？',
-                                    () => {
+                                    async () => {
                                         // LocalStorageをクリア（オンボーディング状態や機能開放状態をリセット）
                                         console.log('[Logout] Clearing all localStorage data');
                                         localStorage.clear();
+                                        sessionStorage.clear();
                                         // ログアウト実行
-                                        firebase.auth().signOut();
+                                        await firebase.auth().signOut();
+                                        // ページをリロードして完全にリセット
+                                        window.location.reload();
                                     }
                                 );
                             }}
