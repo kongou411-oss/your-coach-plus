@@ -33,15 +33,34 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
     const [editingChatId, setEditingChatId] = useState(null);
     const [editedChatTitle, setEditedChatTitle] = useState('');
 
+    // 有料教科書購入用のstate
+    const [purchasedModules, setPurchasedModules] = useState([]);
+    const [paidCredits, setPaidCredits] = useState(0);
+    const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+    const [purchaseTargetModule, setPurchaseTargetModule] = useState(null);
+    const [isPurchasing, setIsPurchasing] = useState(false);
+
     // Textbookモジュール一覧
     const textbookModules = [
+        {
+            id: 'yourcoach_guide',
+            title: 'YourCoach+の教科書',
+            category: '公式ガイド',
+            path: '/module/yourcoach_guide_textbook.html',
+            description: '記録→分析→学習→共有の4ステップで、あなただけの最適解を見つける',
+            icon: 'BookOpen',
+            isFree: true,
+            price: 0
+        },
         {
             id: 'mental_textbook',
             title: 'メンタルの教科書',
             category: '心理学',
             path: '/module/mental_textbook_new.html',
             description: 'モチベーション、習慣形成、ストレス管理などメンタル面の科学的アプローチ',
-            icon: 'Brain'
+            icon: 'Brain',
+            isFree: true,
+            price: 0
         },
         {
             id: 'protein_textbook',
@@ -49,7 +68,9 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             category: '栄養学',
             path: '/module/Nutrition/macro/protein_textbook_new.html',
             description: 'タンパク質の役割、アミノ酸スコア、摂取タイミング、プロテインの選び方',
-            icon: 'Apple'
+            icon: 'Apple',
+            isFree: true,
+            price: 0
         },
         {
             id: 'carb_textbook',
@@ -57,7 +78,9 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             category: '栄養学',
             path: '/module/Nutrition/macro/carb_textbook_new.html',
             description: '炭水化物の種類、GI値、タイミング、糖質制限の科学',
-            icon: 'Apple'
+            icon: 'Apple',
+            isFree: true,
+            price: 0
         },
         {
             id: 'fat_textbook',
@@ -65,7 +88,9 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             category: '栄養学',
             path: '/module/Nutrition/macro/fat_textbook_new.html',
             description: '脂質の種類、オメガ3/6/9、トランス脂肪酸、ケトジェニックダイエット',
-            icon: 'Apple'
+            icon: 'Apple',
+            isFree: true,
+            price: 0
         },
         {
             id: 'basic_supplements_textbook',
@@ -73,7 +98,9 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             category: '栄養学',
             path: '/module/basic_supplements_textbook_new.html',
             description: 'クレアチン、アミノ酸、ベータアラニン、HMBなど基礎サプリメントの科学',
-            icon: 'Apple'
+            icon: 'Apple',
+            isFree: true,
+            price: 0
         },
         {
             id: 'vitamin_mineral_textbook',
@@ -81,7 +108,19 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             category: '栄養学',
             path: '/module/Nutrition/micro/vitamin_mineral_textbook_new.html',
             description: '微量栄養素の役割、欠乏症、過剰症、サプリメント摂取の考え方',
-            icon: 'Apple'
+            icon: 'Apple',
+            isFree: true,
+            price: 0
+        },
+        {
+            id: 'sleep_textbook',
+            title: '睡眠の教科書',
+            category: 'リカバリー',
+            path: '/module/sleep_textbook.html',
+            description: 'パフォーマンスを最大化する睡眠の科学と実践テクニック',
+            icon: 'Moon',
+            isFree: false,
+            price: 50
         }
     ];
 
@@ -89,6 +128,21 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
     useEffect(() => {
         loadAIChatHistory();
     }, []);
+
+    // 購入済みモジュールと有料クレジットの読み込み
+    useEffect(() => {
+        const loadPurchaseData = async () => {
+            try {
+                const purchased = await TextbookPurchaseService.getPurchasedModules(userId);
+                setPurchasedModules(purchased);
+                const credits = await TextbookPurchaseService.getPaidCredits(userId);
+                setPaidCredits(credits);
+            } catch (error) {
+                console.error('購入データの読み込みエラー:', error);
+            }
+        };
+        loadPurchaseData();
+    }, [userId]);
 
     const loadAIChatHistory = async () => {
         const history = await DataService.getPGBaseChatHistory();
@@ -517,7 +571,8 @@ ${context}
                             { value: 'all', label: 'すべて', icon: 'LayoutGrid', color: 'cyan' },
                             { value: '心理学', label: '心理学', icon: 'Brain', color: 'pink' },
                             { value: '栄養学', label: '栄養学', icon: 'Apple', color: 'green' },
-                            { value: '運動科学', label: '運動科学', icon: 'Zap', color: 'orange' }
+                            { value: '運動科学', label: '運動科学', icon: 'Zap', color: 'orange' },
+                            { value: 'リカバリー', label: 'リカバリー', icon: 'Moon', color: 'indigo' }
                         ].map(cat => (
                             <button
                                 key={cat.value}
@@ -549,25 +604,51 @@ ${context}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {filteredModules.map(module => (
+                        {filteredModules.map(module => {
+                            const isPurchased = module.isFree || purchasedModules.includes(module.id);
+                            const handleModuleClick = () => {
+                                if (module.isFree || isPurchased) {
+                                    setSelectedModule(module);
+                                } else {
+                                    setPurchaseTargetModule(module);
+                                    setShowPurchaseModal(true);
+                                }
+                            };
+                            return (
                             <button
                                 key={module.id}
-                                onClick={() => setSelectedModule(module)}
-                                className="bg-white rounded-lg p-4 shadow-sm hover:shadow-lg transition text-left border-2 border-transparent hover:border-cyan-300"
+                                onClick={handleModuleClick}
+                                className={`bg-white rounded-lg p-4 shadow-sm hover:shadow-lg transition text-left border-2 ${
+                                    !module.isFree && !isPurchased ? 'border-amber-200 hover:border-amber-400' : 'border-transparent hover:border-cyan-300'
+                                }`}
                             >
                                 <div className="flex items-start gap-3 mb-3">
                                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                                         module.category === '心理学' ? 'bg-gradient-to-br from-pink-500 to-rose-500' :
                                         module.category === '運動科学' ? 'bg-gradient-to-br from-orange-500 to-red-500' :
+                                        module.category === 'リカバリー' ? 'bg-gradient-to-br from-indigo-500 to-purple-500' :
                                         'bg-gradient-to-br from-green-500 to-emerald-500'
                                     }`}>
                                         <Icon name={module.icon} size={24} className="text-white" />
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="font-bold text-gray-800 mb-1">{module.title}</h3>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="font-bold text-gray-800">{module.title}</h3>
+                                            {!module.isFree && (
+                                                isPurchased ? (
+                                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">購入済</span>
+                                                ) : (
+                                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full font-medium flex items-center gap-1">
+                                                        <Icon name="Star" size={10} />
+                                                        {module.price}Cr
+                                                    </span>
+                                                )
+                                            )}
+                                        </div>
                                         <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
                                             module.category === '心理学' ? 'bg-sky-100 text-sky-700' :
                                             module.category === '運動科学' ? 'bg-orange-100 text-orange-700' :
+                                            module.category === 'リカバリー' ? 'bg-indigo-100 text-indigo-700' :
                                             'bg-green-100 text-green-700'
                                         }`}>
                                             {module.category}
@@ -575,12 +656,14 @@ ${context}
                                     </div>
                                 </div>
                                 <p className="text-sm text-gray-600">{module.description}</p>
-                                <div className="mt-3 flex items-center text-cyan-600 text-sm font-medium">
-                                    <span>教科書を開く</span>
-                                    <Icon name="ChevronRight" size={16} className="ml-1" />
+                                <div className={`mt-3 flex items-center text-sm font-medium ${
+                                    !module.isFree && !isPurchased ? 'text-amber-600' : 'text-cyan-600'
+                                }`}>
+                                    <span>{!module.isFree && !isPurchased ? '購入して読む' : '教科書を開く'}</span>
+                                    <Icon name={!module.isFree && !isPurchased ? 'Lock' : 'ChevronRight'} size={16} className="ml-1" />
                                 </div>
                             </button>
-                        ))}
+                        )})}
                     </div>
                 )}
                 </div>
@@ -925,6 +1008,125 @@ ${context}
                                 className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition"
                             >
                                 保存
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            ) : null}
+
+            {/* 教科書購入確認モーダル */}
+            {showPurchaseModal && purchaseTargetModule ? ReactDOM.createPortal(
+                <div
+                    className="fixed inset-0 flex items-center justify-center p-4"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 999999,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)'
+                    }}
+                    onClick={() => {
+                        if (!isPurchasing) {
+                            setShowPurchaseModal(false);
+                            setPurchaseTargetModule(null);
+                        }
+                    }}
+                >
+                    <div
+                        className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-md p-6 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                                <Icon name={purchaseTargetModule.icon} size={24} className="text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-800">{purchaseTargetModule.title}</h2>
+                                <p className="text-sm text-gray-500">{purchaseTargetModule.category}</p>
+                            </div>
+                        </div>
+
+                        <p className="text-gray-600 mb-4">{purchaseTargetModule.description}</p>
+
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-gray-700 font-medium">購入価格</span>
+                                <span className="text-amber-700 font-bold text-lg">{purchaseTargetModule.price} 有料クレジット</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-gray-700 font-medium">有料クレジット残高</span>
+                                <span className={`font-bold text-lg ${paidCredits >= purchaseTargetModule.price ? 'text-green-600' : 'text-red-600'}`}>
+                                    {paidCredits} Cr
+                                </span>
+                            </div>
+                            {paidCredits < purchaseTargetModule.price && (
+                                <p className="text-red-600 text-sm mt-2">
+                                    ※ 有料クレジットが不足しています。設定画面からクレジットを購入してください。
+                                </p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-2">
+                                ※ 無料クレジットでは有料教科書を購入できません
+                            </p>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    setShowPurchaseModal(false);
+                                    setPurchaseTargetModule(null);
+                                }}
+                                disabled={isPurchasing}
+                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (paidCredits < purchaseTargetModule.price) {
+                                        toast.error('有料クレジットが不足しています');
+                                        return;
+                                    }
+                                    setIsPurchasing(true);
+                                    try {
+                                        const result = await TextbookPurchaseService.purchaseModule(
+                                            userId,
+                                            purchaseTargetModule.id,
+                                            purchaseTargetModule.price
+                                        );
+                                        if (result.success) {
+                                            toast.success('購入完了！教科書を開きます');
+                                            setPurchasedModules(result.purchasedModules);
+                                            setPaidCredits(result.remainingPaidCredits);
+                                            setShowPurchaseModal(false);
+                                            setSelectedModule(purchaseTargetModule);
+                                            setPurchaseTargetModule(null);
+                                        } else {
+                                            toast.error(result.error || '購入に失敗しました');
+                                        }
+                                    } catch (error) {
+                                        console.error('購入エラー:', error);
+                                        toast.error('購入に失敗しました');
+                                    } finally {
+                                        setIsPurchasing(false);
+                                    }
+                                }}
+                                disabled={isPurchasing || paidCredits < purchaseTargetModule.price}
+                                className="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isPurchasing ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        処理中...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Icon name="Star" size={16} />
+                                        購入する
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>

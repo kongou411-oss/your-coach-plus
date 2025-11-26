@@ -957,7 +957,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
             age: profile.age || 25,
             gender: profile.gender || '男性',
             height: profile.height || 170,
-            mealsPerDay: profile.mealsPerDay || 4, // 想定食事回数（デフォルト4回）
+            mealsPerDay: profile.mealsPerDay || 5, // 想定食事回数（デフォルト5回）
 
             // 活動レベル
             activityLevel: profile.activityLevel || 3,
@@ -1138,14 +1138,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         <div className="border-l-4 border-[#4A9EFF] pl-4">
                             <label className="block text-sm font-medium mb-2">想定食事回数 / 日</label>
                             <select
-                                value={profile.mealsPerDay || 4}
+                                value={profile.mealsPerDay || 5}
                                 onChange={(e) => setProfile({...profile, mealsPerDay: Number(e.target.value)})}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
                             >
                                 <option value={2}>2回</option>
                                 <option value={3}>3回</option>
-                                <option value={4}>4回（推奨）</option>
-                                <option value={5}>5回</option>
+                                <option value={4}>4回</option>
+                                <option value={5}>5回（推奨）</option>
                                 <option value={6}>6回</option>
                                 <option value={7}>7回</option>
                                 <option value={8}>8回</option>

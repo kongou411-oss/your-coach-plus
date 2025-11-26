@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YourCoach+の教科書 - PGBASE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.8;
+        }
+        .conclusion-box {
+            background: #ffffff;
+            border-left: 4px solid #14b8a6;
+            color: #374151;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .section-header {
+            border-left: 4px solid #06b6d4;
+            padding-left: 1rem;
+            margin: 2rem 0 1rem 0;
+        }
+        .evidence-badge {
+            display: inline-block;
+            background: #7c3aed;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .step-card {
+            background: #ffffff;
+            border-left: 4px solid #06b6d4;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0 12px 12px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            background: #06b6d4;
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 1.25rem;
+            margin-right: 0.75rem;
+        }
+        .feature-box {
+            background: #f0fdfa;
+            border: 1px solid #99f6e4;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.75rem 0;
+        }
+        .result-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .recommend-box {
+            background: #ede9fe;
+            border-left: 4px solid #7c3aed;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .philosophy-box {
+            background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 100%);
+            border: 2px solid #14b8a6;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+        }
+        .meta-info {
+            background: #ffffff;
+            border-left: 4px solid #22c55e;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 2rem 0;
+            font-size: 0.875rem;
+        }
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: #14b8a6;
+            color: white;
+            padding: 1rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+            cursor: pointer;
+            border: none;
+            font-size: 1.25rem;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-4xl mx-auto p-6 bg-white shadow-lg min-h-screen">
+
+        <!-- ヘッダー -->
+        <header class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="evidence-badge">📱 公式ガイド</span>
+                <span class="text-sm text-gray-600">YourCoach+ 活用マニュアル</span>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-700 mb-4">
+                YourCoach+の教科書
+            </h1>
+            <p class="text-lg text-gray-600">
+                記録→分析→学習→共有の4ステップで、あなただけの最適解を見つける
+            </p>
+            <div class="flex gap-4 mt-4 text-sm text-gray-500">
+                <span>📚 カテゴリ: 公式ガイド</span>
+                <span>⏱️ 読了時間: 5分</span>
+            </div>
+        </header>
+
+        <!-- 基本理念 -->
+        <section class="philosophy-box">
+            <h2 class="text-xl font-bold text-teal-800 mb-3 flex items-center gap-2">
+                <span>🎯</span>
+                <span>基本理念</span>
+            </h2>
+            <p class="text-gray-700 text-lg leading-relaxed">
+                YourCoach+は<strong>「相関分析でパフォーマンス向上」</strong>を実現するアプリです。
+            </p>
+            <p class="text-gray-700 mt-3">
+                睡眠時間と集中力、食事内容と体調、運動と気分――これらの関係性は人それぞれ異なります。
+                日々の記録を蓄積し、AI分析で相関を発見することで、<strong>「自分に何が効くか」</strong>を科学的に見つけ出します。
+            </p>
+        </section>
+
+        <!-- Step 1: 毎日の記録 -->
+        <section class="step-card">
+            <h2 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                <span class="step-number">1</span>
+                <span>毎日の記録（食事・運動・コンディション）</span>
+            </h2>
+
+            <p class="text-gray-700 mb-4">
+                相関分析の第一歩は「記録」です。記録がなければ分析もできません。
+            </p>
+
+            <div class="feature-box">
+                <p class="font-semibold text-green-600 mb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+                    食事記録
+                </p>
+                <p class="text-gray-700">何を、いつ、どれくらい食べたかを記録。栄養バランスが自動計算されます。</p>
+            </div>
+
+            <div class="feature-box">
+                <p class="font-semibold text-orange-600 mb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"/></svg>
+                    運動記録
+                </p>
+                <p class="text-gray-700">運動の種類、時間、強度を記録。消費カロリーと活動量を可視化します。</p>
+            </div>
+
+            <div class="feature-box">
+                <p class="font-semibold text-red-600 mb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg>
+                    コンディション記録
+                </p>
+                <p class="text-gray-700">睡眠時間、体調、気分を記録。パフォーマンスに影響する要因を追跡します。</p>
+            </div>
+
+            <div class="recommend-box">
+                <p class="font-semibold text-purple-800 mb-2">💡 推奨ガイドライン</p>
+                <ul class="text-gray-700 space-y-1">
+                    <li>• <strong>睡眠</strong>：7〜8時間/日を目安に</li>
+                    <li>• <strong>食事</strong>：1日5食を推奨（朝・昼・トレ前・トレ後プロテイン・夜）</li>
+                    <li>• <strong>記録タイミング</strong>：食後・運動後すぐが理想</li>
+                </ul>
+            </div>
+
+            <div class="result-box">
+                <p class="font-semibold text-amber-800">→ 得られるもの</p>
+                <p class="text-gray-700">行動が数値として「見える化」され、相関分析の材料が蓄積されます。</p>
+            </div>
+        </section>
+
+        <!-- Step 2: 分析で振り返る -->
+        <section class="step-card">
+            <h2 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                <span class="step-number">2</span>
+                <span>分析で振り返る（履歴・AI分析）</span>
+            </h2>
+
+            <p class="text-gray-700 mb-4">
+                蓄積したデータを2つの視点で振り返ります。
+            </p>
+
+            <div class="feature-box">
+                <p class="font-semibold text-teal-800 mb-2">📈 履歴分析</p>
+                <p class="text-gray-700">
+                    過去のデータをグラフで可視化。体重推移、摂取カロリー、栄養バランスの変化を時系列で確認できます。
+                    週単位・月単位での傾向を把握しましょう。
+                </p>
+            </div>
+
+            <div class="feature-box">
+                <p class="font-semibold text-teal-800 mb-2">🤖 AI分析</p>
+                <p class="text-gray-700">
+                    AIがあなたのデータから相関パターンを発見。「睡眠が6時間未満の日は集中力が20%低下」
+                    「運動した翌日は睡眠の質が向上」など、自分だけの法則を見つけます。
+                </p>
+            </div>
+
+            <div class="result-box">
+                <p class="font-semibold text-amber-800">→ 得られるもの</p>
+                <p class="text-gray-700">
+                    データに基づいた「自分の傾向」が分かり、何を改善すべきかが明確になります。
+                </p>
+            </div>
+        </section>
+
+        <!-- Step 3: PGBASEで学ぶ -->
+        <section class="step-card">
+            <h2 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                <span class="step-number">3</span>
+                <span>PGBASEで学ぶ</span>
+            </h2>
+
+            <p class="text-gray-700 mb-4">
+                AI分析で「睡眠が大事」と分かっても、「なぜ大事か」「どうすれば改善できるか」が分からなければ行動に移せません。
+                PGBASEで科学的知識を身につけましょう。
+            </p>
+
+            <div class="feature-box">
+                <p class="font-semibold text-teal-800 mb-2">📚 教科書モジュール</p>
+                <p class="text-gray-700">
+                    栄養学、運動科学、メンタルヘルスなど、パフォーマンス向上に必要な知識を体系的に学べます。
+                    公的資料・学術研究に基づいた信頼できる情報です。
+                </p>
+            </div>
+
+            <div class="result-box">
+                <p class="font-semibold text-amber-800">→ 得られるもの</p>
+                <p class="text-gray-700">
+                    「知識」が「判断力」に変わり、自分で最適な選択ができるようになります。
+                </p>
+            </div>
+        </section>
+
+        <!-- Step 4: COMYで共有する -->
+        <section class="step-card">
+            <h2 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                <span class="step-number">4</span>
+                <span>COMYで共有する</span>
+            </h2>
+
+            <p class="text-gray-700 mb-4">
+                一人で続けるより、仲間と一緒の方が継続率は格段に上がります。
+                COMY（コミュニティ機能）で同じ目標を持つ仲間とつながりましょう。
+            </p>
+
+            <div class="feature-box">
+                <p class="font-semibold text-teal-800 mb-2">👥 コミュニティ機能</p>
+                <p class="text-gray-700">
+                    進捗の共有、励まし合い、情報交換ができます。
+                    他のユーザーの成功事例から学ぶこともできます。
+                </p>
+            </div>
+
+            <div class="result-box">
+                <p class="font-semibold text-amber-800">→ 得られるもの</p>
+                <p class="text-gray-700">
+                    モチベーション維持と継続力。一人では難しい「習慣化」を仲間の力で実現します。
+                </p>
+            </div>
+        </section>
+
+        <!-- まとめ -->
+        <section class="conclusion-box">
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>📌</span>
+                <span>まとめ：4ステップサイクル</span>
+            </h2>
+
+            <div class="flex flex-wrap justify-center items-center gap-2 text-lg font-semibold text-gray-700 my-6">
+                <span class="bg-cyan-100 px-3 py-1 rounded-full">①記録</span>
+                <span>→</span>
+                <span class="bg-cyan-100 px-3 py-1 rounded-full">②分析</span>
+                <span>→</span>
+                <span class="bg-cyan-100 px-3 py-1 rounded-full">③学習</span>
+                <span>→</span>
+                <span class="bg-cyan-100 px-3 py-1 rounded-full">④共有</span>
+                <span>→</span>
+                <span class="text-teal-600">繰り返し</span>
+            </div>
+
+            <p class="text-gray-700 mb-4">
+                このサイクルを回すことで、以下の成果が得られます：
+            </p>
+
+            <ul class="space-y-2 text-gray-700">
+                <li>✅ <strong>自分だけの最適解</strong>が見つかる（相関分析）</li>
+                <li>✅ <strong>科学的根拠</strong>に基づいた行動ができる（知識）</li>
+                <li>✅ <strong>継続できる仕組み</strong>が手に入る（コミュニティ）</li>
+                <li>✅ 結果として<strong>パフォーマンスが向上</strong>する</li>
+            </ul>
+
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <p class="text-xl font-semibold mb-3">🎯 今日から始めること</p>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                    <li>まずは今日の食事を1回記録してみる</li>
+                    <li>コンディション（睡眠・体調）を毎朝記録する習慣をつける</li>
+                    <li>1週間続いたらAI分析を確認してみる</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- メタ情報 -->
+        <section class="meta-info">
+            <h3 class="font-bold text-gray-700 mb-3">📝 モジュール情報</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-700">
+                <div>
+                    <p><strong>編纂者:</strong> YourCoach+チーム</p>
+                    <p><strong>作成日:</strong> 2025年1月</p>
+                    <p><strong>バージョン:</strong> 1.0</p>
+                </div>
+                <div>
+                    <p><strong>カテゴリー:</strong> 公式ガイド</p>
+                    <p><strong>対象:</strong> 全ユーザー</p>
+                    <p><strong>読了時間:</strong> 約5分</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- スクロールトップボタン -->
+    <button
+        onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+        class="scroll-top-btn"
+        aria-label="ページトップへ"
+    >
+        ↑
+    </button>
+
+</body>
+</html>

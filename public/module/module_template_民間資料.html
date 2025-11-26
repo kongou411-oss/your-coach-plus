@@ -7,12 +7,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
             line-height: 1.8;
         }
         .conclusion-box {
-            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-            color: white;
+            background: #ffffff; border-left: 4px solid #14b8a6;
+            color: #374151;
             padding: 1.5rem;
             border-radius: 12px;
             margin: 2rem 0;
@@ -37,6 +37,7 @@
             border-left: 4px solid #06b6d4;
             padding: 1rem;
             margin: 1rem 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .source-card {
             background: #dbeafe;
@@ -46,18 +47,36 @@
             margin: 1.5rem 0;
         }
         .meta-info {
-            background: #f3f4f6;
+            background: #ffffff; border-left: 4px solid #22c55e;
             border-radius: 8px;
             padding: 1rem;
             margin: 2rem 0;
             font-size: 0.875rem;
         }
         .expert-quote {
-            background: #f0f9ff;
+            background: #ffffff;
             border-left: 4px solid #0891b2;
             padding: 1rem;
             margin: 1rem 0;
             font-style: italic;
+        }
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: #14b8a6;
+            color: white;
+            padding: 1rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+            cursor: pointer;
+            border: none;
+            font-size: 1.25rem;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -70,7 +89,7 @@
                 <span class="evidence-badge">📊 民間資料</span>
                 <span class="text-sm text-gray-600">レベル: 専門家・信頼できる民間団体</span>
             </div>
-            <h1 class="text-4xl font-bold text-gray-900 mb-4">
+            <h1 class="text-4xl font-bold text-gray-700 mb-4">
                 [モジュールタイトル]
             </h1>
             <p class="text-lg text-gray-600">
@@ -102,7 +121,7 @@
 
         <!-- 目次 -->
         <nav class="bg-gray-100 p-6 rounded-lg mb-8">
-            <h2 class="text-xl font-bold mb-4 text-gray-900">📋 目次</h2>
+            <h2 class="text-xl font-bold mb-4 text-gray-700">📋 目次</h2>
             <ol class="list-decimal list-inside space-y-2 text-gray-700">
                 <li><a href="#section1" class="hover:text-cyan-600">このテーマの重要性</a></li>
                 <li><a href="#section2" class="hover:text-cyan-600">専門家の知見とデータ</a></li>
@@ -114,7 +133,7 @@
 
         <!-- セクション1: 重要性 -->
         <section id="section1" class="mb-12">
-            <h2 class="section-header text-3xl font-bold text-gray-900">
+            <h2 class="section-header text-xl font-bold text-gray-700">
                 1. このテーマの重要性
             </h2>
             <p class="text-gray-700 mt-4">
@@ -133,7 +152,7 @@
 
         <!-- セクション2: 専門家の知見 -->
         <section id="section2" class="mb-12">
-            <h2 class="section-header text-3xl font-bold text-gray-900">
+            <h2 class="section-header text-xl font-bold text-gray-700">
                 2. 専門家の知見とデータ
             </h2>
 
@@ -181,7 +200,7 @@
 
         <!-- セクション3: 実践的アプローチ -->
         <section id="section3" class="mb-12">
-            <h2 class="section-header text-3xl font-bold text-gray-900">
+            <h2 class="section-header text-xl font-bold text-gray-700">
                 3. 実践的アプローチ
             </h2>
 
@@ -234,15 +253,15 @@
             <h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">3.4 よくある質問（Q&A）</h3>
             <div class="space-y-4">
                 <div class="border-l-4 border-cyan-500 pl-4">
-                    <p class="font-semibold text-gray-900 mb-1">Q: [よくある質問1]</p>
+                    <p class="font-semibold text-gray-700 mb-1">Q: [よくある質問1]</p>
                     <p class="text-gray-700">A: [回答]</p>
                 </div>
                 <div class="border-l-4 border-cyan-500 pl-4">
-                    <p class="font-semibold text-gray-900 mb-1">Q: [よくある質問2]</p>
+                    <p class="font-semibold text-gray-700 mb-1">Q: [よくある質問2]</p>
                     <p class="text-gray-700">A: [回答]</p>
                 </div>
                 <div class="border-l-4 border-cyan-500 pl-4">
-                    <p class="font-semibold text-gray-900 mb-1">Q: [よくある質問3]</p>
+                    <p class="font-semibold text-gray-700 mb-1">Q: [よくある質問3]</p>
                     <p class="text-gray-700">A: [回答]</p>
                 </div>
             </div>
@@ -250,7 +269,7 @@
 
         <!-- セクション4: よくある誤解 -->
         <section id="section4" class="mb-12">
-            <h2 class="section-header text-3xl font-bold text-gray-900">
+            <h2 class="section-header text-xl font-bold text-gray-700">
                 4. よくある誤解と注意点
             </h2>
 
@@ -287,7 +306,7 @@
 
         <!-- セクション5: 結論とまとめ -->
         <section id="section5" class="mb-12">
-            <h2 class="section-header text-3xl font-bold text-gray-900">
+            <h2 class="section-header text-xl font-bold text-gray-700">
                 5. 結論とまとめ
             </h2>
             <div class="conclusion-box">
@@ -297,7 +316,7 @@
                     <li>✅ [重要ポイント2の再確認]</li>
                     <li>✅ [重要ポイント3の再確認]</li>
                 </ul>
-                <div class="mt-6 pt-6 border-t border-white/30">
+                <div class="mt-6 pt-6 border-t border-gray-200">
                     <p class="text-xl font-semibold mb-3">🎯 今日から始められること</p>
                     <ol class="list-decimal list-inside space-y-2">
                         <li>[今日から始められる具体的な行動1]</li>
@@ -305,7 +324,7 @@
                         <li>[今日から始められる具体的な行動3]</li>
                     </ol>
                 </div>
-                <div class="mt-6 pt-6 border-t border-white/30">
+                <div class="mt-6 pt-6 border-t border-gray-200">
                     <p class="text-xl font-semibold mb-3">🔄 習慣化のコツ</p>
                     <p>[継続するためのアドバイス]</p>
                 </div>
@@ -314,7 +333,7 @@
 
         <!-- 関連モジュール -->
         <section class="mb-12 bg-cyan-50 p-6 rounded-lg">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">🔗 関連モジュール</h2>
+            <h2 class="text-2xl font-bold text-gray-700 mb-4">🔗 関連モジュール</h2>
             <ul class="space-y-3">
                 <li>
                     <a href="#" class="text-cyan-600 hover:text-cyan-800 font-semibold">
@@ -339,7 +358,7 @@
 
         <!-- さらに学ぶために -->
         <section class="mb-12 bg-blue-50 p-6 rounded-lg">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">📚 さらに学ぶために</h2>
+            <h2 class="text-2xl font-bold text-gray-700 mb-4">📚 さらに学ぶために</h2>
             <p class="text-gray-700 mb-4">
                 このテーマについてさらに深く学びたい方は、以下のリソースもご参考ください。
             </p>
@@ -352,7 +371,7 @@
 
         <!-- メタ情報 -->
         <section class="meta-info">
-            <h3 class="font-bold text-gray-900 mb-3">📝 モジュール情報</h3>
+            <h3 class="font-bold text-gray-700 mb-3">📝 モジュール情報</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-700">
                 <div>
                     <p><strong>編纂者:</strong> サクライ</p>
@@ -368,7 +387,7 @@
             </div>
 
             <div class="mt-6 pt-4 border-t border-gray-300">
-                <p class="font-bold text-gray-900 mb-2">📖 主要参考資料</p>
+                <p class="font-bold text-gray-700 mb-2">📖 主要参考資料</p>
                 <ol class="list-decimal list-inside space-y-2 text-sm text-gray-700">
                     <li>
                         [書籍名 or 資料名], [著者/団体], [年]<br>
@@ -382,7 +401,7 @@
             </div>
 
             <div class="mt-6 pt-4 border-t border-gray-300">
-                <p class="font-bold text-gray-900 mb-2">🔍 編纂プロセス</p>
+                <p class="font-bold text-gray-700 mb-2">🔍 編纂プロセス</p>
                 <p class="text-sm text-gray-700">
                     本モジュールは、複数の信頼できる情報源を参照し、編纂者の専門知識と実践経験に基づいて作成されています。
                     定期的に内容を見直し、最新の情報に更新しています。
@@ -392,7 +411,7 @@
 
         <!-- フィードバック募集 -->
         <section class="bg-gradient-to-r from-cyan-50 to-blue-50 p-6 rounded-lg mt-8">
-            <h3 class="font-bold text-gray-900 mb-3">💬 フィードバックをお待ちしています</h3>
+            <h3 class="font-bold text-gray-700 mb-3">💬 フィードバックをお待ちしています</h3>
             <p class="text-gray-700 mb-4">
                 このモジュールは役に立ちましたか？改善点や追加してほしい情報があれば、ぜひお知らせください。
             </p>
@@ -408,7 +427,7 @@
 
         <!-- 免責事項 -->
         <section class="bg-gray-100 p-6 rounded-lg mt-8 text-sm text-gray-600">
-            <p class="font-bold text-gray-900 mb-2">⚠️ 免責事項</p>
+            <p class="font-bold text-gray-700 mb-2">⚠️ 免責事項</p>
             <p>
                 本モジュールの情報は教育・情報提供目的で作成されており、医療アドバイスの代替ではありません。
                 個別の健康状態や医学的な問題については、必ず医師・管理栄養士・専門家にご相談ください。

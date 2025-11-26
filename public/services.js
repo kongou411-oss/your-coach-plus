@@ -2044,6 +2044,138 @@ const ExperienceService = {
     }
 };
 
+
+// ========================================
+// 教科書購入サービス
+// ========================================
+const TextbookPurchaseService = {
+    /**
+     * 購入済みモジュール一覧を取得（Firestore優先）
+     * @param {string} userId
+     * @returns {Promise<string[]>} 購入済みモジュールID配列
+     */
+    getPurchasedModules: async (userId) => {
+        try {
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+
+            if (!userDoc.exists) {
+                return [];
+            }
+
+            const userData = userDoc.data();
+            return userData.purchasedModules || [];
+        } catch (error) {
+            console.error('[TextbookPurchase] Failed to get purchased modules:', error);
+            return [];
+        }
+    },
+
+    /**
+     * モジュールが購入済みかチェック
+     * @param {string} userId
+     * @param {string} moduleId
+     * @returns {Promise<boolean>}
+     */
+    isModulePurchased: async (userId, moduleId) => {
+        const purchasedModules = await TextbookPurchaseService.getPurchasedModules(userId);
+        return purchasedModules.includes(moduleId);
+    },
+
+    /**
+     * 有料クレジット残高を取得
+     * @param {string} userId
+     * @returns {Promise<number>}
+     */
+    getPaidCredits: async (userId) => {
+        try {
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+
+            if (!userDoc.exists) {
+                return 0;
+            }
+
+            return userDoc.data().paidCredits || 0;
+        } catch (error) {
+            console.error('[TextbookPurchase] Failed to get paid credits:', error);
+            return 0;
+        }
+    },
+
+    /**
+     * 教科書を購入（有料クレジットのみ使用可能）
+     * @param {string} userId
+     * @param {string} moduleId
+     * @param {number} price - 必要な有料クレジット数
+     * @returns {Promise<{success: boolean, error?: string, remainingPaidCredits?: number}>}
+     */
+    purchaseModule: async (userId, moduleId, price) => {
+        try {
+            const userRef = db.collection('users').doc(userId);
+
+            // トランザクションで購入処理
+            const result = await db.runTransaction(async (transaction) => {
+                const userDoc = await transaction.get(userRef);
+
+                if (!userDoc.exists) {
+                    throw new Error('USER_NOT_FOUND');
+                }
+
+                const userData = userDoc.data();
+                const paidCredits = userData.paidCredits || 0;
+                const purchasedModules = userData.purchasedModules || [];
+
+                // 既に購入済みかチェック
+                if (purchasedModules.includes(moduleId)) {
+                    throw new Error('ALREADY_PURCHASED');
+                }
+
+                // 有料クレジット残高チェック
+                if (paidCredits < price) {
+                    throw new Error('INSUFFICIENT_PAID_CREDITS');
+                }
+
+                // 購入処理
+                const newPaidCredits = paidCredits - price;
+                const newPurchasedModules = [...purchasedModules, moduleId];
+
+                transaction.update(userRef, {
+                    paidCredits: newPaidCredits,
+                    purchasedModules: newPurchasedModules
+                });
+
+                return {
+                    success: true,
+                    remainingPaidCredits: newPaidCredits,
+                    purchasedModules: newPurchasedModules
+                };
+            });
+
+            console.log('[TextbookPurchase] User ' + userId + ' purchased module ' + moduleId + ' for ' + price + ' paid credits');
+            return result;
+
+        } catch (error) {
+            console.error('[TextbookPurchase] Purchase failed:', error);
+
+            let errorMessage = '購入に失敗しました';
+            if (error.message === 'USER_NOT_FOUND') {
+                errorMessage = 'ユーザーが見つかりません';
+            } else if (error.message === 'ALREADY_PURCHASED') {
+                errorMessage = '既に購入済みです';
+            } else if (error.message === 'INSUFFICIENT_PAID_CREDITS') {
+                errorMessage = '有料クレジットが不足しています';
+            }
+
+            return {
+                success: false,
+                error: errorMessage,
+                errorCode: error.message
+            };
+        }
+    }
+};
+
 // ========================================
 // 通知サービス - 凍結のため削除
 // ========================================
@@ -2380,3 +2512,4 @@ window.CreditService = CreditService;
 window.ExperienceService = ExperienceService;
 window.PremiumService = PremiumService;
 window.MFAService = MFAService;
+window.TextbookPurchaseService = TextbookPurchaseService;

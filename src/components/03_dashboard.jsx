@@ -1407,7 +1407,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // 1食あたりの動的GL上限と絶対GL上限
     // 想定食事回数（プロフィールから取得、デフォルト4回）
-    const mealsPerDay = profile?.mealsPerDay || 4;
+    const mealsPerDay = profile?.mealsPerDay || 5;
 
     // 1食あたりの動的GL上限（目標達成のための理想値）
     const mealDynamicGLLimit = Math.round(dynamicGLLimit / mealsPerDay);
