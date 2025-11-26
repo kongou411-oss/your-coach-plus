@@ -1100,7 +1100,7 @@ const AddMealModal = ({
                 <div className="border-t p-4 space-y-2 flex-shrink-0">
                     {/* 1行目：写真解析（Premium制限あり） */}
                     {(() => {
-                        const isPremium = userProfile?.subscriptionStatus === 'active';
+                        const isPremium = userProfile?.subscription?.status === 'active';
                         const isTrial = usageDays < 7;
                         const hasAccess = isPremium || isTrial;
 

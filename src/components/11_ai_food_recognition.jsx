@@ -1,5 +1,6 @@
 import React from 'react';
 import toast from 'react-hot-toast';
+import { normalizeForSearch } from '../kanjiReadingMap.js';
 // ===== AI Food Recognition Component =====
 // AI搭載の食事認識機能（写真から食品を自動認識）
 
@@ -346,6 +347,12 @@ JSONのみ出力、説明文不要`;
 
             // 認識された食品をfoodDatabaseと照合
             const matchedFoods = parsedResult.foods.map(food => {
+                // 括弧の正規化（半角→全角）：AIが半角括弧で返す場合があるため
+                const normalizedName = food.name
+                    .replace(/\(/g, '（')
+                    .replace(/\)/g, '）');
+                food.name = normalizedName;
+
                 // 【優先度1】パッケージ情報がある場合（source: 'package'）
                 if (food.source === 'package' && food.nutritionPer100g) {
                     console.log(`[recognizeFood] パッケージ情報を使用: ${food.name}`, food.nutritionPer100g);
@@ -409,6 +416,16 @@ JSONのみ出力、説明文不要`;
                 }
 
                 console.log(`[recognizeFood] 検索名リスト (${food.name}):`, searchNames);
+
+                // デバッグ: 白米の検索時にfoodDBの主食カテゴリを確認
+                if (food.name.includes('白米')) {
+                    const mainDishKeys = Object.keys(foodDB['主食'] || {}).filter(k => k.includes('白米'));
+                    console.log(`[recognizeFood] DEBUG: foodDB主食カテゴリの白米キー:`, mainDishKeys);
+                    console.log(`[recognizeFood] DEBUG: 検索名の文字コード:`, [...searchNames[0]].map(c => c.charCodeAt(0).toString(16)));
+                    if (mainDishKeys.length > 0) {
+                        console.log(`[recognizeFood] DEBUG: DBキーの文字コード:`, [...mainDishKeys[0]].map(c => c.charCodeAt(0).toString(16)));
+                    }
+                }
 
                 let foundMatch = false;
                 Object.keys(foodDB).forEach(category => {
@@ -1438,7 +1455,7 @@ JSON形式のみ出力、説明文不要`;
                     temperature: 0.2,
                     topK: 40,
                     topP: 0.95,
-                    maxOutputTokens: 4096,
+                    maxOutputTokens: 8192,
                 }
             }, 5, 30000); // maxRetries=5, timeout=30秒
 
@@ -1486,6 +1503,29 @@ JSON形式のみ出力、説明文不要`;
             // 3. NaN, Infinity を null に変換
             jsonString = jsonString.replace(/:\s*NaN/g, ': null').replace(/:\s*Infinity/g, ': null');
 
+            // 4. 不完全なJSON修復（途中で切れた場合）
+            // 開いている括弧をカウントして閉じる
+            let bracketCount = 0;
+            let braceCount = 0;
+            for (const char of jsonString) {
+                if (char === '[') bracketCount++;
+                if (char === ']') bracketCount--;
+                if (char === '{') braceCount++;
+                if (char === '}') braceCount--;
+            }
+            // 不完全な文字列や値を削除（末尾のカンマや不完全なキーを除去）
+            jsonString = jsonString.replace(/,\s*"[^"]*"?\s*:?\s*[^,}\]]*$/, '');
+            jsonString = jsonString.replace(/,\s*\{[^}]*$/, '');
+            // 閉じ括弧を追加
+            while (bracketCount > 0) {
+                jsonString += ']';
+                bracketCount--;
+            }
+            while (braceCount > 0) {
+                jsonString += '}';
+                braceCount--;
+            }
+
             let response;
             try {
                 response = JSON.parse(jsonString);
@@ -1495,7 +1535,17 @@ JSON形式のみ出力、説明文不要`;
                 throw new Error(`栄養素の解析に失敗しました: ${parseError.message}`);
             }
 
+            // bestMatchがない場合、candidatesから補完を試みる
             if (!response.bestMatch || !response.bestMatch.name) {
+                if (response.candidates && response.candidates.length > 0) {
+                    // 最もスコアの高い候補をbestMatchとして使用
+                    const topCandidate = response.candidates.reduce((best, current) =>
+                        (current.matchScore || 0) > (best.matchScore || 0) ? current : best
+                    , response.candidates[0]);
+                    console.warn('[fetchNutritionFromHachitei] bestMatch欠落、candidatesから補完:', topCandidate.name);
+                    // candidatesにはname, matchScore, matchReasonしかないので、再検索が必要
+                    throw new Error(`最適候補が不完全です（${topCandidate.name}）。再検索してください。`);
+                }
                 throw new Error('最適候補が見つかりませんでした');
             }
 
@@ -1725,6 +1775,23 @@ JSON形式のみ出力、説明文不要`;
 
         console.log(`[searchFoodDatabaseCandidates] 検索名リスト:`, searchNames);
 
+        // 検索ヘルパー関数：漢字読み仮名マッピングを使った検索（19_add_meal_modal.jsxと同じ）
+        const searchMatch = (itemName, searchTerm) => {
+            if (!searchTerm) return true;
+
+            // 検索語を正規化（カタカナ→ひらがな、空白削除など）
+            const normalizedQuery = searchTerm
+                .toLowerCase()
+                .replace(/[\u30a1-\u30f6]/g, (m) => String.fromCharCode(m.charCodeAt(0) - 0x60))
+                .replace(/\s+/g, '');
+
+            // アイテム名を正規化（漢字→読み仮名を含む）
+            const normalizedItemName = normalizeForSearch(itemName);
+
+            // 部分一致検索
+            return normalizedItemName.includes(normalizedQuery);
+        };
+
         // 部分一致でスコアリング
         Object.keys(foodDB).forEach(category => {
             Object.keys(foodDB[category]).forEach(itemName => {
@@ -1745,10 +1812,10 @@ JSON形式のみ出力、説明文不要`;
                     matchReason = '完全一致';
                     if (isTargetItem) console.log(`  → 完全一致: スコア${matchScore}`);
                 }
-                // 部分一致（含む）
-                else if (searchNames.some(name => itemName.includes(name) || name.includes(itemName))) {
+                // 部分一致（含む）- normalizeForSearchを使用
+                else if (searchNames.some(name => searchMatch(itemName, name))) {
                     // マッチした文字列の長さに応じてスコアを調整
-                    const matchingName = searchNames.find(name => itemName.includes(name) || name.includes(itemName));
+                    const matchingName = searchNames.find(name => searchMatch(itemName, name));
                     const matchLength = matchingName.length;
                     if (matchLength >= 3) {
                         matchScore = 90;
@@ -1760,13 +1827,15 @@ JSON形式のみ出力、説明文不要`;
                     matchReason = '部分一致';
                     if (isTargetItem) console.log(`  → 部分一致: マッチ文字「${matchingName}」(長さ${matchLength}), スコア${matchScore}`);
                 }
-                // 文字列の類似度（簡易的に先頭一致・後方一致をチェック）
+                // 文字列の類似度（簡易的に先頭一致・後方一致をチェック）- normalizeForSearchを使用
                 else {
+                    const normalizedItemName = normalizeForSearch(itemName);
                     searchNames.forEach(name => {
-                        if (itemName.startsWith(name) || name.startsWith(itemName)) {
+                        const normalizedName = normalizeForSearch(name);
+                        if (normalizedItemName.startsWith(normalizedName) || normalizedName.startsWith(normalizedItemName)) {
                             matchScore = Math.max(matchScore, 80);
                             matchReason = '前方一致';
-                        } else if (itemName.endsWith(name) || name.endsWith(itemName)) {
+                        } else if (normalizedItemName.endsWith(normalizedName) || normalizedName.endsWith(normalizedItemName)) {
                             matchScore = Math.max(matchScore, 75);
                             matchReason = '後方一致';
                         }
@@ -2340,10 +2409,27 @@ JSON形式のみ出力、説明文不要`;
             return;
         }
 
+        // 検索ヘルパー関数：漢字読み仮名マッピングを使った検索（19_add_meal_modal.jsxと同じ）
+        const searchMatch = (itemName, searchTerm) => {
+            if (!searchTerm) return true;
+
+            // 検索語を正規化（カタカナ→ひらがな、空白削除など）
+            const normalizedQuery = searchTerm
+                .toLowerCase()
+                .replace(/[\u30a1-\u30f6]/g, (m) => String.fromCharCode(m.charCodeAt(0) - 0x60))
+                .replace(/\s+/g, '');
+
+            // アイテム名を正規化（漢字→読み仮名を含む）
+            const normalizedItemName = normalizeForSearch(itemName);
+
+            // 部分一致検索
+            return normalizedItemName.includes(normalizedQuery);
+        };
+
         const results = [];
         Object.keys(foodDB).forEach(category => {
             Object.keys(foodDB[category]).forEach(itemName => {
-                if (itemName.includes(query)) {
+                if (searchMatch(itemName, query)) {
                     results.push({
                         name: itemName,
                         category: category,
@@ -2612,27 +2698,31 @@ JSON形式のみ出力、説明文不要`;
                                 });
 
                                 return (
-                                    <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-                                        <h3 className="font-bold text-green-800 mb-2 flex items-center gap-2">
+                                    <div className="rounded-lg p-4 border-2" style={{ borderColor: '#4A9EFF' }}>
+                                        <h3 className="font-bold mb-2 flex items-center gap-2" style={{ color: '#4A9EFF' }}>
                                             <Icon name="Check" size={20} />
                                             認識された食材の合計（{recognizedFoods.length}アイテム）
                                         </h3>
                                         <div className="grid grid-cols-4 gap-3 text-center">
-                                            <div>
-                                                <div className="text-2xl font-bold text-green-700">{Math.round(totalStats.calories)}</div>
-                                                <div className="text-xs text-gray-600 mt-1">kcal</div>
+                                            <div className="bg-sky-50 rounded-lg p-2">
+                                                <div className="text-xs text-gray-600">カロリー</div>
+                                                <div className="text-xl font-bold text-blue-600">{Math.round(totalStats.calories)}</div>
+                                                <div className="text-xs text-gray-600">kcal</div>
                                             </div>
-                                            <div>
-                                                <div className="text-2xl font-bold text-green-700">{totalStats.protein.toFixed(1)}</div>
-                                                <div className="text-xs text-gray-600 mt-1">P (g)</div>
+                                            <div className="bg-red-50 rounded-lg p-2">
+                                                <div className="text-xs text-gray-600">P</div>
+                                                <div className="text-xl font-bold text-red-500">{totalStats.protein.toFixed(1)}</div>
+                                                <div className="text-xs text-gray-600">g</div>
                                             </div>
-                                            <div>
-                                                <div className="text-2xl font-bold text-green-700">{totalStats.fat.toFixed(1)}</div>
-                                                <div className="text-xs text-gray-600 mt-1">F (g)</div>
+                                            <div className="bg-yellow-50 rounded-lg p-2">
+                                                <div className="text-xs text-gray-600">F</div>
+                                                <div className="text-xl font-bold text-yellow-500">{totalStats.fat.toFixed(1)}</div>
+                                                <div className="text-xs text-gray-600">g</div>
                                             </div>
-                                            <div>
-                                                <div className="text-2xl font-bold text-green-700">{totalStats.carbs.toFixed(1)}</div>
-                                                <div className="text-xs text-gray-600 mt-1">C (g)</div>
+                                            <div className="bg-green-50 rounded-lg p-2">
+                                                <div className="text-xs text-gray-600">C</div>
+                                                <div className="text-xl font-bold text-green-500">{totalStats.carbs.toFixed(1)}</div>
+                                                <div className="text-xs text-gray-600">g</div>
                                             </div>
                                         </div>
                                     </div>
@@ -2642,7 +2732,8 @@ JSON形式のみ出力、説明文不要`;
                             {/* 手動で食材追加ボタン */}
                             <button
                                 onClick={() => setShowManualAdd(!showManualAdd)}
-                                className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold py-3 rounded-lg hover:from-blue-700 hover:to-cyan-700 transition flex items-center justify-center gap-2"
+                                className="w-full text-white font-bold py-3 rounded-lg hover:opacity-90 transition flex items-center justify-center gap-2"
+                                style={{ backgroundColor: '#4A9EFF' }}
                             >
                                 <Icon name="Plus" size={20} />
                                 {showManualAdd ? '検索を閉じる' : '食材を手動で追加'}
@@ -2838,24 +2929,12 @@ JSON形式のみ出力、説明文不要`;
                                 );
                             })()}
 
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => {
-                                        setRecognizedFoods([]);
-                                        setImagePreview(null);
-                                        setSelectedImage(null);
-                                    }}
-                                    className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
-                                >
-                                    やり直す
-                                </button>
-                                <button
-                                    onClick={confirmFoods}
-                                    className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition"
-                                >
-                                    確定して記録
-                                </button>
-                            </div>
+                            <button
+                                onClick={confirmFoods}
+                                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition"
+                            >
+                                確定して記録
+                            </button>
                         </div>
                     )}
 
