@@ -791,6 +791,16 @@ const OnboardingScreen = ({ user, onComplete }) => {
     const [codeError, setCodeError] = useState('');
     const [codeValidated, setCodeValidated] = useState(false); // コード検証成功フラグ
 
+    // URLパラメータから紹介コードを自動取得
+    React.useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        if (refCode) {
+            console.log('[Auth] Referral code from URL:', refCode);
+            setB2b2cCode(refCode.toUpperCase());
+        }
+    }, []);
+
     // 性別変更時にデフォルト値を更新
     const handleGenderChange = (newGender) => {
         const genderDefaults = {
@@ -918,6 +928,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
 
         try {
             const functions = firebase.app().functions('asia-northeast2');
+
+            console.log('[Code] Validating code:', code, 'startsWith USER-:', code.startsWith('USER-'), 'startsWith B2B-:', code.startsWith('B2B-'));
 
             // コードタイプを判定
             if (code.startsWith('B2B-')) {

@@ -1848,12 +1848,17 @@ const ReferralCodeSection = ({ userProfile, userId }) => {
         }
     };
 
+    const copyReferralCode = () => {
+        navigator.clipboard.writeText(referralCode);
+        setCopied(true);
+        toast.success('コードをコピーしました！');
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     const copyReferralLink = () => {
         const referralLink = `${window.location.origin}/?ref=${referralCode}`;
         navigator.clipboard.writeText(referralLink);
-        setCopied(true);
         toast.success('リンクをコピーしました！');
-        setTimeout(() => setCopied(false), 2000);
     };
 
     const shareReferralLink = async () => {
@@ -1916,8 +1921,9 @@ const ReferralCodeSection = ({ userProfile, userId }) => {
                 <div className="flex items-center justify-between">
                     <p className="text-2xl font-bold text-gray-800 tracking-wider">{referralCode}</p>
                     <button
-                        onClick={copyReferralLink}
+                        onClick={copyReferralCode}
                         className="p-2 hover:bg-white/50 rounded transition"
+                        title="コードをコピー"
                     >
                         <Icon name={copied ? "Check" : "Copy"} size={20} className={copied ? "text-green-600" : "text-gray-600"} />
                     </button>

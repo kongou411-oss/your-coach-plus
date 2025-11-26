@@ -1682,6 +1682,13 @@ exports.redeemGiftCode = onCall({
     throw new HttpsError("invalid-argument", "コードを入力してください");
   }
 
+  // スラッシュが含まれているとFirestoreのパスエラーになるため拒否
+  if (code.includes('/') || code.includes('\\')) {
+    throw new HttpsError("invalid-argument", "無効なコード形式です");
+  }
+
+  console.log(`[GiftCode] Attempting to redeem code: ${code} for user: ${userId}`);
+
   try {
     return await admin.firestore().runTransaction(async (t) => {
       const codeRef = admin.firestore().collection('giftCodes').doc(code);
