@@ -2001,3 +2001,165 @@ exports.deleteGiftCode = onCall({
     throw new HttpsError("internal", "コードの削除に失敗しました", error.message);
   }
 });
+
+// ===== COMY投稿管理（管理者用） =====
+
+// COMY投稿一覧取得
+exports.getAdminCommunityPosts = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  const { adminPassword, filter } = request.data;
+
+  // 管理者パスワードチェック
+  if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    throw new HttpsError("permission-denied", "管理者権限がありません");
+  }
+
+  try {
+    let query = admin.firestore().collection('communityPosts');
+
+    // フィルターに応じてクエリを変更
+    if (filter === 'pending') {
+      query = query.where('approvalStatus', '==', 'pending');
+    } else if (filter === 'approved') {
+      query = query.where('approvalStatus', '==', 'approved');
+    } else if (filter === 'rejected') {
+      query = query.where('approvalStatus', '==', 'rejected');
+    }
+    // filter === 'all' の場合は全件取得
+
+    const snapshot = await query.orderBy('timestamp', 'desc').limit(100).get();
+
+    const posts = [];
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+
+      // ユーザー情報を取得
+      let userInfo = { displayName: data.author || '不明', email: '' };
+      if (data.userId) {
+        const userDoc = await admin.firestore().collection('users').doc(data.userId).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          userInfo = {
+            displayName: userData.displayName || userData.nickname || data.author || '不明',
+            email: userData.email || ''
+          };
+        }
+      }
+
+      posts.push({
+        id: doc.id,
+        ...data,
+        timestamp: data.timestamp?.toDate?.()?.toISOString() || null,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+        approvedAt: data.approvedAt?.toDate?.()?.toISOString() || null,
+        rejectedAt: data.rejectedAt?.toDate?.()?.toISOString() || null,
+        userInfo
+      });
+    }
+
+    // 統計情報も取得
+    const pendingCount = await admin.firestore().collection('communityPosts')
+      .where('approvalStatus', '==', 'pending').count().get();
+    const approvedCount = await admin.firestore().collection('communityPosts')
+      .where('approvalStatus', '==', 'approved').count().get();
+    const rejectedCount = await admin.firestore().collection('communityPosts')
+      .where('approvalStatus', '==', 'rejected').count().get();
+
+    return {
+      success: true,
+      posts,
+      stats: {
+        pending: pendingCount.data().count,
+        approved: approvedCount.data().count,
+        rejected: rejectedCount.data().count,
+        total: pendingCount.data().count + approvedCount.data().count + rejectedCount.data().count
+      }
+    };
+  } catch (error) {
+    console.error('[COMY Admin] Get posts failed:', error);
+    throw new HttpsError("internal", "投稿の取得に失敗しました", error.message);
+  }
+});
+
+// COMY投稿承認
+exports.adminApprovePost = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  const { postId, adminPassword } = request.data;
+
+  if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    throw new HttpsError("permission-denied", "管理者権限がありません");
+  }
+
+  if (!postId) {
+    throw new HttpsError("invalid-argument", "投稿IDを指定してください");
+  }
+
+  try {
+    await admin.firestore().collection('communityPosts').doc(postId).update({
+      approvalStatus: 'approved',
+      approvedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    console.log(`[COMY Admin] Post ${postId} approved`);
+    return { success: true, message: '投稿を承認しました' };
+  } catch (error) {
+    console.error('[COMY Admin] Approve failed:', error);
+    throw new HttpsError("internal", "承認に失敗しました", error.message);
+  }
+});
+
+// COMY投稿却下
+exports.adminRejectPost = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  const { postId, reason, adminPassword } = request.data;
+
+  if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    throw new HttpsError("permission-denied", "管理者権限がありません");
+  }
+
+  if (!postId) {
+    throw new HttpsError("invalid-argument", "投稿IDを指定してください");
+  }
+
+  try {
+    await admin.firestore().collection('communityPosts').doc(postId).update({
+      approvalStatus: 'rejected',
+      rejectionReason: reason || '',
+      rejectedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    console.log(`[COMY Admin] Post ${postId} rejected`);
+    return { success: true, message: '投稿を却下しました' };
+  } catch (error) {
+    console.error('[COMY Admin] Reject failed:', error);
+    throw new HttpsError("internal", "却下に失敗しました", error.message);
+  }
+});
+
+// COMY投稿削除
+exports.adminDeletePost = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  const { postId, adminPassword } = request.data;
+
+  if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    throw new HttpsError("permission-denied", "管理者権限がありません");
+  }
+
+  if (!postId) {
+    throw new HttpsError("invalid-argument", "投稿IDを指定してください");
+  }
+
+  try {
+    await admin.firestore().collection('communityPosts').doc(postId).delete();
+
+    console.log(`[COMY Admin] Post ${postId} deleted`);
+    return { success: true, message: '投稿を削除しました' };
+  } catch (error) {
+    console.error('[COMY Admin] Delete failed:', error);
+    throw new HttpsError("internal", "削除に失敗しました", error.message);
+  }
+});

@@ -292,6 +292,9 @@
             <button id="tab-referrals" onclick="switchTab('referrals')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
                 🤝 紹介コード
             </button>
+            <button id="tab-comy" onclick="switchTab('comy')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
+                💬 COMY投稿
+            </button>
         </div>
 
         <!-- ギフトコード管理セクション -->
@@ -518,6 +521,63 @@
                 </div>
             </div>
         </div><!-- 紹介コードセクション終了 -->
+
+        <!-- COMYセクション -->
+        <div id="comy-section" style="display:none;">
+            <!-- 統計 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>総投稿数</h3>
+                    <div class="value" id="total-posts">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>承認待ち</h3>
+                    <div class="value text-yellow-600" id="pending-posts">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>承認済み</h3>
+                    <div class="value text-green-600" id="approved-posts">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>却下済み</h3>
+                    <div class="value text-red-600" id="rejected-posts">-</div>
+                </div>
+            </div>
+
+            <!-- フィルター -->
+            <div class="section mb-6">
+                <div class="section-content">
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <label class="flex items-center gap-2">
+                            <span class="text-sm font-medium">表示:</span>
+                            <select id="comy-filter" onchange="loadCommunityPosts()" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="all">すべて</option>
+                                <option value="pending">承認待ちのみ</option>
+                                <option value="approved">承認済みのみ</option>
+                                <option value="rejected">却下済みのみ</option>
+                            </select>
+                        </label>
+                        <button onclick="loadCommunityPosts()" class="btn-secondary">🔄 更新</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 投稿一覧 -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>💬 COMY投稿一覧</h2>
+                    <span id="comy-count" class="text-sm text-gray-500"></span>
+                </div>
+                <div class="section-content">
+                    <div id="comy-loading" class="loading">投稿を読み込んでいます...</div>
+                    <div id="comy-list" class="space-y-4" style="display:none;"></div>
+                    <div id="comy-empty" class="empty-state" style="display:none;">
+                        <div class="empty-state-icon">💬</div>
+                        <p>該当する投稿がありません</p>
+                    </div>
+                </div>
+            </div>
+        </div><!-- COMYセクション終了 -->
     </div>
 
     <!-- Firebase SDK -->
@@ -566,7 +626,7 @@
 
         // タブ切り替え
         function switchTab(tab) {
-            const sections = ['giftcode', 'b2b2c', 'users', 'referrals'];
+            const sections = ['giftcode', 'b2b2c', 'users', 'referrals', 'comy'];
             const activeClass = 'px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white';
             const inactiveClass = 'px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300';
 
@@ -580,6 +640,7 @@
             // データ読み込み
             if (tab === 'users') loadUsers();
             if (tab === 'referrals') loadReferrals();
+            if (tab === 'comy') loadCommunityPosts();
         }
 
         // ログアウト
@@ -1231,6 +1292,245 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // ===== COMY投稿管理機能 =====
+        let allCommunityPosts = [];
+
+        async function loadCommunityPosts() {
+            const loading = document.getElementById('comy-loading');
+            const list = document.getElementById('comy-list');
+            const empty = document.getElementById('comy-empty');
+            const filter = document.getElementById('comy-filter').value;
+
+            loading.style.display = 'block';
+            list.style.display = 'none';
+            empty.style.display = 'none';
+
+            try {
+                const getAdminCommunityPosts = functions.httpsCallable('getAdminCommunityPosts');
+                const result = await getAdminCommunityPosts({ adminPassword, filter });
+
+                if (!result.data.success) {
+                    throw new Error('データ取得に失敗しました');
+                }
+
+                allCommunityPosts = result.data.posts;
+                const stats = result.data.stats;
+
+                // 統計更新
+                document.getElementById('total-posts').textContent = stats.total;
+                document.getElementById('pending-posts').textContent = stats.pending;
+                document.getElementById('approved-posts').textContent = stats.approved;
+                document.getElementById('rejected-posts').textContent = stats.rejected;
+
+                loading.style.display = 'none';
+
+                if (allCommunityPosts.length === 0) {
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                list.style.display = 'block';
+                document.getElementById('comy-count').textContent = `${allCommunityPosts.length}件`;
+                renderCommunityPosts(allCommunityPosts);
+
+            } catch (error) {
+                console.error('Load community posts error:', error);
+                loading.innerHTML = '<p style="color: red;">エラー: ' + error.message + '</p>';
+            }
+        }
+
+        function renderCommunityPosts(posts) {
+            const container = document.getElementById('comy-list');
+            container.innerHTML = posts.map(post => {
+                const statusBadge = getStatusBadge(post.approvalStatus);
+                const categoryBadge = post.category === 'body'
+                    ? '<span class="px-2 py-1 text-xs rounded-full bg-sky-100 text-sky-700">💪 ボディメイク</span>'
+                    : '<span class="px-2 py-1 text-xs rounded-full bg-teal-100 text-teal-700">🧠 メンタル</span>';
+
+                const timestamp = post.timestamp ? new Date(post.timestamp).toLocaleString('ja-JP') : '不明';
+
+                return `
+                    <div class="border-2 rounded-xl p-4 transition-all ${getStatusBorderColor(post.approvalStatus)}">
+                        <!-- ヘッダー -->
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
+                                    ${(post.author || 'U')[0]}
+                                </div>
+                                <div>
+                                    <div class="font-bold text-gray-800">${post.userInfo?.displayName || post.author || '不明'}</div>
+                                    <div class="text-xs text-gray-500">${post.userInfo?.email || ''}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${categoryBadge}
+                                ${statusBadge}
+                            </div>
+                        </div>
+
+                        <!-- 投稿日時 -->
+                        <div class="text-xs text-gray-500 mb-3">
+                            📅 ${timestamp}
+                        </div>
+
+                        <!-- 画像（ビフォーアフター） -->
+                        ${post.category === 'body' && post.beforePhoto && post.afterPhoto ? `
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <p class="text-xs text-gray-600 text-center mb-1 font-semibold">Before</p>
+                                    <img src="${post.beforePhoto}" alt="Before" class="w-full h-32 object-cover rounded-lg border-2 border-gray-200">
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-600 text-center mb-1 font-semibold">After</p>
+                                    <img src="${post.afterPhoto}" alt="After" class="w-full h-32 object-cover rounded-lg border-2 border-sky-300">
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <!-- 投稿内容 -->
+                        <div class="bg-gray-50 p-3 rounded-lg mb-3">
+                            <p class="text-sm text-gray-800 whitespace-pre-wrap">${post.content || '(内容なし)'}</p>
+                        </div>
+
+                        <!-- データ連携情報 -->
+                        ${post.attachedData ? `
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                                <p class="text-xs font-semibold text-blue-700 mb-2">📊 連携データ</p>
+                                <div class="grid grid-cols-3 gap-2 text-xs text-gray-600">
+                                    <div>継続: ${post.attachedData.usageDays || '-'}日</div>
+                                    <div>記録: ${post.attachedData.recordDays || '-'}日</div>
+                                    <div>カロリー: ${post.attachedData.totalCalories || '-'}kcal</div>
+                                    <div>タンパク質: ${post.attachedData.protein || '-'}g</div>
+                                    <div>体重: ${post.attachedData.weight || '-'}kg</div>
+                                    <div>LBM: ${post.attachedData.lbm || '-'}kg</div>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <!-- 却下理由 -->
+                        ${post.approvalStatus === 'rejected' && post.rejectionReason ? `
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                                <p class="text-xs font-semibold text-red-700 mb-1">❌ 却下理由</p>
+                                <p class="text-sm text-red-800">${post.rejectionReason}</p>
+                            </div>
+                        ` : ''}
+
+                        <!-- アクションボタン -->
+                        <div class="flex gap-2 flex-wrap">
+                            ${post.approvalStatus === 'pending' ? `
+                                <button onclick="approvePost('${post.id}')"
+                                    class="px-4 py-2 text-sm rounded-lg font-medium bg-green-100 text-green-700 hover:bg-green-200 transition flex items-center gap-1">
+                                    ✅ 承認
+                                </button>
+                                <button onclick="showRejectDialog('${post.id}')"
+                                    class="px-4 py-2 text-sm rounded-lg font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 transition flex items-center gap-1">
+                                    ⛔ 却下
+                                </button>
+                            ` : ''}
+                            ${post.approvalStatus === 'rejected' ? `
+                                <button onclick="approvePost('${post.id}')"
+                                    class="px-4 py-2 text-sm rounded-lg font-medium bg-green-100 text-green-700 hover:bg-green-200 transition flex items-center gap-1">
+                                    ✅ 承認に変更
+                                </button>
+                            ` : ''}
+                            ${post.approvalStatus === 'approved' ? `
+                                <button onclick="showRejectDialog('${post.id}')"
+                                    class="px-4 py-2 text-sm rounded-lg font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 transition flex items-center gap-1">
+                                    ⛔ 却下に変更
+                                </button>
+                            ` : ''}
+                            <button onclick="deletePost('${post.id}')"
+                                class="px-4 py-2 text-sm rounded-lg font-medium bg-red-100 text-red-700 hover:bg-red-200 transition flex items-center gap-1">
+                                🗑️ 削除
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getStatusBadge(status) {
+            switch (status) {
+                case 'pending':
+                    return '<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 font-medium">⏳ 承認待ち</span>';
+                case 'approved':
+                    return '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 font-medium">✅ 承認済み</span>';
+                case 'rejected':
+                    return '<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 font-medium">❌ 却下済み</span>';
+                default:
+                    return '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 font-medium">❓ 不明</span>';
+            }
+        }
+
+        function getStatusBorderColor(status) {
+            switch (status) {
+                case 'pending':
+                    return 'border-yellow-300 bg-yellow-50';
+                case 'approved':
+                    return 'border-green-300 bg-green-50';
+                case 'rejected':
+                    return 'border-red-300 bg-red-50';
+                default:
+                    return 'border-gray-200 bg-gray-50';
+            }
+        }
+
+        async function approvePost(postId) {
+            if (!confirm('この投稿を承認しますか？\n承認するとCOMYフィードに公開されます。')) return;
+
+            try {
+                const adminApprovePost = functions.httpsCallable('adminApprovePost');
+                const result = await adminApprovePost({ postId, adminPassword });
+
+                if (result.data.success) {
+                    alert('✅ 投稿を承認しました');
+                    await loadCommunityPosts();
+                }
+            } catch (error) {
+                console.error('Approve post error:', error);
+                alert('❌ 承認に失敗しました: ' + (error.message || error));
+            }
+        }
+
+        function showRejectDialog(postId) {
+            const reason = prompt('却下理由を入力してください（投稿者には通知されません）:');
+            if (reason === null) return; // キャンセル
+
+            rejectPost(postId, reason);
+        }
+
+        async function rejectPost(postId, reason) {
+            try {
+                const adminRejectPost = functions.httpsCallable('adminRejectPost');
+                const result = await adminRejectPost({ postId, reason, adminPassword });
+
+                if (result.data.success) {
+                    alert('⛔ 投稿を却下しました');
+                    await loadCommunityPosts();
+                }
+            } catch (error) {
+                console.error('Reject post error:', error);
+                alert('❌ 却下に失敗しました: ' + (error.message || error));
+            }
+        }
+
+        async function deletePost(postId) {
+            if (!confirm('⚠️ この投稿を完全に削除しますか？\n\nこの操作は取り消せません。')) return;
+
+            try {
+                const adminDeletePost = functions.httpsCallable('adminDeletePost');
+                const result = await adminDeletePost({ postId, adminPassword });
+
+                if (result.data.success) {
+                    alert('🗑️ 投稿を削除しました');
+                    await loadCommunityPosts();
+                }
+            } catch (error) {
+                console.error('Delete post error:', error);
+                alert('❌ 削除に失敗しました: ' + (error.message || error));
+            }
         }
     </script>
 </body>
