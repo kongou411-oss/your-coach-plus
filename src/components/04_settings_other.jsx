@@ -19,12 +19,6 @@ const CodeInputSection = ({ userId, userProfile }) => {
     // 紹介コード関連
     const [hasReferral, setHasReferral] = useState(false);
     const [referralInfo, setReferralInfo] = useState(null);
-    const [showReferralForm, setShowReferralForm] = useState(false);
-    const [referralMetadata, setReferralMetadata] = useState({
-        email: '',
-        name: '',
-        phoneNumber: ''
-    });
 
     // ギフトコード関連
     const [hasGiftCode, setHasGiftCode] = useState(false);
@@ -105,46 +99,18 @@ const CodeInputSection = ({ userId, userProfile }) => {
 
     // 紹介コード適用
     const applyReferralCode = async () => {
-        // バリデーション
-        if (!referralMetadata.email || !referralMetadata.name || !referralMetadata.phoneNumber) {
-            toast.error('すべての項目を入力してください');
-            return false;
-        }
-
-        // メール形式チェック
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(referralMetadata.email)) {
-            toast.error('有効なメールアドレスを入力してください');
-            return false;
-        }
-
-        // 電話番号形式チェック（ハイフンあり/なし両対応）
-        const phoneRegex = /^0\d{9,10}$/;
-        const cleanPhone = referralMetadata.phoneNumber.replace(/-/g, '');
-        if (!phoneRegex.test(cleanPhone)) {
-            toast.error('有効な電話番号を入力してください（例: 09012345678）');
-            return false;
-        }
-
         setValidating(true);
         try {
             const functions = window.firebase.app().functions('asia-northeast2');
             const applyCode = functions.httpsCallable('applyReferralCode');
             const result = await applyCode({
-                referralCode: code.trim().toUpperCase(),
-                userMetadata: {
-                    email: referralMetadata.email,
-                    name: referralMetadata.name,
-                    phoneNumber: cleanPhone
-                }
+                referralCode: code.trim().toUpperCase()
             });
 
-            toast.success(result.data.message || '紹介コードを適用しました！');
+            toast.success(result.data.message || '紹介コードを適用しました！50クレジットが付与されました。');
             setHasReferral(true);
             setReferralInfo({ appliedAt: new Date() });
             setCode('');
-            setShowReferralForm(false);
-            setReferralMetadata({ email: '', name: '', phoneNumber: '' });
             return true;
         } catch (error) {
             console.error('[Referral] Code apply error:', error);
@@ -190,7 +156,7 @@ const CodeInputSection = ({ userId, userProfile }) => {
         if (codeType === 'enterprise') {
             validateEnterpriseCode();
         } else if (codeType === 'referral') {
-            setShowReferralForm(true);
+            applyReferralCode();
         } else if (codeType === 'gift') {
             validateGiftCode();
         } else {
@@ -270,103 +236,6 @@ const CodeInputSection = ({ userId, userProfile }) => {
 
         return items.length > 0 ? <div className="space-y-3">{items}</div> : null;
     };
-
-    // 紹介コード用の追加情報フォーム
-    if (showReferralForm) {
-        return (
-            <div className="space-y-4">
-                <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Icon name="Gift" size={18} className="text-pink-600" />
-                        <h4 className="font-bold text-pink-800">紹介コード: {code.toUpperCase()}</h4>
-                    </div>
-                    <p className="text-sm text-pink-700">
-                        紹介特典を受け取るために、以下の情報を入力してください。
-                        <br />
-                        <span className="text-xs text-gray-600">※不正利用防止のため確認用に使用します</span>
-                    </p>
-                </div>
-
-                <div className="space-y-3">
-                    <label className="block">
-                        <span className="text-sm font-medium text-gray-700 mb-1 block">
-                            氏名 <span className="text-red-500">*</span>
-                        </span>
-                        <input
-                            type="text"
-                            value={referralMetadata.name}
-                            onChange={(e) => setReferralMetadata({ ...referralMetadata, name: e.target.value })}
-                            placeholder="山田 太郎"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none"
-                            disabled={validating}
-                        />
-                    </label>
-
-                    <label className="block">
-                        <span className="text-sm font-medium text-gray-700 mb-1 block">
-                            メールアドレス <span className="text-red-500">*</span>
-                        </span>
-                        <input
-                            type="email"
-                            value={referralMetadata.email}
-                            onChange={(e) => setReferralMetadata({ ...referralMetadata, email: e.target.value })}
-                            placeholder="example@email.com"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none"
-                            disabled={validating}
-                        />
-                    </label>
-
-                    <label className="block">
-                        <span className="text-sm font-medium text-gray-700 mb-1 block">
-                            電話番号 <span className="text-red-500">*</span>
-                        </span>
-                        <input
-                            type="tel"
-                            value={referralMetadata.phoneNumber}
-                            onChange={(e) => setReferralMetadata({ ...referralMetadata, phoneNumber: e.target.value })}
-                            placeholder="09012345678"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none"
-                            disabled={validating}
-                        />
-                    </label>
-                </div>
-
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => {
-                            setShowReferralForm(false);
-                            setReferralMetadata({ email: '', name: '', phoneNumber: '' });
-                        }}
-                        disabled={validating}
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition"
-                    >
-                        キャンセル
-                    </button>
-                    <button
-                        onClick={applyReferralCode}
-                        disabled={validating || !referralMetadata.email || !referralMetadata.name || !referralMetadata.phoneNumber}
-                        className={`flex-1 px-4 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
-                            validating || !referralMetadata.email || !referralMetadata.name || !referralMetadata.phoneNumber
-                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:opacity-90'
-                        }`}
-                    >
-                        {validating ? (
-                            <>
-                                <Icon name="Loader" size={18} className="animate-spin" />
-                                適用中...
-                            </>
-                        ) : (
-                            <>
-                                <Icon name="Gift" size={18} />
-                                紹介コードを適用
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-        );
-    }
 
     // メインのコード入力フォーム
     return (
