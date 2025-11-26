@@ -1519,6 +1519,20 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
                     await DataService.saveUserProfile(user.uid, completedProfile);
 
                     setUserProfile(completedProfile);
+
+                    // 機能開放状態を計算（B2B/ギフト/紹介コードも考慮）
+                    const isPremium = completedProfile.subscription?.status === 'active'
+                        || completedProfile.b2b2cOrgId
+                        || completedProfile.subscription?.giftCodeActive === true
+                        || completedProfile.referralBonusApplied === true;
+                    console.log('[Onboarding] Calculating features with isPremium:', isPremium, 'b2b2cOrgId:', completedProfile.b2b2cOrgId);
+
+                    const today = getTodayDate();
+                    const todayRecord = await DataService.getDailyRecord(user.uid, today);
+                    const unlocked = await calculateUnlockedFeatures(user.uid, todayRecord, isPremium);
+                    console.log('[Onboarding] Unlocked features:', unlocked);
+                    setUnlockedFeatures(Array.isArray(unlocked) ? unlocked : []);
+
                     // オンボーディング完了フラグを設定（クレジット不足モーダルを表示しない）
                     sessionStorage.setItem('onboardingJustCompleted', 'true');
                     // オンボーディング完了後、直接食事誘導モーダルを表示
