@@ -1881,34 +1881,15 @@ exports.getGiftCodes = onCall({
     const codes = [];
     for (const doc of snapshot.docs) {
       const data = doc.data();
-      const giftCode = data.code;
 
-      // usersコレクションからギフトコード使用者を直接検索
-      const usedByDetails = [];
-      try {
-        const usersSnapshot = await admin.firestore().collection('users')
-          .where('subscription.giftCode', '==', giftCode)
-          .get();
-
-        usersSnapshot.forEach(userDoc => {
-          const userData = userDoc.data();
-          usedByDetails.push({
-            userId: userDoc.id,
-            email: userData.email || 'unknown',
-            displayName: userData.displayName || userData.nickname || 'unknown'
-          });
-        });
-      } catch (e) {
-        console.error(`[GiftCode] Error fetching users for code ${giftCode}:`, e);
-      }
-
+      // giftCodesドキュメントに保存されているusedByDetailsをそのまま使用
       codes.push({
         id: doc.id,
-        code: giftCode,
+        code: data.code,
         isActive: data.isActive,
-        usedCount: usedByDetails.length || data.usedBy?.length || 0,
+        usedCount: data.usedBy?.length || 0,
         usedBy: data.usedBy || [],
-        usedByDetails: usedByDetails,
+        usedByDetails: data.usedByDetails || [],
         note: data.note || '',
         createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
         lastUsedAt: data.lastUsedAt?.toDate?.()?.toISOString() || null

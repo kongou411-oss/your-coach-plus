@@ -624,10 +624,12 @@
 
                 // 各企業の使用者を取得
                 for (const org of organizations) {
+                    console.log(`[B2B2C] Searching users for org ${org.id} (${org.name})`);
                     const usersSnapshot = await db.collection('users')
                         .where('b2b2cOrgId', '==', org.id)
                         .get();
                     org.users = [];
+                    console.log(`[B2B2C] Found ${usersSnapshot.size} users`);
                     usersSnapshot.forEach(userDoc => {
                         const userData = userDoc.data();
                         org.users.push({
@@ -791,6 +793,7 @@
 
                 empty.style.display = 'none';
                 list.style.display = 'block';
+                console.log('[GiftCodes] Result:', result.data.codes);
                 renderGiftCodes(result.data.codes);
 
             } catch (error) {
@@ -833,7 +836,7 @@
                     </div>
 
                     ${code.usedByDetails && code.usedByDetails.length > 0 ? `
-                        <details class="mt-3">
+                        <details class="mt-3" open>
                             <summary class="text-sm text-purple-600 cursor-pointer hover:underline font-medium">
                                 👤 使用者詳細 (${code.usedByDetails.length}人)
                             </summary>
@@ -841,13 +844,15 @@
                                 ${code.usedByDetails.map((user, i) => `
                                     <div class="text-sm flex items-center gap-2 ${i > 0 ? 'pt-2 border-t border-gray-100' : ''}">
                                         <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">${i + 1}</span>
-                                        <span class="text-gray-800 font-medium">${user.email || 'メール未取得'}</span>
-                                        ${user.displayName ? `<span class="text-gray-400 text-xs">(${user.displayName})</span>` : ''}
+                                        <div>
+                                            <span class="text-gray-800 font-medium">${user.displayName || '名前未設定'}</span>
+                                            <span class="text-gray-400 text-xs ml-2">${user.email || 'メール未取得'}</span>
+                                        </div>
                                     </div>
                                 `).join('')}
                             </div>
                         </details>
-                    ` : ''}
+                    ` : `<p class="text-sm text-gray-400 mt-3">👤 使用者詳細: なし（usedCount: ${code.usedCount}）</p>`}
                 </div>
             `).join('');
         }
