@@ -4598,7 +4598,7 @@ const LevelBanner = ({ user, setInfoModal }) => {
                             style={{ width: `${Math.min(expData.expProgress || 0, 100)}%` }}
                         />
                     </div>
-                    <span className="text-xs text-white font-medium">{expData.expProgress}%</span>
+                    <span className="text-xs text-white font-medium">{expData.expCurrent} / {expData.expRequired} XP</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                     <div className="flex items-center gap-1">

@@ -81,20 +81,24 @@ const SettingsView = ({
 
     // ===== 初期化・副作用 =====
     useEffect(() => {
-        // 経験値データの計算
+        // 経験値データの計算（ExperienceServiceと同じロジックを使用）
         if (userProfile.experience !== undefined) {
             const experience = userProfile.experience || 0;
-            let level = 1;
-            let totalExpRequired = 0;
-            let expRequired = 100;
 
-            while (experience >= totalExpRequired + expRequired) {
-                totalExpRequired += expRequired;
+            // ExperienceServiceと同じ計算式: 100 * level * (level - 1) / 2
+            const getRequiredExpForLevel = (level) => 100 * level * (level - 1) / 2;
+
+            // 現在のレベルを計算
+            let level = 1;
+            while (getRequiredExpForLevel(level + 1) <= experience) {
                 level++;
-                expRequired = Math.floor(100 * Math.pow(1.1, level - 1));
             }
 
-            const expCurrent = experience - totalExpRequired;
+            // 次のレベルまでの経験値を計算
+            const currentLevelRequired = getRequiredExpForLevel(level);
+            const nextLevelRequired = getRequiredExpForLevel(level + 1);
+            const expCurrent = experience - currentLevelRequired;
+            const expRequired = nextLevelRequired - currentLevelRequired;
             const expProgress = (expCurrent / expRequired) * 100;
 
             // クレジット計算
