@@ -96,6 +96,20 @@ service cloud.firestore {
     }
 
     // ============================================
+    // mealTemplates: 食事テンプレート（本人のみ）
+    // ============================================
+    match /mealTemplates/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // ============================================
+    // workoutTemplates: 運動テンプレート（本人のみ）
+    // ============================================
+    match /workoutTemplates/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // ============================================
     // communityPosts: コミュニティ投稿
     // - 読み取り: 認証済みユーザー全員
     // - 作成: 認証済みユーザー（自分のuserIdで）
