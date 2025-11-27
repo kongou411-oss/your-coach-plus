@@ -1178,6 +1178,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     useEffect(() => {
         const loadAutoFetchedData = async () => {
             try {
+                console.log('[CommunityPost] loadAutoFetchedData called, historyData:', historyData ? Object.keys(historyData).length + ' days' : 'null');
+
                 // 履歴データから過去30日間の平均を計算（本日データがなくても実行）
                 let historyAverage = null;
                 let latestLbm = null;
@@ -1918,83 +1920,96 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 </header>
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {/* 過去30日間の平均データ表示 */}
-                    {autoFetchedData?.history && (
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-                            <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
-                                <Icon name="TrendingUp" size={18} />
-                                過去{autoFetchedData.history.daysCount}日間の平均
-                            </h3>
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                        <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                            <Icon name="TrendingUp" size={18} />
+                            過去{autoFetchedData?.history?.daysCount || 30}日間の平均
+                        </h3>
 
-                            {/* 体組成 */}
-                            {autoFetchedData.body?.lbm && (
+                        {!autoFetchedData ? (
+                            <div className="text-center py-4">
+                                <Icon name="Loader" size={24} className="animate-spin text-blue-500 mx-auto mb-2" />
+                                <p className="text-sm text-gray-600">データを読み込み中...</p>
+                            </div>
+                        ) : !autoFetchedData.history ? (
+                            <div className="text-center py-4">
+                                <Icon name="Info" size={24} className="text-gray-400 mx-auto mb-2" />
+                                <p className="text-sm text-gray-600">まだ記録がありません</p>
+                                <p className="text-xs text-gray-500 mt-1">食事や運動を記録すると、ここに平均が表示されます</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* 体組成 */}
+                                {autoFetchedData.body?.lbm && (
+                                    <div className="mb-4 p-3 bg-white/60 rounded-lg">
+                                        <p className="text-xs font-semibold text-blue-700 mb-2">体組成</p>
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-center">
+                                                <p className="text-2xl font-bold text-blue-900">{autoFetchedData.body.lbm}</p>
+                                                <p className="text-xs text-gray-600">LBM (kg)</p>
+                                            </div>
+                                            {autoFetchedData.body.weight && (
+                                                <div className="text-center">
+                                                    <p className="text-lg font-semibold text-gray-700">{autoFetchedData.body.weight}</p>
+                                                    <p className="text-xs text-gray-600">体重 (kg)</p>
+                                                </div>
+                                            )}
+                                            {autoFetchedData.body.bodyFat && (
+                                                <div className="text-center">
+                                                    <p className="text-lg font-semibold text-gray-700">{autoFetchedData.body.bodyFat}</p>
+                                                    <p className="text-xs text-gray-600">体脂肪率 (%)</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 栄養データ */}
                                 <div className="mb-4 p-3 bg-white/60 rounded-lg">
-                                    <p className="text-xs font-semibold text-blue-700 mb-2">体組成</p>
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-center">
-                                            <p className="text-2xl font-bold text-blue-900">{autoFetchedData.body.lbm}</p>
-                                            <p className="text-xs text-gray-600">LBM (kg)</p>
-                                        </div>
-                                        {autoFetchedData.body.weight && (
-                                            <div className="text-center">
-                                                <p className="text-lg font-semibold text-gray-700">{autoFetchedData.body.weight}</p>
-                                                <p className="text-xs text-gray-600">体重 (kg)</p>
-                                            </div>
-                                        )}
-                                        {autoFetchedData.body.bodyFat && (
-                                            <div className="text-center">
-                                                <p className="text-lg font-semibold text-gray-700">{autoFetchedData.body.bodyFat}</p>
-                                                <p className="text-xs text-gray-600">体脂肪率 (%)</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* 栄養データ */}
-                            <div className="mb-4 p-3 bg-white/60 rounded-lg">
-                                <p className="text-xs font-semibold text-orange-700 mb-2">栄養（1日平均）</p>
-                                <div className="grid grid-cols-4 gap-2 text-center">
-                                    <div>
-                                        <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.calories}</p>
-                                        <p className="text-xs text-gray-600">kcal</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-lg font-bold text-red-500">{autoFetchedData.history.protein}</p>
-                                        <p className="text-xs text-gray-600">P (g)</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-lg font-bold text-yellow-600">{autoFetchedData.history.fat}</p>
-                                        <p className="text-xs text-gray-600">F (g)</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-lg font-bold text-green-600">{autoFetchedData.history.carbs}</p>
-                                        <p className="text-xs text-gray-600">C (g)</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 運動・睡眠データ */}
-                            <div className="p-3 bg-white/60 rounded-lg">
-                                <p className="text-xs font-semibold text-purple-700 mb-2">運動・睡眠（1日平均）</p>
-                                <div className="grid grid-cols-3 gap-2 text-center">
-                                    <div>
-                                        <p className="text-lg font-bold text-purple-600">{autoFetchedData.history.workoutTime}</p>
-                                        <p className="text-xs text-gray-600">運動時間 (分)</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-lg font-bold text-indigo-600">{autoFetchedData.history.totalSets}</p>
-                                        <p className="text-xs text-gray-600">セット数</p>
-                                    </div>
-                                    {autoFetchedData.history.sleepHours && (
+                                    <p className="text-xs font-semibold text-orange-700 mb-2">栄養（1日平均）</p>
+                                    <div className="grid grid-cols-4 gap-2 text-center">
                                         <div>
-                                            <p className="text-lg font-bold text-blue-600">{autoFetchedData.history.sleepHours}</p>
-                                            <p className="text-xs text-gray-600">睡眠 (時間)</p>
+                                            <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.calories}</p>
+                                            <p className="text-xs text-gray-600">kcal</p>
                                         </div>
-                                    )}
+                                        <div>
+                                            <p className="text-lg font-bold text-red-500">{autoFetchedData.history.protein}</p>
+                                            <p className="text-xs text-gray-600">P (g)</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-bold text-yellow-600">{autoFetchedData.history.fat}</p>
+                                            <p className="text-xs text-gray-600">F (g)</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-bold text-green-600">{autoFetchedData.history.carbs}</p>
+                                            <p className="text-xs text-gray-600">C (g)</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    )}
+
+                                {/* 運動・睡眠データ */}
+                                <div className="p-3 bg-white/60 rounded-lg">
+                                    <p className="text-xs font-semibold text-purple-700 mb-2">運動・睡眠（1日平均）</p>
+                                    <div className="grid grid-cols-3 gap-2 text-center">
+                                        <div>
+                                            <p className="text-lg font-bold text-purple-600">{autoFetchedData.history.workoutTime}</p>
+                                            <p className="text-xs text-gray-600">運動時間 (分)</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-bold text-indigo-600">{autoFetchedData.history.totalSets}</p>
+                                            <p className="text-xs text-gray-600">セット数</p>
+                                        </div>
+                                        {autoFetchedData.history.sleepHours && (
+                                            <div>
+                                                <p className="text-lg font-bold text-blue-600">{autoFetchedData.history.sleepHours}</p>
+                                                <p className="text-xs text-gray-600">睡眠 (時間)</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
 
                     {/* タイトル */}
                     <div>
