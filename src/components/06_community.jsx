@@ -2262,12 +2262,15 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                     </div>
 
                     {/* PG BASE引用（オプション） */}
-                    <details className="bg-gray-50 border border-gray-200 rounded-lg">
-                        <summary className="p-4 cursor-pointer font-semibold text-gray-800 flex items-center justify-between">
+                    <details className="bg-gray-50 border border-gray-200 rounded-lg group">
+                        <summary className="p-4 cursor-pointer font-semibold text-gray-800 flex items-center justify-between list-none [&::-webkit-details-marker]:hidden">
                             <span>PG BASEから引用（任意）</span>
-                            {citedModules.length > 0 && (
-                                <span className="text-sm text-orange-600 font-normal">{citedModules.length}件選択中</span>
-                            )}
+                            <span className="flex items-center gap-2">
+                                {citedModules.length > 0 && (
+                                    <span className="text-sm text-orange-600 font-normal">{citedModules.length}件選択中</span>
+                                )}
+                                <Icon name="ChevronDown" size={20} className="text-gray-500 transition-transform group-open:rotate-180" />
+                            </span>
                         </summary>
                         <div className="px-4 pb-4">
                             <p className="text-sm text-gray-600 mb-3">学んだ教科書を選択できます</p>
