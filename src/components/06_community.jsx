@@ -1215,55 +1215,70 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                         ? (conditionValues.reduce((sum, v) => sum + v, 0) / conditionValues.length).toFixed(1)
                         : null;
 
-                    // 履歴データから平均を計算
+                    // 履歴データから過去30日間の平均を計算
                     let historyAverage = null;
+                    let latestLbm = null;
                     if (historyData) {
-                        const dates = Object.keys(historyData).filter(date => {
+                        // 日付順にソートして過去30日分を取得
+                        const allDates = Object.keys(historyData).sort().reverse();
+                        const last30Days = allDates.slice(0, 30);
+
+                        // LBMは直近の記録された値を使用
+                        for (const date of allDates) {
+                            const d = historyData[date];
+                            if (d.bodyComposition?.leanBodyMass) {
+                                latestLbm = d.bodyComposition.leanBodyMass;
+                                break;
+                            }
+                        }
+
+                        // データがある日のみを対象
+                        const datesWithData = last30Days.filter(date => {
                             const d = historyData[date];
                             return (d.meals && d.meals.length > 0) || (d.workouts && d.workouts.length > 0);
-                        }).slice(-30); // 過去30日
+                        });
 
-                        if (dates.length > 0) {
-                            let avgCalories = 0, avgProtein = 0, avgFat = 0, avgCarbs = 0, avgWorkout = 0;
-                            let avgCondition = 0, conditionCount = 0;
+                        if (datesWithData.length > 0) {
+                            let avgCalories = 0, avgProtein = 0, avgFat = 0, avgCarbs = 0;
+                            let avgWorkoutTime = 0, avgTotalSets = 0;
+                            let avgSleepHours = 0, sleepCount = 0;
 
-                            dates.forEach(date => {
+                            datesWithData.forEach(date => {
                                 const d = historyData[date];
+
+                                // 食事データ集計
                                 avgCalories += d.meals?.reduce((sum, m) => sum + (m.calories || 0), 0) || 0;
                                 avgProtein += d.meals?.reduce((sum, m) => sum + (m.protein || 0), 0) || 0;
                                 avgFat += d.meals?.reduce((sum, m) => sum + (m.fat || 0), 0) || 0;
                                 avgCarbs += d.meals?.reduce((sum, m) => sum + (m.carbs || 0), 0) || 0;
 
-                                const workoutTime = d.workouts?.reduce((sum, w) => {
-                                    return sum + (w.exercises?.reduce((setSum, ex) => {
-                                        return setSum + (ex.sets?.reduce((s, set) => s + (set.duration || 0), 0) || 0);
-                                    }, 0) || 0);
-                                }, 0) || 0;
-                                avgWorkout += workoutTime;
+                                // 運動データ集計（時間とセット数）
+                                d.workouts?.forEach(w => {
+                                    w.exercises?.forEach(ex => {
+                                        const sets = ex.sets || [];
+                                        avgTotalSets += sets.length;
+                                        avgWorkoutTime += sets.reduce((s, set) => s + (set.duration || 0), 0);
+                                    });
+                                });
 
-                                if (d.conditions) {
-                                    const cv = [
-                                        d.conditions.sleepQuality,
-                                        d.conditions.appetite,
-                                        d.conditions.digestion,
-                                        d.conditions.focus,
-                                        d.conditions.stress
-                                    ].filter(v => v !== undefined && v !== null);
-                                    if (cv.length > 0) {
-                                        avgCondition += cv.reduce((sum, v) => sum + v, 0) / cv.length;
-                                        conditionCount++;
-                                    }
+                                // 睡眠時間（1-5スケール → 実時間変換: 1=5h, 2=6h, 3=7h, 4=8h, 5=9h）
+                                if (d.conditions?.sleepHours) {
+                                    const sleepValue = d.conditions.sleepHours;
+                                    avgSleepHours += sleepValue + 4; // 1→5h, 2→6h, ...
+                                    sleepCount++;
                                 }
                             });
 
+                            const count = datesWithData.length;
                             historyAverage = {
-                                calories: Math.round(avgCalories / dates.length),
-                                protein: Math.round(avgProtein / dates.length),
-                                fat: Math.round(avgFat / dates.length),
-                                carbs: Math.round(avgCarbs / dates.length),
-                                workoutTime: Math.round(avgWorkout / dates.length),
-                                conditionScore: conditionCount > 0 ? (avgCondition / conditionCount).toFixed(1) : null,
-                                daysCount: dates.length
+                                calories: Math.round(avgCalories / count),
+                                protein: Math.round(avgProtein / count),
+                                fat: Math.round(avgFat / count),
+                                carbs: Math.round(avgCarbs / count),
+                                workoutTime: Math.round(avgWorkoutTime / count),
+                                totalSets: Math.round(avgTotalSets / count),
+                                sleepHours: sleepCount > 0 ? (avgSleepHours / sleepCount).toFixed(1) : null,
+                                daysCount: count
                             };
                         }
                     }
@@ -1272,7 +1287,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                         body: {
                             weight: bodyComposition.weight || null,
                             bodyFat: bodyComposition.bodyFatPercentage || null,
-                            lbm: bodyComposition.leanBodyMass || null
+                            lbm: bodyComposition.leanBodyMass || latestLbm || null
                         },
                         today: {
                             calories: totalCalories,
@@ -1282,7 +1297,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             workoutTime: totalWorkoutTime,
                             conditionScore: conditionScore
                         },
-                        history: historyAverage
+                        history: historyAverage,
+                        latestLbm: latestLbm
                     });
                 }
             } catch (error) {
@@ -1894,55 +1910,82 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                     <div className="w-6"></div>
                 </header>
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {/* 自動取得データ表示 */}
-                    {autoFetchedData && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    {/* 過去30日間の平均データ表示 */}
+                    {autoFetchedData?.history && (
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
                             <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
-                                <Icon name="Database" size={18} />
-                                自動取得データ
+                                <Icon name="TrendingUp" size={18} />
+                                過去{autoFetchedData.history.daysCount}日間の平均
                             </h3>
 
                             {/* 体組成 */}
-                            {autoFetchedData.body && (autoFetchedData.body.weight || autoFetchedData.body.bodyFat) && (
-                                <div className="mb-3">
-                                    <p className="text-sm font-semibold text-blue-800 mb-1">体組成（本日）</p>
-                                    <div className="grid grid-cols-3 gap-2 text-sm text-gray-600">
-                                        {autoFetchedData.body.weight && <div>体重: {autoFetchedData.body.weight}kg</div>}
-                                        {autoFetchedData.body.bodyFat && <div>体脂肪率: {autoFetchedData.body.bodyFat}%</div>}
-                                        {autoFetchedData.body.lbm && <div>LBM: {autoFetchedData.body.lbm}kg</div>}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* 本日のデータ */}
-                            {autoFetchedData.today && (
-                                <div className="mb-3">
-                                    <p className="text-sm font-semibold text-blue-800 mb-1">本日の記録</p>
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                                        <div>食事: {autoFetchedData.today.calories}kcal</div>
-                                        <div>P: {autoFetchedData.today.protein}g</div>
-                                        <div>運動: {autoFetchedData.today.workoutTime}分</div>
-                                        {autoFetchedData.today.conditionScore && (
-                                            <div>コンディション: {autoFetchedData.today.conditionScore}/5</div>
+                            {autoFetchedData.body?.lbm && (
+                                <div className="mb-4 p-3 bg-white/60 rounded-lg">
+                                    <p className="text-xs font-semibold text-blue-700 mb-2">体組成</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-center">
+                                            <p className="text-2xl font-bold text-blue-900">{autoFetchedData.body.lbm}</p>
+                                            <p className="text-xs text-gray-600">LBM (kg)</p>
+                                        </div>
+                                        {autoFetchedData.body.weight && (
+                                            <div className="text-center">
+                                                <p className="text-lg font-semibold text-gray-700">{autoFetchedData.body.weight}</p>
+                                                <p className="text-xs text-gray-600">体重 (kg)</p>
+                                            </div>
+                                        )}
+                                        {autoFetchedData.body.bodyFat && (
+                                            <div className="text-center">
+                                                <p className="text-lg font-semibold text-gray-700">{autoFetchedData.body.bodyFat}</p>
+                                                <p className="text-xs text-gray-600">体脂肪率 (%)</p>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
                             )}
 
-                            {/* 履歴平均 */}
-                            {autoFetchedData.history && (
-                                <div>
-                                    <p className="text-sm font-semibold text-blue-800 mb-1">過去の平均（{autoFetchedData.history.daysCount}日間）</p>
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                                        <div>食事: {autoFetchedData.history.calories}kcal</div>
-                                        <div>P: {autoFetchedData.history.protein}g</div>
-                                        <div>運動: {autoFetchedData.history.workoutTime}分</div>
-                                        {autoFetchedData.history.conditionScore && (
-                                            <div>コンディション: {autoFetchedData.history.conditionScore}/5</div>
-                                        )}
+                            {/* 栄養データ */}
+                            <div className="mb-4 p-3 bg-white/60 rounded-lg">
+                                <p className="text-xs font-semibold text-orange-700 mb-2">栄養（1日平均）</p>
+                                <div className="grid grid-cols-4 gap-2 text-center">
+                                    <div>
+                                        <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.calories}</p>
+                                        <p className="text-xs text-gray-600">kcal</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-red-500">{autoFetchedData.history.protein}</p>
+                                        <p className="text-xs text-gray-600">P (g)</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-yellow-600">{autoFetchedData.history.fat}</p>
+                                        <p className="text-xs text-gray-600">F (g)</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-green-600">{autoFetchedData.history.carbs}</p>
+                                        <p className="text-xs text-gray-600">C (g)</p>
                                     </div>
                                 </div>
-                            )}
+                            </div>
+
+                            {/* 運動・睡眠データ */}
+                            <div className="p-3 bg-white/60 rounded-lg">
+                                <p className="text-xs font-semibold text-purple-700 mb-2">運動・睡眠（1日平均）</p>
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <p className="text-lg font-bold text-purple-600">{autoFetchedData.history.workoutTime}</p>
+                                        <p className="text-xs text-gray-600">運動時間 (分)</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-indigo-600">{autoFetchedData.history.totalSets}</p>
+                                        <p className="text-xs text-gray-600">セット数</p>
+                                    </div>
+                                    {autoFetchedData.history.sleepHours && (
+                                        <div>
+                                            <p className="text-lg font-bold text-blue-600">{autoFetchedData.history.sleepHours}</p>
+                                            <p className="text-xs text-gray-600">睡眠 (時間)</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 
