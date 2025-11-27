@@ -1173,152 +1173,109 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
 
     // 当日のデイリー記録を取得
     const [todayRecord, setTodayRecord] = useState(null);
-    const [autoFetchedData, setAutoFetchedData] = useState(null);
 
-    useEffect(() => {
-        const loadAutoFetchedData = async () => {
-            try {
-                console.log('[CommunityPost] loadAutoFetchedData called, historyData:', historyData ? Object.keys(historyData).length + ' days' : 'null');
+    // 履歴データから過去30日間の平均を同期的に計算（即座に表示）
+    const autoFetchedData = useMemo(() => {
+        if (!historyData || Object.keys(historyData).length === 0) {
+            return { body: {}, today: {}, history: null };
+        }
 
-                // 履歴データから過去30日間の平均を計算（本日データがなくても実行）
-                let historyAverage = null;
-                let latestLbm = null;
-                let latestWeight = null;
-                let latestBodyFat = null;
+        // 日付順にソートして過去30日分を取得
+        const allDates = Object.keys(historyData).sort().reverse();
+        const last30Days = allDates.slice(0, 30);
 
-                if (historyData && Object.keys(historyData).length > 0) {
-                    // 日付順にソートして過去30日分を取得
-                    const allDates = Object.keys(historyData).sort().reverse();
-                    const last30Days = allDates.slice(0, 30);
+        // 体組成は直近の記録された値を使用
+        let latestLbm = null, latestWeight = null, latestBodyFat = null;
+        for (const date of allDates) {
+            const d = historyData[date];
+            if (!latestLbm && d.bodyComposition?.leanBodyMass) {
+                latestLbm = d.bodyComposition.leanBodyMass;
+            }
+            if (!latestWeight && d.bodyComposition?.weight) {
+                latestWeight = d.bodyComposition.weight;
+            }
+            if (!latestBodyFat && d.bodyComposition?.bodyFatPercentage) {
+                latestBodyFat = d.bodyComposition.bodyFatPercentage;
+            }
+            if (latestLbm && latestWeight && latestBodyFat) break;
+        }
 
-                    // 体組成は直近の記録された値を使用
-                    for (const date of allDates) {
-                        const d = historyData[date];
-                        if (!latestLbm && d.bodyComposition?.leanBodyMass) {
-                            latestLbm = d.bodyComposition.leanBodyMass;
-                        }
-                        if (!latestWeight && d.bodyComposition?.weight) {
-                            latestWeight = d.bodyComposition.weight;
-                        }
-                        if (!latestBodyFat && d.bodyComposition?.bodyFatPercentage) {
-                            latestBodyFat = d.bodyComposition.bodyFatPercentage;
-                        }
-                        if (latestLbm && latestWeight && latestBodyFat) break;
-                    }
+        // データがある日のみを対象
+        const datesWithData = last30Days.filter(date => {
+            const d = historyData[date];
+            return (d.meals && d.meals.length > 0) || (d.workouts && d.workouts.length > 0);
+        });
 
-                    // データがある日のみを対象
-                    const datesWithData = last30Days.filter(date => {
-                        const d = historyData[date];
-                        return (d.meals && d.meals.length > 0) || (d.workouts && d.workouts.length > 0);
+        let historyAverage = null;
+        if (datesWithData.length > 0) {
+            let avgCalories = 0, avgProtein = 0, avgFat = 0, avgCarbs = 0;
+            let avgWorkoutTime = 0, avgTotalSets = 0;
+            let avgSleepHours = 0, sleepCount = 0;
+
+            datesWithData.forEach(date => {
+                const d = historyData[date];
+
+                // 食事データ集計
+                avgCalories += d.meals?.reduce((sum, m) => sum + (m.calories || 0), 0) || 0;
+                avgProtein += d.meals?.reduce((sum, m) => sum + (m.protein || 0), 0) || 0;
+                avgFat += d.meals?.reduce((sum, m) => sum + (m.fat || 0), 0) || 0;
+                avgCarbs += d.meals?.reduce((sum, m) => sum + (m.carbs || 0), 0) || 0;
+
+                // 運動データ集計（時間とセット数）
+                d.workouts?.forEach(w => {
+                    w.exercises?.forEach(ex => {
+                        const sets = ex.sets || [];
+                        avgTotalSets += sets.length;
+                        avgWorkoutTime += sets.reduce((s, set) => s + (set.duration || 0), 0);
                     });
+                });
 
-                    if (datesWithData.length > 0) {
-                        let avgCalories = 0, avgProtein = 0, avgFat = 0, avgCarbs = 0;
-                        let avgWorkoutTime = 0, avgTotalSets = 0;
-                        let avgSleepHours = 0, sleepCount = 0;
-
-                        datesWithData.forEach(date => {
-                            const d = historyData[date];
-
-                            // 食事データ集計
-                            avgCalories += d.meals?.reduce((sum, m) => sum + (m.calories || 0), 0) || 0;
-                            avgProtein += d.meals?.reduce((sum, m) => sum + (m.protein || 0), 0) || 0;
-                            avgFat += d.meals?.reduce((sum, m) => sum + (m.fat || 0), 0) || 0;
-                            avgCarbs += d.meals?.reduce((sum, m) => sum + (m.carbs || 0), 0) || 0;
-
-                            // 運動データ集計（時間とセット数）
-                            d.workouts?.forEach(w => {
-                                w.exercises?.forEach(ex => {
-                                    const sets = ex.sets || [];
-                                    avgTotalSets += sets.length;
-                                    avgWorkoutTime += sets.reduce((s, set) => s + (set.duration || 0), 0);
-                                });
-                            });
-
-                            // 睡眠時間（1-5スケール → 実時間変換: 1=5h, 2=6h, 3=7h, 4=8h, 5=9h）
-                            if (d.conditions?.sleepHours) {
-                                const sleepValue = d.conditions.sleepHours;
-                                avgSleepHours += sleepValue + 4; // 1→5h, 2→6h, ...
-                                sleepCount++;
-                            }
-                        });
-
-                        const count = datesWithData.length;
-                        historyAverage = {
-                            calories: Math.round(avgCalories / count),
-                            protein: Math.round(avgProtein / count),
-                            fat: Math.round(avgFat / count),
-                            carbs: Math.round(avgCarbs / count),
-                            workoutTime: Math.round(avgWorkoutTime / count),
-                            totalSets: Math.round(avgTotalSets / count),
-                            sleepHours: sleepCount > 0 ? (avgSleepHours / sleepCount).toFixed(1) : null,
-                            daysCount: count
-                        };
-                    }
+                // 睡眠時間（1-5スケール → 実時間変換: 1=5h, 2=6h, 3=7h, 4=8h, 5=9h）
+                if (d.conditions?.sleepHours) {
+                    const sleepValue = d.conditions.sleepHours;
+                    avgSleepHours += sleepValue + 4; // 1→5h, 2→6h, ...
+                    sleepCount++;
                 }
+            });
 
-                // 本日のデータも取得
+            const count = datesWithData.length;
+            historyAverage = {
+                calories: Math.round(avgCalories / count),
+                protein: Math.round(avgProtein / count),
+                fat: Math.round(avgFat / count),
+                carbs: Math.round(avgCarbs / count),
+                workoutTime: Math.round(avgWorkoutTime / count),
+                totalSets: Math.round(avgTotalSets / count),
+                sleepHours: sleepCount > 0 ? (avgSleepHours / sleepCount).toFixed(1) : null,
+                daysCount: count
+            };
+        }
+
+        return {
+            body: {
+                weight: latestWeight,
+                bodyFat: latestBodyFat,
+                lbm: latestLbm
+            },
+            today: {},
+            history: historyAverage
+        };
+    }, [historyData]);
+
+    // 本日のデータは非同期で取得（表示には影響しない）
+    useEffect(() => {
+        const loadTodayRecord = async () => {
+            if (!userProfile?.uid) return;
+            try {
                 const todayDate = new Date().toISOString().split('T')[0];
                 const record = await DataService.getDailyRecord(userProfile.uid, todayDate);
                 setTodayRecord(record);
-
-                const bodyComposition = record?.bodyComposition || {};
-                const meals = record?.meals || [];
-                const workouts = record?.workouts || [];
-                const conditions = record?.conditions || {};
-
-                // 本日の食事データ集計
-                const totalCalories = meals.reduce((sum, m) => sum + (m.calories || 0), 0);
-                const totalProtein = meals.reduce((sum, m) => sum + (m.protein || 0), 0);
-                const totalFat = meals.reduce((sum, m) => sum + (m.fat || 0), 0);
-                const totalCarbs = meals.reduce((sum, m) => sum + (m.carbs || 0), 0);
-
-                // 本日の運動データ集計
-                const totalWorkoutTime = workouts.reduce((sum, w) => {
-                    const workoutTime = w.exercises?.reduce((setSum, ex) => {
-                        return setSum + (ex.sets?.reduce((s, set) => s + (set.duration || 0), 0) || 0);
-                    }, 0) || 0;
-                    return sum + workoutTime;
-                }, 0);
-
-                // コンディションスコア計算
-                const conditionValues = [
-                    conditions.sleepQuality,
-                    conditions.appetite,
-                    conditions.digestion,
-                    conditions.focus,
-                    conditions.stress
-                ].filter(v => v !== undefined && v !== null);
-                const conditionScore = conditionValues.length > 0
-                    ? (conditionValues.reduce((sum, v) => sum + v, 0) / conditionValues.length).toFixed(1)
-                    : null;
-
-                setAutoFetchedData({
-                    body: {
-                        weight: bodyComposition.weight || latestWeight || null,
-                        bodyFat: bodyComposition.bodyFatPercentage || latestBodyFat || null,
-                        lbm: bodyComposition.leanBodyMass || latestLbm || null
-                    },
-                    today: {
-                        calories: totalCalories,
-                        protein: totalProtein,
-                        fat: totalFat,
-                        carbs: totalCarbs,
-                        workoutTime: totalWorkoutTime,
-                        conditionScore: conditionScore
-                    },
-                    history: historyAverage,
-                    latestLbm: latestLbm
-                });
             } catch (error) {
-                console.error('[CommunityPost] Failed to load auto fetched data:', error);
+                console.error('[CommunityPost] Failed to load today record:', error);
             }
         };
-
-        if (userProfile?.uid) {
-            loadAutoFetchedData();
-        }
-    }, [userProfile?.uid, historyData]);
+        loadTodayRecord();
+    }, [userProfile?.uid]);
 
     // ユーザーのプロジェクトを読み込み
     useEffect(() => {
