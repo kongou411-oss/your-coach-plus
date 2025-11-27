@@ -1607,12 +1607,14 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     const stats = calculateStats();
 
     const pgbaseModules = [
+        { id: 'yourcoach_guide', title: 'YourCoach+の教科書', category: '公式ガイド' },
         { id: 'mental_textbook', title: 'メンタルの教科書', category: '心理学' },
-        { id: 'pg_formula_textbook', title: 'PG式の教科書', category: '運動科学' },
-        { id: 'carb_textbook', title: '炭水化物の教科書', category: '栄養学' },
         { id: 'protein_textbook', title: 'タンパク質の教科書', category: '栄養学' },
+        { id: 'carb_textbook', title: '炭水化物の教科書', category: '栄養学' },
         { id: 'fat_textbook', title: '脂質の教科書', category: '栄養学' },
-        { id: 'vitamin_mineral_textbook', title: 'ビタミン・ミネラルの教科書', category: '栄養学' }
+        { id: 'basic_supplements_textbook', title: '基礎サプリメントの教科書', category: '栄養学' },
+        { id: 'vitamin_mineral_textbook', title: 'ビタミン・ミネラルの教科書', category: '栄養学' },
+        { id: 'sleep_textbook', title: '睡眠の教科書', category: 'リカバリー' }
     ];
 
     // 写真選択ハンドラー（カメラ撮影限定）
@@ -2260,12 +2262,15 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                     </div>
 
                     {/* PG BASE引用（オプション） */}
-                    <div>
-                        <label className="block font-semibold text-gray-800 mb-2">
-                            PG BASEから引用（任意）
-                        </label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                            <p className="text-sm text-gray-600 mb-3">学んだモジュールを選択できます</p>
+                    <details className="bg-gray-50 border border-gray-200 rounded-lg">
+                        <summary className="p-4 cursor-pointer font-semibold text-gray-800 flex items-center justify-between">
+                            <span>PG BASEから引用（任意）</span>
+                            {citedModules.length > 0 && (
+                                <span className="text-sm text-orange-600 font-normal">{citedModules.length}件選択中</span>
+                            )}
+                        </summary>
+                        <div className="px-4 pb-4">
+                            <p className="text-sm text-gray-600 mb-3">学んだ教科書を選択できます</p>
                             <div className="space-y-2">
                                 {pgbaseModules.map(module => (
                                     <button
@@ -2289,7 +2294,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                 ))}
                             </div>
                         </div>
-                    </div>
+                    </details>
 
                     {/* 投稿ボタン */}
                     <button
