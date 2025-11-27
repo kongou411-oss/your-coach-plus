@@ -3060,8 +3060,15 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
     const [showMentorApplication, setShowMentorApplication] = useState(false);
     const [babHeight, setBabHeight] = useState(64); // BAB高さ（デフォルト: 格納時）
 
+    // 新機能: コメント・フォロー・プロフィール用state
+    const [postComments, setPostComments] = useState({}); // { postId: [comments] }
+    const [profileModalUserId, setProfileModalUserId] = useState(null); // プロフィールモーダル表示対象
+    const [myFollowerCount, setMyFollowerCount] = useState(0);
+    const [myFollowingCount, setMyFollowingCount] = useState(0);
+
     useEffect(() => {
         loadPosts();
+        loadMyFollowCounts();
         // URLパラメータから投稿IDを取得
         const urlParams = new URLSearchParams(window.location.search);
         const postId = urlParams.get('post');
@@ -3070,6 +3077,19 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
             setCommentingPostId(postId);
         }
     }, []);
+
+    // 自分のフォロー数を読み込み
+    const loadMyFollowCounts = async () => {
+        try {
+            const profile = await DataService.getUserPublicProfile(userId);
+            if (profile) {
+                setMyFollowerCount(profile.followerCount || 0);
+                setMyFollowingCount(profile.followingCount || 0);
+            }
+        } catch (error) {
+            console.error('Error loading follow counts:', error);
+        }
+    };
 
     // 選択された投稿までスクロール
     useEffect(() => {
@@ -3190,70 +3210,99 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
         setActiveView('feed');
     };
 
+    // いいねトグル（Firestore atomic操作版）
     const toggleLike = async (postId) => {
-        const updatedPosts = posts.map(post => {
-            if (post.id === postId) {
-                // いいねしたユーザーのリストを管理
-                const likedUsers = post.likedUsers || [];
-                const hasLiked = likedUsers.includes(userId);
-
-                if (hasLiked) {
-                    // すでにいいね済み → 取り消し
-                    return {
-                        ...post,
-                        likes: Math.max(0, (post.likes || 0) - 1),
-                        likedUsers: likedUsers.filter(id => id !== userId)
-                    };
-                } else {
-                    // まだいいねしていない → いいね追加
-                    return {
-                        ...post,
-                        likes: (post.likes || 0) + 1,
-                        likedUsers: [...likedUsers, userId]
-                    };
+        const result = await DataService.togglePostLike(postId, userId);
+        if (result.success) {
+            // ローカル状態を更新
+            setPosts(posts.map(post => {
+                if (post.id === postId) {
+                    const likedUsers = post.likedUsers || [];
+                    if (result.liked) {
+                        return {
+                            ...post,
+                            likes: (post.likes || 0) + 1,
+                            likedUsers: [...likedUsers, userId]
+                        };
+                    } else {
+                        return {
+                            ...post,
+                            likes: Math.max(0, (post.likes || 0) - 1),
+                            likedUsers: likedUsers.filter(id => id !== userId)
+                        };
+                    }
                 }
-            }
-            return post;
-        });
-        setPosts(updatedPosts);
-        await DataService.saveCommunityPosts(updatedPosts);
+                return post;
+            }));
+        }
     };
 
+    // コメント追加（サブコレクション版）
     const handleAddComment = async (postId) => {
         if (!commentText.trim()) return;
 
-        const updatedPosts = posts.map(post => {
-            if (post.id === postId) {
-                const newComment = {
-                    id: Date.now().toString(),
-                    userId: userId,
-                    author: userProfile?.nickname || 'ユーザー',
-                    content: commentText,
-                    timestamp: new Date().toISOString()
-                };
-                return {
-                    ...post,
-                    comments: [...(post.comments || []), newComment]
-                };
-            }
-            return post;
-        });
+        const commentData = {
+            userId: userId,
+            author: userProfile?.nickname || 'ユーザー',
+            content: commentText.trim()
+        };
 
-        setPosts(updatedPosts);
-        await DataService.saveCommunityPosts(updatedPosts);
-        setCommentText('');
-        // コメント送信後、コメント欄は開いたまま保持
+        const result = await DataService.addComment(postId, commentData);
+        if (result.success) {
+            // コメント一覧を再取得
+            const comments = await DataService.getPostComments(postId);
+            setPostComments(prev => ({ ...prev, [postId]: comments }));
+
+            // 投稿のコメント数を更新
+            setPosts(posts.map(post => {
+                if (post.id === postId) {
+                    return {
+                        ...post,
+                        commentCount: (post.commentCount || 0) + 1
+                    };
+                }
+                return post;
+            }));
+
+            setCommentText('');
+            toast.success('コメントを投稿しました');
+        } else {
+            toast.error('コメントの投稿に失敗しました');
+        }
     };
 
+    // コメント表示トグル
     const handleToggleComments = async (postId) => {
         if (commentingPostId === postId) {
-            // 閉じる場合
             setCommentingPostId(null);
         } else {
-            // 開く場合：最新データを取得してコメント欄を開く
-            const latestPosts = await DataService.getCommunityPosts();
-            setPosts(latestPosts);
+            // コメントを取得
+            const comments = await DataService.getPostComments(postId);
+            setPostComments(prev => ({ ...prev, [postId]: comments }));
             setCommentingPostId(postId);
+        }
+    };
+
+    // コメント削除
+    const handleDeleteComment = async (postId, commentId) => {
+        const result = await DataService.deleteComment(postId, commentId);
+        if (result.success) {
+            // コメント一覧を再取得
+            const comments = await DataService.getPostComments(postId);
+            setPostComments(prev => ({ ...prev, [postId]: comments }));
+
+            // 投稿のコメント数を更新
+            setPosts(posts.map(post => {
+                if (post.id === postId) {
+                    return {
+                        ...post,
+                        commentCount: Math.max(0, (post.commentCount || 0) - 1)
+                    };
+                }
+                return post;
+            }));
+
+            toast.success('コメントを削除しました');
         }
     };
 
@@ -3523,12 +3572,25 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                         </div>
                                     )}
 
-                                    {/* 投稿者 */}
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                            {post.author?.[0] || 'U'}
-                                        </div>
-                                        <p className="font-medium text-gray-800 text-sm">{post.author}</p>
+                                    {/* 投稿者（クリックでプロフィール表示） */}
+                                    <div className="flex items-center justify-between mb-3">
+                                        <button
+                                            onClick={() => setProfileModalUserId(post.userId)}
+                                            className="flex items-center gap-2 hover:bg-gray-100 rounded-lg p-1 -ml-1 transition"
+                                        >
+                                            <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                                {post.author?.[0] || 'U'}
+                                            </div>
+                                            <p className="font-medium text-gray-800 text-sm">{post.author}</p>
+                                        </button>
+                                        {/* フォローボタン（自分以外の投稿に表示） */}
+                                        {post.userId !== userId && (
+                                            <FollowButton
+                                                targetUserId={post.userId}
+                                                currentUserId={userId}
+                                                compact={true}
+                                            />
+                                        )}
                                     </div>
 
                                     {/* 投稿内容 */}
@@ -3579,7 +3641,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                             className="flex items-center gap-1 text-gray-600 hover:text-teal-600 transition"
                                         >
                                             <Icon name="MessageCircle" size={18} />
-                                            <span className="text-sm">{post.comments?.length || 0}</span>
+                                            <span className="text-sm">{post.commentCount || 0}</span>
                                         </button>
                                         <button
                                             onClick={() => handleShare(post)}
@@ -3589,22 +3651,39 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                         </button>
                                     </div>
 
-                                    {/* コメントセクション */}
+                                    {/* コメントセクション（サブコレクション版） */}
                                     {commentingPostId === post.id && (
                                         <div className="mt-3 pt-3 border-t border-gray-100">
                                             {/* コメント一覧 */}
-                                            {post.comments && post.comments.length > 0 && (
+                                            {postComments[post.id] && postComments[post.id].length > 0 && (
                                                 <div className="mb-3 space-y-2 max-h-60 overflow-y-auto">
-                                                    {post.comments.map(comment => (
-                                                        <div key={comment.id} className="bg-gray-50 rounded-lg p-2">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                                                                    {comment.author?.[0] || 'U'}
+                                                    {postComments[post.id].map(comment => (
+                                                        <div key={comment.id} className="bg-gray-50 rounded-lg p-2 group">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <button
+                                                                        onClick={() => setProfileModalUserId(comment.userId)}
+                                                                        className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs hover:ring-2 hover:ring-blue-300 transition"
+                                                                    >
+                                                                        {comment.author?.[0] || 'U'}
+                                                                    </button>
+                                                                    <span className="text-xs font-semibold text-gray-800">{comment.author}</span>
+                                                                    <span className="text-xs text-gray-500">
+                                                                        {comment.createdAt?.toDate ?
+                                                                            comment.createdAt.toDate().toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) :
+                                                                            ''}
+                                                                    </span>
                                                                 </div>
-                                                                <span className="text-xs font-semibold text-gray-800">{comment.author}</span>
-                                                                <span className="text-xs text-gray-600">
-                                                                    {new Date(comment.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                                </span>
+                                                                {/* 自分のコメントのみ削除可能 */}
+                                                                {comment.userId === userId && (
+                                                                    <button
+                                                                        onClick={() => handleDeleteComment(post.id, comment.id)}
+                                                                        className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition"
+                                                                        title="削除"
+                                                                    >
+                                                                        <Icon name="Trash2" size={14} />
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                             <p className="text-sm text-gray-600 ml-8">{comment.content}</p>
                                                         </div>
@@ -3620,12 +3699,12 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                                     onChange={(e) => setCommentText(e.target.value)}
                                                     onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
                                                     placeholder="コメントを入力..."
-                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
                                                 />
                                                 <button
                                                     onClick={() => handleAddComment(post.id)}
                                                     disabled={!commentText.trim()}
-                                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                                                    className="px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white rounded-lg text-sm hover:from-fuchsia-700 hover:to-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
                                                 >
                                                     送信
                                                 </button>
@@ -3708,6 +3787,15 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-xl">{userProfile.nickname || userProfile.name || 'ユーザー'}</h3>
+                                    {userProfile.goal && (
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            <Icon name="Target" size={14} className="inline mr-1" />
+                                            {userProfile.goal}
+                                        </p>
+                                    )}
+                                    <span className="text-xs bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full font-medium mt-1 inline-block">
+                                        Lv.{userProfile.level || 1}
+                                    </span>
                                 </div>
                             </div>
 
@@ -3718,14 +3806,20 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                                     </p>
                                     <p className="text-xs text-gray-600">投稿</p>
                                 </div>
-                                <div className="text-center">
-                                    <p className="text-2xl font-bold text-gray-800">0</p>
-                                    <p className="text-xs text-gray-600">フォロー</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-2xl font-bold text-gray-800">0</p>
+                                <button
+                                    onClick={() => setProfileModalUserId(userId)}
+                                    className="text-center hover:bg-gray-100 rounded-lg py-2 transition"
+                                >
+                                    <p className="text-2xl font-bold text-gray-800">{myFollowingCount}</p>
+                                    <p className="text-xs text-gray-600">フォロー中</p>
+                                </button>
+                                <button
+                                    onClick={() => setProfileModalUserId(userId)}
+                                    className="text-center hover:bg-gray-100 rounded-lg py-2 transition"
+                                >
+                                    <p className="text-2xl font-bold text-gray-800">{myFollowerCount}</p>
                                     <p className="text-xs text-gray-600">フォロワー</p>
-                                </div>
+                                </button>
                             </div>
                         </div>
 
@@ -3733,15 +3827,32 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                             <h4 className="font-bold text-gray-600">あなたの投稿</h4>
                             {posts.filter(p => p.userId === userId).length === 0 ? (
                                 <div className="text-center py-8 bg-white rounded-lg">
+                                    <Icon name="MessageSquare" size={48} className="mx-auto mb-3 text-gray-300" />
                                     <p className="text-gray-600">まだ投稿がありません</p>
+                                    <button
+                                        onClick={() => setActiveView('post')}
+                                        className="mt-3 px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white rounded-lg text-sm font-medium hover:from-fuchsia-700 hover:to-teal-700 transition"
+                                    >
+                                        最初の投稿をする
+                                    </button>
                                 </div>
                             ) : (
                                 posts.filter(p => p.userId === userId).map(post => (
                                     <div key={post.id} className="bg-white rounded-lg shadow-sm p-4">
-                                        <p className="text-gray-600 mb-2">{post.content}</p>
-                                        <p className="text-xs text-gray-600">
-                                            {new Date(post.timestamp).toLocaleString('ja-JP')}
-                                        </p>
+                                        <p className="text-gray-600 mb-2 whitespace-pre-wrap">{post.content}</p>
+                                        <div className="flex items-center justify-between text-xs text-gray-500">
+                                            <span>{new Date(post.timestamp).toLocaleString('ja-JP')}</span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="flex items-center gap-1">
+                                                    <Icon name="Heart" size={12} />
+                                                    {post.likes || 0}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <Icon name="MessageCircle" size={12} />
+                                                    {post.commentCount || 0}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))
                             )}
@@ -3827,6 +3938,15 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                         averageScore: 0
                     }}
                     onClose={() => setShowMentorApplication(false)}
+                />
+            )}
+
+            {/* ユーザープロフィールモーダル */}
+            {profileModalUserId && (
+                <UserProfileModal
+                    targetUserId={profileModalUserId}
+                    currentUserId={userId}
+                    onClose={() => setProfileModalUserId(null)}
                 />
             )}
         </div>

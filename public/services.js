@@ -762,16 +762,305 @@ const DataService = {
         }
     },
 
-    // 投稿にいいね追加
+    // ===== いいね機能（改善版） =====
+
+    // いいねトグル（追加/解除）
     togglePostLike: async (postId, userId) => {
         try {
-            await db.collection('communityPosts').doc(postId).update({
-                likes: firebase.firestore.FieldValue.increment(1)
-            });
-            return true;
+            const postRef = db.collection('communityPosts').doc(postId);
+            const postDoc = await postRef.get();
+
+            if (!postDoc.exists) {
+                console.error('Post not found:', postId);
+                return { success: false, liked: false };
+            }
+
+            const postData = postDoc.data();
+            const likedUsers = postData.likedUsers || [];
+            const hasLiked = likedUsers.includes(userId);
+
+            if (hasLiked) {
+                // いいね解除
+                await postRef.update({
+                    likes: firebase.firestore.FieldValue.increment(-1),
+                    likedUsers: firebase.firestore.FieldValue.arrayRemove(userId)
+                });
+                return { success: true, liked: false };
+            } else {
+                // いいね追加
+                await postRef.update({
+                    likes: firebase.firestore.FieldValue.increment(1),
+                    likedUsers: firebase.firestore.FieldValue.arrayUnion(userId)
+                });
+                return { success: true, liked: true };
+            }
         } catch (error) {
             console.error('Error toggling like:', error);
+            return { success: false, liked: false };
+        }
+    },
+
+    // ===== コメント機能（サブコレクション版） =====
+
+    // コメント取得
+    getPostComments: async (postId) => {
+        try {
+            const snapshot = await db.collection('communityPosts')
+                .doc(postId)
+                .collection('comments')
+                .orderBy('createdAt', 'asc')
+                .get();
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error('Error fetching comments:', error);
+            return [];
+        }
+    },
+
+    // コメント追加
+    addComment: async (postId, commentData) => {
+        try {
+            const docRef = await db.collection('communityPosts')
+                .doc(postId)
+                .collection('comments')
+                .add({
+                    ...commentData,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+            // 投稿のコメント数をインクリメント
+            await db.collection('communityPosts').doc(postId).update({
+                commentCount: firebase.firestore.FieldValue.increment(1)
+            });
+
+            return { success: true, commentId: docRef.id };
+        } catch (error) {
+            console.error('Error adding comment:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // コメント削除
+    deleteComment: async (postId, commentId) => {
+        try {
+            await db.collection('communityPosts')
+                .doc(postId)
+                .collection('comments')
+                .doc(commentId)
+                .delete();
+
+            // 投稿のコメント数をデクリメント
+            await db.collection('communityPosts').doc(postId).update({
+                commentCount: firebase.firestore.FieldValue.increment(-1)
+            });
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting comment:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // ===== フォロー機能 =====
+
+    // フォローする
+    followUser: async (followerId, followingId) => {
+        try {
+            // 自分自身はフォローできない
+            if (followerId === followingId) {
+                return { success: false, error: '自分自身をフォローすることはできません' };
+            }
+
+            // 既にフォローしているかチェック
+            const existingFollow = await db.collection('follows')
+                .where('followerId', '==', followerId)
+                .where('followingId', '==', followingId)
+                .get();
+
+            if (!existingFollow.empty) {
+                return { success: false, error: '既にフォローしています' };
+            }
+
+            // フォロー関係を作成
+            await db.collection('follows').add({
+                followerId,
+                followingId,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // フォロワー数・フォロー数を更新
+            const batch = db.batch();
+
+            // フォローする側のfollowingCountを増やす
+            const followerRef = db.collection('users').doc(followerId);
+            batch.update(followerRef, {
+                followingCount: firebase.firestore.FieldValue.increment(1)
+            });
+
+            // フォローされる側のfollowerCountを増やす
+            const followingRef = db.collection('users').doc(followingId);
+            batch.update(followingRef, {
+                followerCount: firebase.firestore.FieldValue.increment(1)
+            });
+
+            await batch.commit();
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error following user:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // フォロー解除
+    unfollowUser: async (followerId, followingId) => {
+        try {
+            // フォロー関係を検索
+            const followSnapshot = await db.collection('follows')
+                .where('followerId', '==', followerId)
+                .where('followingId', '==', followingId)
+                .get();
+
+            if (followSnapshot.empty) {
+                return { success: false, error: 'フォローしていません' };
+            }
+
+            // フォロー関係を削除
+            const batch = db.batch();
+            followSnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+
+            // フォロワー数・フォロー数を更新
+            const followerRef = db.collection('users').doc(followerId);
+            batch.update(followerRef, {
+                followingCount: firebase.firestore.FieldValue.increment(-1)
+            });
+
+            const followingRef = db.collection('users').doc(followingId);
+            batch.update(followingRef, {
+                followerCount: firebase.firestore.FieldValue.increment(-1)
+            });
+
+            await batch.commit();
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error unfollowing user:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // フォローしているかチェック
+    isFollowing: async (followerId, followingId) => {
+        try {
+            const snapshot = await db.collection('follows')
+                .where('followerId', '==', followerId)
+                .where('followingId', '==', followingId)
+                .get();
+            return !snapshot.empty;
+        } catch (error) {
+            console.error('Error checking follow status:', error);
             return false;
+        }
+    },
+
+    // フォロワー一覧取得
+    getFollowers: async (userId) => {
+        try {
+            const snapshot = await db.collection('follows')
+                .where('followingId', '==', userId)
+                .orderBy('createdAt', 'desc')
+                .get();
+
+            const followerIds = snapshot.docs.map(doc => doc.data().followerId);
+
+            // ユーザー情報を取得
+            const followers = [];
+            for (const followerId of followerIds) {
+                const userDoc = await db.collection('users').doc(followerId).get();
+                if (userDoc.exists) {
+                    followers.push({
+                        id: followerId,
+                        ...userDoc.data()
+                    });
+                }
+            }
+
+            return followers;
+        } catch (error) {
+            console.error('Error fetching followers:', error);
+            return [];
+        }
+    },
+
+    // フォロー中一覧取得
+    getFollowing: async (userId) => {
+        try {
+            const snapshot = await db.collection('follows')
+                .where('followerId', '==', userId)
+                .orderBy('createdAt', 'desc')
+                .get();
+
+            const followingIds = snapshot.docs.map(doc => doc.data().followingId);
+
+            // ユーザー情報を取得
+            const following = [];
+            for (const followingId of followingIds) {
+                const userDoc = await db.collection('users').doc(followingId).get();
+                if (userDoc.exists) {
+                    following.push({
+                        id: followingId,
+                        ...userDoc.data()
+                    });
+                }
+            }
+
+            return following;
+        } catch (error) {
+            console.error('Error fetching following:', error);
+            return [];
+        }
+    },
+
+    // ユーザープロフィール取得（公開情報のみ）
+    getUserPublicProfile: async (userId) => {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (!userDoc.exists) {
+                return null;
+            }
+
+            const data = userDoc.data();
+            // 公開情報のみ返す
+            return {
+                id: userId,
+                nickname: data.nickname || 'ユーザー',
+                goal: data.goal || '',
+                level: data.level || 1,
+                followerCount: data.followerCount || 0,
+                followingCount: data.followingCount || 0,
+                createdAt: data.createdAt
+            };
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            return null;
+        }
+    },
+
+    // ユーザーの投稿一覧取得
+    getUserPosts: async (userId) => {
+        try {
+            const snapshot = await db.collection('communityPosts')
+                .where('userId', '==', userId)
+                .where('approvalStatus', '==', 'approved')
+                .orderBy('timestamp', 'desc')
+                .limit(20)
+                .get();
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error('Error fetching user posts:', error);
+            return [];
         }
     },
 

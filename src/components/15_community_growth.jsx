@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from './01_common.jsx';
 import { showFeedback } from './10_feedback.jsx';
+import toast from 'react-hot-toast';
 
 // ===== Community Growth Features =====
-// コミュニティ育成システム（メンター制度、ベストアンサー、テーマスペース）
+// コミュニティ育成システム（メンター制度、ベストアンサー、テーマスペース、フォロー機能）
 
 // メンター制度
 const MentorSystem = {
@@ -446,7 +447,413 @@ const MentorApplicationForm = ({ userId, userProfile, userStats, onClose }) => {
 };
 
 
+// ===== ユーザープロフィールモーダル =====
+const UserProfileModal = ({ targetUserId, currentUserId, onClose }) => {
+    const [profile, setProfile] = useState(null);
+    const [posts, setPosts] = useState([]);
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [followLoading, setFollowLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('posts'); // 'posts' | 'followers' | 'following'
+    const [followers, setFollowers] = useState([]);
+    const [following, setFollowing] = useState([]);
+
+    useEffect(() => {
+        loadProfile();
+    }, [targetUserId]);
+
+    const loadProfile = async () => {
+        setLoading(true);
+        try {
+            // プロフィール取得
+            const profileData = await DataService.getUserPublicProfile(targetUserId);
+            setProfile(profileData);
+
+            // 投稿取得
+            const userPosts = await DataService.getUserPosts(targetUserId);
+            setPosts(userPosts);
+
+            // フォロー状態確認
+            if (currentUserId && currentUserId !== targetUserId) {
+                const following = await DataService.isFollowing(currentUserId, targetUserId);
+                setIsFollowing(following);
+            }
+        } catch (error) {
+            console.error('Error loading profile:', error);
+            toast.error('プロフィールの読み込みに失敗しました');
+        }
+        setLoading(false);
+    };
+
+    const loadFollowers = async () => {
+        const data = await DataService.getFollowers(targetUserId);
+        setFollowers(data);
+    };
+
+    const loadFollowing = async () => {
+        const data = await DataService.getFollowing(targetUserId);
+        setFollowing(data);
+    };
+
+    useEffect(() => {
+        if (activeTab === 'followers') {
+            loadFollowers();
+        } else if (activeTab === 'following') {
+            loadFollowing();
+        }
+    }, [activeTab]);
+
+    const handleFollow = async () => {
+        if (!currentUserId || followLoading) return;
+
+        setFollowLoading(true);
+        try {
+            if (isFollowing) {
+                const result = await DataService.unfollowUser(currentUserId, targetUserId);
+                if (result.success) {
+                    setIsFollowing(false);
+                    setProfile(prev => ({
+                        ...prev,
+                        followerCount: Math.max(0, (prev.followerCount || 0) - 1)
+                    }));
+                    toast.success('フォローを解除しました');
+                } else {
+                    toast.error(result.error || 'フォロー解除に失敗しました');
+                }
+            } else {
+                const result = await DataService.followUser(currentUserId, targetUserId);
+                if (result.success) {
+                    setIsFollowing(true);
+                    setProfile(prev => ({
+                        ...prev,
+                        followerCount: (prev.followerCount || 0) + 1
+                    }));
+                    toast.success('フォローしました');
+                } else {
+                    toast.error(result.error || 'フォローに失敗しました');
+                }
+            }
+        } catch (error) {
+            console.error('Follow error:', error);
+            toast.error('エラーが発生しました');
+        }
+        setFollowLoading(false);
+    };
+
+    if (loading) {
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                <div className="bg-white rounded-2xl p-8">
+                    <div className="animate-spin w-8 h-8 border-4 border-fuchsia-600 border-t-transparent rounded-full mx-auto"></div>
+                    <p className="mt-4 text-gray-600">読み込み中...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!profile) {
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-8 text-center">
+                    <Icon name="UserX" size={48} className="mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-600">ユーザーが見つかりません</p>
+                    <button
+                        onClick={onClose}
+                        className="mt-4 px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                    >
+                        閉じる
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+                {/* ヘッダー */}
+                <div className="bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white p-4 flex justify-between items-center">
+                    <h3 className="text-lg font-bold">プロフィール</h3>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                    >
+                        <Icon name="X" size={20} />
+                    </button>
+                </div>
+
+                {/* プロフィール情報 */}
+                <div className="p-6 border-b">
+                    <div className="flex items-center gap-4">
+                        {/* アバター */}
+                        <div className="w-20 h-20 bg-gradient-to-br from-fuchsia-500 to-teal-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                            {profile.nickname?.[0] || 'U'}
+                        </div>
+
+                        <div className="flex-1">
+                            <h4 className="text-xl font-bold text-gray-800">{profile.nickname}</h4>
+                            {profile.goal && (
+                                <p className="text-sm text-gray-600 mt-1">
+                                    <Icon name="Target" size={14} className="inline mr-1" />
+                                    {profile.goal}
+                                </p>
+                            )}
+                            <div className="flex items-center gap-1 mt-1">
+                                <span className="text-xs bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full font-medium">
+                                    Lv.{profile.level || 1}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* フォロー数 */}
+                    <div className="flex gap-6 mt-4 justify-center">
+                        <button
+                            onClick={() => setActiveTab('followers')}
+                            className="text-center hover:bg-gray-100 px-4 py-2 rounded-lg transition"
+                        >
+                            <p className="text-xl font-bold text-gray-800">{profile.followerCount || 0}</p>
+                            <p className="text-xs text-gray-600">フォロワー</p>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('following')}
+                            className="text-center hover:bg-gray-100 px-4 py-2 rounded-lg transition"
+                        >
+                            <p className="text-xl font-bold text-gray-800">{profile.followingCount || 0}</p>
+                            <p className="text-xs text-gray-600">フォロー中</p>
+                        </button>
+                        <div className="text-center px-4 py-2">
+                            <p className="text-xl font-bold text-gray-800">{posts.length}</p>
+                            <p className="text-xs text-gray-600">投稿</p>
+                        </div>
+                    </div>
+
+                    {/* フォローボタン */}
+                    {currentUserId && currentUserId !== targetUserId && (
+                        <button
+                            onClick={handleFollow}
+                            disabled={followLoading}
+                            className={`w-full mt-4 py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 ${
+                                isFollowing
+                                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    : 'bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white hover:from-fuchsia-700 hover:to-teal-700'
+                            }`}
+                        >
+                            {followLoading ? (
+                                <div className="animate-spin w-5 h-5 border-2 border-current border-t-transparent rounded-full"></div>
+                            ) : isFollowing ? (
+                                <>
+                                    <Icon name="UserCheck" size={18} />
+                                    フォロー中
+                                </>
+                            ) : (
+                                <>
+                                    <Icon name="UserPlus" size={18} />
+                                    フォローする
+                                </>
+                            )}
+                        </button>
+                    )}
+                </div>
+
+                {/* タブ */}
+                <div className="flex border-b">
+                    <button
+                        onClick={() => setActiveTab('posts')}
+                        className={`flex-1 py-3 text-sm font-medium transition border-b-2 ${
+                            activeTab === 'posts'
+                                ? 'border-fuchsia-600 text-fuchsia-600'
+                                : 'border-transparent text-gray-600'
+                        }`}
+                    >
+                        投稿
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('followers')}
+                        className={`flex-1 py-3 text-sm font-medium transition border-b-2 ${
+                            activeTab === 'followers'
+                                ? 'border-fuchsia-600 text-fuchsia-600'
+                                : 'border-transparent text-gray-600'
+                        }`}
+                    >
+                        フォロワー
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('following')}
+                        className={`flex-1 py-3 text-sm font-medium transition border-b-2 ${
+                            activeTab === 'following'
+                                ? 'border-fuchsia-600 text-fuchsia-600'
+                                : 'border-transparent text-gray-600'
+                        }`}
+                    >
+                        フォロー中
+                    </button>
+                </div>
+
+                {/* コンテンツ */}
+                <div className="flex-1 overflow-y-auto p-4">
+                    {activeTab === 'posts' && (
+                        <div className="space-y-3">
+                            {posts.length === 0 ? (
+                                <p className="text-center text-gray-500 py-8">まだ投稿がありません</p>
+                            ) : (
+                                posts.map(post => (
+                                    <div key={post.id} className="bg-gray-50 rounded-lg p-3">
+                                        <p className="text-sm text-gray-800 line-clamp-3">{post.content}</p>
+                                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                            <span className="flex items-center gap-1">
+                                                <Icon name="Heart" size={12} />
+                                                {post.likes || 0}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <Icon name="MessageCircle" size={12} />
+                                                {post.commentCount || 0}
+                                            </span>
+                                            <span>
+                                                {new Date(post.timestamp).toLocaleDateString('ja-JP')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'followers' && (
+                        <div className="space-y-2">
+                            {followers.length === 0 ? (
+                                <p className="text-center text-gray-500 py-8">フォロワーはいません</p>
+                            ) : (
+                                followers.map(user => (
+                                    <div key={user.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
+                                            {user.nickname?.[0] || 'U'}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-medium text-gray-800">{user.nickname || 'ユーザー'}</p>
+                                            <p className="text-xs text-gray-500">Lv.{user.level || 1}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'following' && (
+                        <div className="space-y-2">
+                            {following.length === 0 ? (
+                                <p className="text-center text-gray-500 py-8">フォロー中のユーザーはいません</p>
+                            ) : (
+                                following.map(user => (
+                                    <div key={user.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
+                                            {user.nickname?.[0] || 'U'}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-medium text-gray-800">{user.nickname || 'ユーザー'}</p>
+                                            <p className="text-xs text-gray-500">Lv.{user.level || 1}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ===== フォローボタンコンポーネント =====
+const FollowButton = ({ targetUserId, currentUserId, compact = false }) => {
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        checkFollowStatus();
+    }, [targetUserId, currentUserId]);
+
+    const checkFollowStatus = async () => {
+        if (!currentUserId || currentUserId === targetUserId) {
+            setLoading(false);
+            return;
+        }
+        const following = await DataService.isFollowing(currentUserId, targetUserId);
+        setIsFollowing(following);
+        setLoading(false);
+    };
+
+    const handleFollow = async (e) => {
+        e.stopPropagation();
+        if (!currentUserId || loading) return;
+
+        setLoading(true);
+        try {
+            if (isFollowing) {
+                const result = await DataService.unfollowUser(currentUserId, targetUserId);
+                if (result.success) {
+                    setIsFollowing(false);
+                    toast.success('フォローを解除しました');
+                }
+            } else {
+                const result = await DataService.followUser(currentUserId, targetUserId);
+                if (result.success) {
+                    setIsFollowing(true);
+                    toast.success('フォローしました');
+                }
+            }
+        } catch (error) {
+            console.error('Follow error:', error);
+        }
+        setLoading(false);
+    };
+
+    // 自分自身の場合は表示しない
+    if (!currentUserId || currentUserId === targetUserId) {
+        return null;
+    }
+
+    if (compact) {
+        return (
+            <button
+                onClick={handleFollow}
+                disabled={loading}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                    isFollowing
+                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-fuchsia-600 text-white hover:bg-fuchsia-700'
+                }`}
+            >
+                {loading ? '...' : isFollowing ? 'フォロー中' : 'フォロー'}
+            </button>
+        );
+    }
+
+    return (
+        <button
+            onClick={handleFollow}
+            disabled={loading}
+            className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-1 ${
+                isFollowing
+                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white hover:from-fuchsia-700 hover:to-teal-700'
+            }`}
+        >
+            {loading ? (
+                <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full"></div>
+            ) : (
+                <>
+                    <Icon name={isFollowing ? "UserCheck" : "UserPlus"} size={16} />
+                    {isFollowing ? 'フォロー中' : 'フォロー'}
+                </>
+            )}
+        </button>
+    );
+};
+
 // グローバルに公開
 window.MentorSystem = MentorSystem;
 window.ThemeSpaceSelector = ThemeSpaceSelector;
 window.MentorApplicationForm = MentorApplicationForm;
+window.UserProfileModal = UserProfileModal;
+window.FollowButton = FollowButton;
