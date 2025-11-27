@@ -3800,7 +3800,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                             </div>
 
                             <div className="grid grid-cols-3 gap-4 py-4 border-t border-gray-100">
-                                <div className="text-center">
+                                <div className="text-center py-2">
                                     <p className="text-2xl font-bold text-gray-800">
                                         {posts.filter(p => p.userId === userId).length}
                                     </p>
