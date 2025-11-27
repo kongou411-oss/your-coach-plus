@@ -1176,13 +1176,17 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
 
     // 履歴データから過去30日間の平均を同期的に計算（即座に表示）
     const autoFetchedData = useMemo(() => {
+        console.log('[CommunityPost] useMemo historyData:', historyData ? Object.keys(historyData).length + ' days' : 'null');
+
         if (!historyData || Object.keys(historyData).length === 0) {
+            console.log('[CommunityPost] No historyData, returning empty');
             return { body: {}, today: {}, history: null };
         }
 
         // 日付順にソートして過去30日分を取得
         const allDates = Object.keys(historyData).sort().reverse();
         const last30Days = allDates.slice(0, 30);
+        console.log('[CommunityPost] allDates:', allDates.slice(0, 5), '... last30Days:', last30Days.length);
 
         // 体組成は直近の記録された値を使用
         let latestLbm = null, latestWeight = null, latestBodyFat = null;
@@ -1199,12 +1203,16 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
             }
             if (latestLbm && latestWeight && latestBodyFat) break;
         }
+        console.log('[CommunityPost] latestBody:', { latestLbm, latestWeight, latestBodyFat });
 
-        // データがある日のみを対象
+        // データがある日のみを対象（食事・運動・体組成のいずれかがあればOK）
         const datesWithData = last30Days.filter(date => {
             const d = historyData[date];
-            return (d.meals && d.meals.length > 0) || (d.workouts && d.workouts.length > 0);
+            return (d.meals && d.meals.length > 0) ||
+                   (d.workouts && d.workouts.length > 0) ||
+                   (d.bodyComposition && Object.keys(d.bodyComposition).length > 0);
         });
+        console.log('[CommunityPost] datesWithData:', datesWithData.length);
 
         let historyAverage = null;
         if (datesWithData.length > 0) {
