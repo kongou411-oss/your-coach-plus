@@ -8,15 +8,7 @@
     <meta http-equiv="Expires" content="0">
     <title>Your Coach+ v4.6.1</title>
 
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
-
-    <!-- PWA Meta Tags -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Coach+">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <!-- App Icons (ネイティブアプリ専用 - PWA機能は削除) -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
 
@@ -56,18 +48,6 @@
 
     <script type="module" src="/src/main.jsx"></script>
 
-    <!-- Service Worker 登録スクリプト（通知機能に必要） -->
-    <script>
-        // Firebase Messaging用のService Workerを登録
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/firebase-messaging-sw.js')
-                .then(function(registration) {
-                    console.log('[Service Worker] Firebase Messaging SW登録成功:', registration.scope);
-                })
-                .catch(function(error) {
-                    console.error('[Service Worker] Firebase Messaging SW登録失敗:', error);
-                });
-        }
-    </script>
+    <!-- ネイティブアプリ専用: Service Workerは不要（Capacitor Push Notificationsを使用） -->
 </body>
 </html>

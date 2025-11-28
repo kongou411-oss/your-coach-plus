@@ -12,9 +12,20 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/",
+        "destination": "/home.html",
+        "type": 302
+      }
+    ],
     "rewrites": [
       {
-        "source": "!{home.html,privacy.html,terms.html}",
+        "source": "/app",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/app/**",
         "destination": "/index.html"
       }
     ],

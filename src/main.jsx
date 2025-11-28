@@ -5,8 +5,11 @@ import './index.css'
 import { Capacitor } from '@capacitor/core'
 import { StatusBar, Style } from '@capacitor/status-bar'
 
+// ネイティブアプリかどうか判定
+const isNativeApp = Capacitor.isNativePlatform();
+
 // ネイティブアプリ時のセーフエリア対応
-if (Capacitor.isNativePlatform()) {
+if (isNativeApp) {
     document.body.classList.add('native-app');
 
     // ステータスバーを透明にしてコンテンツの上に重ねる
