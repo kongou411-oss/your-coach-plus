@@ -1,5 +1,7 @@
 import React from 'react';
 import toast from 'react-hot-toast';
+import { isNativeApp } from '../capacitor-push';
+import { GoogleAuth } from '@southdevs/capacitor-google-auth';
 
 // ===== 基本設定タブコンポーネント =====
 const BasicTab = ({
@@ -1146,6 +1148,15 @@ const BasicTab = ({
                                         console.log('[Logout] Clearing all localStorage data');
                                         localStorage.clear();
                                         sessionStorage.clear();
+                                        // ネイティブアプリの場合はGoogle認証もサインアウト
+                                        if (isNativeApp()) {
+                                            try {
+                                                await GoogleAuth.signOut();
+                                                console.log('[Logout] GoogleAuth signed out');
+                                            } catch (error) {
+                                                console.error('[Logout] GoogleAuth signOut error:', error);
+                                            }
+                                        }
                                         // ログアウト実行
                                         await firebase.auth().signOut();
                                         // ページをリロードして完全にリセット

@@ -9,9 +9,6 @@ const NotificationSettings = ({ userId }) => {
     const [notificationPermission, setNotificationPermission] = useState('default');
     const [fcmToken, setFcmToken] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [isIOS, setIsIOS] = useState(false);
-    const [isStandalone, setIsStandalone] = useState(false);
-    const [showInstallGuide, setShowInstallGuide] = useState(false);
     const [isNative, setIsNative] = useState(false);
 
     // 通知設定（Firestoreから読み込み）
@@ -34,16 +31,9 @@ const NotificationSettings = ({ userId }) => {
     const [newCustomBody, setNewCustomBody] = useState('');
     const [newCustomTime, setNewCustomTime] = useState('12:00');
 
-    // iOS判定とPWAモード判定、ネイティブアプリ判定
+    // ネイティブアプリ判定と通知チャンネル作成
     useEffect(() => {
         const checkDevice = async () => {
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            const iosDevice = /iPad|iPhone|iPod/.test(userAgent);
-            const standalone = window.matchMedia('(display-mode: standalone)').matches;
-
-            setIsIOS(iosDevice);
-            setIsStandalone(standalone);
-
             // Capacitorネイティブアプリの判定
             const native = isNativeApp();
             setIsNative(native);
@@ -135,11 +125,8 @@ const NotificationSettings = ({ userId }) => {
         }
     }, [userId]);
 
-    // 通知権限の確認とFCMトークンの取得
+    // 通知権限の確認とFCMトークンの取得（ネイティブアプリ専用）
     useEffect(() => {
-        let retryCount = 0;
-        const maxRetries = 3;
-
         // Firestoreにトークンを保存する共通関数
         const saveTokenToFirestore = async (token) => {
             if (!token || !userId || !window.db) return;
@@ -155,11 +142,11 @@ const NotificationSettings = ({ userId }) => {
         };
 
         const checkAndGetToken = async () => {
-            console.log(`[Notification] checkAndGetToken called (attempt ${retryCount + 1}/${maxRetries + 1})`);
+            console.log('[Notification] checkAndGetToken called');
             console.log('[Notification] userId:', userId);
             console.log('[Notification] isNative:', isNativeApp());
 
-            // ===== ネイティブアプリの場合（Capacitor） =====
+            // ネイティブアプリの場合のみ（Capacitor Push Notifications）
             if (isNativeApp()) {
                 console.log('[Notification] Using Capacitor Push Notifications');
                 const result = await initPushNotifications(userId, async (token) => {
@@ -170,68 +157,8 @@ const NotificationSettings = ({ userId }) => {
                 if (result) {
                     setNotificationPermission('granted');
                 }
-                return;
-            }
-
-            // ===== PWA/Webの場合 =====
-            console.log('[Notification] window.messaging:', !!window.messaging);
-            console.log('[Notification] window.db:', !!window.db);
-
-            if (!('Notification' in window)) {
-                console.warn('[Notification] Notification API not supported');
-                return;
-            }
-
-            const permission = Notification.permission;
-            setNotificationPermission(permission);
-            console.log('[Notification] Permission:', permission);
-
-            // 既に許可されている場合はFCMトークンを取得
-            if (permission === 'granted' && userId) {
-                // window.messagingとwindow.dbの初期化を待つ
-                if (!window.messaging || !window.db) {
-                    console.warn('[Notification] Firebase not ready yet, will retry...');
-
-                    if (retryCount < maxRetries) {
-                        retryCount++;
-                        setTimeout(() => checkAndGetToken(), 1000); // 1秒後にリトライ
-                    } else {
-                        console.error('[Notification] Firebase initialization timeout');
-                    }
-                    return;
-                }
-
-                try {
-                    console.log('[Notification] Waiting for Service Worker...');
-                    const registration = await navigator.serviceWorker.ready;
-                    console.log('[Notification] Service Worker ready:', registration.scope);
-
-                    const messaging = window.messaging;
-                    console.log('[Notification] Getting FCM token...');
-
-                    const token = await messaging.getToken({
-                        vapidKey: 'BIifQg3P5w9Eb4JU4EDqx7bbNeAhveYPK2GCeEyi28A6-y04sm11TASGWBoI0Enewki1f7PFvQ6KjsQb5J5EMXU',
-                        serviceWorkerRegistration: registration
-                    });
-
-                    if (token) {
-                        setFcmToken(token);
-                        console.log('[Notification] ✅ FCM Token retrieved:', token.substring(0, 30) + '...');
-                        await saveTokenToFirestore(token);
-                    } else {
-                        console.warn('[Notification] Token is empty');
-                    }
-                } catch (error) {
-                    console.error('[Notification] ❌ Failed to get/save FCM token:', error);
-                    console.error('[Notification] Error details:', error.code, error.message);
-
-                    // リトライ
-                    if (retryCount < maxRetries && error.code !== 'messaging/permission-blocked') {
-                        retryCount++;
-                        console.log(`[Notification] Retrying in 2 seconds... (${retryCount}/${maxRetries})`);
-                        setTimeout(() => checkAndGetToken(), 2000);
-                    }
-                }
+            } else {
+                console.log('[Notification] Not a native app, skipping push setup');
             }
         };
 
@@ -241,100 +168,26 @@ const NotificationSettings = ({ userId }) => {
         }
     }, [userId]);
 
-    // フォアグラウンドメッセージのハンドラーを設定
-    // Android PWAを開いている時は、ここで通知を出さないと無音になる
-    useEffect(() => {
-        if (!window.messaging) return;
-
-        const unsubscribe = window.messaging.onMessage(async (payload) => {
-            console.log('[Foreground] Message received:', payload);
-
-            // Android PWAのフォアグラウンド時は手動で通知を出す必要がある
-            if (Notification.permission === 'granted') {
-                const title = payload.notification?.title || 'Your Coach+';
-                const body = payload.notification?.body || '新しい通知があります';
-
-                // タグをタイトル+時刻+タイプで固定（重複防止）
-                // Cloud Functionsと完全に同じタグを使用
-                const notificationType = payload.data?.type || 'notification';
-                const scheduleTime = payload.data?.scheduleTime || 'unknown';
-                const notificationTag = `${title}-${scheduleTime}-${notificationType}`;
-
-                const options = {
-                    body: body,
-                    icon: '/icons/icon-192.png',
-                    badge: '/icons/icon-72.png',
-                    tag: notificationTag, // メッセージIDで固定（同じメッセージは1つに統合）
-                    renotify: true,
-                    vibrate: [200, 100, 200],
-                    requireInteraction: true,
-                    data: {
-                        url: payload.data?.url || '/',
-                        ...payload.data
-                    },
-                    actions: [
-                        { action: 'open', title: '開く', icon: '/icons/icon-72.png' },
-                        { action: 'close', title: '閉じる' }
-                    ]
-                };
-
-                // PWA環境ではServiceWorkerRegistration.showNotification()を使う必要がある
-                try {
-                    const registration = await navigator.serviceWorker.ready;
-                    await registration.showNotification(title, options);
-                    console.log('[Foreground] Notification shown via ServiceWorker');
-                } catch (error) {
-                    console.error('[Foreground] Failed to show notification:', error);
-                    // フォールバック: ブラウザ環境では new Notification() を使う
-                    try {
-                        new Notification(title, options);
-                        console.log('[Foreground] Notification shown via Notification API');
-                    } catch (fallbackError) {
-                        console.error('[Foreground] Fallback also failed:', fallbackError);
-                    }
-                }
-            }
-        });
-
-        return () => {
-            if (unsubscribe) unsubscribe();
-        };
-    }, []);
-
-    // 通知権限をリクエスト
+    // 通知権限をリクエスト（ネイティブアプリ専用）
     const requestNotificationPermission = async () => {
+        if (!isNativeApp()) {
+            toast.error('この機能はネイティブアプリでのみ利用可能です');
+            return;
+        }
+
+        setLoading(true);
         try {
-            if (!('Notification' in window)) {
-                toast.error('お使いのブラウザは通知機能に対応していません');
-                return;
-            }
-
-            if (isIOS && !isStandalone) {
-                setShowInstallGuide(true);
-                return;
-            }
-
-            setLoading(true);
-
-            const permission = await Notification.requestPermission();
-            setNotificationPermission(permission);
-
-            if (permission === 'granted') {
-                const registration = await navigator.serviceWorker.ready;
-                const messaging = window.messaging;
-                const token = await messaging.getToken({
-                    vapidKey: 'BIifQg3P5w9Eb4JU4EDqx7bbNeAhveYPK2GCeEyi28A6-y04sm11TASGWBoI0Enewki1f7PFvQ6KjsQb5J5EMXU',
-                    serviceWorkerRegistration: registration
-                });
-
+            const result = await initPushNotifications(userId, async (token) => {
                 setFcmToken(token);
-                toast.success('通知権限が許可されました');
-
-                // FCMトークンを配列で保存（複数端末対応）
+                setNotificationPermission('granted');
                 await window.db.collection('users').doc(userId).set({
                     fcmTokens: window.firebase.firestore.FieldValue.arrayUnion(token),
                     fcmTokenUpdatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
+            });
+            if (result) {
+                setNotificationPermission('granted');
+                toast.success('通知権限が許可されました');
             } else {
                 toast.error('通知権限が拒否されました');
             }
