@@ -150,6 +150,62 @@ dist/                 ← ビルド出力（デプロイ対象）
 
 ---
 
+## Capacitor ネイティブアプリ対応
+
+### ビルド手順
+```bash
+npm run build              # Webビルド
+npx cap sync android       # Androidに同期
+# Android Studio で APK ビルド
+```
+
+### ファイル構造
+```
+android/                   ← Androidプロジェクト
+├── app/
+│   ├── src/main/assets/   ← distからコピーされる
+│   └── google-services.json ← Firebase設定（要手動配置）
+capacitor.config.json      ← Capacitor設定
+src/capacitor-push.js      ← ネイティブプッシュ通知
+src/main.jsx               ← StatusBar設定
+```
+
+### セーフエリア（ステータスバー対応）
+
+**重要**: パディングの多重適用に注意
+
+| 画面タイプ | 対応方法 |
+|-----------|---------|
+| ダッシュボード（非fixed） | `body.native-app` の `padding-top` で自動対応 |
+| フルスクリーンビュー（`fixed inset-0`） | ヘッダーに `native-safe-header` クラスを追加 |
+
+**CSSクラス（`src/index.css`）**:
+- `body.native-app`: ネイティブ時に自動付与（`src/main.jsx`）
+- `native-safe-header`: フルスクリーンビューのヘッダー用
+
+**フルスクリーンビュー一覧**（`native-safe-header` が必要）:
+- `05_analysis.jsx`: AnalysisView
+- `06_community.jsx`: PGBaseView, COMYView, CommunityPostView
+- `16_history_v10.jsx` + `public/history_v10_standalone.html`: 履歴
+
+#### 過去のバグ（再発防止）
+| 日付 | バグ | 原因 | 修正 |
+|------|------|------|------|
+| 2025/11/29 | ステータスバー余白が多すぎる | body, fullscreen-view, header に3重でpadding適用 | ダッシュボードはbodyのみ、フルスクリーンはheaderのみに統一 |
+
+### Google認証（ネイティブ）
+- プラグイン: `@southdevs/capacitor-google-auth`
+- 初期化: `02_auth.jsx` の `useEffect` で `GoogleAuth.initialize()`
+- SHA-1フィンガープリント: Firebase Console に登録必須
+- `google-services.json`: Firebase Console からダウンロード → `android/app/` に配置
+
+### プッシュ通知（ネイティブ）
+- PWA: `firebase-messaging-sw.js` + FCMトークン
+- ネイティブ: `@capacitor/push-notifications` + `src/capacitor-push.js`
+- 両方のトークンを `users/{userId}.fcmTokens` 配列に保存してマルチキャスト
+
+---
+
 ## 参照ドキュメント
 
 詳細な技術仕様・トラブルシューティングは `README.md` を参照。

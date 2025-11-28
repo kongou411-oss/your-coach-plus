@@ -42,6 +42,8 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
     <style>
+        /* セーフエリア対応は親コンポーネント（16_history_v10.jsx）で処理 */
+
         /* スクロールバーを完全非表示 */
         * {
             scrollbar-width: none; /* Firefox */
@@ -316,7 +318,7 @@
     </style>
 </head>
 <body class="bg-gray-100">
-    <!-- 履歴バナー（フルワイド） -->
+    <!-- 履歴バナー（フルワイド） - セーフエリア対応は親のiframeコンテナで処理 -->
     <div class="bg-gradient-to-r from-purple-500 to-indigo-600 shadow-md p-3 mb-4">
         <div class="flex items-center justify-between text-white">
             <div class="flex items-center gap-2">

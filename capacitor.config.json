@@ -1,0 +1,31 @@
+{
+  "appId": "com.yourcoach.plus",
+  "appName": "Your Coach+",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#000000",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "dark",
+      "backgroundColor": "#000000"
+    },
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
+  },
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#000000"
+  }
+}

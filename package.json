@@ -38,6 +38,16 @@
     "vite": "^7.1.12"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/app": "^7.1.0",
+    "@capacitor/browser": "^7.0.2",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
+    "@capacitor/push-notifications": "^7.0.3",
+    "@capacitor/splash-screen": "^7.0.3",
+    "@capacitor/status-bar": "^7.0.3",
+    "@capgo/capacitor-native-biometric": "^7.5.3",
+    "@southdevs/capacitor-google-auth": "^7.0.0",
     "chart.js": "^4.5.1",
     "chartjs-plugin-annotation": "^3.1.0",
     "firebase": "^12.5.0",

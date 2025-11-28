@@ -119,15 +119,15 @@ exports.scheduleNotification = onCall({
   cors: true,
   memory: "512MiB",
 }, async (request) => {
-  const { targetTime, fcmToken, title, body, notificationType, userId, scheduleTimeStr } = request.data;
+  const { targetTime, title, body, notificationType, userId, scheduleTimeStr } = request.data;
 
   // 認証チェック
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "ユーザーはログインしている必要があります");
   }
 
-  // パラメータチェック
-  if (!targetTime || !fcmToken || !title || !body || !notificationType || !scheduleTimeStr) {
+  // パラメータチェック（fcmTokenはFirestoreから取得するので不要）
+  if (!targetTime || !title || !body || !notificationType || !scheduleTimeStr) {
     throw new HttpsError("invalid-argument", "必須パラメータが不足しています");
   }
 
@@ -387,41 +387,35 @@ async function rescheduleNotification(title, body, notificationType, userId, sch
     const url = `https://${location}-${project}.cloudfunctions.net/sendPushNotification`;
 
     // 【重要】時間の計算ロジック修正（タイムゾーン対応）
-    // 日本時間（JST = UTC+9）で明日の指定時刻を計算
+    // 日本時間（JST = UTC+9）で翌日の指定時刻を計算
     const [hours, minutes] = scheduleTimeStr.split(":").map(Number);
 
     // 現在のUTC時刻を取得
     const nowUTC = new Date();
 
-    // 明日の日付を取得（UTC基準）
-    const tomorrow = new Date(nowUTC);
-    tomorrow.setUTCDate(nowUTC.getUTCDate() + 1);
+    // JSTでの現在時刻を計算
+    const nowJST = new Date(nowUTC.getTime() + 9 * 60 * 60 * 1000);
 
-    // 指定時刻をJSTで設定するため、UTC時刻に変換
-    // JST = UTC + 9時間 なので、UTC = JST - 9時間
-    let utcHours = hours - 9;
-    let utcDate = tomorrow.getUTCDate();
+    // JSTで翌日の指定時刻を作成
+    const targetJST = new Date(nowJST);
+    targetJST.setDate(nowJST.getDate() + 1);
+    targetJST.setHours(hours, minutes, 0, 0);
 
-    // 時刻が負になった場合（例: JST 08:00 = UTC -01:00 = 前日の23:00）
-    if (utcHours < 0) {
-      utcHours += 24;
-      utcDate -= 1;
+    // JSTからUTCに変換（-9時間）
+    const targetUTC = new Date(targetJST.getTime() - 9 * 60 * 60 * 1000);
+
+    // 万が一、計算結果が現在より過去の場合はさらに1日追加
+    if (targetUTC.getTime() <= nowUTC.getTime()) {
+      targetUTC.setDate(targetUTC.getDate() + 1);
     }
 
-    tomorrow.setUTCDate(utcDate);
-    tomorrow.setUTCHours(utcHours);
-    tomorrow.setUTCMinutes(minutes);
-    tomorrow.setUTCSeconds(0);
-    tomorrow.setUTCMilliseconds(0);
+    const scheduleTimeSeconds = Math.floor(targetUTC.getTime() / 1000);
 
-    const scheduleTimeSeconds = Math.floor(tomorrow.getTime() / 1000);
-
-    // デバッグログ（JST表示のため+9時間）
-    const tomorrowJST = new Date(tomorrow.getTime() + 9 * 60 * 60 * 1000);
+    // デバッグログ
     console.log(`[Reschedule] Current UTC: ${nowUTC.toISOString()}`);
     console.log(`[Reschedule] Target JST time: ${scheduleTimeStr}`);
-    console.log(`[Reschedule] Next execution (UTC): ${tomorrow.toISOString()}`);
-    console.log(`[Reschedule] Next execution (JST): ${tomorrowJST.toISOString().replace('T', ' ').replace('Z', ' JST')}`);
+    console.log(`[Reschedule] Next execution (UTC): ${targetUTC.toISOString()}`);
+    console.log(`[Reschedule] Next execution (JST): ${targetJST.toISOString().replace('T', ' ').slice(0, 19)} JST`);
     console.log(`[Reschedule] Timestamp: ${scheduleTimeSeconds}`);
 
     const task = {
@@ -444,7 +438,7 @@ async function rescheduleNotification(title, body, notificationType, userId, sch
     };
 
     const [response] = await tasksClient.createTask({parent: queuePath, task});
-    console.log(`[Rescheduled] ${notificationType} at ${tomorrowJST.toLocaleString("ja-JP", {timeZone: "Asia/Tokyo"})} (Task: ${response.name})`);
+    console.log(`[Rescheduled] ${notificationType} at ${targetUTC.toLocaleString("ja-JP", {timeZone: "Asia/Tokyo"})} (Task: ${response.name})`);
   } catch (error) {
     console.error(`[Reschedule Error] Failed to reschedule ${notificationType}:`, error);
     console.error(`[Reschedule Error] Details:`, {

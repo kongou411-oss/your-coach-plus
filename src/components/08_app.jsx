@@ -2,6 +2,7 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import SettingsView from './04_settings';
 import { GlobalConfirmModal } from './00_confirm_modal.jsx';
+import { isNativeApp, initPushNotifications, createNotificationChannel, initBackButtonHandler, removeBackButtonHandler } from '../capacitor-push';
 
 // ===== Welcome Guide Modal Component - REMOVED =====
 // オンボーディング完了後、直接食事誘導モーダルを表示するため削除
@@ -215,7 +216,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
     if (!show) return null;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 text-white p-4 z-[10002] shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 text-white p-4 z-[10002] shadow-lg" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)' }}>
             <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1">
                     <Icon name="Cookie" size={24} className="text-amber-400 flex-shrink-0 mt-0.5" />
@@ -910,7 +911,55 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                 generatePredictions(prevDayRecord);
                             }
 
-                            // ========== FCM通知機能は削除されました ==========
+                            // ネイティブアプリ時のプッシュ通知初期化
+                            if (isNativeApp()) {
+                                try {
+                                    await createNotificationChannel();
+                                    await initPushNotifications(
+                                        firebaseUser.uid,
+                                        // トークン受信時のコールバック
+                                        async (token) => {
+                                            // Firestoreにトークンを保存
+                                            if (token && window.db && window.firebase) {
+                                                await window.db.collection('users').doc(firebaseUser.uid).set({
+                                                    fcmTokens: window.firebase.firestore.FieldValue.arrayUnion(token),
+                                                    fcmTokenUpdatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+                                                }, { merge: true });
+                                                console.log('[Push] FCM token saved to Firestore');
+                                            }
+                                        },
+                                        // フォアグラウンド通知受信時のコールバック
+                                        ({ title, body }) => {
+                                            // アプリ内でToast表示
+                                            toast(
+                                                (t) => (
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="flex-shrink-0">
+                                                            <span className="text-2xl">🔔</span>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-bold text-gray-900">{title}</p>
+                                                            <p className="text-sm text-gray-600 mt-1">{body}</p>
+                                                        </div>
+                                                    </div>
+                                                ),
+                                                {
+                                                    duration: 5000,
+                                                    position: 'top-center',
+                                                    style: {
+                                                        background: '#fff',
+                                                        padding: '16px',
+                                                        borderRadius: '12px',
+                                                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                                    },
+                                                }
+                                            );
+                                        }
+                                    );
+                                } catch (error) {
+                                    console.error('[Push] Error initializing push notifications:', error);
+                                }
+                            }
 
                             setLoading(false);
                         } else {
@@ -922,6 +971,75 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
                 return () => unsubscribe();
             }, []);
+
+            // Androidバックボタンのハンドリング
+            useEffect(() => {
+                if (!isNativeApp()) return;
+
+                const handleBackButton = () => {
+                    // 開いている画面を順番に閉じる
+                    if (showSettings) {
+                        setShowSettings(false);
+                        return true;
+                    }
+                    if (showAnalysisView) {
+                        setShowAnalysisView(false);
+                        return true;
+                    }
+                    if (showHistoryV10) {
+                        setShowHistoryV10(false);
+                        return true;
+                    }
+                    if (showPGBaseView) {
+                        setShowPGBaseView(false);
+                        return true;
+                    }
+                    if (showCOMYView) {
+                        setShowCOMYView(false);
+                        return true;
+                    }
+                    if (showSubscriptionView) {
+                        setShowSubscriptionView(false);
+                        return true;
+                    }
+                    if (showAIInput) {
+                        setShowAIInput(false);
+                        return true;
+                    }
+                    if (showHistoryView) {
+                        setShowHistoryView(false);
+                        return true;
+                    }
+                    if (showAddView) {
+                        setShowAddView(false);
+                        return true;
+                    }
+                    if (showAdminPanel) {
+                        setShowAdminPanel(false);
+                        return true;
+                    }
+                    // ダッシュボード表示中で他に閉じる画面がない
+                    return false;
+                };
+
+                const handleExitApp = () => {
+                    // アプリ終了の確認
+                    if (window.confirm('アプリを終了しますか？')) {
+                        import('@capacitor/app').then(({ App }) => {
+                            App.exitApp();
+                        });
+                    }
+                };
+
+                initBackButtonHandler({
+                    onBackButton: handleBackButton,
+                    onExitApp: handleExitApp
+                });
+
+                return () => {
+                    removeBackButtonHandler();
+                };
+            }, [showSettings, showAnalysisView, showHistoryV10, showPGBaseView, showCOMYView, showSubscriptionView, showAIInput, showHistoryView, showAddView, showAdminPanel]);
 
             // currentDateは初期化時に今日の日付が設定されているので、このuseEffectは不要
             // useEffect(() => {
@@ -3580,7 +3698,8 @@ AIコーチなどの高度な機能が解放されます。
                             transform: 'translate3d(0, 0, 0)',
                             WebkitTransform: 'translate3d(0, 0, 0)',
                             backfaceVisibility: 'hidden',
-                            WebkitBackfaceVisibility: 'hidden'
+                            WebkitBackfaceVisibility: 'hidden',
+                            paddingBottom: 'env(safe-area-inset-bottom, 0px)'
                         }}
                     >
                         {/* 折りたたみトグルボタン - 最上辺に配置 */}
@@ -3689,6 +3808,7 @@ AIコーチなどの高度な機能が解放されます。
                                         setShowPGBaseView(false);
                                         setShowSettings(false);
                                         // COMYを開く
+                                        console.error('[App] COMYタブクリック, COMYView:', window.COMYView ? 'exists' : 'undefined');
                                         setShowCOMYView(true);
                                         setBottomBarExpanded(false);
                                     }}

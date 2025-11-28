@@ -1,5 +1,8 @@
 import React from 'react';
 import toast from 'react-hot-toast';
+import { isNativeApp } from '../capacitor-push';
+import { GoogleAuth } from '@southdevs/capacitor-google-auth';
+
 // ===== Authentication Components =====
 // ===== Authentication Components =====
 const LoginScreen = () => {
@@ -34,6 +37,25 @@ const LoginScreen = () => {
 
     // Googleリダイレクト中の状態
     const [isRedirecting, setIsRedirecting] = useState(false);
+
+    // Google Auth 初期化（ネイティブアプリ用）
+    useEffect(() => {
+        const initGoogleAuth = async () => {
+            if (isNativeApp()) {
+                try {
+                    await GoogleAuth.initialize({
+                        clientId: '654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com',
+                        scopes: ['profile', 'email'],
+                        grantOfflineAccess: true,
+                    });
+                    console.log('✅ GoogleAuth initialized');
+                } catch (error) {
+                    console.error('❌ GoogleAuth initialization error:', error);
+                }
+            }
+        };
+        initGoogleAuth();
+    }, []);
 
     // iframe内からのpostMessageを受け取ってモーダルを閉じる
     useEffect(() => {
@@ -173,14 +195,30 @@ const LoginScreen = () => {
             event.stopPropagation();
         }
 
-        console.log('🔵 signInWithPopupを試みます...');
+        console.log('🔵 Googleログインを試みます... isNative:', isNativeApp());
 
         try {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            const result = await auth.signInWithPopup(provider);
-            const user = result.user;
+            let user;
 
-            console.log('✅ ポップアップ認証成功:', { uid: user.uid, email: user.email });
+            // ネイティブアプリの場合はCapacitor Google Authを使用
+            if (isNativeApp()) {
+                console.log('🔵 ネイティブGoogle認証を使用');
+                const googleUser = await GoogleAuth.signIn();
+                console.log('✅ Google認証成功:', googleUser);
+
+                // FirebaseにGoogleクレデンシャルでサインイン
+                const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
+                const result = await auth.signInWithCredential(credential);
+                user = result.user;
+            } else {
+                // Web/PWAの場合は従来通りポップアップを使用
+                console.log('🔵 signInWithPopupを使用');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await auth.signInWithPopup(provider);
+                user = result.user;
+            }
+
+            console.log('✅ Firebase認証成功:', { uid: user.uid, email: user.email });
 
             // 既存ユーザーかチェック
             const profile = await DataService.getUserProfile(user.uid);
@@ -189,14 +227,17 @@ const LoginScreen = () => {
                 // 未登録ユーザー：サインアウトして新規登録を促す
                 console.log('⚠️ 未登録ユーザー: サインアウトします');
                 await auth.signOut();
+                if (isNativeApp()) {
+                    await GoogleAuth.signOut();
+                }
                 toast('Googleアカウントが未登録です。まずアカウントを作成してください。');
                 setIsSignUp(true);
             }
             // 既存ユーザーの場合はonAuthStateChangedで処理される
         } catch (error) {
-            console.error('❌ ポップアップ認証エラー:', error);
+            console.error('❌ Google認証エラー:', error);
             if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-                toast.error(`認証エラー: ${error.message}`);
+                toast.error(`認証エラー: ${error.message || error}`);
             }
         }
     };
@@ -208,7 +249,7 @@ const LoginScreen = () => {
             event.stopPropagation();
         }
 
-        console.log('🔵 signInWithPopupを試みます（新規登録）...');
+        console.log('🔵 Google新規登録を試みます... isNative:', isNativeApp());
 
         // 規約同意チェック
         if (!agreedToTerms) {
@@ -217,17 +258,33 @@ const LoginScreen = () => {
         }
 
         try {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            const result = await auth.signInWithPopup(provider);
-            const user = result.user;
+            let user;
 
-            console.log('✅ ポップアップ認証成功（新規登録）:', { uid: user.uid, email: user.email });
+            // ネイティブアプリの場合はCapacitor Google Authを使用
+            if (isNativeApp()) {
+                console.log('🔵 ネイティブGoogle認証を使用（新規登録）');
+                const googleUser = await GoogleAuth.signIn();
+                console.log('✅ Google認証成功:', googleUser);
+
+                // FirebaseにGoogleクレデンシャルでサインイン
+                const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
+                const result = await auth.signInWithCredential(credential);
+                user = result.user;
+            } else {
+                // Web/PWAの場合は従来通りポップアップを使用
+                console.log('🔵 signInWithPopupを使用（新規登録）');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await auth.signInWithPopup(provider);
+                user = result.user;
+            }
+
+            console.log('✅ Firebase認証成功（新規登録）:', { uid: user.uid, email: user.email });
 
             // 新規ユーザーの場合はonAuthStateChangedで処理される
         } catch (error) {
-            console.error('❌ ポップアップ認証エラー:', error);
+            console.error('❌ Google認証エラー:', error);
             if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-                toast.error(`認証エラー: ${error.message}`);
+                toast.error(`認証エラー: ${error.message || error}`);
             }
         }
     };

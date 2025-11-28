@@ -479,9 +479,9 @@ ${context}
     // 選択されたモジュールがある場合はiframe表示
     if (selectedModule) {
         return (
-            <div className="fixed inset-0 bg-white z-50 flex flex-col">
+            <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
                 {/* ヘッダー */}
-                <div className="bg-gradient-to-r from-cyan-600 to-cyan-500 text-white px-4 py-4 flex items-center justify-between shadow-lg">
+                <div className="bg-gradient-to-r from-cyan-600 to-cyan-500 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
                     <button onClick={() => setSelectedModule(null)} className="p-2 hover:bg-white/20 rounded-lg transition">
                         <Icon name="ArrowLeft" size={24} />
                     </button>
@@ -509,9 +509,9 @@ ${context}
         : textbookModules.filter(m => m.category === selectedCategory);
 
     return (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
             {/* ヘッダー */}
-            <div className="bg-gradient-to-r from-cyan-600 to-cyan-500 text-white px-4 py-4 flex items-center justify-between shadow-lg">
+            <div className="bg-gradient-to-r from-cyan-600 to-cyan-500 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
                 <div className="flex items-center gap-3">
                     <Icon name="BookOpen" size={24} />
                     <div>
@@ -1145,6 +1145,8 @@ ${context}
 
 // ===== コミュニティ投稿ビュー =====
 const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, historyData }) => {
+    console.error('[CommunityPostView] mounted, historyData:', historyData ? Object.keys(historyData).length + ' days' : 'null/undefined');
+
     const [postMode, setPostMode] = useState('select'); // 'select', 'new_project', 'add_progress'
     const [postContent, setPostContent] = useState('');
     const [postCategory, setPostCategory] = useState('body');
@@ -1176,17 +1178,17 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
 
     // 履歴データから過去30日間の平均を同期的に計算（即座に表示）
     const autoFetchedData = useMemo(() => {
-        console.log('[CommunityPost] useMemo historyData:', historyData ? Object.keys(historyData).length + ' days' : 'null');
+        console.error('[CommunityPost] useMemo historyData:', historyData ? Object.keys(historyData).length + ' days' : 'null');
 
         if (!historyData || Object.keys(historyData).length === 0) {
-            console.log('[CommunityPost] No historyData, returning empty');
+            console.error('[CommunityPost] No historyData, returning empty');
             return { body: {}, today: {}, history: null };
         }
 
         // 日付順にソートして過去30日分を取得
         const allDates = Object.keys(historyData).sort().reverse();
         const last30Days = allDates.slice(0, 30);
-        console.log('[CommunityPost] allDates:', allDates.slice(0, 5), '... last30Days:', last30Days.length);
+        console.error('[CommunityPost] allDates:', allDates.slice(0, 5), '... last30Days:', last30Days.length);
 
         // 体組成は直近の記録された値を使用
         let latestLbm = null, latestWeight = null, latestBodyFat = null;
@@ -1203,7 +1205,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
             }
             if (latestLbm && latestWeight && latestBodyFat) break;
         }
-        console.log('[CommunityPost] latestBody:', { latestLbm, latestWeight, latestBodyFat });
+        console.error('[CommunityPost] latestBody:', { latestLbm, latestWeight, latestBodyFat });
 
         // データがある日のみを対象（食事・運動・体組成のいずれかがあればOK）
         const datesWithData = last30Days.filter(date => {
@@ -1212,7 +1214,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                    (d.workouts && d.workouts.length > 0) ||
                    (d.bodyComposition && Object.keys(d.bodyComposition).length > 0);
         });
-        console.log('[CommunityPost] datesWithData:', datesWithData.length);
+        console.error('[CommunityPost] datesWithData:', datesWithData.length);
 
         let historyAverage = null;
         if (datesWithData.length > 0) {
@@ -1795,8 +1797,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     // モード選択画面
     if (postMode === 'select') {
         return (
-            <div className="fixed inset-0 bg-white z-50 flex flex-col">
-                <header className="p-4 flex items-center border-b bg-white flex-shrink-0">
+            <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
+                <header className="p-4 flex items-center border-b bg-white flex-shrink-0 native-safe-header">
                     <button onClick={onClose}>
                         <Icon name="ArrowLeft" size={24} />
                     </button>
@@ -1875,8 +1877,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     // プロジェクト作成画面
     if (postMode === 'new_project') {
         return (
-            <div className="fixed inset-0 bg-white z-50 flex flex-col">
-                <header className="p-4 flex items-center border-b bg-white flex-shrink-0">
+            <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
+                <header className="p-4 flex items-center border-b bg-white flex-shrink-0 native-safe-header">
                     <button onClick={() => setPostMode('select')}>
                         <Icon name="ArrowLeft" size={24} />
                     </button>
@@ -2064,8 +2066,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     // 進捗追加画面
     if (postMode === 'add_progress') {
         return (
-            <div className="fixed inset-0 bg-white z-50 flex flex-col">
-                <header className="p-4 flex items-center border-b bg-white flex-shrink-0">
+            <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
+                <header className="p-4 flex items-center border-b bg-white flex-shrink-0 native-safe-header">
                     <button onClick={() => setPostMode('select')}>
                         <Icon name="ArrowLeft" size={24} />
                     </button>
@@ -2250,8 +2252,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     // メンタル投稿画面
     if (postMode === 'mental') {
         return (
-            <div className="fixed inset-0 bg-white z-50 flex flex-col">
-                <header className="p-4 flex items-center border-b bg-white flex-shrink-0">
+            <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
+                <header className="p-4 flex items-center border-b bg-white flex-shrink-0 native-safe-header">
                     <button onClick={() => setPostMode('select')}>
                         <Icon name="ArrowLeft" size={24} />
                     </button>
@@ -2344,8 +2346,8 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
 
     // 以下は既存のメンタル投稿画面（postMode === 'old_post'）- 削除予定
     return (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col">
-            <header className="p-4 flex items-center border-b bg-white flex-shrink-0">
+        <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
+            <header className="p-4 flex items-center border-b bg-white flex-shrink-0 native-safe-header">
                 <button onClick={onClose}>
                     <Icon name="ArrowLeft" size={24} />
                 </button>
@@ -2886,9 +2888,9 @@ const AdminPanel = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
             {/* ヘッダー */}
-            <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-4 py-4 flex items-center justify-between shadow-lg">
+            <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
                 <div className="flex items-center gap-3">
                     <Icon name="Shield" size={24} />
                     <div>
@@ -3080,6 +3082,8 @@ const AdminPanel = ({ onClose }) => {
 
 // ===== COMYビュー =====
 const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
+    console.error('[COMYView] historyData:', historyData ? Object.keys(historyData).length + ' days' : 'null/undefined');
+
     const [activeView, setActiveView] = useState('feed'); // 'admin', 'feed', 'post', 'mypage', 'community'
     const [posts, setPosts] = useState([]);
 
@@ -3386,9 +3390,9 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
     }
 
     return (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
             {/* ヘッダー */}
-            <div className="bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white px-4 py-4 flex items-center justify-between shadow-lg">
+            <div className="bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
                 <div className="flex items-center gap-3">
                     <Icon name="Users" size={24} />
                     <div>
@@ -3925,6 +3929,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
                             </span>
                             <div
                                 onClick={() => {
+                                    console.log('[COMYView] 投稿ボタンクリック, activeView -> post');
                                     setActiveView('post');
                                     setFabOpen(false);
                                 }}

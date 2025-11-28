@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { isNativeApp, initPushNotifications, createNotificationChannel } from '../capacitor-push';
 
 // ===== 通知設定コンポーネント =====
 const NotificationSettings = ({ userId }) => {
@@ -11,6 +12,7 @@ const NotificationSettings = ({ userId }) => {
     const [isIOS, setIsIOS] = useState(false);
     const [isStandalone, setIsStandalone] = useState(false);
     const [showInstallGuide, setShowInstallGuide] = useState(false);
+    const [isNative, setIsNative] = useState(false);
 
     // 通知設定（Firestoreから読み込み）
     const [mealNotifications, setMealNotifications] = useState([]);
@@ -32,15 +34,24 @@ const NotificationSettings = ({ userId }) => {
     const [newCustomBody, setNewCustomBody] = useState('');
     const [newCustomTime, setNewCustomTime] = useState('12:00');
 
-    // iOS判定とPWAモード判定
+    // iOS判定とPWAモード判定、ネイティブアプリ判定
     useEffect(() => {
-        const checkDevice = () => {
+        const checkDevice = async () => {
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
             const iosDevice = /iPad|iPhone|iPod/.test(userAgent);
             const standalone = window.matchMedia('(display-mode: standalone)').matches;
 
             setIsIOS(iosDevice);
             setIsStandalone(standalone);
+
+            // Capacitorネイティブアプリの判定
+            const native = isNativeApp();
+            setIsNative(native);
+
+            // ネイティブアプリの場合は通知チャンネルを作成
+            if (native) {
+                await createNotificationChannel();
+            }
         };
 
         checkDevice();
@@ -129,9 +140,40 @@ const NotificationSettings = ({ userId }) => {
         let retryCount = 0;
         const maxRetries = 3;
 
+        // Firestoreにトークンを保存する共通関数
+        const saveTokenToFirestore = async (token) => {
+            if (!token || !userId || !window.db) return;
+            try {
+                await window.db.collection('users').doc(userId).set({
+                    fcmTokens: window.firebase.firestore.FieldValue.arrayUnion(token),
+                    fcmTokenUpdatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                console.log('[Notification] ✅ Token saved to Firestore successfully');
+            } catch (error) {
+                console.error('[Notification] ❌ Failed to save token:', error);
+            }
+        };
+
         const checkAndGetToken = async () => {
             console.log(`[Notification] checkAndGetToken called (attempt ${retryCount + 1}/${maxRetries + 1})`);
             console.log('[Notification] userId:', userId);
+            console.log('[Notification] isNative:', isNativeApp());
+
+            // ===== ネイティブアプリの場合（Capacitor） =====
+            if (isNativeApp()) {
+                console.log('[Notification] Using Capacitor Push Notifications');
+                const result = await initPushNotifications(userId, async (token) => {
+                    setFcmToken(token);
+                    setNotificationPermission('granted');
+                    await saveTokenToFirestore(token);
+                });
+                if (result) {
+                    setNotificationPermission('granted');
+                }
+                return;
+            }
+
+            // ===== PWA/Webの場合 =====
             console.log('[Notification] window.messaging:', !!window.messaging);
             console.log('[Notification] window.db:', !!window.db);
 
@@ -175,14 +217,7 @@ const NotificationSettings = ({ userId }) => {
                     if (token) {
                         setFcmToken(token);
                         console.log('[Notification] ✅ FCM Token retrieved:', token.substring(0, 30) + '...');
-
-                        // 【重要】トークンをFirestoreに保存（配列で保存）
-                        console.log('[Notification] Saving token to Firestore...');
-                        await window.db.collection('users').doc(userId).set({
-                            fcmTokens: window.firebase.firestore.FieldValue.arrayUnion(token),
-                            fcmTokenUpdatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
-                        }, { merge: true });
-                        console.log('[Notification] ✅ Token saved to Firestore successfully');
+                        await saveTokenToFirestore(token);
                     } else {
                         console.warn('[Notification] Token is empty');
                     }
@@ -314,7 +349,8 @@ const NotificationSettings = ({ userId }) => {
     // 通知をスケジュール（共通関数）
     const scheduleNotification = async (time, title, body, type) => {
         try {
-            if (!fcmToken) {
+            // 通知権限がない場合は警告（fcmTokenはFirestoreから取得されるので、ここでは必須ではない）
+            if (!fcmToken && notificationPermission !== 'granted') {
                 toast.error('先に通知権限を許可してください');
                 return;
             }
@@ -331,9 +367,9 @@ const NotificationSettings = ({ userId }) => {
 
             const scheduleNotificationFunc = window.functions.httpsCallable('scheduleNotification');
 
+            // fcmTokenは不要（Cloud FunctionsがFirestoreから取得する）
             await scheduleNotificationFunc({
                 targetTime: targetDate.toISOString(),
-                fcmToken: fcmToken,
                 title: title,
                 body: body,
                 notificationType: type,

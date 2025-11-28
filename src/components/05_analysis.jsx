@@ -1340,7 +1340,7 @@ ${conversationContext}
     // ローディング中、またはデータ取得中
     if (loading) {
         return (
-            <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-cyan-50 z-50 flex items-center justify-center p-6">
+            <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-cyan-50 z-50 flex items-center justify-center p-6 fullscreen-view">
                 <div className="text-center">
                     {/* ローディングスピナー */}
                     <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
@@ -1353,8 +1353,8 @@ ${conversationContext}
 
     if (!analysis) {
         return (
-            <div className="fixed inset-0 bg-white z-50 flex flex-col">
-                <header className="p-4 flex items-center justify-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0 relative">
+            <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
+                <header className="p-4 flex items-center justify-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0 relative native-safe-header">
                     <button onClick={handleClose} className="absolute left-4 text-white">
                         <Icon name="ArrowLeft" size={24} />
                     </button>
@@ -1371,8 +1371,8 @@ ${conversationContext}
     }
 
     return (
-        <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
-            <header className="p-4 flex items-center justify-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0 sticky top-0 z-30 relative">
+        <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col fullscreen-view">
+            <header className="p-4 flex items-center justify-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0 sticky top-0 z-30 relative native-safe-header">
                 <button onClick={handleClose} className="absolute left-4 text-white">
                     <Icon name="ArrowLeft" size={24} />
                 </button>
