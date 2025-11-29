@@ -10,6 +10,7 @@ const NotificationSettings = ({ userId }) => {
     const [fcmToken, setFcmToken] = useState(null);
     const [loading, setLoading] = useState(false);
     const [isNative, setIsNative] = useState(false);
+    const [showInstallGuide, setShowInstallGuide] = useState(false);
 
     // 通知設定（Firestoreから読み込み）
     const [mealNotifications, setMealNotifications] = useState([]);
@@ -135,20 +136,14 @@ const NotificationSettings = ({ userId }) => {
                     fcmTokens: window.firebase.firestore.FieldValue.arrayUnion(token),
                     fcmTokenUpdatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
-                console.log('[Notification] ✅ Token saved to Firestore successfully');
             } catch (error) {
                 console.error('[Notification] ❌ Failed to save token:', error);
             }
         };
 
         const checkAndGetToken = async () => {
-            console.log('[Notification] checkAndGetToken called');
-            console.log('[Notification] userId:', userId);
-            console.log('[Notification] isNative:', isNativeApp());
-
             // ネイティブアプリの場合のみ（Capacitor Push Notifications）
             if (isNativeApp()) {
-                console.log('[Notification] Using Capacitor Push Notifications');
                 const result = await initPushNotifications(userId, async (token) => {
                     setFcmToken(token);
                     setNotificationPermission('granted');
@@ -157,8 +152,6 @@ const NotificationSettings = ({ userId }) => {
                 if (result) {
                     setNotificationPermission('granted');
                 }
-            } else {
-                console.log('[Notification] Not a native app, skipping push setup');
             }
         };
 

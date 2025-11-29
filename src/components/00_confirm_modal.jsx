@@ -70,7 +70,6 @@ const useConfirmModal = () => {
 };
 
 // グローバル確認関数（Reactコンポーネント外でも使用可能）
-let globalConfirmResolve = null;
 const globalConfirmState = {
     show: false,
     title: '',

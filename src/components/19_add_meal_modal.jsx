@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { STORAGE_KEYS } from '../config.js';
 import { normalizeForSearch } from '../kanjiReadingMap.js';
 
 // 個数単位の定義（全箇所で統一使用）
@@ -220,7 +219,6 @@ const AddMealModal = ({
         if (user) {
             if (!window.DataService) {
                 console.error('[AddMealModal] DataService is not available on window object');
-                console.log('[AddMealModal] Available window objects:', Object.keys(window).filter(k => k.includes('Service') || k.includes('Data')));
                 setMealTemplates([]);
                 return;
             }
@@ -228,8 +226,6 @@ const AddMealModal = ({
             const loadTemplates = async () => {
                 try {
                     const templates = await window.DataService.getMealTemplates(user.uid);
-                    console.log("[19_add_meal_modal] テンプレートデータ（isTrialCreated確認用）:", templates?.map(t => ({id: t.id, name: t.name, isTrialCreated: t.isTrialCreated})));
-                    
                     setMealTemplates(templates || []);
                 } catch (error) {
                     console.error('テンプレート読み込みエラー:', error);
@@ -639,11 +635,6 @@ const AddMealModal = ({
         const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
         const newRatio = isCountUnit ? newAmount : newAmount / 100;
 
-        console.log(`[updateItemAmount] ${item.name}: amount ${item.amount} → ${newAmount}`);
-        console.log(`[updateItemAmount] _base存在:`, !!item._base);
-        console.log(`[updateItemAmount] _base.vitamins.vitaminC:`, item._base?.vitamins?.vitaminC);
-        console.log(`[updateItemAmount] newRatio:`, newRatio);
-
         // ビタミン・ミネラルを再計算（_baseから）
         const vitamins = {};
         const minerals = {};
@@ -659,8 +650,6 @@ const AddMealModal = ({
                 minerals[key] = parseFloat(((item._base.minerals[key] || 0) * newRatio).toFixed(2));
             });
         }
-
-        console.log(`[updateItemAmount] 計算後 vitaminC:`, vitamins.vitaminC);
 
         updatedItems[index] = {
             ...item,
@@ -730,7 +719,6 @@ const AddMealModal = ({
 
         // トライアル期間中（0-6日目）かどうかを判定
         const isTrialPeriod = usageDays < 7;
-        console.log("[19_add_meal_modal] テンプレート保存:", {usageDays, isTrialPeriod, isFreeUser, templatesCount: mealTemplates.length});
 
         // undefinedを再帰的に除去する関数
         const removeUndefined = (obj) => {
@@ -762,7 +750,6 @@ const AddMealModal = ({
         try {
             if (!window.DataService) {
                 console.error('[AddMealModal] DataService is not available on window object');
-                console.log('[AddMealModal] Available window objects:', Object.keys(window).filter(k => k.includes('Service') || k.includes('Data')));
                 toast.error('DataServiceが利用できません。ページを再読み込みしてください。');
                 return;
             }
@@ -1595,7 +1582,6 @@ const AddMealModal = ({
                                     // 無料会員：最初に作成したテンプレート（index 0）のみ使用可能
                                     // プレミアム会員以外は、2枠目以降（index 1+）は全てロック
                                     const isLocked = userProfile?.subscriptionStatus !== 'active' && index !== 0;
-                                    console.log('[19_add_meal_modal] テンプレートロック判定:', {templateName: template.name, index, subscriptionStatus: userProfile?.subscriptionStatus, isLocked});
 
                                     return (
                                         <details key={template.id} className={`border-2 rounded-lg group ${isLocked ? 'bg-gray-100 border-gray-300 opacity-60' : 'bg-gray-50 border-gray-200'}`}>
@@ -2502,8 +2488,6 @@ const AddMealModal = ({
                                                         .doc(customFood.name)
                                                         .set(customFood, { merge: true });
 
-                                                    console.log(`[AddMealModal] カスタムアイテムをデータベースに保存: ${customFood.name} (${customFood.itemType})`);
-
                                                     // stateも更新（即座に反映）
                                                     setCustomFoods(prev => {
                                                         const existing = prev.find(f => f.name === customFood.name);
@@ -2523,8 +2507,6 @@ const AddMealModal = ({
                                                         .collection('customFoods')
                                                         .doc(customFood.name)
                                                         .set(customFood, { merge: true });
-
-                                                    console.log(`[AddMealModal] カスタムアイテムをリストに追加: ${customFood.name} (${customFood.itemType})`);
 
                                                     // stateも更新
                                                     setCustomFoods(prev => {

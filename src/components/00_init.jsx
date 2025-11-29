@@ -4,8 +4,6 @@
 import React from 'react';
 import { FIREBASE_CONFIG } from '../config.js';
 
-const { useState, useEffect, useRef, useCallback } = React;
-
 // ===== Firebase初期化 =====
 // Firebase設定はconfig.jsから読み込む（APIキーを一箇所で管理）
 let auth, db, storage, functions;

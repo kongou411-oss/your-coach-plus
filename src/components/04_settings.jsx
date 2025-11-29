@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useConfirmModal, ConfirmModal } from './00_confirm_modal';
-import { STORAGE_KEYS } from '../config.js';
+import { STORAGE_KEYS, DEFAULT_ROUTINES } from '../config.js';
 import BasicTab from './04_settings_basic';
 import FeaturesTab from './04_settings_features';
 import DataTab from './04_settings_data';
@@ -185,19 +185,9 @@ const SettingsView = ({
                 setLocalRoutines(routinesData);
             } else {
                 // Firestoreにルーティンがない場合、デフォルトルーティンを作成
-                const defaultRoutines = [
-                    { id: 1, name: 'Day 1', splitType: '胸', isRestDay: false },
-                    { id: 2, name: 'Day 2', splitType: '背中', isRestDay: false },
-                    { id: 3, name: 'Day 3', splitType: '休み', isRestDay: true },
-                    { id: 4, name: 'Day 4', splitType: '肩', isRestDay: false },
-                    { id: 5, name: 'Day 5', splitType: '腕', isRestDay: false },
-                    { id: 6, name: 'Day 6', splitType: '脚', isRestDay: false },
-                    { id: 7, name: 'Day 7', splitType: '休み', isRestDay: true }
-                ];
-
                 // Firestoreに保存
                 const batch = firebase.firestore().batch();
-                defaultRoutines.forEach(routine => {
+                DEFAULT_ROUTINES.forEach(routine => {
                     const docRef = firebase.firestore()
                         .collection('users')
                         .doc(userId)
@@ -225,10 +215,6 @@ const SettingsView = ({
 
     // ===== 共通関数 =====
     const handleSave = () => {
-        console.log('[Settings] handleSave開始');
-        console.log('[Settings] advancedSettings:', advancedSettings);
-        console.log('[Settings] profile:', profile);
-
         // LBM再計算
         const lbm = LBMUtils.calculateLBM(profile.weight, profile.bodyFatPercentage);
         const fatMass = profile.weight - lbm;
@@ -244,9 +230,6 @@ const SettingsView = ({
                 carbRatio: advancedSettings.carbRatio
             }
             : {}; // 目的別モード：PFC比率は触らない（既存値を保持）
-
-        console.log('[Settings] pfcSettings:', pfcSettings);
-        console.log('[Settings] usePurposeBased:', advancedSettings.usePurposeBased);
 
         const updatedProfile = {
             ...profile,
@@ -264,8 +247,6 @@ const SettingsView = ({
                 delete updatedProfile[key];
             }
         });
-
-        console.log('[Settings] updatedProfile (Firestore保存前):', updatedProfile);
 
         onUpdateProfile(updatedProfile);
         onClose();

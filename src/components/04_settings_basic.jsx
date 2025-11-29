@@ -784,7 +784,6 @@ const BasicTab = ({
                                         forceResyncFlag: true,
                                         forceResyncTimestamp: new Date().toISOString()
                                     }, { merge: true });
-                                    console.log('再同期フラグをFirestoreに設定しました');
 
                                     // 1. LocalStorageをクリア（認証情報以外）
                                     const keysToPreserve = ['firebase:authUser', 'firebase:host'];
@@ -807,7 +806,6 @@ const BasicTab = ({
                                         await Promise.all(
                                             cacheNames.map(cacheName => caches.delete(cacheName))
                                         );
-                                        console.log('ServiceWorkerキャッシュをクリアしました');
                                     }
 
                                     // 3. Firestoreから最新データを取得して確認
@@ -823,11 +821,6 @@ const BasicTab = ({
                                     }
 
                                     const userData = userDoc.data();
-                                    console.log('Firestore最新データ取得完了:', {
-                                        userId,
-                                        dataKeys: Object.keys(userData || {}),
-                                        timestamp: new Date().toISOString()
-                                    });
 
                                     // 4. ページをリロードして最新データを反映
                                     toast.success('データを再同期しています...');
@@ -1074,8 +1067,6 @@ const BasicTab = ({
                             </p>
                             <button
                                 onClick={() => {
-                                    console.log('[Account Delete] Button clicked');
-                                    console.log('[Account Delete] showConfirm:', typeof showConfirm, showConfirm);
                                     if (!showConfirm) {
                                         toast.error('確認モーダルが利用できません');
                                         return;
@@ -1100,17 +1091,13 @@ const BasicTab = ({
                                                             return;
                                                         }
 
-                                                        console.log('[Account Delete] Starting account deletion...');
-
                                                         // Cloud Functionを呼び出して完全削除（Stripe + Firestore + Auth）
                                                         const functions = window.firebase.app().functions('asia-northeast2');
                                                         const deleteAccount = functions.httpsCallable('deleteAccount');
 
                                                         await deleteAccount();
-                                                        console.log('[Account Delete] Account deletion completed');
 
                                                         // LocalStorage・SessionStorageをクリア
-                                                        console.log('[Account Delete] Clearing all storage data');
                                                         localStorage.clear();
                                                         sessionStorage.clear();
 
@@ -1145,14 +1132,12 @@ const BasicTab = ({
                                     '本当にログアウトしますか？',
                                     async () => {
                                         // LocalStorageをクリア（オンボーディング状態や機能開放状態をリセット）
-                                        console.log('[Logout] Clearing all localStorage data');
                                         localStorage.clear();
                                         sessionStorage.clear();
                                         // ネイティブアプリの場合はGoogle認証もサインアウト
                                         if (isNativeApp()) {
                                             try {
                                                 await GoogleAuth.signOut();
-                                                console.log('[Logout] GoogleAuth signed out');
                                             } catch (error) {
                                                 console.error('[Logout] GoogleAuth signOut error:', error);
                                             }

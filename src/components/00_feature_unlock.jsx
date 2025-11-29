@@ -36,10 +36,7 @@ const getFeatureCompletionStatus = async (userId) => {
     const localCount = Object.keys(localData).filter(k => localData[k]).length;
     const firestoreCount = Object.keys(firestoreData).filter(k => firestoreData[k]).length;
 
-    // より完全なデータを使用（trueの数が多い方）
-    const mergedData = firestoreCount > localCount ? firestoreData : localData;
-
-    // さらにマージ（両方のtrueを保持）
+    // 両方のtrueを保持してマージ
     const finalData = { ...localData, ...firestoreData };
 
     // LocalStorageを更新（最新の完全なデータで）
@@ -255,26 +252,6 @@ const calculateUnlockedFeatures = async (userId, todayRecord, isPremium = false)
         unlocked.push('detailed_nutrients');
         unlocked.push('micronutrients'); // 旧互換性
     }
-
-    console.log('[calculateUnlockedFeatures] ===== 機能開放状態 =====');
-    console.log('[calculateUnlockedFeatures] 登録日数:', daysSinceReg, '日目');
-    console.log('[calculateUnlockedFeatures] トライアル中:', isTrialActive);
-    console.log('[calculateUnlockedFeatures] Premium会員:', isPremium);
-    console.log('[calculateUnlockedFeatures] Premium機能アクセス:', hasPremiumAccess);
-    console.log('[calculateUnlockedFeatures] 開放機能 (' + unlocked.length + '個):', unlocked.join(', '));
-    // console.log('[calculateUnlockedFeatures] ===== 基本機能 =====');
-    // console.log('[calculateUnlockedFeatures] - food:', unlocked.includes('food'));
-    // console.log('[calculateUnlockedFeatures] - training:', unlocked.includes('training'));
-    // console.log('[calculateUnlockedFeatures] - condition:', unlocked.includes('condition'));
-    // console.log('[calculateUnlockedFeatures] - analysis:', unlocked.includes('analysis'));
-    // console.log('[calculateUnlockedFeatures] - idea:', unlocked.includes('idea'));
-    // console.log('[calculateUnlockedFeatures] ===== Premium機能 =====');
-    // console.log('[calculateUnlockedFeatures] - directive:', unlocked.includes('directive'));
-    // console.log('[calculateUnlockedFeatures] - history:', unlocked.includes('history'));
-    // console.log('[calculateUnlockedFeatures] - pg_base:', unlocked.includes('pg_base'));
-    // console.log('[calculateUnlockedFeatures] - template:', unlocked.includes('template'));
-    // console.log('[calculateUnlockedFeatures] - routine:', unlocked.includes('routine'));
-    // console.log('[calculateUnlockedFeatures] - micronutrients:', unlocked.includes('micronutrients'));
 
     return unlocked;
 };

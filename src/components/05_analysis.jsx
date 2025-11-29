@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import ReactDOM from 'react-dom';
 import { MicroLearningPopup, MicroLearningLibrary } from './14_microlearning.jsx';
+import useBABHeight from '../hooks/useBABHeight.js';
+
 // ===== Analysis Components =====
 const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, targetPFC, setLastUpdate, onUpgradeClick, onFeatureUnlocked }) => {
     const [loading, setLoading] = useState(true);
@@ -24,8 +26,8 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
     const [showCreditInfoModal, setShowCreditInfoModal] = useState(false);
     const [isFirstAnalysis, setIsFirstAnalysis] = useState(false);
 
-    // BAB連動state
-    const [babHeight, setBabHeight] = useState(64); // 初期値: 格納時の高さ
+    // BAB連動（カスタムフック使用）
+    const babHeight = useBABHeight(64);
     const [showHelpModal, setShowHelpModal] = useState(false);
 
     // レポート保存関連state
@@ -174,36 +176,6 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
         }
     };
 
-    // BABの高さを監視して入力欄の位置を動的に調整
-    useEffect(() => {
-        const updateBabHeight = () => {
-            const babElement = document.querySelector('.fixed.bottom-0.z-\\[10000\\]');
-            if (babElement) {
-                const height = babElement.offsetHeight;
-                setBabHeight(height);
-                console.log('[Analysis] BAB高さ更新:', height);
-            }
-        };
-
-        // 初回計測
-        updateBabHeight();
-
-        // ResizeObserverでBABの高さ変化を監視
-        const babElement = document.querySelector('.fixed.bottom-0.z-\\[10000\\]');
-        if (babElement) {
-            const resizeObserver = new ResizeObserver(updateBabHeight);
-            resizeObserver.observe(babElement);
-
-            return () => {
-                resizeObserver.disconnect();
-            };
-        }
-
-        // BAB要素が見つからない場合のフォールバック
-        const intervalId = setInterval(updateBabHeight, 500);
-        return () => clearInterval(intervalId);
-    }, []);
-
     const handleClose = () => {
         if (aiLoading) {
             toast.success('AI分析が完了するまでお待ちください。');
@@ -215,9 +187,6 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
     // スコア計算はDataServiceに統一（独自関数を削除）
 
     const performAnalysis = async () => {
-        // ローディング表示を維持（データ取得が完了するまで）
-        // setLoading(true); // 既にtrueなので不要
-
         // Premium判定とクレジットチェック（新システム） - 最優先で実行
         try {
             const expInfo = await ExperienceService.getUserExperience(userId);
@@ -237,10 +206,6 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
 
             if (expInfo.totalCredits <= 0) {
                 setLoading(false);
-                // クレジット0でもページは開く（生成ボタンを押したときにエラーを表示）
-                // toast.error('分析クレジットが不足しています。レベルアップでクレジットを獲得してください。');
-                // onClose();
-                // return;
             }
         } catch (error) {
             console.error('[Analysis] Credit error:', error);
@@ -254,7 +219,6 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
         const isAnalysisCompleted = await isFeatureCompleted(userId, 'analysis');
         const firstAnalysisFlag = !isAnalysisCompleted; // analysis未完了なら初回
         setIsFirstAnalysis(firstAnalysisFlag);
-        console.log('[Analysis] isAnalysisCompleted:', isAnalysisCompleted, 'firstAnalysisFlag:', firstAnalysisFlag);
 
         // スコア計算（AI呼び出し前に実行）- DataServiceに統一
         const scores = DataService.calculateScores(userProfile, dailyRecord, targetPFC);
@@ -1045,8 +1009,6 @@ ${section2Prompt}
         const pgBaseCompleted = await isFeatureCompleted(userId, 'pg_base');
         const communityCompleted = await isFeatureCompleted(userId, 'community');
 
-        console.log('[Analysis] 機能完了状況チェック:', { ideaCompleted, historyCompleted, pgBaseCompleted, communityCompleted });
-
         // 未開放の機能を開放
         if (!ideaCompleted || !historyCompleted || !pgBaseCompleted || !communityCompleted) {
             // 閃き
@@ -1074,11 +1036,9 @@ ${section2Prompt}
 
         // 初回分析の場合、モーダル表示フラグを設定（機能開放の有無に関わらず）
         if (isFirstAnalysisParam) {
-            console.log('[Analysis] 初回分析完了 - モーダル表示フラグを設定');
             localStorage.setItem('showFeatureUnlockModals', 'true');
             // ダッシュボードにイベントを通知
             window.dispatchEvent(new CustomEvent('featureUnlockCompleted'));
-            console.log('[Analysis] featureUnlockCompletedイベントを発火');
         }
     };
 
@@ -1216,8 +1176,6 @@ ${conversationContext}
                                     : report
                             )
                         );
-
-                        console.log('[Analysis] 会話履歴をFirestoreに保存しました');
                     } catch (error) {
                         console.error('[Analysis] 会話履歴の保存に失敗:', error);
                         // エラーが発生してもユーザーには表示しない（バックグラウンド処理）

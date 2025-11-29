@@ -31,13 +31,11 @@ const DataTab = ({
                     // Firestoreから読み込み
                     const loadCustomFoods = async () => {
                         if (!userId) {
-                            console.log('[Settings] ユーザーIDがないためスキップ');
                             return;
                         }
 
                         setLoading(true);
                         try {
-                            console.log('[Settings] customFoods読み込み開始...');
                             const customFoodsSnapshot = await firebase.firestore()
                                 .collection('users')
                                 .doc(userId)
@@ -50,7 +48,6 @@ const DataTab = ({
                             }));
 
                             setCustomFoods(foods);
-                            console.log(`[Settings] customFoods読み込み完了: ${foods.length}件`);
                         } catch (error) {
                             console.error('[Settings] customFoods読み込みエラー:', error);
                             toast.error('読み込みに失敗しました');
@@ -65,7 +62,6 @@ const DataTab = ({
                             const saved = localStorage.getItem('customExercises');
                             const exercises = saved ? JSON.parse(saved) : [];
                             setCustomExercises(exercises);
-                            console.log(`[Settings] customExercises読み込み完了: ${exercises.length}件`);
                         } catch (error) {
                             console.error('[Settings] customExercises読み込みエラー:', error);
                             setCustomExercises([]);
@@ -93,7 +89,6 @@ const DataTab = ({
                                     .doc(item.name)
                                     .delete();
 
-                                console.log(`[Settings] カスタムアイテムを削除: ${item.name}`);
                                 toast.success('削除しました');
                                 loadCustomFoods(); // 再読み込み
                             } catch (error) {
@@ -122,7 +117,6 @@ const DataTab = ({
                                 });
 
                                 await batch.commit();
-                                console.log(`[Settings] ${typeName}を全削除: ${itemsToDelete.length}件`);
                                 toast.success(`${typeName}を全削除しました`);
                                 loadCustomFoods(); // 再読み込み
                             } catch (error) {
@@ -140,7 +134,6 @@ const DataTab = ({
                                 const exercises = saved ? JSON.parse(saved) : [];
                                 const filtered = exercises.filter(ex => ex.id !== exercise.id);
                                 localStorage.setItem('customExercises', JSON.stringify(filtered));
-                                console.log(`[Settings] カスタム種目を削除: ${exercise.name}`);
                                 toast.success('削除しました');
                                 loadCustomExercises(); // 再読み込み
                             } catch (error) {
@@ -155,7 +148,6 @@ const DataTab = ({
                         showConfirm('全削除の確認', `すべての運動（${customExercises.length}件）を削除しますか？`, () => {
                             try {
                                 localStorage.setItem('customExercises', JSON.stringify([]));
-                                console.log(`[Settings] 運動を全削除: ${customExercises.length}件`);
                                 toast.success('運動を全削除しました');
                                 loadCustomExercises(); // 再読み込み
                             } catch (error) {
@@ -1592,7 +1584,6 @@ const DataTab = ({
                                                                 .doc(customFood.name)
                                                                 .set(customFood, { merge: true });
 
-                                                            console.log(`[Settings] カスタムアイテムを更新: ${customFood.name}`);
                                                             toast.success('更新しました');
                                                             loadCustomFoods(); // 再読み込み
                                                             setShowEditModal(false);

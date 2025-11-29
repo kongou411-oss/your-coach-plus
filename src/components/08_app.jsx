@@ -1,11 +1,7 @@
 import React from 'react';
 import toast from 'react-hot-toast';
-import SettingsView from './04_settings';
 import { GlobalConfirmModal } from './00_confirm_modal.jsx';
 import { isNativeApp, initPushNotifications, createNotificationChannel, initBackButtonHandler, removeBackButtonHandler } from '../capacitor-push';
-
-// ===== Welcome Guide Modal Component - REMOVED =====
-// オンボーディング完了後、直接食事誘導モーダルを表示するため削除
 
 // ===== Guide Modal Component =====
 const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId, onClose }) => {
@@ -257,7 +253,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
             const AddItemView = window.AddItemView;
             const AddMealModal = window.AddMealModal; // 新しいゴールベースモーダル
             const AddWorkoutModal = window.AddWorkoutModal; // 新しい運動記録モーダル
-            const EditWorkoutModal = window.EditWorkoutModal;
             const SettingsView = window.SettingsView;
             const SubscriptionView = window.SubscriptionView;
             const ChevronShortcut = window.ChevronShortcut;
@@ -289,7 +284,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
             });
             const [currentRoutine, setCurrentRoutine] = useState(null);
             const [showRoutineGuideModal, setShowRoutineGuideModal] = useState(false); // ルーティンガイドモーダル
-            // 写真解析機能は仕様書により削除（食事記録はテキスト入力のみ）
             const [infoModal, setInfoModal] = useState({ show: false, title: '', content: '' });
             const [predictedData, setPredictedData] = useState(null);
             const [yesterdayRecord, setYesterdayRecord] = useState(null); // 前日の完全な記録データ
@@ -483,7 +477,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                             return;
                         }
 
-                        console.log('[Migration] localStorageからFirestoreへの移行を開始します...');
 
                         // 1. ルーティンデータの移行
                         const savedRoutines = localStorage.getItem(STORAGE_KEYS.ROUTINES);
@@ -513,7 +506,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                         batch.set(docRef, routine);
                                     });
                                     await batch.commit();
-                                    console.log('[Migration] ルーティンを移行しました:', routines.length, '件');
                                 }
                             }
                         }
@@ -528,7 +520,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                 .collection('users')
                                 .doc(user.uid)
                                 .set(routineData, { merge: true });
-                            console.log('[Migration] ルーティン設定を移行しました');
                         }
 
                         // 2. 指示書の移行
@@ -557,7 +548,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                         }
                                     });
                                     await batch.commit();
-                                    console.log('[Migration] 指示書を移行しました:', directives.length, '件');
                                 }
                             }
                         }
@@ -586,7 +576,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                         batch.set(docRef, exercise);
                                     });
                                     await batch.commit();
-                                    console.log('[Migration] カスタム運動を移行しました:', exercises.length, '件');
                                 }
                             }
                         }
@@ -621,7 +610,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                     });
                                     if (count > 0) {
                                         await batch.commit();
-                                        console.log('[Migration] 分析データを移行しました:', count, '件');
                                     }
                                 }
                             }
@@ -629,7 +617,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
                         // 移行完了フラグを設定
                         localStorage.setItem(migrationKey, 'true');
-                        console.log('[Migration] すべてのデータ移行が完了しました');
 
                         // 移行後、localStorageの古いデータを削除
                         localStorage.removeItem(STORAGE_KEYS.ROUTINES);
@@ -638,7 +625,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                         localStorage.removeItem(STORAGE_KEYS.DIRECTIVES);
                         localStorage.removeItem(STORAGE_KEYS.DAILY_ANALYSES);
                         localStorage.removeItem('customExercises');
-                        console.log('[Migration] localStorageの古いデータを削除しました');
 
                     } catch (error) {
                         console.error('[Migration] データ移行エラー:', error);
@@ -708,7 +694,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
             // currentDate監視デバッグ
             useEffect(() => {
-                // console.log('[App useEffect] currentDate変更:', currentDate);
             }, [currentDate]);
 
             // 日付自動更新（0時になったら自動的に今日の日付に戻す）
@@ -721,7 +706,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
                     // 0時台で、前回チェックが別の日付の場合のみ更新
                     if (currentHour === 0 && lastCheckDate !== today) {
-                        console.log('[App] 日付が変わりました。自動更新:', currentDate, '→', today);
                         setCurrentDate(today);
                         sessionStorage.setItem('lastDateCheck', today);
                     } else if (currentHour !== 0) {
@@ -785,8 +769,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     if (event.origin !== window.location.origin) return;
 
                     if (event.data.type === 'REQUEST_AI_ANALYSIS') {
-                        console.log('[App] AI分析リクエスト受信:', event.data);
-
                         const { category, subCategory, metricInfo, data, period, stats } = event.data;
 
                         // AI分析メッセージを生成
@@ -859,7 +841,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
                             if (isForceResync) {
                                 // 再同期時：Firestoreデータをそのまま使用（LocalStorageを無視）
-                                console.log('[再同期モード] Firestoreデータを使用');
 
                                 // フラグを削除（次回は通常モード）
                                 const db = firebase.firestore();
@@ -867,14 +848,12 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                     forceResyncFlag: firebase.firestore.FieldValue.delete(),
                                     forceResyncTimestamp: firebase.firestore.FieldValue.delete()
                                 }, { merge: true });
-                                console.log('[再同期モード] フラグを削除しました');
 
                                 setUserProfile(profile);
                             } else {
                                 // 通常モード：開発用のLocalStorage優先ロジック（プレミアムモード切り替え用）
                                 const localProfile = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || '{}');
                                 if (localProfile.subscriptionStatus !== undefined) {
-                                    console.log('[開発モード] LocalStorageのsubscriptionStatusを優先:', localProfile.subscriptionStatus);
                                     profile.subscriptionStatus = localProfile.subscriptionStatus;
                                     // LocalStorageに保存して次回リロード時も反映されるようにする
                                     localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
@@ -925,7 +904,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                                     fcmTokens: window.firebase.firestore.FieldValue.arrayUnion(token),
                                                     fcmTokenUpdatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
                                                 }, { merge: true });
-                                                console.log('[Push] FCM token saved to Firestore');
                                             }
                                         },
                                         // フォアグラウンド通知受信時のコールバック
@@ -1041,41 +1019,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                 };
             }, [showSettings, showAnalysisView, showHistoryV10, showPGBaseView, showCOMYView, showSubscriptionView, showAIInput, showHistoryView, showAddView, showAdminPanel]);
 
-            // currentDateは初期化時に今日の日付が設定されているので、このuseEffectは不要
-            // useEffect(() => {
-            //     const today = getTodayDate();
-            //     if (currentDate !== today) {
-            //         setCurrentDate(today);
-            //     }
-            // }, []);
-
-            // 0時の自動日付切り替え（無限ループを防ぐため一旦無効化）
-            // ユーザーが手動で日付を選択できるようになったため、自動切り替えは不要
-            // useEffect(() => {
-            //     const checkMidnight = async () => {
-            //         const now = new Date();
-            //         const today = getTodayDate();
-            //
-            //         // 現在の表示日付が今日でない場合、handleDateChangeを使って切り替える
-            //         if (currentDate !== today) {
-            //             // 前日のデータを保存（既に保存されているが、念のため再保存）
-            //             const userId = user?.uid;
-            //             const currentRecord = await DataService.getDailyRecord(userId, currentDate);
-            //             if (currentRecord && (currentRecord.meals?.length > 0 || currentRecord.workouts?.length > 0 || currentRecord.supplements?.length > 0 || currentRecord.conditions)) {
-            //                 await DataService.saveDailyRecord(userId, currentDate, currentRecord);
-            //             }
-            //
-            //             // handleDateChangeを使って今日に切り替え
-            //             handleDateChange(today);
-            //         }
-            //     };
-            //
-            //     // 1分ごとに日付チェック（初回チェックは削除）
-            //     const interval = setInterval(checkMidnight, 60000); // 60秒 = 1分
-            //
-            //     return () => clearInterval(interval);
-            // }, []); // 依存配列を空にして無限ループを防止
-
             // 今日のルーティンを更新（Firestore優先、フォールバックでLocalStorage）
             useEffect(() => {
                 const loadRoutine = async () => {
@@ -1182,7 +1125,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
             // 日付変更ハンドラ
             const handleDateChange = async (newDate) => {
-                console.log('[App] 日付変更:', newDate);
                 setCurrentDate(newDate);
                 // 新しい日付のデータを読み込む
                 const userId = user?.uid;
@@ -1256,16 +1198,12 @@ const CookieConsentBanner = ({ show, onAccept }) => {
             // 初回読み込み時のデータ取得（handleDateChangeで日付変更時は処理されるので、ここでは初回のみ）
             useEffect(() => {
                 const loadDateRecord = async () => {
-                    // console.log('[App] loadDateRecord開始:', { user: !!user, currentDate });
                     if (!user) {
-                        // console.log('[App] userが未定義のためスキップ');
                         return; // ユーザーがいない場合はスキップ
                     }
 
                     const userId = user?.uid;
-                    // console.log('[App] データ読み込み中:', { userId, currentDate });
                     const record = await DataService.getDailyRecord(userId, currentDate);
-                    // console.log('[App] getDailyRecord結果:', record);
 
                     // 表示用にフィルタリング（元のデータは変更しない）
                     let displayRecord = record || { meals: [], workouts: [], supplements: [], conditions: null };
@@ -1369,17 +1307,12 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     }
                 });
 
-                console.log('[DEBUG] New Meals to add:', newMeals);
-                console.log('[DEBUG] Each meal isRoutine flag:', newMeals.map(m => ({name: m.name, isRoutine: m.isRoutine})));
-
                 // dailyRecordに追加
                 const updatedRecord = {
                     ...dailyRecord,
                     meals: [...(dailyRecord.meals || []), ...newMeals],
                     workouts: [...(dailyRecord.workouts || []), ...newWorkouts]
                 };
-
-                console.log('[DEBUG] Updated Record meals:', updatedRecord.meals.map(m => ({name: m.name, isRoutine: m.isRoutine, isPredicted: m.isPredicted, isTemplate: m.isTemplate})));
 
                 setDailyRecord(updatedRecord);
                 await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
@@ -1390,14 +1323,12 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                 window.handleQuickAction = (action) => {
                     switch (action) {
                         case 'meal':
-                            console.log('[08_app] 食事記録: AddMealModal を食材タブで開きます');
                             setMealModalInitialTab('food');
                             setShowNewMealModal(true);
                             setBottomBarMenu(null);
                             setBottomBarExpanded(false);
                             break;
                         case 'supplement':
-                            console.log('[08_app] サプリメント記録: AddMealModal をサプリタブで開きます');
                             setMealModalInitialTab('supplement');
                             setShowNewMealModal(true);
                             setBottomBarMenu(null);
@@ -1717,12 +1648,10 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     const isPremium = finalProfile.subscription?.status === 'active'
                         || finalProfile.b2b2cOrgId
                         || finalProfile.subscription?.giftCodeActive === true;
-                    console.log('[Onboarding] Calculating features with isPremium:', isPremium, 'b2b2cOrgId:', finalProfile.b2b2cOrgId, 'giftCodeActive:', finalProfile.subscription?.giftCodeActive);
 
                     const today = getTodayDate();
                     const todayRecord = await DataService.getDailyRecord(user.uid, today);
                     const unlocked = await calculateUnlockedFeatures(user.uid, todayRecord, isPremium);
-                    console.log('[Onboarding] Unlocked features:', unlocked);
                     setUnlockedFeatures(Array.isArray(unlocked) ? unlocked : []);
 
                     // オンボーディング完了フラグを設定（クレジット不足モーダルを表示しない）
@@ -2209,7 +2138,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                             editingMeal={editingMeal}
                             selectedDate={currentDate}
                             onClose={() => {
-                                console.log('[App] 食事編集モーダルを閉じる');
                                 setEditingMeal(null);
                                 setShowAddView(false);
                             }}
@@ -2321,21 +2249,15 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     {showNewMealModal && AddMealModal && (
                         <AddMealModal
                             onClose={() => {
-                                console.log('[App] 新しいゴールベースモーダルを閉じる');
                                 setShowNewMealModal(false);
                                 setMealModalInitialTab('food'); // 閉じる時にリセット
                             }}
                             selectedDate={currentDate}
                             initialTab={mealModalInitialTab}
                             onAdd={async (meal) => {
-                                console.log('[App] 新しいゴールベースモーダルのonAddが呼ばれました');
                                 const userId = user?.uid;
                                 const targetDate = meal.date || currentDate; // mealに日付が含まれていればそれを使用
                                 try {
-                                    console.log('[AddMealModal onAdd] 保存時の日付:', targetDate);
-                                    console.log('[AddMealModal onAdd] 記録する食事:', meal.name);
-                                    console.log('[AddMealModal onAdd] meal.date:', meal.date, 'currentDate:', currentDate);
-
                                     // 対象日付のレコードを取得（currentDateと異なる可能性がある）
                                     const targetRecord = await DataService.getDailyRecord(userId, targetDate);
                                     let updatedRecord = targetRecord || { meals: [], workouts: [], supplements: [], conditions: null };
@@ -2343,7 +2265,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                     updatedRecord.meals = [...(updatedRecord.meals || []), meal];
 
                                     await DataService.saveDailyRecord(userId, targetDate, updatedRecord);
-                                    console.log('[AddMealModal onAdd] 保存完了:', targetDate);
 
                                     // 表示中の日付に保存した場合のみUIを更新
                                     if (targetDate === currentDate) {
@@ -2446,7 +2367,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                             editingMeal={editingMeal}
                             selectedDate={currentDate}
                             onClose={() => {
-                                console.log('[App] 追加ビューモーダルを閉じる');
                                 setShowAddView(false);
                                 setEditingTemplate(null); // 編集テンプレートをクリア
                                 setEditingMeal(null); // 編集食事をクリア
@@ -2470,16 +2390,12 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                 const targetDate = item.date || currentDate;
 
                                 try {
-                                    console.log('[DEBUG] 保存開始:', { targetDate, itemDate: item.date, currentDate });
                                     // 対象日付のレコードを取得
                                     const targetRecord = await DataService.getDailyRecord(userId, targetDate);
-                                    console.log('[DEBUG] 取得したレコード:', { mealsCount: targetRecord?.meals?.length });
                                     let updatedRecord = targetRecord || { meals: [], workouts: [], supplements: [], conditions: null };
 
                                     if (addViewType === 'meal') {
-                                        console.log('[DEBUG] 食事追加前:', updatedRecord.meals.length);
                                         updatedRecord.meals = [...(updatedRecord.meals || []), item];
-                                        console.log('[DEBUG] 食事追加後:', updatedRecord.meals.length);
                                     } else if (addViewType === 'workout') {
                                         updatedRecord.workouts = [...(updatedRecord.workouts || []), item];
                                     } else if (addViewType === 'supplement') {
@@ -2488,9 +2404,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                         updatedRecord.conditions = item;
                                     }
 
-                                    console.log('[DEBUG] 保存実行:', { targetDate, mealsCount: updatedRecord.meals?.length });
                                     await DataService.saveDailyRecord(userId, targetDate, updatedRecord);
-                                    console.log('[DEBUG] 保存完了');
 
                                     // 表示中の日付に保存した場合のみUIを更新
                                     if (targetDate === currentDate) {
@@ -2676,7 +2590,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                 // 常にunlockedFeaturesを再計算（機能開放状態を最新に保つ）
                                 const unlocked = await calculateUnlockedFeatures(userId, dailyRecord, isPremium);
                                 setUnlockedFeatures(unlocked);
-                                console.log('[App] Updated unlocked features after analysis:', unlocked);
 
                                 // 初回分析の場合のみ、追加の処理
                                 const analysisCompleted = await isFeatureCompleted(userId, 'analysis');
@@ -2690,7 +2603,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                 const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true ;
                                 const unlocked = await calculateUnlockedFeatures(userId, dailyRecord, isPremium);
                                 setUnlockedFeatures(unlocked);
-                                console.log('[App] Features unlocked, updated unlocked features:', unlocked);
                             }}
                             userId={user.uid}
                             userProfile={userProfile}
@@ -3462,9 +3374,7 @@ AIコーチなどの高度な機能が解放されます。
                             initialTab={settingsInitialTab}
                             userProfile={userProfile}
                             onUpdateProfile={async (updatedProfile) => {
-                                console.log('[App] onUpdateProfile受信:', updatedProfile);
                                 await DataService.saveUserProfile(user.uid, updatedProfile);
-                                console.log('[App] Firestore保存完了');
                                 setUserProfile(updatedProfile);
                                 setLastUpdate(Date.now()); // 強制的に再レンダリング
                             }}

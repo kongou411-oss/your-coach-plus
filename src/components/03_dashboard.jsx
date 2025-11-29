@@ -11,22 +11,12 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
 
     // useMemoでdailyRecordが変更されたときにスコアを再計算
     const scores = React.useMemo(() => {
-        console.log('[ScoreDoughnutChart] targetPFC:', targetPFC);
-        console.log('[ScoreDoughnutChart] dailyRecord:', dailyRecord);
         const calculatedScores = DataService.calculateScores(profile, dailyRecord, targetPFC);
-        console.log('[ScoreDoughnutChart] スコアを計算:', calculatedScores);
-        console.log('[ScoreDoughnutChart] 食事スコア詳細:', JSON.stringify(calculatedScores.food, null, 2));
         return calculatedScores;
     }, [profile, dailyRecord, targetPFC]);
 
     // スコア再計算関数（当日のみ）
     const recalculateAllScores = async () => {
-        console.log('[再計算] ボタンがタップされました');
-        console.log('[再計算] user:', user?.uid);
-        console.log('[再計算] currentDate:', currentDate);
-        console.log('[再計算] profile:', profile);
-        console.log('[再計算] targetPFC:', targetPFC);
-
         if (!user || !user.uid) {
             console.error('[再計算] ユーザーIDが見つかりません');
             toast.error('ユーザーIDが見つかりません');
@@ -40,17 +30,14 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
         }
 
         if (recalculating) {
-            console.log('[再計算] 既に再計算中のためスキップ');
             return;
         }
 
         setRecalculating(true);
 
         try {
-            console.log('[再計算] データ取得開始:', user.uid, currentDate);
             // 当日のデータを取得
             const record = await DataService.getDailyRecord(user.uid, currentDate);
-            console.log('[再計算] 取得したrecord:', record);
 
             if (!record || (!record.meals?.length && !record.workouts?.length && !record.conditions)) {
                 console.error('[再計算] 当日のデータがありません');
@@ -59,11 +46,8 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                 return;
             }
 
-            console.log('[再計算] スコア計算開始');
             // スコアを計算
             const calcScores = DataService.calculateScores(profile, record, targetPFC);
-            console.log('[再計算] 計算されたスコア:', calcScores);
-            console.log('[再計算] 食事スコア詳細:', JSON.stringify(calcScores.food, null, 2));
 
             // recordにスコアを追加して保存
             record.scores = {
@@ -72,14 +56,10 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                 condition: calcScores.condition.score
             };
 
-            console.log('[再計算] recordにスコアを追加:', record.scores);
-            console.log('[再計算] データ保存開始');
             await DataService.saveDailyRecord(user.uid, currentDate, record);
-            console.log('[再計算] データ保存完了');
 
             // dailyRecordを更新
             setDailyRecord(record);
-            console.log('[再計算] dailyRecord更新完了');
 
             toast.success('当日のスコアを再計算しました');
         } catch (error) {
@@ -88,7 +68,6 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
             toast.error('スコア再計算中にエラーが発生しました: ' + error.message);
         } finally {
             setRecalculating(false);
-            console.log('[再計算] 処理完了');
         }
     };
 
@@ -611,7 +590,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 if (todayRecord?.bodyComposition?.weight && todayRecord?.bodyComposition?.bodyFatPercentage) {
                     weight = parseFloat(todayRecord.bodyComposition.weight) || 0;
                     bodyFat = parseFloat(todayRecord.bodyComposition.bodyFatPercentage) || 0;
-                    // console.log('[Dashboard] 今日の体組成データを取得:', { weight, bodyFat });
                 } else {
                     // 2. 前日のdailyRecordをチェック
                     const yesterday = new Date();
@@ -622,12 +600,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     if (yesterdayRecord?.bodyComposition?.weight && yesterdayRecord?.bodyComposition?.bodyFatPercentage) {
                         weight = parseFloat(yesterdayRecord.bodyComposition.weight) || 0;
                         bodyFat = parseFloat(yesterdayRecord.bodyComposition.bodyFatPercentage) || 0;
-                        // console.log('[Dashboard] 前日の体組成データを取得:', { weight, bodyFat });
                     } else if (profile?.weight && profile?.bodyFatPercentage) {
                         // 3. プロフィールデータをチェック
                         weight = parseFloat(profile.weight) || 0;
                         bodyFat = parseFloat(profile.bodyFatPercentage) || 0;
-                        // console.log('[Dashboard] プロフィールの体組成データを取得:', { weight, bodyFat });
                     }
                 }
 
@@ -648,7 +624,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             bodyComposition: bodyComp
                         };
                         await DataService.saveDailyRecord(user.uid, todayDate, updatedRecord);
-                        // console.log('[Dashboard] 体組成を今日のレコードに保存:', bodyComp);
                     }
                 }
             } catch (error) {
@@ -748,7 +723,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 };
 
                 await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
-                // console.log('[Dashboard] micronutrientsを保存:', Object.keys(micronutrients).length, 'keys');
             } catch (error) {
                 console.error('[Dashboard] micronutrients保存エラー:', error);
             }
@@ -759,29 +733,21 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
     // recordUpdatedイベントを監視して自動リロード
     useEffect(() => {
-        // console.log('[Dashboard] recordUpdatedイベントリスナーを登録:', { userId: user?.uid, currentDate });
 
         const handleRecordUpdate = async (event) => {
-            // console.log('[Dashboard] recordUpdatedイベント受信:', event.detail);
             if (user?.uid && currentDate) {
                 try {
-                    console.log('[Dashboard] データを再読み込み中...');
                     const record = await DataService.getDailyRecord(user.uid, currentDate);
-                    console.log('[Dashboard] 再読み込み完了:', record);
                     setDailyRecord(record);
                 } catch (error) {
                     console.error('[Dashboard] データ再読み込みエラー:', error);
                 }
-            } else {
-                console.log('[Dashboard] イベント受信したがuser/dateが未設定:', { user: !!user, currentDate });
             }
         };
 
         window.addEventListener('recordUpdated', handleRecordUpdate);
-        // console.log('[Dashboard] イベントリスナー登録完了');
 
         return () => {
-            // console.log('[Dashboard] イベントリスナーを削除');
             window.removeEventListener('recordUpdated', handleRecordUpdate);
         };
     }, [user?.uid, currentDate]);
@@ -831,21 +797,14 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
         const checkAndShowModal = () => {
             const shouldShow = localStorage.getItem('showFeatureUnlockModals');
-            console.log('[Dashboard] checkAndShowModal - shouldShow:', shouldShow);
             if (shouldShow === 'true') {
-                console.log('[Dashboard] モーダル表示タイマー開始');
                 timeoutId = setTimeout(() => {
                     if (isMounted) {
-                        console.log('[Dashboard] モーダルを表示します');
                         setCurrentModalPage(1); // ページ1から開始
                         setShowFeatureUnlockModal(true);
                         localStorage.removeItem('showFeatureUnlockModals');
-                    } else {
-                        console.log('[Dashboard] isMounted = false のためモーダル表示をスキップ');
                     }
                 }, 300); // 少し遅延させてスムーズに表示
-            } else {
-                console.log('[Dashboard] モーダル表示条件を満たしていません');
             }
         };
 
@@ -854,11 +813,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
         // カスタムイベントをリッスン（分析完了時に発火）
         const handleFeatureUnlock = () => {
-            console.log('[Dashboard] featureUnlockCompletedイベントを受信しました');
             checkAndShowModal();
         };
         window.addEventListener('featureUnlockCompleted', handleFeatureUnlock);
-        console.log('[Dashboard] featureUnlockCompletedイベントリスナーを登録しました');
 
         return () => {
             isMounted = false;
@@ -1024,7 +981,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             };
             await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
             setDailyRecord(updatedRecord);
-            console.log('[Dashboard] 指示書完了をdailyRecordに保存');
         } catch (error) {
             console.error('[Dashboard] 指示書完了の保存エラー:', error);
         }
@@ -1155,16 +1111,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         await DataService.saveDailyRecord(userId, currentDate, copiedRecord);
     };
 
-    // 予測データの自動展開はhandleDateChangeで行うため、このuseEffectは削除
-    // useEffect(() => {
-    //     if (yesterdayRecord) {
-    //         // 当日の記録がまだ空の場合のみ、前日データを展開
-    //         const isEmpty = !dailyRecord.meals?.length && !dailyRecord.workouts?.length && !dailyRecord.supplements?.length;
-    //         if (isEmpty) {
-    //             loadPredictedData();
-    //         }
-    //     }
-    // }, [yesterdayRecord, dailyRecord]);
     // 現在の摂取量計算
     const currentIntake = {
         calories: 0,
@@ -3328,7 +3274,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                     sleepHours: item.value
                                                 }
                                             };
-                                            console.log('[睡眠時間変更] updated.conditions:', updated.conditions);
                                             // 即座にUIを更新
                                             setDailyRecord(updated);
 
@@ -3336,9 +3281,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             const userId = user?.uid;
                                             (async () => {
                                                 // スコアを再計算
-                                                console.log('[睡眠時間変更] スコア計算前 - updated.conditions:', updated.conditions);
                                                 const calcScores = DataService.calculateScores(profile, updated, targetPFC);
-                                                console.log('[睡眠時間変更] 計算後スコア:', calcScores.condition);
                                                 const updatedWithScores = {
                                                     ...updated,
                                                     scores: calcScores

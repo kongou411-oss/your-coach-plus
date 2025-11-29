@@ -76,15 +76,12 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
         const loadCustomFoods = async () => {
             // Firebaseの現在のユーザーを直接取得
             const currentUser = firebase.auth().currentUser;
-            console.log('[AIFoodRecognition] useEffect実行、currentUser:', currentUser);
 
             if (!currentUser || !currentUser.uid) {
-                console.log('[AIFoodRecognition] ユーザー未ログインのためスキップ');
                 return;
             }
 
             try {
-                console.log('[AIFoodRecognition] customFoods読み込み開始...');
                 const customFoodsSnapshot = await firebase.firestore()
                     .collection('users')
                     .doc(currentUser.uid)
@@ -99,7 +96,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                     .filter(food => !food.hidden); // 非表示アイテムを除外
 
                 setCustomFoods(foods);
-                console.log(`[AIFoodRecognition] customFoods読み込み完了: ${foods.length}件`, foods.map(f => f.name));
             } catch (error) {
                 console.error('[AIFoodRecognition] customFoods読み込みエラー:', error);
             }
@@ -108,10 +104,8 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
         // 認証状態の変化を監視
         const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                console.log('[AIFoodRecognition] 認証状態変化: ログイン済み');
                 loadCustomFoods();
             } else {
-                console.log('[AIFoodRecognition] 認証状態変化: 未ログイン');
                 setCustomFoods([]);
             }
         });
@@ -210,8 +204,6 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
                 if ((is429Error || isTimeoutError) && attempt < maxRetries) {
                     // エクスポネンシャルバックオフ: 3秒、6秒、12秒、24秒、48秒
                     const waitTime = 3000 * Math.pow(2, attempt);
-                    const errorType = isTimeoutError ? 'タイムアウト' : '429エラー';
-                    console.log(`[callGeminiWithRetry] ${errorType}発生。${waitTime/1000}秒後にリトライ (${attempt + 1}/${maxRetries})`);
                     setRecognizingMessage(`AI処理が混雑しています。${waitTime/1000}秒後に再試行します... (${attempt + 1}/${maxRetries + 1})`);
                     await new Promise(resolve => setTimeout(resolve, waitTime));
                     continue;
@@ -355,7 +347,6 @@ JSONのみ出力、説明文不要`;
 
                 // 【優先度1】パッケージ情報がある場合（source: 'package'）
                 if (food.source === 'package' && food.nutritionPer100g) {
-                    console.log(`[recognizeFood] パッケージ情報を使用: ${food.name}`, food.nutritionPer100g);
 
                     const amount = food.amount || 100;
                     const ratio = amount / 100;
@@ -394,7 +385,6 @@ JSONのみ出力、説明文不要`;
                 if (food.name.includes('鶏卵') && !food.name.match(/SS|S|MS|M|L|LL|（46g）|（50g）|（58g）|（64g）|（70g）/)) {
                     // 卵黄のみ、卵白のみの場合は除外
                     if (!food.name.includes('卵黄') && !food.name.includes('卵白')) {
-                        console.log(`[recognizeFood] 鶏卵サイズ不明 → Mサイズ（58g）を使用: ${food.name}`);
                         searchName = '鶏卵 M（58g）';
                     }
                 }
@@ -415,15 +405,11 @@ JSONのみ出力、説明文不要`;
                     }
                 }
 
-                console.log(`[recognizeFood] 検索名リスト (${food.name}):`, searchNames);
 
                 // デバッグ: 白米の検索時にfoodDBの主食カテゴリを確認
                 if (food.name.includes('白米')) {
                     const mainDishKeys = Object.keys(foodDB['主食'] || {}).filter(k => k.includes('白米'));
-                    console.log(`[recognizeFood] DEBUG: foodDB主食カテゴリの白米キー:`, mainDishKeys);
-                    console.log(`[recognizeFood] DEBUG: 検索名の文字コード:`, [...searchNames[0]].map(c => c.charCodeAt(0).toString(16)));
                     if (mainDishKeys.length > 0) {
-                        console.log(`[recognizeFood] DEBUG: DBキーの文字コード:`, [...mainDishKeys[0]].map(c => c.charCodeAt(0).toString(16)));
                     }
                 }
 
@@ -462,7 +448,6 @@ JSONのみ出力、説明文不要`;
                                 proteinPer100g = (dbItem.protein || 0) * conversionRatio;
                                 fatPer100g = (dbItem.fat || 0) * conversionRatio;
                                 carbsPer100g = (dbItem.carbs || 0) * conversionRatio;
-                                console.log(`[recognizeFood] 特殊単位を100g換算: ${itemName} (${dbItem.servingSize}g) → 100g`);
                             } else {
                                 // 通常の100gあたり食材
                                 caloriesPer100g = dbItem.calories || 0;
@@ -543,7 +528,6 @@ JSONのみ出力、説明文不要`;
                                 }
                             };
                             foundMatch = true;
-                            console.log(`[recognizeFood] データベースマッチ: ${food.name} → ${itemName}（類義語検索）`);
                         }
                     });
                 });
@@ -551,7 +535,6 @@ JSONのみ出力、説明文不要`;
                 // 【優先度3】Firestoreから取得したcustomFoodsから検索
                 if (!matchedItem) {
                     try {
-                        console.log(`[recognizeFood] customFoods検索: ${food.name}`, customFoods.map(f => f.name));
 
                         // 類義語も考慮した検索
                         const customItem = customFoods.find(item => {
@@ -566,7 +549,6 @@ JSONのみ出力、説明文不要`;
                         });
 
                         if (customItem) {
-                            console.log(`[recognizeFood] カスタムアイテムマッチ: ${food.name} → ${customItem.name}`);
                             const amount = food.amount || 100;
                             const ratio = amount / 100;
 
@@ -642,7 +624,6 @@ JSONのみ出力、説明文不要`;
             const unknownFoods = matchedFoods.filter(food => food.needsHachiteiFetch);
 
             if (unknownFoods.length > 0) {
-                console.log(`[recognizeFood] 八訂自動取得対象: ${unknownFoods.length}件（自動取得は最大1件）`, unknownFoods.map(f => f.name));
 
                 // レート制限対策：最大1件のみ自動取得
                 const autoFetchCount = Math.min(unknownFoods.length, 1);
@@ -669,7 +650,6 @@ JSONのみ出力、説明文不要`;
                 setRecognizedFoods(foodsWithLoading);
 
                 // レート制限対策：画像認識直後のAPI呼び出しを避けるため2秒待機
-                console.log(`[recognizeFood] レート制限回避のため2秒待機中...`);
                 await new Promise(resolve => setTimeout(resolve, 2000));
 
                 const hachiteiResults = [];
@@ -678,7 +658,6 @@ JSONのみ出力、説明文不要`;
                     const food = unknownFoods[i];
                     try {
                         setRecognizingMessage(`栄養素を検索中... (${i + 1}/${autoFetchCount}): ${food.name}`);
-                        console.log(`[recognizeFood] 八訂検索中 (${i + 1}/${autoFetchCount}): ${food.name}`);
                         const result = await fetchNutritionFromHachitei(food.name);
 
                         // foodDatabaseからも候補を検索
@@ -710,7 +689,6 @@ JSONのみ出力、説明文不要`;
 
                 // 2件目以降は手動検索が必要（needsManualHachiteiFetch: true）
                 if (unknownFoods.length > 1) {
-                    console.log(`[recognizeFood] 残り${unknownFoods.length - 1}件は手動検索が必要`);
                 }
 
                 // 結果を反映してrecognizedFoodsを更新
@@ -723,7 +701,6 @@ JSONのみ出力、説明文不要`;
 
                     if (!isAutoFetchTarget) {
                         // 2件目以降は手動検索が必要
-                        console.log(`[recognizeFood] 手動検索が必要: ${food.name}`);
                         return {
                             ...food,
                             isUnknown: true,
@@ -746,12 +723,6 @@ JSONのみ出力、説明文不要`;
                     }
 
                     const bestMatch = hachiteiData.result.bestMatch;
-                    console.log(`[recognizeFood] 八訂取得成功: ${food.name} → ${bestMatch.name}`, {
-                        calories: bestMatch.calories,
-                        protein: bestMatch.protein,
-                        confidence: bestMatch.confidence,
-                        matchScore: bestMatch.matchScore
-                    });
 
                     const amount = food.amount || 100;
                     const ratio = amount / 100;
@@ -761,7 +732,6 @@ JSONのみ出力、説明文不要`;
                     const estimatedGI = estimateGI(bestMatch.name, bestMatch.category);
 
                     const categoryValue = bestMatch.category || '八訂';
-                    console.log(`[recognizeFood] 八訂取得アイテムのcategory設定: ${food.name} → category="${categoryValue}", isHachitei=true`);
 
                     return {
                         name: `${food.name}（${bestMatch.name}）`,
@@ -877,7 +847,6 @@ JSONのみ出力、説明文不要`;
                 });
 
                 setRecognizedFoods(updatedFoods);
-                console.log(`[recognizeFood] 八訂自動取得完了: ${unknownFoods.length}件中${updatedFoods.filter(f => f.isHachitei).length}件成功`);
 
                 // ===== 2件目以降の連鎖的自動検索を開始 =====
                 const remainingUnregistered = updatedFoods.filter(food =>
@@ -885,7 +854,6 @@ JSONのみ出力、説明文不要`;
                 );
 
                 if (remainingUnregistered.length > 0) {
-                    console.log(`[recognizeFood] 残り${remainingUnregistered.length}件の連鎖的自動検索を開始`);
 
                     // 2秒待機してから連鎖検索を開始
                     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -894,7 +862,6 @@ JSONのみ出力、説明文不要`;
                     for (let i = 0; i < remainingUnregistered.length; i++) {
                         const targetFood = remainingUnregistered[i];
 
-                        console.log(`[recognizeFood] 連鎖検索 (${i + 1}/${remainingUnregistered.length}): ${targetFood.name}`);
 
                         // ローディング状態にする（最新のstateを参照）
                         setRecognizedFoods(prevFoods => {
@@ -914,7 +881,6 @@ JSONのみ出力、説明文不要`;
 
                             if (result.success && result.bestMatch) {
                                 const bestMatch = result.bestMatch;
-                                console.log(`[recognizeFood] 連鎖検索成功: ${targetFood.name} → ${bestMatch.name}`);
 
                                 // 取得成功時の更新（最新のstateを参照）
                                 setRecognizedFoods(prevFoods => {
@@ -1080,7 +1046,6 @@ JSONのみ出力、説明文不要`;
                         }
                     }
 
-                    console.log(`[recognizeFood] 連鎖的自動検索完了`);
                 }
             }
 
@@ -1107,7 +1072,6 @@ JSONのみ出力、説明文不要`;
         const food = recognizedFoods[foodIndex];
         if (!food || (!food.needsManualHachiteiFetch && !food.hachiteiFailed)) return;
 
-        console.log(`[manualFetchHachitei] 手動検索開始: ${food.name}`);
 
         // 該当食材をローディング状態にする
         const updatedFoods = [...recognizedFoods];
@@ -1137,7 +1101,6 @@ JSONのみ出力、説明文不要`;
             }
 
             const bestMatch = result.bestMatch;
-            console.log(`[manualFetchHachitei] 八訂取得成功: ${food.name} → ${bestMatch.name}`);
 
             updatedFoods[foodIndex] = {
                 ...food,
@@ -1176,13 +1139,11 @@ JSONのみ出力、説明文不要`;
 
             if (nextUnregistered) {
                 const nextIndex = updatedFoods.findIndex(f => f === nextUnregistered);
-                console.log(`[manualFetchHachitei] 次の未登録アイテムを自動検索: ${nextUnregistered.name} (index: ${nextIndex})`);
 
                 // 2秒待機してから次のアイテムを検索
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 await manualFetchHachitei(nextIndex);
             } else {
-                console.log(`[manualFetchHachitei] すべての未登録アイテムの検索完了`);
             }
 
         } catch (error) {
@@ -1202,7 +1163,6 @@ JSONのみ出力、説明文不要`;
         const food = recognizedFoods[foodIndex];
         if (!food) return;
 
-        console.log(`[selectHachiteiCandidate] 候補選択: ${candidateName}`);
 
         // ローディング状態を設定
         const updatedFoods = [...recognizedFoods];
@@ -1271,7 +1231,6 @@ JSONのみ出力、説明文不要`;
             updatedFoods[foodIndex].carbs = parseFloat((updatedFoods[foodIndex]._base.carbs * ratio).toFixed(1));
 
             setRecognizedFoods(updatedFoods);
-            console.log(`[selectHachiteiCandidate] 候補選択完了: ${candidateName}`);
         } catch (error) {
             console.error(`[selectHachiteiCandidate] エラー:`, error);
             // エラー時もローディング解除
@@ -1289,7 +1248,6 @@ JSONのみ出力、説明文不要`;
         const food = recognizedFoods[foodIndex];
         if (!food) return;
 
-        console.log(`[selectFoodDatabaseCandidate] 候補選択: ${candidate.name}`);
 
         const amount = food.amount || 100;
         const dbItem = candidate.dbItem;
@@ -1367,7 +1325,6 @@ JSONのみ出力、説明文不要`;
         };
 
         setRecognizedFoods(updatedFoods);
-        console.log(`[selectFoodDatabaseCandidate] 候補選択完了: ${candidate.name}`);
     };
 
     // ===== 八訂から栄養素を自動取得（ニュアンスヒット対応） =====
@@ -1442,7 +1399,6 @@ JSON形式のみ出力、説明文不要`;
             const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const model = isDev ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
 
-            console.log(`[fetchNutritionFromHachitei] 八訂検索開始: ${foodName} (モデル: ${model})`);
 
             // 八訂検索は30秒タイムアウト（テキスト検索は画像より速い）
             const result = await callGeminiWithRetry(callGemini, {
@@ -1548,14 +1504,6 @@ JSON形式のみ出力、説明文不要`;
                 }
                 throw new Error('最適候補が見つかりませんでした');
             }
-
-            console.log(`[fetchNutritionFromHachitei] 八訂検索完了: ${foodName}`, {
-                searchTerm: response.searchTerm,
-                candidatesCount: response.candidates?.length || 0,
-                bestMatch: response.bestMatch.name,
-                confidence: response.bestMatch.confidence,
-                matchScore: response.bestMatch.matchScore
-            });
 
             return {
                 success: true,
@@ -1671,7 +1619,6 @@ JSON形式のみ出力、説明文不要`;
 
     // ===== foodDatabaseから候補を検索 =====
     const searchFoodDatabaseCandidates = (foodName, maxResults = 5) => {
-        console.log(`[searchFoodDatabaseCandidates] 検索開始: ${foodName}`);
 
         // window.foodDBが存在するか確認
         const foodDB = window.foodDB;
@@ -1773,7 +1720,6 @@ JSON形式のみ出力、説明文不要`;
 
         searchNames = searchNames.concat(extractedKeywords);
 
-        console.log(`[searchFoodDatabaseCandidates] 検索名リスト:`, searchNames);
 
         // 検索ヘルパー関数：漢字読み仮名マッピングを使った検索（19_add_meal_modal.jsxと同じ）
         const searchMatch = (itemName, searchTerm) => {
@@ -1803,14 +1749,12 @@ JSON形式のみ出力、説明文不要`;
                 // デバッグ: 牛ひき肉の検索を詳細ログ
                 const isTargetItem = itemName.includes('ひき肉') || itemName.includes('牛');
                 if (isTargetItem && searchNames.some(n => n.includes('牛') || n.includes('ひき肉'))) {
-                    console.log(`[searchFoodDatabaseCandidates] チェック中: ${itemName}, 検索名: ${searchNames.join(', ')}`);
                 }
 
                 // 完全一致
                 if (searchNames.some(name => name === itemName)) {
                     matchScore = 100;
                     matchReason = '完全一致';
-                    if (isTargetItem) console.log(`  → 完全一致: スコア${matchScore}`);
                 }
                 // 部分一致（含む）- normalizeForSearchを使用
                 else if (searchNames.some(name => searchMatch(itemName, name))) {
@@ -1825,7 +1769,6 @@ JSON形式のみ出力、説明文不要`;
                         matchScore = 50;
                     }
                     matchReason = '部分一致';
-                    if (isTargetItem) console.log(`  → 部分一致: マッチ文字「${matchingName}」(長さ${matchLength}), スコア${matchScore}`);
                 }
                 // 文字列の類似度（簡易的に先頭一致・後方一致をチェック）- normalizeForSearchを使用
                 else {
@@ -1937,7 +1880,6 @@ JSON形式のみ出力、説明文不要`;
             );
 
             if (matchedCategory && foodDB[matchedCategory]) {
-                console.log(`[searchFoodDatabaseCandidates] カテゴリベース検索: ${matchedCategory}`);
 
                 const categoryItems = Object.keys(foodDB[matchedCategory]).slice(0, maxResults * 2).map(itemName => {
                     const dbItem = foodDB[matchedCategory][itemName];
@@ -1971,7 +1913,6 @@ JSON形式のみ出力、説明文不要`;
                 const isUnwantedSize = c.name.match(/鶏卵\s*(SS|MS|S|L|LL)(?!\w)/); // SS, MS, S, L, LL のみ除外（Mは除外しない）
 
                 if (isChickenEgg && isUnwantedSize) {
-                    console.log(`[searchFoodDatabaseCandidates] 鶏卵サイズフィルタ: ${c.name} を除外`);
                     return false; // MS/SS/S/L/LLサイズは除外
                 }
                 return true;
@@ -1982,7 +1923,6 @@ JSON形式のみ出力、説明文不要`;
                 if (c.name.includes('鶏卵 M') || c.name.includes('鶏卵M')) {
                     c.matchScore += 20; // Mサイズを最優先
                     c.matchReason = c.matchReason + '（Mサイズ優先）';
-                    console.log(`[searchFoodDatabaseCandidates] 鶏卵Mサイズブースト: ${c.name}, スコア: ${c.matchScore}`);
                 }
             });
         }
@@ -1992,11 +1932,6 @@ JSON形式のみ出力、説明文不要`;
 
         // 上位N件を返す
         const topCandidates = candidates.slice(0, maxResults);
-
-        console.log(`[searchFoodDatabaseCandidates] 検索完了: ${foodName}`, {
-            totalMatches: candidates.length,
-            topCandidates: topCandidates.map(c => ({ name: c.name, score: c.matchScore, reason: c.matchReason }))
-        });
 
         return topCandidates;
     };
@@ -2128,7 +2063,6 @@ JSON形式のみ出力、説明文不要`;
         );
 
         if (foodsToSave.length > 0) {
-            console.log(`[confirmFoods] 認識食材をカスタムアイテムとして自動保存: ${foodsToSave.length}件`, foodsToSave.map(f => f.name));
 
             for (const food of foodsToSave) {
                 try {
@@ -2224,7 +2158,6 @@ JSON形式のみ出力、説明文不要`;
                             .doc(customFood.name);
 
                         await customFoodsRef.set(customFood, { merge: true });
-                        console.log(`[confirmFoods] カスタムアイテムを保存: ${customFood.name} (${itemType})`);
 
                         // stateも更新（即座に反映）
                         setCustomFoods(prev => {

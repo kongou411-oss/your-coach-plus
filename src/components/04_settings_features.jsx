@@ -1,6 +1,6 @@
 import React from 'react';
 import toast from 'react-hot-toast';
-import { STORAGE_KEYS } from '../config.js';
+import { STORAGE_KEYS, DEFAULT_ROUTINES } from '../config.js';
 import NotificationSettings from './21_notification_settings.jsx';
 
 // ===== 機能タブコンポーネント =====
@@ -1111,19 +1111,9 @@ const FeaturesTab = ({
                                         await batch.commit();
 
                                         // デフォルトルーティンを作成
-                                        const defaultRoutines = [
-                                            { id: 1, name: 'Day 1', splitType: '胸', isRestDay: false },
-                                            { id: 2, name: 'Day 2', splitType: '背中', isRestDay: false },
-                                            { id: 3, name: 'Day 3', splitType: '休み', isRestDay: true },
-                                            { id: 4, name: 'Day 4', splitType: '肩', isRestDay: false },
-                                            { id: 5, name: 'Day 5', splitType: '腕', isRestDay: false },
-                                            { id: 6, name: 'Day 6', splitType: '脚', isRestDay: false },
-                                            { id: 7, name: 'Day 7', splitType: '休み', isRestDay: true }
-                                        ];
-
                                         // Firestoreに保存
                                         const batch2 = firebase.firestore().batch();
-                                        defaultRoutines.forEach(routine => {
+                                        DEFAULT_ROUTINES.forEach(routine => {
                                             const docRef = firebase.firestore()
                                                 .collection('users')
                                                 .doc(userId)
