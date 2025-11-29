@@ -152,12 +152,48 @@ dist/                 ← ビルド出力（デプロイ対象）
 
 ## Capacitor ネイティブアプリ対応
 
-### ビルド手順
+### 🚨 重要: 現在はネイティブアプリ（Android）で開発中
+- **Web版は廃止済み**（PWA → ネイティブ完全移行）
+- デバッグは **Android実機またはエミュレーター** で実施
+- `npm run dev` はコード変更の即時確認用（最終確認は必ずネイティブで）
+
+### ネイティブビルド手順（すべてClaude Codeが実行）
+
+**「ネイティブ確認」と言われたら、以下を全て実行：**
 ```bash
-npm run build              # Webビルド
-npx cap sync android       # Androidに同期
-# Android Studio で APK ビルド
+# 1. Webビルド（dist/生成）
+npm run build
+
+# 2. Androidに同期（dist/ → android/app/src/main/assets/）
+npx cap sync android
+
+# 3. APKビルド（JAVA_HOME設定必須）
+export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" && cd android && ./gradlew assembleDebug
 ```
+
+**⚠️ クリーンビルドが必要な場合（キャッシュ問題など）：**
+- Claude Codeではなく **Android Studio** で実行してもらう
+- Android Studio: Build → Clean Project → Rebuild Project
+
+**ビルド完了後のAPK場所：**
+- Debug: `android/app/build/outputs/apk/debug/app-debug.apk`
+- Release: `android/app/build/outputs/apk/release/app-release.apk`
+
+**ユーザーの役割**: 考える・指示するのみ。実行はすべてClaude Codeが行う。
+
+### デバッグ方法（ネイティブ）
+
+**Android Studio Logcat でログ確認：**
+1. Android Studio 下部の「Logcat」タブ
+2. フィルター: `chromium` または `Console` で検索
+3. WebView内のconsole.log/errorが表示される
+
+**Chrome リモートデバッグ（推奨）：**
+1. Android端末: 設定 → 開発者オプション → USBデバッグ ON
+2. USB接続
+3. PC Chrome: `chrome://inspect` を開く
+4. WebView が表示される → 「inspect」クリック
+5. DevTools でコンソール・ネットワーク確認可能
 
 ### ファイル構造
 ```

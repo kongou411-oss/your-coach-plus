@@ -1,341 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { STORAGE_KEYS } from '../config.js';
+import { BiometricAuthService } from '../biometric-auth.js';
 
 // グローバル関数を取得
 const getFeatureCompletionStatus = window.getFeatureCompletionStatus;
 const getRegistrationDate = window.getRegistrationDate;
-
-// ===== コード入力セクション（企業コード・紹介コード統合） =====
-const CodeInputSection = ({ userId, userProfile }) => {
-    const Icon = window.Icon;
-    const [code, setCode] = useState('');
-    const [validating, setValidating] = useState(false);
-
-    // 企業コード関連
-    const [hasEnterpriseAccess, setHasEnterpriseAccess] = useState(false);
-    const [enterpriseInfo, setEnterpriseInfo] = useState(null);
-
-    // 紹介コード関連
-    const [hasReferral, setHasReferral] = useState(false);
-    const [referralInfo, setReferralInfo] = useState(null);
-
-    // ギフトコード関連
-    const [hasGiftCode, setHasGiftCode] = useState(false);
-    const [giftCodeInfo, setGiftCodeInfo] = useState(null);
-
-    // コード種別を判定
-    const getCodeType = (inputCode) => {
-        if (!inputCode) return null;
-        const trimmed = inputCode.trim().toUpperCase();
-        if (trimmed.startsWith('B2B-')) return 'enterprise';
-        if (trimmed.startsWith('USER-')) return 'referral';
-        // それ以外で3文字以上ならギフトコードとして扱う
-        if (trimmed.length >= 3) return 'gift';
-        return null;
-    };
-
-    const codeType = getCodeType(code);
-
-    // 既存のアクセス権確認
-    useEffect(() => {
-        if (userProfile?.enterpriseAccess) {
-            setHasEnterpriseAccess(true);
-            const db = firebase.firestore();
-            db.collection('users').doc(userId).get().then(doc => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    if (data.enterpriseInfo) {
-                        setEnterpriseInfo(data.enterpriseInfo);
-                    }
-                }
-            });
-        }
-        if (userProfile?.referredBy) {
-            setHasReferral(true);
-            setReferralInfo({
-                appliedAt: userProfile.referralAppliedAt
-            });
-        }
-        // ギフトコード適用済みチェック
-        if (userProfile?.subscription?.giftCodeActive) {
-            setHasGiftCode(true);
-            setGiftCodeInfo({
-                code: userProfile.subscription.giftCode,
-                activatedAt: userProfile.subscription.giftCodeActivatedAt
-            });
-        }
-    }, [userProfile, userId]);
-
-    // 企業コード検証
-    const validateEnterpriseCode = async () => {
-        setValidating(true);
-        try {
-            const functions = window.firebase.app().functions('asia-northeast2');
-            const validateCode = functions.httpsCallable('validateB2B2CCode');
-            const result = await validateCode({
-                accessCode: code.trim()
-            });
-
-            if (result.data.valid) {
-                toast.success('企業コードが認証されました！Premium機能が利用可能になります。');
-                setHasEnterpriseAccess(true);
-                setEnterpriseInfo(result.data.enterpriseInfo || null);
-                setCode('');
-                return true;
-            } else {
-                toast.error(result.data.message || '無効な企業コードです');
-                return false;
-            }
-        } catch (error) {
-            console.error('[Enterprise] Code validation error:', error);
-            const errorMessage = error.message || '企業コードの検証中にエラーが発生しました';
-            toast.error(errorMessage);
-            return false;
-        } finally {
-            setValidating(false);
-        }
-    };
-
-    // 紹介コード適用
-    const applyReferralCode = async () => {
-        setValidating(true);
-        try {
-            const functions = window.firebase.app().functions('asia-northeast2');
-            const applyCode = functions.httpsCallable('applyReferralCode');
-            const result = await applyCode({
-                referralCode: code.trim().toUpperCase()
-            });
-
-            toast.success(result.data.message || '紹介コードを適用しました！50クレジットが付与されました。');
-            setHasReferral(true);
-            setReferralInfo({ appliedAt: new Date() });
-            setCode('');
-            return true;
-        } catch (error) {
-            console.error('[Referral] Code apply error:', error);
-            const errorMessage = error.message || '紹介コードの適用に失敗しました';
-            toast.error(errorMessage);
-            return false;
-        } finally {
-            setValidating(false);
-        }
-    };
-
-    // ギフトコード検証
-    const validateGiftCode = async () => {
-        setValidating(true);
-        try {
-            const result = await window.GiftCodeService.redeemCode(code.trim());
-            if (result.success) {
-                toast.success(result.message || 'Premium会員になりました！');
-                setHasGiftCode(true);
-                setGiftCodeInfo({ code: code.trim().toUpperCase(), activatedAt: new Date() });
-                setCode('');
-                // ページリロードで状態を更新
-                setTimeout(() => window.location.reload(), 1500);
-                return true;
-            }
-        } catch (error) {
-            console.error('[GiftCode] Error:', error);
-            const errorMessage = error.message || error.details?.message || 'コードの適用に失敗しました';
-            toast.error(errorMessage);
-            return false;
-        } finally {
-            setValidating(false);
-        }
-    };
-
-    // コード認証ボタン押下時
-    const handleSubmit = () => {
-        if (!code.trim()) {
-            toast.error('コードを入力してください');
-            return;
-        }
-
-        if (codeType === 'enterprise') {
-            validateEnterpriseCode();
-        } else if (codeType === 'referral') {
-            applyReferralCode();
-        } else if (codeType === 'gift') {
-            validateGiftCode();
-        } else {
-            toast.error('無効なコード形式です');
-        }
-    };
-
-    // 既存アクセス権の表示
-    const renderExistingAccess = () => {
-        const items = [];
-
-        if (hasEnterpriseAccess) {
-            items.push(
-                <div key="enterprise" className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                        <Icon name="Building" size={20} className="text-green-600 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
-                            <h4 className="font-bold text-green-800 mb-1">企業プラン有効</h4>
-                            <p className="text-sm text-green-700">
-                                法人・ジム向けプランでPremium機能をご利用いただけます。
-                            </p>
-                            {enterpriseInfo && (
-                                <div className="mt-2 text-sm space-y-1">
-                                    <p className="text-gray-700">
-                                        <span className="font-medium">企業名:</span> {enterpriseInfo.companyName || '不明'}
-                                    </p>
-                                    {enterpriseInfo.expiresAt && (
-                                        <p className="text-gray-700">
-                                            <span className="font-medium">有効期限:</span>{' '}
-                                            {new Date(enterpriseInfo.expiresAt).toLocaleDateString('ja-JP')}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        if (hasReferral) {
-            items.push(
-                <div key="referral" className="bg-pink-50 border border-pink-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                        <Icon name="Gift" size={20} className="text-pink-600 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
-                            <h4 className="font-bold text-pink-800 mb-1">紹介コード適用済み</h4>
-                            <p className="text-sm text-pink-700">
-                                Premium登録完了後、50回分の分析クレジットが付与されます。
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        if (hasGiftCode) {
-            items.push(
-                <div key="giftcode" className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                        <Icon name="Crown" size={20} className="text-purple-600 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
-                            <h4 className="font-bold text-purple-800 mb-1">ギフトコード適用済み</h4>
-                            <p className="text-sm text-purple-700">
-                                Premium機能が有効になっています。
-                            </p>
-                            {giftCodeInfo?.code && (
-                                <p className="text-xs text-gray-600 mt-1">
-                                    コード: {giftCodeInfo.code}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        return items.length > 0 ? <div className="space-y-3">{items}</div> : null;
-    };
-
-    // メインのコード入力フォーム
-    return (
-        <div className="space-y-4">
-            {/* 既存のアクセス権表示 */}
-            {renderExistingAccess()}
-
-            {/* コード入力説明 */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
-                    <Icon name="Key" size={18} className="text-gray-600" />
-                    コード入力
-                </h4>
-                <div className="text-sm text-gray-600 space-y-2">
-                    <div className="flex items-start gap-2">
-                        <Icon name="Building" size={14} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                        <span><strong>企業コード</strong>（B2B-XXXX）: 法人・ジム向けプランのPremium特典</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                        <Icon name="Gift" size={14} className="text-pink-600 mt-0.5 flex-shrink-0" />
-                        <span><strong>紹介コード</strong>（USER-XXXX）: 友達紹介の50回クレジット特典</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                        <Icon name="Crown" size={14} className="text-purple-600 mt-0.5 flex-shrink-0" />
-                        <span><strong>ギフトコード</strong>: Premium無料招待コード</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* コード入力フォーム */}
-            {(!hasEnterpriseAccess || !hasReferral || !hasGiftCode) && (
-                <div className="space-y-3">
-                    <label className="block">
-                        <span className="text-sm font-medium text-gray-700 mb-2 block">
-                            コードを入力
-                        </span>
-                        <input
-                            type="text"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value.toUpperCase())}
-                            placeholder="コードを入力"
-                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:outline-none font-mono ${
-                                codeType === 'enterprise'
-                                    ? 'border-blue-300 focus:ring-blue-500 bg-blue-50/30'
-                                    : codeType === 'referral'
-                                    ? 'border-pink-300 focus:ring-pink-500 bg-pink-50/30'
-                                    : codeType === 'gift'
-                                    ? 'border-purple-300 focus:ring-purple-500 bg-purple-50/30'
-                                    : 'border-gray-300 focus:ring-gray-500'
-                            }`}
-                            disabled={validating}
-                        />
-                        {codeType && (
-                            <p className={`text-xs mt-1 ${
-                                codeType === 'enterprise' ? 'text-blue-600'
-                                : codeType === 'referral' ? 'text-pink-600'
-                                : 'text-purple-600'
-                            }`}>
-                                {codeType === 'enterprise' ? '企業コード' : codeType === 'referral' ? '紹介コード' : 'ギフトコード'}として認識されました
-                            </p>
-                        )}
-                    </label>
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={validating || !code.trim()}
-                        className={`w-full px-4 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
-                            validating || !code.trim()
-                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                                : codeType === 'referral'
-                                ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:opacity-90'
-                                : codeType === 'gift'
-                                ? 'bg-purple-600 text-white hover:bg-purple-700'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                    >
-                        {validating ? (
-                            <>
-                                <Icon name="Loader" size={18} className="animate-spin" />
-                                検証中...
-                            </>
-                        ) : (
-                            <>
-                                <Icon name={codeType === 'gift' ? 'Crown' : 'Key'} size={18} />
-                                コードを認証
-                            </>
-                        )}
-                    </button>
-                </div>
-            )}
-
-            {/* 全て適用済みの場合 */}
-            {hasEnterpriseAccess && hasReferral && hasGiftCode && (
-                <p className="text-sm text-gray-600 text-center py-2">
-                    すべてのコードが適用済みです
-                </p>
-            )}
-        </div>
-    );
-};
 
 // ===== その他タブコンポーネント =====
 const OtherTab = ({
@@ -353,25 +23,159 @@ const OtherTab = ({
 }) => {
     const Icon = window.Icon;
 
+    // 生体認証関連のstate
+    const [biometricAvailable, setBiometricAvailable] = useState(false);
+    const [biometricType, setBiometricType] = useState('');
+    const [biometricEnabled, setBiometricEnabled] = useState(false);
+    const [checkingBiometric, setCheckingBiometric] = useState(true);
+
+    // 生体認証の利用可能状況を確認
+    useEffect(() => {
+        const checkBiometric = async () => {
+            const { available, biometryType } = await BiometricAuthService.isAvailable();
+            setBiometricAvailable(available);
+            setBiometricType(biometryType);
+            setBiometricEnabled(BiometricAuthService.isEnabled());
+            setCheckingBiometric(false);
+        };
+        checkBiometric();
+    }, []);
+
+    // 生体認証の有効/無効を切り替え
+    const handleToggleBiometric = async () => {
+        if (!biometricEnabled) {
+            // 有効化する前に認証テスト
+            const result = await BiometricAuthService.authenticate();
+            if (result.success) {
+                BiometricAuthService.setEnabled(true);
+                setBiometricEnabled(true);
+                toast.success('生体認証を有効にしました');
+            } else {
+                toast.error(result.error || '認証に失敗しました');
+            }
+        } else {
+            // 無効化
+            BiometricAuthService.setEnabled(false);
+            setBiometricEnabled(false);
+            toast.success('生体認証を無効にしました');
+        }
+    };
+
     return (
         <>
+            {/* セキュリティ設定 */}
+            <details className="border rounded-lg">
+                <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
+                    <Icon name="Shield" size={18} className="text-[#4A9EFF]" />
+                    セキュリティ
+                    <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                </summary>
+                <div className="p-4 pt-0 border-t">
+                    <div className="space-y-4">
+                        {/* 生体認証設定 */}
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-green-100 rounded-lg">
+                                        <Icon name="Fingerprint" size={24} className="text-green-600" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-gray-800">生体認証ロック</h4>
+                                        <p className="text-xs text-gray-600">
+                                            {biometricType || '指紋/顔認証'}でアプリを保護
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {checkingBiometric ? (
+                                <div className="flex items-center justify-center py-4">
+                                    <Icon name="Loader" size={20} className="animate-spin text-gray-400" />
+                                    <span className="ml-2 text-sm text-gray-600">確認中...</span>
+                                </div>
+                            ) : biometricAvailable ? (
+                                <div className="space-y-3">
+                                    <p className="text-sm text-gray-600">
+                                        アプリ起動時に{biometricType}を要求します。
+                                        第三者による不正アクセスを防ぎ、あなたのデータを保護します。
+                                    </p>
+
+                                    <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition">
+                                        <div className="flex items-center gap-2">
+                                            <Icon
+                                                name={biometricEnabled ? "Lock" : "LockOpen"}
+                                                size={18}
+                                                className={biometricEnabled ? "text-green-600" : "text-gray-400"}
+                                            />
+                                            <span className="font-medium text-gray-800">
+                                                {biometricEnabled ? '有効' : '無効'}
+                                            </span>
+                                        </div>
+                                        <div
+                                            onClick={handleToggleBiometric}
+                                            className={`relative w-12 h-6 rounded-full transition-colors cursor-pointer ${
+                                                biometricEnabled ? 'bg-green-500' : 'bg-gray-300'
+                                            }`}
+                                        >
+                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                                                biometricEnabled ? 'translate-x-7' : 'translate-x-1'
+                                            }`} />
+                                        </div>
+                                    </label>
+
+                                    {biometricEnabled && (
+                                        <div className="flex items-start gap-2 p-3 bg-green-100 rounded-lg">
+                                            <Icon name="ShieldCheck" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                            <p className="text-xs text-green-800">
+                                                生体認証ロックが有効です。アプリ起動時に認証が必要になります。
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                        <Icon name="AlertTriangle" size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <p className="text-sm text-amber-800 font-medium">生体認証を利用できません</p>
+                                            <p className="text-xs text-amber-700 mt-1">
+                                                この端末では生体認証がサポートされていないか、まだ設定されていません。
+                                                端末の設定から指紋または顔認証を登録してください。
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 2FA情報（既存のMFAがある場合） */}
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Icon name="Smartphone" size={16} />
+                                <span>SMS認証（2FA）は認証画面から設定できます</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
             {/* アプリ情報 */}
             <details className="border rounded-lg">
                 <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="Info" size={18} className="text-blue-600" />
+                    <Icon name="Info" size={18} className="text-[#4A9EFF]" />
                     アプリ情報
                     <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                 </summary>
                 <div className="p-4 pt-0 border-t">
                     <div className="space-y-4">
                         {/* バージョン情報 */}
-                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
+                        <div className="bg-gradient-to-r from-blue-50 to-sky-50 border border-[#4A9EFF] rounded-lg p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
-                                    <Icon name="Sparkles" size={20} className="text-indigo-600" />
+                                    <Icon name="Sparkles" size={20} className="text-[#4A9EFF]" />
                                     <span className="font-bold text-gray-800">Your Coach+</span>
                                 </div>
-                                <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-medium">
+                                <span className="px-3 py-1 bg-[#4A9EFF] text-white rounded-full text-xs font-medium">
                                     v{window.APP_VERSION}
                                 </span>
                             </div>
@@ -399,15 +203,15 @@ const OtherTab = ({
                             className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition group"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition">
-                                    <Icon name="FileText" size={18} className="text-indigo-600" />
+                                <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition">
+                                    <Icon name="FileText" size={18} className="text-[#4A9EFF]" />
                                 </div>
                                 <div>
                                     <p className="font-medium text-gray-800">リリースノート</p>
                                     <p className="text-xs text-gray-600">更新履歴を確認</p>
                                 </div>
                             </div>
-                            <Icon name="ExternalLink" size={18} className="text-gray-400 group-hover:text-indigo-600 transition" />
+                            <Icon name="ExternalLink" size={18} className="text-gray-400 group-hover:text-[#4A9EFF] transition" />
                         </a>
 
                         {/* 追加リンク */}
@@ -438,7 +242,7 @@ const OtherTab = ({
                             <p className="text-sm font-medium text-gray-800 mb-3">Your Coach+</p>
                             <a
                                 href="mailto:kongou411@gmail.com"
-                                className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 transition"
+                                className="flex items-center gap-2 text-sm text-[#4A9EFF] hover:text-[#3b8fef] transition"
                             >
                                 <Icon name="Mail" size={14} />
                                 <span>kongou411@gmail.com</span>
@@ -448,22 +252,10 @@ const OtherTab = ({
                 </div>
             </details>
 
-            {/* コード入力（企業コード・紹介コード統合） */}
-            <details className="border rounded-lg">
-                <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="Key" size={18} className="text-purple-600" />
-                    コード入力
-                    <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
-                </summary>
-                <div className="p-4 pt-0 border-t">
-                    <CodeInputSection userId={userId} userProfile={userProfile} />
-                </div>
-            </details>
-
             {/* フィードバック */}
             <details className="border rounded-lg">
                 <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="MessageSquare" size={18} className="text-blue-600" />
+                    <Icon name="MessageSquare" size={18} className="text-[#4A9EFF]" />
                     フィードバック
                     <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                 </summary>
@@ -528,55 +320,55 @@ const OtherTab = ({
             {/* ヘルプセンター */}
             <details className="border rounded-lg">
                 <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="HelpCircle" size={18} className="text-indigo-600" />
+                    <Icon name="HelpCircle" size={18} className="text-[#4A9EFF]" />
                     ヘルプセンター
                     <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                 </summary>
                 <div className="p-4 pt-0 border-t">
                     <div className="space-y-3">
                         {/* 基本フロー */}
-                        <details className="border border-indigo-200 rounded-lg bg-indigo-50/30">
-                            <summary className="cursor-pointer p-3 hover:bg-indigo-50 font-medium text-sm flex items-center gap-2">
-                                <Icon name="PlayCircle" size={16} className="text-indigo-600" />
+                        <details className="border border-blue-200 rounded-lg bg-blue-50/30">
+                            <summary className="cursor-pointer p-3 hover:bg-blue-50 font-medium text-sm flex items-center gap-2">
+                                <Icon name="PlayCircle" size={16} className="text-[#4A9EFF]" />
                                 基本フロー
                                 <Icon name="ChevronDown" size={14} className="ml-auto text-gray-400" />
                             </summary>
-                            <div className="p-3 pt-0 border-t border-indigo-200">
+                            <div className="p-3 pt-0 border-t border-blue-200">
                                 <div className="space-y-3">
                                     <p className="text-xs text-gray-600 mb-2">
                                         毎日この流れを繰り返すことで、確実にパフォーマンスが向上します。
                                     </p>
                                     <div className="space-y-2">
                                         <div className="flex items-start gap-3 p-2 bg-white rounded-lg border border-gray-100">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
+                                            <div className="w-6 h-6 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
                                             <div>
                                                 <p className="font-medium text-sm text-gray-800">食事を記録</p>
                                                 <p className="text-xs text-gray-600">写真撮影 or 検索で簡単入力</p>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3 p-2 bg-white rounded-lg border border-gray-100">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
+                                            <div className="w-6 h-6 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
                                             <div>
                                                 <p className="font-medium text-sm text-gray-800">運動を記録</p>
                                                 <p className="text-xs text-gray-600">筋トレ・有酸素・日常活動を記録</p>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3 p-2 bg-white rounded-lg border border-gray-100">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
+                                            <div className="w-6 h-6 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
                                             <div>
                                                 <p className="font-medium text-sm text-gray-800">コンディションを記録</p>
                                                 <p className="text-xs text-gray-600">体重・睡眠・体調を記録</p>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3 p-2 bg-white rounded-lg border border-gray-100">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">4</div>
+                                            <div className="w-6 h-6 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">4</div>
                                             <div>
                                                 <p className="font-medium text-sm text-gray-800">AI分析を実行</p>
                                                 <p className="text-xs text-gray-600">栄養バランス・改善点を自動分析</p>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3 p-2 bg-white rounded-lg border border-gray-100">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">5</div>
+                                            <div className="w-6 h-6 rounded-full bg-[#4A9EFF] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">5</div>
                                             <div>
                                                 <p className="font-medium text-sm text-gray-800">指示書を確認</p>
                                                 <p className="text-xs text-gray-600">具体的な行動アドバイスを取得</p>
@@ -762,23 +554,14 @@ const OtherTab = ({
                 </div>
             </details>
 
-            {/* 開発者セクション（常時表示・後日非表示か削除予定） */}
+            {/* 機能一覧セクション */}
             <details className="border rounded-lg">
                 <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="Settings" size={18} className="text-blue-600" />
-                    開発者                            <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
+                    <Icon name="List" size={18} className="text-[#4A9EFF]" />
+                    機能一覧
+                    <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                 </summary>
                 <div className="p-4 pt-0 border-t">
-                    {/* 開発者ハードコンテンツ*/}
-                    <div className="space-y-6">
-                    <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
-                        <h4 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
-                            <Icon name="AlertTriangle" size={18} />
-                            開発者用ツール                                </h4>
-                        <p className="text-sm text-orange-700">
-                            このタブは開発中のみ表示されます。守破離機能のテストや日付の手動操作が可能です。                                </p>
-                    </div>
-
                     {/* 機能開放状況*/}
                     <div className="border rounded-lg p-6">
                         <h4 className="font-bold mb-4 flex items-center gap-2">
@@ -841,285 +624,6 @@ const OtherTab = ({
                                 );
                             })()}
                         </div>
-                    </div>
-
-                    {/* 日付手動進行 */}
-                    <div className="border rounded-lg p-6">
-                        <h4 className="font-bold mb-4 flex items-center gap-2">
-                            <Icon name="Calendar" size={18} />
-                            日付手動進行
-                        </h4>
-                        <div className="space-y-4">
-                            {/* 現在の日数表示 */}
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                                <div className="flex justify-between items-center mb-3">
-                                    <span className="text-sm text-gray-600">現在</span>
-                                    <span className="text-2xl font-bold text-indigo-600">
-                                        {`${usageDays + 1}日目`}
-                                    </span>
-                                </div>
-                                <div className="text-xs text-gray-600">
-                                    {(() => {
-                                        const currentDay = usageDays; // 0-6日目がトライアル
-                                        const isTrial = currentDay < 7;
-                                        const isPremium = userProfile?.subscriptionStatus === 'active';
-
-                                        if (isTrial) {
-                                            return (
-                                                <span className="text-green-600 font-medium">
-                                                    🎁 無料トライアル中（残り{7 - currentDay}日）
-                                                </span>
-                                            );
-                                        } else if (isPremium) {
-                                            return (
-                                                <span className="text-yellow-600 font-medium">
-                                                    👑 Premium会員（全機能利用可能）
-                                                </span>
-                                            );
-                                        } else {
-                                            return (
-                                                <span className="text-red-600 font-medium">
-                                                    🔒 トライアル終了・Premium機能制限中
-                                                </span>
-                                            );
-                                        }
-                                    })()}
-                                </div>
-                            </div>
-
-                            {/* 日付操作ボタン */}
-                            <div className="space-y-3">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={() => {
-                                            // 1日目（登録日）に戻る
-                                            const today = new Date();
-                                            today.setHours(0, 0, 0, 0);
-                                            localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, today.toISOString());
-                                            localStorage.removeItem(STORAGE_KEYS.FEATURES_COMPLETED);
-                                            window.location.reload();
-                                        }}
-                                        className="px-4 py-3 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium"
-                                    >
-                                        <Icon name="RotateCcw" size={18} className="inline mr-1" />
-                                        1日目へ戻る（登録日）
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            // 8日目（Premium制限開始）へジャンプ
-                                            const registrationDate = new Date();
-                                            registrationDate.setDate(registrationDate.getDate() - 7);
-                                            registrationDate.setHours(0, 0, 0, 0);
-                                            localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, registrationDate.toISOString());
-
-                                            // 全機能完了マーク
-                                            const allCompleted = {
-                                                food: true,
-                                                training: true,
-                                                condition: true,
-                                                analysis: true,
-                                                directive: true,
-                                                pg_base: true,
-                                                template: true,
-                                                routine: true,
-                                                shortcut: true,
-                                                history: true,
-                                                history_analysis: true,
-                                                idea: true,
-                                                community: true
-                                            };
-                                            localStorage.setItem(STORAGE_KEYS.FEATURES_COMPLETED, JSON.stringify(allCompleted));
-                                            window.location.reload();
-                                        }}
-                                        className="px-4 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition font-medium"
-                                    >
-                                        <Icon name="FastForward" size={18} className="inline mr-1" />
-                                        8日目へ（Premium制限開始）
-                                    </button>
-                                </div>
-                                <button
-                                    onClick={async () => {
-                                        // +7日進める（登録日を7日前に移動）
-                                        const currentRegDateStr = await getRegistrationDate(userId);
-                                        const currentReg = new Date(currentRegDateStr);
-                                        currentReg.setDate(currentReg.getDate() - 7);
-                                        currentReg.setHours(0, 0, 0, 0);
-                                        localStorage.setItem(STORAGE_KEYS.REGISTRATION_DATE, currentReg.toISOString());
-                                        window.location.reload();
-                                    }}
-                                    className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
-                                >
-                                    <Icon name="ChevronRight" size={18} className="inline mr-1" />
-                                    +7日進める
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* プレミアムモード切り替え */}
-                    <div className="border rounded-lg p-6">
-                        <h4 className="font-bold mb-4 flex items-center gap-2">
-                            <Icon name="Crown" size={18} className="text-amber-600" />
-                            プレミアムモード（開発用）
-                        </h4>
-                        <div className="space-y-4">
-                            {/* 現在の状態表示 */}
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">現在の状態</span>
-                                    <span className={`text-lg font-bold ${
-                                        userProfile?.subscriptionStatus === 'active'
-                                        ? 'text-amber-600'
-                                        : 'text-gray-600'
-                                    }`}>
-                                        {userProfile?.subscriptionStatus === 'active' ? '👑 Premium会員' : '無料会員'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* モード切り替えボタン */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={async () => {
-                                        try {
-                                            // PremiumServiceを使用してPremium状態を無効化
-                                            const success = await window.PremiumService.setPremiumStatus(userId, false);
-                                            if (success) {
-                                                console.log('[開発モード] 無料会員に切り替え（PremiumService）');
-                                                toast.success('無料会員に切り替えました');
-                                                window.location.reload();
-                                            } else {
-                                                throw new Error('setPremiumStatus failed');
-                                            }
-                                        } catch (error) {
-                                            console.error('プレミアムモード切り替えエラー:', error);
-                                            toast.error('切り替えに失敗しました');
-                                        }
-                                    }}
-                                    className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
-                                >
-                                    <Icon name="User" size={18} className="inline mr-1" />
-                                    無料会員にする
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        try {
-                                            // PremiumServiceを使用してPremium状態を有効化
-                                            const success = await window.PremiumService.setPremiumStatus(userId, true);
-                                            if (success) {
-                                                // クレジットが0または未設定の場合は100を付与
-                                                const expInfo = await window.ExperienceService.getUserExperience(userId);
-                                                if (expInfo.totalCredits === 0) {
-                                                    await window.ExperienceService.addFreeCredits(userId, 100);
-                                                    console.log('[開発モード] 無料クレジットを100付与');
-                                                }
-
-                                                const updatedExpInfo = await window.ExperienceService.getUserExperience(userId);
-                                                console.log('[開発モード] Premium会員に切り替え（PremiumService）');
-                                                toast.success(`Premium会員に切り替えました（クレジット: ${updatedExpInfo.totalCredits}）`);
-                                                window.location.reload();
-                                            } else {
-                                                throw new Error('setPremiumStatus failed');
-                                            }
-                                        } catch (error) {
-                                            console.error('プレミアムモード切り替えエラー:', error);
-                                            toast.error('切り替えに失敗しました');
-                                        }
-                                    }}
-                                    className="px-4 py-3 bg-[#FFF59A] text-gray-800 rounded-lg hover:opacity-90 transition font-medium relative overflow-hidden"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
-                                    <span className="relative z-10">
-                                        <Icon name="Crown" size={18} className="inline mr-1" />
-                                        Premium会員にする
-                                    </span>
-                                </button>
-                            </div>
-
-                            {/* 注意事項 */}
-                            <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg">
-                                <div className="flex items-start gap-2">
-                                    <Icon name="AlertTriangle" size={16} className="text-orange-600 flex-shrink-0 mt-0.5" />
-                                    <div className="text-xs text-orange-700">
-                                        <p className="font-medium mb-1">開発用機能</p>
-                                        <p>この機能は開発・テスト用です。実際のサブスクリプション登録は別途実装されます。</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* LocalStorage管理 */}
-                    <div className="border rounded-lg p-6 bg-gray-50">
-                        <h4 className="font-bold mb-4 flex items-center gap-2">
-                            <Icon name="Database" size={18} className="text-gray-600" />
-                            ストレージ管理（LocalStorage）
-                        </h4>
-                        <div className="space-y-3">
-                            <div className="bg-white p-4 rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
-                                <div className="space-y-2">
-                                    {(() => {
-                                        const keys = Object.keys(localStorage);
-                                        if (keys.length === 0) {
-                                            return (
-                                                <p className="text-sm text-gray-600 text-center py-4">
-                                                    LocalStorageは空です
-                                                </p>
-                                            );
-                                        }
-                                        return keys.sort().map((key) => {
-                                            const value = localStorage.getItem(key);
-                                            let displayValue;
-                                            try {
-                                                const parsed = JSON.parse(value);
-                                                displayValue = JSON.stringify(parsed, null, 2);
-                                            } catch {
-                                                displayValue = value;
-                                            }
-                                            return (
-                                                <details key={key} className="border rounded p-2 bg-gray-50">
-                                                    <summary className="cursor-pointer font-mono text-xs font-semibold text-gray-600 hover:text-gray-800 flex items-center justify-between">
-                                                        <span className="truncate">{key}</span>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                showConfirm('LocalStorageキー削除の確認', `"${key}" を削除しますか？`, () => {
-                                                                    localStorage.removeItem(key);
-                                                                    window.location.reload();
-                                                                });
-                                                            }}
-                                                            className="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs"
-                                                        >
-                                                            削除
-                                                        </button>
-                                                    </summary>
-                                                    <div className="mt-2 p-2 bg-white rounded border">
-                                                        <pre className="text-xs text-gray-600 whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
-                                                            {displayValue}
-                                                        </pre>
-                                                    </div>
-                                                </details>
-                                            );
-                                        });
-                                    })()}
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    showConfirm('全LocalStorage削除の確認', 'すべてのLocalStorageデータを削除しますか？\nこの操作は取り消せません。', () => {
-                                        localStorage.clear();
-                                        toast('LocalStorageをクリアしました');
-                                        window.location.reload();
-                                    });
-                                }}
-                                className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2"
-                            >
-                                <Icon name="Trash2" size={18} />
-                                すべてのストレージをクリア
-                            </button>
-                        </div>
-                    </div>
-
                     </div>
                 </div>
             </details>

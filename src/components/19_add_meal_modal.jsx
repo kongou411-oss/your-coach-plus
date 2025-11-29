@@ -855,7 +855,7 @@ const AddMealModal = ({
                     <div className="px-4 pt-3 pb-2">
                         <div className="flex gap-2">
                             {/* 左側：この食事の合計 */}
-                            <div className="flex-1 bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-200">
+                            <div className="flex-1 bg-blue-50 p-3 rounded-lg border border-blue-200">
                                 <div className="text-xs font-medium text-gray-600 mb-1">この食事の合計</div>
                                 <div className="flex items-center justify-between">
                                     <div className="text-lg font-bold text-blue-600">
@@ -1094,7 +1094,7 @@ const AddMealModal = ({
                         if (!hasAccess) {
                             // Premium専用ロック表示
                             return (
-                                <div className="w-full p-3 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-lg">
+                                <div className="w-full p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Icon name="Lock" size={18} className="text-amber-600" />
@@ -1104,7 +1104,7 @@ const AddMealModal = ({
                                             onClick={() => {
                                                 toast('Premium会員になると、写真から自動で食事を記録できます', { icon: '📸', duration: 3000 });
                                             }}
-                                            className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-md hover:from-amber-600 hover:to-orange-600 transition text-xs font-bold"
+                                            className="px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition text-xs font-bold"
                                         >
                                             Premium会員になる
                                         </button>
@@ -1117,7 +1117,7 @@ const AddMealModal = ({
                         return (
                             <button
                                 onClick={() => setShowAIFoodRecognition(true)}
-                                className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition shadow-md"
+                                className="w-full px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-semibold hover:bg-[#3b8fef] transition shadow-md"
                             >
                                 <Icon name="Camera" size={16} className="inline mr-1" />
                                 写真解析
@@ -1304,7 +1304,7 @@ const AddMealModal = ({
                     <div className="fixed inset-0 bg-black bg-opacity-60 z-[10001] flex items-center justify-center p-4">
                         <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[70vh] overflow-hidden flex flex-col">
                             {/* ヘッダー */}
-                            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-t-2xl z-10">
+                            <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 rounded-t-2xl z-10">
                                 <div className="flex justify-between items-center mb-3">
                                     <h3 className="text-lg font-bold flex items-center gap-2">
                                         <Icon name="Search" size={20} />
@@ -1535,7 +1535,7 @@ const AddMealModal = ({
                 <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-md max-h-[70vh] overflow-hidden flex flex-col">
                         {/* ヘッダー */}
-                        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center">
+                        <div className="bg-purple-600 text-white p-4 flex justify-between items-center">
                             <h3 className="text-lg font-bold flex items-center gap-2">
                                 <Icon name="BookMarked" size={20} />
                                 テンプレートから選択
@@ -1710,7 +1710,7 @@ const AddMealModal = ({
                 <div className="fixed inset-0 bg-black bg-opacity-60 z-[70] flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto">
                         {/* ヘッダー */}
-                        <div className="bg-gradient-to-r from-[#4A9EFF] to-[#3B82F6] text-white p-4 flex justify-between items-center sticky top-0">
+                        <div className="bg-[#4A9EFF] text-white p-4 flex justify-between items-center sticky top-0">
                             <h3 className="text-lg font-bold flex items-center gap-2">
                                 <Icon name="Info" size={20} />
                                 テンプレートについて
@@ -1765,7 +1765,7 @@ const AddMealModal = ({
                             </div>
 
                             {/* Premium会員の特典 */}
-                            <div className="bg-gradient-to-r from-[#FFF59A] to-[#FFF176] border border-amber-300 rounded-lg p-4">
+                            <div className="bg-amber-100 border border-amber-300 rounded-lg p-4">
                                 <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
                                     <Icon name="Crown" size={18} className="text-amber-600" />
                                     Premium会員の特典

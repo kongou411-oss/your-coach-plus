@@ -2280,7 +2280,7 @@ const DataTab = ({
                                         <div className="p-6 border-t">
                                             <button
                                                 onClick={() => setShowDetailModal(false)}
-                                                className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition"
+                                                className="w-full bg-[#4A9EFF] text-white font-bold py-3 rounded-lg hover:bg-[#3b8fef] transition"
                                             >
                                                 閉じる
                                             </button>

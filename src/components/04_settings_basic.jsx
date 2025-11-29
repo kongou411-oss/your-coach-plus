@@ -1,7 +1,312 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { isNativeApp } from '../capacitor-push';
 import { GoogleAuth } from '@southdevs/capacitor-google-auth';
+
+// ===== コード入力セクション（企業コード・紹介コード・ギフトコード統合） =====
+const CodeInputSection = ({ userId, userProfile }) => {
+    const Icon = window.Icon;
+    const [code, setCode] = useState('');
+    const [validating, setValidating] = useState(false);
+
+    // 企業コード関連
+    const [hasEnterpriseAccess, setHasEnterpriseAccess] = useState(false);
+    const [enterpriseInfo, setEnterpriseInfo] = useState(null);
+
+    // 紹介コード関連
+    const [hasReferral, setHasReferral] = useState(false);
+    const [referralInfo, setReferralInfo] = useState(null);
+
+    // ギフトコード関連
+    const [hasGiftCode, setHasGiftCode] = useState(false);
+    const [giftCodeInfo, setGiftCodeInfo] = useState(null);
+
+    // コード種別を判定
+    const getCodeType = (inputCode) => {
+        if (!inputCode) return null;
+        const trimmed = inputCode.trim().toUpperCase();
+        if (trimmed.startsWith('B2B-')) return 'enterprise';
+        if (trimmed.startsWith('USER-')) return 'referral';
+        // それ以外で3文字以上ならギフトコードとして扱う
+        if (trimmed.length >= 3) return 'gift';
+        return null;
+    };
+
+    const codeType = getCodeType(code);
+
+    // 既存のアクセス権確認
+    useEffect(() => {
+        if (userProfile?.enterpriseAccess) {
+            setHasEnterpriseAccess(true);
+            const db = firebase.firestore();
+            db.collection('users').doc(userId).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.enterpriseInfo) {
+                        setEnterpriseInfo(data.enterpriseInfo);
+                    }
+                }
+            });
+        }
+        if (userProfile?.referredBy) {
+            setHasReferral(true);
+            setReferralInfo({
+                appliedAt: userProfile.referralAppliedAt
+            });
+        }
+        // ギフトコード適用済みチェック
+        if (userProfile?.subscription?.giftCodeActive) {
+            setHasGiftCode(true);
+            setGiftCodeInfo({
+                code: userProfile.subscription.giftCode,
+                activatedAt: userProfile.subscription.giftCodeActivatedAt
+            });
+        }
+    }, [userProfile, userId]);
+
+    // 企業コード検証
+    const validateEnterpriseCode = async () => {
+        setValidating(true);
+        try {
+            const functions = window.firebase.app().functions('asia-northeast2');
+            const validateCode = functions.httpsCallable('validateB2B2CCode');
+            const result = await validateCode({
+                accessCode: code.trim()
+            });
+
+            if (result.data.valid) {
+                toast.success('企業コードが認証されました！Premium機能が利用可能になります。');
+                setHasEnterpriseAccess(true);
+                setEnterpriseInfo(result.data.enterpriseInfo || null);
+                setCode('');
+                return true;
+            } else {
+                toast.error(result.data.message || '無効な企業コードです');
+                return false;
+            }
+        } catch (error) {
+            console.error('[Enterprise] Code validation error:', error);
+            const errorMessage = error.message || '企業コードの検証中にエラーが発生しました';
+            toast.error(errorMessage);
+            return false;
+        } finally {
+            setValidating(false);
+        }
+    };
+
+    // 紹介コード適用
+    const applyReferralCode = async () => {
+        setValidating(true);
+        try {
+            const functions = window.firebase.app().functions('asia-northeast2');
+            const applyCode = functions.httpsCallable('applyReferralCode');
+            const result = await applyCode({
+                referralCode: code.trim().toUpperCase()
+            });
+
+            toast.success(result.data.message || '紹介コードを適用しました！50クレジットが付与されました。');
+            setHasReferral(true);
+            setReferralInfo({ appliedAt: new Date() });
+            setCode('');
+            return true;
+        } catch (error) {
+            console.error('[Referral] Code apply error:', error);
+            const errorMessage = error.message || '紹介コードの適用に失敗しました';
+            toast.error(errorMessage);
+            return false;
+        } finally {
+            setValidating(false);
+        }
+    };
+
+    // ギフトコード検証
+    const validateGiftCode = async () => {
+        setValidating(true);
+        try {
+            const result = await window.GiftCodeService.redeemCode(code.trim());
+            if (result.success) {
+                toast.success(result.message || 'Premium会員になりました！');
+                setHasGiftCode(true);
+                setGiftCodeInfo({ code: code.trim().toUpperCase(), activatedAt: new Date() });
+                setCode('');
+                // ページリロードで状態を更新
+                setTimeout(() => window.location.reload(), 1500);
+                return true;
+            }
+        } catch (error) {
+            console.error('[GiftCode] Error:', error);
+            const errorMessage = error.message || error.details?.message || 'コードの適用に失敗しました';
+            toast.error(errorMessage);
+            return false;
+        } finally {
+            setValidating(false);
+        }
+    };
+
+    // コード認証ボタン押下時
+    const handleSubmit = () => {
+        if (!code.trim()) {
+            toast.error('コードを入力してください');
+            return;
+        }
+
+        if (codeType === 'enterprise') {
+            validateEnterpriseCode();
+        } else if (codeType === 'referral') {
+            applyReferralCode();
+        } else if (codeType === 'gift') {
+            validateGiftCode();
+        } else {
+            toast.error('無効なコード形式です');
+        }
+    };
+
+    // 既存アクセス権の表示
+    const renderExistingAccess = () => {
+        const items = [];
+
+        if (hasEnterpriseAccess) {
+            items.push(
+                <div key="enterprise" className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                        <Icon name="Building" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                            <h4 className="font-bold text-green-800 text-sm">企業プラン有効</h4>
+                            {enterpriseInfo && (
+                                <p className="text-xs text-gray-600 mt-1">
+                                    {enterpriseInfo.companyName || '企業'}
+                                    {enterpriseInfo.expiresAt && ` (〜${new Date(enterpriseInfo.expiresAt).toLocaleDateString('ja-JP')})`}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (hasReferral) {
+            items.push(
+                <div key="referral" className="bg-pink-50 border border-pink-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                        <Icon name="Gift" size={16} className="text-pink-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                            <h4 className="font-bold text-pink-800 text-sm">紹介コード適用済み</h4>
+                            <p className="text-xs text-pink-700">50回分のクレジット付与済み</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (hasGiftCode) {
+            items.push(
+                <div key="giftcode" className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                        <Icon name="Crown" size={16} className="text-purple-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                            <h4 className="font-bold text-purple-800 text-sm">ギフトコード適用済み</h4>
+                            {giftCodeInfo?.code && (
+                                <p className="text-xs text-gray-600">コード: {giftCodeInfo.code}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        return items.length > 0 ? <div className="space-y-2">{items}</div> : null;
+    };
+
+    // メインのコード入力フォーム
+    return (
+        <div className="space-y-3">
+            {/* 既存のアクセス権表示 */}
+            {renderExistingAccess()}
+
+            {/* コード入力説明 */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div className="text-xs text-gray-600 space-y-1">
+                    <div className="flex items-start gap-2">
+                        <Icon name="Building" size={12} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                        <span><strong>企業コード</strong>（B2B-XXXX）: 法人・ジム向けプレミアム</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                        <Icon name="Gift" size={12} className="text-pink-600 mt-0.5 flex-shrink-0" />
+                        <span><strong>紹介コード</strong>（USER-XXXX）: 50回クレジット特典</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                        <Icon name="Crown" size={12} className="text-purple-600 mt-0.5 flex-shrink-0" />
+                        <span><strong>ギフトコード</strong>: Premium無料招待</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* コード入力フォーム */}
+            {(!hasEnterpriseAccess || !hasReferral || !hasGiftCode) && (
+                <div className="space-y-2">
+                    <input
+                        type="text"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value.toUpperCase())}
+                        placeholder="コードを入力"
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none font-mono text-sm ${
+                            codeType === 'enterprise'
+                                ? 'border-blue-300 focus:ring-blue-500 bg-blue-50/30'
+                                : codeType === 'referral'
+                                ? 'border-pink-300 focus:ring-pink-500 bg-pink-50/30'
+                                : codeType === 'gift'
+                                ? 'border-purple-300 focus:ring-purple-500 bg-purple-50/30'
+                                : 'border-gray-300 focus:ring-gray-500'
+                        }`}
+                        disabled={validating}
+                    />
+                    {codeType && (
+                        <p className={`text-xs ${
+                            codeType === 'enterprise' ? 'text-blue-600'
+                            : codeType === 'referral' ? 'text-pink-600'
+                            : 'text-purple-600'
+                        }`}>
+                            {codeType === 'enterprise' ? '企業コード' : codeType === 'referral' ? '紹介コード' : 'ギフトコード'}として認識
+                        </p>
+                    )}
+
+                    <button
+                        onClick={handleSubmit}
+                        disabled={validating || !code.trim()}
+                        className={`w-full px-3 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2 text-sm ${
+                            validating || !code.trim()
+                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                                : codeType === 'referral'
+                                ? 'bg-pink-600 text-white hover:bg-pink-700'
+                                : codeType === 'gift'
+                                ? 'bg-purple-600 text-white hover:bg-purple-700'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                    >
+                        {validating ? (
+                            <>
+                                <Icon name="Loader" size={16} className="animate-spin" />
+                                検証中...
+                            </>
+                        ) : (
+                            <>
+                                <Icon name="Key" size={16} />
+                                コードを認証
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
+
+            {/* 全て適用済みの場合 */}
+            {hasEnterpriseAccess && hasReferral && hasGiftCode && (
+                <p className="text-xs text-gray-600 text-center py-1">
+                    すべてのコードが適用済みです
+                </p>
+            )}
+        </div>
+    );
+};
 
 // ===== 基本設定タブコンポーネント =====
 const BasicTab = ({
@@ -42,72 +347,6 @@ const BasicTab = ({
 
     return (
         <div className="space-y-3">
-            {/* 使い方 */}
-            <details className="border rounded-lg">
-                <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="BookOpen" size={18} className="text-blue-600" />
-                    使い方
-                    <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
-                </summary>
-                <div className="p-4 pt-0 border-t">
-                    <div className="space-y-4">
-                        <p className="text-sm text-gray-600 font-semibold">YourCoachの基本フロー</p>
-
-                        {/* フローチャート */}
-                        <div className="bg-white p-4 rounded-lg border-2 border-gray-200 space-y-3">
-                            {/* ステップ1 */}
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
-                                <div>
-                                    <p className="font-bold text-indigo-900">プロフィール設定</p>
-                                    <p className="text-xs text-gray-600">体重・体脂肪率・目標を入力→LBM自動計算→個別化基準値決定</p>
-                                </div>
-                            </div>
-                            <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
-
-                            {/* ステップ2 */}
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
-                                <div>
-                                    <p className="font-bold text-indigo-900">毎日の記録</p>
-                                    <p className="text-xs text-gray-600">食事・トレーニング・サプリを記録→PFC・ビタミン・ミネラル自動集計</p>
-                                </div>
-                            </div>
-                            <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
-
-                            {/* ステップ3 */}
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
-                                <div>
-                                    <p className="font-bold text-indigo-900">達成状況を確認</p>
-                                    <p className="text-xs text-gray-600">ダッシュボードで目標値との比較→不足栄養素を特定</p>
-                                </div>
-                            </div>
-                            <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
-
-                            {/* ステップ4 */}
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">4</div>
-                                <div>
-                                    <p className="font-bold text-indigo-900">調整・最適化</p>
-                                    <p className="text-xs text-gray-600">食事内容を調整→1-12週間サイクルで継続</p>
-                                </div>
-                            </div>
-                            <div className="flex justify-center"><Icon name="ArrowDown" size={20} className="text-indigo-400" /></div>
-
-                            {/* ステップ5 */}
-                            <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm">✓</div>
-                                <div>
-                                    <p className="font-bold text-green-900">目標達成</p>
-                                    <p className="text-xs text-gray-600">理想の身体へ→65日継続でキープ</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </details>
-
             {/* プレミアム */}
             <details className="border rounded-lg border-amber-200 bg-[#FFF59A]/10">
                 <summary className="cursor-pointer p-4 hover:bg-amber-100 font-medium flex items-center gap-2">
@@ -503,39 +742,36 @@ const BasicTab = ({
                                 );
                             }
                         })()}
-                    </div>
-                </div>
-            </details>
 
-            {/* 友達紹介 */}
-            <details id="referral" className="border rounded-lg">
-                <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="Gift" size={18} className="text-pink-600" />
-                    友達紹介で特典ゲット
-                    <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
-                </summary>
-                <div className="p-4 pt-0 border-t border-pink-200">
-                    <div className="space-y-4">
-                        {/* 紹介特典の説明 */}
-                        <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 rounded-lg border border-pink-200">
+                        {/* 友達紹介 */}
+                        <div className="border-t border-amber-200 pt-4 mt-4">
                             <div className="flex items-center gap-2 mb-3">
-                                <Icon name="Sparkles" size={20} className="text-pink-600" />
-                                <h3 className="font-bold text-gray-800">紹介特典</h3>
+                                <Icon name="Gift" size={18} className="text-pink-600" />
+                                <h4 className="font-bold text-gray-800">友達紹介で特典ゲット</h4>
                             </div>
-                            <div className="space-y-2 text-sm text-gray-600">
-                                <div className="flex items-start gap-2">
-                                    <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
-                                    <span><strong>友達:</strong> 50回分の分析クレジット</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
-                                    <span><strong>あなた:</strong> 50回分の分析クレジット</span>
+                            <div className="bg-pink-50 p-4 rounded-lg border border-pink-200 mb-4">
+                                <div className="space-y-2 text-sm text-gray-600">
+                                    <div className="flex items-start gap-2">
+                                        <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                        <span><strong>友達:</strong> 50回分の分析クレジット</span>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                        <span><strong>あなた:</strong> 50回分の分析クレジット</span>
+                                    </div>
                                 </div>
                             </div>
+                            <ReferralCodeSection userProfile={userProfile} userId={userId} />
                         </div>
 
-                        {/* 紹介コード表示・生成 */}
-                        <ReferralCodeSection userProfile={userProfile} userId={userId} />
+                        {/* コード入力 */}
+                        <div className="border-t border-amber-200 pt-4 mt-4">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Icon name="Key" size={18} className="text-purple-600" />
+                                <h4 className="font-bold text-gray-800">コード入力</h4>
+                            </div>
+                            <CodeInputSection userId={userId} userProfile={userProfile} />
+                        </div>
                     </div>
                 </div>
             </details>
@@ -543,7 +779,7 @@ const BasicTab = ({
             {/* アカウント */}
             <details id="account" className="border rounded-lg">
                 <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="UserCircle" size={18} className="text-blue-600" />
+                    <Icon name="UserCircle" size={18} className="text-[#4A9EFF]" />
                     アカウント
                     <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                 </summary>
@@ -1159,7 +1395,7 @@ const BasicTab = ({
             {/* プロフィール */}
             <details className="border rounded-lg">
                 <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="User" size={18} className="text-blue-600" />
+                    <Icon name="User" size={18} className="text-[#4A9EFF]" />
                     プロフィール
                     <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                 </summary>
@@ -1814,7 +2050,7 @@ const BasicTab = ({
                             </div>
                     <button
                         onClick={handleSave}
-                        className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition"
+                        className="w-full bg-[#4A9EFF] text-white font-bold py-2.5 rounded-lg hover:bg-[#3b8fef] transition"
                     >
                         保存
                     </button>

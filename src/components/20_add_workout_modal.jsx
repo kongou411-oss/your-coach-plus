@@ -484,7 +484,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                             <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
                                 <div className="bg-white rounded-2xl w-full max-w-md max-h-[70vh] overflow-hidden flex flex-col">
                                     {/* ヘッダー */}
-                                    <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center">
+                                    <div className="bg-purple-600 text-white p-4 flex justify-between items-center">
                                         <h3 className="text-lg font-bold flex items-center gap-2">
                                             <Icon name="BookMarked" size={20} />
                                             テンプレートから選択
@@ -679,7 +679,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                             <div className="fixed inset-0 bg-black bg-opacity-60 z-[70] flex items-center justify-center p-4">
                                 <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto">
                                     {/* ヘッダー */}
-                                    <div className="bg-gradient-to-r from-[#4A9EFF] to-[#3B82F6] text-white p-4 flex justify-between items-center sticky top-0">
+                                    <div className="bg-[#4A9EFF] text-white p-4 flex justify-between items-center sticky top-0">
                                         <h3 className="text-lg font-bold flex items-center gap-2">
                                             <Icon name="Info" size={20} />
                                             テンプレートについて
@@ -734,7 +734,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                         </div>
 
                                         {/* Premium会員の特典 */}
-                                        <div className="bg-gradient-to-r from-[#FFF59A] to-[#FFF176] border border-amber-300 rounded-lg p-4">
+                                        <div className="bg-amber-100 border border-amber-300 rounded-lg p-4">
                                             <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
                                                 <Icon name="Crown" size={18} className="text-amber-600" />
                                                 Premium会員の特典
@@ -817,7 +817,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                             <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
                                 <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[70vh] overflow-hidden flex flex-col">
                                     {/* ヘッダー */}
-                                    <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-500 text-white p-4 rounded-t-2xl z-10">
+                                    <div className="sticky top-0 bg-orange-600 text-white p-4 rounded-t-2xl z-10">
                                         <div className="flex justify-between items-center mb-3">
                                             <h3 className="text-lg font-bold flex items-center gap-2">
                                                 <Icon name="Search" size={20} />
@@ -1541,7 +1541,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
 【入力方法】
 RM回数と重量を別々に入力してください。`
                                                 })}
-                                                className="text-indigo-600 hover:text-indigo-800"
+                                                className="text-[#4A9EFF] hover:text-[#3b8fef]"
                                             >
                                                 <Icon name="Info" size={14} />
                                             </button>
@@ -1592,7 +1592,7 @@ RM回数と重量を別々に入力してください。`
 【オプション】
 この項目は任意入力です。空欄の場合は他のパラメータから消費カロリーを算出します。`
                                                 })}
-                                                className="text-indigo-600 hover:text-indigo-800"
+                                                className="text-[#4A9EFF] hover:text-[#3b8fef]"
                                             >
                                                 <Icon name="Info" size={14} />
                                             </button>
@@ -2036,7 +2036,7 @@ RM回数と重量を別々に入力してください。`
                         <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4">
                             <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                                 {/* ヘッダー */}
-                                <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-red-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                                <div className="sticky top-0 bg-orange-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
                                     <h3 className="text-lg font-bold flex items-center gap-2">
                                         <Icon name="Dumbbell" size={20} />
                                         運動記録の使い方
@@ -2141,17 +2141,17 @@ RM回数と重量を別々に入力してください。`
                                     {/* 総重量と総時間 */}
                                     <div className="space-y-3">
                                         <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                                            <Icon name="BarChart3" size={20} className="text-indigo-600" />
+                                            <Icon name="BarChart3" size={20} className="text-[#4A9EFF]" />
                                             総重量と総時間の表示
                                         </h4>
-                                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                                            <p className="font-semibold text-indigo-900 mb-2">
+                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                            <p className="font-semibold text-blue-900 mb-2">
                                                 運動セクションの見出し横に表示
                                             </p>
-                                            <p className="text-sm text-indigo-800 mb-3">
+                                            <p className="text-sm text-blue-800 mb-3">
                                                 その日の筋トレ総重量（kg）と全運動の総時間（分）が自動で集計されて表示されます。
                                             </p>
-                                            <div className="bg-white rounded p-3 text-sm text-gray-700 border border-indigo-300 space-y-1">
+                                            <div className="bg-white rounded p-3 text-sm text-gray-700 border border-blue-300 space-y-1">
                                                 <p className="text-xs"><strong>総重量:</strong> すべての筋トレ種目の「重量×回数×セット数」の合計</p>
                                                 <p className="text-xs"><strong>総時間:</strong> すべての運動の時間の合計</p>
                                             </div>
@@ -2162,7 +2162,7 @@ RM回数と重量を別々に入力してください。`
                                     <div className="pt-4 border-t">
                                         <button
                                             onClick={() => setShowWorkoutInfoModal(false)}
-                                            className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold py-3 rounded-lg hover:from-orange-700 hover:to-red-700 transition"
+                                            className="w-full bg-orange-600 text-white font-bold py-3 rounded-lg hover:bg-orange-700 transition"
                                         >
                                             閉じる
                                         </button>

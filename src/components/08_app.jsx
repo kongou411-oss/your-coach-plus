@@ -2,6 +2,7 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import { GlobalConfirmModal } from './00_confirm_modal.jsx';
 import { isNativeApp, initPushNotifications, createNotificationChannel, initBackButtonHandler, removeBackButtonHandler } from '../capacitor-push';
+import { BiometricAuthService } from '../biometric-auth.js';
 
 // ===== Guide Modal Component =====
 const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId, onClose }) => {
@@ -62,7 +63,7 @@ const WhatsNewModal = ({ show, version, releaseNote, onClose }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden slide-up">
                 {/* ヘッダー */}
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 text-center relative">
+                <div className="bg-[#4A9EFF] text-white p-6 text-center relative">
                     <button
                         onClick={onClose}
                         className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition"
@@ -79,9 +80,9 @@ const WhatsNewModal = ({ show, version, releaseNote, onClose }) => {
                 {/* コンテンツ */}
                 <div className="p-6 space-y-4">
                     {/* リリース情報 */}
-                    <div className="border-l-4 border-indigo-500 pl-4">
+                    <div className="border-l-4 border-[#4A9EFF] pl-4">
                         <div className="mb-2">
-                            <div className="font-bold text-indigo-600 mb-1">{releaseNote.title}</div>
+                            <div className="font-bold text-[#4A9EFF] mb-1">{releaseNote.title}</div>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm text-gray-500">{releaseNote.date}</span>
                                 {releaseNote.badge && (
@@ -107,7 +108,7 @@ const WhatsNewModal = ({ show, version, releaseNote, onClose }) => {
                     <div className="space-y-2">
                         <button
                             onClick={onClose}
-                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 rounded-lg hover:opacity-90 transition"
+                            className="w-full bg-[#4A9EFF] text-white font-bold py-3 rounded-lg hover:bg-[#3b8fef] transition"
                         >
                             始める
                         </button>
@@ -115,7 +116,7 @@ const WhatsNewModal = ({ show, version, releaseNote, onClose }) => {
                             href="/home.html#release-notes"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full flex items-center justify-center gap-2 py-2 text-sm text-indigo-600 hover:text-indigo-700 transition"
+                            className="w-full flex items-center justify-center gap-2 py-2 text-sm text-[#4A9EFF] hover:text-[#3b8fef] transition"
                         >
                             <Icon name="ExternalLink" size={14} />
                             <span>過去のリリースノートを見る</span>
@@ -290,6 +291,10 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
             // What's New モーダル
             const [showWhatsNew, setShowWhatsNew] = useState(false);
+
+            // 生体認証関連
+            const [biometricLocked, setBiometricLocked] = useState(false); // 認証待ち状態
+            const [biometricChecking, setBiometricChecking] = useState(true); // 認証チェック中
 
             // ローカルタイムゾーンで今日の日付を取得
             const getTodayDate = () => {
@@ -815,6 +820,40 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                 window.addEventListener('message', handleMessage);
                 return () => window.removeEventListener('message', handleMessage);
             }, [user, userProfile]);
+
+            // 生体認証チェック（アプリ起動時）
+            useEffect(() => {
+                const checkBiometricAuth = async () => {
+                    // 生体認証が有効な場合のみチェック
+                    if (BiometricAuthService.isEnabled() && BiometricAuthService.isNative()) {
+                        setBiometricLocked(true);
+                        setBiometricChecking(false);
+
+                        const result = await BiometricAuthService.authenticate();
+                        if (result.success) {
+                            setBiometricLocked(false);
+                        } else {
+                            // 認証失敗時はロック状態を維持
+                            toast.error(result.error || '認証に失敗しました');
+                        }
+                    } else {
+                        setBiometricLocked(false);
+                        setBiometricChecking(false);
+                    }
+                };
+
+                checkBiometricAuth();
+            }, []);
+
+            // 生体認証の再試行
+            const handleRetryBiometric = async () => {
+                const result = await BiometricAuthService.authenticate();
+                if (result.success) {
+                    setBiometricLocked(false);
+                } else {
+                    toast.error(result.error || '認証に失敗しました');
+                }
+            };
 
             // 認証状態監視
             useEffect(() => {
@@ -1576,7 +1615,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
                         <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-hidden slide-up" onClick={(e) => e.stopPropagation()}>
                             {/* ヘッダー */}
-                            <div className="sticky top-0 bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 flex justify-between items-center z-10">
+                            <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 flex justify-between items-center z-10">
                                 <h3 className="font-bold text-lg">{infoModal.title}</h3>
                                 <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
                                     <Icon name="X" size={20} />
@@ -1610,7 +1649,34 @@ const CookieConsentBanner = ({ show, onAccept }) => {
             };
 
             // ログイン画面
-            if (loading) {
+            // 生体認証ロック画面
+            if (biometricLocked && !biometricChecking) {
+                return (
+                    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
+                        <div className="text-center p-8">
+                            <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Icon name="Lock" size={48} className="text-white" />
+                            </div>
+                            <h1 className="text-2xl font-bold text-white mb-2">Your Coach+</h1>
+                            <p className="text-gray-400 mb-8">認証が必要です</p>
+
+                            <button
+                                onClick={handleRetryBiometric}
+                                className="flex items-center gap-3 mx-auto px-8 py-4 bg-green-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition transform hover:scale-105"
+                            >
+                                <Icon name="Fingerprint" size={24} />
+                                <span>生体認証でロック解除</span>
+                            </button>
+
+                            <p className="text-gray-500 text-sm mt-6">
+                                指紋または顔認証で本人確認を行ってください
+                            </p>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (loading || biometricChecking) {
                 return (
                     <div className="flex items-center justify-center min-h-screen">
                         <div className="text-center">
@@ -1753,14 +1819,14 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                         return (
                                             <button
                                                 onClick={() => handleDateChange(todayStr)}
-                                                className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition font-medium"
+                                                className="text-xs px-2 py-1 bg-blue-100 text-[#4A9EFF] rounded-full hover:bg-blue-200 transition font-medium"
                                             >
                                                 今日へ
                                             </button>
                                         );
                                     } else {
                                         return (
-                                            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">今日</span>
+                                            <span className="text-xs bg-blue-100 text-[#4A9EFF] px-2 py-1 rounded-full">今日</span>
                                         );
                                     }
                                 })()}
@@ -1818,7 +1884,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 {/* ヘッダー */}
-                                <div className="bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 flex items-center justify-between">
+                                <div className="bg-[#4A9EFF] text-white p-4 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Icon name="Calendar" size={24} />
                                         <h3 className="font-bold text-lg">日付を選択</h3>
@@ -1867,9 +1933,9 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                                     }}
                                                     className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition
                                                         ${isSelected
-                                                            ? 'bg-indigo-600 text-white shadow-md'
+                                                            ? 'bg-[#4A9EFF] text-white shadow-md'
                                                             : isToday
-                                                            ? 'bg-indigo-100 text-indigo-700 font-bold'
+                                                            ? 'bg-blue-100 text-[#4A9EFF] font-bold'
                                                             : 'hover:bg-gray-100 text-gray-600'
                                                         }
                                                     `}
@@ -1941,7 +2007,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                                         handleDateChange(todayStr);
                                                         setShowDatePicker(false);
                                                     }}
-                                                    className="w-full mt-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                                                    className="w-full mt-4 py-2 bg-[#4A9EFF] text-white rounded-lg hover:bg-[#3b8fef] transition font-medium"
                                                 >
                                                     今日に戻る
                                                 </button>
@@ -1956,24 +2022,24 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     {/* ルーティンガイドモーダル */}
                     {showRoutineGuideModal && (
                         <div
-                            className="fixed inset-0 bg-black bg-opacity-30 z-50 flex items-center justify-center p-4"
+                            className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4"
                             onClick={() => setShowRoutineGuideModal(false)}
                         >
                             <div
-                                className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+                                className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 {/* ヘッダー */}
-                                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Icon name="HelpCircle" size={24} />
-                                        <h3 className="font-bold text-lg">ルーティンの使い方</h3>
-                                    </div>
+                                <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                        <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+                                        ルーティンの使い方
+                                    </h3>
                                     <button
                                         onClick={() => setShowRoutineGuideModal(false)}
-                                        className="hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition"
+                                        className="p-1 hover:bg-gray-100 rounded-full transition"
                                     >
-                                        <Icon name="X" size={20} />
+                                        <Icon name="X" size={20} className="text-gray-500" />
                                     </button>
                                 </div>
 
@@ -2014,7 +2080,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                         <p className="text-sm text-gray-600">
                                             初回登録時に自動設定される7日間の分割法：
                                         </p>
-                                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg">
+                                        <div className="bg-blue-50 p-3 rounded-lg">
                                             <div className="grid grid-cols-1 gap-2 text-sm">
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-bold text-blue-600">Day 1:</span>
@@ -2065,16 +2131,6 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                             設定を変更しない限り、7日間のサイクルが自動で繰り返されます。
                                         </p>
                                     </div>
-                                </div>
-
-                                {/* フッター */}
-                                <div className="p-4 bg-gray-50 border-t flex justify-end">
-                                    <button
-                                        onClick={() => setShowRoutineGuideModal(false)}
-                                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                                    >
-                                        閉じる
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -3290,7 +3346,7 @@ ${aiInputText}
                     {showStageInfo && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowStageInfo(false)}>
                             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                                <div className="sticky top-0 bg-gradient-to-r from-sky-500 to-blue-600 text-white p-6 rounded-t-2xl">
+                                <div className="sticky top-0 bg-[#4A9EFF] text-white p-6 rounded-t-2xl">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
@@ -3506,7 +3562,7 @@ AIコーチなどの高度な機能が解放されます。
                                         (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history_graph')) ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 >
-                                    <Icon name="Calendar" size={18} className="text-indigo-600" />
+                                    <Icon name="Calendar" size={18} className="text-[#4A9EFF]" />
                                     <span className="text-xs text-gray-600">履歴</span>
                                     {!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history_graph')) && (
                                         <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
@@ -3670,12 +3726,12 @@ AIコーチなどの高度な機能が解放されます。
                                         setBottomBarExpanded(false);
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
-                                        showHistoryV10 ? 'bg-indigo-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history')) ? 'hover:bg-gray-50 active:bg-gray-100' : 'opacity-50')
+                                        showHistoryV10 ? 'bg-blue-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history')) ? 'hover:bg-gray-50 active:bg-gray-100' : 'opacity-50')
                                     }`}
                                     style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                 >
-                                    <Icon name="TrendingUp" size={20} className={showHistoryV10 ? 'text-indigo-700' : 'text-indigo-600'} />
-                                    <span className={`text-xs font-medium ${showHistoryV10 ? 'text-indigo-700' : 'text-gray-600'}`}>
+                                    <Icon name="TrendingUp" size={20} className={showHistoryV10 ? 'text-[#3b8fef]' : 'text-[#4A9EFF]'} />
+                                    <span className={`text-xs font-medium ${showHistoryV10 ? 'text-[#3b8fef]' : 'text-gray-600'}`}>
                                         履歴
                                     </span>
                                 </button>
@@ -3797,7 +3853,7 @@ AIコーチなどの高度な機能が解放されます。
                         title="コンディションを記録しましょう！"
                         message="OKボタンをタップするとコンディション記録セクションに遷移します。&#10;睡眠時間・睡眠の質・腸内環境・集中力・ストレスの5項目を記録してください。"
                         iconName="HeartPulse"
-                        iconColor="bg-indigo-100"
+                        iconColor="bg-blue-100"
                         targetSectionId="condition-section"
                         onClose={() => setShowConditionGuide(false)}
                     />
@@ -3826,7 +3882,7 @@ AIコーチなどの高度な機能が解放されます。
                     {showCreditWarning && (
                         <div className="fixed inset-0 bg-black/70 z-[10001] flex items-center justify-center p-4">
                             <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
-                                <div className="bg-gradient-to-r from-red-500 to-pink-500 p-6 text-center">
+                                <div className="bg-red-500 p-6 text-center">
                                     <Icon name="AlertCircle" size={48} className="text-white mx-auto mb-3" />
                                     <h2 className="text-2xl font-bold text-white mb-2">クレジットが不足しています</h2>
                                     <p className="text-white/90 text-sm">AI機能（分析・写真解析）を利用するにはクレジットが必要です</p>
@@ -3846,7 +3902,7 @@ AIコーチなどの高度な機能が解放されます。
                                                 <span><strong>リワード</strong>：10/20/30...レベル到達で10クレジット</span>
                                             </li>
                                             <li className="flex items-start gap-2">
-                                                <Icon name="TrendingUp" size={16} className="text-indigo-600 flex-shrink-0 mt-0.5" />
+                                                <Icon name="TrendingUp" size={16} className="text-[#4A9EFF] flex-shrink-0 mt-0.5" />
                                                 <span><strong>経験値獲得</strong>：食事・運動・コンディションを記録して分析実行</span>
                                             </li>
                                         </ul>

@@ -454,7 +454,7 @@ const LoginScreen = () => {
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-transparent"
                             required
                             autocomplete="email"
                         />
@@ -466,7 +466,7 @@ const LoginScreen = () => {
                                 type={showPassword ? 'text' : 'password'}
                                 value={password}
                                 onChange={handlePasswordChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-transparent pr-10"
                                 required
                                 minLength={isSignUp ? 8 : 6}
                                 autocomplete={isSignUp ? 'new-password' : 'current-password'}

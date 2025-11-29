@@ -1179,7 +1179,7 @@ const FeaturesTab = ({
                                                         type="text"
                                                         value={routine.name}
                                                         onChange={(e) => updateRoutine(routine.id, { name: e.target.value })}
-                                                        className="font-bold text-indigo-600 bg-transparent border-b border-indigo-300 focus:outline-none w-32"
+                                                        className="font-bold text-[#4A9EFF] bg-transparent border-b border-blue-300 focus:outline-none w-32"
                                                     />
                                                     <label className="flex items-center gap-2 text-sm">
                                                         <input
@@ -1394,7 +1394,7 @@ const FeaturesTab = ({
                                                             type="text"
                                                             value={routine.name}
                                                             onChange={(e) => updateRoutine(routine.id, { name: e.target.value })}
-                                                            className="font-bold text-indigo-600 bg-transparent border-b border-indigo-300 focus:outline-none"
+                                                            className="font-bold text-[#4A9EFF] bg-transparent border-b border-blue-300 focus:outline-none"
                                                         />
                                                         <button
                                                             onClick={() => deleteRoutine(routine.id)}
@@ -1622,7 +1622,7 @@ const FeaturesTab = ({
                                     <div className="flex gap-3 pt-4 border-t">
                                         <button
                                             onClick={() => setShowRestartModal(true)}
-                                            className="w-full px-4 py-3 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-medium border border-indigo-200"
+                                            className="w-full px-4 py-3 bg-blue-50 text-[#4A9EFF] rounded-lg hover:bg-blue-100 transition font-medium border border-blue-200"
                                         >
                                             <Icon name="RotateCcw" size={18} className="inline mr-2" />
                                             任意の日から再開

@@ -444,7 +444,7 @@ ${context}
         return (
             <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
                 {/* ヘッダー */}
-                <div className="bg-gradient-to-r from-cyan-600 to-cyan-500 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
+                <div className="bg-cyan-600 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
                     <button onClick={() => setSelectedModule(null)} className="p-2 hover:bg-white/20 rounded-lg transition">
                         <Icon name="ArrowLeft" size={24} />
                     </button>
@@ -474,7 +474,7 @@ ${context}
     return (
         <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
             {/* ヘッダー */}
-            <div className="bg-gradient-to-r from-cyan-600 to-cyan-500 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
+            <div className="bg-cyan-600 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
                 <div className="flex items-center gap-3">
                     <Icon name="BookOpen" size={24} />
                     <div>
@@ -536,7 +536,7 @@ ${context}
                             { value: '心理学', label: '心理学', icon: 'Brain', color: 'pink' },
                             { value: '栄養学', label: '栄養学', icon: 'Apple', color: 'green' },
                             { value: '運動科学', label: '運動科学', icon: 'Zap', color: 'orange' },
-                            { value: 'リカバリー', label: 'リカバリー', icon: 'Moon', color: 'indigo' }
+                            { value: 'リカバリー', label: 'リカバリー', icon: 'Moon', color: 'purple' }
                         ].map(cat => (
                             <button
                                 key={cat.value}
@@ -544,10 +544,10 @@ ${context}
                                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium text-sm transition ${
                                     selectedCategory === cat.value
                                         ? cat.color === 'sky' ? 'bg-[#4A9EFF] text-white' :
-                                          cat.color === 'pink' ? 'bg-sky-600 text-white' :
+                                          cat.color === 'pink' ? 'bg-pink-600 text-white' :
                                           cat.color === 'green' ? 'bg-green-600 text-white' :
                                           cat.color === 'orange' ? 'bg-orange-600 text-white' :
-                                          cat.color === 'indigo' ? 'bg-indigo-600 text-white' :
+                                          cat.color === 'purple' ? 'bg-purple-600 text-white' :
                                           'bg-cyan-600 text-white'
                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
@@ -591,10 +591,10 @@ ${context}
                                 <div className="flex items-start gap-3 mb-3">
                                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                                         module.category === '公式ガイド' ? 'bg-[#4A9EFF]' :
-                                        module.category === '心理学' ? 'bg-gradient-to-br from-pink-500 to-rose-500' :
-                                        module.category === '運動科学' ? 'bg-gradient-to-br from-orange-500 to-red-500' :
-                                        module.category === 'リカバリー' ? 'bg-gradient-to-br from-indigo-500 to-purple-500' :
-                                        'bg-gradient-to-br from-green-500 to-emerald-500'
+                                        module.category === '心理学' ? 'bg-pink-600' :
+                                        module.category === '運動科学' ? 'bg-orange-600' :
+                                        module.category === 'リカバリー' ? 'bg-purple-600' :
+                                        'bg-green-600'
                                     }`}>
                                         <Icon name={module.icon} size={24} className="text-white" />
                                     </div>
@@ -613,10 +613,10 @@ ${context}
                                             )}
                                         </div>
                                         <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                            module.category === '公式ガイド' ? 'bg-sky-100 text-[#4A9EFF]' :
-                                            module.category === '心理学' ? 'bg-sky-100 text-sky-700' :
+                                            module.category === '公式ガイド' ? 'bg-blue-100 text-[#4A9EFF]' :
+                                            module.category === '心理学' ? 'bg-pink-100 text-pink-700' :
                                             module.category === '運動科学' ? 'bg-orange-100 text-orange-700' :
-                                            module.category === 'リカバリー' ? 'bg-indigo-100 text-indigo-700' :
+                                            module.category === 'リカバリー' ? 'bg-purple-100 text-purple-700' :
                                             'bg-green-100 text-green-700'
                                         }`}>
                                             {module.category}
@@ -1008,7 +1008,7 @@ ${context}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-lg bg-purple-600 flex items-center justify-center">
                                 <Icon name={purchaseTargetModule.icon} size={24} className="text-white" />
                             </div>
                             <div>
@@ -1850,7 +1850,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 </header>
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {/* 過去30日間の平均データ表示 */}
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
                             <Icon name="TrendingUp" size={18} />
                             過去{autoFetchedData?.history?.daysCount || 30}日間の平均
@@ -1926,7 +1926,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                             <p className="text-xs text-gray-600">運動時間 (分)</p>
                                         </div>
                                         <div>
-                                            <p className="text-lg font-bold text-indigo-600">{autoFetchedData.history.totalSets}</p>
+                                            <p className="text-lg font-bold text-[#4A9EFF]">{autoFetchedData.history.totalSets}</p>
                                             <p className="text-xs text-gray-600">セット数</p>
                                         </div>
                                         {autoFetchedData.history.sleepHours && (
@@ -2378,7 +2378,7 @@ const AdminPanel = ({ onClose }) => {
     return (
         <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
             {/* ヘッダー */}
-            <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
+            <div className="bg-red-600 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
                 <div className="flex items-center gap-3">
                     <Icon name="Shield" size={24} />
                     <div>
@@ -2921,7 +2921,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
     return (
         <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
             {/* ヘッダー */}
-            <div className="bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
+            <div className="bg-fuchsia-600 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
                 <div className="flex items-center gap-3">
                     <Icon name="Users" size={24} />
                     <div>

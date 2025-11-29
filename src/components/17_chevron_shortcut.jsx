@@ -71,7 +71,7 @@ const ChevronShortcut = ({ shortcuts, onShortcutClick }) => {
             'open_workout': 'text-orange-600',
             'open_idea': 'text-yellow-500',
             'open_analysis': 'text-indigo-600',
-            'open_history': 'text-indigo-600',
+            'open_history': 'text-[#4A9EFF]',
             'open_pgbase': 'text-cyan-600',
             'open_community': 'text-fuchsia-600',
             'open_settings': 'text-gray-600'

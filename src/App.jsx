@@ -1,5 +1,6 @@
 import React from 'react'
 import { Toaster } from 'react-hot-toast'
+import { Capacitor } from '@capacitor/core'
 
 // 全コンポーネントをインポート
 // 注: config.js, utils.js等はindex.htmlで<script>タグとして読み込まれているため、
@@ -26,6 +27,9 @@ import './components/20_add_workout_modal.jsx'
 import './components/22_template_guide_modal.jsx'
 import './components/08_app.jsx'
 
+// ネイティブアプリかどうか判定
+const isNativeApp = Capacitor.isNativePlatform();
+
 // Appコンポーネントはwindow.Appとして公開されている
 function AppWrapper() {
   if (typeof window.App !== 'undefined' && typeof window.GlobalConfirmModal !== 'undefined') {
@@ -38,6 +42,8 @@ function AppWrapper() {
           reverseOrder={false}
           containerStyle={{
             zIndex: 10001,
+            // ネイティブアプリ時はステータスバー分下げる
+            top: isNativeApp ? 'env(safe-area-inset-top, 24px)' : 0,
           }}
           toastOptions={{
             duration: 3000,

@@ -210,13 +210,18 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
         } catch (error) {
             console.error('[Analysis] Credit error:', error);
             setLoading(false);
-            toast.error('クレジット確認中にエラーが発生しました');
+            toast.error(`クレジット確認エラー: ${error.message}`);
             onClose();
-            return; // ここで関数全体を終了
+            return;
         }
 
         // 初回分析判定: analysisが完了済みかチェック
-        const isAnalysisCompleted = await isFeatureCompleted(userId, 'analysis');
+        let isAnalysisCompleted = false;
+        try {
+            isAnalysisCompleted = window.isFeatureCompleted ? await window.isFeatureCompleted(userId, 'analysis') : false;
+        } catch (error) {
+            toast.error(`機能完了チェックエラー: ${error.message}`);
+        }
         const firstAnalysisFlag = !isAnalysisCompleted; // analysis未完了なら初回
         setIsFirstAnalysis(firstAnalysisFlag);
 
@@ -1000,32 +1005,32 @@ ${section2Prompt}
         }
 
         // 分析完了をマーク
-        await markFeatureCompleted(userId, 'analysis');
+        if (window.markFeatureCompleted) await window.markFeatureCompleted(userId, 'analysis');
 
         // 初回分析後：分析完了後に開放される4機能をマーク
         // 閃き、履歴、PGBASE、コミュニティのみ
-        const ideaCompleted = await isFeatureCompleted(userId, 'idea');
-        const historyCompleted = await isFeatureCompleted(userId, 'history');
-        const pgBaseCompleted = await isFeatureCompleted(userId, 'pg_base');
-        const communityCompleted = await isFeatureCompleted(userId, 'community');
+        const ideaCompleted = window.isFeatureCompleted ? await window.isFeatureCompleted(userId, 'idea') : true;
+        const historyCompleted = window.isFeatureCompleted ? await window.isFeatureCompleted(userId, 'history') : true;
+        const pgBaseCompleted = window.isFeatureCompleted ? await window.isFeatureCompleted(userId, 'pg_base') : true;
+        const communityCompleted = window.isFeatureCompleted ? await window.isFeatureCompleted(userId, 'community') : true;
 
         // 未開放の機能を開放
         if (!ideaCompleted || !historyCompleted || !pgBaseCompleted || !communityCompleted) {
             // 閃き
-            if (!ideaCompleted) {
-                await markFeatureCompleted(userId, 'idea');
+            if (!ideaCompleted && window.markFeatureCompleted) {
+                await window.markFeatureCompleted(userId, 'idea');
             }
             // 履歴
-            if (!historyCompleted) {
-                await markFeatureCompleted(userId, 'history');
+            if (!historyCompleted && window.markFeatureCompleted) {
+                await window.markFeatureCompleted(userId, 'history');
             }
             // PG BASE
-            if (!pgBaseCompleted) {
-                await markFeatureCompleted(userId, 'pg_base');
+            if (!pgBaseCompleted && window.markFeatureCompleted) {
+                await window.markFeatureCompleted(userId, 'pg_base');
             }
             // コミュニティ
-            if (!communityCompleted) {
-                await markFeatureCompleted(userId, 'community');
+            if (!communityCompleted && window.markFeatureCompleted) {
+                await window.markFeatureCompleted(userId, 'community');
             }
 
             // 機能開放後、App.jsのunlockedFeaturesを即座に更新
@@ -1298,7 +1303,7 @@ ${conversationContext}
     // ローディング中、またはデータ取得中
     if (loading) {
         return (
-            <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-cyan-50 z-50 flex items-center justify-center p-6 fullscreen-view">
+            <div className="fixed inset-0 bg-indigo-50 z-50 flex items-center justify-center p-6 fullscreen-view">
                 <div className="text-center">
                     {/* ローディングスピナー */}
                     <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
@@ -1312,7 +1317,7 @@ ${conversationContext}
     if (!analysis) {
         return (
             <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
-                <header className="p-4 flex items-center justify-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0 relative native-safe-header">
+                <header className="p-4 flex items-center justify-center border-b bg-indigo-600 flex-shrink-0 relative native-safe-header">
                     <button onClick={handleClose} className="absolute left-4 text-white">
                         <Icon name="ArrowLeft" size={24} />
                     </button>
@@ -1330,7 +1335,7 @@ ${conversationContext}
 
     return (
         <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col fullscreen-view">
-            <header className="p-4 flex items-center justify-center border-b bg-gradient-to-r from-sky-500 to-blue-600 flex-shrink-0 sticky top-0 z-30 relative native-safe-header">
+            <header className="p-4 flex items-center justify-center border-b bg-indigo-600 flex-shrink-0 sticky top-0 z-30 relative native-safe-header">
                 <button onClick={handleClose} className="absolute left-4 text-white">
                     <Icon name="ArrowLeft" size={24} />
                 </button>
@@ -1835,17 +1840,18 @@ ${conversationContext}
             {/* ヘルプモーダル */}
             {showHelpModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={() => setShowHelpModal(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        {/* ヘッダー */}
+                        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="HelpCircle" size={24} style={{color: '#4A9EFF'}} />
+                                <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
                                 質問機能の使い方
                             </h3>
-                            <button onClick={() => setShowHelpModal(false)} className="text-gray-400 hover:text-gray-600">
-                                <Icon name="X" size={20} />
+                            <button onClick={() => setShowHelpModal(false)} className="p-1 hover:bg-gray-100 rounded-full transition">
+                                <Icon name="X" size={20} className="text-gray-500" />
                             </button>
                         </div>
-                        <div className="space-y-3 text-sm text-gray-600">
+                        <div className="p-6 space-y-3 text-sm text-gray-600">
                             <p className="font-medium text-indigo-600">💡 質問例</p>
                             <ul className="space-y-2 pl-4">
                                 <li className="flex items-start gap-2">
@@ -1876,17 +1882,18 @@ ${conversationContext}
             {/* クレジット消費説明モーダル */}
             {showCreditInfoModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={() => setShowCreditInfoModal(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        {/* ヘッダー */}
+                        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="Info" size={24} style={{color: '#4A9EFF'}} />
+                                <Icon name="Info" size={20} style={{color: '#4A9EFF'}} />
                                 クレジットについて
                             </h3>
-                            <button onClick={() => setShowCreditInfoModal(false)} className="text-gray-400 hover:text-gray-600">
-                                <Icon name="X" size={20} />
+                            <button onClick={() => setShowCreditInfoModal(false)} className="p-1 hover:bg-gray-100 rounded-full transition">
+                                <Icon name="X" size={20} className="text-gray-500" />
                             </button>
                         </div>
-                        <div className="space-y-4 text-sm text-gray-600">
+                        <div className="p-6 space-y-4 text-sm text-gray-600">
                             {/* クレジット消費ルール */}
                             <div>
                                 <p className="font-bold text-indigo-600 mb-2">📊 クレジット消費ルール</p>

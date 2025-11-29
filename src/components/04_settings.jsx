@@ -350,7 +350,7 @@ const SettingsView = ({
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex-1 min-w-[80px] px-4 py-3 flex flex-col items-center justify-center gap-1 transition ${
                                     activeTab === tab.id
-                                        ? 'border-b-2 border-indigo-600 text-indigo-600 font-medium'
+                                        ? 'border-b-2 border-[#4A9EFF] text-[#4A9EFF] font-medium'
                                         : 'text-gray-600 hover:bg-gray-50'
                                 }`}
                             >
@@ -463,7 +463,7 @@ const SettingsView = ({
         {infoModal.show && (
             <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
                 <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                    <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center z-10">
+                    <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 flex justify-between items-center z-10">
                         <h3 className="font-bold text-lg">{infoModal.title}</h3>
                         <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
                             <Icon name="X" size={20} />
@@ -480,7 +480,7 @@ const SettingsView = ({
         {visualGuideModal.show && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-pink-600 text-white p-4 flex justify-between items-center z-10">
+                    <div className="sticky top-0 bg-orange-600 text-white p-4 flex justify-between items-center z-10">
                         <h3 className="font-bold text-lg">外見から体脂肪率を推定</h3>
                         <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
                             <Icon name="X" size={20} />
@@ -553,7 +553,7 @@ const SettingsView = ({
                             </div>
                         </div>
 
-                        <div className="bg-gradient-to-r from-orange-50 to-pink-50 p-4 rounded-lg border border-orange-200">
+                        <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                             <p className="text-sm font-medium text-gray-600 mb-2">推定結果</p>
                             <p className="text-3xl font-bold text-orange-600">
                                 {LBMUtils.estimateBodyFatByAppearance(visualGuideModal.gender, visualGuideModal.selectedLevel).bodyFatPercentage}%
@@ -580,7 +580,7 @@ const SettingsView = ({
                                     setVisualGuideModal({ ...visualGuideModal, show: false });
                                     toast.success(`体脂肪率を ${estimate.bodyFatPercentage}% に設定しました`);
                                 }}
-                                className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-600 to-pink-600 text-white font-bold rounded-lg hover:opacity-90"
+                                className="flex-1 px-4 py-3 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700"
                             >
                                 この値を使用
                             </button>

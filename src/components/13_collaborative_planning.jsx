@@ -184,7 +184,7 @@ JSONのみを出力し、他のテキストは含めないでください。`;
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                 {/* ヘッダー */}
-                <div className="sticky top-0 bg-gradient-to-r from-sky-600 to-sky-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
                     <div>
                         <h3 className="text-lg font-bold flex items-center gap-2">
                             <Icon name="Lightbulb" size={20} />
@@ -238,7 +238,7 @@ JSONのみを出力し、他のテキストは含めないでください。`;
                     </div>
 
                     {/* コーチからの一言 */}
-                    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                         <div className="flex items-start gap-3">
                             <Icon name="MessageCircle" size={24} className="text-yellow-600 flex-shrink-0" />
                             <div>
@@ -268,7 +268,7 @@ JSONのみを出力し、他のテキストは含めないでください。`;
                         </button>
                         <button
                             onClick={savePlan}
-                            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition flex items-center justify-center gap-2"
+                            className="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
                         >
                             <Icon name="Save" size={18} />
                             このプランで決定

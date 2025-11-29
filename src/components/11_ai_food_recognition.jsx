@@ -2525,7 +2525,7 @@ JSON形式のみ出力、説明文不要`;
                             <button
                                 onClick={recognizeFood}
                                 disabled={recognizing}
-                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-4 rounded-xl hover:from-purple-700 hover:to-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="w-full bg-[#4A9EFF] text-white font-bold py-4 rounded-xl hover:bg-[#3b8fef] transition disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {recognizing ? (
                                     <>
@@ -2864,7 +2864,7 @@ JSON形式のみ出力、説明文不要`;
 
                             <button
                                 onClick={confirmFoods}
-                                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition"
+                                className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition"
                             >
                                 確定して記録
                             </button>
@@ -2890,25 +2890,25 @@ JSON形式のみ出力、説明文不要`;
 
             {/* 使い方説明モーダル */}
             {showInfoModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4" onClick={() => setShowInfoModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         {/* ヘッダー */}
-                        <div className="sticky top-0 text-white p-4 rounded-t-2xl flex justify-between items-center z-10" style={{ backgroundColor: '#4A9EFF' }}>
-                            <h3 className="text-lg font-bold flex items-center gap-2">
-                                <Icon name="Camera" size={20} />
+                        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
                                 写真解析の使い方
                             </h3>
                             <button
                                 onClick={() => setShowInfoModal(false)}
-                                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
+                                className="p-1 hover:bg-gray-100 rounded-full transition"
                             >
-                                <Icon name="X" size={20} />
+                                <Icon name="X" size={20} className="text-gray-500" />
                             </button>
                         </div>
 
                         <div className="p-6 space-y-6">
                             {/* 写真解析機能の説明 */}
-                            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl p-4">
+                            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
                                 <h4 className="font-bold text-blue-900 text-base flex items-center gap-2 mb-3">
                                     <Icon name="Sparkles" size={18} style={{ color: '#4A9EFF' }} />
                                     写真解析でできること
@@ -3159,16 +3159,6 @@ JSON形式のみ出力、説明文不要`;
                                         </p>
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* 閉じるボタン */}
-                            <div className="pt-4 border-t">
-                                <button
-                                    onClick={() => setShowInfoModal(false)}
-                                    className="w-full bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
-                                >
-                                    閉じる
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -3664,7 +3654,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                     {(food.needsManualHachiteiFetch || food.hachiteiFailed) && !food.isFetchingHachitei && (
                         <button
                             onClick={() => manualFetchHachitei(foodIndex)}
-                            className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold py-3 rounded-lg hover:from-blue-600 hover:to-indigo-600 transition flex items-center justify-center gap-2 mb-2"
+                            className="w-full bg-[#4A9EFF] text-white font-bold py-3 rounded-lg hover:bg-[#3b8fef] transition flex items-center justify-center gap-2 mb-2"
                         >
                             <Icon name="Search" size={18} />
                             {food.hachiteiFailed ? '栄養素を再検索' : '栄養素を自動検索'}

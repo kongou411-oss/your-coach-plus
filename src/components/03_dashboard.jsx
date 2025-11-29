@@ -280,7 +280,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                                 <div className="flex justify-between items-center">
                                     <div className="text-xs text-gray-600">ビタミン</div>
                                     <div className="flex items-center gap-2">
-                                        <div className="text-sm font-bold text-pink-600">{scores.food.vitamin || 0}</div>
+                                        <div className="text-sm font-bold text-orange-600">{scores.food.vitamin || 0}</div>
                                         <div className="text-xs text-gray-500">配点: 5%</div>
                                     </div>
                                 </div>
@@ -289,7 +289,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                                 <div className="flex justify-between items-center">
                                     <div className="text-xs text-gray-600">ミネラル</div>
                                     <div className="flex items-center gap-2">
-                                        <div className="text-sm font-bold text-indigo-600">{scores.food.mineral || 0}</div>
+                                        <div className="text-sm font-bold text-purple-600">{scores.food.mineral || 0}</div>
                                         <div className="text-xs text-gray-500">配点: 5%</div>
                                     </div>
                                 </div>
@@ -339,11 +339,14 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
             {/* 8軸評価基準モーダル */}
             {show8AxisGuide && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[10000]" onClick={() => setShow8AxisGuide(false)}>
-                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-gray-800">8軸評価基準について</h3>
-                            <button onClick={() => setShow8AxisGuide(false)} className="text-gray-500 hover:text-gray-700">
-                                <Icon name="X" size={24} />
+                    <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+                                8軸評価基準について
+                            </h3>
+                            <button onClick={() => setShow8AxisGuide(false)} className="p-1 hover:bg-gray-100 rounded-full transition">
+                                <Icon name="X" size={20} className="text-gray-500" />
                             </button>
                         </div>
                         <div className="p-6 space-y-6">
@@ -453,8 +456,8 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                                         </div>
                                     </div>
 
-                                    <div className="border-l-4 border-pink-600 pl-3">
-                                        <h5 className="font-semibold text-pink-600 mb-1">ビタミン（配点: 5%）</h5>
+                                    <div className="border-l-4 border-orange-600 pl-3">
+                                        <h5 className="font-semibold text-orange-600 mb-1">ビタミン（配点: 5%）</h5>
                                         <div className="text-sm text-gray-700 space-y-1">
                                             <p><strong>100点:</strong> 13種類のビタミン全ての平均達成率が100%</p>
                                             <p><strong>80〜99点:</strong> 平均達成率80〜100%</p>
@@ -464,8 +467,8 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                                         </div>
                                     </div>
 
-                                    <div className="border-l-4 border-indigo-600 pl-3">
-                                        <h5 className="font-semibold text-indigo-600 mb-1">ミネラル（配点: 5%）</h5>
+                                    <div className="border-l-4 border-purple-600 pl-3">
+                                        <h5 className="font-semibold text-purple-600 mb-1">ミネラル（配点: 5%）</h5>
                                         <div className="text-sm text-gray-700 space-y-1">
                                             <p><strong>100点:</strong> 13種類のミネラル全ての平均達成率が100%</p>
                                             <p><strong>80〜99点:</strong> 平均達成率80〜100%</p>
@@ -1605,7 +1608,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                     if (!hasAccess) {
                         return (
-                            <div className="mt-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-lg p-4">
+                            <div className="mt-4 bg-amber-50 border-2 border-amber-300 rounded-lg p-4">
                                 <div className="flex items-center gap-3 mb-2">
                                     <Icon name="Lock" size={20} className="text-amber-600" />
                                     <h4 className="text-sm font-bold text-amber-900">詳細栄養素（Premium専用）</h4>
@@ -1615,7 +1618,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 </p>
                                 <button
                                     onClick={() => setShowSubscriptionModal(true)}
-                                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-2 px-4 rounded-lg hover:from-amber-600 hover:to-orange-600 transition font-bold text-sm"
+                                    className="w-full bg-amber-500 text-white py-2 px-4 rounded-lg hover:bg-amber-600 transition font-bold text-sm"
                                 >
                                     Premium会員になる
                                 </button>
@@ -2584,7 +2587,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                 {/* 体組成セクション */}
                 <div id="body-composition-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
-                    <div className="px-6 py-4 bg-gradient-to-r from-teal-50 to-cyan-50 flex items-center justify-between border-b-2 border-gray-200">
+                    <div className="px-6 py-4 bg-teal-50 flex items-center justify-between border-b-2 border-gray-200">
                         <div className="flex items-center gap-3">
                             <Icon name="Activity" size={32} className="text-teal-600" />
                             <h4 className="font-bold text-gray-800">体組成</h4>
@@ -2782,7 +2785,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
                 {/* 食事セクション */}
                 <div id="meal-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
-                    <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 flex items-center justify-between border-b-2 border-gray-200">
+                    <div className="px-6 py-4 bg-green-50 flex items-center justify-between border-b-2 border-gray-200">
                         <div className="flex items-center gap-3">
                             <Icon name="Utensils" size={32} className="text-green-600" />
                             <h4 className="font-bold text-gray-800">食事</h4>
@@ -3631,7 +3634,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     // アクセス権限あり：通常の分析セクション
                     return (
                         <div id="analysis-section" className="mb-6 bg-white rounded-xl shadow-sm overflow-hidden border-2 border-gray-200 -mx-6">
-                            <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between border-b-2 border-gray-200">
+                            <div className="px-6 py-4 bg-indigo-50 flex items-center justify-between border-b-2 border-gray-200">
                                 <div className="flex items-center gap-3">
                                     <Icon name="PieChart" size={32} className="text-indigo-600" />
                                     <h4 className="font-bold text-gray-800">分析</h4>
@@ -3720,23 +3723,23 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
             {/* 採点基準説明モーダル */}
             {showScoringGuideModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl w-full max-w-[95vw] sm:max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 space-y-4">
-                            {/* ヘッダー */}
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                    <Icon name="Info" size={20} style={{color: '#4A9EFF'}} />
-                                    採点基準
-                                </h3>
-                                <button
-                                    onClick={() => setShowScoringGuideModal(false)}
-                                    className="p-1 hover:bg-gray-100 rounded-full transition"
-                                >
-                                    <Icon name="X" size={20} className="text-gray-600" />
-                                </button>
-                            </div>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4" onClick={() => setShowScoringGuideModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-[95vw] sm:max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        {/* ヘッダー */}
+                        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <Icon name="Info" size={20} style={{color: '#4A9EFF'}} />
+                                採点基準
+                            </h3>
+                            <button
+                                onClick={() => setShowScoringGuideModal(false)}
+                                className="p-1 hover:bg-gray-100 rounded-full transition"
+                            >
+                                <Icon name="X" size={20} className="text-gray-500" />
+                            </button>
+                        </div>
 
+                        <div className="p-6 space-y-4">
                             {/* 食事スコア */}
                             <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
                                 <div className="flex items-center gap-2 mb-2">
@@ -3810,14 +3813,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     <p className="mt-2 text-xs text-blue-700">※すべての項目が最高値（5）の場合、100点になります</p>
                                 </div>
                             </div>
-
-                            {/* 閉じるボタン */}
-                            <button
-                                onClick={() => setShowScoringGuideModal(false)}
-                                className="w-full py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition font-medium"
-                            >
-                                閉じる
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -3825,23 +3820,23 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
             {/* 詳細栄養素の使い方モーダル */}
             {showDetailedNutrientsGuide && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl w-full max-w-[95vw] sm:max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 space-y-4">
-                            {/* ヘッダー */}
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                    <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
-                                    詳細栄養素の使い方
-                                </h3>
-                                <button
-                                    onClick={() => setShowDetailedNutrientsGuide(false)}
-                                    className="p-1 hover:bg-gray-100 rounded-full transition"
-                                >
-                                    <Icon name="X" size={20} className="text-gray-600" />
-                                </button>
-                            </div>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4" onClick={() => setShowDetailedNutrientsGuide(false)}>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        {/* ヘッダー */}
+                        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+                                詳細栄養素の使い方
+                            </h3>
+                            <button
+                                onClick={() => setShowDetailedNutrientsGuide(false)}
+                                className="p-1 hover:bg-gray-100 rounded-full transition"
+                            >
+                                <Icon name="X" size={20} className="text-gray-500" />
+                            </button>
+                        </div>
 
+                        <div className="p-6 space-y-4">
                             {/* タンパク質の質（DIAAS） */}
                             <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
                                 <div className="flex items-center gap-2 mb-2">
@@ -4035,14 +4030,6 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     </p>
                                 </div>
                             </div>
-
-                            {/* 閉じるボタン */}
-                            <button
-                                onClick={() => setShowDetailedNutrientsGuide(false)}
-                                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                            >
-                                閉じる
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -4086,7 +4073,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-2">
-                                                <Icon name="TrendingUp" size={20} className="text-indigo-600 mt-0.5" />
+                                                <Icon name="TrendingUp" size={20} className="text-[#4A9EFF] mt-0.5" />
                                                 <div>
                                                     <div className="font-bold text-gray-800">履歴</div>
                                                     <div className="text-xs text-gray-600">グラフで進捗を確認できます</div>
@@ -4629,7 +4616,7 @@ const DirectiveEditModal = ({ directive, onClose, onSave, onDelete, getCategoryI
                         <textarea
                             value={editedMessage}
                             onChange={(e) => setEditedMessage(e.target.value)}
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none transition text-sm"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#4A9EFF] focus:ring-2 focus:ring-blue-200 focus:outline-none transition text-sm"
                             rows="3"
                             placeholder="例: 鶏むね肉150g追加"
                         />
