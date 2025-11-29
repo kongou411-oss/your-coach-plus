@@ -2569,11 +2569,18 @@ const AdminPanel = ({ onClose }) => {
 };
 
 // ===== COMYビュー =====
-const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
-    console.error('[COMYView] historyData:', historyData ? Object.keys(historyData).length + ' days' : 'null/undefined');
-
+const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsHistoryData }) => {
     const [activeView, setActiveView] = useState('feed'); // 'admin', 'feed', 'post', 'mypage', 'community'
     const [posts, setPosts] = useState([]);
+
+    // Firestoreから取得した履歴データ（propsのhistoryDataよりも優先）
+    const [firestoreHistoryData, setFirestoreHistoryData] = useState({});
+    const [historyDataLoading, setHistoryDataLoading] = useState(true);
+
+    // propsまたはFirestoreから取得したデータを使用
+    const historyData = Object.keys(firestoreHistoryData).length > 0 ? firestoreHistoryData : (propsHistoryData || {});
+
+    console.log('[COMYView] historyData:', Object.keys(historyData).length + ' days');
 
     // 管理者判定（kongou411@gmail.com のみ）
     const isAdmin = userProfile?.email === 'kongou411@gmail.com';
@@ -2595,6 +2602,40 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData }) => {
     const [profileModalUserId, setProfileModalUserId] = useState(null); // プロフィールモーダル表示対象
     const [myFollowerCount, setMyFollowerCount] = useState(0);
     const [myFollowingCount, setMyFollowingCount] = useState(0);
+
+    // Firestoreから履歴データを取得
+    useEffect(() => {
+        const loadHistoryData = async () => {
+            if (!userId) return;
+
+            try {
+                setHistoryDataLoading(true);
+                const data = {};
+
+                // 過去90日分のデータを取得
+                const today = new Date();
+                for (let i = 0; i < 90; i++) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+
+                    const record = await DataService.getDailyRecord(userId, dateStr);
+                    if (record && (record.meals?.length > 0 || record.workouts?.length > 0 || record.conditions)) {
+                        data[dateStr] = record;
+                    }
+                }
+
+                console.log('[COMYView] Loaded history from Firestore:', Object.keys(data).length + ' days');
+                setFirestoreHistoryData(data);
+            } catch (error) {
+                console.error('[COMYView] Error loading history data:', error);
+            } finally {
+                setHistoryDataLoading(false);
+            }
+        };
+
+        loadHistoryData();
+    }, [userId]);
 
     useEffect(() => {
         loadPosts();

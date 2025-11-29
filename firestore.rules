@@ -82,6 +82,16 @@ service cloud.firestore {
       match /purchasedTextbooks/{textbookId} {
         allow read, write: if isOwner(userId);
       }
+
+      // サブコレクション: directives（AI分析の指示）
+      match /directives/{directiveId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: analyses（AI分析結果）
+      match /analyses/{analysisId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // ============================================
