@@ -1355,6 +1355,8 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
                 setDailyRecord(updatedRecord);
                 await DataService.saveDailyRecord(userId, currentDate, updatedRecord);
+
+                toast.success('ルーティンを適用しました');
             };
 
             // クイックアクションハンドラをグローバルに設定
@@ -1611,14 +1613,20 @@ const CookieConsentBanner = ({ show, onAccept }) => {
             const InfoModal = () => {
                 if (!infoModal.show) return null;
 
+                // タイトルから絵文字を除去
+                const cleanTitle = infoModal.title.replace(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/u, '');
+
                 return (
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
                         <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-hidden slide-up" onClick={(e) => e.stopPropagation()}>
                             {/* ヘッダー */}
-                            <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 flex justify-between items-center z-10">
-                                <h3 className="font-bold text-lg">{infoModal.title}</h3>
-                                <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
-                                    <Icon name="X" size={20} />
+                            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+                                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                    <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+                                    {cleanTitle}
+                                </h3>
+                                <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="p-1 hover:bg-gray-100 rounded-full transition">
+                                    <Icon name="X" size={20} className="text-gray-500" />
                                 </button>
                             </div>
 
@@ -1749,6 +1757,10 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                 C: userProfile.carbRatio
             } : null;
 
+            // カロリーオーバーライドがある場合はそのカロリー調整値を使用
+            const effectiveCalorieAdjustment = dailyRecord?.calorieOverride?.calorieAdjustment ?? userProfile.calorieAdjustment;
+            const effectivePFCOverride = dailyRecord?.calorieOverride?.pfcOverride || customPFCParam;
+
             const targetPFC = LBMUtils.calculateTargetPFC(
                 tdee,
                 userProfile.weightChangePace || 0,
@@ -1756,9 +1768,14 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                 userProfile.style || '一般',
                 userProfile.purpose || 'メンテナンス',
                 userProfile.dietStyle || 'バランス',
-                userProfile.calorieAdjustment,
-                customPFCParam
+                effectiveCalorieAdjustment,
+                effectivePFCOverride
             );
+
+            // カロリーオーバーライド情報をtargetPFCに追加
+            if (dailyRecord?.calorieOverride) {
+                targetPFC.calorieOverride = dailyRecord.calorieOverride;
+            }
 
             // 進捗計算
             const totalFeatures = Object.keys(FEATURES).length;
@@ -1799,7 +1816,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                     }}
                                     className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition flex items-center gap-2"
                                 >
-                                    <Icon name="Calendar" size={20} className="text-sky-600" />
+                                    <Icon name="Calendar" size={20} className="text-[#4A9EFF]" />
                                     <span className="text-xl font-bold text-gray-800">
                                         {(() => {
                                             const [year, month, day] = currentDate.split('-').map(Number);

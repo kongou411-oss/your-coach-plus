@@ -550,6 +550,17 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     // 詳細栄養素の使い方モーダル
     const [showDetailedNutrientsGuide, setShowDetailedNutrientsGuide] = useState(false);
 
+    // ピンポイントカロリー設定モーダル
+    const [showCalorieOverrideModal, setShowCalorieOverrideModal] = useState(false);
+    const [customCalorieAdjustment, setCustomCalorieAdjustment] = useState('');
+    // PFCデフォルト値をプロフィールから取得
+    const defaultPFC = {
+        P: profile?.proteinRatio || 30,
+        F: profile?.fatRatioPercent || 25,
+        C: profile?.carbRatio || 45
+    };
+    const [customPFC, setCustomPFC] = useState(defaultPFC);
+
     // 体脂肪率推定モーダル
     const [visualGuideModal, setVisualGuideModal] = useState({
         show: false,
@@ -790,6 +801,67 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             }
         } catch (error) {
             console.error('[Dashboard] Failed to save body composition to dailyRecord:', error);
+        }
+    };
+
+    // ピンポイントカロリー設定を適用（プリセット or カスタム）
+    const applyCalorieOverride = async (name, adjustment, pfcOverride = null) => {
+        if (!user?.uid || !currentDate) return;
+
+        try {
+            const calorieOverride = {
+                templateName: name,
+                calorieAdjustment: adjustment,
+                appliedAt: new Date().toISOString()
+            };
+
+            // PFCオーバーライドがある場合は追加
+            if (pfcOverride) {
+                calorieOverride.pfcOverride = pfcOverride;
+            }
+
+            const updatedRecord = {
+                ...dailyRecord,
+                calorieOverride
+            };
+
+            setDailyRecord(updatedRecord);
+            await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
+
+            let message = name;
+            if (adjustment !== 0) {
+                message += ` (${adjustment > 0 ? '+' : ''}${adjustment}kcal)`;
+            } else {
+                message += ' (±0kcal)';
+            }
+            if (pfcOverride) {
+                message += ` [P${pfcOverride.P}:F${pfcOverride.F}:C${pfcOverride.C}]`;
+            }
+            toast.success(`${message} を適用しました`);
+
+            setShowCalorieOverrideModal(false);
+            setCustomCalorieAdjustment('');
+            setCustomPFC(defaultPFC);
+        } catch (error) {
+            console.error('[Dashboard] Failed to apply calorie override:', error);
+            toast.error('適用に失敗しました');
+        }
+    };
+
+    // ピンポイントカロリー設定を解除
+    const clearCalorieOverride = async () => {
+        if (!user?.uid || !currentDate) return;
+
+        try {
+            const updatedRecord = { ...dailyRecord };
+            delete updatedRecord.calorieOverride;
+
+            setDailyRecord(updatedRecord);
+            await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
+            toast.success('カロリー設定を解除しました');
+        } catch (error) {
+            console.error('[Dashboard] Failed to clear calorie override:', error);
+            toast.error('解除に失敗しました');
         }
     };
 
@@ -1548,7 +1620,37 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 <div className="space-y-4">
                     {/* カロリー */}
                     <div className="mb-6">
-                        <div className="text-sm text-gray-600 mb-2">カロリー</div>
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-600">カロリー</span>
+                                {targetPFC.calorieOverride && (
+                                    <span className="text-[10px] px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-full flex items-center gap-1">
+                                        <Icon name="Zap" size={10} />
+                                        {targetPFC.calorieOverride.templateName}
+                                        ({targetPFC.calorieOverride.calorieAdjustment !== 0
+                                            ? `${targetPFC.calorieOverride.calorieAdjustment > 0 ? '+' : ''}${targetPFC.calorieOverride.calorieAdjustment}kcal`
+                                            : '±0kcal'})
+                                    </span>
+                                )}
+                            </div>
+                            {targetPFC.calorieOverride ? (
+                                <button
+                                    onClick={clearCalorieOverride}
+                                    className="text-[10px] px-2 py-1 text-orange-600 hover:bg-orange-50 rounded flex items-center gap-1"
+                                >
+                                    <Icon name="X" size={12} />
+                                    解除
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setShowCalorieOverrideModal(true)}
+                                    className="text-[10px] px-2 py-1 text-[#4A9EFF] hover:bg-blue-50 rounded flex items-center gap-1"
+                                >
+                                    <Icon name="Zap" size={12} />
+                                    ピンポイント変更
+                                </button>
+                            )}
+                        </div>
                         <div className="flex items-end gap-2 mb-2 justify-end">
                             <span className="text-2xl sm:text-3xl font-bold text-blue-600">{Math.round(currentIntake.calories)}</span>
                             <span className="text-lg text-gray-600">/</span>
@@ -2478,7 +2580,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         onClick={() => setInfoModal({
                             show: true,
                             title: '📝 記録について',
-                            content: `【通常の記録】\n＋ボタンから、食事・運動・サプリメントを記録できます。記録した内容は即座にダッシュボードに反映されます。\n\n【予測入力（魔法の杖アイコン）】\n前日のデータから今日の食事・運動を自動的に予測して入力します。\n・青背景で表示されます\n・予測データは編集可能です\n・そのまま分析に使用できます\n・タップすると予測入力、再度タップでクリア\n\n【ルーティン入力（リピートアイコン）】\n設定したルーティンに紐づけたテンプレートを自動入力します。\n・紫背景で表示されます\n・ルーティンデータは編集可能です\n・そのまま分析に使用できます\n・タップするとルーティン入力、再度タップでクリア\n\n設定方法：設定 → 機能設定 → ルーティン設定 → 各日に食事・運動テンプレートを紐づけ`
+                            content: `【通常の記録】\n＋ボタンから、食事・運動・サプリメントを記録できます。記録した内容は即座にダッシュボードに反映されます。\n\n【予測ボタン】\n前日のデータから今日の食事・運動を自動的に予測して入力します。\n・青背景で表示されます\n・予測データは編集可能です\n・そのまま分析に使用できます\n・タップすると予測入力、再度タップでクリア\n\n【ルーティンボタン】\n設定したルーティンに紐づけたテンプレートを自動入力します。\n・紫背景で表示されます\n・ルーティンデータは編集可能です\n・そのまま分析に使用できます\n・タップするとルーティン入力、再度タップでクリア\n\n設定方法：設定 → 機能設定 → ルーティン設定 → 各日に食事・運動テンプレートを紐づけ`
                         })}
                         style={{color: '#4A9EFF'}}
                         onMouseEnter={(e) => e.currentTarget.style.color = '#3b8fef'}
@@ -2512,7 +2614,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         loadPredictedData();
                                     }
                                 }}
-                                className={`p-2 rounded-lg font-bold shadow-md hover:shadow-lg transition ${
+                                className={`p-2 rounded-lg font-bold shadow-md hover:shadow-lg transition flex items-center gap-1 ${
                                     dailyRecord.meals?.some(m => m.isPredicted) ||
                                     dailyRecord.workouts?.some(w => w.isPredicted) ||
                                     dailyRecord.bodyComposition?.isPredicted ||
@@ -2529,9 +2631,15 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                   dailyRecord.workouts?.some(w => w.isPredicted) ||
                                   dailyRecord.bodyComposition?.isPredicted ||
                                   dailyRecord.conditions?.isPredicted) ? (
-                                    <Icon name="X" size={20} />
+                                    <>
+                                        <Icon name="X" size={18} />
+                                        <span className="text-sm font-medium">予測</span>
+                                    </>
                                 ) : (
-                                    <Icon name="Wand2" size={20} />
+                                    <>
+                                        <Icon name="Clock" size={18} />
+                                        <span className="text-sm font-medium">予測</span>
+                                    </>
                                 )}
                             </button>
                         )}
@@ -2558,7 +2666,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         }
                                     }
                                 }}
-                                className={`p-2 rounded-lg font-bold shadow-md hover:shadow-lg transition ${
+                                className={`p-2 rounded-lg font-bold shadow-md hover:shadow-lg transition flex items-center gap-1 ${
                                     dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)
                                         ? 'bg-red-600 text-white hover:bg-red-700'
                                         : currentRoutine.isRestDay
@@ -2574,11 +2682,20 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 }
                             >
                                 {(dailyRecord.meals?.some(m => m.isRoutine) || dailyRecord.workouts?.some(w => w.isRoutine)) ? (
-                                    <Icon name="X" size={20} />
+                                    <>
+                                        <Icon name="X" size={18} />
+                                        <span className="text-sm font-medium">ルーティン</span>
+                                    </>
                                 ) : currentRoutine.isRestDay ? (
-                                    <Icon name="Moon" size={20} />
+                                    <>
+                                        <Icon name="Moon" size={18} />
+                                        <span className="text-sm font-medium">休養</span>
+                                    </>
                                 ) : (
-                                    <Icon name="Repeat" size={20} />
+                                    <>
+                                        <Icon name="Repeat" size={18} />
+                                        <span className="text-sm font-medium">ルーティン</span>
+                                    </>
                                 )}
                             </button>
                         )}
@@ -4447,6 +4564,186 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                     userId={user?.uid}
                     userProfile={profile}
                 />
+            )}
+
+            {/* ピンポイントカロリー設定モーダル */}
+            {showCalorieOverrideModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
+                        <div className="flex-shrink-0 bg-orange-500 text-white p-4 flex justify-between items-center">
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                <Icon name="Zap" size={20} />
+                                ピンポイント変更
+                            </h3>
+                            <button onClick={() => { setShowCalorieOverrideModal(false); setCustomCalorieAdjustment(''); setCustomPFC(defaultPFC); }} className="p-1 hover:bg-white hover:bg-opacity-20 rounded-full">
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            <p className="text-sm text-gray-600 mb-4">
+                                <span className="font-bold text-orange-600">{currentDate}</span> のカロリー・PFC目標を変更します。その日限りの設定です。
+                            </p>
+
+                            {/* カロリープリセット */}
+                            <div className="mb-4">
+                                <label className="text-xs font-medium text-gray-500 mb-2 block">カロリー調整プリセット</label>
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={() => applyCalorieOverride('チートデー', 500, customPFC)}
+                                        className="p-3 border-2 border-gray-200 rounded-xl hover:border-green-400 hover:bg-green-50 transition flex justify-between items-center"
+                                    >
+                                        <span className="font-bold text-gray-800">チートデー</span>
+                                        <span className="text-green-600 font-bold">+500 kcal</span>
+                                    </button>
+                                    <button
+                                        onClick={() => applyCalorieOverride('リフィード', 300, customPFC)}
+                                        className="p-3 border-2 border-gray-200 rounded-xl hover:border-green-400 hover:bg-green-50 transition flex justify-between items-center"
+                                    >
+                                        <span className="font-bold text-gray-800">リフィード</span>
+                                        <span className="text-green-600 font-bold">+300 kcal</span>
+                                    </button>
+                                    <button
+                                        onClick={() => applyCalorieOverride('軽めの日', -300, customPFC)}
+                                        className="p-3 border-2 border-gray-200 rounded-xl hover:border-red-400 hover:bg-red-50 transition flex justify-between items-center"
+                                    >
+                                        <span className="font-bold text-gray-800">軽めの日</span>
+                                        <span className="text-red-600 font-bold">-300 kcal</span>
+                                    </button>
+                                    <button
+                                        onClick={() => applyCalorieOverride('VLCD', -500, customPFC)}
+                                        className="p-3 border-2 border-gray-200 rounded-xl hover:border-red-400 hover:bg-red-50 transition flex justify-between items-center"
+                                    >
+                                        <span className="font-bold text-gray-800">VLCD</span>
+                                        <span className="text-red-600 font-bold">-500 kcal</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* カスタムカロリー入力 */}
+                            <div className="border-t pt-4 mb-4">
+                                <label className="text-xs font-medium text-gray-500 mb-2 block">カスタムカロリー調整</label>
+                                <div className="flex gap-2 items-center">
+                                    <input
+                                        type="number"
+                                        value={customCalorieAdjustment}
+                                        onChange={(e) => setCustomCalorieAdjustment(e.target.value)}
+                                        placeholder="例: -200 または +400"
+                                        className="flex-1 p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:outline-none"
+                                    />
+                                    <span className="text-sm text-gray-500">kcal</span>
+                                </div>
+                            </div>
+
+                            {/* PFCバランス */}
+                            <div className="border-t pt-4">
+                                <label className="text-xs font-medium text-gray-500 mb-2 block">PFCバランス</label>
+                                <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
+                                    {/* タンパク質 */}
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-sm font-medium text-red-500">タンパク質 (P)</span>
+                                            <span className="text-sm font-bold">{customPFC.P}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="15"
+                                            max="50"
+                                            step="1"
+                                            value={customPFC.P}
+                                            onChange={(e) => {
+                                                const newP = Number(e.target.value);
+                                                const currentF = customPFC.F;
+                                                const newC = 100 - newP - currentF;
+                                                if (newC >= 15 && newC <= 60) {
+                                                    setCustomPFC({ P: newP, F: currentF, C: newC });
+                                                }
+                                            }}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                    {/* 脂質 */}
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-sm font-medium text-yellow-500">脂質 (F)</span>
+                                            <span className="text-sm font-bold">{customPFC.F}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="15"
+                                            max="40"
+                                            step="1"
+                                            value={customPFC.F}
+                                            onChange={(e) => {
+                                                const newF = Number(e.target.value);
+                                                const currentP = customPFC.P;
+                                                const newC = 100 - currentP - newF;
+                                                if (newC >= 15 && newC <= 60) {
+                                                    setCustomPFC({ P: currentP, F: newF, C: newC });
+                                                }
+                                            }}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                    {/* 炭水化物 */}
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-sm font-medium text-green-500">炭水化物 (C)</span>
+                                            <span className="text-sm font-bold">{customPFC.C}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="15"
+                                            max="60"
+                                            step="1"
+                                            value={customPFC.C}
+                                            onChange={(e) => {
+                                                const newC = Number(e.target.value);
+                                                const currentP = customPFC.P;
+                                                const newF = 100 - currentP - newC;
+                                                if (newF >= 15 && newF <= 40) {
+                                                    setCustomPFC({ P: currentP, F: newF, C: newC });
+                                                }
+                                            }}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t">
+                                        <div className="text-xs text-gray-600">
+                                            合計 {customPFC.P + customPFC.F + customPFC.C}%
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setCustomPFC(defaultPFC)}
+                                            className="text-xs text-[#4A9EFF] hover:text-[#3b8fef] underline"
+                                        >
+                                            現在のバランスに戻す (P{defaultPFC.P}:F{defaultPFC.F}:C{defaultPFC.C})
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 適用ボタン */}
+                            <div className="mt-4 pt-4 border-t">
+                                <button
+                                    onClick={() => {
+                                        const calorieValue = customCalorieAdjustment ? parseInt(customCalorieAdjustment) : 0;
+                                        if (customCalorieAdjustment && isNaN(calorieValue)) {
+                                            toast.error('有効なカロリー値を入力してください');
+                                            return;
+                                        }
+                                        // 名前を決定：カロリー調整ありなら「カスタム」、なければ「PFCバランスのみ」
+                                        const name = calorieValue !== 0 ? 'カスタム' : 'PFCバランスのみ';
+                                        applyCalorieOverride(name, calorieValue, customPFC);
+                                    }}
+                                    className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition flex items-center justify-center gap-2"
+                                >
+                                    <Icon name="Check" size={18} />
+                                    この設定を適用
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
