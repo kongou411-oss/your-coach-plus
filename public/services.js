@@ -1204,7 +1204,7 @@ const DataService = {
         }
     },
 
-    // 投稿削除（自分の投稿のみ削除可能）
+    // 投稿削除（進捗のみ削除、プロジェクトの進捗が0になったらプロジェクトも削除）
     deleteUserPost: async (userId, projectId, progressId) => {
         try {
             // プロジェクトの所有者確認
@@ -1218,19 +1218,36 @@ const DataService = {
                 return { success: false, error: '自分の投稿のみ削除できます' };
             }
 
-            // 進捗（投稿）を削除
-            await db.collection('communityProjects')
-                .doc(projectId)
-                .collection('progress')
-                .doc(progressId)
-                .delete();
+            const projectRef = db.collection('communityProjects').doc(projectId);
+            const progressRef = projectRef.collection('progress').doc(progressId);
 
-            // プロジェクトの進捗数を更新
-            await db.collection('communityProjects').doc(projectId).update({
-                progressCount: firebase.firestore.FieldValue.increment(-1)
-            });
+            // 1. 進捗配下のコメントを削除
+            const commentsSnapshot = await progressRef.collection('comments').get();
+            for (const commentDoc of commentsSnapshot.docs) {
+                await commentDoc.ref.delete();
+            }
 
-            return { success: true };
+            // 2. 進捗を削除
+            await progressRef.delete();
+
+            // 3. 残りの進捗数を確認
+            const remainingProgress = await projectRef.collection('progress').get();
+
+            if (remainingProgress.empty) {
+                // 進捗が0になったらプロジェクト直下のコメントも削除してプロジェクト本体を削除
+                const projectCommentsSnapshot = await projectRef.collection('comments').get();
+                for (const commentDoc of projectCommentsSnapshot.docs) {
+                    await commentDoc.ref.delete();
+                }
+                await projectRef.delete();
+                return { success: true, projectDeleted: true };
+            } else {
+                // プロジェクトの進捗数を更新
+                await projectRef.update({
+                    progressCount: firebase.firestore.FieldValue.increment(-1)
+                });
+                return { success: true, projectDeleted: false };
+            }
         } catch (error) {
             console.error('Error deleting post:', error);
             return { success: false, error: error.message };

@@ -1311,10 +1311,23 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                     .where('isActive', '==', true)
                     .get();
 
-                const projects = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                // 進捗が1件以上あるプロジェクトのみを取得
+                const projectsWithProgress = [];
+                for (const doc of snapshot.docs) {
+                    const progressSnapshot = await doc.ref.collection('progress').limit(1).get();
+                    if (!progressSnapshot.empty) {
+                        projectsWithProgress.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    } else {
+                        // 進捗が0件のプロジェクトは削除
+                        console.log('[CommunityPost] Deleting empty project:', doc.id);
+                        await doc.ref.delete();
+                    }
+                }
+
+                const projects = projectsWithProgress.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
                 console.log('[CommunityPost] Loaded projects:', projects.length);
                 setUserProjects(projects);
@@ -2697,6 +2710,9 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
     const [myFollowerCount, setMyFollowerCount] = useState(0);
     const [myFollowingCount, setMyFollowingCount] = useState(0);
 
+    // マイページ投稿フィルター
+    const [myPostFilter, setMyPostFilter] = useState('all'); // 'all', 'before', 'progress', 'after'
+
     // Firestoreから履歴データを取得
     useEffect(() => {
         const loadHistoryData = async () => {
@@ -2991,7 +3007,11 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
             if (result.success) {
                 // ローカルのpostsから削除
                 setPosts(posts.filter(p => p.id !== post.id));
-                toast.success('投稿を削除しました');
+                if (result.projectDeleted) {
+                    toast.success('投稿を削除しました（プロジェクトも削除）');
+                } else {
+                    toast.success('投稿を削除しました');
+                }
             } else {
                 toast.error(result.error || '削除に失敗しました');
             }
@@ -3552,6 +3572,30 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
 
                         <div className="space-y-4">
                             <h4 className="font-bold text-gray-600">あなたの投稿</h4>
+                            {/* 投稿種類フィルタータブ */}
+                            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                                {[
+                                    { key: 'all', label: 'すべて' },
+                                    { key: 'before', label: '本体' },
+                                    { key: 'progress', label: '進捗' },
+                                    { key: 'after', label: '結果' }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.key}
+                                        onClick={() => setMyPostFilter(tab.key)}
+                                        className={`flex-1 py-1.5 text-xs font-medium rounded-md transition ${
+                                            myPostFilter === tab.key
+                                                ? 'bg-white text-fuchsia-600 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                        <span className="ml-1 text-gray-400">
+                                            ({posts.filter(p => p.userId === userId && (tab.key === 'all' || p.progressType === tab.key)).length})
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
                             {posts.filter(p => p.userId === userId).length === 0 ? (
                                 <div className="text-center py-8 bg-white rounded-lg">
                                     <Icon name="MessageSquare" size={48} className="mx-auto mb-3 text-gray-300" />
@@ -3563,8 +3607,12 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                         最初の投稿をする
                                     </button>
                                 </div>
+                            ) : posts.filter(p => p.userId === userId && (myPostFilter === 'all' || p.progressType === myPostFilter)).length === 0 ? (
+                                <div className="text-center py-6 bg-white rounded-lg">
+                                    <p className="text-gray-500 text-sm">この種類の投稿はありません</p>
+                                </div>
                             ) : (
-                                posts.filter(p => p.userId === userId).map(post => (
+                                posts.filter(p => p.userId === userId && (myPostFilter === 'all' || p.progressType === myPostFilter)).map(post => (
                                     <div key={post.id} className="bg-white rounded-lg shadow-sm p-4">
                                         {/* ヘッダー（アバター・名前・タグ・タイムスタンプ） */}
                                         <div className="flex items-start justify-between mb-3">
