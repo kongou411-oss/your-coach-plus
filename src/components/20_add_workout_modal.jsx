@@ -1,24 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { STORAGE_KEYS } from '../config.js';
 import { normalizeForSearch } from '../kanjiReadingMap.js';
+import { Icon } from './01_common.jsx';
 
 // ===== 運動記録専用モーダル =====
 const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate, editingWorkout, isTemplateMode = false }) => {
-            // 運動専用モーダル：type !== 'workout' の場合はエラー
-            if (type !== 'workout') {
-                return (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
-                        <div className="bg-white rounded-lg p-6 max-w-md">
-                            <h2 className="text-xl font-bold mb-4 text-red-600">エラー</h2>
-                            <p className="mb-4">このモーダルは運動記録専用です。type='{type}' は対応していません。</p>
-                            <button onClick={onClose} className="bg-blue-500 text-white px-4 py-2 rounded">閉じる</button>
-                        </div>
-                    </div>
-                );
-            }
-
-            // 運動記録用のstate
+            // 運動記録用のstate（フックは条件分岐の前に配置する必要がある）
             const [selectedExercise, setSelectedExercise] = useState(null);
             const [exerciseTab, setExerciseTab] = useState('strength'); // 'strength' or 'cardio' or 'stretch'
             const [selectedExerciseCategory, setSelectedExerciseCategory] = useState('胸'); // 運動のカテゴリフィルタ
@@ -40,9 +28,20 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                 duration: 5
             });
             const [workoutTemplates, setWorkoutTemplates] = useState([]);
+            const [searchTerm, setSearchTerm] = useState(''); // 運動検索用
+            const [showSearchModal, setShowSearchModal] = useState(false); // 検索モーダル表示
+            const [templateName, setTemplateName] = useState(''); // テンプレート名
+            const [mealName, setMealName] = useState(''); // 運動名（保存時用）
             const [showCustomExerciseForm, setShowCustomExerciseForm] = useState(false);
             const [workoutInfoModal, setWorkoutInfoModal] = useState({ show: false, title: '', content: '' });
             const [showAdvancedTraining, setShowAdvancedTraining] = useState(false);
+            // 削除されていたState変数を復元
+            const [showTemplates, setShowTemplates] = useState(false);
+            const [showTemplateInfoModal, setShowTemplateInfoModal] = useState(false);
+            const [editingTemplateId, setEditingTemplateId] = useState(null);
+            const [editingTemplateObj, setEditingTemplateObj] = useState(null);
+            // カスタム種目（renderWorkoutInput内から移動）
+            const [customExercises, setCustomExercises] = useState([]);
             const [exerciseSaveMethod, setExerciseSaveMethod] = useState('database'); // 'database' or 'addToList'
             const [showExerciseSaveMethodInfo, setShowExerciseSaveMethodInfo] = useState(false); // 保存方法説明モーダル
             const [customExerciseData, setCustomExerciseData] = useState({
@@ -117,6 +116,71 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                 }
             }, [editingTemplate]);
 
+            // テンプレート読み込み関数（トップレベルで定義）
+            const loadTemplates = async () => {
+                if (!user?.uid) return; // userがない場合はスキップ
+                console.log('[20_add_workout_modal] テンプレート読み込み開始');
+                const templates = await DataService.getWorkoutTemplates(user.uid);
+                console.log('[20_add_workout_modal] 読み込んだテンプレート数:', templates.length);
+
+                console.log("[20_add_workout_modal] テンプレートデータ（isTrialCreated確認用）:", templates.map(t => ({id: t.id, name: t.name, isTrialCreated: t.isTrialCreated})));
+                setWorkoutTemplates(templates);
+            };
+
+            // テンプレート・編集モード・ルーティン初期化
+            useEffect(() => {
+                if (!user?.uid) return; // userがない場合はスキップ
+                loadTemplates();
+
+                // 編集モード時の初期値設定
+                if (editingWorkout) {
+                    if (editingWorkout.exercises && Array.isArray(editingWorkout.exercises)) {
+                        setExercises(JSON.parse(JSON.stringify(editingWorkout.exercises)));
+                    }
+                    return; // 編集モード時はルーティン読み込みをスキップ
+                }
+
+                // ルーティンからワークアウト自動読み込み
+                if (currentRoutine && !currentRoutine.isRestDay && currentRoutine.exercises) {
+                    // ルーティンの最初の種目を自動選択
+                    if (currentRoutine.exercises.length > 0) {
+                        const firstExercise = currentRoutine.exercises[0];
+                        setCurrentExercise(firstExercise.exercise);
+                        if (firstExercise.sets && firstExercise.sets.length > 0) {
+                            setSets(firstExercise.sets.map(set => ({
+                                ...set,
+                                duration: set.duration || 0
+                            })));
+                        }
+                    }
+                }
+            }, []);
+
+            // カスタム種目をFirestoreから読み込み（トップレベルに移動）
+            useEffect(() => {
+                const loadCustomExercises = async () => {
+                    if (!user?.uid) return;
+
+                    try {
+                        const customExercisesSnapshot = await firebase.firestore()
+                            .collection('users')
+                            .doc(user.uid)
+                            .collection('customExercises')
+                            .get();
+
+                        const exercises = customExercisesSnapshot.docs.map(doc => ({
+                            ...doc.data(),
+                            firestoreId: doc.id
+                        }));
+                        setCustomExercises(exercises);
+                    } catch (error) {
+                        console.error('[AddWorkoutModal] Failed to load custom exercises:', error);
+                    }
+                };
+
+                loadCustomExercises();
+            }, [user]);
+
             const renderWorkoutInput = () => {
                 // 編集モード判定（食事モーダルと同じ仕様）
                 const isEditMode = !!editingWorkout;
@@ -129,42 +193,6 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                         .replace(/\s+/g, '');
                     const normalizedText = normalizeForSearch(text);
                     return normalizedText.includes(normalizedQuery);
-                };
-
-                useEffect(() => {
-                    loadTemplates();
-
-                    // 編集モード時の初期値設定
-                    if (editingWorkout) {
-                        if (editingWorkout.exercises && Array.isArray(editingWorkout.exercises)) {
-                            setExercises(JSON.parse(JSON.stringify(editingWorkout.exercises)));
-                        }
-                        return; // 編集モード時はルーティン読み込みをスキップ
-                    }
-
-                    // ルーティンからワークアウト自動読み込み
-                    if (currentRoutine && !currentRoutine.isRestDay && currentRoutine.exercises) {
-                        // ルーティンの最初の種目を自動選択
-                        if (currentRoutine.exercises.length > 0) {
-                            const firstExercise = currentRoutine.exercises[0];
-                            setCurrentExercise(firstExercise.exercise);
-                            if (firstExercise.sets && firstExercise.sets.length > 0) {
-                                setSets(firstExercise.sets.map(set => ({
-                                    ...set,
-                                    duration: set.duration || 0
-                                })));
-                            }
-                        }
-                    }
-                }, []);
-
-                const loadTemplates = async () => {
-                    console.log('[20_add_workout_modal] テンプレート読み込み開始');
-                    const templates = await DataService.getWorkoutTemplates(user.uid);
-                    console.log('[20_add_workout_modal] 読み込んだテンプレート数:', templates.length);
-                    
-                    console.log("[20_add_workout_modal] テンプレートデータ（isTrialCreated確認用）:", templates.map(t => ({id: t.id, name: t.name, isTrialCreated: t.isTrialCreated})));
-                    setWorkoutTemplates(templates);
                 };
 
                 const saveAsTemplate = async () => {
@@ -396,35 +424,9 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                     onClose();
                 };
 
-                // Firestoreからカスタム種目を読み込み（stateで管理）
-                const [customExercises, setCustomExercises] = React.useState([]);
-
-                React.useEffect(() => {
-                    const loadCustomExercises = async () => {
-                        if (!user) return;
-
-                        try {
-                            const customExercisesSnapshot = await firebase.firestore()
-                                .collection('users')
-                                .doc(user.uid)
-                                .collection('customExercises')
-                                .get();
-
-                            const exercises = customExercisesSnapshot.docs.map(doc => ({
-                                ...doc.data(),
-                                firestoreId: doc.id
-                            }));
-                            setCustomExercises(exercises);
-                        } catch (error) {
-                            console.error('[AddWorkoutModal] Failed to load custom exercises:', error);
-                        }
-                    };
-
-                    loadCustomExercises();
-                }, [user]);
-
-                // exerciseDBとカスタム種目をマージ
-                const allExercises = [...exerciseDB, ...customExercises];
+                // exerciseDBとカスタム種目をマージ（window.exerciseDBはservices.jsで定義）
+                const exerciseDBData = window.exerciseDB || [];
+                const allExercises = [...exerciseDBData, ...customExercises];
 
                 const filteredExercises = allExercises.filter(ex => {
                     // 非表示アイテムまたはカテゴリをスキップ
@@ -495,7 +497,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                                 className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
                                                 title="テンプレートについて"
                                             >
-                                                <Icon name="Info" size={18} className="text-[#4A9EFF]" />
+                                                <Icon name="HelpCircle" size={16} className="text-[#4A9EFF]" />
                                             </button>
                                             <button
                                                 onClick={() => setShowTemplates(false)}
@@ -681,7 +683,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                     {/* ヘッダー */}
                                     <div className="bg-[#4A9EFF] text-white p-4 flex justify-between items-center sticky top-0">
                                         <h3 className="text-lg font-bold flex items-center gap-2">
-                                            <Icon name="Info" size={20} />
+                                            <Icon name="HelpCircle" size={16} />
                                             テンプレートについて
                                         </h3>
                                         <button
@@ -1063,7 +1065,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                                 onClick={() => setShowExerciseSaveMethodInfo(true)}
                                                 className="text-[#4A9EFF] hover:text-[#3b8fef]"
                                             >
-                                                <Icon name="Info" size={16} />
+                                                <Icon name="HelpCircle" size={16} />
                                             </button>
                                         </div>
                                         <div className="space-y-2">
@@ -1543,7 +1545,7 @@ RM回数と重量を別々に入力してください。`
                                                 })}
                                                 className="text-[#4A9EFF] hover:text-[#3b8fef]"
                                             >
-                                                <Icon name="Info" size={14} />
+                                                <Icon name="HelpCircle" size={16} />
                                             </button>
                                         </label>
                                         <div className="grid grid-cols-2 gap-2">
@@ -1594,7 +1596,7 @@ RM回数と重量を別々に入力してください。`
                                                 })}
                                                 className="text-[#4A9EFF] hover:text-[#3b8fef]"
                                             >
-                                                <Icon name="Info" size={14} />
+                                                <Icon name="HelpCircle" size={16} />
                                             </button>
                                         </label>
                                         <input
@@ -1957,6 +1959,18 @@ RM回数と重量を別々に入力してください。`
 
 // ========== 運動記録コンポーネント終了 ==========
 
+            // 運動専用モーダル：type !== 'workout' の場合はエラー
+            if (type !== 'workout') {
+                return (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+                        <div className="bg-white rounded-lg p-6 max-w-md">
+                            <h2 className="text-xl font-bold mb-4 text-red-600">エラー</h2>
+                            <p className="mb-4">このモーダルは運動記録専用です。type='{type}' は対応していません。</p>
+                            <button onClick={onClose} className="bg-blue-500 text-white px-4 py-2 rounded">閉じる</button>
+                        </div>
+                    </div>
+                );
+            }
 
             return (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -2010,7 +2024,7 @@ RM回数と重量を別々に入力してください。`
                                         title="使い方"
                                         style={{color: '#4A9EFF'}}
                                     >
-                                        <Icon name="HelpCircle" size={20} />
+                                        <Icon name="HelpCircle" size={16} />
                                     </button>
                                 )}
                                 <button onClick={() => {

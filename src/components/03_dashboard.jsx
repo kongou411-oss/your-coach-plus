@@ -196,7 +196,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                             className="flex items-center gap-1 hover:opacity-80"
                             style={{ color: '#4A9EFF' }}
                         >
-                            <Icon name="HelpCircle" size={18} />
+                            <Icon name="HelpCircle" size={16} />
                         </button>
                     </div>
 
@@ -342,7 +342,7 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                     <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+                                <Icon name="HelpCircle" size={16} style={{color: '#4A9EFF'}} />
                                 8軸評価基準について
                             </h3>
                             <button onClick={() => setShow8AxisGuide(false)} className="p-1 hover:bg-gray-100 rounded-full transition">
@@ -1742,7 +1742,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                     className="ml-auto flex items-center"
                                     style={{ color: '#4A9EFF' }}
                                 >
-                                    <Icon name="HelpCircle" size={18} />
+                                    <Icon name="HelpCircle" size={16} />
                                 </button>
                             </summary>
                             <div className="mt-4 space-y-6">
@@ -1987,7 +1987,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                             {currentIntake.calories < targetPFC.calories * 0.8 && currentIntake.adjustedDailyGL < currentIntake.dynamicGLLimit && (
                                                 <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
                                                     <div className="flex items-start gap-1">
-                                                        <Icon name="Info" size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                                                        <Icon name="HelpCircle" size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
                                                         <div className="text-blue-800">
                                                             <div className="font-semibold mb-1">カロリーが不足しています</div>
                                                             <div className="text-blue-700">
@@ -2564,8 +2564,18 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                 </div>
                             </>
                         ) : (
-                            <div className="text-center text-gray-400 py-4">
+                            <div className="flex items-center justify-center gap-1 text-gray-400 py-4">
                                 <p className="text-sm">今日の指示書がありません</p>
+                                <button
+                                    onClick={() => setInfoModal({
+                                        show: true,
+                                        title: '📋 指示書について',
+                                        content: `【指示書とは】\nAI分析の結果から生成される、翌日の具体的な行動目標です。\n\n【生成タイミング】\n分析を実行すると、AIが記録データを分析して翌日の指示書を自動生成します。\n\n【使い方】\n1. 毎日の記録・分析を継続する\n2. 翌日、指示書を確認する\n3. 目標を意識して行動する\n4. 達成したら「完了」ボタンをタップ\n\n【編集機能】\n指示書の内容は自分で編集することも可能です。\n\n【ポイント】\n・具体的で達成可能な目標が設定されます\n・完了をタップすると達成記録が残ります\n・継続することで習慣化をサポートします`
+                                    })}
+                                    style={{color: '#4A9EFF'}}
+                                >
+                                    <Icon name="HelpCircle" size={16} />
+                                </button>
                             </div>
                         )}
                     </div>
@@ -2586,7 +2596,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         onMouseEnter={(e) => e.currentTarget.style.color = '#3b8fef'}
                         onMouseLeave={(e) => e.currentTarget.style.color = '#4A9EFF'}
                     >
-                        <Icon name="HelpCircle" size={18} />
+                        <Icon name="HelpCircle" size={16} />
                     </button>
                     <div className="ml-auto flex gap-2">
                         {/* 予測入力ボタン（アイコンのみ） */}
@@ -3761,7 +3771,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                         title="採点基準を見る"
                                         style={{color: '#4A9EFF'}}
                                     >
-                                        <Icon name="Info" size={16} />
+                                        <Icon name="HelpCircle" size={16} />
                                     </button>
                                 </div>
                                 <button
@@ -3845,7 +3855,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {/* ヘッダー */}
                         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="Info" size={20} style={{color: '#4A9EFF'}} />
+                                <Icon name="HelpCircle" size={16} style={{color: '#4A9EFF'}} />
                                 採点基準
                             </h3>
                             <button
@@ -3942,7 +3952,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {/* ヘッダー */}
                         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+                                <Icon name="HelpCircle" size={16} style={{color: '#4A9EFF'}} />
                                 詳細栄養素の使い方
                             </h3>
                             <button
@@ -4872,7 +4882,7 @@ AI分析・写真解析：無料→有料の順に使用
                         })}
                         className="text-white/80 hover:text-white transition p-1"
                     >
-                        <Icon name="Info" size={12} />
+                        <Icon name="HelpCircle" size={16} />
                     </button>
                 </div>
             </div>

@@ -201,7 +201,7 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                             <div className="space-y-4">
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <Icon name="Info" size={18} className="text-blue-600" />
+                                        <Icon name="HelpCircle" size={16} className="text-blue-600" />
                                         <h4 className="font-bold text-gray-800">クレジット追加購入について</h4>
                                     </div>
                                     <p className="text-sm text-gray-600">

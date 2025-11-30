@@ -840,7 +840,7 @@ const AddMealModal = ({
                                 className="p-2 hover:bg-blue-50 rounded-full transition"
                                 title="使い方"
                             >
-                                <Icon name="HelpCircle" size={20} className="text-[#4A9EFF]" />
+                                <Icon name="HelpCircle" size={16} className="text-[#4A9EFF]" />
                             </button>
                             {/* 閉じるボタン */}
                             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
@@ -1546,7 +1546,7 @@ const AddMealModal = ({
                                     className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
                                     title="テンプレートについて"
                                 >
-                                    <Icon name="Info" size={18} className="text-[#4A9EFF]" />
+                                    <Icon name="HelpCircle" size={16} className="text-[#4A9EFF]" />
                                 </button>
                                 <button onClick={() => setShowTemplateSelector(false)} className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full">
                                     <Icon name="X" size={20} />
@@ -1712,7 +1712,7 @@ const AddMealModal = ({
                         {/* ヘッダー */}
                         <div className="bg-[#4A9EFF] text-white p-4 flex justify-between items-center sticky top-0">
                             <h3 className="text-lg font-bold flex items-center gap-2">
-                                <Icon name="Info" size={20} />
+                                <Icon name="HelpCircle" size={16} />
                                 テンプレートについて
                             </h3>
                             <button
@@ -1856,7 +1856,7 @@ const AddMealModal = ({
                                     onClick={() => setShowCustomGuide(true)}
                                     className="p-1 hover:bg-white hover:bg-opacity-20 rounded-full transition text-white"
                                 >
-                                    <Icon name="HelpCircle" size={18} />
+                                    <Icon name="HelpCircle" size={16} />
                                 </button>
                             </h3>
                             <button
@@ -2331,7 +2331,7 @@ const AddMealModal = ({
                                         onClick={() => setShowCustomHelp(true)}
                                         className="p-1 hover:bg-gray-100 rounded-full transition"
                                     >
-                                        <Icon name="HelpCircle" size={14} className="text-[#4A9EFF]" />
+                                        <Icon name="HelpCircle" size={16} className="text-[#4A9EFF]" />
                                     </button>
                                 </div>
                                 <div className="space-y-2">
@@ -2683,7 +2683,7 @@ const AddMealModal = ({
                         {/* ヘッダー */}
                         <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between rounded-t-2xl">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="HelpCircle" size={24} className="text-[#4A9EFF]" />
+                                <Icon name="HelpCircle" size={16} className="text-[#4A9EFF]" />
                                 食事記録の使い方
                             </h3>
                             <button
@@ -2966,7 +2966,7 @@ const AddMealModal = ({
                                     </div>
                                     <div className="bg-amber-50 p-3 rounded-lg">
                                         <div className="flex items-start gap-2">
-                                            <Icon name="Info" size={16} className="text-amber-700 flex-shrink-0 mt-0.5" />
+                                            <Icon name="HelpCircle" size={16} className="text-amber-700 flex-shrink-0 mt-0.5" />
                                             <p className="text-gray-700 text-xs">
                                                 <span className="font-semibold">DIAASとアミノ酸スコアの違い：</span>
                                                 DIAASは1.0を超える値もあります（アミノ酸スコアは最大1.0）。製品情報がない場合は上記を参考にしてください。
@@ -3028,7 +3028,7 @@ const AddMealModal = ({
                         {/* ヘッダー */}
                         <div className="bg-white border-b p-4 flex items-center justify-between rounded-t-2xl">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="HelpCircle" size={24} className="text-[#4A9EFF]" />
+                                <Icon name="HelpCircle" size={16} className="text-[#4A9EFF]" />
                                 保存方法について
                             </h3>
                             <button

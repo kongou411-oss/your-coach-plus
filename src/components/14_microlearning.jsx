@@ -184,7 +184,7 @@ const MicroLearningStep = ({ step }) => {
             {step.note && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <p className="text-sm text-yellow-800 flex items-start gap-2">
-                        <Icon name="Info" size={16} className="flex-shrink-0 mt-0.5" />
+                        <Icon name="HelpCircle" size={16} className="flex-shrink-0 mt-0.5" />
                         <span>{step.note}</span>
                     </p>
                 </div>

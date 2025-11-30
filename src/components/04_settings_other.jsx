@@ -162,7 +162,7 @@ const OtherTab = ({
             {/* アプリ情報 */}
             <details className="border rounded-lg">
                 <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="Info" size={18} className="text-[#4A9EFF]" />
+                    <Icon name="HelpCircle" size={16} className="text-[#4A9EFF]" />
                     アプリ情報
                     <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                 </summary>
@@ -320,7 +320,7 @@ const OtherTab = ({
             {/* ヘルプセンター */}
             <details className="border rounded-lg">
                 <summary className="cursor-pointer p-4 hover:bg-gray-50 font-medium flex items-center gap-2">
-                    <Icon name="HelpCircle" size={18} className="text-[#4A9EFF]" />
+                    <Icon name="HelpCircle" size={16} className="text-[#4A9EFF]" />
                     ヘルプセンター
                     <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                 </summary>
@@ -604,7 +604,7 @@ const OtherTab = ({
                                     <>
                                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
                                             <p className="text-xs text-gray-600">
-                                                <Icon name="Info" size={14} className="inline text-blue-600 mr-1" />
+                                                <Icon name="HelpCircle" size={16} className="inline text-blue-600 mr-1" />
                                                 現在: {currentDay + 1}日目 ({isTrial ? `無料期間：残り${7-currentDay}日` : (isPremium ? 'Premium会員' : '無料会員・機能制限中')})
                                             </p>
                                         </div>

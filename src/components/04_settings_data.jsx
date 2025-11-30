@@ -1969,7 +1969,7 @@ const DataTab = ({
                                                                             className="p-1 text-blue-600 hover:text-blue-800 transition"
                                                                             title="詳細を表示"
                                                                         >
-                                                                            <Icon name="Info" size={18} />
+                                                                            <Icon name="HelpCircle" size={16} />
                                                                         </button>
                                                                         <button
                                                                             onClick={() => toggleItemVisibility(item.name)}

@@ -1622,7 +1622,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                             {/* ヘッダー */}
                             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
                                 <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                    <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+                                    <Icon name="HelpCircle" size={16} style={{color: '#4A9EFF'}} />
                                     {cleanTitle}
                                 </h3>
                                 <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="p-1 hover:bg-gray-100 rounded-full transition">
@@ -1880,7 +1880,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                             onMouseLeave={(e) => e.currentTarget.style.color = '#4A9EFF'}
                                             title="ルーティンの使い方"
                                         >
-                                            <Icon name="HelpCircle" size={18} />
+                                            <Icon name="HelpCircle" size={16} />
                                         </button>
                                     </div>
                                     <span className={`text-xl font-bold ${currentRoutine.isRestDay ? 'text-gray-700' : 'text-purple-700'}`}>{currentRoutine.splitType}</span>
@@ -2049,7 +2049,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                 {/* ヘッダー */}
                                 <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
                                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                        <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+                                        <Icon name="HelpCircle" size={16} style={{color: '#4A9EFF'}} />
                                         ルーティンの使い方
                                     </h3>
                                     <button
@@ -2064,7 +2064,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                 <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                                     <div className="space-y-3">
                                         <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                                            <Icon name="Info" size={18} className="text-blue-600" />
+                                            <Icon name="HelpCircle" size={16} className="text-blue-600" />
                                             ルーティンとは？
                                         </h4>
                                         <p className="text-sm text-gray-600">
@@ -2809,7 +2809,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                         <>
                                             <div className="mb-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
                                                 <div className="flex items-start gap-2 mb-2">
-                                                    <Icon name="HelpCircle" size={18} className="text-amber-600 mt-0.5" />
+                                                    <Icon name="HelpCircle" size={16} className="text-amber-600 mt-0.5" />
                                                     <p className="text-sm text-amber-900 font-semibold">使い方</p>
                                                 </div>
                                                 <p className="text-sm text-amber-700 ml-6">
@@ -3388,7 +3388,7 @@ AIコーチなどの高度な機能が解放されます。
                                                     })}
                                                     className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded transition"
                                                 >
-                                                    <Icon name="Info" size={18} />
+                                                    <Icon name="HelpCircle" size={16} />
                                                 </button>
                                             </div>
                                             <p className="text-sm opacity-90">利用{usageDays}日目 • {currentStage}（{usageDays < 10 ? '基礎' : usageDays < 18 ? '応用' : '独自'}）</p>
@@ -3870,7 +3870,7 @@ AIコーチなどの高度な機能が解放されます。
                         title="コンディションを記録しましょう！"
                         message="OKボタンをタップするとコンディション記録セクションに遷移します。&#10;睡眠時間・睡眠の質・腸内環境・集中力・ストレスの5項目を記録してください。"
                         iconName="HeartPulse"
-                        iconColor="bg-blue-100"
+                        iconColor="bg-red-100"
                         targetSectionId="condition-section"
                         onClose={() => setShowConditionGuide(false)}
                     />

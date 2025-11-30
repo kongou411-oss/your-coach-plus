@@ -1128,7 +1128,7 @@ const BasicTab = ({
 
                                         <div className="bg-white p-2 rounded border border-purple-200">
                                             <p className="text-xs text-gray-600">
-                                                <Icon name="Info" size={12} className="inline mr-1" />
+                                                <Icon name="HelpCircle" size={16} className="inline mr-1" />
                                                 ブラウザとスマホPWAで異なるデータが表示される場合は、「同期状態を確認」→「強制再同期」をお試しください
                                             </p>
                                         </div>
@@ -1406,7 +1406,7 @@ const BasicTab = ({
                             {/* 計算ロジック解説 */}
                             <details className="bg-blue-50 border-2 border-blue-200 rounded-lg mb-4">
                                 <summary className="cursor-pointer p-3 hover:bg-blue-100 font-medium flex items-center gap-2 text-blue-800">
-                                    <Icon name="Info" size={18} className="text-blue-600" />
+                                    <Icon name="HelpCircle" size={16} className="text-blue-600" />
                                     <span className="text-sm">計算ロジック解説（全フロー）</span>
                                     <Icon name="ChevronDown" size={16} className="ml-auto text-blue-400" />
                                 </summary>
@@ -1456,11 +1456,15 @@ const BasicTab = ({
                                         <div className="pl-6 space-y-1 text-xs">
                                             <p className="font-medium text-gray-800">【計算式】目標摂取カロリー = TDEE + カロリー調整値</p>
                                             <p className="text-gray-600 mt-1">
-                                                • メンテナンス: +0kcal（現状維持）<br/>
-                                                • ダイエット: -300kcal（減量）<br/>
-                                                • バルクアップ: +300kcal（増量）<br/>
-                                                • リコンプ: +0kcal（体組成改善、トレーニングが重要）<br/>
-                                                • カスタム: 独自の調整値を入力可能（推奨範囲：±300kcal）
+                                                <strong>ペースからの自動計算:</strong><br/>
+                                                体脂肪 1kg ≒ 7,200 kcal<br/>
+                                                カロリー調整 = (月間目標kg × 7,200) ÷ 30日
+                                            </p>
+                                            <p className="text-gray-600 mt-1">
+                                                • ダイエット標準: -1 kg/月 → -240kcal/日<br/>
+                                                • バルクアップ標準: +1 kg/月 → +240kcal/日<br/>
+                                                • メンテナンス/リコンプ: 0kcal<br/>
+                                                • ペースは4段階から選択、またはカスタム入力可能
                                             </p>
                                         </div>
                                     </div>
@@ -1787,26 +1791,33 @@ const BasicTab = ({
                                         })}
                                         className="text-[#4A9EFF] hover:text-[#3b8fef]"
                                     >
-                                        <Icon name="Info" size={14} />
+                                        <Icon name="HelpCircle" size={16} />
                                     </button>
                                 </label>
 
                                 {/* 目的選択（ボタン、縦並び）*/}
                                 <div className="space-y-2 mb-3">
                                     {[
-                                        { value: 'ダイエット', label: 'ダイエット', sub: '脂肪を落とす', adjust: -300 },
-                                        { value: 'メンテナンス', label: 'メンテナンス', sub: '現状維持', adjust: 0 },
-                                        { value: 'バルクアップ', label: 'バルクアップ', sub: '筋肉をつける', adjust: 300 },
-                                        { value: 'リコンプ', label: 'リコンプ', sub: '体組成改善', adjust: 0 }
-                                    ].map(({ value, label, sub, adjust }) => (
+                                        { value: 'ダイエット', label: 'ダイエット', sub: '脂肪を落とす', defaultPace: -1 },
+                                        { value: 'メンテナンス', label: 'メンテナンス', sub: '現状維持', defaultPace: 0 },
+                                        { value: 'バルクアップ', label: 'バルクアップ', sub: '筋肉をつける', defaultPace: 1 },
+                                        { value: 'リコンプ', label: 'リコンプ', sub: '体組成改善', defaultPace: 0 }
+                                    ].map(({ value, label, sub, defaultPace }) => {
+                                        // ペースからカロリー調整値を算出
+                                        const adjust = LBMUtils.calculateCalorieAdjustmentFromPace(defaultPace, 'kg');
+                                        return (
                                         <button
                                             key={value}
                                             type="button"
                                             onClick={() => {
-                                                let pace = 0;
-                                                if (value === 'ダイエット') pace = -1;
-                                                else if (value === 'バルクアップ') pace = 1;
-                                                setProfile({...profile, purpose: value, weightChangePace: pace, calorieAdjustment: adjust});
+                                                setProfile({
+                                                    ...profile,
+                                                    purpose: value,
+                                                    weightChangePace: defaultPace,
+                                                    paceUnit: 'kg',
+                                                    customPaceValue: null,
+                                                    calorieAdjustment: adjust
+                                                });
                                             }}
                                             className={`w-full p-2 rounded-lg border-2 transition flex items-center justify-between ${
                                                 profile.purpose === value
@@ -1817,6 +1828,11 @@ const BasicTab = ({
                                             <div className="text-left">
                                                 <div className="font-bold text-sm">{label}</div>
                                                 <div className="text-xs text-gray-600">{sub}</div>
+                                                {defaultPace !== 0 && (
+                                                    <div className="text-xs text-gray-500">
+                                                        標準: {defaultPace > 0 ? '+' : ''}{defaultPace} kg/月
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className={`text-xs font-bold px-2 py-0.5 rounded ${
                                                 adjust > 0 ? 'bg-green-100 text-green-700' :
@@ -1826,29 +1842,195 @@ const BasicTab = ({
                                                 {adjust > 0 ? '+' : ''}{adjust}kcal
                                             </div>
                                         </button>
-                                    ))}
+                                    )})}
                                 </div>
 
-                                {/* カロリー調整値 */}
-                                <div className="mt-3">
-                                    <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
-                                        <div className="flex flex-col">
-                                            <span>カロリー調整値kcal/日</span>
-                                            <span className="text-xs text-gray-600 font-normal mt-0.5">メンテナンスから±調整</span>
+                                {/* ペース設定（ダイエット・バルクアップ時のみ表示） */}
+                                {(profile.purpose === 'ダイエット' || profile.purpose === 'バルクアップ') && (
+                                    <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                            <span>ペース設定</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setInfoModal({
+                                                    show: true,
+                                                    title: 'ペース設定について',
+                                                    content: `体重変化のペースを設定すると、カロリー調整値が自動計算されます。
+
+【計算式】
+体脂肪 1kg ≒ 7,200 kcal
+日次カロリー調整 = (月間目標kg × 7,200) ÷ 30日
+
+【単位の違い】
+• kg/月: 体重の絶対変化量（体格に関係なく固定）
+• 体脂肪率%/月: 現在の体重に対する割合で変化
+  （例: 70kgで-1%→-0.7kg→-168kcal/日）
+
+【推奨ペース】
+ダイエット: -0.5〜-2 kg/月 または -1〜-3%/月
+バルクアップ: +0.5〜+2 kg/月 または +0.5〜+2%/月
+
+※ 安全のため、上限は -1,000〜+500 kcal/日 に制限されています。`
+                                                })}
+                                                className="text-[#4A9EFF] hover:text-[#3b8fef]"
+                                            >
+                                                <Icon name="HelpCircle" size={16} />
+                                            </button>
+                                        </label>
+
+                                        {/* 単位選択 */}
+                                        <div className="flex gap-2 mb-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const newPresets = LBMUtils.getPacePresets(profile.purpose, 'kg', profile.weight);
+                                                    const defaultPreset = newPresets.find(p => Math.abs(p.value) === 1) || newPresets[1];
+                                                    setProfile({
+                                                        ...profile,
+                                                        paceUnit: 'kg',
+                                                        weightChangePace: defaultPreset?.value || (profile.purpose === 'ダイエット' ? -1 : 1),
+                                                        customPaceValue: null,
+                                                        calorieAdjustment: defaultPreset?.kcal || (profile.purpose === 'ダイエット' ? -240 : 240)
+                                                    });
+                                                }}
+                                                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition ${
+                                                    (profile.paceUnit || 'kg') === 'kg'
+                                                        ? 'bg-[#4A9EFF] text-white'
+                                                        : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                kg/月
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const newPresets = LBMUtils.getPacePresets(profile.purpose, 'bf_percent', profile.weight);
+                                                    const defaultPreset = newPresets.find(p => Math.abs(p.value) === 1) || newPresets[1];
+                                                    setProfile({
+                                                        ...profile,
+                                                        paceUnit: 'bf_percent',
+                                                        weightChangePace: defaultPreset?.value || (profile.purpose === 'ダイエット' ? -1 : 1),
+                                                        customPaceValue: null,
+                                                        calorieAdjustment: defaultPreset?.kcal || 0
+                                                    });
+                                                }}
+                                                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition ${
+                                                    profile.paceUnit === 'bf_percent'
+                                                        ? 'bg-[#4A9EFF] text-white'
+                                                        : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                体脂肪率%/月
+                                            </button>
                                         </div>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="50"
-                                        value={profile.calorieAdjustment !== undefined && profile.calorieAdjustment !== null ? profile.calorieAdjustment : ''}
-                                        onChange={(e) => {
-                                            const value = e.target.value === '' ? null : Number(e.target.value);
-                                            setProfile({...profile, calorieAdjustment: value});
-                                        }}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
-                                        placeholder="0"
-                                    />
-                                </div>
+
+                                        {/* プリセット選択 */}
+                                        <div className="space-y-2 mb-3">
+                                            {LBMUtils.getPacePresets(profile.purpose, profile.paceUnit || 'kg', profile.weight).map((preset) => (
+                                                <button
+                                                    key={preset.value}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const unit = profile.paceUnit || 'kg';
+                                                        const adjustment = LBMUtils.calculateCalorieAdjustmentFromPace(preset.value, unit, profile.weight);
+                                                        setProfile({
+                                                            ...profile,
+                                                            weightChangePace: preset.value,
+                                                            customPaceValue: null,
+                                                            calorieAdjustment: adjustment
+                                                        });
+                                                    }}
+                                                    className={`w-full p-2 rounded-lg border-2 transition flex items-center justify-between ${
+                                                        profile.weightChangePace === preset.value && !profile.customPaceValue
+                                                            ? 'border-[#4A9EFF] bg-blue-50'
+                                                            : 'border-gray-200 bg-white hover:border-[#4A9EFF]'
+                                                    }`}
+                                                >
+                                                    <div className="font-bold text-sm">{preset.label}</div>
+                                                    <div className="text-xs text-gray-600">{preset.description}</div>
+                                                    <div className={`text-xs font-bold px-2 py-0.5 rounded ${
+                                                        preset.kcal > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                        {preset.kcal > 0 ? '+' : ''}{preset.kcal} kcal/日
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* カスタムペース入力 */}
+                                        <div className="border-t pt-3">
+                                            <div className="text-xs text-gray-600 mb-2">またはカスタム値を入力:</div>
+                                            <div className="flex gap-2 items-center">
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={profile.customPaceValue !== undefined && profile.customPaceValue !== null ? profile.customPaceValue : ''}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value === '' ? null : Number(e.target.value);
+                                                        const unit = profile.paceUnit || 'kg';
+                                                        const adjustment = value !== null
+                                                            ? LBMUtils.calculateCalorieAdjustmentFromPace(value, unit, profile.weight)
+                                                            : 0;
+                                                        setProfile({
+                                                            ...profile,
+                                                            customPaceValue: value,
+                                                            weightChangePace: value,
+                                                            calorieAdjustment: adjustment
+                                                        });
+                                                    }}
+                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none text-sm"
+                                                    placeholder={profile.purpose === 'ダイエット' ? '-1.5' : '0.75'}
+                                                />
+                                                <span className="text-sm text-gray-600 whitespace-nowrap">
+                                                    {(profile.paceUnit || 'kg') === 'kg' ? 'kg/月' : '体脂肪率%/月'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* 計算結果表示 */}
+                                        <div className={`mt-3 p-2 rounded-lg text-center ${
+                                            profile.calorieAdjustment > 0 ? 'bg-green-100' :
+                                            profile.calorieAdjustment < 0 ? 'bg-red-100' : 'bg-gray-100'
+                                        }`}>
+                                            <div className="text-xs text-gray-600">算出カロリー調整値</div>
+                                            <div className={`text-lg font-bold ${
+                                                profile.calorieAdjustment > 0 ? 'text-green-700' :
+                                                profile.calorieAdjustment < 0 ? 'text-red-700' : 'text-gray-700'
+                                            }`}>
+                                                {profile.calorieAdjustment > 0 ? '+' : ''}{profile.calorieAdjustment || 0} kcal/日
+                                            </div>
+                                            {profile.weightChangePace && (
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    {profile.weightChangePace > 0 ? '+' : ''}{profile.weightChangePace} {(profile.paceUnit || 'kg') === 'bf_percent' ? '体脂肪率%' : 'kg'}/月
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* メンテナンス・リコンプ時のカロリー調整（任意） */}
+                                {(profile.purpose === 'メンテナンス' || profile.purpose === 'リコンプ') && (
+                                    <div className="mt-3">
+                                        <label className="block text-sm font-medium mb-1.5 flex items-center gap-2">
+                                            <div className="flex flex-col">
+                                                <span>カロリー調整値 (任意)</span>
+                                                <span className="text-xs text-gray-600 font-normal mt-0.5">メンテナンスから微調整</span>
+                                            </div>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="50"
+                                            value={profile.calorieAdjustment !== undefined && profile.calorieAdjustment !== null ? profile.calorieAdjustment : ''}
+                                            onChange={(e) => {
+                                                const value = e.target.value === '' ? null : Number(e.target.value);
+                                                setProfile({...profile, calorieAdjustment: value});
+                                            }}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                )}
+
                             </div>
 
                             {/* STEP 4: PFCバランス設定*/}
@@ -1897,46 +2079,7 @@ const BasicTab = ({
                                     PFCバランス（目標比率）
                                 </label>
 
-                                {/* モード選択*/}
-                                <div className="mb-2">
-                                    <div className="flex gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setAdvancedSettings({
-                                                    ...advancedSettings,
-                                                    usePurposeBased: true
-                                                });
-                                            }}
-                                            className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition ${
-                                                advancedSettings.usePurposeBased === true
-                                                    ? 'bg-[#4A9EFF] text-white'
-                                                    : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-                                            }`}
-                                        >
-                                            デフォルト比率
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setAdvancedSettings({
-                                                    ...advancedSettings,
-                                                    usePurposeBased: false
-                                                });
-                                            }}
-                                            className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition ${
-                                                advancedSettings.usePurposeBased === false
-                                                    ? 'bg-[#4A9EFF] text-white'
-                                                    : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-                                            }`}
-                                        >
-                                            カスタム比率
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* カスタム比率設定（カスタムモード時のみ表示を*/}
-                                {advancedSettings.usePurposeBased === false && (
+                                {/* カスタム比率設定 */}
                                 <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
                                     {/* タンパク質 */}
                                     <div>
@@ -2042,11 +2185,26 @@ const BasicTab = ({
                                             className="w-full"
                                         />
                                     </div>
-                                    <div className="text-xs text-gray-600 pt-2 border-t">
-                                        合計 {(advancedSettings.proteinRatio || 30) + (advancedSettings.fatRatioPercent || 25) + (advancedSettings.carbRatio || 45)}%
+                                    <div className="flex justify-between items-center pt-2 border-t">
+                                        <div className="text-xs text-gray-600">
+                                            合計 {(advancedSettings.proteinRatio || 30) + (advancedSettings.fatRatioPercent || 25) + (advancedSettings.carbRatio || 45)}%
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setAdvancedSettings({
+                                                    ...advancedSettings,
+                                                    proteinRatio: 30,
+                                                    fatRatioPercent: 25,
+                                                    carbRatio: 45
+                                                });
+                                            }}
+                                            className="text-xs text-[#4A9EFF] hover:text-[#3b8fef] underline"
+                                        >
+                                            デフォルトに戻す
+                                        </button>
                                     </div>
                                 </div>
-                                )}
                             </div>
                     <button
                         onClick={handleSave}

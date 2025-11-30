@@ -2403,7 +2403,7 @@ JSON形式のみ出力、説明文不要`;
                             className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
                             title="使い方"
                         >
-                            <Icon name="HelpCircle" size={20} />
+                            <Icon name="HelpCircle" size={16} />
                         </button>
                         <button
                             onClick={onClose}
@@ -2721,7 +2721,7 @@ JSON形式のみ出力、説明文不要`;
 
                                     <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
                                         <p className="text-xs text-blue-800">
-                                            <Icon name="HelpCircle" size={14} className="inline mr-1" />
+                                            <Icon name="HelpCircle" size={16} className="inline mr-1" />
                                             AIが認識できなかった食材を手動で追加できます
                                         </p>
                                     </div>
@@ -2874,7 +2874,7 @@ JSON形式のみ出力、説明文不要`;
                     {/* 使い方説明 */}
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
-                            <Icon name="Info" size={16} />
+                            <Icon name="HelpCircle" size={16} />
                             使い方のコツ
                         </h4>
                         <ul className="text-sm text-blue-800 space-y-1">
@@ -2895,7 +2895,7 @@ JSON形式のみ出力、説明文不要`;
                         {/* ヘッダー */}
                         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+                                <Icon name="HelpCircle" size={16} style={{color: '#4A9EFF'}} />
                                 写真解析の使い方
                             </h3>
                             <button
@@ -2975,7 +2975,7 @@ JSON形式のみ出力、説明文不要`;
                                             <div className="mt-2 space-y-2">
                                                 <div className="bg-blue-100 border border-blue-300 rounded p-2">
                                                     <p className="text-xs text-blue-900 font-semibold mb-1 flex items-center gap-1">
-                                                        <Icon name="Info" size={12} />
+                                                        <Icon name="HelpCircle" size={16} />
                                                         八訂候補（日本食品標準成分表）
                                                     </p>
                                                     <p className="text-xs text-blue-800">
@@ -3520,7 +3520,7 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                     <details className="bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">
                         <summary className="px-3 py-2 cursor-pointer hover:bg-blue-100 transition flex items-center justify-between text-sm font-medium text-blue-800">
                             <span className="flex items-center gap-2">
-                                <Icon name="Info" size={14} />
+                                <Icon name="HelpCircle" size={16} />
                                 八訂候補を見る（{food.hachiteiCandidates.length}件）
                             </span>
                             <Icon name="ChevronDown" size={14} />

@@ -1364,7 +1364,7 @@ ${conversationContext}
                             className="p-1 hover:bg-white/50 rounded transition"
                             style={{color: '#4A9EFF'}}
                         >
-                            <Icon name="Info" size={16} />
+                            <Icon name="HelpCircle" size={16} />
                         </button>
                         <button
                             onClick={() => setShowMicroLearningSelector(true)}
@@ -1802,7 +1802,7 @@ ${conversationContext}
                             className="p-2 hover:bg-indigo-50 rounded-lg transition flex-shrink-0"
                             style={{color: '#4A9EFF'}}
                         >
-                            <Icon name="Info" size={20} />
+                            <Icon name="HelpCircle" size={16} />
                         </button>
                         <input
                             type="text"
@@ -1844,7 +1844,7 @@ ${conversationContext}
                         {/* ヘッダー */}
                         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="HelpCircle" size={20} style={{color: '#4A9EFF'}} />
+                                <Icon name="HelpCircle" size={16} style={{color: '#4A9EFF'}} />
                                 質問機能の使い方
                             </h3>
                             <button onClick={() => setShowHelpModal(false)} className="p-1 hover:bg-gray-100 rounded-full transition">
@@ -1886,7 +1886,7 @@ ${conversationContext}
                         {/* ヘッダー */}
                         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="Info" size={20} style={{color: '#4A9EFF'}} />
+                                <Icon name="HelpCircle" size={16} style={{color: '#4A9EFF'}} />
                                 クレジットについて
                             </h3>
                             <button onClick={() => setShowCreditInfoModal(false)} className="p-1 hover:bg-gray-100 rounded-full transition">
@@ -2551,7 +2551,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                 })}
                                 className="text-indigo-600 hover:text-indigo-800"
                             >
-                                <Icon name="Info" size={16} />
+                                <Icon name="HelpCircle" size={16} />
                             </button>
                         </div>
                         <CalendarView
@@ -2981,7 +2981,7 @@ const HistoryView = ({ onClose, userId, userProfile, lastUpdate, setInfoModal })
                                         })}
                                         className="text-indigo-600 hover:text-indigo-800"
                                     >
-                                        <Icon name="Info" size={16} />
+                                        <Icon name="HelpCircle" size={16} />
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">

@@ -597,7 +597,7 @@ const NotificationSettings = ({ userId }) => {
                         {activeTab === 'meal' && (
                             <div className="space-y-4">
                                 <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <Icon name="Info" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                                    <Icon name="HelpCircle" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
                                     <p className="text-xs text-blue-800">
                                         朝食・昼食・夕食など、複数の時刻に通知を設定できます。タイトルと本文を自由にカスタマイズできます。
                                     </p>
@@ -671,7 +671,7 @@ const NotificationSettings = ({ userId }) => {
                         {activeTab === 'workout' && (
                             <div className="space-y-4">
                                 <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <Icon name="Info" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                                    <Icon name="HelpCircle" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
                                     <p className="text-xs text-blue-800">
                                         毎日決まった時刻にトレーニングのリマインダーが届きます。タイトルと本文を自由にカスタマイズできます。
                                     </p>
@@ -745,7 +745,7 @@ const NotificationSettings = ({ userId }) => {
                         {activeTab === 'analysis' && (
                             <div className="space-y-4">
                                 <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <Icon name="Info" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                                    <Icon name="HelpCircle" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
                                     <p className="text-xs text-blue-800">
                                         1日の終わりに、今日の栄養状態をAI分析で振り返りましょう。タイトルと本文を自由にカスタマイズできます。
                                     </p>
@@ -819,7 +819,7 @@ const NotificationSettings = ({ userId }) => {
                         {activeTab === 'custom' && (
                             <div className="space-y-4">
                                 <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <Icon name="Info" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                                    <Icon name="HelpCircle" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
                                     <p className="text-xs text-blue-800">
                                         自由なタイトル・内容で通知を作成できます。薬のリマインダーなどに便利です。
                                     </p>
@@ -896,7 +896,7 @@ const NotificationSettings = ({ userId }) => {
             {notificationPermission === 'granted' && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                     <div className="flex items-start gap-2">
-                        <Icon name="Info" size={16} className="text-yellow-600 mt-0.5 flex-shrink-0" />
+                        <Icon name="HelpCircle" size={16} className="text-yellow-600 mt-0.5 flex-shrink-0" />
                         <p className="text-xs text-yellow-800">
                             通知は設定した時刻の数秒以内に届きます。より正確なタイミングが必要な場合は、スマートフォンの標準アラーム機能をご利用ください。
                         </p>

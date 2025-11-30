@@ -1827,7 +1827,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                     {userProjects.length === 0 && (
                         <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <p className="text-sm text-blue-800 flex items-center gap-2">
-                                <Icon name="Info" size={16} />
+                                <Icon name="HelpCircle" size={16} />
                                 まずは新しいプロジェクトを作成して、ビフォー写真から始めましょう！
                             </p>
                         </div>
@@ -1863,7 +1863,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             </div>
                         ) : !autoFetchedData.history ? (
                             <div className="text-center py-4">
-                                <Icon name="Info" size={24} className="text-gray-400 mx-auto mb-2" />
+                                <Icon name="HelpCircle" size={16} className="text-gray-400 mx-auto mb-2" />
                                 <p className="text-sm text-gray-600">まだ記録がありません</p>
                                 <p className="text-xs text-gray-500 mt-1">食事や運動を記録すると、ここに平均が表示されます</p>
                             </div>
@@ -2407,7 +2407,7 @@ const AdminPanel = ({ onClose }) => {
                     <div className="max-w-4xl mx-auto space-y-4">
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                             <p className="text-sm text-blue-800 flex items-center gap-2">
-                                <Icon name="Info" size={16} />
+                                <Icon name="HelpCircle" size={16} />
                                 <span className="font-semibold">承認待ち: {pendingPosts.length}件</span>
                             </p>
                         </div>
@@ -2995,7 +2995,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                             <div className="space-y-4">
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                                     <p className="text-sm text-blue-800 flex items-center gap-2">
-                                        <Icon name="Info" size={16} />
+                                        <Icon name="HelpCircle" size={16} />
                                         <span className="font-semibold">承認待ち: {pendingPosts.length}件</span>
                                     </p>
                                 </div>
