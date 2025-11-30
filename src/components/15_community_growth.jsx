@@ -448,13 +448,13 @@ const MentorApplicationForm = ({ userId, userProfile, userStats, onClose }) => {
 
 
 // ===== ユーザープロフィールモーダル =====
-const UserProfileModal = ({ targetUserId, currentUserId, onClose }) => {
+const UserProfileModal = ({ targetUserId, currentUserId, onClose, initialTab = 'posts' }) => {
     const [profile, setProfile] = useState(null);
     const [posts, setPosts] = useState([]);
     const [isFollowing, setIsFollowing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [followLoading, setFollowLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState('posts'); // 'posts' | 'followers' | 'following'
+    const [activeTab, setActiveTab] = useState(initialTab); // 'posts' | 'followers' | 'following'
     const [followers, setFollowers] = useState([]);
     const [following, setFollowing] = useState([]);
 
@@ -612,6 +612,10 @@ const UserProfileModal = ({ targetUserId, currentUserId, onClose }) => {
 
                     {/* フォロー数 */}
                     <div className="flex gap-6 mt-4 justify-center">
+                        <div className="text-center px-4 py-2">
+                            <p className="text-xl font-bold text-gray-800">{posts.length}</p>
+                            <p className="text-xs text-gray-600">投稿</p>
+                        </div>
                         <button
                             onClick={() => setActiveTab('followers')}
                             className="text-center hover:bg-gray-100 px-4 py-2 rounded-lg transition"
@@ -626,10 +630,6 @@ const UserProfileModal = ({ targetUserId, currentUserId, onClose }) => {
                             <p className="text-xl font-bold text-gray-800">{profile.followingCount || 0}</p>
                             <p className="text-xs text-gray-600">フォロー中</p>
                         </button>
-                        <div className="text-center px-4 py-2">
-                            <p className="text-xl font-bold text-gray-800">{posts.length}</p>
-                            <p className="text-xs text-gray-600">投稿</p>
-                        </div>
                     </div>
 
                     {/* フォローボタン */}

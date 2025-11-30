@@ -2693,6 +2693,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
     // 新機能: コメント・フォロー・プロフィール用state
     const [postComments, setPostComments] = useState({}); // { postId: [comments] }
     const [profileModalUserId, setProfileModalUserId] = useState(null); // プロフィールモーダル表示対象
+    const [profileModalInitialTab, setProfileModalInitialTab] = useState('posts'); // プロフィールモーダルの初期タブ
     const [myFollowerCount, setMyFollowerCount] = useState(0);
     const [myFollowingCount, setMyFollowingCount] = useState(0);
 
@@ -3023,7 +3024,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                 <div className="flex items-center gap-3">
                     <Icon name="Users" size={24} />
                     <div>
-                        <h2 className="text-xl font-bold">{userProfile?.nickname || 'COMY'}</h2>
+                        <h2 className="text-xl font-bold">COMY</h2>
                         <p className="text-xs opacity-90">コミュニティ</p>
                     </div>
                 </div>
@@ -3527,18 +3528,24 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                     <p className="text-xs text-gray-600">投稿</p>
                                 </div>
                                 <button
-                                    onClick={() => setProfileModalUserId(userId)}
-                                    className="text-center hover:bg-gray-100 rounded-lg py-2 transition"
-                                >
-                                    <p className="text-2xl font-bold text-gray-800">{myFollowingCount}</p>
-                                    <p className="text-xs text-gray-600">フォロー中</p>
-                                </button>
-                                <button
-                                    onClick={() => setProfileModalUserId(userId)}
+                                    onClick={() => {
+                                        setProfileModalInitialTab('followers');
+                                        setProfileModalUserId(userId);
+                                    }}
                                     className="text-center hover:bg-gray-100 rounded-lg py-2 transition"
                                 >
                                     <p className="text-2xl font-bold text-gray-800">{myFollowerCount}</p>
                                     <p className="text-xs text-gray-600">フォロワー</p>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setProfileModalInitialTab('following');
+                                        setProfileModalUserId(userId);
+                                    }}
+                                    className="text-center hover:bg-gray-100 rounded-lg py-2 transition"
+                                >
+                                    <p className="text-2xl font-bold text-gray-800">{myFollowingCount}</p>
+                                    <p className="text-xs text-gray-600">フォロー中</p>
                                 </button>
                             </div>
                         </div>
@@ -3975,7 +3982,11 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                 <UserProfileModal
                     targetUserId={profileModalUserId}
                     currentUserId={userId}
-                    onClose={() => setProfileModalUserId(null)}
+                    initialTab={profileModalInitialTab}
+                    onClose={() => {
+                        setProfileModalUserId(null);
+                        setProfileModalInitialTab('posts');
+                    }}
                 />
             )}
         </div>
