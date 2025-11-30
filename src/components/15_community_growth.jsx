@@ -586,9 +586,13 @@ const UserProfileModal = ({ targetUserId, currentUserId, onClose }) => {
                 <div className="p-6 border-b">
                     <div className="flex items-center gap-4">
                         {/* アバター */}
-                        <div className="w-20 h-20 bg-gradient-to-br from-fuchsia-500 to-teal-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                            {profile.nickname?.[0] || 'U'}
-                        </div>
+                        {profile.avatarUrl ? (
+                            <img src={profile.avatarUrl} alt="" className="w-20 h-20 rounded-full object-cover" />
+                        ) : (
+                            <div className="w-20 h-20 bg-gradient-to-br from-fuchsia-500 to-teal-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                                {profile.nickname?.[0] || 'U'}
+                            </div>
+                        )}
 
                         <div className="flex-1">
                             <h4 className="text-xl font-bold text-gray-800">{profile.nickname}</h4>
@@ -693,24 +697,245 @@ const UserProfileModal = ({ targetUserId, currentUserId, onClose }) => {
                 {/* コンテンツ */}
                 <div className="flex-1 overflow-y-auto p-4">
                     {activeTab === 'posts' && (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {posts.length === 0 ? (
                                 <p className="text-center text-gray-500 py-8">まだ投稿がありません</p>
                             ) : (
                                 posts.map(post => (
-                                    <div key={post.id} className="bg-gray-50 rounded-lg p-3">
-                                        <p className="text-sm text-gray-800 line-clamp-3">{post.content}</p>
-                                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                                            <span className="flex items-center gap-1">
-                                                <Icon name="Heart" size={12} />
-                                                {post.likes || 0}
+                                    <div key={post.id} className="bg-white rounded-lg shadow-sm p-4">
+                                        {/* ヘッダー（アバター・名前・タグ・タイムスタンプ） */}
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {(post.authorAvatarUrl || profile?.avatarUrl) ? (
+                                                    <img src={post.authorAvatarUrl || profile?.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+                                                ) : (
+                                                    <div className="w-7 h-7 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                                        {post.author?.[0] || profile?.nickname?.[0] || 'U'}
+                                                    </div>
+                                                )}
+                                                <p className="font-medium text-gray-800 text-sm">{post.author || profile?.nickname || 'ユーザー'}</p>
+                                                {/* カテゴリバッジ（ボディメイク/メンタル） */}
+                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                    post.category === 'body'
+                                                        ? 'bg-fuchsia-100 text-fuchsia-700'
+                                                        : 'bg-teal-100 text-teal-700'
+                                                }`}>
+                                                    {post.category === 'body' ? 'ボディメイク' : 'メンタル'}
+                                                </span>
+                                                {/* 目的タグ（ダイエット/メンテナンス/バルクアップ/リコンプ） */}
+                                                {post.goalCategory && post.goalCategory !== 'その他' && (
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                        post.goalCategory === 'ダイエット' ? 'bg-orange-100 text-orange-700' :
+                                                        post.goalCategory === '維持' ? 'bg-blue-100 text-blue-700' :
+                                                        post.goalCategory === 'バルクアップ' ? 'bg-green-100 text-green-700' :
+                                                        post.goalCategory === 'リコンプ' ? 'bg-purple-100 text-purple-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                        {post.goalCategory === 'ダイエット' ? 'ダイエット' :
+                                                         post.goalCategory === '維持' ? 'メンテナンス' :
+                                                         post.goalCategory === 'バルクアップ' ? 'バルクアップ' :
+                                                         post.goalCategory === 'リコンプ' ? 'リコンプ' :
+                                                         post.goalCategory}
+                                                    </span>
+                                                )}
+                                                {/* 進捗タイプタグ（新規/経過/結果） */}
+                                                {post.progressType && (
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                        post.progressType === 'before' ? 'bg-sky-100 text-sky-700' :
+                                                        post.progressType === 'progress' ? 'bg-amber-100 text-amber-700' :
+                                                        post.progressType === 'after' ? 'bg-emerald-100 text-emerald-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                        {post.progressType === 'before' ? '新規' :
+                                                         post.progressType === 'progress' ? '経過' :
+                                                         post.progressType === 'after' ? '結果' : ''}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-gray-500">
+                                                {new Date(post.timestamp).toLocaleString('ja-JP')}
+                                            </p>
+                                        </div>
+
+                                        {/* 写真 */}
+                                        {post.photo && (
+                                            <div className="mb-3">
+                                                <img src={post.photo} alt="Progress" className="w-full rounded-lg" />
+                                                {post.progressType === 'before' && (
+                                                    <p className="text-xs text-gray-500 text-center mt-1">ビフォー</p>
+                                                )}
+                                            </div>
+                                        )}
+                                        {!post.photo && post.beforePhoto && post.afterPhoto && (
+                                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                                <div>
+                                                    <p className="text-xs text-gray-600 text-center mb-1">Before</p>
+                                                    <img src={post.beforePhoto} alt="Before" className="w-full rounded-lg" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-600 text-center mb-1">After</p>
+                                                    <img src={post.afterPhoto} alt="After" className="w-full rounded-lg" />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* 投稿内容 */}
+                                        <p className="text-gray-600 mb-3 whitespace-pre-wrap">{post.content}</p>
+
+                                        {/* データ連携情報（新形式: bodyData, historyData, usageDays, recordDays） */}
+                                        {(post.bodyData || post.historyData || post.usageDays || post.recordDays || post.projectTitle || post.daysSinceStart !== undefined) && (
+                                            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3 text-xs">
+                                                {/* プロジェクト情報（タイトル・開始からの日数・進捗回数） */}
+                                                {(post.projectTitle || post.daysSinceStart !== undefined || post.progressNumber !== undefined) && (
+                                                    <div className="flex flex-wrap gap-x-3 gap-y-1 mb-1 pb-1 border-b border-gray-200">
+                                                        {post.projectTitle && (
+                                                            <span className="text-gray-700 font-medium">{post.projectTitle}</span>
+                                                        )}
+                                                        {post.daysSinceStart !== undefined && post.daysSinceStart > 0 && (
+                                                            <span className="text-purple-600 font-medium">{post.daysSinceStart}日目</span>
+                                                        )}
+                                                        {post.progressNumber !== undefined && post.progressNumber > 0 && (
+                                                            <span className="text-pink-600 font-medium">{post.progressNumber + 1}回目</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* 継続日数・記録日数 */}
+                                                {(post.usageDays || post.recordDays) && (
+                                                    <div className="flex flex-wrap gap-x-4 gap-y-1 mb-1">
+                                                        {post.usageDays > 0 && (
+                                                            <span className="text-fuchsia-600 font-medium">継続 {post.usageDays}日</span>
+                                                        )}
+                                                        {post.recordDays > 0 && (
+                                                            <span className="text-cyan-600 font-medium">記録 {post.recordDays}日</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* 体組成 */}
+                                                {post.bodyData && (post.bodyData.weight || post.bodyData.lbm || post.bodyData.bodyFat) && (
+                                                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                                        {post.bodyData.lbm && (
+                                                            <span className="text-teal-600 font-medium">LBM {post.bodyData.lbm}kg</span>
+                                                        )}
+                                                        {post.bodyData.weight && (
+                                                            <span className="text-teal-600">体重 <span className="font-medium">{post.bodyData.weight}kg</span></span>
+                                                        )}
+                                                        {post.bodyData.bodyFat && (
+                                                            <span className="text-teal-600">体脂肪 <span className="font-medium">{post.bodyData.bodyFat}%</span></span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* 過去平均（食事・運動・コンディション） */}
+                                                {post.historyData && (post.historyData.calories || post.historyData.protein || post.historyData.exerciseCount) && (
+                                                    <div className={`space-y-1 ${(post.bodyData?.weight || post.usageDays) ? 'mt-1 pt-1 border-t border-gray-200' : ''}`}>
+                                                        <span className="text-gray-400 text-xs">{post.historyData.daysCount || 30}日平均:</span>
+                                                        {/* 食事 */}
+                                                        <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                                                            <span className="text-gray-500 text-xs">食事:</span>
+                                                            {post.historyData.calories > 0 && (
+                                                                <span className="text-blue-600 font-medium text-xs">{post.historyData.calories}kcal</span>
+                                                            )}
+                                                            {post.historyData.protein > 0 && (
+                                                                <span className="text-red-500 font-medium text-xs">P{post.historyData.protein}g</span>
+                                                            )}
+                                                            {post.historyData.fat > 0 && (
+                                                                <span className="text-yellow-500 font-medium text-xs">F{post.historyData.fat}g</span>
+                                                            )}
+                                                            <span className="text-green-500 font-medium text-xs">C{post.historyData.carbs ?? 0}g</span>
+                                                        </div>
+                                                        {/* 運動 */}
+                                                        {(post.historyData.exerciseCount > 0 || post.historyData.totalSets > 0) && (
+                                                            <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                                                                <span className="text-gray-500 text-xs">運動:</span>
+                                                                {post.historyData.exerciseCount > 0 && (
+                                                                    <span className="text-orange-600 font-medium text-xs">{post.historyData.exerciseCount}種目</span>
+                                                                )}
+                                                                {post.historyData.totalSets > 0 && (
+                                                                    <span className="text-orange-600 font-medium text-xs">{post.historyData.totalSets}セット</span>
+                                                                )}
+                                                                {post.historyData.totalVolume > 0 && (
+                                                                    <span className="text-orange-600 font-medium text-xs">{post.historyData.totalVolume.toLocaleString()}kg</span>
+                                                                )}
+                                                                {post.historyData.workoutTime > 0 && (
+                                                                    <span className="text-orange-600 font-medium text-xs">{post.historyData.workoutTime}分</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {/* コンディション */}
+                                                        {(post.historyData.sleepHours || post.historyData.sleepQuality || post.historyData.digestion || post.historyData.focus || post.historyData.stress) && (
+                                                            <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                                                                <span className="text-gray-500 text-xs">コンディ:</span>
+                                                                {post.historyData.sleepHours && (
+                                                                    <span className="text-red-500 font-medium text-xs">睡眠{post.historyData.sleepHours}h</span>
+                                                                )}
+                                                                {post.historyData.sleepQuality && (
+                                                                    <span className="text-red-500 font-medium text-xs">質{post.historyData.sleepQuality}</span>
+                                                                )}
+                                                                {post.historyData.digestion && (
+                                                                    <span className="text-red-500 font-medium text-xs">腸{post.historyData.digestion}</span>
+                                                                )}
+                                                                {post.historyData.focus && (
+                                                                    <span className="text-red-500 font-medium text-xs">集中{post.historyData.focus}</span>
+                                                                )}
+                                                                {post.historyData.stress && (
+                                                                    <span className="text-red-500 font-medium text-xs">ストレス{post.historyData.stress}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* プロフィール設定（PFCバランス・目標・活動係数など） */}
+                                                {post.profileSettings && (
+                                                    <div className={`flex flex-wrap gap-x-3 gap-y-1 ${(post.historyData || post.bodyData?.weight || post.usageDays) ? 'mt-1 pt-1 border-t border-gray-200' : ''}`}>
+                                                        <span className="text-gray-400">設定:</span>
+                                                        {/* PFCバランス（設定値） */}
+                                                        {post.profileSettings.pfcBalance && (
+                                                            <span className="text-gray-500">
+                                                                PFC(<span className="text-red-500 font-medium">{post.profileSettings.pfcBalance.protein}</span>:
+                                                                <span className="text-yellow-500 font-medium">{post.profileSettings.pfcBalance.fat}</span>:
+                                                                <span className="text-green-500 font-medium">{post.profileSettings.pfcBalance.carb}</span>)
+                                                            </span>
+                                                        )}
+                                                        {/* 活動係数 */}
+                                                        {post.profileSettings.activityMultiplier && (
+                                                            <span className="text-violet-600 font-medium">
+                                                                活動係数 ×{post.profileSettings.activityMultiplier}
+                                                            </span>
+                                                        )}
+                                                        {/* カロリー調整値 */}
+                                                        {post.profileSettings.calorieAdjustment !== 0 && (
+                                                            <span className={`font-medium ${post.profileSettings.calorieAdjustment > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                {post.profileSettings.calorieAdjustment > 0 ? '+' : ''}{post.profileSettings.calorieAdjustment}kcal
+                                                            </span>
+                                                        )}
+                                                        {/* 目標カロリー・PFC */}
+                                                        {post.profileSettings.targetCalories > 0 && (
+                                                            <span className="text-blue-600">
+                                                                目標<span className="font-medium">{post.profileSettings.targetCalories}</span>kcal
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* PG BASE引用 */}
+                                        {post.citedModule && (
+                                            <div className="p-2 bg-teal-50 border border-teal-200 rounded-lg mb-3">
+                                                <p className="text-xs text-teal-800">
+                                                    引用: <span className="font-semibold">{post.citedModule.title}</span>
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* アクション */}
+                                        <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
+                                            <span className="flex items-center gap-1 text-gray-600">
+                                                <Icon name="Heart" size={18} />
+                                                <span className="text-sm">{post.likes || 0}</span>
                                             </span>
-                                            <span className="flex items-center gap-1">
-                                                <Icon name="MessageCircle" size={12} />
-                                                {post.commentCount || 0}
-                                            </span>
-                                            <span>
-                                                {new Date(post.timestamp).toLocaleDateString('ja-JP')}
+                                            <span className="flex items-center gap-1 text-gray-600">
+                                                <Icon name="MessageCircle" size={18} />
+                                                <span className="text-sm">{post.commentCount || 0}</span>
                                             </span>
                                         </div>
                                     </div>

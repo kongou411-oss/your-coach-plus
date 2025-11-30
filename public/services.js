@@ -148,6 +148,11 @@ const foodDB = getFoodDBFromExternal();
 const supplementDB = getSupplementDBFromExternal();
 const exerciseDB = getExerciseDBFromExternal();
 
+// グローバル変数としてwindowに登録（Reactコンポーネントからアクセス可能にする）
+window.exerciseDB = exerciseDB;
+window.foodDB = foodDB;
+window.supplementDB = supplementDB;
+
 // ===== データアクセス層（開発中はlocalStorage） =====
 const DataService = {
     // ユーザー認証情報の保存/更新（Google/Email認証後に自動実行）
@@ -675,18 +680,79 @@ const DataService = {
     },
 
 
-    // コミュニティ投稿取得
-    // コミュニティ投稿取得（承認済みのみ）
+    // コミュニティ投稿取得（communityProjectsのprogress サブコレクションから承認済みを取得）
     getCommunityPosts: async () => {
         try {
-            const snapshot = await db.collection('communityPosts')
-                .where('approvalStatus', '==', 'approved')
-                .orderBy('timestamp', 'desc')
-                .limit(50)
-                .get();
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const posts = [];
+            const userAvatarCache = {}; // ユーザーアバターのキャッシュ
+
+            // 全プロジェクトを取得
+            const projectsSnapshot = await db.collection('communityProjects').get();
+
+            for (const projectDoc of projectsSnapshot.docs) {
+                const projectData = projectDoc.data();
+                const projectId = projectDoc.id;
+                const projectUserId = projectData.userId;
+
+                // ユーザーの最新アバターを取得（キャッシュがなければ）
+                if (projectUserId && !userAvatarCache[projectUserId]) {
+                    try {
+                        const userDoc = await db.collection('users').doc(projectUserId).get();
+                        if (userDoc.exists) {
+                            userAvatarCache[projectUserId] = userDoc.data().avatarUrl || null;
+                        }
+                    } catch (e) {
+                        console.log('Failed to fetch user avatar:', projectUserId);
+                    }
+                }
+
+                // 各プロジェクトの承認済み進捗を取得
+                const progressSnapshot = await db.collection('communityProjects')
+                    .doc(projectId)
+                    .collection('progress')
+                    .where('approvalStatus', '==', 'approved')
+                    .orderBy('timestamp', 'desc')
+                    .get();
+
+                for (const progressDoc of progressSnapshot.docs) {
+                    const progressData = progressDoc.data();
+
+                    posts.push({
+                        id: progressDoc.id,
+                        projectId: projectId,
+                        projectTitle: projectData.title,
+                        goalCategory: projectData.goalCategory,
+                        userId: projectData.userId,
+                        author: progressData.authorName || projectData.userName,
+                        // アバター優先順位: 投稿時のアバター → ユーザーの最新アバター → プロジェクトのアバター
+                        authorAvatarUrl: progressData.authorAvatarUrl || userAvatarCache[projectUserId] || projectData.userAvatar || null,
+                        category: 'body',
+                        progressType: progressData.progressType || 'progress',
+                        photo: progressData.photo || null,
+                        content: progressData.caption || projectData.goal || '',
+                        approvalStatus: progressData.approvalStatus || 'approved',
+                        timestamp: progressData.timestamp || null,
+                        likes: progressData.likes || 0,
+                        likedUsers: progressData.likedUsers || [],
+                        commentCount: progressData.commentCount || 0,
+                        bodyData: progressData.bodyData,
+                        historyData: progressData.historyData,
+                        daysSinceStart: progressData.daysSinceStart
+                    });
+                }
+            }
+
+            // タイムスタンプでソート（新しい順）
+            posts.sort((a, b) => {
+                const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
+                const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+                return dateB - dateA;
+            });
+
+            console.log('[getCommunityPosts] Loaded', posts.length, 'approved posts');
+            return posts.slice(0, 50); // 最大50件
         } catch (error) {
-            console.error('Error fetching community posts:', error);
+            console.error('[getCommunityPosts] Error:', error);
             return [];
         }
     },
@@ -705,16 +771,25 @@ const DataService = {
         }
     },
 
-    // コミュニティ画像アップロード
-    uploadCommunityPhoto: async (userId, file, photoType) => {
+    // コミュニティ画像アップロード（Base64対応）
+    uploadCommunityPhoto: async (userId, dataUrl, photoType) => {
         try {
             const timestamp = Date.now();
             const ref = storage.ref(`community/${userId}/${photoType}_${timestamp}.jpg`);
-            await ref.put(file);
+
+            // Base64データURLの場合はputStringを使用
+            if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+                await ref.putString(dataUrl, 'data_url');
+            } else {
+                // Fileオブジェクトの場合
+                await ref.put(dataUrl);
+            }
+
             const url = await ref.getDownloadURL();
+            console.log('[uploadCommunityPhoto] Success:', url);
             return url;
         } catch (error) {
-            console.error('Error uploading community photo:', error);
+            console.error('[uploadCommunityPhoto] Error:', error);
             return null;
         }
     },
@@ -764,14 +839,18 @@ const DataService = {
 
     // ===== いいね機能（改善版） =====
 
-    // いいねトグル（追加/解除）
-    togglePostLike: async (postId, userId) => {
+    // いいねトグル（追加/解除）- communityProjects/{projectId}/progress/{progressId} 対応
+    togglePostLike: async (postId, userId, projectId) => {
         try {
-            const postRef = db.collection('communityPosts').doc(postId);
+            // projectIdがある場合はprogressサブコレクション、なければcommunityPosts
+            const postRef = projectId
+                ? db.collection('communityProjects').doc(projectId).collection('progress').doc(postId)
+                : db.collection('communityPosts').doc(postId);
+
             const postDoc = await postRef.get();
 
             if (!postDoc.exists) {
-                console.error('Post not found:', postId);
+                console.error('Post not found:', postId, 'projectId:', projectId);
                 return { success: false, liked: false };
             }
 
@@ -802,11 +881,15 @@ const DataService = {
 
     // ===== コメント機能（サブコレクション版） =====
 
-    // コメント取得
-    getPostComments: async (postId) => {
+    // コメント取得 - communityProjects/{projectId}/progress/{postId}/comments 対応
+    getPostComments: async (postId, projectId) => {
         try {
-            const snapshot = await db.collection('communityPosts')
-                .doc(postId)
+            // projectIdがある場合はprogressサブコレクション、なければcommunityPosts
+            const postRef = projectId
+                ? db.collection('communityProjects').doc(projectId).collection('progress').doc(postId)
+                : db.collection('communityPosts').doc(postId);
+
+            const snapshot = await postRef
                 .collection('comments')
                 .orderBy('createdAt', 'asc')
                 .get();
@@ -817,11 +900,15 @@ const DataService = {
         }
     },
 
-    // コメント追加
-    addComment: async (postId, commentData) => {
+    // コメント追加 - communityProjects/{projectId}/progress/{postId}/comments 対応
+    addComment: async (postId, commentData, projectId) => {
         try {
-            const docRef = await db.collection('communityPosts')
-                .doc(postId)
+            // projectIdがある場合はprogressサブコレクション、なければcommunityPosts
+            const postRef = projectId
+                ? db.collection('communityProjects').doc(projectId).collection('progress').doc(postId)
+                : db.collection('communityPosts').doc(postId);
+
+            const docRef = await postRef
                 .collection('comments')
                 .add({
                     ...commentData,
@@ -829,7 +916,7 @@ const DataService = {
                 });
 
             // 投稿のコメント数をインクリメント
-            await db.collection('communityPosts').doc(postId).update({
+            await postRef.update({
                 commentCount: firebase.firestore.FieldValue.increment(1)
             });
 
@@ -840,17 +927,21 @@ const DataService = {
         }
     },
 
-    // コメント削除
-    deleteComment: async (postId, commentId) => {
+    // コメント削除 - communityProjects/{projectId}/progress/{postId}/comments 対応
+    deleteComment: async (postId, commentId, projectId) => {
         try {
-            await db.collection('communityPosts')
-                .doc(postId)
+            // projectIdがある場合はprogressサブコレクション、なければcommunityPosts
+            const postRef = projectId
+                ? db.collection('communityProjects').doc(projectId).collection('progress').doc(postId)
+                : db.collection('communityPosts').doc(postId);
+
+            await postRef
                 .collection('comments')
                 .doc(commentId)
                 .delete();
 
             // 投稿のコメント数をデクリメント
-            await db.collection('communityPosts').doc(postId).update({
+            await postRef.update({
                 commentCount: firebase.firestore.FieldValue.increment(-1)
             });
 
@@ -1036,6 +1127,7 @@ const DataService = {
             return {
                 id: userId,
                 nickname: data.nickname || 'ユーザー',
+                avatarUrl: data.avatarUrl || null,
                 goal: data.goal || '',
                 level: data.level || 1,
                 followerCount: data.followerCount || 0,
@@ -1048,19 +1140,100 @@ const DataService = {
         }
     },
 
-    // ユーザーの投稿一覧取得
+    // ユーザーの投稿一覧取得（communityProjects/progress から取得）
     getUserPosts: async (userId) => {
         try {
-            const snapshot = await db.collection('communityPosts')
+            const posts = [];
+
+            // ユーザーのプロジェクトを取得
+            const projectsSnapshot = await db.collection('communityProjects')
                 .where('userId', '==', userId)
-                .where('approvalStatus', '==', 'approved')
-                .orderBy('timestamp', 'desc')
-                .limit(20)
                 .get();
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            for (const projectDoc of projectsSnapshot.docs) {
+                const projectData = projectDoc.data();
+                const projectId = projectDoc.id;
+
+                // 各プロジェクトの承認済み進捗を取得
+                const progressSnapshot = await db.collection('communityProjects')
+                    .doc(projectId)
+                    .collection('progress')
+                    .where('approvalStatus', '==', 'approved')
+                    .orderBy('timestamp', 'desc')
+                    .get();
+
+                for (const progressDoc of progressSnapshot.docs) {
+                    const progressData = progressDoc.data();
+
+                    posts.push({
+                        id: progressDoc.id,
+                        projectId: projectId,
+                        projectTitle: projectData.title,
+                        goalCategory: projectData.goalCategory,
+                        userId: projectData.userId,
+                        author: projectData.userName,
+                        userAvatar: projectData.userAvatar,
+                        category: 'body',
+                        progressType: progressData.progressType || 'progress',
+                        photo: progressData.photo || null,
+                        imageUrls: progressData.imageUrls || [],
+                        content: progressData.caption || projectData.goal || '',
+                        approvalStatus: progressData.approvalStatus || 'approved',
+                        timestamp: progressData.timestamp || null,
+                        likes: progressData.likes || 0,
+                        likedUsers: progressData.likedUsers || [],
+                        commentCount: progressData.commentCount || 0,
+                        bodyData: progressData.bodyData,
+                        historyData: progressData.historyData,
+                        daysSinceStart: progressData.daysSinceStart
+                    });
+                }
+            }
+
+            // タイムスタンプでソート（新しい順）
+            posts.sort((a, b) => {
+                const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
+                const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+                return dateB - dateA;
+            });
+
+            return posts.slice(0, 20);
         } catch (error) {
             console.error('Error fetching user posts:', error);
             return [];
+        }
+    },
+
+    // 投稿削除（自分の投稿のみ削除可能）
+    deleteUserPost: async (userId, projectId, progressId) => {
+        try {
+            // プロジェクトの所有者確認
+            const projectDoc = await db.collection('communityProjects').doc(projectId).get();
+            if (!projectDoc.exists) {
+                return { success: false, error: 'プロジェクトが見つかりません' };
+            }
+
+            const projectData = projectDoc.data();
+            if (projectData.userId !== userId) {
+                return { success: false, error: '自分の投稿のみ削除できます' };
+            }
+
+            // 進捗（投稿）を削除
+            await db.collection('communityProjects')
+                .doc(projectId)
+                .collection('progress')
+                .doc(progressId)
+                .delete();
+
+            // プロジェクトの進捗数を更新
+            await db.collection('communityProjects').doc(projectId).update({
+                progressCount: firebase.firestore.FieldValue.increment(-1)
+            });
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting post:', error);
+            return { success: false, error: error.message };
         }
     },
 

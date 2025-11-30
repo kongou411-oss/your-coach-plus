@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { isNativeApp } from '../capacitor-push';
 import { GoogleAuth } from '@southdevs/capacitor-google-auth';
+import ReactCrop from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 // ===== コード入力セクション（企業コード・紹介コード・ギフトコード統合） =====
 const CodeInputSection = ({ userId, userProfile }) => {
@@ -345,7 +347,149 @@ const BasicTab = ({
     const Icon = window.Icon;
     const LBMUtils = window.LBMUtils;
 
+    // アイコン画像クロップ用state
+    const [cropModalOpen, setCropModalOpen] = useState(false);
+    const [imageSrc, setImageSrc] = useState(null);
+    const [crop, setCrop] = useState({ unit: '%', width: 80, aspect: 1 });
+    const [completedCrop, setCompletedCrop] = useState(null);
+    const imgRef = useRef(null);
+
+    // 画像選択時
+    const handleImageSelect = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('画像サイズは5MB以下にしてください');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            setImageSrc(reader.result);
+            setCrop({ unit: '%', width: 80, aspect: 1 });
+            setCompletedCrop(null);
+            setCropModalOpen(true);
+        };
+        reader.readAsDataURL(file);
+        e.target.value = ''; // リセット
+    };
+
+    // クロップ確定時
+    const handleCropComplete = async () => {
+        if (!completedCrop || !imgRef.current) {
+            toast.error('範囲を選択してください');
+            return;
+        }
+
+        const image = imgRef.current;
+        const canvas = document.createElement('canvas');
+        const scaleX = image.naturalWidth / image.width;
+        const scaleY = image.naturalHeight / image.height;
+        const pixelCrop = {
+            x: completedCrop.x * scaleX,
+            y: completedCrop.y * scaleY,
+            width: completedCrop.width * scaleX,
+            height: completedCrop.height * scaleY
+        };
+
+        const outputSize = 200;
+        canvas.width = outputSize;
+        canvas.height = outputSize;
+        const ctx = canvas.getContext('2d');
+
+        ctx.drawImage(
+            image,
+            pixelCrop.x,
+            pixelCrop.y,
+            pixelCrop.width,
+            pixelCrop.height,
+            0,
+            0,
+            outputSize,
+            outputSize
+        );
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setProfile({...profile, avatarUrl: compressedDataUrl});
+
+        // 即座にFirestoreに保存
+        if (userId) {
+            try {
+                const db = firebase.firestore();
+                await db.collection('users').doc(userId).update({
+                    avatarUrl: compressedDataUrl
+                });
+                toast.success('アイコン画像を保存しました');
+            } catch (err) {
+                console.error('Avatar save error:', err);
+                toast.error('アイコン画像の保存に失敗しました');
+            }
+        }
+
+        setCropModalOpen(false);
+        setImageSrc(null);
+    };
+
     return (
+        <>
+        {/* アイコン画像クロップモーダル */}
+        {cropModalOpen && (
+            <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-auto">
+                    <div className="p-4 border-b flex items-center justify-between">
+                        <h3 className="font-bold text-lg">アイコン画像の範囲を選択</h3>
+                        <button
+                            onClick={() => {
+                                setCropModalOpen(false);
+                                setImageSrc(null);
+                            }}
+                            className="p-2 hover:bg-gray-100 rounded-full"
+                        >
+                            <Icon name="X" size={20} />
+                        </button>
+                    </div>
+                    <div className="p-4">
+                        {imageSrc && (
+                            <ReactCrop
+                                crop={crop}
+                                onChange={(c) => setCrop(c)}
+                                onComplete={(c) => setCompletedCrop(c)}
+                                aspect={1}
+                                circularCrop
+                            >
+                                <img
+                                    ref={imgRef}
+                                    src={imageSrc}
+                                    alt="Crop"
+                                    style={{ maxHeight: '60vh', width: '100%', objectFit: 'contain' }}
+                                />
+                            </ReactCrop>
+                        )}
+                        <p className="text-xs text-gray-500 mt-2 text-center">
+                            ドラッグして範囲を選択してください
+                        </p>
+                    </div>
+                    <div className="p-4 border-t flex gap-2">
+                        <button
+                            onClick={() => {
+                                setCropModalOpen(false);
+                                setImageSrc(null);
+                            }}
+                            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                        >
+                            キャンセル
+                        </button>
+                        <button
+                            onClick={handleCropComplete}
+                            className="flex-1 px-4 py-2 bg-[#4A9EFF] text-white rounded-lg hover:bg-blue-600 transition"
+                        >
+                            確定
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
         <div className="space-y-3">
             {/* プレミアム */}
             <details className="border rounded-lg border-amber-200 bg-[#FFF59A]/10">
@@ -1508,6 +1652,66 @@ const BasicTab = ({
                             <div className="border-l-4 border-[#4A9EFF] pl-4">
                                 <h4 className="text-xs font-bold text-gray-800 mb-2">STEP 1: 個人情報</h4>
                                 <div className="space-y-2.5">
+                                    {/* アイコン画像 */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1.5">アイコン画像</label>
+                                        <div className="flex items-center gap-4">
+                                            {/* プレビュー */}
+                                            <div className="relative">
+                                                {profile.avatarUrl ? (
+                                                    <img
+                                                        src={profile.avatarUrl}
+                                                        alt="アイコン"
+                                                        className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                                                    />
+                                                ) : (
+                                                    <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                                                        {profile.nickname?.[0] || 'U'}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {/* アップロードボタン */}
+                                            <div className="flex flex-col gap-2">
+                                                <label className="cursor-pointer px-4 py-2 bg-[#4A9EFF] text-white text-sm rounded-lg hover:bg-blue-600 transition flex items-center gap-2">
+                                                    <Icon name="Camera" size={16} />
+                                                    画像を選択
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={handleImageSelect}
+                                                    />
+                                                </label>
+                                                {profile.avatarUrl && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={async () => {
+                                                            setProfile({...profile, avatarUrl: null});
+
+                                                            // 即座にFirestoreから削除
+                                                            if (userId) {
+                                                                try {
+                                                                    const db = firebase.firestore();
+                                                                    await db.collection('users').doc(userId).update({
+                                                                        avatarUrl: firebase.firestore.FieldValue.delete()
+                                                                    });
+                                                                    toast.success('アイコン画像を削除しました');
+                                                                } catch (err) {
+                                                                    console.error('Avatar delete error:', err);
+                                                                    toast.error('アイコン画像の削除に失敗しました');
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition flex items-center gap-2"
+                                                    >
+                                                        <Icon name="Trash2" size={16} />
+                                                        削除
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">COMYの投稿やプロフィールで表示されます</p>
+                                    </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-1.5">ニックネーム</label>
                                         <input
@@ -2216,6 +2420,7 @@ const BasicTab = ({
             </div>
         </details>
         </div>
+        </>
     );
 };
 

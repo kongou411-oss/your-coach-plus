@@ -1182,8 +1182,15 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
         let historyAverage = null;
         if (datesWithData.length > 0) {
             let avgCalories = 0, avgProtein = 0, avgFat = 0, avgCarbs = 0;
-            let avgWorkoutTime = 0, avgTotalSets = 0;
+            // 運動4項目（運動がある日のみカウント = 休養日除外）
+            let avgExerciseCount = 0, avgTotalSets = 0, avgTotalVolume = 0, avgWorkoutTime = 0;
+            let workoutDaysCount = 0;
+            // コンディション用
             let avgSleepHours = 0, sleepCount = 0;
+            let avgSleepQuality = 0, sleepQualityCount = 0;
+            let avgDigestion = 0, digestionCount = 0;
+            let avgFocus = 0, focusCount = 0;
+            let avgStress = 0, stressCount = 0;
 
             datesWithData.forEach(date => {
                 const d = historyData[date];
@@ -1194,32 +1201,75 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 avgFat += d.meals?.reduce((sum, m) => sum + (m.fat || 0), 0) || 0;
                 avgCarbs += d.meals?.reduce((sum, m) => sum + (m.carbs || 0), 0) || 0;
 
-                // 運動データ集計（時間とセット数）
-                d.workouts?.forEach(w => {
-                    w.exercises?.forEach(ex => {
-                        const sets = ex.sets || [];
-                        avgTotalSets += sets.length;
-                        avgWorkoutTime += sets.reduce((s, set) => s + (set.duration || 0), 0);
+                // 運動データ集計（4項目：種目数、セット数、ボリューム、時間）
+                // 休養日（isRestDay: true）を持つworkoutがある日は除外
+                const hasRestDayWorkout = d.workouts?.some(w => w.isRestDay === true);
+                if (d.workouts && d.workouts.length > 0 && !hasRestDayWorkout) {
+                    workoutDaysCount++;
+                    d.workouts.forEach(w => {
+                        w.exercises?.forEach(ex => {
+                            avgExerciseCount += 1;
+                            const sets = ex.sets || [];
+                            avgTotalSets += sets.length;
+                            // ボリューム（重量×回数）
+                            avgTotalVolume += sets.reduce((sum, set) => {
+                                const weight = set.weight || 0;
+                                const reps = set.reps || 0;
+                                return sum + (weight * reps);
+                            }, 0);
+                            // 時間
+                            if (ex.duration) {
+                                avgWorkoutTime += ex.duration;
+                            } else {
+                                avgWorkoutTime += sets.reduce((s, set) => s + (set.duration || 0), 0);
+                            }
+                        });
                     });
-                });
+                }
 
-                // 睡眠時間（1-5スケール → 実時間変換: 1=5h, 2=6h, 3=7h, 4=8h, 5=9h）
-                if (d.conditions?.sleepHours) {
-                    const sleepValue = d.conditions.sleepHours;
-                    avgSleepHours += sleepValue + 4; // 1→5h, 2→6h, ...
-                    sleepCount++;
+                // コンディションデータ集計
+                if (d.conditions) {
+                    if (d.conditions.sleepHours) {
+                        avgSleepHours += d.conditions.sleepHours + 4; // 1→5h, 2→6h, ...
+                        sleepCount++;
+                    }
+                    if (d.conditions.sleepQuality) {
+                        avgSleepQuality += d.conditions.sleepQuality;
+                        sleepQualityCount++;
+                    }
+                    if (d.conditions.digestion) {
+                        avgDigestion += d.conditions.digestion;
+                        digestionCount++;
+                    }
+                    if (d.conditions.focus) {
+                        avgFocus += d.conditions.focus;
+                        focusCount++;
+                    }
+                    if (d.conditions.stress) {
+                        avgStress += d.conditions.stress;
+                        stressCount++;
+                    }
                 }
             });
 
             const count = datesWithData.length;
             historyAverage = {
+                // 食事
                 calories: Math.round(avgCalories / count),
                 protein: Math.round(avgProtein / count),
                 fat: Math.round(avgFat / count),
                 carbs: Math.round(avgCarbs / count),
-                workoutTime: Math.round(avgWorkoutTime / count),
-                totalSets: Math.round(avgTotalSets / count),
+                // 運動4項目（運動がある日数で割る = 休養日除外）
+                exerciseCount: workoutDaysCount > 0 ? Math.round(avgExerciseCount / workoutDaysCount) : 0,
+                totalSets: workoutDaysCount > 0 ? Math.round(avgTotalSets / workoutDaysCount) : 0,
+                totalVolume: workoutDaysCount > 0 ? Math.round(avgTotalVolume / workoutDaysCount) : 0,
+                workoutTime: workoutDaysCount > 0 ? Math.round(avgWorkoutTime / workoutDaysCount) : 0,
+                // コンディション
                 sleepHours: sleepCount > 0 ? (avgSleepHours / sleepCount).toFixed(1) : null,
+                sleepQuality: sleepQualityCount > 0 ? (avgSleepQuality / sleepQualityCount).toFixed(1) : null,
+                digestion: digestionCount > 0 ? (avgDigestion / digestionCount).toFixed(1) : null,
+                focus: focusCount > 0 ? (avgFocus / focusCount).toFixed(1) : null,
+                stress: stressCount > 0 ? (avgStress / stressCount).toFixed(1) : null,
                 daysCount: count
             };
         }
@@ -1254,16 +1304,19 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     useEffect(() => {
         const loadUserProjects = async () => {
             try {
+                console.log('[CommunityPost] Loading projects for user:', userProfile.uid);
+                // orderByを削除してインデックス不要に（クライアント側でソート）
                 const snapshot = await db.collection('communityProjects')
                     .where('userId', '==', userProfile.uid)
                     .where('isActive', '==', true)
-                    .orderBy('createdAt', 'desc')
                     .get();
 
                 const projects = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
-                }));
+                })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                console.log('[CommunityPost] Loaded projects:', projects.length);
                 setUserProjects(projects);
             } catch (error) {
                 console.error('[CommunityPost] Failed to load projects:', error);
@@ -1275,25 +1328,14 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
         }
     }, [userProfile?.uid]);
 
-    // 最後の投稿日時を取得
-    const lastBodyPostDate = localStorage.getItem('lastBodyPostDate');
-    const lastPostTime = lastBodyPostDate ? new Date(lastBodyPostDate) : null;
-
-    // 過去30日の記録日数をカウント（最後の投稿以降のみカウント）
+    // 過去30日の記録日数をカウント
     const getRecordDaysInLast30 = () => {
         if (!historyData) return 0;
         const last30Days = Object.keys(historyData)
             .filter(date => {
                 const recordDate = new Date(date);
                 const daysDiff = Math.floor((new Date() - recordDate) / (1000 * 60 * 60 * 24));
-
-                // 過去30日以内
-                if (daysDiff < 0 || daysDiff >= 30) return false;
-
-                // 最後の投稿以降の記録のみカウント
-                if (lastPostTime && recordDate <= lastPostTime) return false;
-
-                return true;
+                return daysDiff >= 0 && daysDiff < 30;
             })
             .filter(date => {
                 const data = historyData[date];
@@ -1305,13 +1347,6 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     };
 
     const recordDays = getRecordDaysInLast30();
-
-    // 初回投稿：30日継続＋22日記録
-    // 2回目以降：前回投稿から30日経過 OR 前回投稿以降に22日記録
-    const daysSinceLastPost = lastPostTime ? Math.floor((new Date() - lastPostTime) / (1000 * 60 * 60 * 24)) : 999;
-    const canPostBody = !lastPostTime
-        ? (usageDays >= 30 && recordDays >= 22)  // 初回
-        : (daysSinceLastPost >= 30 || recordDays >= 22);  // 2回目以降
 
     // 過去3ヶ月のLBM変化を計算
     const calculateLBMChange = () => {
@@ -1349,19 +1384,6 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
         if (!debugMode && postCategory === 'body') {
             if (!beforePhoto || !afterPhoto) {
                 setErrorMessage('ビフォー・アフター写真を両方アップロードしてください');
-                return;
-            }
-            // データ選択の検証
-            if (dataSelectionType === 'single' && !selectedHistoryDate) {
-                setErrorMessage('引用する記録データを選択してください');
-                return;
-            }
-            if (dataSelectionType === 'average' && !stats) {
-                setErrorMessage('記録データが不足しています');
-                return;
-            }
-            if (!canPostBody) {
-                setErrorMessage('ボディメイク投稿には30日以上の継続と、過去30日中22日以上の記録が必要です');
                 return;
             }
         }
@@ -1439,6 +1461,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
             const newPost = {
                 id: Date.now(),
                 author: userProfile.name || userProfile.nickname || 'ユーザー',
+                authorAvatarUrl: userProfile.avatarUrl || null,
                 userId: userProfile.uid,
                 category: postCategory,
                 content: postContent,
@@ -1610,6 +1633,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 userAvatar: (userProfile.nickname || userProfile.name || 'U')[0],
                 title: projectTitle.trim(),
                 goal: projectGoal.trim() || '',
+                goalCategory: userProfile.purpose || 'その他', // ダイエット、維持、バルクアップ、リコンプ
                 createdAt: new Date().toISOString(),
                 startDate: new Date().toISOString(),
                 category: 'body_transformation',
@@ -1632,6 +1656,9 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
             // 進捗（ビフォー）を追加（自動取得したデータを使用）
             const progressData = {
                 projectId: projectId,
+                projectTitle: projectTitle.trim(),
+                author: userProfile.nickname || userProfile.name || 'ユーザー',
+                authorAvatarUrl: userProfile.avatarUrl || null,
                 progressType: 'before',
                 progressNumber: 0,
                 photo: photoUrl,
@@ -1639,6 +1666,50 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 bodyData: autoFetchedData?.body || {},
                 dailyData: autoFetchedData?.today || {},
                 historyData: autoFetchedData?.history || {},
+                usageDays: usageDays || 0,
+                recordDays: recordDays || 0,
+                // プロフィール設定
+                profileSettings: (() => {
+                    // LBM計算
+                    const lbm = userProfile.leanBodyMass || (userProfile.weight ? userProfile.weight * (1 - (userProfile.bodyFatPercentage || 15) / 100) : 0);
+                    const fatMass = (userProfile.weight || 0) - lbm;
+
+                    // 活動係数
+                    const activityMultipliers = {1: 1.05, 2: 1.225, 3: 1.4, 4: 1.575, 5: 1.75};
+                    const activityMultiplier = userProfile.customActivityMultiplier || activityMultipliers[userProfile.activityLevel] || 1.4;
+
+                    // TDEE計算
+                    const bmr = lbm > 0 ? 370 + (21.6 * lbm) + (fatMass * 4.5) : 0;
+                    const tdee = Math.round(bmr * activityMultiplier);
+
+                    // カロリー調整
+                    const calorieAdj = userProfile.calorieAdjustment || 0;
+
+                    // 目標カロリー
+                    const adjustedCalories = tdee + calorieAdj;
+
+                    // PFCバランス（設定値をそのまま使用）
+                    const pRatio = userProfile.advancedSettings?.proteinRatio || 30;
+                    const fRatio = userProfile.advancedSettings?.fatRatioPercent || 20;
+                    const cRatio = userProfile.advancedSettings?.carbRatio || 50;
+
+                    // 目標PFC（g）計算
+                    const targetP = Math.round((adjustedCalories * pRatio / 100) / 4);
+                    const targetF = Math.round((adjustedCalories * fRatio / 100) / 9);
+                    const targetC = Math.round((adjustedCalories * cRatio / 100) / 4);
+
+                    return {
+                        purpose: userProfile.purpose || '',
+                        style: userProfile.style || '',
+                        activityMultiplier: activityMultiplier,
+                        calorieAdjustment: calorieAdj,
+                        pfcBalance: { protein: pRatio, fat: fRatio, carb: cRatio },
+                        targetCalories: adjustedCalories,
+                        targetProtein: targetP,
+                        targetFat: targetF,
+                        targetCarbs: targetC
+                    };
+                })(),
                 timestamp: new Date().toISOString(),
                 daysSinceStart: 0,
                 approvalStatus: 'pending'
@@ -1678,7 +1749,9 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 userId: userProfile.uid,
                 userName: userProfile.nickname || userProfile.name || 'ユーザー',
                 userAvatar: (userProfile.nickname || userProfile.name || 'U')[0],
+                authorAvatarUrl: userProfile.avatarUrl || null,
                 category: 'mental',
+                goalCategory: userProfile.purpose || 'その他', // ダイエット、維持、バルクアップ、リコンプ
                 title: mentalTitle.trim(),
                 body: mentalContent.trim(),
                 citedModules: citedModules,
@@ -1727,6 +1800,9 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
             // 進捗データを作成（自動取得したデータを使用）
             const progressData = {
                 projectId: selectedProject,
+                projectTitle: project.title || '',
+                author: userProfile.nickname || userProfile.name || 'ユーザー',
+                authorAvatarUrl: userProfile.avatarUrl || null,
                 progressType: progressType,
                 progressNumber: project.progressCount,
                 photo: photoUrl,
@@ -1734,6 +1810,50 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 bodyData: autoFetchedData?.body || {},
                 dailyData: autoFetchedData?.today || {},
                 historyData: autoFetchedData?.history || {},
+                usageDays: usageDays || 0,
+                recordDays: recordDays || 0,
+                // プロフィール設定
+                profileSettings: (() => {
+                    // LBM計算
+                    const lbm = userProfile.leanBodyMass || (userProfile.weight ? userProfile.weight * (1 - (userProfile.bodyFatPercentage || 15) / 100) : 0);
+                    const fatMass = (userProfile.weight || 0) - lbm;
+
+                    // 活動係数
+                    const activityMultipliers = {1: 1.05, 2: 1.225, 3: 1.4, 4: 1.575, 5: 1.75};
+                    const activityMultiplier = userProfile.customActivityMultiplier || activityMultipliers[userProfile.activityLevel] || 1.4;
+
+                    // TDEE計算
+                    const bmr = lbm > 0 ? 370 + (21.6 * lbm) + (fatMass * 4.5) : 0;
+                    const tdee = Math.round(bmr * activityMultiplier);
+
+                    // カロリー調整
+                    const calorieAdj = userProfile.calorieAdjustment || 0;
+
+                    // 目標カロリー
+                    const adjustedCalories = tdee + calorieAdj;
+
+                    // PFCバランス（設定値をそのまま使用）
+                    const pRatio = userProfile.advancedSettings?.proteinRatio || 30;
+                    const fRatio = userProfile.advancedSettings?.fatRatioPercent || 20;
+                    const cRatio = userProfile.advancedSettings?.carbRatio || 50;
+
+                    // 目標PFC（g）計算
+                    const targetP = Math.round((adjustedCalories * pRatio / 100) / 4);
+                    const targetF = Math.round((adjustedCalories * fRatio / 100) / 9);
+                    const targetC = Math.round((adjustedCalories * cRatio / 100) / 4);
+
+                    return {
+                        purpose: userProfile.purpose || '',
+                        style: userProfile.style || '',
+                        activityMultiplier: activityMultiplier,
+                        calorieAdjustment: calorieAdj,
+                        pfcBalance: { protein: pRatio, fat: fRatio, carb: cRatio },
+                        targetCalories: adjustedCalories,
+                        targetProtein: targetP,
+                        targetFat: targetF,
+                        targetCarbs: targetC
+                    };
+                })(),
                 timestamp: new Date().toISOString(),
                 daysSinceStart: daysSinceStart,
                 approvalStatus: 'pending'
@@ -1768,7 +1888,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                     <h1 className="text-xl font-bold mx-auto">投稿を作成</h1>
                     <div className="w-6"></div>
                 </header>
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 pb-24">
                     <h2 className="text-lg font-bold mb-4">投稿タイプを選択</h2>
 
                     <div className="space-y-4">
@@ -1848,7 +1968,21 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                     <h1 className="text-xl font-bold mx-auto">新規プロジェクト作成</h1>
                     <div className="w-6"></div>
                 </header>
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-6">
+                    {/* アプリ継続日数 */}
+                    <div className="bg-gradient-to-r from-fuchsia-50 to-purple-50 border border-fuchsia-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Icon name="Calendar" size={18} className="text-fuchsia-600" />
+                                <span className="font-semibold text-gray-800">アプリ継続日数</span>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-3xl font-bold text-fuchsia-600">{usageDays || 0}</span>
+                                <span className="text-sm text-gray-600 ml-1">日</span>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* 過去30日間の平均データ表示 */}
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
@@ -1869,37 +2003,12 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             </div>
                         ) : (
                             <>
-                                {/* 体組成 */}
-                                {autoFetchedData.body?.lbm && (
-                                    <div className="mb-4 p-3 bg-white/60 rounded-lg">
-                                        <p className="text-xs font-semibold text-blue-700 mb-2">体組成</p>
-                                        <div className="flex items-center gap-4">
-                                            <div className="text-center">
-                                                <p className="text-2xl font-bold text-blue-900">{autoFetchedData.body.lbm}</p>
-                                                <p className="text-xs text-gray-600">LBM (kg)</p>
-                                            </div>
-                                            {autoFetchedData.body.weight && (
-                                                <div className="text-center">
-                                                    <p className="text-lg font-semibold text-gray-700">{autoFetchedData.body.weight}</p>
-                                                    <p className="text-xs text-gray-600">体重 (kg)</p>
-                                                </div>
-                                            )}
-                                            {autoFetchedData.body.bodyFat && (
-                                                <div className="text-center">
-                                                    <p className="text-lg font-semibold text-gray-700">{autoFetchedData.body.bodyFat}</p>
-                                                    <p className="text-xs text-gray-600">体脂肪率 (%)</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* 栄養データ */}
+                                {/* 食事（1日平均） */}
                                 <div className="mb-4 p-3 bg-white/60 rounded-lg">
-                                    <p className="text-xs font-semibold text-orange-700 mb-2">栄養（1日平均）</p>
+                                    <p className="text-xs font-semibold text-gray-700 mb-2">食事（1日平均）</p>
                                     <div className="grid grid-cols-4 gap-2 text-center">
                                         <div>
-                                            <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.calories}</p>
+                                            <p className="text-lg font-bold text-blue-600">{autoFetchedData.history.calories}</p>
                                             <p className="text-xs text-gray-600">kcal</p>
                                         </div>
                                         <div>
@@ -1907,39 +2016,159 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                                             <p className="text-xs text-gray-600">P (g)</p>
                                         </div>
                                         <div>
-                                            <p className="text-lg font-bold text-yellow-600">{autoFetchedData.history.fat}</p>
+                                            <p className="text-lg font-bold text-yellow-500">{autoFetchedData.history.fat}</p>
                                             <p className="text-xs text-gray-600">F (g)</p>
                                         </div>
                                         <div>
-                                            <p className="text-lg font-bold text-green-600">{autoFetchedData.history.carbs}</p>
+                                            <p className="text-lg font-bold text-green-500">{autoFetchedData.history.carbs}</p>
                                             <p className="text-xs text-gray-600">C (g)</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* 運動・睡眠データ */}
+                                {/* 運動（1日平均） */}
+                                <div className="mb-4 p-3 bg-white/60 rounded-lg">
+                                    <p className="text-xs font-semibold text-gray-700 mb-2">運動（1日平均）</p>
+                                    <div className="grid grid-cols-4 gap-2 text-center">
+                                        <div>
+                                            <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.exerciseCount}</p>
+                                            <p className="text-xs text-gray-600">総種目</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.totalSets}</p>
+                                            <p className="text-xs text-gray-600">総セット</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.totalVolume.toLocaleString()}</p>
+                                            <p className="text-xs text-gray-600">総重量(kg)</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.workoutTime}</p>
+                                            <p className="text-xs text-gray-600">総時間(分)</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* コンディション（1日平均） */}
                                 <div className="p-3 bg-white/60 rounded-lg">
-                                    <p className="text-xs font-semibold text-purple-700 mb-2">運動・睡眠（1日平均）</p>
-                                    <div className="grid grid-cols-3 gap-2 text-center">
+                                    <p className="text-xs font-semibold text-gray-700 mb-2">コンディション（1日平均）</p>
+                                    <div className="grid grid-cols-5 gap-1 text-center">
                                         <div>
-                                            <p className="text-lg font-bold text-purple-600">{autoFetchedData.history.workoutTime}</p>
-                                            <p className="text-xs text-gray-600">運動時間 (分)</p>
+                                            <p className="text-lg font-bold text-red-500">{autoFetchedData.history.sleepHours || '-'}</p>
+                                            <p className="text-xs text-gray-600">睡眠時間</p>
                                         </div>
                                         <div>
-                                            <p className="text-lg font-bold text-[#4A9EFF]">{autoFetchedData.history.totalSets}</p>
-                                            <p className="text-xs text-gray-600">セット数</p>
+                                            <p className="text-lg font-bold text-red-500">{autoFetchedData.history.sleepQuality || '-'}</p>
+                                            <p className="text-xs text-gray-600">睡眠の質</p>
                                         </div>
-                                        {autoFetchedData.history.sleepHours && (
-                                            <div>
-                                                <p className="text-lg font-bold text-blue-600">{autoFetchedData.history.sleepHours}</p>
-                                                <p className="text-xs text-gray-600">睡眠 (時間)</p>
-                                            </div>
-                                        )}
+                                        <div>
+                                            <p className="text-lg font-bold text-red-500">{autoFetchedData.history.digestion || '-'}</p>
+                                            <p className="text-xs text-gray-600">腸内環境</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-bold text-red-500">{autoFetchedData.history.focus || '-'}</p>
+                                            <p className="text-xs text-gray-600">集中力</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-bold text-red-500">{autoFetchedData.history.stress || '-'}</p>
+                                            <p className="text-xs text-gray-600">ストレス</p>
+                                        </div>
                                     </div>
                                 </div>
                             </>
                         )}
                     </div>
+
+                    {/* プロフィール設定 */}
+                    {(() => {
+                        // LBM計算
+                        const lbm = userProfile.leanBodyMass || (userProfile.weight ? userProfile.weight * (1 - (userProfile.bodyFatPercentage || 15) / 100) : 0);
+                        const fatMass = (userProfile.weight || 0) - lbm;
+
+                        // 活動係数の計算
+                        const activityMultipliers = {1: 1.05, 2: 1.225, 3: 1.4, 4: 1.575, 5: 1.75};
+                        const activityMultiplier = userProfile.customActivityMultiplier || activityMultipliers[userProfile.activityLevel] || 1.4;
+
+                        // TDEE計算
+                        const bmr = lbm > 0 ? 370 + (21.6 * lbm) + (fatMass * 4.5) : 0;
+                        const tdee = Math.round(bmr * activityMultiplier);
+
+                        // カロリー調整
+                        const calorieAdj = userProfile.calorieAdjustment || 0;
+
+                        // 目標カロリー
+                        const adjustedCalories = tdee + calorieAdj;
+
+                        // PFCバランス（設定値をそのまま使用）
+                        const pRatio = userProfile.advancedSettings?.proteinRatio || 30;
+                        const fRatio = userProfile.advancedSettings?.fatRatioPercent || 20;
+                        const cRatio = userProfile.advancedSettings?.carbRatio || 50;
+
+                        // 目標PFC（g）計算（設定の比率から計算）
+                        const targetP = Math.round((adjustedCalories * pRatio / 100) / 4);
+                        const targetF = Math.round((adjustedCalories * fRatio / 100) / 9);
+                        const targetC = Math.round((adjustedCalories * cRatio / 100) / 4);
+
+                        return (
+                            <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
+                                <h3 className="font-bold text-violet-900 mb-3 flex items-center gap-2">
+                                    <Icon name="Settings" size={18} />
+                                    プロフィール設定
+                                </h3>
+                                <div className="space-y-2">
+                                    {/* スタイル */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">スタイル</span>
+                                        <span className="font-bold text-violet-700">{userProfile.style || '未設定'}</span>
+                                    </div>
+                                    {/* 活動係数 */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">活動係数</span>
+                                        <span className="font-bold text-violet-700">×{activityMultiplier}</span>
+                                    </div>
+                                    {/* 目的 */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">目的</span>
+                                        <span className="font-bold text-violet-700">{userProfile.purpose || '未設定'}</span>
+                                    </div>
+                                    {/* カロリー調整 */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">カロリー調整</span>
+                                        <span className={`font-bold ${calorieAdj > 0 ? 'text-green-600' : calorieAdj < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                                            {calorieAdj > 0 ? '+' : ''}{calorieAdj} kcal
+                                        </span>
+                                    </div>
+                                    {/* PFCバランス */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">PFCバランス</span>
+                                        <span className="font-bold">
+                                            <span className="text-red-500">{pRatio}%</span>
+                                            <span className="text-gray-400">/</span>
+                                            <span className="text-yellow-500">{fRatio}%</span>
+                                            <span className="text-gray-400">/</span>
+                                            <span className="text-green-500">{cRatio}%</span>
+                                        </span>
+                                    </div>
+                                    {/* 目標カロリー */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">目標カロリー</span>
+                                        <span className="font-bold text-blue-600">{adjustedCalories} kcal</span>
+                                    </div>
+                                    {/* 目標PFC */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">目標PFC</span>
+                                        <span className="font-bold">
+                                            <span className="text-red-500">P{targetP}g</span>
+                                            <span className="text-gray-400 mx-1">/</span>
+                                            <span className="text-yellow-500">F{targetF}g</span>
+                                            <span className="text-gray-400 mx-1">/</span>
+                                            <span className="text-green-500">C{targetC}g</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {/* タイトル */}
                     <div>
@@ -2037,58 +2266,180 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                     <h1 className="text-xl font-bold mx-auto">進捗を追加</h1>
                     <div className="w-6"></div>
                 </header>
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {/* 自動取得データ表示 */}
-                    {autoFetchedData && (
+                <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-6">
+                    {/* 過去の平均データ表示 */}
+                    {autoFetchedData?.history && (
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
-                                <Icon name="Database" size={18} />
-                                自動取得データ
+                                <Icon name="TrendingUp" size={18} />
+                                過去{autoFetchedData.history.daysCount}日間の平均
                             </h3>
 
-                            {/* 体組成 */}
-                            {autoFetchedData.body && (autoFetchedData.body.weight || autoFetchedData.body.bodyFat) && (
-                                <div className="mb-3">
-                                    <p className="text-sm font-semibold text-blue-800 mb-1">体組成（本日）</p>
-                                    <div className="grid grid-cols-3 gap-2 text-sm text-gray-600">
-                                        {autoFetchedData.body.weight && <div>体重: {autoFetchedData.body.weight}kg</div>}
-                                        {autoFetchedData.body.bodyFat && <div>体脂肪率: {autoFetchedData.body.bodyFat}%</div>}
-                                        {autoFetchedData.body.lbm && <div>LBM: {autoFetchedData.body.lbm}kg</div>}
+                            {/* 食事（1日平均） */}
+                            <div className="mb-4 p-3 bg-white/60 rounded-lg">
+                                <p className="text-xs font-semibold text-gray-700 mb-2">食事（1日平均）</p>
+                                <div className="grid grid-cols-4 gap-2 text-center">
+                                    <div>
+                                        <p className="text-lg font-bold text-blue-600">{autoFetchedData.history.calories}</p>
+                                        <p className="text-xs text-gray-600">kcal</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-red-500">{autoFetchedData.history.protein}</p>
+                                        <p className="text-xs text-gray-600">P (g)</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-yellow-500">{autoFetchedData.history.fat}</p>
+                                        <p className="text-xs text-gray-600">F (g)</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-green-500">{autoFetchedData.history.carbs}</p>
+                                        <p className="text-xs text-gray-600">C (g)</p>
                                     </div>
                                 </div>
-                            )}
+                            </div>
 
-                            {/* 本日のデータ */}
-                            {autoFetchedData.today && (
-                                <div className="mb-3">
-                                    <p className="text-sm font-semibold text-blue-800 mb-1">本日の記録</p>
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                                        <div>食事: {autoFetchedData.today.calories}kcal</div>
-                                        <div>P: {autoFetchedData.today.protein}g</div>
-                                        <div>運動: {autoFetchedData.today.workoutTime}分</div>
-                                        {autoFetchedData.today.conditionScore && (
-                                            <div>コンディション: {autoFetchedData.today.conditionScore}/5</div>
-                                        )}
+                            {/* 運動（1日平均） */}
+                            <div className="mb-4 p-3 bg-white/60 rounded-lg">
+                                <p className="text-xs font-semibold text-gray-700 mb-2">運動（1日平均）</p>
+                                <div className="grid grid-cols-4 gap-2 text-center">
+                                    <div>
+                                        <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.exerciseCount}</p>
+                                        <p className="text-xs text-gray-600">総種目</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.totalSets}</p>
+                                        <p className="text-xs text-gray-600">総セット</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.totalVolume.toLocaleString()}</p>
+                                        <p className="text-xs text-gray-600">総重量(kg)</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-orange-600">{autoFetchedData.history.workoutTime}</p>
+                                        <p className="text-xs text-gray-600">総時間(分)</p>
                                     </div>
                                 </div>
-                            )}
+                            </div>
 
-                            {/* 履歴平均 */}
-                            {autoFetchedData.history && (
-                                <div>
-                                    <p className="text-sm font-semibold text-blue-800 mb-1">過去の平均（{autoFetchedData.history.daysCount}日間）</p>
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                                        <div>食事: {autoFetchedData.history.calories}kcal</div>
-                                        <div>P: {autoFetchedData.history.protein}g</div>
-                                        <div>運動: {autoFetchedData.history.workoutTime}分</div>
-                                        {autoFetchedData.history.conditionScore && (
-                                            <div>コンディション: {autoFetchedData.history.conditionScore}/5</div>
-                                        )}
+                            {/* コンディション（1日平均） */}
+                            <div className="p-3 bg-white/60 rounded-lg">
+                                <p className="text-xs font-semibold text-gray-700 mb-2">コンディション（1日平均）</p>
+                                <div className="grid grid-cols-5 gap-1 text-center">
+                                    <div>
+                                        <p className="text-lg font-bold text-red-500">{autoFetchedData.history.sleepHours || '-'}</p>
+                                        <p className="text-xs text-gray-600">睡眠時間</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-red-500">{autoFetchedData.history.sleepQuality || '-'}</p>
+                                        <p className="text-xs text-gray-600">睡眠の質</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-red-500">{autoFetchedData.history.digestion || '-'}</p>
+                                        <p className="text-xs text-gray-600">腸内環境</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-red-500">{autoFetchedData.history.focus || '-'}</p>
+                                        <p className="text-xs text-gray-600">集中力</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-red-500">{autoFetchedData.history.stress || '-'}</p>
+                                        <p className="text-xs text-gray-600">ストレス</p>
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     )}
+
+                    {/* プロフィール設定 */}
+                    {(() => {
+                        // LBM計算
+                        const lbm = userProfile.leanBodyMass || (userProfile.weight ? userProfile.weight * (1 - (userProfile.bodyFatPercentage || 15) / 100) : 0);
+                        const fatMass = (userProfile.weight || 0) - lbm;
+
+                        // 活動係数の計算
+                        const activityMultipliers = {1: 1.05, 2: 1.225, 3: 1.4, 4: 1.575, 5: 1.75};
+                        const activityMultiplier = userProfile.customActivityMultiplier || activityMultipliers[userProfile.activityLevel] || 1.4;
+
+                        // TDEE計算
+                        const bmr = lbm > 0 ? 370 + (21.6 * lbm) + (fatMass * 4.5) : 0;
+                        const tdee = Math.round(bmr * activityMultiplier);
+
+                        // カロリー調整
+                        const calorieAdj = userProfile.calorieAdjustment || 0;
+
+                        // 目標カロリー
+                        const adjustedCalories = tdee + calorieAdj;
+
+                        // PFCバランス（設定値をそのまま使用）
+                        const pRatio = userProfile.advancedSettings?.proteinRatio || 30;
+                        const fRatio = userProfile.advancedSettings?.fatRatioPercent || 20;
+                        const cRatio = userProfile.advancedSettings?.carbRatio || 50;
+
+                        // 目標PFC（g）計算（設定の比率から計算）
+                        const targetP = Math.round((adjustedCalories * pRatio / 100) / 4);
+                        const targetF = Math.round((adjustedCalories * fRatio / 100) / 9);
+                        const targetC = Math.round((adjustedCalories * cRatio / 100) / 4);
+
+                        return (
+                            <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
+                                <h3 className="font-bold text-violet-900 mb-3 flex items-center gap-2">
+                                    <Icon name="Settings" size={18} />
+                                    プロフィール設定
+                                </h3>
+                                <div className="space-y-2">
+                                    {/* スタイル */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">スタイル</span>
+                                        <span className="font-bold text-violet-700">{userProfile.style || '未設定'}</span>
+                                    </div>
+                                    {/* 活動係数 */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">活動係数</span>
+                                        <span className="font-bold text-violet-700">×{activityMultiplier}</span>
+                                    </div>
+                                    {/* 目的 */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">目的</span>
+                                        <span className="font-bold text-violet-700">{userProfile.purpose || '未設定'}</span>
+                                    </div>
+                                    {/* カロリー調整 */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">カロリー調整</span>
+                                        <span className={`font-bold ${calorieAdj > 0 ? 'text-green-600' : calorieAdj < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                                            {calorieAdj > 0 ? '+' : ''}{calorieAdj} kcal
+                                        </span>
+                                    </div>
+                                    {/* PFCバランス */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">PFCバランス</span>
+                                        <span className="font-bold">
+                                            <span className="text-red-500">{pRatio}%</span>
+                                            <span className="text-gray-400">/</span>
+                                            <span className="text-yellow-500">{fRatio}%</span>
+                                            <span className="text-gray-400">/</span>
+                                            <span className="text-green-500">{cRatio}%</span>
+                                        </span>
+                                    </div>
+                                    {/* 目標カロリー */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">目標カロリー</span>
+                                        <span className="font-bold text-blue-600">{adjustedCalories} kcal</span>
+                                    </div>
+                                    {/* 目標PFC */}
+                                    <div className="flex justify-between items-center p-2 bg-white/60 rounded-lg">
+                                        <span className="text-xs text-gray-600">目標PFC</span>
+                                        <span className="font-bold">
+                                            <span className="text-red-500">P{targetP}g</span>
+                                            <span className="text-gray-400 mx-1">/</span>
+                                            <span className="text-yellow-500">F{targetF}g</span>
+                                            <span className="text-gray-400 mx-1">/</span>
+                                            <span className="text-green-500">C{targetC}g</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {/* プロジェクト選択 */}
                     <div>
@@ -2223,7 +2574,7 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                     <h1 className="text-xl font-bold mx-auto">メンタル投稿</h1>
                     <div className="w-6"></div>
                 </header>
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-6">
                     {/* タイトル */}
                     <div>
                         <label className="block font-semibold text-gray-800 mb-2">
@@ -2311,267 +2662,11 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     return null;
 };
 
-// ===== 管理者パネル（COMY投稿承認） =====
-const AdminPanel = ({ onClose }) => {
-    const [pendingPosts, setPendingPosts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedPost, setSelectedPost] = useState(null);
-
-    useEffect(() => {
-        loadPendingPosts();
-    }, []);
-
-    const loadPendingPosts = async () => {
-        setLoading(true);
-        const posts = await DataService.getPendingPosts();
-        setPendingPosts(posts);
-        setLoading(false);
-    };
-
-    const [confirmAction, setConfirmAction] = useState(null); // { type: 'approve|reject', postId, reason }
-    const [showRejectDialog, setShowRejectDialog] = useState(null); // postId
-    const [rejectReason, setRejectReason] = useState('');
-    const [actionMessage, setActionMessage] = useState('');
-
-    const handleApprove = async (postId) => {
-        setConfirmAction({ type: 'approve', postId });
-    };
-
-    const handleReject = (postId) => {
-        setShowRejectDialog(postId);
-        setRejectReason('');
-    };
-
-    const executeApprove = async () => {
-        const postId = confirmAction.postId;
-        setConfirmAction(null);
-
-        const success = await DataService.approvePost(postId);
-        if (success) {
-            setActionMessage('投稿を承認しました');
-            setTimeout(() => setActionMessage(''), 3000);
-            loadPendingPosts();
-        } else {
-            setActionMessage('承認に失敗しました');
-        }
-    };
-
-    const executeReject = async () => {
-        if (!rejectReason.trim()) {
-            setActionMessage('却下理由を入力してください');
-            return;
-        }
-
-        const postId = showRejectDialog;
-        setShowRejectDialog(null);
-
-        const success = await DataService.rejectPost(postId, rejectReason);
-        if (success) {
-            setActionMessage('投稿を却下しました');
-            setTimeout(() => setActionMessage(''), 3000);
-            loadPendingPosts();
-        } else {
-            setActionMessage('却下に失敗しました');
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col fullscreen-view">
-            {/* ヘッダー */}
-            <div className="bg-red-600 text-white px-4 py-4 flex items-center justify-between shadow-lg native-safe-header">
-                <div className="flex items-center gap-3">
-                    <Icon name="Shield" size={24} />
-                    <div>
-                        <h2 className="text-xl font-bold">管理者パネル</h2>
-                        <p className="text-xs opacity-90">COMY投稿承認</p>
-                    </div>
-                </div>
-                <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition">
-                    <Icon name="X" size={24} />
-                </button>
-            </div>
-
-            {/* コンテンツ */}
-            <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
-                {loading ? (
-                    <div className="text-center py-12">
-                        <div className="animate-spin w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                        <p className="text-gray-600">読み込み中...</p>
-                    </div>
-                ) : pendingPosts.length === 0 ? (
-                    <div className="text-center py-12">
-                        <Icon name="CheckCircle" size={64} className="mx-auto mb-4 text-green-500" />
-                        <p className="text-gray-600 font-medium">承認待ちの投稿はありません</p>
-                    </div>
-                ) : (
-                    <div className="max-w-4xl mx-auto space-y-4">
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                            <p className="text-sm text-blue-800 flex items-center gap-2">
-                                <Icon name="HelpCircle" size={16} />
-                                <span className="font-semibold">承認待ち: {pendingPosts.length}件</span>
-                            </p>
-                        </div>
-
-                        {pendingPosts.map(post => (
-                            <div key={post.id} className="bg-white rounded-lg shadow-md p-6">
-                                {/* 投稿情報 */}
-                                <div className="flex items-center justify-between mb-4 pb-4 border-b">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
-                                            {post.author?.[0] || 'U'}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-gray-800">{post.author}</p>
-                                            <p className="text-xs text-gray-600">
-                                                {new Date(post.timestamp).toLocaleString('ja-JP')}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                                        post.category === 'body'
-                                            ? 'bg-sky-100 text-sky-700'
-                                            : 'bg-teal-100 text-teal-700'
-                                    }`}>
-                                        {post.category === 'body' ? '💪 ボディメイク' : '🧠 メンタル'}
-                                    </span>
-                                </div>
-
-                                {/* ビフォー・アフター写真 */}
-                                {post.category === 'body' && post.beforePhoto && post.afterPhoto && (
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div>
-                                            <p className="text-xs text-gray-600 text-center mb-2 font-semibold">Before</p>
-                                            <img src={post.beforePhoto} alt="Before" className="w-full rounded-lg border-2 border-gray-200" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-600 text-center mb-2 font-semibold">After</p>
-                                            <img src={post.afterPhoto} alt="After" className="w-full rounded-lg border-2 border-sky-300" />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* 投稿内容 */}
-                                <div className="mb-4">
-                                    <p className="text-sm font-semibold text-gray-600 mb-2">投稿内容:</p>
-                                    <p className="text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">
-                                        {post.content}
-                                    </p>
-                                </div>
-
-                                {/* データ連携情報 */}
-                                {post.attachedData && (
-                                    <div className="p-4 bg-sky-50 border border-sky-200 rounded-lg mb-4">
-                                        <p className="text-xs font-semibold text-sky-700 mb-3 flex items-center gap-1">
-                                            <Icon name="Database" size={14} />
-                                            データ連携情報
-                                        </p>
-                                        <div className="grid grid-cols-3 gap-3 text-xs text-gray-600">
-                                            <div>• 継続: {post.attachedData.usageDays}日</div>
-                                            <div>• 記録: {post.attachedData.recordDays}日</div>
-                                            <div>• カロリー: {post.attachedData.totalCalories}kcal</div>
-                                            <div>• タンパク質: {post.attachedData.protein}g</div>
-                                            <div>• 体重: {post.attachedData.weight}kg</div>
-                                            <div>• LBM: {post.attachedData.lbm}kg</div>
-                                            {post.attachedData.lbmChange && (
-                                                <div className="col-span-3 font-semibold text-sky-700">
-                                                    • LBM変化: {post.attachedData.lbmChange > 0 ? '+' : ''}{post.attachedData.lbmChange}kg
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* アクションボタン */}
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => handleApprove(post.id)}
-                                        className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-semibold flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="CheckCircle" size={20} />
-                                        承認
-                                    </button>
-                                    <button
-                                        onClick={() => handleReject(post.id)}
-                                        className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition font-semibold flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="XCircle" size={20} />
-                                        却下
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* 承認確認ダイアログ */}
-            {confirmAction && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">投稿を承認しますか？</h3>
-                        <p className="text-sm text-gray-600 mb-6">承認すると、この投稿がCOMYフィードに公開されます。</p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setConfirmAction(null)}
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                            >
-                                キャンセル
-                            </button>
-                            <button
-                                onClick={executeApprove}
-                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
-                            >
-                                承認する
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* 却下理由入力ダイアログ */}
-            {showRejectDialog && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">投稿を却下</h3>
-                        <p className="text-sm text-gray-600 mb-4">却下理由を入力してください（投稿者には通知されません）</p>
-                        <textarea
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                            placeholder="例: 不適切な内容が含まれているため"
-                            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent mb-4 min-h-[100px]"
-                        />
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowRejectDialog(null)}
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                            >
-                                キャンセル
-                            </button>
-                            <button
-                                onClick={executeReject}
-                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
-                            >
-                                却下する
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* アクションメッセージ */}
-            {actionMessage && (
-                <div className="fixed top-4 right-4 z-[70] bg-gray-900 text-white px-6 py-3 rounded-lg shadow-lg">
-                    {actionMessage}
-                </div>
-            )}
-        </div>
-    );
-};
-
 // ===== COMYビュー =====
 const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsHistoryData }) => {
     const [activeView, setActiveView] = useState('feed'); // 'admin', 'feed', 'post', 'mypage', 'community'
     const [posts, setPosts] = useState([]);
+    const babHeight = useBABHeight(64); // BAB高さ（動的取得）
 
     // Firestoreから取得した履歴データ（propsのhistoryDataよりも優先）
     const [firestoreHistoryData, setFirestoreHistoryData] = useState({});
@@ -2582,12 +2677,6 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
 
     console.log('[COMYView] historyData:', Object.keys(historyData).length + ' days');
 
-    // 管理者判定（kongou411@gmail.com のみ）
-    const isAdmin = userProfile?.email === 'kongou411@gmail.com';
-
-    // AdminPanel用のstate
-    const [pendingPosts, setPendingPosts] = useState([]);
-    const [adminLoading, setAdminLoading] = useState(false);
     const [fabOpen, setFabOpen] = useState(false);
     const [commentingPostId, setCommentingPostId] = useState(null);
     const [commentText, setCommentText] = useState('');
@@ -2595,7 +2684,11 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
     const [selectedPostId, setSelectedPostId] = useState(null);
     const [showThemeSpaceSelector, setShowThemeSpaceSelector] = useState(false);
     const [showMentorApplication, setShowMentorApplication] = useState(false);
-    const [babHeight, setBabHeight] = useState(64); // BAB高さ（デフォルト: 格納時）
+
+    // フィード フィルター/ソート用state
+    const [feedFilter, setFeedFilter] = useState('all'); // 'all', 'ダイエット', '維持', 'バルクアップ', 'リコンプ'
+    const [feedSort, setFeedSort] = useState('newest'); // 'newest', 'popular'
+    const [showFilterSort, setShowFilterSort] = useState(false); // フィルターUI折りたたみ
 
     // 新機能: コメント・フォロー・プロフィール用state
     const [postComments, setPostComments] = useState({}); // { postId: [comments] }
@@ -2732,42 +2825,6 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
         setPosts(allPosts);
     };
 
-    const loadPendingPosts = async () => {
-        setAdminLoading(true);
-        const pending = await DataService.getPendingPosts();
-        setPendingPosts(pending);
-        setAdminLoading(false);
-    };
-
-    // 管理者の場合、承認待ち投稿も読み込む
-    useEffect(() => {
-        if (isAdmin && activeView === 'admin') {
-            loadPendingPosts();
-        }
-    }, [isAdmin, activeView]);
-
-    // 承認・却下機能
-    const handleApprove = async (postId) => {
-        const success = await DataService.approvePost(postId);
-        if (success) {
-            toast.success('投稿を承認しました');
-            loadPendingPosts();
-            loadPosts(); // フィードも更新
-        } else {
-            toast.error('承認に失敗しました');
-        }
-    };
-
-    const handleReject = async (postId, reason) => {
-        const success = await DataService.rejectPost(postId, reason);
-        if (success) {
-            toast.success('投稿を却下しました');
-            loadPendingPosts();
-        } else {
-            toast.error('却下に失敗しました');
-        }
-    };
-
     const handleSubmitPost = async (newPost) => {
         const updatedPosts = [newPost, ...posts];
         await DataService.saveCommunityPosts(updatedPosts);
@@ -2782,8 +2839,8 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
     };
 
     // いいねトグル（Firestore atomic操作版）
-    const toggleLike = async (postId) => {
-        const result = await DataService.togglePostLike(postId, userId);
+    const toggleLike = async (postId, projectId) => {
+        const result = await DataService.togglePostLike(postId, userId, projectId);
         if (result.success) {
             // ローカル状態を更新
             setPosts(posts.map(post => {
@@ -2809,19 +2866,20 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
     };
 
     // コメント追加（サブコレクション版）
-    const handleAddComment = async (postId) => {
+    const handleAddComment = async (postId, projectId) => {
         if (!commentText.trim()) return;
 
         const commentData = {
             userId: userId,
             author: userProfile?.nickname || 'ユーザー',
+            authorAvatarUrl: userProfile?.avatarUrl || null,
             content: commentText.trim()
         };
 
-        const result = await DataService.addComment(postId, commentData);
+        const result = await DataService.addComment(postId, commentData, projectId);
         if (result.success) {
             // コメント一覧を再取得
-            const comments = await DataService.getPostComments(postId);
+            const comments = await DataService.getPostComments(postId, projectId);
             setPostComments(prev => ({ ...prev, [postId]: comments }));
 
             // 投稿のコメント数を更新
@@ -2843,23 +2901,23 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
     };
 
     // コメント表示トグル
-    const handleToggleComments = async (postId) => {
+    const handleToggleComments = async (postId, projectId) => {
         if (commentingPostId === postId) {
             setCommentingPostId(null);
         } else {
             // コメントを取得
-            const comments = await DataService.getPostComments(postId);
+            const comments = await DataService.getPostComments(postId, projectId);
             setPostComments(prev => ({ ...prev, [postId]: comments }));
             setCommentingPostId(postId);
         }
     };
 
     // コメント削除
-    const handleDeleteComment = async (postId, commentId) => {
-        const result = await DataService.deleteComment(postId, commentId);
+    const handleDeleteComment = async (postId, commentId, projectId) => {
+        const result = await DataService.deleteComment(postId, commentId, projectId);
         if (result.success) {
             // コメント一覧を再取得
-            const comments = await DataService.getPostComments(postId);
+            const comments = await DataService.getPostComments(postId, projectId);
             setPostComments(prev => ({ ...prev, [postId]: comments }));
 
             // 投稿のコメント数を更新
@@ -2902,8 +2960,47 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
         }
     };
 
-    // 承認済み投稿のみ表示
-    const approvedPosts = posts.filter(post => post.approvalStatus === 'approved');
+    // 承認済み投稿をフィルタリング・ソート
+    const approvedPosts = posts
+        .filter(post => post.approvalStatus === 'approved')
+        .filter(post => feedFilter === 'all' || post.goalCategory === feedFilter)
+        .sort((a, b) => {
+            if (feedSort === 'popular') {
+                return (b.likes || 0) - (a.likes || 0);
+            }
+            // newest（デフォルト）
+            return new Date(b.timestamp) - new Date(a.timestamp);
+        });
+
+    // 投稿削除ハンドラ
+    const [deletingPostId, setDeletingPostId] = useState(null);
+    const handleDeletePost = async (post) => {
+        if (!post.projectId || !post.id) {
+            toast.error('この投稿は削除できません');
+            return;
+        }
+
+        if (!window.confirm('この投稿を削除しますか？\nこの操作は取り消せません。')) {
+            return;
+        }
+
+        setDeletingPostId(post.id);
+        try {
+            const result = await DataService.deleteUserPost(userId, post.projectId, post.id);
+            if (result.success) {
+                // ローカルのpostsから削除
+                setPosts(posts.filter(p => p.id !== post.id));
+                toast.success('投稿を削除しました');
+            } else {
+                toast.error(result.error || '削除に失敗しました');
+            }
+        } catch (error) {
+            console.error('Delete post error:', error);
+            toast.error('削除に失敗しました');
+        } finally {
+            setDeletingPostId(null);
+        }
+    };
 
     // 投稿画面表示中
     if (activeView === 'post') {
@@ -2911,7 +3008,8 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
             <CommunityPostView
                 onClose={() => setActiveView('feed')}
                 onSubmitPost={handleSubmitPost}
-                userProfile={userProfile}
+                userProfile={{ ...userProfile, uid: userId }}
+                userId={userId}
                 usageDays={usageDays}
                 historyData={historyData}
             />
@@ -2937,20 +3035,6 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
             {/* タブナビゲーション */}
             <div className="bg-white border-b border-gray-200">
                 <div className="flex px-4 gap-2">
-                    {/* 管理者タブ（kongou411@gmail.com限定） */}
-                    {isAdmin && (
-                        <button
-                            onClick={() => setActiveView('admin')}
-                            className={`px-5 py-3 font-medium text-sm transition border-b-2 ${
-                                activeView === 'admin'
-                                    ? 'border-red-600 text-red-600'
-                                    : 'border-transparent text-gray-600 hover:text-gray-800'
-                            }`}
-                        >
-                            <Icon name="Shield" size={16} className="inline mr-1" />
-                            管理者
-                        </button>
-                    )}
                     <button
                         onClick={() => setActiveView('feed')}
                         className={`px-5 py-3 font-medium text-sm transition border-b-2 ${
@@ -2962,144 +3046,79 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                         <Icon name="MessageSquare" size={16} className="inline mr-1" />
                         フィード
                     </button>
-                    <button
-                        onClick={() => setActiveView('community')}
-                        className={`px-5 py-3 font-medium text-sm transition border-b-2 ${
-                            activeView === 'community'
-                                ? 'border-fuchsia-600 text-fuchsia-600'
-                                : 'border-transparent text-gray-600 hover:text-gray-800'
-                        }`}
-                    >
-                        <Icon name="Compass" size={16} className="inline mr-1" />
-                        コミュニティ
-                    </button>
                 </div>
             </div>
 
             {/* コンテンツエリア */}
-            <div className="flex-1 overflow-y-auto bg-gray-50">
-                {/* 管理者ビュー */}
-                {activeView === 'admin' && isAdmin && (
-                    <div className="max-w-4xl mx-auto p-4">
-                        {adminLoading ? (
-                            <div className="text-center py-12">
-                                <div className="animate-spin w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                                <p className="text-gray-600">読み込み中...</p>
-                            </div>
-                        ) : pendingPosts.length === 0 ? (
-                            <div className="text-center py-12">
-                                <Icon name="CheckCircle" size={64} className="mx-auto mb-4 text-green-500" />
-                                <p className="text-gray-600 font-medium">承認待ちの投稿はありません</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                                    <p className="text-sm text-blue-800 flex items-center gap-2">
-                                        <Icon name="HelpCircle" size={16} />
-                                        <span className="font-semibold">承認待ち: {pendingPosts.length}件</span>
-                                    </p>
-                                </div>
-
-                                {pendingPosts.map(post => (
-                                    <div key={post.id} className="bg-white rounded-lg shadow-md p-6">
-                                        {/* 投稿情報 */}
-                                        <div className="flex items-center justify-between mb-4 pb-4 border-b">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
-                                                    {post.author?.[0] || 'U'}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-gray-800">{post.author}</p>
-                                                    <p className="text-xs text-gray-600">
-                                                        {new Date(post.timestamp).toLocaleString('ja-JP')}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                                                post.category === 'body'
-                                                    ? 'bg-sky-100 text-sky-700'
-                                                    : 'bg-teal-100 text-teal-700'
-                                            }`}>
-                                                {post.category === 'body' ? '💪 ボディメイク' : '🧠 メンタル'}
-                                            </span>
-                                        </div>
-
-                                        {/* ビフォー・アフター写真 */}
-                                        {post.category === 'body' && post.beforePhoto && post.afterPhoto && (
-                                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                                <div>
-                                                    <p className="text-xs text-gray-600 text-center mb-2 font-semibold">Before</p>
-                                                    <img src={post.beforePhoto} alt="Before" className="w-full rounded-lg border-2 border-gray-200" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-600 text-center mb-2 font-semibold">After</p>
-                                                    <img src={post.afterPhoto} alt="After" className="w-full rounded-lg border-2 border-sky-300" />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* 投稿内容 */}
-                                        <div className="mb-4">
-                                            <p className="text-sm font-semibold text-gray-600 mb-2">投稿内容:</p>
-                                            <p className="text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">
-                                                {post.content}
-                                            </p>
-                                        </div>
-
-                                        {/* データ連携情報 */}
-                                        {post.attachedData && (
-                                            <div className="p-4 bg-sky-50 border border-sky-200 rounded-lg mb-4">
-                                                <p className="text-xs font-semibold text-sky-700 mb-3 flex items-center gap-1">
-                                                    <Icon name="Database" size={14} />
-                                                    データ連携情報
-                                                </p>
-                                                <div className="grid grid-cols-3 gap-3 text-xs text-gray-600">
-                                                    <div>• 継続: {post.attachedData.usageDays}日</div>
-                                                    <div>• 記録: {post.attachedData.recordDays}日</div>
-                                                    <div>• カロリー: {post.attachedData.totalCalories}kcal</div>
-                                                    <div>• タンパク質: {post.attachedData.protein}g</div>
-                                                    <div>• 体重: {post.attachedData.weight}kg</div>
-                                                    <div>• LBM: {post.attachedData.lbm}kg</div>
-                                                    {post.attachedData.lbmChange && (
-                                                        <div className="col-span-3 font-semibold text-sky-700">
-                                                            • LBM変化: {post.attachedData.lbmChange > 0 ? '+' : ''}{post.attachedData.lbmChange}kg
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* アクションボタン */}
-                                        <div className="flex gap-3">
-                                            <button
-                                                onClick={() => handleApprove(post.id)}
-                                                className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-semibold flex items-center justify-center gap-2"
-                                            >
-                                                <Icon name="CheckCircle" size={20} />
-                                                承認
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    const reason = prompt('却下理由を入力してください（投稿者には通知されません）:');
-                                                    if (reason && reason.trim()) {
-                                                        handleReject(post.id, reason);
-                                                    }
-                                                }}
-                                                className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition font-semibold flex items-center justify-center gap-2"
-                                            >
-                                                <Icon name="XCircle" size={20} />
-                                                却下
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-
+            <div className="flex-1 overflow-y-auto bg-gray-50" style={{ paddingBottom: `${babHeight + 80}px` }}>
                 {activeView === 'feed' && (
                     <div className="max-w-2xl mx-auto p-4 space-y-4">
+                        {/* フィルター・ソートUI（折りたたみ式） */}
+                        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                            <button
+                                onClick={() => setShowFilterSort(!showFilterSort)}
+                                className="w-full px-3 py-2 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Icon name="Filter" size={14} />
+                                    {feedFilter === 'all' ? 'すべて' :
+                                     feedFilter === 'ダイエット' ? 'ダイエット' :
+                                     feedFilter === '維持' ? 'メンテナンス' : feedFilter}
+                                    {feedSort === 'popular' && ' / 人気順'}
+                                </span>
+                                <Icon name={showFilterSort ? "ChevronUp" : "ChevronDown"} size={14} />
+                            </button>
+                            {showFilterSort && (
+                                <div className="px-3 pb-3 pt-1 border-t space-y-2">
+                                    {/* カテゴリフィルター */}
+                                    <div className="flex flex-wrap gap-1">
+                                        {[
+                                            { value: 'all', label: 'すべて' },
+                                            { value: 'ダイエット', label: 'ダイエット' },
+                                            { value: '維持', label: 'メンテナンス' },
+                                            { value: 'バルクアップ', label: 'バルクアップ' },
+                                            { value: 'リコンプ', label: 'リコンプ' }
+                                        ].map(filter => (
+                                            <button
+                                                key={filter.value}
+                                                onClick={() => setFeedFilter(filter.value)}
+                                                className={`px-3 py-1 text-xs rounded-full transition ${
+                                                    feedFilter === filter.value
+                                                        ? 'bg-fuchsia-600 text-white'
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                {filter.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {/* ソート */}
+                                    <div className="flex gap-1">
+                                        <button
+                                            onClick={() => setFeedSort('newest')}
+                                            className={`px-2 py-1 text-xs rounded transition ${
+                                                feedSort === 'newest'
+                                                    ? 'bg-gray-800 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            新着
+                                        </button>
+                                        <button
+                                            onClick={() => setFeedSort('popular')}
+                                            className={`px-2 py-1 text-xs rounded transition ${
+                                                feedSort === 'popular'
+                                                    ? 'bg-gray-800 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            人気
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         {approvedPosts.length === 0 ? (
                             <div className="text-center py-12">
                                 <Icon name="MessageSquare" size={64} className="mx-auto mb-4 text-gray-300" />
@@ -3115,22 +3134,77 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                         selectedPostId === post.id ? 'ring-2 ring-blue-500' : ''
                                     }`}
                                 >
-                                    {/* カテゴリバッジ */}
+                                    {/* 投稿者 + カテゴリバッジ + 目的タグ + 日時（同じ行） */}
                                     <div className="flex items-center justify-between mb-3">
-                                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                                            post.category === 'body'
-                                                ? 'bg-fuchsia-100 text-fuchsia-700'
-                                                : 'bg-teal-100 text-teal-700'
-                                        }`}>
-                                            {post.category === 'body' ? '💪 ボディメイク' : '🧠 メンタル'}
-                                        </span>
-                                        <p className="text-xs text-gray-600">
+                                        <div className="flex items-center gap-2">
+                                            {/* 投稿者（クリックでプロフィール表示） */}
+                                            <button
+                                                onClick={() => setProfileModalUserId(post.userId)}
+                                                className="flex items-center gap-2 hover:bg-gray-100 rounded-lg p-1 -ml-1 transition"
+                                            >
+                                                {post.authorAvatarUrl ? (
+                                                    <img src={post.authorAvatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+                                                ) : (
+                                                    <div className="w-7 h-7 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                                        {post.author?.[0] || 'U'}
+                                                    </div>
+                                                )}
+                                                <p className="font-medium text-gray-800 text-sm">{post.author}</p>
+                                            </button>
+                                            {/* カテゴリバッジ（ボディメイク/メンタル） */}
+                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                post.category === 'body'
+                                                    ? 'bg-fuchsia-100 text-fuchsia-700'
+                                                    : 'bg-teal-100 text-teal-700'
+                                            }`}>
+                                                {post.category === 'body' ? 'ボディメイク' : 'メンタル'}
+                                            </span>
+                                            {/* 目的タグ（ダイエット/メンテナンス/バルクアップ/リコンプ） */}
+                                            {post.goalCategory && post.goalCategory !== 'その他' && (
+                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                    post.goalCategory === 'ダイエット' ? 'bg-orange-100 text-orange-700' :
+                                                    post.goalCategory === '維持' ? 'bg-blue-100 text-blue-700' :
+                                                    post.goalCategory === 'バルクアップ' ? 'bg-green-100 text-green-700' :
+                                                    post.goalCategory === 'リコンプ' ? 'bg-purple-100 text-purple-700' :
+                                                    'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                    {post.goalCategory === 'ダイエット' ? 'ダイエット' :
+                                                     post.goalCategory === '維持' ? 'メンテナンス' :
+                                                     post.goalCategory === 'バルクアップ' ? 'バルクアップ' :
+                                                     post.goalCategory === 'リコンプ' ? 'リコンプ' :
+                                                     post.goalCategory}
+                                                </span>
+                                            )}
+                                            {/* 進捗タイプタグ（新規/経過/結果） */}
+                                            {post.progressType && (
+                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                    post.progressType === 'before' ? 'bg-sky-100 text-sky-700' :
+                                                    post.progressType === 'progress' ? 'bg-amber-100 text-amber-700' :
+                                                    post.progressType === 'after' ? 'bg-emerald-100 text-emerald-700' :
+                                                    'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                    {post.progressType === 'before' ? '新規' :
+                                                     post.progressType === 'progress' ? '経過' :
+                                                     post.progressType === 'after' ? '結果' : ''}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-500">
                                             {new Date(post.timestamp).toLocaleString('ja-JP')}
                                         </p>
                                     </div>
 
-                                    {/* ビフォー・アフター写真 */}
-                                    {post.category === 'body' && post.beforePhoto && post.afterPhoto && (
+                                    {/* 写真 */}
+                                    {post.photo && (
+                                        <div className="mb-3">
+                                            <img src={post.photo} alt="Progress" className="w-full rounded-lg" />
+                                            {post.progressType === 'before' && (
+                                                <p className="text-xs text-gray-500 text-center mt-1">ビフォー</p>
+                                            )}
+                                        </div>
+                                    )}
+                                    {/* ビフォー・アフター写真（旧形式対応） */}
+                                    {!post.photo && post.beforePhoto && post.afterPhoto && (
                                         <div className="grid grid-cols-2 gap-2 mb-3">
                                             <div>
                                                 <p className="text-xs text-gray-600 text-center mb-1">Before</p>
@@ -3143,42 +3217,168 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                         </div>
                                     )}
 
-                                    {/* 投稿者（クリックでプロフィール表示） */}
-                                    <div className="flex items-center justify-between mb-3">
-                                        <button
-                                            onClick={() => setProfileModalUserId(post.userId)}
-                                            className="flex items-center gap-2 hover:bg-gray-100 rounded-lg p-1 -ml-1 transition"
-                                        >
-                                            <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                                {post.author?.[0] || 'U'}
-                                            </div>
-                                            <p className="font-medium text-gray-800 text-sm">{post.author}</p>
-                                        </button>
-                                        {/* フォローボタン（自分以外の投稿に表示） */}
-                                        {post.userId !== userId && (
+                                    {/* 投稿内容 */}
+                                    <p className="text-gray-600 mb-3 whitespace-pre-wrap">{post.content}</p>
+
+                                    {/* フォローボタン（自分以外の投稿に表示） */}
+                                    {post.userId !== userId && (
+                                        <div className="mb-3">
                                             <FollowButton
                                                 targetUserId={post.userId}
                                                 currentUserId={userId}
                                                 compact={true}
                                             />
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
 
-                                    {/* 投稿内容 */}
-                                    <p className="text-gray-600 mb-3 whitespace-pre-wrap">{post.content}</p>
-
-                                    {/* データ連携情報 */}
-                                    {post.attachedData && (
+                                    {/* データ連携情報（新形式: bodyData, historyData, usageDays, recordDays） */}
+                                    {(post.bodyData || post.historyData || post.usageDays || post.recordDays || post.projectTitle || post.daysSinceStart !== undefined) && (
+                                        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3 text-xs overflow-visible">
+                                            {/* プロジェクト情報（タイトル・開始からの日数・進捗回数） */}
+                                            {(post.projectTitle || post.daysSinceStart !== undefined || post.progressNumber !== undefined) && (
+                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mb-1 pb-1 border-b border-gray-200">
+                                                    {post.projectTitle && (
+                                                        <span className="text-gray-700 font-medium">{post.projectTitle}</span>
+                                                    )}
+                                                    {post.daysSinceStart !== undefined && post.daysSinceStart > 0 && (
+                                                        <span className="text-purple-600 font-medium">{post.daysSinceStart}日目</span>
+                                                    )}
+                                                    {post.progressNumber !== undefined && post.progressNumber > 0 && (
+                                                        <span className="text-pink-600 font-medium">{post.progressNumber + 1}回目</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {/* 継続日数・記録日数 */}
+                                            {(post.usageDays || post.recordDays) && (
+                                                <div className="flex flex-wrap gap-x-4 gap-y-1 mb-1">
+                                                    {post.usageDays > 0 && (
+                                                        <span className="text-fuchsia-600 font-medium">継続 {post.usageDays}日</span>
+                                                    )}
+                                                    {post.recordDays > 0 && (
+                                                        <span className="text-cyan-600 font-medium">記録 {post.recordDays}日</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {/* 体組成 */}
+                                            {post.bodyData && (post.bodyData.weight || post.bodyData.lbm || post.bodyData.bodyFat) && (
+                                                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                                    {post.bodyData.lbm && (
+                                                        <span className="text-teal-600 font-medium">LBM {post.bodyData.lbm}kg</span>
+                                                    )}
+                                                    {post.bodyData.weight && (
+                                                        <span className="text-teal-600">体重 <span className="font-medium">{post.bodyData.weight}kg</span></span>
+                                                    )}
+                                                    {post.bodyData.bodyFat && (
+                                                        <span className="text-teal-600">体脂肪 <span className="font-medium">{post.bodyData.bodyFat}%</span></span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {/* 過去平均（食事・運動・コンディション） */}
+                                            {post.historyData && (post.historyData.calories || post.historyData.protein || post.historyData.exerciseCount) && (
+                                                <div className={`space-y-1 ${(post.bodyData?.weight || post.usageDays) ? 'mt-1 pt-1 border-t border-gray-200' : ''}`}>
+                                                    <span className="text-gray-400 text-xs">{post.historyData.daysCount || 30}日平均:</span>
+                                                    {/* 食事 */}
+                                                    <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                                                        <span className="text-gray-500 text-xs">食事:</span>
+                                                        {post.historyData.calories > 0 && (
+                                                            <span className="text-blue-600 font-medium text-xs">{post.historyData.calories}kcal</span>
+                                                        )}
+                                                        {post.historyData.protein > 0 && (
+                                                            <span className="text-red-500 font-medium text-xs">P{post.historyData.protein}g</span>
+                                                        )}
+                                                        {post.historyData.fat > 0 && (
+                                                            <span className="text-yellow-500 font-medium text-xs">F{post.historyData.fat}g</span>
+                                                        )}
+                                                        <span className="text-green-500 font-medium text-xs">C{post.historyData.carbs ?? 0}g</span>
+                                                    </div>
+                                                    {/* 運動 */}
+                                                    {(post.historyData.exerciseCount > 0 || post.historyData.totalSets > 0) && (
+                                                        <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                                                            <span className="text-gray-500 text-xs">運動:</span>
+                                                            {post.historyData.exerciseCount > 0 && (
+                                                                <span className="text-orange-600 font-medium text-xs">{post.historyData.exerciseCount}種目</span>
+                                                            )}
+                                                            {post.historyData.totalSets > 0 && (
+                                                                <span className="text-orange-600 font-medium text-xs">{post.historyData.totalSets}セット</span>
+                                                            )}
+                                                            {post.historyData.totalVolume > 0 && (
+                                                                <span className="text-orange-600 font-medium text-xs">{post.historyData.totalVolume.toLocaleString()}kg</span>
+                                                            )}
+                                                            {post.historyData.workoutTime > 0 && (
+                                                                <span className="text-orange-600 font-medium text-xs">{post.historyData.workoutTime}分</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {/* コンディション */}
+                                                    {(post.historyData.sleepHours || post.historyData.sleepQuality || post.historyData.digestion || post.historyData.focus || post.historyData.stress) && (
+                                                        <div>
+                                                            <span className="text-gray-500 text-xs">コンディション: </span>
+                                                            <span className="text-red-500 font-medium text-xs">
+                                                                {post.historyData.sleepHours && `睡眠${post.historyData.sleepHours}h `}
+                                                                {post.historyData.sleepQuality && `質${post.historyData.sleepQuality} `}
+                                                                {post.historyData.digestion && `腸${post.historyData.digestion} `}
+                                                                {post.historyData.focus && `集中${post.historyData.focus} `}
+                                                                {post.historyData.stress && `ストレス${post.historyData.stress}`}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {/* プロフィール設定（PFCバランス・目標・活動係数など） */}
+                                            {post.profileSettings && (
+                                                <div className={`space-y-1 ${(post.historyData || post.bodyData?.weight || post.usageDays) ? 'mt-1 pt-1 border-t border-gray-200' : ''}`}>
+                                                    <span className="text-gray-400 text-xs">設定</span>
+                                                    {/* 目標カロリー・PFC（g） */}
+                                                    {post.profileSettings.targetCalories > 0 && (
+                                                        <div className="text-xs">
+                                                            <span className="text-blue-600 font-medium">目標 {post.profileSettings.targetCalories}kcal</span>
+                                                            {(post.profileSettings.targetProtein || post.profileSettings.targetFat || post.profileSettings.targetCarbs) && (
+                                                                <span className="ml-2">
+                                                                    <span className="text-red-500 font-medium">P{post.profileSettings.targetProtein || 0}g</span>
+                                                                    <span className="text-gray-400"> / </span>
+                                                                    <span className="text-yellow-500 font-medium">F{post.profileSettings.targetFat || 0}g</span>
+                                                                    <span className="text-gray-400"> / </span>
+                                                                    <span className="text-green-500 font-medium">C{post.profileSettings.targetCarbs || 0}g</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {/* 活動係数・カロリー調整・PFCバランス */}
+                                                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs">
+                                                        {post.profileSettings.activityMultiplier && (
+                                                            <span className="text-violet-600 font-medium">活動係数×{post.profileSettings.activityMultiplier}</span>
+                                                        )}
+                                                        {post.profileSettings.calorieAdjustment !== 0 && post.profileSettings.calorieAdjustment !== undefined && (
+                                                            <span className={`font-medium ${post.profileSettings.calorieAdjustment > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                調整{post.profileSettings.calorieAdjustment > 0 ? '+' : ''}{post.profileSettings.calorieAdjustment}kcal
+                                                            </span>
+                                                        )}
+                                                        {post.profileSettings.pfcBalance && (
+                                                            <span className="text-gray-500">
+                                                                PFC比 <span className="text-red-500 font-medium">{post.profileSettings.pfcBalance.protein}%</span>
+                                                                <span className="text-gray-400">/</span>
+                                                                <span className="text-yellow-500 font-medium">{post.profileSettings.pfcBalance.fat}%</span>
+                                                                <span className="text-gray-400">/</span>
+                                                                <span className="text-green-500 font-medium">{post.profileSettings.pfcBalance.carb}%</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {/* データ連携情報（旧形式: attachedData） */}
+                                    {!post.bodyData && !post.historyData && post.attachedData && (
                                         <div className="p-3 bg-fuchsia-50 border border-fuchsia-200 rounded-lg mb-3">
-                                            <p className="text-xs font-semibold text-fuchsia-700 mb-2">📊 データ連携</p>
+                                            <p className="text-xs font-semibold text-fuchsia-700 mb-2">データ連携</p>
                                             <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                                                <div>• 継続: {post.attachedData.usageDays}日</div>
-                                                <div>• 記録: {post.attachedData.recordDays}日</div>
-                                                <div>• カロリー: {post.attachedData.totalCalories}kcal</div>
-                                                <div>• タンパク質: {post.attachedData.protein}g</div>
+                                                <div>継続: {post.attachedData.usageDays}日</div>
+                                                <div>記録: {post.attachedData.recordDays}日</div>
+                                                <div>カロリー: {post.attachedData.totalCalories}kcal</div>
+                                                <div>タンパク質: {post.attachedData.protein}g</div>
                                                 {post.attachedData.lbmChange && (
                                                     <div className="col-span-2 font-semibold text-fuchsia-700">
-                                                        • LBM変化: {post.attachedData.lbmChange > 0 ? '+' : ''}{post.attachedData.lbmChange}kg
+                                                        LBM変化: {post.attachedData.lbmChange > 0 ? '+' : ''}{post.attachedData.lbmChange}kg
                                                     </div>
                                                 )}
                                             </div>
@@ -3197,7 +3397,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                     {/* アクション */}
                                     <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
                                         <button
-                                            onClick={() => toggleLike(post.id)}
+                                            onClick={() => toggleLike(post.id, post.projectId)}
                                             className={`flex items-center gap-1 transition ${
                                                 (post.likedUsers || []).includes(userId)
                                                     ? 'text-fuchsia-600'
@@ -3208,7 +3408,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                             <span className="text-sm">{post.likes || 0}</span>
                                         </button>
                                         <button
-                                            onClick={() => handleToggleComments(post.id)}
+                                            onClick={() => handleToggleComments(post.id, post.projectId)}
                                             className="flex items-center gap-1 text-gray-600 hover:text-teal-600 transition"
                                         >
                                             <Icon name="MessageCircle" size={18} />
@@ -3234,9 +3434,15 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                                                 <div className="flex items-center gap-2">
                                                                     <button
                                                                         onClick={() => setProfileModalUserId(comment.userId)}
-                                                                        className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs hover:ring-2 hover:ring-blue-300 transition"
+                                                                        className="hover:ring-2 hover:ring-blue-300 transition rounded-full"
                                                                     >
-                                                                        {comment.author?.[0] || 'U'}
+                                                                        {comment.authorAvatarUrl ? (
+                                                                            <img src={comment.authorAvatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                                                                        ) : (
+                                                                            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                                                                {comment.author?.[0] || 'U'}
+                                                                            </div>
+                                                                        )}
                                                                     </button>
                                                                     <span className="text-xs font-semibold text-gray-800">{comment.author}</span>
                                                                     <span className="text-xs text-gray-500">
@@ -3248,7 +3454,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                                                 {/* 自分のコメントのみ削除可能 */}
                                                                 {comment.userId === userId && (
                                                                     <button
-                                                                        onClick={() => handleDeleteComment(post.id, comment.id)}
+                                                                        onClick={() => handleDeleteComment(post.id, comment.id, post.projectId)}
                                                                         className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition"
                                                                         title="削除"
                                                                     >
@@ -3268,12 +3474,12 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                                     type="text"
                                                     value={commentingPostId === post.id ? commentText : ''}
                                                     onChange={(e) => setCommentText(e.target.value)}
-                                                    onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+                                                    onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id, post.projectId)}
                                                     placeholder="コメントを入力..."
                                                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
                                                 />
                                                 <button
-                                                    onClick={() => handleAddComment(post.id)}
+                                                    onClick={() => handleAddComment(post.id, post.projectId)}
                                                     disabled={!commentText.trim()}
                                                     className="px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white rounded-lg text-sm hover:from-fuchsia-700 hover:to-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
                                                 >
@@ -3288,74 +3494,17 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                     </div>
                 )}
 
-                {activeView === 'community' && (
-                    <div className="max-w-2xl mx-auto p-4 space-y-4">
-                        {/* テーマスペース選択 */}
-                        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-                            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                                <Icon name="Compass" size={20} className="text-fuchsia-600" />
-                                テーマスペース
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-4">
-                                あなたの目標に合ったスペースに参加しましょう
-                            </p>
-                            <button
-                                onClick={() => setShowThemeSpaceSelector(true)}
-                                className="w-full bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white font-bold py-3 rounded-lg hover:from-fuchsia-700 hover:to-teal-700 transition"
-                            >
-                                スペースを選択
-                            </button>
-                        </div>
-
-                        {/* メンターシステム */}
-                        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-                            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                                <Icon name="Award" size={20} className="text-emerald-600" />
-                                メンター制度
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-4">
-                                経験豊富なユーザーから学び、サポートを受けましょう
-                            </p>
-                            <div className="space-y-2">
-                                <button
-                                    onClick={() => setShowMentorApplication(true)}
-                                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-3 rounded-lg hover:from-emerald-700 hover:to-teal-700 transition"
-                                >
-                                    メンターに応募
-                                </button>
-                                <p className="text-xs text-gray-600 text-center">
-                                    ※ 30日以上の利用、10回以上の貢献が必要です
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* ベストアンサー機能の説明 */}
-                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 shadow-sm border border-amber-200">
-                            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                                <Icon name="Star" size={20} className="text-amber-600" />
-                                ベストアンサー制度
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-3">
-                                質問に対して最も役立つ回答をベストアンサーとして選べます
-                            </p>
-                            <div className="bg-white rounded-lg p-3 text-sm text-gray-600">
-                                <ul className="space-y-1">
-                                    <li>✓ ベストアンサーに選ばれると50ポイント獲得</li>
-                                    <li>✓ ポイントでメンター資格が取得可能</li>
-                                    <li>✓ 質問者は7日以内に選択可能</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {activeView === 'mypage' && (
                     <div className="max-w-2xl mx-auto p-4">
                         <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-20 h-20 bg-gradient-to-br from-fuchsia-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-2xl">
-                                    {(userProfile.nickname || userProfile.name || 'U')[0]}
-                                </div>
+                                {userProfile.avatarUrl ? (
+                                    <img src={userProfile.avatarUrl} alt="" className="w-20 h-20 rounded-full object-cover" />
+                                ) : (
+                                    <div className="w-20 h-20 bg-gradient-to-br from-fuchsia-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-2xl">
+                                        {(userProfile.nickname || userProfile.name || 'U')[0]}
+                                    </div>
+                                )}
                                 <div>
                                     <h3 className="font-bold text-xl">{userProfile.nickname || userProfile.name || 'ユーザー'}</h3>
                                     {userProfile.goal && (
@@ -3410,20 +3559,329 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                             ) : (
                                 posts.filter(p => p.userId === userId).map(post => (
                                     <div key={post.id} className="bg-white rounded-lg shadow-sm p-4">
-                                        <p className="text-gray-600 mb-2 whitespace-pre-wrap">{post.content}</p>
-                                        <div className="flex items-center justify-between text-xs text-gray-500">
-                                            <span>{new Date(post.timestamp).toLocaleString('ja-JP')}</span>
-                                            <div className="flex items-center gap-3">
-                                                <span className="flex items-center gap-1">
-                                                    <Icon name="Heart" size={12} />
-                                                    {post.likes || 0}
+                                        {/* ヘッダー（アバター・名前・タグ・タイムスタンプ） */}
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {(post.authorAvatarUrl || userProfile.avatarUrl) ? (
+                                                    <img src={post.authorAvatarUrl || userProfile.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+                                                ) : (
+                                                    <div className="w-7 h-7 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                                        {post.author?.[0] || 'U'}
+                                                    </div>
+                                                )}
+                                                <p className="font-medium text-gray-800 text-sm">{post.author}</p>
+                                                {/* カテゴリバッジ（ボディメイク/メンタル） */}
+                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                    post.category === 'body'
+                                                        ? 'bg-fuchsia-100 text-fuchsia-700'
+                                                        : 'bg-teal-100 text-teal-700'
+                                                }`}>
+                                                    {post.category === 'body' ? 'ボディメイク' : 'メンタル'}
                                                 </span>
-                                                <span className="flex items-center gap-1">
-                                                    <Icon name="MessageCircle" size={12} />
-                                                    {post.commentCount || 0}
-                                                </span>
+                                                {/* 目的タグ（ダイエット/メンテナンス/バルクアップ/リコンプ） */}
+                                                {post.goalCategory && post.goalCategory !== 'その他' && (
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                        post.goalCategory === 'ダイエット' ? 'bg-orange-100 text-orange-700' :
+                                                        post.goalCategory === '維持' ? 'bg-blue-100 text-blue-700' :
+                                                        post.goalCategory === 'バルクアップ' ? 'bg-green-100 text-green-700' :
+                                                        post.goalCategory === 'リコンプ' ? 'bg-purple-100 text-purple-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                        {post.goalCategory === 'ダイエット' ? 'ダイエット' :
+                                                         post.goalCategory === '維持' ? 'メンテナンス' :
+                                                         post.goalCategory === 'バルクアップ' ? 'バルクアップ' :
+                                                         post.goalCategory === 'リコンプ' ? 'リコンプ' :
+                                                         post.goalCategory}
+                                                    </span>
+                                                )}
+                                                {/* 進捗タイプタグ（新規/経過/結果） */}
+                                                {post.progressType && (
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                        post.progressType === 'before' ? 'bg-sky-100 text-sky-700' :
+                                                        post.progressType === 'progress' ? 'bg-amber-100 text-amber-700' :
+                                                        post.progressType === 'after' ? 'bg-emerald-100 text-emerald-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                        {post.progressType === 'before' ? '新規' :
+                                                         post.progressType === 'progress' ? '経過' :
+                                                         post.progressType === 'after' ? '結果' : ''}
+                                                    </span>
+                                                )}
                                             </div>
+                                            <p className="text-xs text-gray-500">
+                                                {new Date(post.timestamp).toLocaleString('ja-JP')}
+                                            </p>
                                         </div>
+
+                                        {/* 写真 */}
+                                        {post.photo && (
+                                            <div className="mb-3">
+                                                <img src={post.photo} alt="Progress" className="w-full rounded-lg" />
+                                                {post.progressType === 'before' && (
+                                                    <p className="text-xs text-gray-500 text-center mt-1">ビフォー</p>
+                                                )}
+                                            </div>
+                                        )}
+                                        {!post.photo && post.beforePhoto && post.afterPhoto && (
+                                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                                <div>
+                                                    <p className="text-xs text-gray-600 text-center mb-1">Before</p>
+                                                    <img src={post.beforePhoto} alt="Before" className="w-full rounded-lg" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-600 text-center mb-1">After</p>
+                                                    <img src={post.afterPhoto} alt="After" className="w-full rounded-lg" />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* 投稿内容 */}
+                                        <p className="text-gray-600 mb-3 whitespace-pre-wrap">{post.content}</p>
+
+                                        {/* データ連携情報（新形式: bodyData, historyData, usageDays, recordDays） */}
+                                        {(post.bodyData || post.historyData || post.usageDays || post.recordDays || post.projectTitle || post.daysSinceStart !== undefined) && (
+                                            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3 text-xs overflow-visible">
+                                                {/* プロジェクト情報（タイトル・開始からの日数・進捗回数） */}
+                                                {(post.projectTitle || post.daysSinceStart !== undefined || post.progressNumber !== undefined) && (
+                                                    <div className="flex flex-wrap gap-x-3 gap-y-1 mb-1 pb-1 border-b border-gray-200">
+                                                        {post.projectTitle && (
+                                                            <span className="text-gray-700 font-medium">{post.projectTitle}</span>
+                                                        )}
+                                                        {post.daysSinceStart !== undefined && post.daysSinceStart > 0 && (
+                                                            <span className="text-purple-600 font-medium">{post.daysSinceStart}日目</span>
+                                                        )}
+                                                        {post.progressNumber !== undefined && post.progressNumber > 0 && (
+                                                            <span className="text-pink-600 font-medium">{post.progressNumber + 1}回目</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* 継続日数・記録日数 */}
+                                                {(post.usageDays || post.recordDays) && (
+                                                    <div className="flex flex-wrap gap-x-4 gap-y-1 mb-1">
+                                                        {post.usageDays > 0 && (
+                                                            <span className="text-fuchsia-600 font-medium">継続 {post.usageDays}日</span>
+                                                        )}
+                                                        {post.recordDays > 0 && (
+                                                            <span className="text-cyan-600 font-medium">記録 {post.recordDays}日</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* 体組成 */}
+                                                {post.bodyData && (post.bodyData.weight || post.bodyData.lbm || post.bodyData.bodyFat) && (
+                                                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                                        {post.bodyData.lbm && (
+                                                            <span className="text-teal-600 font-medium">LBM {post.bodyData.lbm}kg</span>
+                                                        )}
+                                                        {post.bodyData.weight && (
+                                                            <span className="text-teal-600">体重 <span className="font-medium">{post.bodyData.weight}kg</span></span>
+                                                        )}
+                                                        {post.bodyData.bodyFat && (
+                                                            <span className="text-teal-600">体脂肪 <span className="font-medium">{post.bodyData.bodyFat}%</span></span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* 過去平均（食事・運動・コンディション） */}
+                                                {post.historyData && (post.historyData.calories || post.historyData.protein || post.historyData.exerciseCount) && (
+                                                    <div className={`space-y-1 ${(post.bodyData?.weight || post.usageDays) ? 'mt-1 pt-1 border-t border-gray-200' : ''}`}>
+                                                        <span className="text-gray-400 text-xs">{post.historyData.daysCount || 30}日平均:</span>
+                                                        {/* 食事 */}
+                                                        <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                                                            <span className="text-gray-500 text-xs">食事:</span>
+                                                            {post.historyData.calories > 0 && (
+                                                                <span className="text-blue-600 font-medium text-xs">{post.historyData.calories}kcal</span>
+                                                            )}
+                                                            {post.historyData.protein > 0 && (
+                                                                <span className="text-red-500 font-medium text-xs">P{post.historyData.protein}g</span>
+                                                            )}
+                                                            {post.historyData.fat > 0 && (
+                                                                <span className="text-yellow-500 font-medium text-xs">F{post.historyData.fat}g</span>
+                                                            )}
+                                                            <span className="text-green-500 font-medium text-xs">C{post.historyData.carbs ?? 0}g</span>
+                                                        </div>
+                                                        {/* 運動 */}
+                                                        {(post.historyData.exerciseCount > 0 || post.historyData.totalSets > 0) && (
+                                                            <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                                                                <span className="text-gray-500 text-xs">運動:</span>
+                                                                {post.historyData.exerciseCount > 0 && (
+                                                                    <span className="text-orange-600 font-medium text-xs">{post.historyData.exerciseCount}種目</span>
+                                                                )}
+                                                                {post.historyData.totalSets > 0 && (
+                                                                    <span className="text-orange-600 font-medium text-xs">{post.historyData.totalSets}セット</span>
+                                                                )}
+                                                                {post.historyData.totalVolume > 0 && (
+                                                                    <span className="text-orange-600 font-medium text-xs">{post.historyData.totalVolume.toLocaleString()}kg</span>
+                                                                )}
+                                                                {post.historyData.workoutTime > 0 && (
+                                                                    <span className="text-orange-600 font-medium text-xs">{post.historyData.workoutTime}分</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {/* コンディション */}
+                                                        {(post.historyData.sleepHours || post.historyData.sleepQuality || post.historyData.digestion || post.historyData.focus || post.historyData.stress) && (
+                                                            <div>
+                                                                <span className="text-gray-500 text-xs">コンディション: </span>
+                                                                <span className="text-red-500 font-medium text-xs">
+                                                                    {post.historyData.sleepHours && `睡眠${post.historyData.sleepHours}h `}
+                                                                    {post.historyData.sleepQuality && `質${post.historyData.sleepQuality} `}
+                                                                    {post.historyData.digestion && `腸${post.historyData.digestion} `}
+                                                                    {post.historyData.focus && `集中${post.historyData.focus} `}
+                                                                    {post.historyData.stress && `ストレス${post.historyData.stress}`}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* プロフィール設定（PFCバランス・目標・活動係数など） */}
+                                                {post.profileSettings && (
+                                                    <div className={`space-y-1 ${(post.historyData || post.bodyData?.weight || post.usageDays) ? 'mt-1 pt-1 border-t border-gray-200' : ''}`}>
+                                                        <span className="text-gray-400 text-xs">設定</span>
+                                                        {/* 目標カロリー・PFC（g） */}
+                                                        {post.profileSettings.targetCalories > 0 && (
+                                                            <div className="text-xs">
+                                                                <span className="text-blue-600 font-medium">目標 {post.profileSettings.targetCalories}kcal</span>
+                                                                {(post.profileSettings.targetProtein || post.profileSettings.targetFat || post.profileSettings.targetCarbs) && (
+                                                                    <span className="ml-2">
+                                                                        <span className="text-red-500 font-medium">P{post.profileSettings.targetProtein || 0}g</span>
+                                                                        <span className="text-gray-400"> / </span>
+                                                                        <span className="text-yellow-500 font-medium">F{post.profileSettings.targetFat || 0}g</span>
+                                                                        <span className="text-gray-400"> / </span>
+                                                                        <span className="text-green-500 font-medium">C{post.profileSettings.targetCarbs || 0}g</span>
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {/* 活動係数・カロリー調整・PFCバランス */}
+                                                        <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs">
+                                                            {post.profileSettings.activityMultiplier && (
+                                                                <span className="text-violet-600 font-medium">活動係数×{post.profileSettings.activityMultiplier}</span>
+                                                            )}
+                                                            {post.profileSettings.calorieAdjustment !== 0 && post.profileSettings.calorieAdjustment !== undefined && (
+                                                                <span className={`font-medium ${post.profileSettings.calorieAdjustment > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                    調整{post.profileSettings.calorieAdjustment > 0 ? '+' : ''}{post.profileSettings.calorieAdjustment}kcal
+                                                                </span>
+                                                            )}
+                                                            {post.profileSettings.pfcBalance && (
+                                                                <span className="text-gray-500">
+                                                                    PFC比 <span className="text-red-500 font-medium">{post.profileSettings.pfcBalance.protein}</span>
+                                                                    <span className="text-gray-400">/</span>
+                                                                    <span className="text-yellow-500 font-medium">{post.profileSettings.pfcBalance.fat}</span>
+                                                                    <span className="text-gray-400">/</span>
+                                                                    <span className="text-green-500 font-medium">{post.profileSettings.pfcBalance.carb}</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* PG BASE引用 */}
+                                        {post.citedModule && (
+                                            <div className="p-2 bg-teal-50 border border-teal-200 rounded-lg mb-3">
+                                                <p className="text-xs text-teal-800">
+                                                    引用: <span className="font-semibold">{post.citedModule.title}</span>
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* アクション */}
+                                        <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
+                                            <button
+                                                onClick={() => toggleLike(post.id, post.projectId)}
+                                                className={`flex items-center gap-1 transition ${
+                                                    (post.likedUsers || []).includes(userId)
+                                                        ? 'text-fuchsia-600'
+                                                        : 'text-gray-600 hover:text-fuchsia-600'
+                                                }`}
+                                            >
+                                                <Icon name="Heart" size={18} fill={(post.likedUsers || []).includes(userId) ? 'currentColor' : 'none'} />
+                                                <span className="text-sm">{post.likes || 0}</span>
+                                            </button>
+                                            <button
+                                                onClick={() => handleToggleComments(post.id, post.projectId)}
+                                                className="flex items-center gap-1 text-gray-600 hover:text-teal-600 transition"
+                                            >
+                                                <Icon name="MessageCircle" size={18} />
+                                                <span className="text-sm">{post.commentCount || 0}</span>
+                                            </button>
+                                            <button
+                                                onClick={() => handleShare(post)}
+                                                className="flex items-center gap-1 text-gray-600 hover:text-emerald-600 transition"
+                                            >
+                                                <Icon name="Share2" size={18} />
+                                            </button>
+                                            {/* 削除ボタン（自分の投稿のみ） */}
+                                            <button
+                                                onClick={() => handleDeletePost(post)}
+                                                disabled={deletingPostId === post.id}
+                                                className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500 ml-auto disabled:opacity-50"
+                                                title="削除"
+                                            >
+                                                {deletingPostId === post.id ? (
+                                                    <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                                                ) : (
+                                                    <Icon name="Trash2" size={18} />
+                                                )}
+                                            </button>
+                                        </div>
+
+                                        {/* コメントセクション */}
+                                        {commentingPostId === post.id && (
+                                            <div className="mt-3 pt-3 border-t border-gray-100">
+                                                {postComments[post.id] && postComments[post.id].length > 0 && (
+                                                    <div className="mb-3 space-y-2 max-h-60 overflow-y-auto">
+                                                        {postComments[post.id].map(comment => (
+                                                            <div key={comment.id} className="bg-gray-50 rounded-lg p-2 group">
+                                                                <div className="flex items-center justify-between mb-1">
+                                                                    <div className="flex items-center gap-2">
+                                                                        {comment.authorAvatarUrl ? (
+                                                                            <img src={comment.authorAvatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                                                                        ) : (
+                                                                            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                                                                {comment.author?.[0] || 'U'}
+                                                                            </div>
+                                                                        )}
+                                                                        <span className="text-xs font-semibold text-gray-800">{comment.author}</span>
+                                                                        <span className="text-xs text-gray-500">
+                                                                            {comment.createdAt?.toDate ?
+                                                                                comment.createdAt.toDate().toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) :
+                                                                                ''}
+                                                                        </span>
+                                                                    </div>
+                                                                    {comment.userId === userId && (
+                                                                        <button
+                                                                            onClick={() => handleDeleteComment(post.id, comment.id, post.projectId)}
+                                                                            className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition"
+                                                                            title="削除"
+                                                                        >
+                                                                            <Icon name="Trash2" size={14} />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-sm text-gray-600 ml-8">{comment.content}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={commentingPostId === post.id ? commentText : ''}
+                                                        onChange={(e) => setCommentText(e.target.value)}
+                                                        onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id, post.projectId)}
+                                                        placeholder="コメントを入力..."
+                                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleAddComment(post.id, post.projectId)}
+                                                        disabled={!commentText.trim()}
+                                                        className="px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-teal-600 text-white rounded-lg text-sm hover:from-fuchsia-700 hover:to-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                                                    >
+                                                        送信
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))
                             )}
@@ -3528,5 +3986,4 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
 // グローバルに公開
 window.PGBaseView = PGBaseView;
 window.CommunityPostView = CommunityPostView;
-window.AdminPanel = AdminPanel;
 window.COMYView = COMYView;
