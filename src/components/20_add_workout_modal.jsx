@@ -842,40 +842,51 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                             className="w-full px-4 py-2 rounded-lg text-gray-800 focus:ring-2 focus:ring-white focus:outline-none"
                                         />
 
-                                        {/* 筋トレ/有酸素/ストレッチ タブ */}
-                                        <div className="grid grid-cols-3 mt-3 gap-2">
+                                        {/* 筋トレ/有酸素/ストレッチ/その他 タブ */}
+                                        <div className="grid grid-cols-4 mt-3 gap-2">
                                             <button
                                                 onClick={() => setExerciseTab('strength')}
-                                                className={`py-2 px-3 rounded-lg font-medium transition flex items-center justify-center gap-1 text-sm ${
+                                                className={`py-2 px-2 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
                                                     exerciseTab === 'strength'
                                                         ? 'bg-white text-orange-600'
                                                         : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
                                                 }`}
                                             >
-                                                <Icon name="Dumbbell" size={16} />
+                                                <Icon name="Dumbbell" size={14} />
                                                 筋トレ
                                             </button>
                                             <button
                                                 onClick={() => setExerciseTab('cardio')}
-                                                className={`py-2 px-3 rounded-lg font-medium transition flex items-center justify-center gap-1 text-sm ${
+                                                className={`py-2 px-2 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
                                                     exerciseTab === 'cardio'
                                                         ? 'bg-white text-blue-600'
                                                         : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
                                                 }`}
                                             >
-                                                <Icon name="Heart" size={16} />
+                                                <Icon name="Heart" size={14} />
                                                 有酸素
                                             </button>
                                             <button
                                                 onClick={() => setExerciseTab('stretch')}
-                                                className={`py-2 px-3 rounded-lg font-medium transition flex items-center justify-center gap-1 text-sm ${
+                                                className={`py-2 px-2 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
                                                     exerciseTab === 'stretch'
                                                         ? 'bg-white text-green-600'
                                                         : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
                                                 }`}
                                             >
-                                                <Icon name="Wind" size={16} />
+                                                <Icon name="Wind" size={14} />
                                                 ストレッチ
+                                            </button>
+                                            <button
+                                                onClick={() => setExerciseTab('other')}
+                                                className={`py-2 px-2 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
+                                                    exerciseTab === 'other'
+                                                        ? 'bg-white text-gray-600'
+                                                        : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                                                }`}
+                                            >
+                                                <Icon name="MoreHorizontal" size={14} />
+                                                その他
                                             </button>
                                         </div>
                                     </div>
@@ -937,9 +948,48 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                                         return ex.exerciseTab === 'stretch';
                                                     }
                                                     return stretchCategories.includes(ex.category);
+                                                } else if (exerciseTab === 'other') {
+                                                    // その他タブ - 検索モーダルでは表示しない（専用UIがある）
+                                                    return false;
                                                 }
                                                 return false;
                                             });
+
+                                            // その他タブの場合は専用UI
+                                            if (exerciseTab === 'other') {
+                                                return (
+                                                    <div className="space-y-3">
+                                                        <p className="text-sm text-gray-600 mb-4">その他の記録を追加できます</p>
+
+                                                        {/* 休養日アイテム */}
+                                                        <button
+                                                            onClick={() => {
+                                                                // 休養日として記録
+                                                                const restDayWorkout = {
+                                                                    name: '休養日',
+                                                                    isRestDay: true,
+                                                                    exercises: [],
+                                                                    timestamp: new Date().toISOString()
+                                                                };
+                                                                onAdd(restDayWorkout);
+                                                                toast.success('休養日を記録しました');
+                                                                setShowSearchModal(false);
+                                                            }}
+                                                            className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 transition border-2 border-gray-300 hover:border-gray-400 rounded-lg"
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                                                                    <Icon name="Moon" size={20} className="text-gray-600" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-gray-900">休養日</p>
+                                                                    <p className="text-xs text-gray-600">ルーティンが稼働日でも休養日として記録されます</p>
+                                                                </div>
+                                                            </div>
+                                                        </button>
+                                                    </div>
+                                                );
+                                            }
 
                                             if (displayedExercises.length === 0) {
                                                 return (

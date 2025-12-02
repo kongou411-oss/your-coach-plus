@@ -182,7 +182,14 @@ const SettingsView = ({
                     ...doc.data(),
                     firestoreId: doc.id
                 }));
-                setLocalRoutines(routinesData);
+                // 重複するidを除去（最初に見つかったものを優先）
+                const uniqueRoutines = routinesData.reduce((acc, routine) => {
+                    if (!acc.find(r => r.id === routine.id)) {
+                        acc.push(routine);
+                    }
+                    return acc;
+                }, []);
+                setLocalRoutines(uniqueRoutines);
             } else {
                 // Firestoreにルーティンがない場合、デフォルトルーティンを作成
                 // Firestoreに保存
@@ -206,7 +213,7 @@ const SettingsView = ({
                         routineActive: true
                     }, { merge: true });
 
-                setLocalRoutines(defaultRoutines);
+                setLocalRoutines(DEFAULT_ROUTINES);
             }
         } catch (error) {
             console.error('[Settings] Failed to load routines:', error);

@@ -200,19 +200,23 @@ const LoginScreen = () => {
         try {
             let user;
 
-            // ネイティブアプリ専用（Capacitor Google Auth）
-            if (!isNativeApp()) {
-                toast.error('Google認証はネイティブアプリでのみ利用可能です');
-                return;
-            }
-            console.log('🔵 ネイティブGoogle認証を使用');
-            const googleUser = await GoogleAuth.signIn();
-            console.log('✅ Google認証成功:', googleUser);
+            if (isNativeApp()) {
+                // ネイティブアプリ（Capacitor Google Auth）
+                console.log('🔵 ネイティブGoogle認証を使用');
+                const googleUser = await GoogleAuth.signIn();
+                console.log('✅ Google認証成功:', googleUser);
 
-            // FirebaseにGoogleクレデンシャルでサインイン
-            const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
-            const result = await auth.signInWithCredential(credential);
-            user = result.user;
+                const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
+                const result = await auth.signInWithCredential(credential);
+                user = result.user;
+            } else {
+                // ブラウザ（Firebase signInWithPopup）
+                console.log('🔵 ブラウザGoogle認証を使用');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                const result = await auth.signInWithPopup(provider);
+                user = result.user;
+            }
 
             console.log('✅ Firebase認証成功:', { uid: user.uid, email: user.email });
 
@@ -256,19 +260,23 @@ const LoginScreen = () => {
         try {
             let user;
 
-            // ネイティブアプリ専用（Capacitor Google Auth）
-            if (!isNativeApp()) {
-                toast.error('Google認証はネイティブアプリでのみ利用可能です');
-                return;
-            }
-            console.log('🔵 ネイティブGoogle認証を使用（新規登録）');
-            const googleUser = await GoogleAuth.signIn();
-            console.log('✅ Google認証成功:', googleUser);
+            if (isNativeApp()) {
+                // ネイティブアプリ（Capacitor Google Auth）
+                console.log('🔵 ネイティブGoogle認証を使用（新規登録）');
+                const googleUser = await GoogleAuth.signIn();
+                console.log('✅ Google認証成功:', googleUser);
 
-            // FirebaseにGoogleクレデンシャルでサインイン
-            const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
-            const result = await auth.signInWithCredential(credential);
-            user = result.user;
+                const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
+                const result = await auth.signInWithCredential(credential);
+                user = result.user;
+            } else {
+                // ブラウザ（Firebase signInWithPopup）
+                console.log('🔵 ブラウザGoogle認証を使用（新規登録）');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                const result = await auth.signInWithPopup(provider);
+                user = result.user;
+            }
 
             console.log('✅ Firebase認証成功（新規登録）:', { uid: user.uid, email: user.email });
 

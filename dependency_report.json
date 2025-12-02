@@ -1,0 +1,1076 @@
+{
+  "summary": {
+    "totalFiles": 26,
+    "totalImports": 31,
+    "totalExports": 10,
+    "unusedFilesCount": 14,
+    "circularDependenciesCount": 0,
+    "duplicateExportsCount": 0
+  },
+  "circularDependencies": [],
+  "unusedFiles": [
+    "00_feature_unlock.jsx",
+    "02_auth.jsx",
+    "03_dashboard.jsx",
+    "05_analysis.jsx",
+    "06_community.jsx",
+    "11_ai_food_recognition.jsx",
+    "13_collaborative_planning.jsx",
+    "15_community_growth.jsx",
+    "16_history_v10.jsx",
+    "17_chevron_shortcut.jsx",
+    "18_subscription.jsx",
+    "19_add_meal_modal.jsx",
+    "20_add_workout_modal.jsx",
+    "22_template_guide_modal.jsx"
+  ],
+  "duplicateExports": [],
+  "highDependencyComponents": [],
+  "dataServiceUsage": [
+    {
+      "file": "02_auth.jsx",
+      "windowDataService": 0,
+      "importDataService": 4
+    },
+    {
+      "file": "03_dashboard.jsx",
+      "windowDataService": 0,
+      "importDataService": 31
+    },
+    {
+      "file": "04_settings.jsx",
+      "windowDataService": 3,
+      "importDataService": 3
+    },
+    {
+      "file": "04_settings_features.jsx",
+      "windowDataService": 2,
+      "importDataService": 2
+    },
+    {
+      "file": "05_analysis.jsx",
+      "windowDataService": 0,
+      "importDataService": 10
+    },
+    {
+      "file": "06_community.jsx",
+      "windowDataService": 0,
+      "importDataService": 29
+    },
+    {
+      "file": "08_app.jsx",
+      "windowDataService": 0,
+      "importDataService": 33
+    },
+    {
+      "file": "15_community_growth.jsx",
+      "windowDataService": 0,
+      "importDataService": 10
+    },
+    {
+      "file": "19_add_meal_modal.jsx",
+      "windowDataService": 6,
+      "importDataService": 5
+    },
+    {
+      "file": "20_add_workout_modal.jsx",
+      "windowDataService": 5,
+      "importDataService": 18
+    }
+  ],
+  "globalVariableUsage": [
+    {
+      "file": "00_confirm_modal.jsx",
+      "globals": [
+        "window.showGlobalConfirm"
+      ]
+    },
+    {
+      "file": "00_init.jsx",
+      "globals": [
+        "window.auth",
+        "window.db",
+        "window.storage",
+        "window.functions",
+        "window.firebase"
+      ]
+    },
+    {
+      "file": "04_settings_basic.jsx",
+      "globals": [
+        "window.firebase"
+      ]
+    },
+    {
+      "file": "04_settings_other.jsx",
+      "globals": [
+        "window.firebase"
+      ]
+    },
+    {
+      "file": "05_analysis.jsx",
+      "globals": [
+        "window.showGlobalConfirm"
+      ]
+    },
+    {
+      "file": "06_community.jsx",
+      "globals": [
+        "window.showGlobalConfirm"
+      ]
+    },
+    {
+      "file": "08_app.jsx",
+      "globals": [
+        "window.db",
+        "window.firebase"
+      ]
+    },
+    {
+      "file": "10_feedback.jsx",
+      "globals": [
+        "window.showFeedback"
+      ]
+    },
+    {
+      "file": "18_subscription.jsx",
+      "globals": [
+        "window.firebase"
+      ]
+    },
+    {
+      "file": "20_add_workout_modal.jsx",
+      "globals": [
+        "window.showGlobalConfirm"
+      ]
+    },
+    {
+      "file": "21_notification_settings.jsx",
+      "globals": [
+        "window.db",
+        "window.firebase",
+        "window.functions"
+      ]
+    }
+  ],
+  "fullDependencyGraph": {
+    "00_confirm_modal.jsx": [],
+    "00_feature_unlock.jsx": [],
+    "00_init.jsx": [],
+    "01_common.jsx": [],
+    "02_auth.jsx": [],
+    "03_dashboard.jsx": [],
+    "04_settings.jsx": [
+      "00_confirm_modal.jsx",
+      "04_settings_basic.jsx",
+      "04_settings_features.jsx",
+      "04_settings_data.jsx",
+      "04_settings_other.jsx"
+    ],
+    "04_settings_basic.jsx": [],
+    "04_settings_data.jsx": [],
+    "04_settings_features.jsx": [
+      "21_notification_settings.jsx"
+    ],
+    "04_settings_other.jsx": [],
+    "05_analysis.jsx": [
+      "14_microlearning.jsx"
+    ],
+    "06_community.jsx": [],
+    "08_app.jsx": [
+      "04_settings.jsx",
+      "00_confirm_modal.jsx"
+    ],
+    "10_feedback.jsx": [
+      "01_common.jsx"
+    ],
+    "11_ai_food_recognition.jsx": [],
+    "13_collaborative_planning.jsx": [],
+    "14_microlearning.jsx": [
+      "01_common.jsx"
+    ],
+    "15_community_growth.jsx": [
+      "01_common.jsx",
+      "10_feedback.jsx"
+    ],
+    "16_history_v10.jsx": [],
+    "17_chevron_shortcut.jsx": [],
+    "18_subscription.jsx": [],
+    "19_add_meal_modal.jsx": [],
+    "20_add_workout_modal.jsx": [],
+    "21_notification_settings.jsx": [],
+    "22_template_guide_modal.jsx": []
+  },
+  "detailedDependencies": {
+    "00_confirm_modal.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        }
+      ],
+      "relativeImports": [],
+      "exports": [
+        {
+          "line": 133,
+          "name": "ConfirmModal",
+          "isDefault": false
+        },
+        {
+          "line": 133,
+          "name": "useConfirmModal",
+          "isDefault": false
+        },
+        {
+          "line": 133,
+          "name": "GlobalConfirmModal",
+          "isDefault": false
+        }
+      ],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": [
+        "window.showGlobalConfirm"
+      ]
+    },
+    "00_feature_unlock.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "{ FEATURES, STORAGE_KEYS }",
+          "source": "../config.js"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 2,
+          "imported": "{ FEATURES, STORAGE_KEYS }",
+          "source": "../config.js"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": []
+    },
+    "00_init.jsx": {
+      "imports": [
+        {
+          "line": 4,
+          "imported": "React",
+          "source": "react"
+        },
+        {
+          "line": 5,
+          "imported": "{ FIREBASE_CONFIG }",
+          "source": "../config.js"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 5,
+          "imported": "{ FIREBASE_CONFIG }",
+          "source": "../config.js"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": [
+        "window.auth",
+        "window.db",
+        "window.storage",
+        "window.functions",
+        "window.firebase"
+      ]
+    },
+    "01_common.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        }
+      ],
+      "relativeImports": [],
+      "exports": [
+        {
+          "line": 60,
+          "name": "Icon",
+          "isDefault": false
+        },
+        {
+          "line": 60,
+          "name": "MarkdownRenderer",
+          "isDefault": false
+        }
+      ],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": []
+    },
+    "02_auth.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "{ isNativeApp }",
+          "source": "../capacitor-push"
+        },
+        {
+          "line": 4,
+          "imported": "{ GoogleAuth }",
+          "source": "@southdevs/capacitor-google-auth"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 3,
+          "imported": "{ isNativeApp }",
+          "source": "../capacitor-push"
+        },
+        {
+          "line": 4,
+          "imported": "{ GoogleAuth }",
+          "source": "@southdevs/capacitor-google-auth"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 4,
+      "globalVars": []
+    },
+    "03_dashboard.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        }
+      ],
+      "relativeImports": [],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 31,
+      "globalVars": []
+    },
+    "04_settings.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React, { useState, useEffect }",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "{ useConfirmModal, ConfirmModal }",
+          "source": "./00_confirm_modal"
+        },
+        {
+          "line": 4,
+          "imported": "{ STORAGE_KEYS }",
+          "source": "../config.js"
+        },
+        {
+          "line": 5,
+          "imported": "BasicTab",
+          "source": "./04_settings_basic"
+        },
+        {
+          "line": 6,
+          "imported": "FeaturesTab",
+          "source": "./04_settings_features"
+        },
+        {
+          "line": 7,
+          "imported": "DataTab",
+          "source": "./04_settings_data"
+        },
+        {
+          "line": 8,
+          "imported": "OtherTab",
+          "source": "./04_settings_other"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 3,
+          "imported": "{ useConfirmModal, ConfirmModal }",
+          "source": "./00_confirm_modal"
+        },
+        {
+          "line": 4,
+          "imported": "{ STORAGE_KEYS }",
+          "source": "../config.js"
+        },
+        {
+          "line": 5,
+          "imported": "BasicTab",
+          "source": "./04_settings_basic"
+        },
+        {
+          "line": 6,
+          "imported": "FeaturesTab",
+          "source": "./04_settings_features"
+        },
+        {
+          "line": 7,
+          "imported": "DataTab",
+          "source": "./04_settings_data"
+        },
+        {
+          "line": 8,
+          "imported": "OtherTab",
+          "source": "./04_settings_other"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 3,
+      "importDataService": 3,
+      "globalVars": []
+    },
+    "04_settings_basic.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "{ isNativeApp }",
+          "source": "../capacitor-push"
+        },
+        {
+          "line": 4,
+          "imported": "{ GoogleAuth }",
+          "source": "@southdevs/capacitor-google-auth"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 3,
+          "imported": "{ isNativeApp }",
+          "source": "../capacitor-push"
+        },
+        {
+          "line": 4,
+          "imported": "{ GoogleAuth }",
+          "source": "@southdevs/capacitor-google-auth"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": [
+        "window.firebase"
+      ]
+    },
+    "04_settings_data.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        }
+      ],
+      "relativeImports": [],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": []
+    },
+    "04_settings_features.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "{ STORAGE_KEYS }",
+          "source": "../config.js"
+        },
+        {
+          "line": 4,
+          "imported": "NotificationSettings",
+          "source": "./21_notification_settings.jsx"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 3,
+          "imported": "{ STORAGE_KEYS }",
+          "source": "../config.js"
+        },
+        {
+          "line": 4,
+          "imported": "NotificationSettings",
+          "source": "./21_notification_settings.jsx"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 2,
+      "importDataService": 2,
+      "globalVars": []
+    },
+    "04_settings_other.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React, { useState, useEffect }",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "{ STORAGE_KEYS }",
+          "source": "../config.js"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 3,
+          "imported": "{ STORAGE_KEYS }",
+          "source": "../config.js"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": [
+        "window.firebase"
+      ]
+    },
+    "05_analysis.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React, { useState, useEffect, useRef, useCallback }",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "ReactDOM",
+          "source": "react-dom"
+        },
+        {
+          "line": 4,
+          "imported": "{ MicroLearningPopup, MicroLearningLibrary }",
+          "source": "./14_microlearning.jsx"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 4,
+          "imported": "{ MicroLearningPopup, MicroLearningLibrary }",
+          "source": "./14_microlearning.jsx"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 10,
+      "globalVars": [
+        "window.showGlobalConfirm"
+      ]
+    },
+    "06_community.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "ReactDOM",
+          "source": "react-dom"
+        },
+        {
+          "line": 3,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        }
+      ],
+      "relativeImports": [],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 29,
+      "globalVars": [
+        "window.showGlobalConfirm"
+      ]
+    },
+    "08_app.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "SettingsView",
+          "source": "./04_settings"
+        },
+        {
+          "line": 4,
+          "imported": "{ GlobalConfirmModal }",
+          "source": "./00_confirm_modal.jsx"
+        },
+        {
+          "line": 5,
+          "imported": "{ isNativeApp, initPushNotifications, createNotificationChannel, initBackButtonHandler, removeBackButtonHandler }",
+          "source": "../capacitor-push"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 3,
+          "imported": "SettingsView",
+          "source": "./04_settings"
+        },
+        {
+          "line": 4,
+          "imported": "{ GlobalConfirmModal }",
+          "source": "./00_confirm_modal.jsx"
+        },
+        {
+          "line": 5,
+          "imported": "{ isNativeApp, initPushNotifications, createNotificationChannel, initBackButtonHandler, removeBackButtonHandler }",
+          "source": "../capacitor-push"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 33,
+      "globalVars": [
+        "window.db",
+        "window.firebase"
+      ]
+    },
+    "10_feedback.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React, { useState, useEffect }",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "{ Icon }",
+          "source": "./01_common.jsx"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 2,
+          "imported": "{ Icon }",
+          "source": "./01_common.jsx"
+        }
+      ],
+      "exports": [
+        {
+          "line": 211,
+          "name": "FeedbackManager",
+          "isDefault": false
+        },
+        {
+          "line": 211,
+          "name": "FeedbackTriggers",
+          "isDefault": false
+        },
+        {
+          "line": 211,
+          "name": "showFeedback",
+          "isDefault": false
+        }
+      ],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": [
+        "window.showFeedback"
+      ]
+    },
+    "11_ai_food_recognition.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "{ normalizeForSearch }",
+          "source": "../kanjiReadingMap.js"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 3,
+          "imported": "{ normalizeForSearch }",
+          "source": "../kanjiReadingMap.js"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": []
+    },
+    "13_collaborative_planning.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        }
+      ],
+      "relativeImports": [],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": []
+    },
+    "14_microlearning.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React, { useState }",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "{ Icon }",
+          "source": "./01_common.jsx"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 2,
+          "imported": "{ Icon }",
+          "source": "./01_common.jsx"
+        }
+      ],
+      "exports": [
+        {
+          "line": 6,
+          "name": "MicroLearningPopup",
+          "isDefault": false
+        },
+        {
+          "line": 260,
+          "name": "MicroLearningLibrary",
+          "isDefault": false
+        }
+      ],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": []
+    },
+    "15_community_growth.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React, { useState, useEffect }",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "{ Icon }",
+          "source": "./01_common.jsx"
+        },
+        {
+          "line": 3,
+          "imported": "{ showFeedback }",
+          "source": "./10_feedback.jsx"
+        },
+        {
+          "line": 4,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 2,
+          "imported": "{ Icon }",
+          "source": "./01_common.jsx"
+        },
+        {
+          "line": 3,
+          "imported": "{ showFeedback }",
+          "source": "./10_feedback.jsx"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 10,
+      "globalVars": []
+    },
+    "16_history_v10.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "{ isNativeApp }",
+          "source": "../capacitor-push"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 2,
+          "imported": "{ isNativeApp }",
+          "source": "../capacitor-push"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": []
+    },
+    "17_chevron_shortcut.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React",
+          "source": "react"
+        }
+      ],
+      "relativeImports": [],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": []
+    },
+    "18_subscription.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React, { useState }",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "{ SUBSCRIPTION_PLAN }",
+          "source": "../config"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 3,
+          "imported": "{ SUBSCRIPTION_PLAN }",
+          "source": "../config"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": [
+        "window.firebase"
+      ]
+    },
+    "19_add_meal_modal.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React, { useState, useEffect }",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "{ STORAGE_KEYS }",
+          "source": "../config.js"
+        },
+        {
+          "line": 4,
+          "imported": "{ normalizeForSearch }",
+          "source": "../kanjiReadingMap.js"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 3,
+          "imported": "{ STORAGE_KEYS }",
+          "source": "../config.js"
+        },
+        {
+          "line": 4,
+          "imported": "{ normalizeForSearch }",
+          "source": "../kanjiReadingMap.js"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 6,
+      "importDataService": 5,
+      "globalVars": []
+    },
+    "20_add_workout_modal.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React, { useState }",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "{ STORAGE_KEYS }",
+          "source": "../config.js"
+        },
+        {
+          "line": 4,
+          "imported": "{ normalizeForSearch }",
+          "source": "../kanjiReadingMap.js"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 3,
+          "imported": "{ STORAGE_KEYS }",
+          "source": "../config.js"
+        },
+        {
+          "line": 4,
+          "imported": "{ normalizeForSearch }",
+          "source": "../kanjiReadingMap.js"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 5,
+      "importDataService": 18,
+      "globalVars": [
+        "window.showGlobalConfirm"
+      ]
+    },
+    "21_notification_settings.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React, { useState, useEffect }",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "toast",
+          "source": "react-hot-toast"
+        },
+        {
+          "line": 3,
+          "imported": "{ isNativeApp, initPushNotifications, createNotificationChannel }",
+          "source": "../capacitor-push"
+        }
+      ],
+      "relativeImports": [
+        {
+          "line": 3,
+          "imported": "{ isNativeApp, initPushNotifications, createNotificationChannel }",
+          "source": "../capacitor-push"
+        }
+      ],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": [
+        "window.db",
+        "window.firebase",
+        "window.functions"
+      ]
+    },
+    "22_template_guide_modal.jsx": {
+      "imports": [
+        {
+          "line": 1,
+          "imported": "React, { useState }",
+          "source": "react"
+        },
+        {
+          "line": 2,
+          "imported": "{ BookTemplate, X }",
+          "source": "lucide-react"
+        }
+      ],
+      "relativeImports": [],
+      "exports": [],
+      "windowDataService": 0,
+      "importDataService": 0,
+      "globalVars": []
+    }
+  }
+}

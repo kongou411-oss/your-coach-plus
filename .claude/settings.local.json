@@ -1,7 +1,36 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./gradlew clean:*)"
+      "Bash(./gradlew clean:*)",
+      "Bash(unzip:*)",
+      "Bash(node analyze_dependencies.js:*)",
+      "Bash(awk:*)",
+      "Bash(node analyze_dependencies.cjs:*)",
+      "Bash(npm run build:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nRefactor: 未使用コード削除・コード整理・カスタムフック導入\n\n- 未使用ファイル削除: foodDatabase_v2.js, foodDatabase.js, notificationSound.js, services.js, trainingDatabase.js, utils.js\n- 20_add_workout_modal.jsx: EditWorkoutModal・食事関連コード削除 (6,202→2,213行, 64%削減)\n- useBABHeightカスタムフック作成・05_analysis.jsx/06_community.jsxで共有化\n- 各コンポーネントからコメントアウトコード・console.log削除\n- ビルドサイズ: 996KB (1MB以下維持)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push)",
+      "Bash(firebase deploy:*)",
+      "Bash(cat:*)",
+      "Bash(where:*)",
+      "Bash(dir \"C:\\Program Files\\Android\\Android Studio\\jbr\\bin\\java.exe\")",
+      "Bash(dir \"C:\\Program Files\\Java\")",
+      "Bash(set JAVA_HOME=C:Program FilesAndroidAndroid Studiojbr)",
+      "Bash(gradlew clean:*)",
+      "Bash(.gradlew.bat clean assembleDebug)",
+      "Bash(export JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\":*)",
+      "Bash(npm run dev:*)",
+      "Bash(dir \"C:\\Users\\yourc\\yourcoach_new\\public\\config.js\")",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(git commit:*)",
+      "Bash(npx cap:*)",
+      "Bash(./gradlew assembleDebug:*)",
+      "Bash(firebase functions:log:*)",
+      "Bash(npm install:*)",
+      "Bash(./gradlew bundleRelease:*)",
+      "Bash(\"$JAVA_HOME/bin/keytool\":*)"
     ],
     "deny": [],
     "ask": []

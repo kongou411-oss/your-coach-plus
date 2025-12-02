@@ -142,6 +142,69 @@ const LBMUtils = {
         return bmr * (activityMultipliers[activityLevel] || 1.4);
     },
 
+    // ペース（kg/月 or 体脂肪率%ポイント/月）からカロリー調整値を計算
+    // 体脂肪 1kg ≒ 7,200 kcal
+    calculateCalorieAdjustmentFromPace: (paceValue, paceUnit = 'kg', currentWeight = null) => {
+        // paceValue: 数値（正=増量、負=減量）
+        // paceUnit: 'kg'（kg/月）または 'bf_percent'（体脂肪率%ポイント/月）
+        // currentWeight: 体脂肪率%計算時に必要
+
+        let monthlyChangeKg = paceValue;
+
+        if (paceUnit === 'bf_percent' && currentWeight) {
+            // 体脂肪率%ポイントから kg に変換
+            // 例: 70kg × (-1% ÷ 100) = -0.7 kg
+            monthlyChangeKg = currentWeight * (paceValue / 100);
+        }
+
+        // 月間 kg × 7200 ÷ 30日 = 日次カロリー調整
+        const dailyAdjustment = Math.round((monthlyChangeKg * 7200) / 30);
+
+        // 安全範囲に制限（-1000 〜 +500 kcal/日）
+        return Math.max(-1000, Math.min(500, dailyAdjustment));
+    },
+
+    // ペースのプリセット選択肢（単位別）
+    getPacePresets: (purpose, paceUnit = 'kg', currentWeight = null) => {
+        if (paceUnit === 'kg') {
+            // kg/月 ベースのプリセット
+            if (purpose === 'ダイエット') {
+                return [
+                    { value: -0.5, label: 'ゆっくり', description: '-0.5 kg/月', kcal: -120 },
+                    { value: -1, label: '標準', description: '-1 kg/月', kcal: -240 },
+                    { value: -2, label: '速め', description: '-2 kg/月', kcal: -480 },
+                    { value: -3, label: 'アグレッシブ', description: '-3 kg/月', kcal: -720 }
+                ];
+            } else if (purpose === 'バルクアップ') {
+                return [
+                    { value: 0.5, label: 'リーンバルク', description: '+0.5 kg/月', kcal: 120 },
+                    { value: 1, label: '標準', description: '+1 kg/月', kcal: 240 },
+                    { value: 1.5, label: '速め', description: '+1.5 kg/月', kcal: 360 },
+                    { value: 2, label: 'アグレッシブ', description: '+2 kg/月', kcal: 480 }
+                ];
+            }
+        } else if (paceUnit === 'bf_percent') {
+            // 体脂肪率%/月 ベースのプリセット（体重に応じてkcal計算）
+            const weight = currentWeight || 70;
+            if (purpose === 'ダイエット') {
+                return [
+                    { value: -0.5, label: 'ゆっくり', description: '-0.5%/月', kcal: Math.round((weight * -0.005 * 7200) / 30) },
+                    { value: -1, label: '標準', description: '-1%/月', kcal: Math.round((weight * -0.01 * 7200) / 30) },
+                    { value: -2, label: '速め', description: '-2%/月', kcal: Math.round((weight * -0.02 * 7200) / 30) },
+                    { value: -3, label: 'アグレッシブ', description: '-3%/月', kcal: Math.round((weight * -0.03 * 7200) / 30) }
+                ];
+            } else if (purpose === 'バルクアップ') {
+                return [
+                    { value: 0.5, label: 'リーンバルク', description: '+0.5%/月', kcal: Math.round((weight * 0.005 * 7200) / 30) },
+                    { value: 1, label: '標準', description: '+1%/月', kcal: Math.round((weight * 0.01 * 7200) / 30) },
+                    { value: 1.5, label: '速め', description: '+1.5%/月', kcal: Math.round((weight * 0.015 * 7200) / 30) },
+                    { value: 2, label: 'アグレッシブ', description: '+2%/月', kcal: Math.round((weight * 0.02 * 7200) / 30) }
+                ];
+            }
+        }
+        return [];
+    },
+
     // LBMベースのタンパク質目標 (2.0-3.0g/kg LBM)
     calculateProteinTarget: (lbm, intensity = 'moderate') => {
         const multipliers = {

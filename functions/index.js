@@ -2002,7 +2002,7 @@ exports.deleteGiftCode = onCall({
 
 // ===== COMY投稿管理（管理者用） =====
 
-// COMY投稿一覧取得
+// COMY投稿一覧取得（communityProjectsのprogress サブコレクションから承認待ちを取得）
 exports.getAdminCommunityPosts = onCall({
   region: "asia-northeast2",
 }, async (request) => {
@@ -2014,64 +2014,111 @@ exports.getAdminCommunityPosts = onCall({
   }
 
   try {
-    let query = admin.firestore().collection('communityPosts');
-
-    // フィルターに応じてクエリを変更
-    if (filter === 'pending') {
-      query = query.where('approvalStatus', '==', 'pending');
-    } else if (filter === 'approved') {
-      query = query.where('approvalStatus', '==', 'approved');
-    } else if (filter === 'rejected') {
-      query = query.where('approvalStatus', '==', 'rejected');
-    }
-    // filter === 'all' の場合は全件取得
-
-    const snapshot = await query.orderBy('timestamp', 'desc').limit(100).get();
-
     const posts = [];
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
 
-      // ユーザー情報を取得
-      let userInfo = { displayName: data.author || '不明', email: '' };
-      if (data.userId) {
-        const userDoc = await admin.firestore().collection('users').doc(data.userId).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          userInfo = {
-            displayName: userData.displayName || userData.nickname || data.author || '不明',
-            email: userData.email || ''
-          };
-        }
+    // 全プロジェクトを取得
+    const projectsSnapshot = await admin.firestore().collection('communityProjects').get();
+
+    for (const projectDoc of projectsSnapshot.docs) {
+      const projectData = projectDoc.data();
+      const projectId = projectDoc.id;
+
+      // 各プロジェクトの進捗を取得
+      let progressQuery = admin.firestore()
+        .collection('communityProjects')
+        .doc(projectId)
+        .collection('progress');
+
+      // フィルターに応じてクエリを変更
+      if (filter === 'pending') {
+        progressQuery = progressQuery.where('approvalStatus', '==', 'pending');
+      } else if (filter === 'approved') {
+        progressQuery = progressQuery.where('approvalStatus', '==', 'approved');
+      } else if (filter === 'rejected') {
+        progressQuery = progressQuery.where('approvalStatus', '==', 'rejected');
       }
 
-      posts.push({
-        id: doc.id,
-        ...data,
-        timestamp: data.timestamp?.toDate?.()?.toISOString() || null,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
-        approvedAt: data.approvedAt?.toDate?.()?.toISOString() || null,
-        rejectedAt: data.rejectedAt?.toDate?.()?.toISOString() || null,
-        userInfo
-      });
+      const progressSnapshot = await progressQuery.orderBy('timestamp', 'desc').get();
+
+      for (const progressDoc of progressSnapshot.docs) {
+        const progressData = progressDoc.data();
+
+        // ユーザー情報を取得
+        let userInfo = { displayName: projectData.userName || '不明', email: '' };
+        if (projectData.userId) {
+          const userDoc = await admin.firestore().collection('users').doc(projectData.userId).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            userInfo = {
+              displayName: userData.displayName || userData.nickname || projectData.userName || '不明',
+              email: userData.email || ''
+            };
+          }
+        }
+
+        posts.push({
+          id: progressDoc.id,
+          projectId: projectId,
+          projectTitle: projectData.title,
+          goalCategory: projectData.goalCategory,
+          userId: projectData.userId,
+          author: projectData.userName,
+          category: 'body',
+          progressType: progressData.progressType || 'progress',
+          photo: progressData.photo || null,
+          beforePhoto: progressData.progressType === 'before' ? progressData.photo : null,
+          afterPhoto: progressData.progressType !== 'before' ? progressData.photo : null,
+          content: progressData.caption || projectData.goal || '',
+          approvalStatus: progressData.approvalStatus || 'pending',
+          timestamp: progressData.timestamp || null,
+          attachedData: {
+            bodyData: progressData.bodyData,
+            dailyData: progressData.dailyData,
+            historyData: progressData.historyData,
+            daysSinceStart: progressData.daysSinceStart
+          },
+          userInfo
+        });
+      }
     }
 
-    // 統計情報も取得
-    const pendingCount = await admin.firestore().collection('communityPosts')
-      .where('approvalStatus', '==', 'pending').count().get();
-    const approvedCount = await admin.firestore().collection('communityPosts')
-      .where('approvalStatus', '==', 'approved').count().get();
-    const rejectedCount = await admin.firestore().collection('communityPosts')
-      .where('approvalStatus', '==', 'rejected').count().get();
+    // タイムスタンプでソート（新しい順）
+    posts.sort((a, b) => {
+      const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
+      const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+      return dateB - dateA;
+    });
+
+    // 統計情報を計算
+    let pendingCount = 0;
+    let approvedCount = 0;
+    let rejectedCount = 0;
+
+    // 再度全進捗を取得して統計
+    for (const projectDoc of projectsSnapshot.docs) {
+      const projectId = projectDoc.id;
+      const allProgressSnapshot = await admin.firestore()
+        .collection('communityProjects')
+        .doc(projectId)
+        .collection('progress')
+        .get();
+
+      for (const progressDoc of allProgressSnapshot.docs) {
+        const status = progressDoc.data().approvalStatus;
+        if (status === 'pending') pendingCount++;
+        else if (status === 'approved') approvedCount++;
+        else if (status === 'rejected') rejectedCount++;
+      }
+    }
 
     return {
       success: true,
-      posts,
+      posts: posts.slice(0, 100), // 最大100件
       stats: {
-        pending: pendingCount.data().count,
-        approved: approvedCount.data().count,
-        rejected: rejectedCount.data().count,
-        total: pendingCount.data().count + approvedCount.data().count + rejectedCount.data().count
+        pending: pendingCount,
+        approved: approvedCount,
+        rejected: rejectedCount,
+        total: pendingCount + approvedCount + rejectedCount
       }
     };
   } catch (error) {
@@ -2080,27 +2127,32 @@ exports.getAdminCommunityPosts = onCall({
   }
 });
 
-// COMY投稿承認
+// COMY投稿承認（communityProjects/progress サブコレクション対応）
 exports.adminApprovePost = onCall({
   region: "asia-northeast2",
 }, async (request) => {
-  const { postId, adminPassword } = request.data;
+  const { postId, projectId, adminPassword } = request.data;
 
   if (adminPassword !== process.env.ADMIN_PASSWORD) {
     throw new HttpsError("permission-denied", "管理者権限がありません");
   }
 
-  if (!postId) {
-    throw new HttpsError("invalid-argument", "投稿IDを指定してください");
+  if (!postId || !projectId) {
+    throw new HttpsError("invalid-argument", "投稿IDとプロジェクトIDを指定してください");
   }
 
   try {
-    await admin.firestore().collection('communityPosts').doc(postId).update({
-      approvalStatus: 'approved',
-      approvedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    await admin.firestore()
+      .collection('communityProjects')
+      .doc(projectId)
+      .collection('progress')
+      .doc(postId)
+      .update({
+        approvalStatus: 'approved',
+        approvedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
 
-    console.log(`[COMY Admin] Post ${postId} approved`);
+    console.log(`[COMY Admin] Progress ${postId} in project ${projectId} approved`);
     return { success: true, message: '投稿を承認しました' };
   } catch (error) {
     console.error('[COMY Admin] Approve failed:', error);
@@ -2108,28 +2160,46 @@ exports.adminApprovePost = onCall({
   }
 });
 
-// COMY投稿却下
+// COMY投稿却下（communityProjects/progress サブコレクション対応）
 exports.adminRejectPost = onCall({
   region: "asia-northeast2",
 }, async (request) => {
-  const { postId, reason, adminPassword } = request.data;
+  const { postId, projectId, reason, adminPassword } = request.data;
 
   if (adminPassword !== process.env.ADMIN_PASSWORD) {
     throw new HttpsError("permission-denied", "管理者権限がありません");
   }
 
-  if (!postId) {
-    throw new HttpsError("invalid-argument", "投稿IDを指定してください");
+  if (!postId || !projectId) {
+    throw new HttpsError("invalid-argument", "投稿IDとプロジェクトIDを指定してください");
   }
 
   try {
-    await admin.firestore().collection('communityPosts').doc(postId).update({
+    const projectRef = admin.firestore().collection('communityProjects').doc(projectId);
+    const progressRef = projectRef.collection('progress').doc(postId);
+
+    // 進捗投稿を却下
+    await progressRef.update({
       approvalStatus: 'rejected',
       rejectionReason: reason || '',
       rejectedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log(`[COMY Admin] Post ${postId} rejected`);
+    // プロジェクトの承認済み進捗数を確認
+    const approvedProgress = await projectRef.collection('progress')
+      .where('approvalStatus', '==', 'approved')
+      .get();
+
+    // 承認済み進捗が0件ならプロジェクトを非アクティブに
+    if (approvedProgress.empty) {
+      await projectRef.update({
+        isActive: false,
+        rejectedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      console.log(`[COMY Admin] Project ${projectId} deactivated (no approved progress)`);
+    }
+
+    console.log(`[COMY Admin] Progress ${postId} in project ${projectId} rejected`);
     return { success: true, message: '投稿を却下しました' };
   } catch (error) {
     console.error('[COMY Admin] Reject failed:', error);
@@ -2137,24 +2207,37 @@ exports.adminRejectPost = onCall({
   }
 });
 
-// COMY投稿削除
+// COMY投稿削除（communityProjects/progress サブコレクション対応）
 exports.adminDeletePost = onCall({
   region: "asia-northeast2",
 }, async (request) => {
-  const { postId, adminPassword } = request.data;
+  const { postId, projectId, adminPassword } = request.data;
 
   if (adminPassword !== process.env.ADMIN_PASSWORD) {
     throw new HttpsError("permission-denied", "管理者権限がありません");
   }
 
-  if (!postId) {
-    throw new HttpsError("invalid-argument", "投稿IDを指定してください");
+  if (!postId || !projectId) {
+    throw new HttpsError("invalid-argument", "投稿IDとプロジェクトIDを指定してください");
   }
 
   try {
-    await admin.firestore().collection('communityPosts').doc(postId).delete();
+    const projectRef = admin.firestore().collection('communityProjects').doc(projectId);
+    const progressRef = projectRef.collection('progress').doc(postId);
 
-    console.log(`[COMY Admin] Post ${postId} deleted`);
+    // 進捗投稿を削除
+    await progressRef.delete();
+
+    // プロジェクトの残りの進捗数を確認
+    const remainingProgress = await projectRef.collection('progress').get();
+
+    // 進捗が0件ならプロジェクトも削除
+    if (remainingProgress.empty) {
+      await projectRef.delete();
+      console.log(`[COMY Admin] Project ${projectId} deleted (no remaining progress)`);
+    }
+
+    console.log(`[COMY Admin] Progress ${postId} in project ${projectId} deleted`);
     return { success: true, message: '投稿を削除しました' };
   } catch (error) {
     console.error('[COMY Admin] Delete failed:', error);
