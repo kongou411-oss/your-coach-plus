@@ -60,6 +60,7 @@ const AddMealModal = ({
     const [selectedCategory, setSelectedCategory] = useState('肉類'); // デフォルトで肉類を表示
     const [filteredSearchItems, setFilteredSearchItems] = useState([]); // 検索結果（非同期処理用）
     const [isSearching, setIsSearching] = useState(false); // 検索中フラグ
+    const [isCategoryExpanded, setIsCategoryExpanded] = useState(false); // カテゴリ折りたたみ
 
     // 量調整UI用のstate
     const [selectedItemIndex, setSelectedItemIndex] = useState(null); // 選択中のアイテム
@@ -1366,28 +1367,53 @@ const AddMealModal = ({
                                 </div>
                             </div>
 
-                            {/* カテゴリフィルタ */}
+                            {/* カテゴリフィルタ（折りたたみ式） */}
                             {foodTab === 'food' && (
-                                <div className="px-4 py-3 border-b bg-gray-50">
-                                    <div className="flex flex-wrap gap-2">
-                                        {categories.map(cat => (
-                                            <button
-                                                key={cat}
-                                                onClick={() => setSelectedCategory(cat)}
-                                                className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                                                    (selectedCategory || '穀類') === cat
-                                                        ? 'bg-green-600 text-white'
-                                                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                                }`}
-                                            >
-                                                {cat}
-                                            </button>
-                                        ))}
-                                    </div>
+                                <div className="border-b bg-gray-50">
+                                    {/* 折りたたみヘッダー */}
+                                    <button
+                                        onClick={() => setIsCategoryExpanded(!isCategoryExpanded)}
+                                        className="w-full px-4 py-2 flex items-center justify-between hover:bg-gray-100 transition"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-gray-500">カテゴリ:</span>
+                                            <span className="px-3 py-1 bg-green-600 text-white rounded-full text-xs font-medium">
+                                                {selectedCategory || '穀類'}
+                                            </span>
+                                        </div>
+                                        <Icon
+                                            name={isCategoryExpanded ? "ChevronUp" : "ChevronDown"}
+                                            size={16}
+                                            className="text-gray-400"
+                                        />
+                                    </button>
+                                    {/* 展開時のカテゴリ一覧 */}
+                                    {isCategoryExpanded && (
+                                        <div className="px-4 pb-3">
+                                            <div className="flex flex-wrap gap-2">
+                                                {categories.map(cat => (
+                                                    <button
+                                                        key={cat}
+                                                        onClick={() => {
+                                                            setSelectedCategory(cat);
+                                                            setIsCategoryExpanded(false);
+                                                        }}
+                                                        className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                                                            (selectedCategory || '穀類') === cat
+                                                                ? 'bg-green-600 text-white'
+                                                                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                                        }`}
+                                                    >
+                                                        {cat}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
-                            {/* サプリメントのサブカテゴリフィルタ */}
+                            {/* サプリメントのサブカテゴリフィルタ（折りたたみ式） */}
                             {foodTab === 'supplement' && (() => {
                                 // サプリメントのサブカテゴリ一覧を取得 + カスタムカテゴリを追加（食材タブと同じロジック）
                                 const supplementItems = foodDB['サプリメント'] || {};
@@ -1397,22 +1423,47 @@ const AddMealModal = ({
                                 const allSubcategories = [...subcategories, 'カスタム'];
 
                                 return (
-                                    <div className="px-4 py-3 border-b bg-gray-50">
-                                        <div className="flex flex-wrap gap-2">
-                                            {allSubcategories.map(subcat => (
-                                                <button
-                                                    key={subcat}
-                                                    onClick={() => setSelectedCategory(subcat)}
-                                                    className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                                                        (selectedCategory || 'プロテイン') === subcat
-                                                            ? 'bg-blue-600 text-white'
-                                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                                    }`}
-                                                >
-                                                    {subcat}
-                                                </button>
-                                            ))}
-                                        </div>
+                                    <div className="border-b bg-gray-50">
+                                        {/* 折りたたみヘッダー */}
+                                        <button
+                                            onClick={() => setIsCategoryExpanded(!isCategoryExpanded)}
+                                            className="w-full px-4 py-2 flex items-center justify-between hover:bg-gray-100 transition"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-gray-500">カテゴリ:</span>
+                                                <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-xs font-medium">
+                                                    {selectedCategory || 'プロテイン'}
+                                                </span>
+                                            </div>
+                                            <Icon
+                                                name={isCategoryExpanded ? "ChevronUp" : "ChevronDown"}
+                                                size={16}
+                                                className="text-gray-400"
+                                            />
+                                        </button>
+                                        {/* 展開時のカテゴリ一覧 */}
+                                        {isCategoryExpanded && (
+                                            <div className="px-4 pb-3">
+                                                <div className="flex flex-wrap gap-2">
+                                                    {allSubcategories.map(subcat => (
+                                                        <button
+                                                            key={subcat}
+                                                            onClick={() => {
+                                                                setSelectedCategory(subcat);
+                                                                setIsCategoryExpanded(false);
+                                                            }}
+                                                            className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                                                                (selectedCategory || 'プロテイン') === subcat
+                                                                    ? 'bg-blue-600 text-white'
+                                                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                                            }`}
+                                                        >
+                                                            {subcat}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })()}

@@ -3164,12 +3164,22 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                                 className="flex items-center gap-2 hover:bg-gray-100 rounded-lg p-1 -ml-1 transition"
                                             >
                                                 {post.authorAvatarUrl ? (
-                                                    <img src={post.authorAvatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
-                                                ) : (
-                                                    <div className="w-7 h-7 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                                                        {post.author?.[0] || 'U'}
-                                                    </div>
-                                                )}
+                                                    <img
+                                                        src={post.authorAvatarUrl}
+                                                        alt=""
+                                                        className="w-7 h-7 rounded-full object-cover"
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.nextSibling.style.display = 'flex';
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                <div
+                                                    className="w-7 h-7 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full items-center justify-center text-white font-bold text-xs"
+                                                    style={{ display: post.authorAvatarUrl ? 'none' : 'flex' }}
+                                                >
+                                                    {post.author?.[0] || 'U'}
+                                                </div>
                                                 <p className="font-medium text-gray-800 text-sm">{post.author}</p>
                                             </button>
                                             {/* カテゴリバッジ（ボディメイク/メンタル） */}
@@ -3458,12 +3468,22 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                                                         className="hover:ring-2 hover:ring-blue-300 transition rounded-full"
                                                                     >
                                                                         {comment.authorAvatarUrl ? (
-                                                                            <img src={comment.authorAvatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
-                                                                        ) : (
-                                                                            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                                                                                {comment.author?.[0] || 'U'}
-                                                                            </div>
-                                                                        )}
+                                                                            <img
+                                                                                src={comment.authorAvatarUrl}
+                                                                                alt=""
+                                                                                className="w-6 h-6 rounded-full object-cover"
+                                                                                onError={(e) => {
+                                                                                    e.target.style.display = 'none';
+                                                                                    e.target.nextSibling.style.display = 'flex';
+                                                                                }}
+                                                                            />
+                                                                        ) : null}
+                                                                        <div
+                                                                            className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full items-center justify-center text-white font-bold text-xs"
+                                                                            style={{ display: comment.authorAvatarUrl ? 'none' : 'flex' }}
+                                                                        >
+                                                                            {comment.author?.[0] || 'U'}
+                                                                        </div>
                                                                     </button>
                                                                     <span className="text-xs font-semibold text-gray-800">{comment.author}</span>
                                                                     <span className="text-xs text-gray-500">
@@ -3520,12 +3540,22 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                         <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
                             <div className="flex items-center gap-4 mb-6">
                                 {userProfile.avatarUrl ? (
-                                    <img src={userProfile.avatarUrl} alt="" className="w-20 h-20 rounded-full object-cover" />
-                                ) : (
-                                    <div className="w-20 h-20 bg-gradient-to-br from-fuchsia-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-2xl">
-                                        {(userProfile.nickname || userProfile.name || 'U')[0]}
-                                    </div>
-                                )}
+                                    <img
+                                        src={userProfile.avatarUrl}
+                                        alt=""
+                                        className="w-20 h-20 rounded-full object-cover"
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.nextSibling.style.display = 'flex';
+                                        }}
+                                    />
+                                ) : null}
+                                <div
+                                    className="w-20 h-20 bg-gradient-to-br from-fuchsia-500 to-teal-500 rounded-full items-center justify-center text-white font-bold text-2xl"
+                                    style={{ display: userProfile.avatarUrl ? 'none' : 'flex' }}
+                                >
+                                    {(userProfile.nickname || userProfile.name || 'U')[0]}
+                                </div>
                                 <div>
                                     <h3 className="font-bold text-xl">{userProfile.nickname || userProfile.name || 'ユーザー'}</h3>
                                     {userProfile.goal && (
@@ -3618,12 +3648,22 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 {(post.authorAvatarUrl || userProfile.avatarUrl) ? (
-                                                    <img src={post.authorAvatarUrl || userProfile.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
-                                                ) : (
-                                                    <div className="w-7 h-7 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                                                        {post.author?.[0] || 'U'}
-                                                    </div>
-                                                )}
+                                                    <img
+                                                        src={post.authorAvatarUrl || userProfile.avatarUrl}
+                                                        alt=""
+                                                        className="w-7 h-7 rounded-full object-cover"
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.nextSibling.style.display = 'flex';
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                <div
+                                                    className="w-7 h-7 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full items-center justify-center text-white font-bold text-xs"
+                                                    style={{ display: (post.authorAvatarUrl || userProfile.avatarUrl) ? 'none' : 'flex' }}
+                                                >
+                                                    {post.author?.[0] || 'U'}
+                                                </div>
                                                 <p className="font-medium text-gray-800 text-sm">{post.author}</p>
                                                 {/* カテゴリバッジ（ボディメイク/メンタル） */}
                                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -3890,12 +3930,22 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                                                 <div className="flex items-center justify-between mb-1">
                                                                     <div className="flex items-center gap-2">
                                                                         {comment.authorAvatarUrl ? (
-                                                                            <img src={comment.authorAvatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
-                                                                        ) : (
-                                                                            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                                                                                {comment.author?.[0] || 'U'}
-                                                                            </div>
-                                                                        )}
+                                                                            <img
+                                                                                src={comment.authorAvatarUrl}
+                                                                                alt=""
+                                                                                className="w-6 h-6 rounded-full object-cover"
+                                                                                onError={(e) => {
+                                                                                    e.target.style.display = 'none';
+                                                                                    e.target.nextSibling.style.display = 'flex';
+                                                                                }}
+                                                                            />
+                                                                        ) : null}
+                                                                        <div
+                                                                            className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full items-center justify-center text-white font-bold text-xs"
+                                                                            style={{ display: comment.authorAvatarUrl ? 'none' : 'flex' }}
+                                                                        >
+                                                                            {comment.author?.[0] || 'U'}
+                                                                        </div>
                                                                         <span className="text-xs font-semibold text-gray-800">{comment.author}</span>
                                                                         <span className="text-xs text-gray-500">
                                                                             {comment.createdAt?.toDate ?

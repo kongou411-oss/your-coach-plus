@@ -10,6 +10,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
             const [selectedExercise, setSelectedExercise] = useState(null);
             const [exerciseTab, setExerciseTab] = useState('strength'); // 'strength' or 'cardio' or 'stretch'
             const [selectedExerciseCategory, setSelectedExerciseCategory] = useState('胸'); // 運動のカテゴリフィルタ
+            const [isCategoryExpanded, setIsCategoryExpanded] = useState(false); // カテゴリ折りたたみ
             const [showWorkoutInfoModal, setShowWorkoutInfoModal] = useState(false); // 運動記録の使い方モーダル
             const [hiddenStandardTrainings, setHiddenStandardTrainings] = useState([]);
             const [hiddenTrainingCategories, setHiddenTrainingCategories] = useState([]);
@@ -891,26 +892,51 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                         </div>
                                     </div>
 
-                                    {/* カテゴリフィルタ（筋トレの場合のみ） */}
+                                    {/* カテゴリフィルタ（筋トレの場合のみ・折りたたみ式） */}
                                     {exerciseTab === 'strength' && (() => {
                                         const strengthCategories = ['胸', '背中', '脚', '肩', '腕', '腹筋・体幹', '尻', 'ウエイトリフティング', 'カスタム'];
                                         return (
-                                            <div className="px-4 py-3 border-b bg-gray-50">
-                                                <div className="flex flex-wrap gap-2">
-                                                    {strengthCategories.map(cat => (
-                                                        <button
-                                                            key={cat}
-                                                            onClick={() => setSelectedExerciseCategory(cat)}
-                                                            className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                                                                (selectedExerciseCategory || '胸') === cat
-                                                                    ? 'bg-orange-600 text-white'
-                                                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                                            }`}
-                                                        >
-                                                            {cat}
-                                                        </button>
-                                                    ))}
-                                                </div>
+                                            <div className="border-b bg-gray-50">
+                                                {/* 折りたたみヘッダー */}
+                                                <button
+                                                    onClick={() => setIsCategoryExpanded(!isCategoryExpanded)}
+                                                    className="w-full px-4 py-2 flex items-center justify-between hover:bg-gray-100 transition"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs text-gray-500">カテゴリ:</span>
+                                                        <span className="px-3 py-1 bg-orange-600 text-white rounded-full text-xs font-medium">
+                                                            {selectedExerciseCategory || '胸'}
+                                                        </span>
+                                                    </div>
+                                                    <Icon
+                                                        name={isCategoryExpanded ? "ChevronUp" : "ChevronDown"}
+                                                        size={16}
+                                                        className="text-gray-400"
+                                                    />
+                                                </button>
+                                                {/* 展開時のカテゴリ一覧 */}
+                                                {isCategoryExpanded && (
+                                                    <div className="px-4 pb-3">
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {strengthCategories.map(cat => (
+                                                                <button
+                                                                    key={cat}
+                                                                    onClick={() => {
+                                                                        setSelectedExerciseCategory(cat);
+                                                                        setIsCategoryExpanded(false);
+                                                                    }}
+                                                                    className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                                                                        (selectedExerciseCategory || '胸') === cat
+                                                                            ? 'bg-orange-600 text-white'
+                                                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                                                    }`}
+                                                                >
+                                                                    {cat}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })()}

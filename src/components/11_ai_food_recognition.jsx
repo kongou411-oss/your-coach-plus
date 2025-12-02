@@ -522,6 +522,47 @@ JSONのみ出力、説明文不要`;
                                     protein: proteinPer100g,
                                     fat: fatPer100g,
                                     carbs: carbsPer100g,
+                                    // 品質指標
+                                    diaas: dbItem.diaas ?? null,
+                                    gi: dbItem.gi ?? null,
+                                    // 脂肪酸
+                                    saturatedFat: dbItem.saturatedFat ?? null,
+                                    monounsaturatedFat: dbItem.monounsaturatedFat ?? null,
+                                    polyunsaturatedFat: dbItem.polyunsaturatedFat ?? null,
+                                    mediumChainFat: dbItem.mediumChainFat ?? null,
+                                    // 糖質・食物繊維
+                                    sugar: dbItem.sugar ?? null,
+                                    fiber: dbItem.fiber ?? null,
+                                    solubleFiber: dbItem.solubleFiber ?? null,
+                                    insolubleFiber: dbItem.insolubleFiber ?? null,
+                                    // ビタミン
+                                    vitaminA: dbItem.vitaminA ?? null,
+                                    vitaminB1: dbItem.vitaminB1 ?? null,
+                                    vitaminB2: dbItem.vitaminB2 ?? null,
+                                    vitaminB6: dbItem.vitaminB6 ?? null,
+                                    vitaminB12: dbItem.vitaminB12 ?? null,
+                                    vitaminC: dbItem.vitaminC ?? null,
+                                    vitaminD: dbItem.vitaminD ?? null,
+                                    vitaminE: dbItem.vitaminE ?? null,
+                                    vitaminK: dbItem.vitaminK ?? null,
+                                    niacin: dbItem.niacin ?? null,
+                                    pantothenicAcid: dbItem.pantothenicAcid ?? null,
+                                    biotin: dbItem.biotin ?? null,
+                                    folicAcid: dbItem.folicAcid ?? null,
+                                    // ミネラル
+                                    sodium: dbItem.sodium ?? null,
+                                    potassium: dbItem.potassium ?? null,
+                                    calcium: dbItem.calcium ?? null,
+                                    magnesium: dbItem.magnesium ?? null,
+                                    phosphorus: dbItem.phosphorus ?? null,
+                                    iron: dbItem.iron ?? null,
+                                    zinc: dbItem.zinc ?? null,
+                                    copper: dbItem.copper ?? null,
+                                    manganese: dbItem.manganese ?? null,
+                                    iodine: dbItem.iodine ?? null,
+                                    selenium: dbItem.selenium ?? null,
+                                    chromium: dbItem.chromium ?? null,
+                                    molybdenum: dbItem.molybdenum ?? null,
                                     servingSize: 100,
                                     servingUnit: 'g',
                                     unit: '100g'
@@ -805,40 +846,40 @@ JSONのみ出力、説明文不要`;
                             carbs: bestMatch.carbs || 0,
                             diaas: bestMatch.diaas || estimatedDiaas,
                             gi: bestMatch.gi || estimatedGI,
-                            saturatedFat: bestMatch.saturatedFat || null,
-                            monounsaturatedFat: bestMatch.monounsaturatedFat || null,
-                            polyunsaturatedFat: bestMatch.polyunsaturatedFat || null,
-                            mediumChainFat: bestMatch.mediumChainFat || null,
-                            sugar: bestMatch.sugar || null,
-                            fiber: bestMatch.fiber || null,
-                            solubleFiber: bestMatch.solubleFiber || null,
-                            insolubleFiber: bestMatch.insolubleFiber || null,
-                            vitaminA: bestMatch.vitaminA || null,
-                            vitaminD: bestMatch.vitaminD || null,
-                            vitaminE: bestMatch.vitaminE || null,
-                            vitaminK: bestMatch.vitaminK || null,
-                            vitaminB1: bestMatch.vitaminB1 || null,
-                            vitaminB2: bestMatch.vitaminB2 || null,
-                            niacin: bestMatch.niacin || null,
-                            pantothenicAcid: bestMatch.pantothenicAcid || null,
-                            vitaminB6: bestMatch.vitaminB6 || null,
-                            biotin: bestMatch.biotin || null,
-                            folicAcid: bestMatch.folicAcid || null,
-                            vitaminB12: bestMatch.vitaminB12 || null,
-                            vitaminC: bestMatch.vitaminC || null,
-                            calcium: bestMatch.calcium || null,
-                            iron: bestMatch.iron || null,
-                            magnesium: bestMatch.magnesium || null,
-                            phosphorus: bestMatch.phosphorus || null,
-                            potassium: bestMatch.potassium || null,
-                            sodium: bestMatch.sodium || null,
-                            zinc: bestMatch.zinc || null,
-                            copper: bestMatch.copper || null,
-                            manganese: bestMatch.manganese || null,
-                            selenium: bestMatch.selenium || null,
-                            iodine: bestMatch.iodine || null,
-                            chromium: bestMatch.chromium || null,
-                            molybdenum: bestMatch.molybdenum || null,
+                            saturatedFat: bestMatch.saturatedFat ?? null,
+                            monounsaturatedFat: bestMatch.monounsaturatedFat ?? null,
+                            polyunsaturatedFat: bestMatch.polyunsaturatedFat ?? null,
+                            mediumChainFat: bestMatch.mediumChainFat ?? null,
+                            sugar: bestMatch.sugar ?? null,
+                            fiber: bestMatch.fiber ?? null,
+                            solubleFiber: bestMatch.solubleFiber ?? null,
+                            insolubleFiber: bestMatch.insolubleFiber ?? null,
+                            vitaminA: bestMatch.vitaminA ?? null,
+                            vitaminD: bestMatch.vitaminD ?? null,
+                            vitaminE: bestMatch.vitaminE ?? null,
+                            vitaminK: bestMatch.vitaminK ?? null,
+                            vitaminB1: bestMatch.vitaminB1 ?? null,
+                            vitaminB2: bestMatch.vitaminB2 ?? null,
+                            niacin: bestMatch.niacin ?? null,
+                            pantothenicAcid: bestMatch.pantothenicAcid ?? null,
+                            vitaminB6: bestMatch.vitaminB6 ?? null,
+                            biotin: bestMatch.biotin ?? null,
+                            folicAcid: bestMatch.folicAcid ?? null,
+                            vitaminB12: bestMatch.vitaminB12 ?? null,
+                            vitaminC: bestMatch.vitaminC ?? null,
+                            calcium: bestMatch.calcium ?? null,
+                            iron: bestMatch.iron ?? null,
+                            magnesium: bestMatch.magnesium ?? null,
+                            phosphorus: bestMatch.phosphorus ?? null,
+                            potassium: bestMatch.potassium ?? null,
+                            sodium: bestMatch.sodium ?? null,
+                            zinc: bestMatch.zinc ?? null,
+                            copper: bestMatch.copper ?? null,
+                            manganese: bestMatch.manganese ?? null,
+                            selenium: bestMatch.selenium ?? null,
+                            iodine: bestMatch.iodine ?? null,
+                            chromium: bestMatch.chromium ?? null,
+                            molybdenum: bestMatch.molybdenum ?? null,
                             servingSize: 100,
                             servingUnit: 'g',
                             unit: '100g'
@@ -2096,6 +2137,7 @@ JSON形式のみ出力、説明文不要`;
                         protein: base.protein || 0,
                         fat: base.fat || 0,
                         carbs: base.carbs || 0,
+                        unit: 'g',  // foodDatabaseとの互換性のため
                         servingSize: 100,
                         servingUnit: 'g',
 
@@ -2201,24 +2243,40 @@ JSON形式のみ出力、説明文不要`;
             const vitamins = {};
             const minerals = {};
 
-            // ビタミン（個別キー優先、なければオブジェクトから取得）
+            // ビタミン（個別キー優先、なければオブジェクトから取得、なければ_baseから取得）
             const vitaminKeys = ['vitaminA', 'vitaminD', 'vitaminE', 'vitaminK', 'vitaminB1', 'vitaminB2',
                                  'niacin', 'pantothenicAcid', 'vitaminB6', 'biotin', 'folicAcid', 'vitaminB12', 'vitaminC'];
             vitaminKeys.forEach(key => {
-                const value = food[key] !== undefined ? food[key] : (food.vitamins && food.vitamins[key]);
-                if (value !== null && value !== undefined) {
-                    // 既に実量換算済みの場合はそのまま、100g基準の場合は換算
+                // 優先度: food[key] > food.vitamins[key] > food._base[key]
+                let value = null;
+                if (food[key] !== undefined && food[key] !== null) {
+                    value = food[key];
+                } else if (food.vitamins && food.vitamins[key] !== undefined && food.vitamins[key] !== null) {
+                    value = food.vitamins[key];
+                } else if (food._base && food._base[key] !== undefined && food._base[key] !== null) {
+                    // _baseは100gあたりなので実量換算
+                    value = parseFloat((food._base[key] * ratio).toFixed(2));
+                }
+                if (value !== null) {
                     vitamins[key] = value;
                 }
             });
 
-            // ミネラル（個別キー優先、なければオブジェクトから取得）
+            // ミネラル（個別キー優先、なければオブジェクトから取得、なければ_baseから取得）
             const mineralKeys = ['calcium', 'iron', 'magnesium', 'phosphorus', 'potassium', 'sodium',
                                  'zinc', 'copper', 'manganese', 'selenium', 'iodine', 'chromium', 'molybdenum'];
             mineralKeys.forEach(key => {
-                const value = food[key] !== undefined ? food[key] : (food.minerals && food.minerals[key]);
-                if (value !== null && value !== undefined) {
-                    // 既に実量換算済みの場合はそのまま、100g基準の場合は換算
+                // 優先度: food[key] > food.minerals[key] > food._base[key]
+                let value = null;
+                if (food[key] !== undefined && food[key] !== null) {
+                    value = food[key];
+                } else if (food.minerals && food.minerals[key] !== undefined && food.minerals[key] !== null) {
+                    value = food.minerals[key];
+                } else if (food._base && food._base[key] !== undefined && food._base[key] !== null) {
+                    // _baseは100gあたりなので実量換算
+                    value = parseFloat((food._base[key] * ratio).toFixed(2));
+                }
+                if (value !== null) {
                     minerals[key] = value;
                 }
             });
