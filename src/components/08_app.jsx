@@ -1059,52 +1059,81 @@ const CookieConsentBanner = ({ show, onAccept }) => {
             }, [showSettings, showAnalysisView, showHistoryV10, showPGBaseView, showCOMYView, showSubscriptionView, showAIInput, showHistoryView, showAddView, showAdminPanel]);
 
             // 今日のルーティンを更新（Firestore優先、フォールバックでLocalStorage）
-            useEffect(() => {
-                const loadRoutine = async () => {
-                    if (!user) {
-                        setCurrentRoutine(null);
-                        return;
-                    }
+            const loadCurrentRoutine = async () => {
+                if (!user) {
+                    setCurrentRoutine(null);
+                    return;
+                }
 
-                    try {
-                        // Firestoreからルーティンを取得
-                        const routineDoc = await firebase.firestore()
-                            .collection('users')
-                            .doc(user.uid)
-                            .collection('settings')
-                            .doc('routine')
-                            .get();
+                try {
+                    // Firestoreからルーティンスケジュールを取得
+                    const routineDoc = await firebase.firestore()
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('settings')
+                        .doc('routine')
+                        .get();
 
-                        if (routineDoc.exists) {
-                            const routineData = routineDoc.data();
+                    if (routineDoc.exists) {
+                        const routineData = routineDoc.data();
 
-                            if (routineData.active && routineData.startDate && routineData.days) {
-                                const startDate = new Date(routineData.startDate);
-                                const today = new Date();
-                                const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                                const currentDayIndex = daysDiff % routineData.days.length;
-                                const currentDayData = routineData.days[currentDayIndex];
+                        if (routineData.active && routineData.startDate && routineData.days) {
+                            const startDate = new Date(routineData.startDate);
+                            const today = new Date();
+                            const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+                            const currentDayIndex = daysDiff % routineData.days.length;
+                            const currentDayData = routineData.days[currentDayIndex];
+                            const currentDayNumber = currentDayIndex + 1;
 
-                                setCurrentRoutine({
-                                    splitType: currentDayData.name,
-                                    isRestDay: currentDayData.isRestDay,
-                                    dayNumber: currentDayIndex + 1,
-                                    totalDays: routineData.days.length
-                                });
-                            } else {
-                                setCurrentRoutine(null);
+                            // routinesコレクションからテンプレート紐づけ情報を取得
+                            const routinesSnapshot = await firebase.firestore()
+                                .collection('users')
+                                .doc(user.uid)
+                                .collection('routines')
+                                .where('id', '==', currentDayNumber)
+                                .limit(1)
+                                .get();
+
+                            let mealTemplates = [];
+                            let workoutTemplates = [];
+
+                            if (!routinesSnapshot.empty) {
+                                const routineDetail = routinesSnapshot.docs[0].data();
+                                mealTemplates = routineDetail.mealTemplates || [];
+                                workoutTemplates = routineDetail.workoutTemplates || [];
                             }
+
+                            setCurrentRoutine({
+                                splitType: currentDayData.name,
+                                isRestDay: currentDayData.isRestDay,
+                                dayNumber: currentDayNumber,
+                                totalDays: routineData.days.length,
+                                mealTemplates: mealTemplates,
+                                workoutTemplates: workoutTemplates
+                            });
                         } else {
-                            // Firestoreにルーティンがない場合
                             setCurrentRoutine(null);
                         }
-                    } catch (error) {
-                        console.error('[Routine] Failed to load routine:', error);
+                    } else {
+                        // Firestoreにルーティンがない場合
                         setCurrentRoutine(null);
                     }
-                };
+                } catch (error) {
+                    console.error('[Routine] Failed to load routine:', error);
+                    setCurrentRoutine(null);
+                }
+            };
 
-                loadRoutine();
+            // グローバルに公開（設定画面からの更新用）
+            useEffect(() => {
+                window.reloadCurrentRoutine = loadCurrentRoutine;
+                return () => {
+                    delete window.reloadCurrentRoutine;
+                };
+            }, [user]);
+
+            useEffect(() => {
+                loadCurrentRoutine();
             }, [unlockedFeatures, user]);
 
             // ショートカットの enabled を機能開放状態に連動

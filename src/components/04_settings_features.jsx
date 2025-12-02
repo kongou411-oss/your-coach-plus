@@ -1054,6 +1054,10 @@ const FeaturesTab = ({
                                 });
                                 await batch.commit();
                                 await loadRoutines();
+                                // ダッシュボードのルーティン情報を即座に更新
+                                if (window.reloadCurrentRoutine) {
+                                    window.reloadCurrentRoutine();
+                                }
                             } catch (error) {
                                 console.error('[FeaturesTab] Failed to save routines:', error);
                                 toast.error('ルーティンの保存に失敗しました');
