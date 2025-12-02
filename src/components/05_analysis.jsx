@@ -351,29 +351,49 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
         const today = getTodayDate();
         const todayRecord = dailyRecord; // 既に取得済みの当日データを使用
 
-        // 当日のPFC計算
-        const totalProtein = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.protein || 0), 0), 0);
-        const totalFat = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fat || 0), 0), 0);
-        const totalCarbs = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.carbs || 0), 0), 0);
-        const totalCalories = (todayRecord.meals || []).reduce((sum, m) => sum + (m.calories || 0), 0);
+        // 当日のPFC計算（ratioを適用して実量換算）
+        // protein, fat, carbsは100g基準で保存されているため、量に応じた換算が必要
+        const COUNT_UNITS = ['本', '個', '杯', '枚', '錠'];
 
-        // 糖質・食物繊維・GI値の計算
-        const totalSugar = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.sugar || 0), 0), 0);
-        const totalFiber = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.fiber || 0), 0), 0);
-        const totalSolubleFiber = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.solubleFiber || 0), 0), 0);
-        const totalInsolubleFiber = (todayRecord.meals || []).reduce((sum, m) => sum + (m.items || []).reduce((s, i) => s + (i.insolubleFiber || 0), 0), 0);
-
-        // GI値の加重平均計算
+        let totalProtein = 0;
+        let totalFat = 0;
+        let totalCarbs = 0;
+        let totalCalories = 0;
+        let totalSugar = 0;
+        let totalFiber = 0;
+        let totalSolubleFiber = 0;
+        let totalInsolubleFiber = 0;
         let totalGI = 0;
         let totalCarbsForGI = 0;
+
         (todayRecord.meals || []).forEach(meal => {
+            totalCalories += (meal.calories || 0);  // meal.caloriesは既に実量換算済み
+
             (meal.items || []).forEach(item => {
+                // ratio計算: 個数単位はamountそのまま、重量単位はamount/100
+                const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
+                const ratio = isCountUnit ? item.amount : (item.amount || 0) / 100;
+
+                // protein, fat, carbsは100g基準なのでratio適用
+                totalProtein += (item.protein || 0) * ratio;
+                totalFat += (item.fat || 0) * ratio;
+                totalCarbs += (item.carbs || 0) * ratio;
+
+                // sugar, fiberは既に実量換算済み（19_add_meal_modal.jsxで保存時にratio適用済み）
+                totalSugar += (item.sugar || 0);
+                totalFiber += (item.fiber || 0);
+                totalSolubleFiber += (item.solubleFiber || 0);
+                totalInsolubleFiber += (item.insolubleFiber || 0);
+
+                // GI値の加重平均計算（carbsは100g基準なのでratio適用後の値を使用）
                 if (item.gi && item.carbs) {
-                    totalGI += (item.gi || 0) * (item.carbs || 0);
-                    totalCarbsForGI += (item.carbs || 0);
+                    const actualCarbs = (item.carbs || 0) * ratio;
+                    totalGI += (item.gi || 0) * actualCarbs;
+                    totalCarbsForGI += actualCarbs;
                 }
             });
         });
+
         const averageGI = totalCarbsForGI > 0 ? Math.round(totalGI / totalCarbsForGI) : 0;
 
         // 当日データのみを構造化

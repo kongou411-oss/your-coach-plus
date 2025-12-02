@@ -1385,14 +1385,14 @@ const DataService = {
                 totalProtein += protein;
                 totalFat += fat;
                 totalCarbs += carbs;
-                totalFiber += (item.fiber || 0) * ratio;
+                totalFiber += (item.fiber || 0);  // 既に実量換算済み
                 totalSugar += (item.sugar || 0);  // 既に実量換算済み
 
-                // 脂肪酸
-                totalSaturatedFat += (item.saturatedFat || 0) * ratio;
-                totalMonounsaturatedFat += (item.monounsaturatedFat || 0) * ratio;
-                totalPolyunsaturatedFat += (item.polyunsaturatedFat || 0) * ratio;
-                totalMediumChainFat += (item.mediumChainFat || 0) * ratio;
+                // 脂肪酸（既に実量換算済み）
+                totalSaturatedFat += (item.saturatedFat || 0);
+                totalMonounsaturatedFat += (item.monounsaturatedFat || 0);
+                totalPolyunsaturatedFat += (item.polyunsaturatedFat || 0);
+                totalMediumChainFat += (item.mediumChainFat || 0);
 
                 // DIAAS（タンパク質量で重み付け）
                 if (item.diaas && protein > 0) {
@@ -1405,22 +1405,24 @@ const DataService = {
                 }
 
                 // ビタミン（個別キー形式 or ネストされたオブジェクト形式の両方に対応）
+                // 既に実量換算済みなのでratio不要
                 const vitaminKeys = ['vitaminA', 'vitaminB1', 'vitaminB2', 'vitaminB6', 'vitaminB12', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK'];
                 vitaminKeys.forEach(key => {
                     // 個別キーを優先、なければネストされたvitaminsオブジェクトから取得
                     const value = item[key] !== undefined ? item[key] : (item.vitamins && item.vitamins[key]);
                     if (value) {
-                        vitamins[key] = (vitamins[key] || 0) + value * ratio;
+                        vitamins[key] = (vitamins[key] || 0) + value;  // 既に実量換算済み
                     }
                 });
 
                 // ミネラル（個別キー形式 or ネストされたオブジェクト形式の両方に対応）
+                // 既に実量換算済みなのでratio不要
                 const mineralKeys = ['calcium', 'iron', 'magnesium', 'zinc', 'sodium', 'potassium'];
                 mineralKeys.forEach(key => {
                     // 個別キーを優先、なければネストされたmineralsオブジェクトから取得
                     const value = item[key] !== undefined ? item[key] : (item.minerals && item.minerals[key]);
                     if (value) {
-                        minerals[key] = (minerals[key] || 0) + value * ratio;
+                        minerals[key] = (minerals[key] || 0) + value;  // 既に実量換算済み
                     }
                 });
             });
