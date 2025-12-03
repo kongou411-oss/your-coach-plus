@@ -3159,7 +3159,11 @@ JSON形式のみ出力、説明文不要`;
                                     </li>
                                     <li className="flex items-start gap-2">
                                         <Icon name="Check" size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#4A9EFF' }} />
-                                        <span>データベースと照合して<strong>ビタミン・ミネラルも自動取得</strong></span>
+                                        <span><strong>パッケージの栄養成分表示</strong>を読み取り、PFCを自動取得</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <Icon name="Check" size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#4A9EFF' }} />
+                                        <span>八訂（日本食品標準成分表）から<strong>ビタミン・ミネラル・食物繊維・脂肪酸・糖質・DIAAS・GI</strong>を自動補完</span>
                                     </li>
                                     <li className="flex items-start gap-2">
                                         <Icon name="Check" size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#4A9EFF' }} />
@@ -3168,6 +3172,10 @@ JSON形式のみ出力、説明文不要`;
                                     <li className="flex items-start gap-2">
                                         <Icon name="Check" size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#4A9EFF' }} />
                                         <span>認識結果を<strong>自由に編集・調整</strong>できる</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <Icon name="Check" size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#4A9EFF' }} />
+                                        <span>認識した食材は<strong>自動でカスタム登録</strong>され、次回から簡単に使用可能</span>
                                     </li>
                                 </ul>
                             </div>
@@ -3191,14 +3199,25 @@ JSON形式のみ出力、説明文不要`;
                                         <div>
                                             <p className="font-semibold text-gray-800">AIが自動で食材を認識・解析</p>
                                             <p className="text-sm text-gray-600 mt-1">「AIで食品を認識」ボタンを押すと、AIが写真から食材を自動で検出し、量とカロリー・PFCを推定します。</p>
-                                            <div className="mt-2 bg-blue-100 border border-blue-300 rounded p-2">
-                                                <p className="text-xs text-blue-900 font-semibold mb-1 flex items-center gap-1">
-                                                    <Icon name="Loader" size={12} className="animate-spin" />
-                                                    解析中の表示について
-                                                </p>
-                                                <p className="text-xs text-blue-800">
-                                                    解析中は各食材カードに「🔄 データベースから栄養情報を取得中...」と表示されます。この間、より詳細な栄養情報（ビタミン・ミネラル含む）を検索しています。通常10秒程度で完了します。
-                                                </p>
+                                            <div className="mt-2 space-y-2">
+                                                <div className="bg-green-100 border border-green-300 rounded p-2">
+                                                    <p className="text-xs text-green-900 font-semibold mb-1 flex items-center gap-1">
+                                                        <Icon name="Package" size={12} />
+                                                        パッケージ商品の場合
+                                                    </p>
+                                                    <p className="text-xs text-green-800">
+                                                        栄養成分表示からPFC（カロリー・たんぱく質・脂質・炭水化物）を読み取ります。ビタミン・ミネラル・食物繊維・脂肪酸・糖質・DIAAS・GIは八訂データベースから自動補完されます。
+                                                    </p>
+                                                </div>
+                                                <div className="bg-blue-100 border border-blue-300 rounded p-2">
+                                                    <p className="text-xs text-blue-900 font-semibold mb-1 flex items-center gap-1">
+                                                        <Icon name="Loader" size={12} className="animate-spin" />
+                                                        解析中の表示について
+                                                    </p>
+                                                    <p className="text-xs text-blue-800">
+                                                        解析中は各食材カードに「🔄 データベースから栄養情報を取得中...」と表示されます。この間、より詳細な栄養情報（ビタミン・ミネラル・食物繊維・脂肪酸・糖質・DIAAS・GI）を検索しています。通常10秒程度で完了します。
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -3234,7 +3253,15 @@ JSON形式のみ出力、説明文不要`;
                                         <div>
                                             <p className="font-semibold text-gray-800">認識結果を確認・調整</p>
                                             <p className="text-sm text-gray-600 mt-1">認識された食材の名前、量、栄養素を確認します。数量を調整したり、不要な食材を削除できます。</p>
-                                            <p className="text-xs text-gray-600 mt-2">💡 認識された食材は自動的にカスタムアイテムとして保存され、次回から「食材を検索」の「カスタム」タブで簡単に使用できます。</p>
+                                            <div className="mt-2 bg-purple-100 border border-purple-300 rounded p-2">
+                                                <p className="text-xs text-purple-900 font-semibold mb-1 flex items-center gap-1">
+                                                    <Icon name="Save" size={12} />
+                                                    自動カスタム登録
+                                                </p>
+                                                <p className="text-xs text-purple-800">
+                                                    「確定して記録」を押すと、認識された食材は自動的にカスタムアイテムとして保存されます。次回から「食材を検索」の「カスタム」タブで簡単に使用できます。パッケージ商品も同様に保存されます。
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3 bg-blue-50 p-3 rounded-lg">
