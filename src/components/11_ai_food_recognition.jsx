@@ -1,6 +1,8 @@
 import React from 'react';
 import toast from 'react-hot-toast';
 import { normalizeForSearch } from '../kanjiReadingMap.js';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 // ===== AI Food Recognition Component =====
 // AI搭載の食事認識機能（写真から食品を自動認識）
 
@@ -128,10 +130,83 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
         return dateString;
     };
 
-    // 画像選択ハンドラー
-    const handleImageSelect = (event) => {
-        const file = event.target.files[0];
+    // Capacitor Cameraでカメラ撮影
+    const handleCameraCapture = async () => {
+        try {
+            // ネイティブアプリの場合はCapacitor Camera APIを使用
+            if (Capacitor.isNativePlatform()) {
+                const image = await Camera.getPhoto({
+                    quality: 90,
+                    allowEditing: false,
+                    resultType: CameraResultType.Base64,
+                    source: CameraSource.Camera,
+                    correctOrientation: true,
+                });
 
+                if (image.base64String) {
+                    const base64Data = `data:image/jpeg;base64,${image.base64String}`;
+                    setImagePreview(base64Data);
+                    setSelectedImage({ base64: image.base64String }); // Base64として保存
+                    setError(null);
+                }
+            } else {
+                // Webフォールバック
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.capture = 'environment';
+                input.onchange = (e) => handleFileSelect(e.target.files[0]);
+                input.click();
+            }
+        } catch (error) {
+            console.error('[Camera] Error:', error);
+            if (error.message?.includes('User cancelled')) {
+                // ユーザーがキャンセルした場合は何もしない
+                return;
+            }
+            setError('カメラの起動に失敗しました。カメラへのアクセスを許可してください。');
+        }
+    };
+
+    // Capacitor Cameraでギャラリーから選択
+    const handleGallerySelect = async () => {
+        try {
+            // ネイティブアプリの場合はCapacitor Camera APIを使用
+            if (Capacitor.isNativePlatform()) {
+                const image = await Camera.getPhoto({
+                    quality: 90,
+                    allowEditing: false,
+                    resultType: CameraResultType.Base64,
+                    source: CameraSource.Photos,
+                    correctOrientation: true,
+                });
+
+                if (image.base64String) {
+                    const base64Data = `data:image/jpeg;base64,${image.base64String}`;
+                    setImagePreview(base64Data);
+                    setSelectedImage({ base64: image.base64String }); // Base64として保存
+                    setError(null);
+                }
+            } else {
+                // Webフォールバック
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => handleFileSelect(e.target.files[0]);
+                input.click();
+            }
+        } catch (error) {
+            console.error('[Gallery] Error:', error);
+            if (error.message?.includes('User cancelled')) {
+                // ユーザーがキャンセルした場合は何もしない
+                return;
+            }
+            setError('ギャラリーからの選択に失敗しました。');
+        }
+    };
+
+    // ファイル選択ハンドラー（Webフォールバック用）
+    const handleFileSelect = (file) => {
         // ファイルが選択されていない場合（パーミッション拒否など）
         if (!file) {
             setError('写真が選択されませんでした。カメラへのアクセスを許可してください。');
@@ -168,6 +243,12 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
     // 画像をBase64に変換
     const imageToBase64 = (file) => {
         return new Promise((resolve, reject) => {
+            // Capacitor Cameraから取得したBase64データの場合
+            if (file && file.base64) {
+                resolve(file.base64);
+                return;
+            }
+            // 通常のFileオブジェクトの場合
             const reader = new FileReader();
             reader.onloadend = () => {
                 // data:image/jpeg;base64, の部分を除去
@@ -350,6 +431,7 @@ JSONのみ出力、説明文不要`;
 
                     const amount = food.amount || 100;
                     const ratio = amount / 100;
+                    const nutri = food.nutritionPer100g;
 
                     return {
                         name: food.name,
@@ -357,19 +439,75 @@ JSONのみ出力、説明文不要`;
                         itemType: food.itemType || 'supplement',
                         amount: amount,  // g単位
                         unit: 'g',
-                        calories: Math.round((food.nutritionPer100g.calories || 0) * ratio),
-                        protein: parseFloat(((food.nutritionPer100g.protein || 0) * ratio).toFixed(1)),
-                        fat: parseFloat(((food.nutritionPer100g.fat || 0) * ratio).toFixed(1)),
-                        carbs: parseFloat(((food.nutritionPer100g.carbs || 0) * ratio).toFixed(1)),
+                        calories: Math.round((nutri.calories || 0) * ratio),
+                        protein: parseFloat(((nutri.protein || 0) * ratio).toFixed(1)),
+                        fat: parseFloat(((nutri.fat || 0) * ratio).toFixed(1)),
+                        carbs: parseFloat(((nutri.carbs || 0) * ratio).toFixed(1)),
                         confidence: food.confidence || 1.0,
                         isPackageInfo: true,
                         packageWeight: food.packageWeight || null,
                         nutritionPer: food.nutritionPer || 100,
+                        // ビタミン（個別キー形式、実量に換算）
+                        vitaminA: nutri.vitaminA ? parseFloat((nutri.vitaminA * ratio).toFixed(1)) : null,
+                        vitaminB1: nutri.vitaminB1 ? parseFloat((nutri.vitaminB1 * ratio).toFixed(2)) : null,
+                        vitaminB2: nutri.vitaminB2 ? parseFloat((nutri.vitaminB2 * ratio).toFixed(2)) : null,
+                        vitaminB6: nutri.vitaminB6 ? parseFloat((nutri.vitaminB6 * ratio).toFixed(2)) : null,
+                        vitaminB12: nutri.vitaminB12 ? parseFloat((nutri.vitaminB12 * ratio).toFixed(1)) : null,
+                        vitaminC: nutri.vitaminC ? parseFloat((nutri.vitaminC * ratio).toFixed(1)) : null,
+                        vitaminD: nutri.vitaminD ? parseFloat((nutri.vitaminD * ratio).toFixed(1)) : null,
+                        vitaminE: nutri.vitaminE ? parseFloat((nutri.vitaminE * ratio).toFixed(1)) : null,
+                        vitaminK: nutri.vitaminK ? parseFloat((nutri.vitaminK * ratio).toFixed(1)) : null,
+                        niacin: nutri.niacin ? parseFloat((nutri.niacin * ratio).toFixed(1)) : null,
+                        pantothenicAcid: nutri.pantothenicAcid ? parseFloat((nutri.pantothenicAcid * ratio).toFixed(2)) : null,
+                        biotin: nutri.biotin ? parseFloat((nutri.biotin * ratio).toFixed(1)) : null,
+                        folicAcid: nutri.folicAcid ? parseFloat((nutri.folicAcid * ratio).toFixed(1)) : null,
+                        // ミネラル（個別キー形式、実量に換算）
+                        sodium: nutri.sodium ? parseFloat((nutri.sodium * ratio).toFixed(1)) : null,
+                        potassium: nutri.potassium ? parseFloat((nutri.potassium * ratio).toFixed(1)) : null,
+                        calcium: nutri.calcium ? parseFloat((nutri.calcium * ratio).toFixed(1)) : null,
+                        magnesium: nutri.magnesium ? parseFloat((nutri.magnesium * ratio).toFixed(1)) : null,
+                        phosphorus: nutri.phosphorus ? parseFloat((nutri.phosphorus * ratio).toFixed(1)) : null,
+                        iron: nutri.iron ? parseFloat((nutri.iron * ratio).toFixed(1)) : null,
+                        zinc: nutri.zinc ? parseFloat((nutri.zinc * ratio).toFixed(1)) : null,
+                        copper: nutri.copper ? parseFloat((nutri.copper * ratio).toFixed(2)) : null,
+                        manganese: nutri.manganese ? parseFloat((nutri.manganese * ratio).toFixed(2)) : null,
+                        iodine: nutri.iodine ? parseFloat((nutri.iodine * ratio).toFixed(1)) : null,
+                        selenium: nutri.selenium ? parseFloat((nutri.selenium * ratio).toFixed(1)) : null,
+                        chromium: nutri.chromium ? parseFloat((nutri.chromium * ratio).toFixed(1)) : null,
+                        molybdenum: nutri.molybdenum ? parseFloat((nutri.molybdenum * ratio).toFixed(1)) : null,
                         _base: {  // 100gあたりの基準値
-                            calories: food.nutritionPer100g.calories || 0,
-                            protein: food.nutritionPer100g.protein || 0,
-                            fat: food.nutritionPer100g.fat || 0,
-                            carbs: food.nutritionPer100g.carbs || 0,
+                            calories: nutri.calories || 0,
+                            protein: nutri.protein || 0,
+                            fat: nutri.fat || 0,
+                            carbs: nutri.carbs || 0,
+                            // ビタミン
+                            vitaminA: nutri.vitaminA ?? null,
+                            vitaminB1: nutri.vitaminB1 ?? null,
+                            vitaminB2: nutri.vitaminB2 ?? null,
+                            vitaminB6: nutri.vitaminB6 ?? null,
+                            vitaminB12: nutri.vitaminB12 ?? null,
+                            vitaminC: nutri.vitaminC ?? null,
+                            vitaminD: nutri.vitaminD ?? null,
+                            vitaminE: nutri.vitaminE ?? null,
+                            vitaminK: nutri.vitaminK ?? null,
+                            niacin: nutri.niacin ?? null,
+                            pantothenicAcid: nutri.pantothenicAcid ?? null,
+                            biotin: nutri.biotin ?? null,
+                            folicAcid: nutri.folicAcid ?? null,
+                            // ミネラル
+                            sodium: nutri.sodium ?? null,
+                            potassium: nutri.potassium ?? null,
+                            calcium: nutri.calcium ?? null,
+                            magnesium: nutri.magnesium ?? null,
+                            phosphorus: nutri.phosphorus ?? null,
+                            iron: nutri.iron ?? null,
+                            zinc: nutri.zinc ?? null,
+                            copper: nutri.copper ?? null,
+                            manganese: nutri.manganese ?? null,
+                            iodine: nutri.iodine ?? null,
+                            selenium: nutri.selenium ?? null,
+                            chromium: nutri.chromium ?? null,
+                            molybdenum: nutri.molybdenum ?? null,
                             servingSize: 100,
                             servingUnit: 'g',
                             unit: '100g'
@@ -603,9 +741,34 @@ JSONのみ出力、説明文不要`;
                                 protein: parseFloat(((customItem.protein || 0) * ratio).toFixed(1)),
                                 fat: parseFloat(((customItem.fat || 0) * ratio).toFixed(1)),
                                 carbs: parseFloat(((customItem.carbs || 0) * ratio).toFixed(1)),
-                                // ビタミン・ミネラル（カスタムアイテムから取得）
-                                vitamins: customItem.vitamins || {},
-                                minerals: customItem.minerals || {},
+                                // ビタミン（個別キー形式、実量に換算）
+                                vitaminA: customItem.vitaminA ? parseFloat((customItem.vitaminA * ratio).toFixed(1)) : null,
+                                vitaminB1: customItem.vitaminB1 ? parseFloat((customItem.vitaminB1 * ratio).toFixed(2)) : null,
+                                vitaminB2: customItem.vitaminB2 ? parseFloat((customItem.vitaminB2 * ratio).toFixed(2)) : null,
+                                vitaminB6: customItem.vitaminB6 ? parseFloat((customItem.vitaminB6 * ratio).toFixed(2)) : null,
+                                vitaminB12: customItem.vitaminB12 ? parseFloat((customItem.vitaminB12 * ratio).toFixed(1)) : null,
+                                vitaminC: customItem.vitaminC ? parseFloat((customItem.vitaminC * ratio).toFixed(1)) : null,
+                                vitaminD: customItem.vitaminD ? parseFloat((customItem.vitaminD * ratio).toFixed(1)) : null,
+                                vitaminE: customItem.vitaminE ? parseFloat((customItem.vitaminE * ratio).toFixed(1)) : null,
+                                vitaminK: customItem.vitaminK ? parseFloat((customItem.vitaminK * ratio).toFixed(1)) : null,
+                                niacin: customItem.niacin ? parseFloat((customItem.niacin * ratio).toFixed(1)) : null,
+                                pantothenicAcid: customItem.pantothenicAcid ? parseFloat((customItem.pantothenicAcid * ratio).toFixed(2)) : null,
+                                biotin: customItem.biotin ? parseFloat((customItem.biotin * ratio).toFixed(1)) : null,
+                                folicAcid: customItem.folicAcid ? parseFloat((customItem.folicAcid * ratio).toFixed(1)) : null,
+                                // ミネラル（個別キー形式、実量に換算）
+                                sodium: customItem.sodium ? parseFloat((customItem.sodium * ratio).toFixed(1)) : null,
+                                potassium: customItem.potassium ? parseFloat((customItem.potassium * ratio).toFixed(1)) : null,
+                                calcium: customItem.calcium ? parseFloat((customItem.calcium * ratio).toFixed(1)) : null,
+                                magnesium: customItem.magnesium ? parseFloat((customItem.magnesium * ratio).toFixed(1)) : null,
+                                phosphorus: customItem.phosphorus ? parseFloat((customItem.phosphorus * ratio).toFixed(1)) : null,
+                                iron: customItem.iron ? parseFloat((customItem.iron * ratio).toFixed(1)) : null,
+                                zinc: customItem.zinc ? parseFloat((customItem.zinc * ratio).toFixed(1)) : null,
+                                copper: customItem.copper ? parseFloat((customItem.copper * ratio).toFixed(2)) : null,
+                                manganese: customItem.manganese ? parseFloat((customItem.manganese * ratio).toFixed(2)) : null,
+                                iodine: customItem.iodine ? parseFloat((customItem.iodine * ratio).toFixed(1)) : null,
+                                selenium: customItem.selenium ? parseFloat((customItem.selenium * ratio).toFixed(1)) : null,
+                                chromium: customItem.chromium ? parseFloat((customItem.chromium * ratio).toFixed(1)) : null,
+                                molybdenum: customItem.molybdenum ? parseFloat((customItem.molybdenum * ratio).toFixed(1)) : null,
                                 otherNutrients: customItem.otherNutrients || [],
                                 confidence: food.confidence || 0.5,
                                 isCustom: true,
@@ -614,6 +777,34 @@ JSONのみ出力、説明文不要`;
                                     protein: customItem.protein || 0,
                                     fat: customItem.fat || 0,
                                     carbs: customItem.carbs || 0,
+                                    // ビタミン
+                                    vitaminA: customItem.vitaminA ?? null,
+                                    vitaminB1: customItem.vitaminB1 ?? null,
+                                    vitaminB2: customItem.vitaminB2 ?? null,
+                                    vitaminB6: customItem.vitaminB6 ?? null,
+                                    vitaminB12: customItem.vitaminB12 ?? null,
+                                    vitaminC: customItem.vitaminC ?? null,
+                                    vitaminD: customItem.vitaminD ?? null,
+                                    vitaminE: customItem.vitaminE ?? null,
+                                    vitaminK: customItem.vitaminK ?? null,
+                                    niacin: customItem.niacin ?? null,
+                                    pantothenicAcid: customItem.pantothenicAcid ?? null,
+                                    biotin: customItem.biotin ?? null,
+                                    folicAcid: customItem.folicAcid ?? null,
+                                    // ミネラル
+                                    sodium: customItem.sodium ?? null,
+                                    potassium: customItem.potassium ?? null,
+                                    calcium: customItem.calcium ?? null,
+                                    magnesium: customItem.magnesium ?? null,
+                                    phosphorus: customItem.phosphorus ?? null,
+                                    iron: customItem.iron ?? null,
+                                    zinc: customItem.zinc ?? null,
+                                    copper: customItem.copper ?? null,
+                                    manganese: customItem.manganese ?? null,
+                                    iodine: customItem.iodine ?? null,
+                                    selenium: customItem.selenium ?? null,
+                                    chromium: customItem.chromium ?? null,
+                                    molybdenum: customItem.molybdenum ?? null,
                                     servingSize: 100,
                                     servingUnit: 'g',
                                     unit: '100g'
@@ -1643,6 +1834,8 @@ JSON形式のみ出力、説明文不要`;
         if (lowerName.includes('りんご') || lowerName.includes('リンゴ')) return 36;
         if (lowerName.includes('オレンジ')) return 31;
         if (lowerName.includes('牛乳') || lowerName.includes('ヨーグルト')) return 25;
+        if (lowerName.includes('キムチ') || lowerName.includes('きむち')) return 28;
+        if (lowerName.includes('漬物') || lowerName.includes('漬け') || lowerName.includes('ぬか漬け') || lowerName.includes('たくあん')) return 26;
 
         // タンパク質・脂質中心の食品（GI値が低いまたは無関係）
         if (lowerCategory.includes('肉') || lowerCategory.includes('魚') || lowerCategory.includes('卵')) {
@@ -2295,20 +2488,20 @@ JSON形式のみ出力、説明文不要`;
                 category: food.category || 'その他',
 
                 // 品質指標（実量）
-                diaas: food.diaas || base.diaas || null,
-                gi: food.gi || base.gi || null,
+                diaas: food.diaas ?? base.diaas ?? null,
+                gi: food.gi ?? base.gi ?? null,
 
-                // 脂肪酸（実量）
-                saturatedFat: food.saturatedFat || null,
-                monounsaturatedFat: food.monounsaturatedFat || null,
-                polyunsaturatedFat: food.polyunsaturatedFat || null,
-                mediumChainFat: food.mediumChainFat || null,
+                // 脂肪酸（実量 - _baseからフォールバック）
+                saturatedFat: food.saturatedFat ?? (base.saturatedFat != null ? parseFloat((base.saturatedFat * ratio).toFixed(2)) : null),
+                monounsaturatedFat: food.monounsaturatedFat ?? (base.monounsaturatedFat != null ? parseFloat((base.monounsaturatedFat * ratio).toFixed(2)) : null),
+                polyunsaturatedFat: food.polyunsaturatedFat ?? (base.polyunsaturatedFat != null ? parseFloat((base.polyunsaturatedFat * ratio).toFixed(2)) : null),
+                mediumChainFat: food.mediumChainFat ?? (base.mediumChainFat != null ? parseFloat((base.mediumChainFat * ratio).toFixed(2)) : null),
 
-                // 糖質・食物繊維（実量）
-                sugar: food.sugar || null,
-                fiber: food.fiber || null,
-                solubleFiber: food.solubleFiber || null,
-                insolubleFiber: food.insolubleFiber || null,
+                // 糖質・食物繊維（実量 - _baseからフォールバック）
+                sugar: food.sugar ?? (base.sugar != null ? parseFloat((base.sugar * ratio).toFixed(1)) : null),
+                fiber: food.fiber ?? (base.fiber != null ? parseFloat((base.fiber * ratio).toFixed(1)) : null),
+                solubleFiber: food.solubleFiber ?? (base.solubleFiber != null ? parseFloat((base.solubleFiber * ratio).toFixed(1)) : null),
+                insolubleFiber: food.insolubleFiber ?? (base.insolubleFiber != null ? parseFloat((base.insolubleFiber * ratio).toFixed(1)) : null),
 
                 // ビタミン・ミネラルは実量換算済み（既存の仕様を維持）
                 vitamins: vitamins,
@@ -2510,45 +2703,32 @@ JSON形式のみ出力、説明文不要`;
                     {!imagePreview && (
                         <div className="space-y-3">
                             {/* カメラで撮影ボタン */}
-                            <div className="border-2 border-gray-300 rounded-xl overflow-hidden hover:border-sky-400 transition">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    capture="environment"
-                                    onChange={handleImageSelect}
-                                    className="hidden"
-                                    id="food-image-camera"
-                                />
-                                <label htmlFor="food-image-camera" className="cursor-pointer block bg-sky-50 hover:bg-sky-100 transition p-6 text-center">
-                                    <Icon name="Camera" size={48} className="mx-auto mb-3 text-sky-600" />
-                                    <p className="text-base font-bold text-sky-700 mb-1">
-                                        📷 カメラで撮影
-                                    </p>
-                                    <p className="text-xs text-sky-600">
-                                        その場で食事を撮影して記録
-                                    </p>
-                                </label>
-                            </div>
+                            <button
+                                onClick={handleCameraCapture}
+                                className="w-full border-2 border-gray-300 rounded-xl overflow-hidden hover:border-sky-400 transition bg-sky-50 hover:bg-sky-100 p-6 text-center"
+                            >
+                                <Icon name="Camera" size={48} className="mx-auto mb-3 text-sky-600" />
+                                <p className="text-base font-bold text-sky-700 mb-1">
+                                    📷 カメラで撮影
+                                </p>
+                                <p className="text-xs text-sky-600">
+                                    その場で食事を撮影して記録
+                                </p>
+                            </button>
 
                             {/* ギャラリーから選択ボタン */}
-                            <div className="border-2 border-gray-300 rounded-xl overflow-hidden hover:border-gray-400 transition">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageSelect}
-                                    className="hidden"
-                                    id="food-image-gallery"
-                                />
-                                <label htmlFor="food-image-gallery" className="cursor-pointer block bg-gray-50 hover:bg-gray-100 transition p-6 text-center">
-                                    <Icon name="Image" size={48} className="mx-auto mb-3 text-gray-600" />
-                                    <p className="text-base font-bold text-gray-600 mb-1">
-                                        🖼️ ギャラリーから選択
-                                    </p>
-                                    <p className="text-xs text-gray-600">
-                                        保存済みの写真から選択
-                                    </p>
-                                </label>
-                            </div>
+                            <button
+                                onClick={handleGallerySelect}
+                                className="w-full border-2 border-gray-300 rounded-xl overflow-hidden hover:border-gray-400 transition bg-gray-50 hover:bg-gray-100 p-6 text-center"
+                            >
+                                <Icon name="Image" size={48} className="mx-auto mb-3 text-gray-600" />
+                                <p className="text-base font-bold text-gray-600 mb-1">
+                                    🖼️ ギャラリーから選択
+                                </p>
+                                <p className="text-xs text-gray-600">
+                                    保存済みの写真から選択
+                                </p>
+                            </button>
                         </div>
                     )}
 

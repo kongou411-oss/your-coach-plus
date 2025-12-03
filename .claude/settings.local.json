@@ -30,7 +30,11 @@
       "Bash(firebase functions:log:*)",
       "Bash(npm install:*)",
       "Bash(./gradlew bundleRelease:*)",
-      "Bash(\"$JAVA_HOME/bin/keytool\":*)"
+      "Bash(\"$JAVA_HOME/bin/keytool\":*)",
+      "Bash(./gradlew signingReport:*)",
+      "Bash(./gradlew assembleRelease)",
+      "Bash(\"$JAVA_HOME/bin/keytool\" -list -v -keystore \"C:/Users/yourc/yourcoach_new/android/app/yourcoach-release-key.jks\" -storepass yourcoach123 -alias yourcoach)",
+      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool\" -list -v -keystore \"C:/Users/yourc/yourcoach_new/android/app/yourcoach-release-key.jks\" -storepass yourcoach123 -alias yourcoach)"
     ],
     "deny": [],
     "ask": []

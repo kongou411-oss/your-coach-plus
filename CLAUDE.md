@@ -167,17 +167,22 @@ npm run build
 # 2. Androidに同期（dist/ → android/app/src/main/assets/）
 npx cap sync android
 
-# 3. APKビルド（JAVA_HOME設定必須）
-export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" && cd android && ./gradlew assembleDebug
+# 3. リリース版AABビルド（JAVA_HOME設定必須）
+export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" && cd android && ./gradlew bundleRelease
 ```
 
 **⚠️ クリーンビルドが必要な場合（キャッシュ問題など）：**
 - Claude Codeではなく **Android Studio** で実行してもらう
 - Android Studio: Build → Clean Project → Rebuild Project
 
-**ビルド完了後のAPK場所：**
-- Debug: `android/app/build/outputs/apk/debug/app-debug.apk`
-- Release: `android/app/build/outputs/apk/release/app-release.apk`
+**ビルド完了後のファイル場所：**
+- **AAB（Play Store用）**: `android/app/build/outputs/bundle/release/app-release.aab` ← 基本はこちらを使用
+- Debug APK: `android/app/build/outputs/apk/debug/app-debug.apk`
+
+**⚠️ Play Storeアップロード時のバージョンコード：**
+- 同じversionCodeは再アップロード不可
+- エラー時は `android/app/build.gradle` の `versionCode` を +1 する
+- 現在: versionCode **8**, versionName **1.0.7**
 
 **ユーザーの役割**: 考える・指示するのみ。実行はすべてClaude Codeが行う。
 

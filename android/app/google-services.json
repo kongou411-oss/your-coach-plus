@@ -14,11 +14,35 @@
       },
       "oauth_client": [
         {
+          "client_id": "654534642431-an92c1qhlhgm4fshmupfumtoedlhg62k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yourcoach.plus",
+            "certificate_hash": "294647aa0a8f52ab3cd7d6ec6c796da0e764737d"
+          }
+        },
+        {
+          "client_id": "654534642431-etgb9gmhuse25budoslun4f19vd083f9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yourcoach.plus",
+            "certificate_hash": "a080da5d6f9493a12092c19c66e82005a077604b"
+          }
+        },
+        {
           "client_id": "654534642431-lu3a3jrc0r1kqd5anhpfrj66un11h2ki.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.yourcoach.plus",
             "certificate_hash": "2bbd69f34cea9a653da610efa96034ff12830091"
+          }
+        },
+        {
+          "client_id": "654534642431-nd2m1417hap11jh0iri187sccuo6kgf0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yourcoach.plus",
+            "certificate_hash": "c229752d253b1fe57da1cabb997d19463a65814d"
           }
         },
         {
