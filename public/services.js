@@ -256,12 +256,20 @@ const DataService = {
 
         // profileが存在する場合、デフォルト値とフラグを設定
         if (profile) {
+            // Premium判定: subscription.status === 'active' または b2b2cOrgId または giftCodeActive
+            const isPremium = profile.subscription?.status === 'active'
+                || profile.b2b2cOrgId
+                || profile.subscription?.giftCodeActive === true;
+
             return {
                 ...profile,
                 freeCredits: profile.freeCredits ?? 14,
                 paidCredits: profile.paidCredits ?? 0,
                 // 既存ユーザーのために：onboardingCompletedがundefinedの場合はtrueとみなす
-                onboardingCompleted: profile.onboardingCompleted !== undefined ? profile.onboardingCompleted : true
+                onboardingCompleted: profile.onboardingCompleted !== undefined ? profile.onboardingCompleted : true,
+                // Premium判定用のフラットなフィールドを追加（各コンポーネントで参照しやすくするため）
+                subscriptionStatus: isPremium ? 'active' : 'free',
+                isPremium: isPremium
             };
         }
 
