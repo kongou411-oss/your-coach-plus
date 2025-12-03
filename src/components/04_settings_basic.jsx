@@ -496,7 +496,7 @@ const BasicTab = ({
                 <summary className="cursor-pointer p-4 hover:bg-amber-100 font-medium flex items-center gap-2">
                     <Icon name="Crown" size={18} className="text-amber-600" />
                     プレミアム
-                    {(userProfile?.subscription?.status === 'active') && (
+                    {userProfile?.isPremium && (
                         <span className="ml-2 px-2 py-0.5 bg-[#FFF59A] text-gray-800 text-xs rounded-full relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                             <span className="relative z-10">Premium会員</span>
@@ -507,7 +507,7 @@ const BasicTab = ({
                 <div className="p-4 pt-0 border-t border-amber-200">
                     <div className="space-y-4">
                         {(() => {
-                            const isPremium = userProfile?.subscription?.status === 'active';
+                            const isPremium = userProfile?.isPremium;
                             const isGiftPremium = userProfile?.subscription?.giftCodeActive === true;
                             const isB2BPremium = userProfile?.b2b2cOrgId ? true : false;
                             const hasReferralBonus = userProfile?.referralBonusApplied === true;
@@ -1339,8 +1339,10 @@ const BasicTab = ({
                                                     onClick={() => {
                                                         const debugInfo = {
                                                             userId,
-                                                            subscriptionStatus: userProfile?.subscription?.status || 'none',
-                                                            isPremium: userProfile?.subscription?.status === 'active',
+                                                            subscriptionStatus: userProfile?.subscriptionStatus || 'none',
+                                                            isPremium: userProfile?.isPremium || false,
+                                                            giftCodeActive: userProfile?.subscription?.giftCodeActive || false,
+                                                            b2b2cOrgId: userProfile?.b2b2cOrgId || null,
                                                             userAgent: navigator.userAgent,
                                                             pwaMode: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone,
                                                             online: navigator.onLine,
@@ -1451,7 +1453,7 @@ const BasicTab = ({
                                         toast.error('確認モーダルが利用できません');
                                         return;
                                     }
-                                    const isPremium = userProfile?.subscription?.status === 'active';
+                                    const isPremium = userProfile?.isPremium;
                                     const warningMessage = isPremium
                                         ? 'アカウントを削除すると、有料プランの有効期限が残っていても即座に無効になり、すべてのデータが完全に削除されます。日割り等の返金は行われません。この操作は取り消せません。本当に削除しますか？'
                                         : 'アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。本当に削除しますか？';

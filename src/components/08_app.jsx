@@ -907,7 +907,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                             const todayRecord = await DataService.getDailyRecord(firebaseUser.uid, today);
 
                             // 新しい機能開放システムで開放状態を計算
-                            const isPremium = profile.subscription?.status === 'active' || profile.b2b2cOrgId || profile.subscription?.giftCodeActive === true;
+                            const isPremium = profile.isPremium;
                             const unlocked = await calculateUnlockedFeatures(firebaseUser.uid, todayRecord, isPremium);
                             
                             setUnlockedFeatures(Array.isArray(unlocked) ? unlocked : []);
@@ -1748,9 +1748,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     setUserProfile(finalProfile);
 
                     // 機能開放状態を計算（B2B/ギフトコードのみPremium扱い、紹介コードはクレジットのみ）
-                    const isPremium = finalProfile.subscription?.status === 'active'
-                        || finalProfile.b2b2cOrgId
-                        || finalProfile.subscription?.giftCodeActive === true;
+                    const isPremium = finalProfile.isPremium;
 
                     const today = getTodayDate();
                     const todayRecord = await DataService.getDailyRecord(user.uid, today);
@@ -2385,7 +2383,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                     const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
-                                    const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true ;
+                                    const isPremium = userProfile?.isPremium;
                                     const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
 
@@ -2437,7 +2435,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                     const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
-                                    const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true ;
+                                    const isPremium = userProfile?.isPremium;
                                     const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
 
@@ -2525,7 +2523,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                     const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
-                                    const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true ;
+                                    const isPremium = userProfile?.isPremium;
                                     const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
 
@@ -2650,7 +2648,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                     const oldUnlocked = Array.isArray(unlockedFeatures) ? [...unlockedFeatures] : [];
 
                                     await checkAndCompleteFeatures(userId, updatedRecord);
-                                    const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true ;
+                                    const isPremium = userProfile?.isPremium;
                                     const newUnlocked = await calculateUnlockedFeatures(userId, updatedRecord, isPremium);
                                     setUnlockedFeatures(Array.isArray(newUnlocked) ? newUnlocked : []);
 
@@ -2687,7 +2685,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
                                 // 新しい機能開放システム：分析を閲覧したら完了マーク
                                 const userId = user?.uid;
-                                const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true ;
+                                const isPremium = userProfile?.isPremium;
 
                                 // 常にunlockedFeaturesを再計算（機能開放状態を最新に保つ）
                                 const unlocked = await calculateUnlockedFeatures(userId, dailyRecord, isPremium);
@@ -2702,7 +2700,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                             onFeatureUnlocked={async () => {
                                 // 分析実行後すぐにunlockedFeaturesを再計算
                                 const userId = user?.uid;
-                                const isPremium = userProfile?.subscription?.status === 'active' || userProfile?.b2b2cOrgId || userProfile?.subscription?.giftCodeActive === true ;
+                                const isPremium = userProfile?.isPremium;
                                 const unlocked = await calculateUnlockedFeatures(userId, dailyRecord, isPremium);
                                 setUnlockedFeatures(unlocked);
                             }}
