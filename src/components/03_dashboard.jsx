@@ -1037,7 +1037,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             window.removeEventListener('levelUp', handleLevelUp);
             window.removeEventListener('creditUpdated', handleCreditUpdate);
         };
-    }, [user]);
+    }, [user, profile?.paidCredits]); // profile.paidCreditsが更新されたら再読み込み
 
     // 指示書を完了にする
     const handleCompleteDirective = async () => {
