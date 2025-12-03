@@ -1389,9 +1389,9 @@ exports.getAdminUserList = onCall({
         id: doc.id,
         email: data.email || authInfo.email || null,
         displayName: data.displayName || data.nickname || authInfo.displayName || null,
-        // Firebase Authの日付を優先
+        // 登録日はFirebase Auth優先、最終ログインはFirestore優先（アプリ起動時に更新されるため）
         createdAt: authInfo.creationTime || data.createdAt || data.registrationDate || null,
-        lastLoginAt: authInfo.lastSignInTime || data.lastLoginAt || null,
+        lastLoginAt: data.lastLoginAt || authInfo.lastSignInTime || null,
         // Firestoreデータ
         freeCredits: data.freeCredits || 0,
         paidCredits: data.paidCredits || 0,
