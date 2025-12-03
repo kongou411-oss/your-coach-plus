@@ -950,12 +950,19 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             const expToNext = ExperienceService.getExpToNextLevel(data.level, data.experience);
             const progress = Math.round((expToNext.current / expToNext.required) * 100);
 
+            // propsのprofileとExperienceServiceのデータを比較し、大きい方を採用
+            // （キャッシュからの古いデータを防ぐため）
+            const propsPaidCredits = profile?.paidCredits || 0;
+            const dataPaidCredits = data.paidCredits || 0;
+            const finalPaidCredits = Math.max(propsPaidCredits, dataPaidCredits);
+            const finalFreeCredits = data.freeCredits || 0;
+
             setExpData({
                 level: data.level,
                 experience: data.experience,
-                totalCredits: data.totalCredits,
-                freeCredits: data.freeCredits,
-                paidCredits: data.paidCredits,
+                totalCredits: finalFreeCredits + finalPaidCredits,
+                freeCredits: finalFreeCredits,
+                paidCredits: finalPaidCredits,
                 expProgress: progress,
                 expCurrent: expToNext.current,
                 expRequired: expToNext.required

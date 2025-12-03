@@ -2211,15 +2211,19 @@ const ExperienceService = {
         const profile = await DataService.getUserProfile(userId);
 
         // 既存ユーザーでクレジット情報がない場合、初期化する
+        // ※ paidCreditsが既に設定されている場合（ギフトコード等）は上書きしない
         if (profile && profile.freeCredits === undefined) {
             console.log('[ExperienceService] Existing user without credits detected. Initializing...');
-            profile.experience = 0;
-            profile.level = 1;
+            profile.experience = profile.experience || 0;
+            profile.level = profile.level || 1;
             profile.freeCredits = 14; // 初回クレジット
-            profile.paidCredits = 0;
-            profile.processedScoreDates = [];
-            profile.processedDirectiveDates = [];
-            profile.registrationDate = profile.joinDate || new Date().toISOString();
+            // paidCreditsは上書きしない（ギフトコード等で既に設定されている可能性）
+            if (profile.paidCredits === undefined) {
+                profile.paidCredits = 0;
+            }
+            profile.processedScoreDates = profile.processedScoreDates || [];
+            profile.processedDirectiveDates = profile.processedDirectiveDates || [];
+            profile.registrationDate = profile.registrationDate || profile.joinDate || new Date().toISOString();
 
             // 保存
             await DataService.saveUserProfile(userId, profile);
