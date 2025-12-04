@@ -152,14 +152,39 @@ dist/                 ← ビルド出力（デプロイ対象）
 
 ## Capacitor ネイティブアプリ対応
 
-### 🚨 重要: 現在はネイティブアプリ（Android）で開発中
+### 🚨 重要: ネイティブアプリ（iOS/Android）で開発中
 - **Web版は廃止済み**（PWA → ネイティブ完全移行）
-- デバッグは **Android実機またはエミュレーター** で実施
 - `npm run dev` はコード変更の即時確認用（最終確認は必ずネイティブで）
 
-### ネイティブビルド手順（すべてClaude Codeが実行）
+### 開発環境の分担
 
-**「ネイティブ確認」と言われたら、以下を全て実行：**
+| 作業 | Mac | Windows |
+|------|-----|---------|
+| **iOS開発・テスト** | ✅ | ❌ |
+| **iOSビルド（App Store）** | ✅ | ❌ |
+| **Androidビルド（AAB）** | ❌ | ✅ |
+| **Firebase deploy** | ✅ | ✅ |
+| **Git操作** | ✅ | ✅ |
+| **Web開発（npm run dev）** | ✅ | ✅ |
+
+### iOSビルド手順（Mac専用）
+
+```bash
+# 1. Webビルド
+npm run build
+
+# 2. iOSに同期
+npx cap sync ios
+
+# 3. Xcodeで実行
+# Xcode: ▶ボタン または Product → Run
+```
+
+**App Store用ビルド：**
+- Xcode: Product → Archive → Distribute App
+
+### Androidビルド手順（Windows専用）
+
 ```bash
 # 1. Webビルド（dist/生成）
 npm run build
@@ -237,8 +262,21 @@ src/main.jsx               ← StatusBar設定
 ### Google認証（ネイティブ）
 - プラグイン: `@southdevs/capacitor-google-auth`
 - 初期化: `02_auth.jsx` の `useEffect` で `GoogleAuth.initialize()`
+
+**Android:**
 - SHA-1フィンガープリント: Firebase Console に登録必須
 - `google-services.json`: Firebase Console からダウンロード → `android/app/` に配置
+
+**iOS:**
+- `GoogleService-Info.plist`: Firebase Console からダウンロード → `ios/App/App/` に配置
+- `Info.plist`: REVERSED_CLIENT_ID を URL Scheme に追加済み
+- `GoogleAuth.signIn()` には `scopes` と `serverClientId` を必ず渡す（iOSプラグイン要件）
+
+#### 過去のバグ（再発防止）
+| 日付 | バグ | 原因 | 修正 |
+|------|------|------|------|
+| 2025/12/05 | iOS「must provide scope」エラー | `GoogleAuth.signIn()` にscopes未指定 | `signIn({ scopes: ['profile', 'email'], serverClientId: '...' })` に変更 |
+| 2025/12/05 | iOS「auth/requests-from-referer-blocked」 | Firebase Browser KeyにHTTPリファラー制限 | Google Cloud Console でAPI Key制限を「なし」に変更 |
 
 ### プッシュ通知（ネイティブ）
 - PWA: `firebase-messaging-sw.js` + FCMトークン
