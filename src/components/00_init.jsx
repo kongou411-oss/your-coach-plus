@@ -2,6 +2,7 @@
 // React Hooks & Firebase初期化
 
 import React from 'react';
+import { Capacitor } from '@capacitor/core';
 import { FIREBASE_CONFIG } from '../config.js';
 
 // ===== Firebase初期化 =====
@@ -16,14 +17,20 @@ const initializeFirebase = () => {
         }
         auth = firebase.auth();
 
-        // 永続化設定（signInWithRedirectに必須）
-        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-            .then(() => {
-                console.log('✅ Firebase Auth Persistence設定完了 (LOCAL)');
-            })
-            .catch((error) => {
-                console.error('❌ Firebase Auth Persistence設定失敗:', error);
-            });
+        // 永続化設定 - Capacitorネイティブアプリでは設定しない（IndexedDBを自動使用）
+        // capacitor://localhost スキームではLOCAL永続化がブロックされるため
+        if (!Capacitor.isNativePlatform()) {
+            // Webブラウザのみ永続化設定
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                .then(() => {
+                    console.log('✅ Firebase Auth Persistence設定完了 (LOCAL - Web)');
+                })
+                .catch((error) => {
+                    console.error('❌ Firebase Auth Persistence設定失敗:', error);
+                });
+        } else {
+            console.log('✅ Firebase Auth initialized (Native - IndexedDB auto)');
+        }
 
         db = firebase.firestore();
         storage = firebase.storage();

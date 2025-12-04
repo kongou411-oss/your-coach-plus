@@ -1,9 +1,10 @@
 {
-  "appId": "com.yourcoach.plus",
+  "appId": "com.yourcoach.plus.yourcoachplus",
   "appName": "Your Coach+",
   "webDir": "dist",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "iosScheme": "https"
   },
   "plugins": {
     "PushNotifications": {
@@ -21,11 +22,16 @@
     "GoogleAuth": {
       "scopes": ["profile", "email"],
       "serverClientId": "654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com",
-      "forceCodeForRefreshToken": true
+      "forceCodeForRefreshToken": true,
+      "iosClientId": "654534642431-e2ssoj5ifa8veu31bogtq4f8hju1vrq6.apps.googleusercontent.com"
     }
   },
   "android": {
     "allowMixedContent": true,
     "backgroundColor": "#000000"
+  },
+  "ios": {
+    "backgroundColor": "#000000",
+    "scheme": "https"
   }
 }

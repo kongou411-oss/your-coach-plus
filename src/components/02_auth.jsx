@@ -44,7 +44,7 @@ const LoginScreen = () => {
             if (isNativeApp()) {
                 try {
                     await GoogleAuth.initialize({
-                        clientId: '654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com',
+                        clientId: '654534642431-e2ssoj5ifa8veu31bogtq4f8hju1vrq6.apps.googleusercontent.com',
                         scopes: ['profile', 'email'],
                         grantOfflineAccess: true,
                     });
@@ -203,7 +203,10 @@ const LoginScreen = () => {
             if (isNativeApp()) {
                 // ネイティブアプリ（Capacitor Google Auth）
                 console.log('🔵 ネイティブGoogle認証を使用');
-                const googleUser = await GoogleAuth.signIn();
+                const googleUser = await GoogleAuth.signIn({
+                    scopes: ['profile', 'email'],
+                    serverClientId: '654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com'
+                });
                 console.log('✅ Google認証成功:', googleUser);
 
                 const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
@@ -263,7 +266,10 @@ const LoginScreen = () => {
             if (isNativeApp()) {
                 // ネイティブアプリ（Capacitor Google Auth）
                 console.log('🔵 ネイティブGoogle認証を使用（新規登録）');
-                const googleUser = await GoogleAuth.signIn();
+                const googleUser = await GoogleAuth.signIn({
+                    scopes: ['profile', 'email'],
+                    serverClientId: '654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com'
+                });
                 console.log('✅ Google認証成功:', googleUser);
 
                 const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);

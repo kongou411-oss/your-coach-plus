@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Your Coach+</string>
+	<string>Your Coach+</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -45,5 +45,23 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.yourcoach.plus.yourcoachplus</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.654534642431-e2ssoj5ifa8veu31bogtq4f8hju1vrq6</string>
+				<string>yourcoachplus</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>食事や運動の記録に写真を使用します</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>食事や運動の記録に写真を選択します</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>写真をライブラリに保存します</string>
 </dict>
 </plist>

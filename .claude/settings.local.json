@@ -34,7 +34,22 @@
       "Bash(./gradlew signingReport:*)",
       "Bash(./gradlew assembleRelease)",
       "Bash(\"$JAVA_HOME/bin/keytool\" -list -v -keystore \"C:/Users/yourc/yourcoach_new/android/app/yourcoach-release-key.jks\" -storepass yourcoach123 -alias yourcoach)",
-      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool\" -list -v -keystore \"C:/Users/yourc/yourcoach_new/android/app/yourcoach-release-key.jks\" -storepass yourcoach123 -alias yourcoach)"
+      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool\" -list -v -keystore \"C:/Users/yourc/yourcoach_new/android/app/yourcoach-release-key.jks\" -storepass yourcoach123 -alias yourcoach)",
+      "Bash(pod install)",
+      "Bash(grep:*)",
+      "WebSearch",
+      "Bash(find:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:capacitorjs.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:nextnative.dev)",
+      "WebFetch(domain:firebase.google.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:jsmobiledev.com)",
+      "WebFetch(domain:jorgevergara.co)",
+      "Bash(npx firebase deploy:*)",
+      "Bash(npm exec:*)",
+      "Bash(firebase login:*)"
     ],
     "deny": [],
     "ask": []
