@@ -2,6 +2,7 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import { isNativeApp } from '../capacitor-push';
 import { GoogleAuth } from '@southdevs/capacitor-google-auth';
+import { Capacitor } from '@capacitor/core';
 
 // ===== Authentication Components =====
 // ===== Authentication Components =====
@@ -202,11 +203,20 @@ const LoginScreen = () => {
 
             if (isNativeApp()) {
                 // ネイティブアプリ（Capacitor Google Auth）
-                console.log('🔵 ネイティブGoogle認証を使用');
-                const googleUser = await GoogleAuth.signIn({
-                    scopes: ['profile', 'email'],
-                    serverClientId: '654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com'
-                });
+                const platform = Capacitor.getPlatform();
+                console.log('🔵 ネイティブGoogle認証を使用 platform:', platform);
+
+                let googleUser;
+                if (platform === 'ios') {
+                    // iOS: scopes と serverClientId が必須
+                    googleUser = await GoogleAuth.signIn({
+                        scopes: ['profile', 'email'],
+                        serverClientId: '654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com'
+                    });
+                } else {
+                    // Android: パラメータなしで呼び出し
+                    googleUser = await GoogleAuth.signIn();
+                }
                 console.log('✅ Google認証成功:', googleUser);
 
                 const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
@@ -265,11 +275,20 @@ const LoginScreen = () => {
 
             if (isNativeApp()) {
                 // ネイティブアプリ（Capacitor Google Auth）
-                console.log('🔵 ネイティブGoogle認証を使用（新規登録）');
-                const googleUser = await GoogleAuth.signIn({
-                    scopes: ['profile', 'email'],
-                    serverClientId: '654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com'
-                });
+                const platform = Capacitor.getPlatform();
+                console.log('🔵 ネイティブGoogle認証を使用（新規登録） platform:', platform);
+
+                let googleUser;
+                if (platform === 'ios') {
+                    // iOS: scopes と serverClientId が必須
+                    googleUser = await GoogleAuth.signIn({
+                        scopes: ['profile', 'email'],
+                        serverClientId: '654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com'
+                    });
+                } else {
+                    // Android: パラメータなしで呼び出し
+                    googleUser = await GoogleAuth.signIn();
+                }
                 console.log('✅ Google認証成功:', googleUser);
 
                 const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
