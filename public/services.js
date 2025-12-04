@@ -340,6 +340,30 @@ const DataService = {
         }
     },
 
+    // 日次記録一括取得（履歴ページ用・高速）
+    getAllDailyRecords: async (userId) => {
+        try {
+            const snapshot = await db
+                .collection('dailyRecords')
+                .doc(userId)
+                .collection('records')
+                .get();
+
+            const records = {};
+            snapshot.forEach(doc => {
+                records[doc.id] = doc.data();
+            });
+            console.log(`[DataService] getAllDailyRecords: ${Object.keys(records).length}件取得`);
+            return records;
+        } catch (error) {
+            if (error.code === 'permission-denied') {
+                return {};
+            }
+            console.error('Error fetching all daily records:', error);
+            return {};
+        }
+    },
+
     // 日次記録保存
     saveDailyRecord: async (userId, date, record) => {
         try {

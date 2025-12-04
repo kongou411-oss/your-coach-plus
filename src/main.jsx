@@ -12,10 +12,19 @@ const isNativeApp = Capacitor.isNativePlatform();
 if (isNativeApp) {
     document.body.classList.add('native-app');
 
-    // ステータスバーを透明にしてコンテンツの上に重ねる
-    StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
-    StatusBar.setStyle({ style: Style.Light }).catch(() => {});
-    StatusBar.setBackgroundColor({ color: '#3B82F6' }).catch(() => {}); // blue-500
+    const isIOS = Capacitor.getPlatform() === 'ios';
+
+    if (isIOS) {
+        // iOS: ステータスバーを透明にしてコンテンツの上に重ねる（オーバーレイモード）
+        StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
+        StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+        StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => {}); // 透明
+    } else {
+        // Android: 従来の動作を維持
+        StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+        StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+        StatusBar.setBackgroundColor({ color: '#3B82F6' }).catch(() => {}); // blue-500
+    }
 }
 
 // config を先にインポートして window に公開（他のモジュールより先に実行）

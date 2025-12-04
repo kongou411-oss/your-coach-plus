@@ -42,7 +42,20 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
     <style>
-        /* セーフエリア対応は親コンポーネント（16_history_v10.jsx）で処理 */
+        /* セーフエリア対応（ネイティブアプリ時） */
+        body.native-app .history-header {
+            padding-top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+        }
+        /* ヘッダー上部の背景を同じ色で埋める（白線を消す） */
+        body.native-app .history-header::before {
+            content: '';
+            position: absolute;
+            top: calc(-1 * env(safe-area-inset-top, 0px));
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: inherit;
+        }
 
         /* スクロールバーを完全非表示 */
         * {
@@ -318,8 +331,8 @@
     </style>
 </head>
 <body class="bg-gray-100">
-    <!-- 履歴バナー（フルワイド） - セーフエリア対応は親のiframeコンテナで処理 -->
-    <div class="bg-gradient-to-r from-purple-500 to-indigo-600 shadow-md p-3 mb-4">
+    <!-- 履歴バナー（フルワイド） -->
+    <div class="history-header bg-gradient-to-r from-purple-500 to-indigo-600 shadow-md p-3 mb-4 relative">
         <div class="flex items-center justify-between text-white">
             <div class="flex items-center gap-2">
                 <i data-lucide="trending-up" class="w-5 h-5"></i>
@@ -329,6 +342,12 @@
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
         </div>
+    </div>
+
+    <!-- デバッグ情報表示エリア（本番では非表示） -->
+    <div id="debug-info" class="mx-4 mb-2 p-2 bg-yellow-100 border border-yellow-400 rounded text-xs hidden" style="display: none !important;">
+        <div class="font-bold text-yellow-800">デバッグ情報:</div>
+        <div id="debug-content" class="text-yellow-700 whitespace-pre-wrap"></div>
     </div>
 
     <div class="max-w-6xl mx-auto px-4">
@@ -1404,16 +1423,48 @@
     </div>
 
     <script>
+        // ===== デバッグ関数 =====
+        function showDebug(message) {
+            const debugInfo = document.getElementById('debug-info');
+            const debugContent = document.getElementById('debug-content');
+            if (debugInfo && debugContent) {
+                debugInfo.classList.remove('hidden');
+                debugContent.textContent += message + '\n';
+            }
+            console.log('[DEBUG]', message);
+        }
+
+        // ===== ネイティブアプリ判定 =====
+        const urlParams = new URLSearchParams(window.location.search);
+        const isNativeApp = urlParams.get('native') === 'true';
+        if (isNativeApp) {
+            document.body.classList.add('native-app');
+            showDebug('ネイティブアプリモード: ON');
+        }
+
         // ===== Firebase初期化 =====
         let auth, db, storage, functions;
-        if (!DEV_MODE) {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(FIREBASE_CONFIG);
+        showDebug('DEV_MODE: ' + (typeof DEV_MODE !== 'undefined' ? DEV_MODE : 'undefined'));
+        showDebug('firebase: ' + (typeof firebase !== 'undefined' ? 'OK' : 'NG'));
+        showDebug('FIREBASE_CONFIG: ' + (typeof FIREBASE_CONFIG !== 'undefined' ? 'OK' : 'NG'));
+        showDebug('DataService: ' + (typeof DataService !== 'undefined' ? 'OK' : 'NG'));
+
+        if (typeof DEV_MODE === 'undefined' || !DEV_MODE) {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(FIREBASE_CONFIG);
+                    showDebug('Firebase初期化完了');
+                } else {
+                    showDebug('Firebase既に初期化済み');
+                }
+                auth = firebase.auth();
+                db = firebase.firestore();
+                storage = firebase.storage();
+                functions = firebase.functions();
+                showDebug('Firebase services取得完了');
+            } catch (e) {
+                showDebug('Firebase初期化エラー: ' + e.message);
             }
-            auth = firebase.auth();
-            db = firebase.firestore();
-            storage = firebase.storage();
-            functions = firebase.functions();
         }
 
         // Lucideアイコン初期化
@@ -1543,6 +1594,8 @@
             if (loadingOverlay) loadingOverlay.classList.remove('hidden');
 
             const userId = window.currentUser?.uid || 'demo_user';
+            showDebug('loadRealData() userId: ' + userId);
+            showDebug('Step 1: allData初期化');
             const allData = {
                 // パフォーマンス
                 lbm: [],
@@ -1590,12 +1643,15 @@
             };
 
             // 全期間のデータを取得（登録日から現在まで）
+            showDebug('Step 2: today取得');
             const today = getLocalDateString(new Date());
-            console.log('[履歴データ取得] 開始 - userId:', userId, 'today:', today);
+            showDebug('today: ' + today);
 
             // ユーザープロフィールから登録日を取得
+            showDebug('Step 3: userProfile取得');
             const userProfileKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.USER_PROFILE : 'yourCoachBeta_userProfile';
             const userProfile = JSON.parse(localStorage.getItem(userProfileKey) || '{}');
+            showDebug('userProfile取得完了');
             const registrationDate = userProfile.registrationDate || userProfile.createdAt || userProfile.joinDate;
 
             let startDate;
@@ -1614,35 +1670,39 @@
             const daysDiff = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24));
             console.log('[履歴データ取得] 取得期間:', daysDiff + 1, '日間');
 
-            // LocalStorageの内容を確認（DEV_MODE用）
-            if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
-                const storageKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.DAILY_RECORDS : 'yourCoachBeta_dailyRecords';
-                const saved = localStorage.getItem(storageKey);
-                if (saved) {
-                    const records = JSON.parse(saved);
-                    console.log('[履歴データ取得] LocalStorage内の日付一覧:', Object.keys(records));
-                    console.log('[履歴データ取得] 今日のデータ:', records[today]);
-                } else {
-                    console.log('[履歴データ取得] LocalStorageにデータなし');
+            // 一括取得（親から渡されたデータを優先使用）
+            let allRecords = {};
+            if (parentAllRecords && Object.keys(parentAllRecords).length > 0) {
+                // 親から渡されたデータを使用（iOS対応）
+                showDebug('親から渡されたデータを使用: ' + Object.keys(parentAllRecords).length + '件');
+                allRecords = parentAllRecords;
+            } else if (typeof DataService !== 'undefined' && DataService.getAllDailyRecords) {
+                // 親からデータがない場合は直接取得を試みる
+                showDebug('getAllDailyRecords 呼び出し中...');
+                try {
+                    // タイムアウト付きで呼び出し（5秒）
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('タイムアウト(5秒)')), 5000)
+                    );
+                    allRecords = await Promise.race([
+                        DataService.getAllDailyRecords(userId),
+                        timeoutPromise
+                    ]);
+                    showDebug(`getAllDailyRecords 完了: ${Object.keys(allRecords).length}件`);
+                } catch (e) {
+                    showDebug('getAllDailyRecords エラー: ' + e.message);
+                    // タイムアウトまたはエラーの場合は空のデータで続行
+                    allRecords = {};
                 }
             }
 
+            // 全期間のデータを処理
             for (let i = daysDiff; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(date.getDate() - i);
                 const dateStr = getLocalDateString(date);
 
-                let record = null;
-                if (typeof DataService !== 'undefined') {
-                    record = await DataService.getDailyRecord(userId, dateStr);
-                }
-
-                if (record) {
-                    console.log(`[履歴データ取得] ${dateStr} (${i}日前): meals=${record.meals?.length || 0}, workouts=${record.workouts?.length || 0}, conditions=${record.conditions ? 'あり' : 'なし'}`);
-                } else if (i <= 7) {
-                    // 過去7日分はログ出力（デバッグ用）
-                    console.log(`[履歴データ取得] ${dateStr} (${i}日前): データなし`);
-                }
+                const record = allRecords[dateStr] || null;
 
                 if (record) {
                     // スコアを再計算（最新のロジックで計算）
@@ -4242,24 +4302,37 @@
             alert('メモを削除しました');
         }
 
+        // 親から受け取った全レコードを保存
+        let parentAllRecords = null;
+
         // 初期表示
         // 親ウィンドウからのユーザー情報を受け取る
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'SET_USER_INFO') {
-                console.log('[履歴グラフ] 親ウィンドウからユーザー情報を受信:', event.data.userId);
+                showDebug('postMessage受信: SET_USER_INFO userId=' + event.data.userId);
                 window.currentUser = {
                     uid: event.data.userId,
                     profile: event.data.userProfile
                 };
                 // calculateScoresで使用するためにグローバル変数に保存
                 window.currentUserProfile = event.data.userProfile;
+
+                // 親から渡されたデータがあれば使用
+                if (event.data.allRecords) {
+                    parentAllRecords = event.data.allRecords;
+                    showDebug('親からデータ受信: ' + Object.keys(parentAllRecords).length + '件');
+                }
+
                 // ユーザー情報を受け取ったらデータを再読み込み
                 if (typeof loadRealData === 'function') {
+                    showDebug('loadRealData 呼び出し開始');
                     loadRealData().then(data => {
+                        showDebug('loadRealData 完了');
                         allData = data;
-                        console.log('[履歴グラフ] ユーザーデータ再読み込み完了');
                         globalMinMax = calculateGlobalMinMax('lbm');
                         updateChart(1);
+                    }).catch(err => {
+                        showDebug('loadRealData エラー: ' + err.message);
                     });
                 }
             } else if (event.data && event.data.type === 'RELOAD_DATA') {
@@ -4296,25 +4369,48 @@
         });
 
         async function init() {
+            showDebug('init() 開始');
             // DEV_MODEの確認
             const isDevMode = typeof DEV_MODE !== 'undefined' && DEV_MODE;
+            showDebug('isDevMode: ' + isDevMode);
 
-            // 現在のユーザー情報を取得（親ウィンドウから受信する可能性があるので初期値のみ設定）
+            // 現在のユーザー情報を取得
             if (isDevMode) {
                 // DEV_MODE: LocalStorageを使用
+                showDebug('DEV_MODE - LocalStorage使用');
                 window.currentUser = { uid: DEV_USER_ID || 'demo_user' };
+                await initializeData();
             } else if (typeof firebase !== 'undefined' && firebase.auth) {
-                // 本番モード: Firebaseを使用
-                const user = firebase.auth().currentUser;
-                if (user) {
-                    window.currentUser = { uid: user.uid };
-                } else {
-                    // ログインユーザーが取得できない場合は仮の値を設定
-                    // （親ウィンドウからpostMessageで上書きされる）
-                    window.currentUser = { uid: 'demo_user' };
-                }
+                // 本番モード: Firebase認証状態を待つ
+                showDebug('本番モード - onAuthStateChanged待機');
+                firebase.auth().onAuthStateChanged(async (user) => {
+                    if (user) {
+                        showDebug('認証成功: ' + user.uid);
+                        window.currentUser = { uid: user.uid };
+                        await initializeData();
+                    } else {
+                        showDebug('未認証 - postMessage待機');
+                        // 親ウィンドウからpostMessageでuserIdが送られてくるのを待つ
+                        // postMessageハンドラでloadRealDataが呼ばれる
+                        window.currentUser = { uid: 'demo_user' };
+                        // UIは初期化するがデータは空のまま
+                        loadGoals();
+                        loadAnnotations();
+                        globalMinMax = calculateGlobalMinMax('lbm');
+                        updateChart(1);
+                    }
+                });
+                return; // onAuthStateChangedのコールバックで処理するためここで終了
+            } else {
+                showDebug('firebase.auth 不可 - demo_user');
+                window.currentUser = { uid: 'demo_user' };
+                await initializeData();
             }
+        }
 
+        // データ初期化（認証後に呼ばれる）
+        async function initializeData() {
+            showDebug('initializeData() 開始 - userId: ' + (window.currentUser?.uid || 'なし'));
             loadGoals(); // 目標データを読み込み
             loadAnnotations(); // メモデータを読み込み
 
@@ -4322,12 +4418,12 @@
             if (typeof DataService !== 'undefined') {
                 try {
                     allData = await loadRealData();
-                    console.log('Real data loaded successfully');
+                    console.log('[履歴グラフ] Real data loaded successfully');
                 } catch (error) {
-                    console.error('Failed to load real data:', error);
+                    console.error('[履歴グラフ] Failed to load real data:', error);
                 }
             } else {
-                console.warn('DataService is not available');
+                console.warn('[履歴グラフ] DataService is not available');
             }
 
             globalMinMax = calculateGlobalMinMax('lbm');

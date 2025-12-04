@@ -1193,8 +1193,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[95vw] sm:max-w-2xl slide-up max-h-[90vh] overflow-y-auto">
+        <div className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 flex items-start justify-center p-4 pt-12"
+             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
+            <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[95vw] sm:max-w-2xl slide-up max-h-[85vh] overflow-y-auto">
                 <h2 className="text-2xl font-bold mb-2">
                     {step === 0 && '基本情報'}
                     {step === 1 && '現在の体組成を知る'}
@@ -2076,7 +2077,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     </div>
                 )}
 
-                <div className="flex gap-4 mt-8">
+                <div className="flex gap-4 mt-8 pb-4">
                     {step > 0 && (
                         <button
                             onClick={() => {

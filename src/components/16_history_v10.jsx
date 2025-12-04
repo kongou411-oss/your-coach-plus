@@ -9,16 +9,38 @@ const HistoryV10View = ({ onClose, userId, userProfile }) => {
     const native = isNativeApp();
 
     React.useEffect(() => {
-        // iframeが読み込まれたら、親ウィンドウからユーザー情報と閉じる関数を渡す
-        const handleLoad = () => {
-            if (iframeRef.current && iframeRef.current.contentWindow) {
-                // iframeにユーザー情報を設定
-                iframeRef.current.contentWindow.postMessage({
-                    type: 'SET_USER_INFO',
-                    userId: userId,
-                    userProfile: userProfile
-                }, '*');
+        // iframeが読み込まれたら、親ウィンドウからユーザー情報とデータを渡す
+        const handleLoad = async () => {
+            // 初回チェック
+            if (!iframeRef.current || !iframeRef.current.contentWindow) {
+                return;
             }
+
+            // 親でデータを取得してiframeに送信
+            let allRecords = {};
+            if (typeof DataService !== 'undefined' && DataService.getAllDailyRecords) {
+                try {
+                    console.log('[HistoryV10] 親でデータ取得開始');
+                    allRecords = await DataService.getAllDailyRecords(userId);
+                    console.log('[HistoryV10] 親でデータ取得完了:', Object.keys(allRecords).length, '件');
+                } catch (e) {
+                    console.error('[HistoryV10] データ取得エラー:', e);
+                }
+            }
+
+            // 非同期処理後に再チェック（コンポーネントがアンマウントされている可能性）
+            if (!iframeRef.current || !iframeRef.current.contentWindow) {
+                console.log('[HistoryV10] iframe already unmounted, skipping postMessage');
+                return;
+            }
+
+            // iframeにユーザー情報とデータを設定
+            iframeRef.current.contentWindow.postMessage({
+                type: 'SET_USER_INFO',
+                userId: userId,
+                userProfile: userProfile,
+                allRecords: allRecords  // 履歴データも一緒に送信
+            }, '*');
         };
 
         // iframe内からの閉じるメッセージを受け取る
@@ -42,7 +64,6 @@ const HistoryV10View = ({ onClose, userId, userProfile }) => {
     return (
         <div
             className="fixed inset-0 bg-gray-50 z-50 fullscreen-view"
-            style={native ? { paddingTop: 'env(safe-area-inset-top, 0px)' } : {}}
         >
             {/* Full v10.html in iframe (no header - use iframe's own header) */}
             <iframe

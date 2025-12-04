@@ -24,10 +24,24 @@ body.native-app {
   padding-bottom: var(--safe-area-inset-bottom);
 }
 
-/* フルスクリーンビューはbodyのパディングを無視してviewport全体を使う */
-/* そのため、ヘッダーにのみパディングを追加 */
-body.native-app .native-safe-header {
+/* フルスクリーンビュー（fixed inset-0）はbodyのパディングを無視してviewport全体を使う */
+/* ヘッダーの背景色でセーフエリアをカバーするため、疑似要素で上部を埋める */
+body.native-app .fullscreen-view .native-safe-header {
   padding-top: env(safe-area-inset-top, 0px) !important;
+  /* ヘッダー上部のセーフエリアを同じ背景色で埋める */
+  position: relative;
+}
+
+/* フルスクリーンビューのヘッダー上部に背景を追加（白線を消す） */
+body.native-app .fullscreen-view .native-safe-header::before {
+  content: '';
+  position: absolute;
+  top: calc(-1 * env(safe-area-inset-top, 0px));
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: inherit;
+  z-index: -1;
 }
 
 /* ネイティブアプリ時のステータスバー分の余白 */

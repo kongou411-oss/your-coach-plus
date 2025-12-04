@@ -49,7 +49,12 @@
       "WebFetch(domain:jorgevergara.co)",
       "Bash(npx firebase deploy:*)",
       "Bash(npm exec:*)",
-      "Bash(firebase login:*)"
+      "Bash(firebase login:*)",
+      "Bash(export JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\")",
+      "Bash(chmod:*)",
+      "Bash(brew install:*)",
+      "Bash(export JAVA_HOME:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
