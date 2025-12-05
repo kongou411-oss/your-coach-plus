@@ -1,5 +1,6 @@
 import React from 'react';
 import { isNativeApp } from '../capacitor-push';
+import useBABHeight from '../hooks/useBABHeight.js';
 // ===== History V10 Component (Direct iframe to v10.html) =====
 const HistoryV10View = ({ onClose, userId, userProfile }) => {
     const iframeRef = React.useRef(null);
@@ -7,6 +8,8 @@ const HistoryV10View = ({ onClose, userId, userProfile }) => {
     const [cacheKey] = React.useState(() => Date.now());
     // ネイティブアプリ判定
     const native = isNativeApp();
+    // BAB高さ（動的取得）
+    const babHeight = useBABHeight(64);
 
     React.useEffect(() => {
         // iframeが読み込まれたら、親ウィンドウからユーザー情報とデータを渡す
@@ -39,7 +42,8 @@ const HistoryV10View = ({ onClose, userId, userProfile }) => {
                 type: 'SET_USER_INFO',
                 userId: userId,
                 userProfile: userProfile,
-                allRecords: allRecords  // 履歴データも一緒に送信
+                allRecords: allRecords,  // 履歴データも一緒に送信
+                babHeight: babHeight  // BAB高さも送信
             }, '*');
         };
 
@@ -59,7 +63,17 @@ const HistoryV10View = ({ onClose, userId, userProfile }) => {
                 window.removeEventListener('message', handleMessage);
             };
         }
-    }, [userId, userProfile, onClose]);
+    }, [userId, userProfile, onClose, babHeight]);
+
+    // BAB高さが変わったらiframeに通知
+    React.useEffect(() => {
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+            iframeRef.current.contentWindow.postMessage({
+                type: 'SET_BAB_HEIGHT',
+                babHeight: babHeight
+            }, '*');
+        }
+    }, [babHeight]);
 
     return (
         <div

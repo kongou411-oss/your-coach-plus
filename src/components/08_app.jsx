@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { GlobalConfirmModal } from './00_confirm_modal.jsx';
 import { isNativeApp, initPushNotifications, createNotificationChannel, initBackButtonHandler, removeBackButtonHandler } from '../capacitor-push';
 import { BiometricAuthService } from '../biometric-auth.js';
+import useBABHeight from '../hooks/useBABHeight.js';
 
 // ===== Guide Modal Component =====
 const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId, onClose }) => {
@@ -258,6 +259,9 @@ const CookieConsentBanner = ({ show, onAccept }) => {
             const SubscriptionView = window.SubscriptionView;
             const ChevronShortcut = window.ChevronShortcut;
             const TemplateGuideModal = window.TemplateGuideModal; // テンプレートガイドモーダル
+
+            // BAB高さ（動的取得）
+            const babHeight = useBABHeight(64);
 
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
@@ -2186,7 +2190,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     </div>
 
                     {/* メインコンテンツ */}
-                    <div className="p-4 pb-32">
+                    <div className="p-4" style={{ paddingBottom: `${babHeight + 16}px` }}>
                         <DashboardView
                             dailyRecord={dailyRecord}
                             targetPFC={targetPFC}

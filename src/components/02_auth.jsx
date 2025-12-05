@@ -43,13 +43,21 @@ const LoginScreen = () => {
     useEffect(() => {
         const initGoogleAuth = async () => {
             if (isNativeApp()) {
+                const platform = Capacitor.getPlatform();
+                console.log('🔵 GoogleAuth初期化開始 platform:', platform);
+
                 try {
+                    // iOS: iosClientId, Android: serverClientId (Web Client ID)
+                    const clientId = platform === 'ios'
+                        ? '654534642431-e2ssoj5ifa8veu31bogtq4f8hju1vrq6.apps.googleusercontent.com'
+                        : '654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com';
+
                     await GoogleAuth.initialize({
-                        clientId: '654534642431-e2ssoj5ifa8veu31bogtq4f8hju1vrq6.apps.googleusercontent.com',
+                        clientId: clientId,
                         scopes: ['profile', 'email'],
                         grantOfflineAccess: true,
                     });
-                    console.log('✅ GoogleAuth initialized');
+                    console.log('✅ GoogleAuth initialized with clientId:', clientId);
                 } catch (error) {
                     console.error('❌ GoogleAuth initialization error:', error);
                 }
@@ -1212,8 +1220,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 flex items-start justify-center p-4 pt-12"
-             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
+        <div className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center p-4"
+             style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
             <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[95vw] sm:max-w-2xl slide-up max-h-[85vh] overflow-y-auto">
                 <h2 className="text-2xl font-bold mb-2">
                     {step === 0 && '基本情報'}

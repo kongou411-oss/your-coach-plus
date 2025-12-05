@@ -558,7 +558,7 @@ exports.sendFeedback = onCall({
     // メール送信
     const mailOptions = {
       from: gmailUser.value(),
-      to: "kongou411@gmail.com",
+      to: "official@your-coach-plus.com",
       subject: `[Your Coach+] ユーザーフィードバック from ${userEmail}`,
       html: `
         <h2>Your Coach+ フィードバック</h2>
@@ -1359,7 +1359,7 @@ exports.getAdminUserList = onCall({
   region: "asia-northeast2",
 }, async (request) => {
   // 管理者メールチェック
-  const ADMIN_EMAILS = ['kongou411@gmail.com'];
+  const ADMIN_EMAILS = ['official@your-coach-plus.com'];
   if (!request.auth || !ADMIN_EMAILS.includes(request.auth.token.email)) {
     throw new HttpsError("permission-denied", "管理者権限が必要です");
   }

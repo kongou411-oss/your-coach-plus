@@ -55,8 +55,8 @@
     "firebase": "^12.5.0",
     "flatpickr": "^4.6.13",
     "lucide-react": "^0.552.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "react-hot-toast": "^2.6.0",
     "react-image-crop": "^11.0.10",
     "wanakana": "^5.3.1"

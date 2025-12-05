@@ -241,11 +241,11 @@ const OtherTab = ({
                             <p className="text-xs text-gray-600 mb-2">運営者</p>
                             <p className="text-sm font-medium text-gray-800 mb-3">Your Coach+</p>
                             <a
-                                href="mailto:kongou411@gmail.com"
+                                href="mailto:official@your-coach-plus.com"
                                 className="flex items-center gap-2 text-sm text-[#4A9EFF] hover:text-[#3b8fef] transition"
                             >
                                 <Icon name="Mail" size={14} />
-                                <span>kongou411@gmail.com</span>
+                                <span>official@your-coach-plus.com</span>
                             </a>
                         </div>
                     </div>
@@ -308,7 +308,7 @@ const OtherTab = ({
                                         )}
                                     </button>
                                     <p className="text-xs text-gray-600 mt-2 text-center">
-                                        送信先: kongou411@gmail.com
+                                        送信先: official@your-coach-plus.com
                                     </p>
                                 </>
                             )}

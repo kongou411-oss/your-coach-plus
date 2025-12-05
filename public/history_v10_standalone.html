@@ -4307,6 +4307,14 @@
 
         // 初期表示
         // 親ウィンドウからのユーザー情報を受け取る
+        // BAB高さを適用する関数
+        function applyBabHeight(height) {
+            if (height && height > 0) {
+                document.body.style.paddingBottom = (height + 16) + 'px';
+                console.log('[履歴グラフ] BAB高さ適用:', height + 'px');
+            }
+        }
+
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'SET_USER_INFO') {
                 showDebug('postMessage受信: SET_USER_INFO userId=' + event.data.userId);
@@ -4323,6 +4331,11 @@
                     showDebug('親からデータ受信: ' + Object.keys(parentAllRecords).length + '件');
                 }
 
+                // BAB高さを適用
+                if (event.data.babHeight) {
+                    applyBabHeight(event.data.babHeight);
+                }
+
                 // ユーザー情報を受け取ったらデータを再読み込み
                 if (typeof loadRealData === 'function') {
                     showDebug('loadRealData 呼び出し開始');
@@ -4335,6 +4348,9 @@
                         showDebug('loadRealData エラー: ' + err.message);
                     });
                 }
+            } else if (event.data && event.data.type === 'SET_BAB_HEIGHT') {
+                // BAB高さ変更メッセージを受信
+                applyBabHeight(event.data.babHeight);
             } else if (event.data && event.data.type === 'RELOAD_DATA') {
                 // データ再読み込みメッセージを受信
                 console.log('[履歴グラフ] データ再読み込み要求を受信');
