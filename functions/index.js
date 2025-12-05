@@ -455,6 +455,285 @@ async function rescheduleNotification(title, body, notificationType, userId, sch
   }
 }
 
+// ===== ルーティン通知をスケジュール =====
+exports.scheduleRoutineNotification = onCall({
+  region: "asia-northeast2",
+  cors: true,
+  memory: "512MiB",
+}, async (request) => {
+  const { userId, scheduleTimeStr } = request.data;
+
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ユーザーはログインしている必要があります");
+  }
+
+  if (!scheduleTimeStr) {
+    throw new HttpsError("invalid-argument", "通知時刻が指定されていません");
+  }
+
+  try {
+    const tasksClient = new CloudTasksClient();
+    const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
+    const location = "asia-northeast2";
+    const queue = "notification-queue";
+
+    const queuePath = tasksClient.queuePath(project, location, queue);
+    const url = `https://${location}-${project}.cloudfunctions.net/sendRoutineNotification`;
+
+    // 今日の指定時刻 or 翌日の指定時刻を計算
+    const [hours, minutes] = scheduleTimeStr.split(":").map(Number);
+    const nowUTC = new Date();
+    const nowJST = new Date(nowUTC.getTime() + 9 * 60 * 60 * 1000);
+
+    // JSTで今日の指定時刻を作成
+    let targetJST = new Date(nowJST);
+    targetJST.setHours(hours, minutes, 0, 0);
+
+    // 既に過ぎていたら翌日に設定
+    if (targetJST.getTime() <= nowJST.getTime()) {
+      targetJST.setDate(targetJST.getDate() + 1);
+    }
+
+    // JSTからUTCに変換
+    const targetUTC = new Date(targetJST.getTime() - 9 * 60 * 60 * 1000);
+    const scheduleTimeSeconds = Math.floor(targetUTC.getTime() / 1000);
+
+    const task = {
+      httpRequest: {
+        httpMethod: "POST",
+        url: url,
+        headers: {"Content-Type": "application/json"},
+        body: Buffer.from(JSON.stringify({
+          userId,
+          scheduleTimeStr,
+        })).toString("base64"),
+        oidcToken: {
+          serviceAccountEmail: `${project}@appspot.gserviceaccount.com`,
+        },
+      },
+      scheduleTime: {seconds: scheduleTimeSeconds},
+    };
+
+    const [response] = await tasksClient.createTask({parent: queuePath, task});
+    console.log(`[Routine Notification] Scheduled for ${userId} at ${scheduleTimeStr} (Task: ${response.name})`);
+
+    return {
+      success: true,
+      taskId: response.name,
+      scheduleTime: targetJST.toISOString(),
+    };
+  } catch (error) {
+    console.error("[Routine Notification] Failed to schedule:", error);
+    throw new HttpsError("internal", "ルーティン通知のスケジュールに失敗しました", error.message);
+  }
+});
+
+// ===== ルーティン通知を送信（Cloud Tasksから呼び出される） =====
+exports.sendRoutineNotification = onRequest({
+  region: "asia-northeast2",
+  memory: "512MiB",
+}, async (req, res) => {
+  try {
+    let { userId, scheduleTimeStr } = req.body;
+
+    if (!userId || !scheduleTimeStr) {
+      console.error("[Routine Notification] Missing parameters:", { userId, scheduleTimeStr });
+      return res.status(400).send("Missing parameters");
+    }
+
+    const db = admin.firestore();
+
+    // 1. ユーザー情報と通知設定を取得
+    const [userDoc, settingsDoc, routineDoc] = await Promise.all([
+      db.collection("users").doc(userId).get(),
+      db.collection("users").doc(userId).collection("settings").doc("notifications").get(),
+      db.collection("users").doc(userId).collection("settings").doc("routine").get(),
+    ]);
+
+    if (!userDoc.exists || !settingsDoc.exists) {
+      console.log(`[Routine Notification] User or settings not found: ${userId}`);
+      return res.status(200).send("Stop chaining");
+    }
+
+    const userData = userDoc.data();
+    const settings = settingsDoc.data();
+
+    // 2. ルーティン通知が有効かチェック
+    if (!settings.routine || !settings.routine.enabled || settings.routine.time !== scheduleTimeStr) {
+      console.log(`[Routine Notification] Setting disabled or changed for ${userId}`);
+      return res.status(200).send("Stop chaining");
+    }
+
+    // 3. ルーティン設定がない場合はスキップ
+    if (!routineDoc.exists) {
+      console.log(`[Routine Notification] No routine config for ${userId}`);
+      // 設定はあるがルーティンがない場合は翌日も試行
+      await rescheduleRoutineNotification(userId, scheduleTimeStr);
+      return res.status(200).send("No routine config, rescheduled");
+    }
+
+    const routineData = routineDoc.data();
+    if (!routineData.active || !routineData.startDate || !routineData.days) {
+      console.log(`[Routine Notification] Routine not active for ${userId}`);
+      await rescheduleRoutineNotification(userId, scheduleTimeStr);
+      return res.status(200).send("Routine not active, rescheduled");
+    }
+
+    // 4. 今日のルーティンを計算（08_app.jsxと同じロジック）
+    const startDate = new Date(routineData.startDate);
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000); // JSTで今日
+    const daysDiff = Math.floor((nowJST - startDate) / (1000 * 60 * 60 * 24));
+    const currentDayIndex = daysDiff % routineData.days.length;
+    const currentDayData = routineData.days[currentDayIndex];
+    const dayNumber = currentDayIndex + 1;
+    const totalDays = routineData.days.length;
+
+    // 5. 通知内容を生成
+    const title = "今日のルーティン";
+    const body = currentDayData.isRestDay
+      ? `Day ${dayNumber}/${totalDays} - 今日は休養日です`
+      : `Day ${dayNumber}/${totalDays} - 今日は${currentDayData.name}の日です`;
+
+    // 6. FCMトークンを取得
+    let tokens = [];
+    if (userData.fcmTokens && Array.isArray(userData.fcmTokens)) {
+      tokens = userData.fcmTokens;
+    } else if (userData.fcmToken) {
+      tokens = [userData.fcmToken];
+    }
+
+    const uniqueTokens = [...new Set(tokens)];
+    if (uniqueTokens.length === 0) {
+      console.log(`[Routine Notification] No FCM tokens for ${userId}`);
+      await rescheduleRoutineNotification(userId, scheduleTimeStr);
+      return res.status(200).send("No tokens, rescheduled");
+    }
+
+    // 7. FCM通知送信
+    const notificationTag = `routine-${scheduleTimeStr}`;
+    const message = {
+      tokens: uniqueTokens,
+      notification: { title, body },
+      webpush: {
+        headers: { Urgency: "high" },
+        notification: {
+          tag: notificationTag,
+          icon: "/icons/icon-192.png",
+          badge: "/icons/icon-72.png",
+          vibrate: [200, 100, 200],
+          requireInteraction: true,
+          renotify: true,
+        },
+      },
+      data: {
+        type: "routine",
+        userId: userId,
+        dayNumber: String(dayNumber),
+        splitType: currentDayData.name,
+      },
+      android: {
+        priority: "high",
+        notification: {
+          channelId: "high_importance_channel",
+          priority: "max",
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          visibility: "public",
+          tag: notificationTag,
+        },
+      },
+      apns: {
+        headers: {
+          "apns-collapse-id": notificationTag,
+          "apns-priority": "10",
+          "apns-push-type": "alert",
+        },
+        payload: {
+          aps: {
+            alert: { title, body },
+            "interruption-level": "time-sensitive",
+            sound: "default",
+            badge: 1,
+          },
+        },
+      },
+    };
+
+    const response = await admin.messaging().sendEachForMulticast(message);
+    console.log(`[Routine Notification] Sent to ${response.successCount}/${tokens.length} devices for ${userId}`);
+
+    // 8. 無効なトークンを削除
+    if (response.failureCount > 0) {
+      const failedTokens = [];
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          failedTokens.push(tokens[idx]);
+        }
+      });
+      if (failedTokens.length > 0 && userData.fcmTokens) {
+        await db.collection("users").doc(userId).update({
+          fcmTokens: admin.firestore.FieldValue.arrayRemove(...failedTokens),
+        });
+      }
+    }
+
+    // 9. 翌日の通知をスケジュール
+    await rescheduleRoutineNotification(userId, scheduleTimeStr);
+
+    res.status(200).send("Routine notification sent and rescheduled");
+  } catch (error) {
+    console.error("[Routine Notification] Error:", error);
+    res.status(500).send("Internal Error");
+  }
+});
+
+// ===== ルーティン通知を翌日に再スケジュール =====
+async function rescheduleRoutineNotification(userId, scheduleTimeStr) {
+  try {
+    const tasksClient = new CloudTasksClient();
+    const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
+    const location = "asia-northeast2";
+    const queue = "notification-queue";
+
+    const queuePath = tasksClient.queuePath(project, location, queue);
+    const url = `https://${location}-${project}.cloudfunctions.net/sendRoutineNotification`;
+
+    const [hours, minutes] = scheduleTimeStr.split(":").map(Number);
+    const nowUTC = new Date();
+    const nowJST = new Date(nowUTC.getTime() + 9 * 60 * 60 * 1000);
+
+    // 翌日の指定時刻
+    const targetJST = new Date(nowJST);
+    targetJST.setDate(nowJST.getDate() + 1);
+    targetJST.setHours(hours, minutes, 0, 0);
+
+    const targetUTC = new Date(targetJST.getTime() - 9 * 60 * 60 * 1000);
+    const scheduleTimeSeconds = Math.floor(targetUTC.getTime() / 1000);
+
+    const task = {
+      httpRequest: {
+        httpMethod: "POST",
+        url: url,
+        headers: {"Content-Type": "application/json"},
+        body: Buffer.from(JSON.stringify({
+          userId,
+          scheduleTimeStr,
+        })).toString("base64"),
+        oidcToken: {
+          serviceAccountEmail: `${project}@appspot.gserviceaccount.com`,
+        },
+      },
+      scheduleTime: {seconds: scheduleTimeSeconds},
+    };
+
+    const [response] = await tasksClient.createTask({parent: queuePath, task});
+    console.log(`[Routine Notification] Rescheduled for ${userId} at ${scheduleTimeStr} (Task: ${response.name})`);
+  } catch (error) {
+    console.error(`[Routine Notification] Reschedule failed:`, error);
+  }
+}
+
 // ===== 管理者機能: ユーザー情報取得 =====
 exports.adminGetUser = onCall({
   region: "asia-northeast1",

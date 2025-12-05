@@ -1030,7 +1030,7 @@ const FeaturesTab = ({
 
                         const saveRoutines = async (updated) => {
                             try {
-                                // Firestoreに保存
+                                // Firestoreに保存（routinesコレクション）
                                 const batch = firebase.firestore().batch();
                                 updated.forEach(routine => {
                                     if (routine.firestoreId) {
@@ -1053,6 +1053,26 @@ const FeaturesTab = ({
                                     }
                                 });
                                 await batch.commit();
+
+                                // settings/routineも同期（通知用）
+                                const days = updated
+                                    .sort((a, b) => a.id - b.id)
+                                    .map(r => ({
+                                        day: r.id,
+                                        name: r.splitType || r.name,
+                                        isRestDay: r.isRestDay || false
+                                    }));
+
+                                await firebase.firestore()
+                                    .collection('users')
+                                    .doc(userId)
+                                    .collection('settings')
+                                    .doc('routine')
+                                    .set({
+                                        days: days,
+                                        updatedAt: firebase.firestore.Timestamp.now()
+                                    }, { merge: true });
+
                                 await loadRoutines();
                                 // ダッシュボードのルーティン情報を即座に更新
                                 if (window.reloadCurrentRoutine) {
@@ -1127,7 +1147,7 @@ const FeaturesTab = ({
                                         });
                                         await batch2.commit();
 
-                                        // ルーティン設定を更新
+                                        // ルーティン設定を更新（旧形式: ユーザードキュメント）
                                         await firebase.firestore()
                                             .collection('users')
                                             .doc(userId)
@@ -1135,6 +1155,33 @@ const FeaturesTab = ({
                                                 routineStartDate: new Date().toISOString(),
                                                 routineActive: true
                                             }, { merge: true });
+
+                                        // ルーティン設定を更新（新形式: settings/routine）
+                                        await firebase.firestore()
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('settings')
+                                            .doc('routine')
+                                            .set({
+                                                name: '7日間分割（胸→背中→休→肩→腕→脚→休）',
+                                                days: [
+                                                    { day: 1, name: '胸', isRestDay: false },
+                                                    { day: 2, name: '背中', isRestDay: false },
+                                                    { day: 3, name: '休養日', isRestDay: true },
+                                                    { day: 4, name: '肩', isRestDay: false },
+                                                    { day: 5, name: '腕', isRestDay: false },
+                                                    { day: 6, name: '脚', isRestDay: false },
+                                                    { day: 7, name: '休養日', isRestDay: true }
+                                                ],
+                                                startDate: new Date().toISOString().split('T')[0],
+                                                active: true,
+                                                updatedAt: firebase.firestore.Timestamp.now()
+                                            });
+
+                                        // ダッシュボードのルーティンを即座に更新
+                                        if (window.reloadCurrentRoutine) {
+                                            window.reloadCurrentRoutine();
+                                        }
 
                                         toast.success('デフォルトルーティンに戻しました');
 
@@ -1660,14 +1707,43 @@ const FeaturesTab = ({
                                                                 try {
                                                                     const today = new Date();
                                                                     today.setDate(today.getDate() - (selectedRestartDay - 1));
+                                                                    const startDateStr = today.toISOString().split('T')[0];
 
-                                                                    // Firestoreに保存
+                                                                    // Firestoreに保存（旧形式: ユーザードキュメント）
                                                                     await firebase.firestore()
                                                                         .collection('users')
                                                                         .doc(userId)
                                                                         .set({
                                                                             routineStartDate: today.toISOString()
                                                                         }, { merge: true });
+
+                                                                    // settings/routineも更新（新形式）
+                                                                    // localRoutinesからdaysを構築
+                                                                    const days = localRoutines
+                                                                        .filter(r => r.id <= 7 || r.id > 7) // 全ルーティン
+                                                                        .sort((a, b) => a.id - b.id)
+                                                                        .map(r => ({
+                                                                            day: r.id,
+                                                                            name: r.splitType || r.name,
+                                                                            isRestDay: r.isRestDay || false
+                                                                        }));
+
+                                                                    await firebase.firestore()
+                                                                        .collection('users')
+                                                                        .doc(userId)
+                                                                        .collection('settings')
+                                                                        .doc('routine')
+                                                                        .set({
+                                                                            startDate: startDateStr,
+                                                                            active: true,
+                                                                            days: days,
+                                                                            updatedAt: firebase.firestore.Timestamp.now()
+                                                                        }, { merge: true });
+
+                                                                    // ダッシュボードのルーティンを即座に更新
+                                                                    if (window.reloadCurrentRoutine) {
+                                                                        window.reloadCurrentRoutine();
+                                                                    }
 
                                                                     toast.success('ルーティンを再開しました');
                                                                     setShowRestartModal(false);

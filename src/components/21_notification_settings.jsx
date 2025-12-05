@@ -5,7 +5,7 @@ import { isNativeApp, initPushNotifications, createNotificationChannel, checkNot
 // ===== 通知設定コンポーネント =====
 const NotificationSettings = ({ userId }) => {
     const Icon = window.Icon;
-    const [activeTab, setActiveTab] = useState('meal');
+    const [activeTab, setActiveTab] = useState('routine');
     const [notificationPermission, setNotificationPermission] = useState('default');
     const [fcmToken, setFcmToken] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -13,6 +13,8 @@ const NotificationSettings = ({ userId }) => {
     const [showInstallGuide, setShowInstallGuide] = useState(false);
 
     // 通知設定（Firestoreから読み込み）
+    const [routineNotification, setRoutineNotification] = useState({ enabled: false, time: '07:00' });
+    const [routineData, setRoutineData] = useState(null); // ルーティン設定データ
     const [mealNotifications, setMealNotifications] = useState([]);
     const [workoutNotifications, setWorkoutNotifications] = useState([]);
     const [analysisNotifications, setAnalysisNotifications] = useState([]);
@@ -48,6 +50,33 @@ const NotificationSettings = ({ userId }) => {
         checkDevice();
     }, []);
 
+    // Firestoreからルーティン設定を読み込み
+    useEffect(() => {
+        const loadRoutineData = async () => {
+            try {
+                const routineDoc = await window.db
+                    .collection('users')
+                    .doc(userId)
+                    .collection('settings')
+                    .doc('routine')
+                    .get();
+
+                if (routineDoc.exists) {
+                    const data = routineDoc.data();
+                    if (data.active && data.startDate && data.days) {
+                        setRoutineData(data);
+                    }
+                }
+            } catch (error) {
+                console.error('[Notification] Failed to load routine data:', error);
+            }
+        };
+
+        if (userId) {
+            loadRoutineData();
+        }
+    }, [userId]);
+
     // Firestoreから通知設定を読み込み
     useEffect(() => {
         const loadNotificationSettings = async () => {
@@ -55,6 +84,11 @@ const NotificationSettings = ({ userId }) => {
                 const doc = await window.db.collection('users').doc(userId).collection('settings').doc('notifications').get();
                 if (doc.exists) {
                     const data = doc.data();
+
+                    // ルーティン通知
+                    if (data.routine) {
+                        setRoutineNotification(data.routine);
+                    }
 
                     // 旧形式から新形式へのマイグレーション
                     const migrateMeal = (meal) => {
@@ -499,6 +533,57 @@ const NotificationSettings = ({ userId }) => {
         }
     };
 
+    // ルーティン通知を保存（トグル/時刻変更時）
+    const saveRoutineNotification = async (newSettings) => {
+        try {
+            setLoading(true);
+            const updatedRoutine = { ...routineNotification, ...newSettings };
+            setRoutineNotification(updatedRoutine);
+
+            // Firestoreに保存
+            await window.db.collection('users').doc(userId).collection('settings').doc('notifications').set({
+                routine: updatedRoutine
+            }, { merge: true });
+
+            // 有効化された場合のみスケジュール
+            if (updatedRoutine.enabled) {
+                const scheduleRoutineNotificationFunc = window.functions.httpsCallable('scheduleRoutineNotification');
+                await scheduleRoutineNotificationFunc({
+                    userId: userId,
+                    scheduleTimeStr: updatedRoutine.time
+                });
+                toast.success(`ルーティン通知を ${updatedRoutine.time} に設定しました`);
+            } else {
+                toast.success('ルーティン通知をオフにしました');
+            }
+        } catch (error) {
+            console.error('[Notification] Failed to save routine notification:', error);
+            toast.error('ルーティン通知の設定に失敗しました');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 今日のルーティンを取得するヘルパー関数
+    const getTodayRoutine = () => {
+        if (!routineData || !routineData.days || !routineData.startDate) {
+            return null;
+        }
+
+        const startDate = new Date(routineData.startDate);
+        const today = new Date();
+        const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+        const currentDayIndex = daysDiff % routineData.days.length;
+        const currentDayData = routineData.days[currentDayIndex];
+
+        return {
+            dayNumber: currentDayIndex + 1,
+            totalDays: routineData.days.length,
+            name: currentDayData.name,
+            isRestDay: currentDayData.isRestDay
+        };
+    };
+
     return (
         <div className="space-y-4">
             {/* インストールガイドモーダル（iOS用） */}
@@ -565,55 +650,186 @@ const NotificationSettings = ({ userId }) => {
             {notificationPermission === 'granted' && (
                 <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                     {/* タブヘッダー */}
-                    <div className="flex border-b border-gray-200">
+                    <div className="flex border-b border-gray-200 overflow-x-auto">
+                        <button
+                            onClick={() => setActiveTab('routine')}
+                            className={`flex-1 px-3 py-3 text-xs font-medium transition whitespace-nowrap ${
+                                activeTab === 'routine'
+                                    ? 'bg-purple-50 text-purple-600 border-b-2 border-purple-600'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            <Icon name="Repeat" size={14} className="inline mr-1" />
+                            ルーティン
+                        </button>
                         <button
                             onClick={() => setActiveTab('meal')}
-                            className={`flex-1 px-4 py-3 text-sm font-medium transition ${
+                            className={`flex-1 px-3 py-3 text-xs font-medium transition whitespace-nowrap ${
                                 activeTab === 'meal'
                                     ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
                                     : 'text-gray-600 hover:bg-gray-50'
                             }`}
                         >
-                            <Icon name="UtensilsCrossed" size={16} className="inline mr-1" />
+                            <Icon name="UtensilsCrossed" size={14} className="inline mr-1" />
                             食事
                         </button>
                         <button
                             onClick={() => setActiveTab('workout')}
-                            className={`flex-1 px-4 py-3 text-sm font-medium transition ${
+                            className={`flex-1 px-3 py-3 text-xs font-medium transition whitespace-nowrap ${
                                 activeTab === 'workout'
                                     ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
                                     : 'text-gray-600 hover:bg-gray-50'
                             }`}
                         >
-                            <Icon name="Dumbbell" size={16} className="inline mr-1" />
+                            <Icon name="Dumbbell" size={14} className="inline mr-1" />
                             運動
                         </button>
                         <button
                             onClick={() => setActiveTab('analysis')}
-                            className={`flex-1 px-4 py-3 text-sm font-medium transition ${
+                            className={`flex-1 px-3 py-3 text-xs font-medium transition whitespace-nowrap ${
                                 activeTab === 'analysis'
                                     ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
                                     : 'text-gray-600 hover:bg-gray-50'
                             }`}
                         >
-                            <Icon name="LineChart" size={16} className="inline mr-1" />
+                            <Icon name="LineChart" size={14} className="inline mr-1" />
                             分析
                         </button>
                         <button
                             onClick={() => setActiveTab('custom')}
-                            className={`flex-1 px-4 py-3 text-sm font-medium transition ${
+                            className={`flex-1 px-3 py-3 text-xs font-medium transition whitespace-nowrap ${
                                 activeTab === 'custom'
                                     ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
                                     : 'text-gray-600 hover:bg-gray-50'
                             }`}
                         >
-                            <Icon name="Settings" size={16} className="inline mr-1" />
+                            <Icon name="Settings" size={14} className="inline mr-1" />
                             カスタム
                         </button>
                     </div>
 
                     {/* タブコンテンツ */}
                     <div className="p-4">
+                        {/* ルーティンタブ */}
+                        {activeTab === 'routine' && (
+                            <div className="space-y-4">
+                                <div className="flex items-start gap-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                    <Icon name="HelpCircle" size={16} className="text-purple-600 mt-0.5 flex-shrink-0" />
+                                    <p className="text-xs text-purple-800">
+                                        毎日指定時刻に、今日のトレーニング分割（例: 胸の日、休養日など）をお知らせします。
+                                    </p>
+                                </div>
+
+                                {/* ルーティン未設定の場合 */}
+                                {!routineData && (
+                                    <div className="p-4 bg-gray-50 rounded-lg text-center">
+                                        <Icon name="AlertCircle" size={24} className="mx-auto text-gray-400 mb-2" />
+                                        <p className="text-sm text-gray-600">ルーティンが設定されていません</p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            設定 → 機能 → ルーティン からルーティンを設定してください
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* ルーティン設定済みの場合 */}
+                                {routineData && (
+                                    <>
+                                        {/* 今日のルーティンプレビュー */}
+                                        {(() => {
+                                            const todayRoutine = getTodayRoutine();
+                                            if (!todayRoutine) return null;
+                                            return (
+                                                <div className={`p-4 rounded-lg ${todayRoutine.isRestDay ? 'bg-gray-100' : 'bg-purple-100'}`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <Icon
+                                                                name={todayRoutine.isRestDay ? "Moon" : "Repeat"}
+                                                                size={20}
+                                                                className={todayRoutine.isRestDay ? "text-gray-600" : "text-purple-600"}
+                                                            />
+                                                            <span className="text-sm text-gray-600">
+                                                                今日は Day {todayRoutine.dayNumber}/{todayRoutine.totalDays}
+                                                            </span>
+                                                        </div>
+                                                        <span className={`text-lg font-bold ${todayRoutine.isRestDay ? 'text-gray-700' : 'text-purple-700'}`}>
+                                                            {todayRoutine.name}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {/* ON/OFFトグル */}
+                                        <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg">
+                                            <div>
+                                                <p className="font-medium text-gray-800">ルーティン通知</p>
+                                                <p className="text-xs text-gray-500">毎日決まった時刻にお知らせ</p>
+                                            </div>
+                                            <button
+                                                onClick={() => saveRoutineNotification({ enabled: !routineNotification.enabled })}
+                                                disabled={loading}
+                                                className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+                                                    routineNotification.enabled ? 'bg-purple-600' : 'bg-gray-300'
+                                                } ${loading ? 'opacity-50' : ''}`}
+                                            >
+                                                <span
+                                                    className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
+                                                        routineNotification.enabled ? 'translate-x-6' : 'translate-x-0'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+
+                                        {/* 時刻設定（有効時のみ表示） */}
+                                        {routineNotification.enabled && (
+                                            <div className="space-y-3">
+                                                <p className="text-sm font-medium text-gray-700">通知時刻</p>
+                                                <div className="flex gap-3">
+                                                    <input
+                                                        type="time"
+                                                        value={routineNotification.time}
+                                                        onChange={(e) => setRoutineNotification({ ...routineNotification, time: e.target.value })}
+                                                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                    />
+                                                    <button
+                                                        onClick={() => saveRoutineNotification({ time: routineNotification.time })}
+                                                        disabled={loading}
+                                                        className="px-6 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition disabled:opacity-50"
+                                                    >
+                                                        {loading ? '保存中...' : '保存'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* 通知プレビュー */}
+                                        {routineNotification.enabled && (
+                                            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                <p className="text-xs text-gray-500 mb-2">通知プレビュー</p>
+                                                <div className="flex items-start gap-2">
+                                                    <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                        <Icon name="Repeat" size={16} className="text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-gray-800 text-sm">今日のルーティン</p>
+                                                        <p className="text-xs text-gray-600">
+                                                            {(() => {
+                                                                const todayRoutine = getTodayRoutine();
+                                                                if (!todayRoutine) return '読み込み中...';
+                                                                return todayRoutine.isRestDay
+                                                                    ? `Day ${todayRoutine.dayNumber} - 今日は休養日です`
+                                                                    : `Day ${todayRoutine.dayNumber} - 今日は${todayRoutine.name}の日です`;
+                                                            })()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
+
                         {/* 食事タブ */}
                         {activeTab === 'meal' && (
                             <div className="space-y-4">
